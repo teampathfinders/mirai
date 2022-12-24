@@ -1,0 +1,8 @@
+[package]
+name = "msserver"
+version = "0.1.0"
+edition = "2021"
+authors = ["RadiatedMonkey"]
+
+[dependencies]
+tokio = { version = "1.23.0", features = ["net", "rt-multi-thread", "macros"] }
