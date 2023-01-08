@@ -7,27 +7,18 @@ use std::time::Duration;
 use tokio::runtime;
 
 use error::VexResult;
-use network::NetworkSupervisor;
+use network::NetworkManager;
 
 const IPV4_PORT: u16 = 19132;
 const IPV6_PORT: u16 = 19133;
 
 async fn app_main() -> VexResult<()> {
     loop {
-        let server = match NetworkSupervisor::new(IPV4_PORT, Some(IPV6_PORT)).await {
-            Ok(s) => s,
-            Err(e) => {
-                tracing::error!("Server startup failed: {e:?}, quitting...");
-                tracing::error!("Cause: {e:?}");
-                return Err(e);
-            }
-        };
-
-        match server.start().await {
+        match NetworkManager::start(IPV4_PORT, Some(IPV6_PORT)).await {
             Ok(_) => {
                 tracing::info!("Received OK, not restarting server");
-                break
-            },
+                break;
+            }
             Err(e) => {
                 tracing::error!("Seems like the server crashed, attempting to restart it...");
                 tracing::error!("Crash cause: {e:?}");
@@ -46,9 +37,13 @@ fn main() -> VexResult<()> {
         .enable_time()
         .thread_name_fn(|| {
             static ATOMIC_THREAD_COUNTER: AtomicU16 = AtomicU16::new(0);
-            format!("worker-{}", ATOMIC_THREAD_COUNTER.fetch_add(1, Ordering::Relaxed))
+            format!(
+                "worker-{}",
+                ATOMIC_THREAD_COUNTER.fetch_add(1, Ordering::Relaxed)
+            )
         })
-        .build().expect("Failed to build runtime");
+        .build()
+        .expect("Failed to build runtime");
 
     runtime.block_on(app_main())
 }

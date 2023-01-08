@@ -1,3 +1,5 @@
-mod supervisor;
+mod manager;
+mod worker;
 
-pub use supervisor::*;
+pub use manager::*;
+pub use worker::*;
