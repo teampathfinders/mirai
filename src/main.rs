@@ -14,7 +14,10 @@ const IPV6_PORT: u16 = 19133;
 
 async fn app_main() -> VexResult<()> {
     loop {
-        match NetworkManager::start(IPV4_PORT, Some(IPV6_PORT)).await {
+        match NetworkManager::start(
+            IPV4_PORT,
+            Some(IPV6_PORT)
+        ).await {
             Ok(_) => {
                 tracing::info!("Received OK, not restarting server");
                 break;

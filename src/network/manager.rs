@@ -8,13 +8,16 @@ use std::{
         Arc,
     },
 };
+use std::mem::MaybeUninit;
 use std::time::Duration;
+use crossbeam::deque::{Injector, Worker};
 
 use tokio::net::UdpSocket;
 use tokio::{task, time};
 use tokio_util::sync::CancellationToken;
 
 use crate::error::{VexError, VexResult};
+use crate::network::SchedulerQueue;
 
 const IPV4_LOCAL_ADDR: Ipv4Addr = Ipv4Addr::new(127, 0, 0, 1);
 const IPV6_LOCAL_ADDR: Ipv6Addr = Ipv6Addr::new(0, 0, 0, 0, 0, 0, 0, 1);
@@ -32,42 +35,39 @@ pub struct RawPacket {
 }
 
 pub struct NetworkManager {
-    active_flag: CancellationToken,
+    flag: CancellationToken,
     ipv4_socket: Arc<UdpSocket>,
-    // ipv6_socket: Arc<Option<UdpSocket>>,
-
-    incoming_queue: deque::Injector<RawPacket>,
-    incoming_stealers: [deque::Stealer<RawPacket>; WORKER_COUNT],
-
-    receiver_thread: task::JoinHandle<()>,
-    sender_thread: task::JoinHandle<()>,
-    worker_threads: [task::JoinHandle<()>; WORKER_COUNT],
+    ipv6_socket: Arc<Option<UdpSocket>>,
 }
 
 impl NetworkManager {
-    pub async fn start(ipv4_port: u16, ipv6_port: Option<u16>) -> VexResult<()> {
+    pub async fn start(
+        ipv4_port: u16,
+        ipv6_port: Option<u16>
+    ) -> VexResult<()> {
         let token = CancellationToken::new();
 
         let ipv4_socket =
             Arc::new(UdpSocket::bind(SocketAddrV4::new(IPV4_LOCAL_ADDR, ipv4_port)).await?);
 
-        // let ipv6_socket = Arc::new(if let Some(port) = ipv6_port {
-        //     Some(UdpSocket::bind(SocketAddrV6::new(IPV6_LOCAL_ADDR, port, 0, 0)).await?)
-        // } else {
-        //     None
-        // });
+        let ipv6_socket = Arc::new(if let Some(port) = ipv6_port {
+            Some(UdpSocket::bind(SocketAddrV6::new(IPV6_LOCAL_ADDR, port, 0, 0)).await?)
+        } else {
+            None
+        });
+
+        let (incoming_queue, local_queues) = SchedulerQueue::new();
+        let incoming_queue = Arc::new(incoming_queue);
 
         let receiver_task = {
             let token = token.clone();
             let ipv4_socket = ipv4_socket.clone();
+            let queue = incoming_queue.clone();
 
             tokio::spawn(async move {
-                Self::v4_receiver_task(token, ipv4_socket).await;
+                Self::v4_receiver_task(token, ipv4_socket, queue).await;
             })
         };
-        
-        tokio::time::sleep(Duration::from_secs(1)).await;
-        token.cancel();
 
         let _ = tokio::join!(receiver_task);
 
@@ -77,7 +77,8 @@ impl NetworkManager {
     /// Receives packets from IPv4 clients and adds them to the receive queue
     async fn v4_receiver_task(
         token: CancellationToken,
-        socket: Arc<UdpSocket>
+        socket: Arc<UdpSocket>,
+        scheduler: Arc<SchedulerQueue<RawPacket, WORKER_COUNT>>
     ) {
         let mut receive_buffer = [0u8; RECV_BUF_SIZE];
 
@@ -100,15 +101,10 @@ impl NetworkManager {
             };
 
             tracing::debug!("{n:?} bytes from {address:?}");
-            // match manager.incoming_queue.push(RawPacket {
-            //     buffer: BytesMut::from(&receive_buffer[..n]),
-            //     address,
-            // }) {
-            //     Ok(_) => (),
-            //     Err(e) => {
-            //         tracing::warn!("Receiving queue is full! Dropping this packet");
-            //     }
-            // }
+            scheduler.schedule_task(RawPacket {
+                buffer: BytesMut::from(&receive_buffer[..n]),
+                address,
+            });
         }
     }
     //
