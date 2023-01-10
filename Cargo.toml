@@ -11,7 +11,7 @@ tokio-console = ["console-subscriber"]
 bytes = "1.3.0"
 console-subscriber = { version = "0.1.8", optional = true }
 thiserror = "1.0.37"
-tokio = { version = "1.23.0", features = ["net", "rt-multi-thread", "macros", "time", "sync"] }
+tokio = { version = "1.23.0", features = ["net", "rt-multi-thread", "macros", "time", "sync", "signal"] }
 tokio-util = "0.7.4"
 tracing = "0.1.37"
 tracing-subscriber = "0.3.16"

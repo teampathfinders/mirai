@@ -11,7 +11,7 @@ use std::{
 };
 
 use tokio::net::UdpSocket;
-use tokio::{task, time};
+use tokio::{task, time, signal};
 use tokio_util::sync::CancellationToken;
 
 use crate::error::{VexError, VexResult};
@@ -28,6 +28,7 @@ const LEAVING_QUEUE_SIZE: usize = 25;
 
 pub const WORKER_COUNT: usize = 1;
 
+#[derive(Debug)]
 pub struct RawPacket {
     buffer: BytesMut,
     address: SocketAddr,
@@ -42,6 +43,17 @@ pub struct NetworkManager {
 impl NetworkManager {
     pub async fn start(ipv4_port: u16, ipv6_port: Option<u16>) -> VexResult<()> {
         let token = CancellationToken::new();
+
+        // Shutdown on Ctrl-C
+        {
+            let token = token.clone();
+            tokio::spawn(async move {
+                signal::ctrl_c().await.unwrap();
+                tracing::info!("Ctrl-C detected, token cancelled, shutting down services...");
+
+                token.cancel();
+            });
+        }
 
         let ipv4_socket =
             Arc::new(UdpSocket::bind(SocketAddrV4::new(IPV4_LOCAL_ADDR, ipv4_port)).await?);
@@ -78,16 +90,15 @@ impl NetworkManager {
         {
             let mut worker_handles = Vec::with_capacity(WORKER_COUNT);
             for _ in 0..WORKER_COUNT {
-                worker_handles.push(
-                    Worker::new(
-                        token.clone(),
-                        incoming_queue.clone(), leaving_queue.clone()
-                    )
-                );
+                worker_handles.push(Worker::new(
+                    token.clone(),
+                    incoming_queue.clone(),
+                    leaving_queue.clone(),
+                ));
             }
 
-            tokio::time::sleep(Duration::from_secs(3)).await;
-            token.cancel();
+            // tokio::time::sleep(Duration::from_secs(3)).await;
+            // token.cancel();
 
             for handle in worker_handles {
                 let _ = tokio::join!(handle);
@@ -103,7 +114,7 @@ impl NetworkManager {
     async fn v4_receiver_task(
         token: CancellationToken,
         socket: Arc<UdpSocket>,
-        queue: Arc<AsyncDeque<RawPacket>>
+        queue: Arc<AsyncDeque<RawPacket>>,
     ) {
         let mut receive_buffer = [0u8; RECV_BUF_SIZE];
 
@@ -126,10 +137,12 @@ impl NetworkManager {
             };
 
             tracing::debug!("{n:?} bytes from {address:?}");
-            queue.push(RawPacket {
-                buffer: BytesMut::from(&receive_buffer[..n]),
-                address,
-            }).await;
+            queue
+                .push(RawPacket {
+                    buffer: BytesMut::from(&receive_buffer[..n]),
+                    address,
+                })
+                .await;
         }
 
         tracing::info!("IPv4 inward service shut down");
@@ -139,7 +152,7 @@ impl NetworkManager {
     async fn v4_sender_task(
         token: CancellationToken,
         socket: Arc<UdpSocket>,
-        queue: Arc<AsyncDeque<RawPacket>>
+        queue: Arc<AsyncDeque<RawPacket>>,
     ) {
         loop {
             let task = tokio::select! {

@@ -3,14 +3,14 @@ use tokio::sync::{Mutex, Semaphore};
 
 pub struct AsyncDeque<T> {
     deque: Mutex<VecDeque<T>>,
-    permits: Semaphore
+    permits: Semaphore,
 }
 
 impl<T> AsyncDeque<T> {
     pub fn new(capacity: usize) -> Self {
         Self {
             deque: Mutex::new(VecDeque::with_capacity(capacity)),
-            permits: Semaphore::new(0)
+            permits: Semaphore::new(0),
         }
     }
 

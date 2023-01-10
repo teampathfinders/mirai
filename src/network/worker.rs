@@ -1,12 +1,12 @@
-use std::iter;
-use std::sync::Arc;
-use std::sync::atomic::{AtomicU16, Ordering};
-use std::time::{Duration, Instant};
-use tokio::task;
-use tokio_util::sync::CancellationToken;
 use crate::error::VexResult;
 use crate::network::RawPacket;
 use crate::util::AsyncDeque;
+use std::iter;
+use std::sync::atomic::{AtomicU16, Ordering};
+use std::sync::Arc;
+use std::time::{Duration, Instant};
+use tokio::task;
+use tokio_util::sync::CancellationToken;
 
 pub const GAME_TICK: Duration = Duration::from_millis(1000 / 20);
 
@@ -17,24 +17,25 @@ pub struct Worker {
     incoming_queue: Arc<AsyncDeque<RawPacket>>,
     leaving_queue: Arc<AsyncDeque<RawPacket>>,
 
-    worker_id: u16
+    worker_id: u16,
 }
 
 impl Worker {
     pub fn new(
         token: CancellationToken,
         incoming_queue: Arc<AsyncDeque<RawPacket>>,
-        leaving_queue: Arc<AsyncDeque<RawPacket>>
+        leaving_queue: Arc<AsyncDeque<RawPacket>>,
     ) -> task::JoinHandle<()> {
         let worker_id = ATOMIC_ID_COUNTER.fetch_add(1, Ordering::SeqCst);
 
         let worker = Self {
-            token, incoming_queue, leaving_queue, worker_id
+            token,
+            incoming_queue,
+            leaving_queue,
+            worker_id,
         };
 
-        tokio::spawn(async move {
-            worker.work().await
-        })
+        tokio::spawn(async move { worker.work().await })
     }
 
     async fn work(&self) {
@@ -62,6 +63,9 @@ impl Worker {
     }
 
     async fn handle_task(&self, task: RawPacket) -> VexResult<()> {
+        tracing::debug!("Echoing: {task:?}");
+        self.leaving_queue.push(task).await;
+
         Ok(())
     }
 
