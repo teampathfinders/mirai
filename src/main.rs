@@ -1,5 +1,6 @@
 mod error;
 mod network;
+mod util;
 
 use std::sync::atomic::{AtomicU16, Ordering};
 use std::time::Duration;
@@ -14,12 +15,9 @@ const IPV6_PORT: u16 = 19133;
 
 async fn app_main() -> VexResult<()> {
     loop {
-        match NetworkManager::start(
-            IPV4_PORT,
-            Some(IPV6_PORT)
-        ).await {
+        match NetworkManager::start(IPV4_PORT, Some(IPV6_PORT)).await {
             Ok(_) => {
-                tracing::info!("Received OK, not restarting server");
+                tracing::info!("Received OK for shutdown, not restarting server");
                 break;
             }
             Err(e) => {
@@ -41,7 +39,7 @@ fn main() -> VexResult<()> {
         .thread_name_fn(|| {
             static ATOMIC_THREAD_COUNTER: AtomicU16 = AtomicU16::new(0);
             format!(
-                "worker-{}",
+                "async-thread-{}",
                 ATOMIC_THREAD_COUNTER.fetch_add(1, Ordering::Relaxed)
             )
         })

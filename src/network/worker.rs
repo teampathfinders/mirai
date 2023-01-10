@@ -1,30 +1,71 @@
-use crate::network::RawPacket;
-use crossbeam::deque;
-
 use std::iter;
+use std::sync::Arc;
+use std::sync::atomic::{AtomicU16, Ordering};
+use std::time::{Duration, Instant};
+use tokio::task;
+use tokio_util::sync::CancellationToken;
+use crate::error::VexResult;
+use crate::network::RawPacket;
+use crate::util::AsyncDeque;
 
-pub struct Worker<'m> {
-    local: deque::Worker<RawPacket>,
-    global: &'m deque::Injector<RawPacket>,
-    stealers: &'m [deque::Stealer<RawPacket>],
+pub const GAME_TICK: Duration = Duration::from_millis(1000 / 20);
+
+static ATOMIC_ID_COUNTER: AtomicU16 = AtomicU16::new(1);
+
+pub struct Worker {
+    token: CancellationToken,
+    incoming_queue: Arc<AsyncDeque<RawPacket>>,
+    leaving_queue: Arc<AsyncDeque<RawPacket>>,
+
+    worker_id: u16
 }
 
-impl Worker<'_> {
-    fn find_task(&self) -> Option<RawPacket> {
-        // Pop a task from the local queue, if not empty
-        self.local.pop().or_else(|| {
-            // Otherwise, look for a task elsewhere
-            iter::repeat_with(|| {
-                // Try stealing a batch of tasks from the global queue
-                self.global
-                    .steal_batch_and_pop(&self.local)
-                    // Or try stealing a task from one of the other threads.
-                    .or_else(|| self.stealers.iter().map(|s| s.steal()).collect())
-            })
-            // Loop while no task was stolen and any steal operations need to be retried
-            .find(|s| !s.is_retry())
-            // Extract the stolen task, if there is one
-            .and_then(|s| s.success())
+impl Worker {
+    pub fn new(
+        token: CancellationToken,
+        incoming_queue: Arc<AsyncDeque<RawPacket>>,
+        leaving_queue: Arc<AsyncDeque<RawPacket>>
+    ) -> task::JoinHandle<()> {
+        let worker_id = ATOMIC_ID_COUNTER.fetch_add(1, Ordering::SeqCst);
+
+        let worker = Self {
+            token, incoming_queue, leaving_queue, worker_id
+        };
+
+        tokio::spawn(async move {
+            worker.work().await
         })
+    }
+
+    async fn work(&self) {
+        let mut start_timestamp;
+        loop {
+            start_timestamp = Instant::now();
+
+            match tokio::select! {
+                _ = self.token.cancelled() => break,
+                task = self.find_task() => self.handle_task(task).await
+            } {
+                Ok(_) => (),
+                Err(e) => {
+                    tracing::error!("Failed to process packet: {e:?}");
+                }
+            }
+
+            let time_elapsed = Instant::now().duration_since(start_timestamp);
+            if time_elapsed < GAME_TICK {
+                tokio::time::sleep(GAME_TICK - time_elapsed).await;
+            }
+        }
+
+        tracing::info!("Worker {} shut down", self.worker_id);
+    }
+
+    async fn handle_task(&self, task: RawPacket) -> VexResult<()> {
+        Ok(())
+    }
+
+    async fn find_task(&self) -> RawPacket {
+        self.incoming_queue.pop().await
     }
 }
