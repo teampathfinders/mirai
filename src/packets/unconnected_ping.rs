@@ -16,7 +16,7 @@ impl Decodable for UnconnectedPing {
         vex_check!(buffer.get_u8() == Self::ID);
 
         let time = buffer.get_i64();
-        buffer.get_u128(); // Skip magic
+        buffer.get_u128(); // Skip offline message data
         let client_guid = buffer.get_i64();
 
         Ok(Self {
