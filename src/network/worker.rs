@@ -63,8 +63,8 @@ impl Worker {
     }
 
     async fn handle_task(&self, task: RawPacket) -> VexResult<()> {
-        tracing::debug!("Echoing: {task:?}");
-        self.leaving_queue.push(task).await;
+        tracing::info!("Worker {} handling task", self.worker_id);
+
 
         Ok(())
     }

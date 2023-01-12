@@ -1,5 +1,6 @@
 mod error;
 mod network;
+mod packets;
 mod util;
 
 use std::sync::atomic::{AtomicU16, Ordering};
