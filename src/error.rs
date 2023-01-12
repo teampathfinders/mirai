@@ -6,25 +6,32 @@ pub type VexResult<T> = Result<T, VexError>;
 macro_rules! vex_check {
     ($expression: expr, $message: expr) => {
         if ($expression) == false {
-            return Err(
-                $crate::error::VexError::AssertionFailed($message)
-            )
+            return Err($crate::error::VexError::Assertion($message));
         }
     };
 
     ($expression: expr) => {
-        vex_check!($expression, format!("Assertion failed: {}", stringify!($expression)));
-    }
+        vex_check!(
+            $expression,
+            format!("Assertion failed: {}", stringify!($expression))
+        );
+    };
 }
 
 #[derive(Debug, Error)]
 pub enum VexError {
-    #[error("Non-fatal assertion failed: {0}")]
-    AssertionFailed(String),
-
+    #[error("Non-fatal assertion failed | {0}")]
+    Assertion(String),
+    #[error("Synchronisation primitive failed | {0}")]
+    SyncPrimitive(String),
     #[error(transparent)]
-    IoError(#[from] std::io::Error),
-
+    Io(#[from] std::io::Error),
     #[error("Unknown error")]
     Other,
+}
+
+impl<T> From<std::sync::PoisonError<T>> for VexError {
+    fn from(error: std::sync::PoisonError<T>) -> VexError {
+        VexError::SyncPrimitive(error.to_string())
+    }
 }

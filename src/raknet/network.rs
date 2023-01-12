@@ -11,12 +11,12 @@ use std::{
 };
 
 use tokio::net::UdpSocket;
-use tokio::{task, time, signal};
+use tokio::{signal, task, time};
 use tokio_util::sync::CancellationToken;
 
 use crate::error::{VexError, VexResult};
-use crate::network::Worker;
 use crate::util::AsyncDeque;
+use crate::worker::Worker;
 
 const IPV4_LOCAL_ADDR: Ipv4Addr = Ipv4Addr::new(127, 0, 0, 1);
 const IPV6_LOCAL_ADDR: Ipv6Addr = Ipv6Addr::new(0, 0, 0, 0, 0, 0, 0, 1);
@@ -34,43 +34,49 @@ pub struct RawPacket {
     address: SocketAddr,
 }
 
-pub struct NetworkManager {
-    flag: CancellationToken,
+pub struct NetController {
+    global_token: CancellationToken,
     ipv4_socket: Arc<UdpSocket>,
-    ipv6_socket: Arc<Option<UdpSocket>>,
+    ipv4_port: u16,
+
+    inward_queue: Arc<AsyncDeque<RawPacket>>,
+    outward_queue: Arc<AsyncDeque<RawPacket>>
+
+    // ipv6_socket: Arc<Option<UdpSocket>>,
+    // ipv6_port: Option<u16>
 }
 
-impl NetworkManager {
-    pub async fn start(ipv4_port: u16, ipv6_port: Option<u16>) -> VexResult<()> {
-        let token = CancellationToken::new();
-
-        // Shutdown on Ctrl-C
-        {
-            let token = token.clone();
-            tokio::spawn(async move {
-                signal::ctrl_c().await.unwrap();
-                tracing::info!("Ctrl-C detected, token cancelled, shutting down services...");
-
-                token.cancel();
-            });
-        }
-
+impl NetController {
+    pub async fn new(global_token: CancellationToken, ipv4_port: u16) -> VexResult<NetController> {
         let ipv4_socket =
             Arc::new(UdpSocket::bind(SocketAddrV4::new(IPV4_LOCAL_ADDR, ipv4_port)).await?);
+        tracing::info!("Set up IPv4 socket on port {ipv4_port}");
 
-        let ipv6_socket = Arc::new(if let Some(port) = ipv6_port {
-            Some(UdpSocket::bind(SocketAddrV6::new(IPV6_LOCAL_ADDR, port, 0, 0)).await?)
-        } else {
-            None
-        });
+        Ok(NetController {
+            global_token,
+            ipv4_socket,
+            ipv4_port,
 
-        let incoming_queue = Arc::new(AsyncDeque::new(INCOMING_QUEUE_SIZE));
-        let leaving_queue = Arc::new(AsyncDeque::new(LEAVING_QUEUE_SIZE));
+            inward_queue: Arc::new(AsyncDeque::new(10)),
+            outward_queue: Arc::new(AsyncDeque::new(10))
+        })
+    }
+
+    pub fn ipv4_port(&self) -> u16 {
+        self.ipv4_port
+    }
+
+    pub async fn start(&self) -> VexResult<()> {
+        // let ipv6_socket = Arc::new(if let Some(port) = ipv6_port {
+        //     Some(UdpSocket::bind(SocketAddrV6::new(IPV6_LOCAL_ADDR, port, 0, 0)).await?)
+        // } else {
+        //     None
+        // });
 
         let receiver_task = {
-            let token = token.clone();
-            let ipv4_socket = ipv4_socket.clone();
-            let incoming_queue = incoming_queue.clone();
+            let token = self.global_token.clone();
+            let ipv4_socket = self.ipv4_socket.clone();
+            let incoming_queue = self.inward_queue.clone();
 
             tokio::spawn(async move {
                 Self::v4_receiver_task(token, ipv4_socket, incoming_queue).await;
@@ -78,9 +84,9 @@ impl NetworkManager {
         };
 
         let sender_task = {
-            let token = token.clone();
-            let ipv4_socket = ipv4_socket.clone();
-            let leaving_queue = leaving_queue.clone();
+            let token = self.global_token.clone();
+            let ipv4_socket = self.ipv4_socket.clone();
+            let leaving_queue = self.outward_queue.clone();
 
             tokio::spawn(async move {
                 Self::v4_sender_task(token, ipv4_socket, leaving_queue).await;
@@ -91,14 +97,11 @@ impl NetworkManager {
             let mut worker_handles = Vec::with_capacity(WORKER_COUNT);
             for _ in 0..WORKER_COUNT {
                 worker_handles.push(Worker::new(
-                    token.clone(),
-                    incoming_queue.clone(),
-                    leaving_queue.clone(),
+                    self.global_token.clone(),
+                    self.inward_queue.clone(),
+                    self.outward_queue.clone(),
                 ));
             }
-
-            // tokio::time::sleep(Duration::from_secs(3)).await;
-            // token.cancel();
 
             for handle in worker_handles {
                 let _ = tokio::join!(handle);
@@ -106,7 +109,6 @@ impl NetworkManager {
         }
 
         let _ = tokio::join!(receiver_task, sender_task);
-
         Ok(())
     }
 
@@ -116,6 +118,8 @@ impl NetworkManager {
         socket: Arc<UdpSocket>,
         queue: Arc<AsyncDeque<RawPacket>>,
     ) {
+        tracing::info!("V4 inward service online");
+
         let mut receive_buffer = [0u8; RECV_BUF_SIZE];
 
         loop {
@@ -154,6 +158,8 @@ impl NetworkManager {
         socket: Arc<UdpSocket>,
         queue: Arc<AsyncDeque<RawPacket>>,
     ) {
+        tracing::info!("V4 outward service online");
+
         loop {
             let task = tokio::select! {
                 _ = token.cancelled() => break,

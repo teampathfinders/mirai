@@ -1,5 +1,5 @@
-use bytes::BytesMut;
 use crate::error::VexResult;
+use bytes::BytesMut;
 
 pub trait RaknetPacket {
     const ID: u8;
@@ -10,7 +10,9 @@ pub trait Encodable {
 }
 
 pub trait Decodable {
-    fn decode(buf: BytesMut) -> VexResult<Self> where Self: Sized;
+    fn decode(buf: BytesMut) -> VexResult<Self>
+    where
+        Self: Sized;
 }
 
 #[macro_export]
@@ -48,7 +50,7 @@ macro_rules! __impl_general_packet {
                     }
                 )*
             }
-            impl $(<$($lt),*>)* $crate::packets::RaknetPacket for $name $(<$($lt),*>)* {
+            impl $(<$($lt),*>)* $crate::raknet::packets::RaknetPacket for $name $(<$($lt),*>)* {
                 const ID: u8 = $id;
             }
         }

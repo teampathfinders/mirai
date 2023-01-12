@@ -1,7 +1,7 @@
-use bytes::{Buf, BufMut, BytesMut};
 use crate::error::VexResult;
+use crate::raknet::packets::{Decodable, Encodable, RaknetPacket};
 use crate::{decodable, vex_check};
-use crate::packets::{Decodable, Encodable, RaknetPacket};
+use bytes::{Buf, BufMut, BytesMut};
 
 decodable!(
     0x01,
@@ -19,8 +19,6 @@ impl Decodable for UnconnectedPing {
         buffer.get_u128(); // Skip offline message data
         let client_guid = buffer.get_i64();
 
-        Ok(Self {
-            time, client_guid
-        })
+        Ok(Self { time, client_guid })
     }
 }

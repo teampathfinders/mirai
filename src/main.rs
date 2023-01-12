@@ -1,28 +1,38 @@
+mod config;
+mod controller;
 mod error;
-mod network;
-mod packets;
+mod raknet;
 mod util;
+mod worker;
 
 use std::sync::atomic::{AtomicU16, Ordering};
 use std::time::Duration;
 
 use tokio::runtime;
 
+use crate::config::ServerConfig;
+use crate::controller::ServerController;
 use error::VexResult;
-use network::NetworkManager;
+use raknet::NetController;
 
 const IPV4_PORT: u16 = 19132;
 const IPV6_PORT: u16 = 19133;
 
+const CONFIG: ServerConfig = ServerConfig {
+    max_players: 10,
+    ipv4_port: 19132,
+};
+
 async fn app_main() -> VexResult<()> {
     loop {
-        match NetworkManager::start(IPV4_PORT, Some(IPV6_PORT)).await {
+        let controller = ServerController::new(CONFIG).await?;
+        match controller.run().await {
             Ok(_) => {
-                tracing::info!("Received OK for shutdown, not restarting server");
+                tracing::info!("Received OK for shutdown, not restarting controller");
                 break;
             }
             Err(e) => {
-                tracing::error!("Seems like the server crashed, attempting to restart it...");
+                tracing::error!("Seems like the controller panicked, attempting to restart it...");
                 tracing::error!("Crash cause: {e:?}");
             }
         }
@@ -62,8 +72,7 @@ fn init_logging() {
 
     let fmt = tracing_subscriber::fmt::layer()
         .with_target(false)
-        .with_thread_names(true)
-        .pretty();
+        .with_thread_names(true);
 
     tracing_subscriber::registry()
         .with(console_layer)
@@ -82,7 +91,6 @@ fn init_logging() {
         .with_target(false)
         .with_max_level(tracing::Level::DEBUG)
         .with_thread_names(true)
-        .pretty()
         .init();
 
     tracing::info!("Tracing (without console) enabled");

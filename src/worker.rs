@@ -1,5 +1,5 @@
 use crate::error::VexResult;
-use crate::network::RawPacket;
+use crate::raknet::RawPacket;
 use crate::util::AsyncDeque;
 use std::iter;
 use std::sync::atomic::{AtomicU16, Ordering};
@@ -64,7 +64,6 @@ impl Worker {
 
     async fn handle_task(&self, task: RawPacket) -> VexResult<()> {
         tracing::info!("Worker {} handling task", self.worker_id);
-
 
         Ok(())
     }
