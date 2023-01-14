@@ -1,5 +1,5 @@
-use std::net::SocketAddr;
 use bytes::BytesMut;
+use std::net::SocketAddr;
 
 #[derive(Debug)]
 pub struct RawPacket {
@@ -10,15 +10,11 @@ pub struct RawPacket {
 impl RawPacket {
     #[inline]
     pub fn is_offline_packet(&self) -> bool {
-        self.buffer
-            .first()
-            .map_or(false, |f| f & 0x80 == 0)
+        self.buffer.first().map_or(false, |f| f & 0x80 == 0)
     }
 
     #[inline]
     pub fn packet_id(&self) -> Option<u8> {
-        self.buffer
-            .first()
-            .map(|i| *i)
+        self.buffer.first().map(|i| *i)
     }
 }

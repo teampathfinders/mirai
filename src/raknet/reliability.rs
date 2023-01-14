@@ -1,5 +1,7 @@
 use crate::error::VexError;
-use crate::raknet::Reliability::{Reliable, ReliableOrdered, ReliableSequenced, UnreliableSequenced};
+use crate::raknet::Reliability::{
+    Reliable, ReliableOrdered, ReliableSequenced, UnreliableSequenced,
+};
 
 use Reliability::*;
 
@@ -9,7 +11,7 @@ pub enum Reliability {
     UnreliableSequenced,
     Reliable,
     ReliableOrdered,
-    ReliableSequenced
+    ReliableSequenced,
 }
 
 impl TryFrom<u8> for Reliability {
@@ -22,7 +24,11 @@ impl TryFrom<u8> for Reliability {
             2 => Reliable,
             3 => ReliableOrdered,
             4 => ReliableSequenced,
-            _ => return Err(VexError::InvalidRequest("Invalid reliability ID".to_string()))
+            _ => {
+                return Err(VexError::InvalidRequest(
+                    "Invalid reliability ID".to_string(),
+                ))
+            }
         })
     }
 }
@@ -31,21 +37,21 @@ impl Reliability {
     pub fn reliable(self) -> bool {
         match self {
             Unreliable | UnreliableSequenced => false,
-            _ => true
+            _ => true,
         }
     }
 
     pub fn ordered(self) -> bool {
         match self {
             ReliableOrdered => true,
-            _ => false
+            _ => false,
         }
     }
 
     pub fn sequenced(self) -> bool {
         match self {
             UnreliableSequenced | ReliableSequenced => true,
-            _ => false
+            _ => false,
         }
     }
 }

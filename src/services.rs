@@ -1,15 +1,17 @@
-use std::net::{Ipv4Addr, Ipv6Addr, SocketAddrV4};
-use tokio::net::UdpSocket;
 use crate::config::{ServerConfig, CLIENT_VERSION_STRING, NETWORK_VERSION};
 use crate::error::{VexError, VexResult};
-use rand::Rng;
-use std::sync::{Arc, RwLock};
-use bytes::BytesMut;
-use tokio::signal;
-use tokio_util::sync::CancellationToken;
-use crate::raknet::packets::{Decodable, RaknetPacket, RawPacket, UnconnectedPing, UnconnectedPong};
+use crate::raknet::packets::{
+    Decodable, RaknetPacket, RawPacket, UnconnectedPing, UnconnectedPong,
+};
 use crate::raknet::SessionController;
 use crate::util::AsyncDeque;
+use bytes::BytesMut;
+use rand::Rng;
+use std::net::{Ipv4Addr, Ipv6Addr, SocketAddrV4};
+use std::sync::{Arc, RwLock};
+use tokio::net::UdpSocket;
+use tokio::signal;
+use tokio_util::sync::CancellationToken;
 
 const IPV4_LOCAL_ADDR: Ipv4Addr = Ipv4Addr::new(127, 0, 0, 1);
 const IPV6_LOCAL_ADDR: Ipv6Addr = Ipv6Addr::new(0, 0, 0, 0, 0, 0, 0, 1);
@@ -27,7 +29,7 @@ pub struct ServerController {
     outward_queue: Arc<AsyncDeque<RawPacket>>,
 
     global_token: CancellationToken,
-    session_controller: Arc<SessionController>
+    session_controller: Arc<SessionController>,
 }
 
 impl ServerController {
@@ -48,7 +50,10 @@ impl ServerController {
             inward_queue: Arc::new(AsyncDeque::new(10)),
             outward_queue: Arc::new(AsyncDeque::new(10)),
 
-            session_controller: Arc::new(SessionController::new(global_token.clone(), config.max_players)?),
+            session_controller: Arc::new(SessionController::new(
+                global_token.clone(),
+                config.max_players,
+            )?),
             global_token,
         };
         server.refresh_metadata("Default description")?;
@@ -61,16 +66,12 @@ impl ServerController {
 
         let receiver_task = {
             let controller = self.clone();
-            tokio::spawn(async move {
-                controller.v4_receiver_task().await
-            })
+            tokio::spawn(async move { controller.v4_receiver_task().await })
         };
 
         let sender_task = {
             let controller = self.clone();
-            tokio::spawn(async move {
-                controller.v4_sender_task().await
-            })
+            tokio::spawn(async move { controller.v4_sender_task().await })
         };
 
         let session_handle = self.session_controller.start();
@@ -86,14 +87,16 @@ impl ServerController {
     }
 
     async fn handle_offline_packet(self: Arc<Self>, packet: RawPacket) -> VexResult<()> {
-        let id = packet.packet_id().ok_or(VexError::InvalidRequest("Packet is empty".to_string()))?;
+        let id = packet
+            .packet_id()
+            .ok_or(VexError::InvalidRequest("Packet is empty".to_string()))?;
         tracing::info!("{id:0x?}");
 
         match id {
             UnconnectedPing::ID => self.handle_unconnected_ping(packet).await?,
             OpenConnectionRequest1::ID => self.handle_open_connection_request1(packet).await?,
             OpenConnectionRequest2::ID => self.handle_open_connection_request2(packet).await?,
-            _ => todo!("Packet type not implemented")
+            _ => todo!("Packet type not implemented"),
         }
 
         Ok(())
@@ -104,10 +107,13 @@ impl ServerController {
         let pong = UnconnectedPong {
             time: ping.time,
             server_guid: self.guid,
-            metadata: self.metadata()
-        }.encode();
+            metadata: self.metadata(),
+        }
+        .encode();
 
-        self.ipv4_socket.send_to(pong.as_ref(), packet.address).await?;
+        self.ipv4_socket
+            .send_to(pong.as_ref(), packet.address)
+            .await?;
         Ok(())
     }
 
@@ -115,10 +121,13 @@ impl ServerController {
         let request = OpenConnectionRequest1::decode(packet.buffer.clone())?;
         let reply = OpenConnectionReply1 {
             mtu: request.mtu,
-            server_guid: self.guid
-        }.encode();
+            server_guid: self.guid,
+        }
+        .encode();
 
-        self.ipv4_socket.send_to(reply.as_ref(), packet.address).await?;
+        self.ipv4_socket
+            .send_to(reply.as_ref(), packet.address)
+            .await?;
         Ok(())
     }
 
@@ -127,10 +136,13 @@ impl ServerController {
         let reply = OpenConnectionReply2 {
             server_guid: self.guid,
             mtu: request.mtu,
-            client_address: packet.address
-        }.encode();
+            client_address: packet.address,
+        }
+        .encode();
 
-        self.ipv4_socket.send_to(reply.as_ref(), packet.address).await?;
+        self.ipv4_socket
+            .send_to(reply.as_ref(), packet.address)
+            .await?;
         Ok(())
     }
 
@@ -160,7 +172,7 @@ impl ServerController {
 
             let mut raw_packet = RawPacket {
                 buffer: BytesMut::from(&receive_buffer[..n]),
-                address
+                address,
             };
 
             if raw_packet.is_offline_packet() {
@@ -204,7 +216,8 @@ impl ServerController {
             CLIENT_VERSION_STRING,
             // self.session_controller.player_count(),
             // self.session_controller.max_player_count(),
-            0, 10,
+            0,
+            10,
             self.guid,
             description,
             // self.ipv4_port,

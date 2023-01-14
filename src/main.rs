@@ -1,7 +1,7 @@
 mod config;
-mod services;
 mod error;
 mod raknet;
+mod services;
 mod util;
 mod worker;
 

@@ -1,4 +1,5 @@
 use crate::error::VexResult;
+use crate::raknet::packets::RawPacket;
 use crate::util::AsyncDeque;
 use std::iter;
 use std::sync::atomic::{AtomicU16, Ordering};
@@ -6,7 +7,6 @@ use std::sync::Arc;
 use std::time::{Duration, Instant};
 use tokio::task;
 use tokio_util::sync::CancellationToken;
-use crate::raknet::packets::RawPacket;
 
 pub const GAME_TICK: Duration = Duration::from_millis(1000 / 20);
 

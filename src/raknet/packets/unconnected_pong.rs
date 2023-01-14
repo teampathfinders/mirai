@@ -7,7 +7,7 @@ encodable!(
     pub struct UnconnectedPong {
         time: i64,
         server_guid: i64,
-        metadata: String
+        metadata: String,
     }
 );
 

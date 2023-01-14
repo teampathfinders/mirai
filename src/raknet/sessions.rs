@@ -1,10 +1,10 @@
+use crate::data::ServerData;
 use crate::error::VexResult;
 use dashmap::DashMap;
 use std::net::SocketAddr;
 use std::sync::Arc;
 use std::time::{Duration, Instant};
 use tokio_util::sync::CancellationToken;
-use crate::data::ServerData;
 
 const TICK_INTERVAL: Duration = Duration::from_millis(1000 / 50);
 
@@ -12,7 +12,7 @@ const TICK_INTERVAL: Duration = Duration::from_millis(1000 / 50);
 pub struct Session {
     address: SocketAddr,
     last_update: Instant,
-    active: CancellationToken
+    active: CancellationToken,
 }
 
 impl Session {
@@ -20,7 +20,7 @@ impl Session {
         let session = Arc::new(Self {
             address,
             last_update: Instant::now(),
-            active: CancellationToken::new()
+            active: CancellationToken::new(),
         });
 
         {
@@ -30,7 +30,7 @@ impl Session {
                 while !session.active.is_cancelled() {
                     match session.tick().await {
                         Ok(_) => (),
-                        Err(e) => tracing::error!("{e}")
+                        Err(e) => tracing::error!("{e}"),
                     }
                     interval.tick().await;
                 }
@@ -53,7 +53,7 @@ impl Session {
 pub struct SessionController {
     global_token: CancellationToken,
     map: DashMap<SocketAddr, Session>,
-    max_player_count: usize
+    max_player_count: usize,
 }
 
 impl SessionController {
