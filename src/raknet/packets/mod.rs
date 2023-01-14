@@ -13,6 +13,13 @@ mod new_incoming_connection;
 pub use traits::*;
 pub use unconnected_ping::*;
 pub use unconnected_pong::*;
+pub use open_connection_reply1::*;
+pub use open_connection_request1::*;
+pub use open_connection_request2::*;
+pub use open_connection_reply2::*;
+pub use connection_request::*;
+pub use connection_request_accepted::*;
+pub use new_incoming_connection::*;
 pub use packet::*;
 
 pub const OFFLINE_MESSAGE_DATA: &[u8] = &[

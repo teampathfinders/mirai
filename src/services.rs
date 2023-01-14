@@ -91,6 +91,8 @@ impl ServerController {
 
         match id {
             UnconnectedPing::ID => self.handle_unconnected_ping(packet).await?,
+            OpenConnectionRequest1::ID => self.handle_open_connection_request1(packet).await?,
+            OpenConnectionRequest2::ID => self.handle_open_connection_request2(packet).await?,
             _ => todo!("Packet type not implemented")
         }
 
