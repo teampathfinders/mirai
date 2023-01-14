@@ -4,5 +4,5 @@ use std::net::SocketAddr;
 pub struct NewIncomingConnection;
 
 impl NewIncomingConnection {
-    const ID: u8 = 0x13;
+    pub const ID: u8 = 0x13;
 }
