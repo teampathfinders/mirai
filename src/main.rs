@@ -4,7 +4,6 @@ mod error;
 mod raknet;
 mod util;
 mod worker;
-mod data;
 
 use std::sync::atomic::{AtomicU16, Ordering};
 use std::time::Duration;

@@ -18,7 +18,8 @@ const IPV6_LOCAL_ADDR: Ipv6Addr = Ipv6Addr::new(0, 0, 0, 0, 0, 0, 0, 1);
 const RECV_BUF_SIZE: usize = 4096;
 
 pub struct ServerController {
-    data: Arc<ServerData>,
+    guid: i64,
+    metadata: RwLock<String>,
 
     ipv4_socket: Arc<UdpSocket>,
     ipv4_port: u16,
@@ -35,22 +36,23 @@ impl ServerController {
         tracing::info!("Setting up services...");
 
         let global_token = CancellationToken::new();
-        let data = Arc::new(ServerData::new()?);
-
         let ipv4_socket =
             Arc::new(UdpSocket::bind(SocketAddrV4::new(IPV4_LOCAL_ADDR, config.ipv4_port)).await?);
 
         let server = Self {
-            data: data.clone(),
+            guid: rand::thread_rng().gen(),
+            metadata: RwLock::new(String::new()),
+
             ipv4_socket,
             ipv4_port: config.ipv4_port,
 
             inward_queue: Arc::new(AsyncDeque::new(10)),
             outward_queue: Arc::new(AsyncDeque::new(10)),
 
-            session_controller: Arc::new(SessionController::new(data.clone(), global_token.clone(), config.max_players)?),
+            session_controller: Arc::new(SessionController::new(global_token.clone(), config.max_players)?),
             global_token,
         };
+        server.refresh_metadata("Default description")?;
 
         Ok(Arc::new(server))
     }
@@ -100,8 +102,8 @@ impl ServerController {
         let ping = UnconnectedPing::decode(packet.buffer.clone())?;
         let pong = UnconnectedPong::build()
             .time(*ping.time())
-            .server_guid(self.data.guid())
-            .metadata(self.data.metadata()?)
+            .server_guid(self.guid)
+            .metadata(self.metadata())
             .encode();
 
         self.ipv4_socket.send_to(pong.as_ref(), packet.address).await?;
@@ -169,6 +171,32 @@ impl ServerController {
         }
 
         tracing::info!("Outward v4 service shut down");
+    }
+
+    fn refresh_metadata(&self, description: &str) -> VexResult<()> {
+        let new_id = format!(
+            "MCPE;Vex Dedicated Server;{};{};{};{};{};{};Survival;1;{};{};",
+            NETWORK_VERSION,
+            CLIENT_VERSION_STRING,
+            // self.session_controller.player_count(),
+            // self.session_controller.max_player_count(),
+            0, 10,
+            self.guid,
+            description,
+            // self.ipv4_port,
+            19132,
+            19133
+        );
+
+        let mut lock = self.metadata.write()?;
+        *lock = new_id;
+
+        Ok(())
+    }
+
+    fn metadata(&self) -> VexResult<String> {
+        let lock = self.metadata.read()?;
+        Ok((*lock).clone())
     }
 
     /// Register handler to shut down server on Ctrl-C signal
