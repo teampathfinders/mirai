@@ -112,7 +112,8 @@ impl NetController {
             .metadata(self.data.metadata()?)
             .encode();
 
-        todo!();
+        self.ipv4_socket.send_to(pong.as_ref(), packet.address).await?;
+        Ok(())
     }
 
     /// Receives packets from IPv4 clients and adds them to the receive queue
