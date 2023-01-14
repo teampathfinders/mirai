@@ -1,10 +1,11 @@
 use crate::decodable;
 
-decodable!(
-    0x05,
+
     pub struct OpenConnectionRequest1 {
         protocol_version: u8,
         mtu: u16
     }
-);
 
+impl OpenConnectionRequest1 {
+    const ID: u8 = 0x05;
+}
