@@ -1,11 +1,10 @@
-use crate::decodable;
-use std::net::SocketAddr;
+use crate::raknet::packets::RaknetPacket;
 
-decodable!(
-     0x09,
-    pub struct ConnectionRequest{
-        guid: i64,
-        time: i64
-    }
-);
+pub struct ConnectionRequest {
+    pub guid: i64,
+    pub time: i64
+}
 
+impl ConnectionRequest {
+    const ID: u8 = 0x09;
+}

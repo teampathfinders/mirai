@@ -7,7 +7,6 @@ use std::sync::{Arc, RwLock};
 use bytes::BytesMut;
 use tokio::signal;
 use tokio_util::sync::CancellationToken;
-use crate::data::ServerData;
 use crate::raknet::packets::{Decodable, RaknetPacket, RawPacket, UnconnectedPing, UnconnectedPong};
 use crate::raknet::SessionController;
 use crate::util::AsyncDeque;
@@ -100,13 +99,36 @@ impl ServerController {
 
     async fn handle_unconnected_ping(self: Arc<Self>, packet: RawPacket) -> VexResult<()> {
         let ping = UnconnectedPing::decode(packet.buffer.clone())?;
-        let pong = UnconnectedPong::build()
-            .time(*ping.time())
-            .server_guid(self.guid)
-            .metadata(self.metadata())
-            .encode();
+        let pong = UnconnectedPong {
+            time: ping.time,
+            server_guid: self.guid,
+            metadata: self.metadata()
+        }.encode();
 
         self.ipv4_socket.send_to(pong.as_ref(), packet.address).await?;
+        Ok(())
+    }
+
+    async fn handle_open_connection_request1(self: Arc<Self>, packet: RawPacket) -> VexResult<()> {
+        let request = OpenConnectionRequest1::decode(packet.buffer.clone())?;
+        let reply = OpenConnectionReply1 {
+            mtu: request.mtu,
+            server_guid: self.guid
+        }.encode();
+
+        self.ipv4_socket.send_to(reply.as_ref(), packet.address).await?;
+        Ok(())
+    }
+
+    async fn handle_open_connection_request2(self: Arc<Self>, packet: RawPacket) -> VexResult<()> {
+        let request = OpenConnectionRequest2::decode(packet.buffer.clone())?;
+        let reply = OpenConnectionReply2 {
+            server_guid: self.guid,
+            mtu: request.mtu,
+            client_address: packet.address
+        }.encode();
+
+        self.ipv4_socket.send_to(reply.as_ref(), packet.address).await?;
         Ok(())
     }
 
