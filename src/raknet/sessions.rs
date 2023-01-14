@@ -1,7 +1,9 @@
 use crate::error::VexResult;
 use dashmap::DashMap;
 use std::net::SocketAddr;
+use std::sync::Arc;
 use tokio_util::sync::CancellationToken;
+use crate::data::ServerData;
 
 pub struct Session {
     address: SocketAddr,
@@ -15,6 +17,7 @@ pub struct SessionController {
 
 impl SessionController {
     pub fn new(
+        data: Arc<ServerData>,
         global_token: CancellationToken,
         max_player_count: usize,
     ) -> VexResult<SessionController> {

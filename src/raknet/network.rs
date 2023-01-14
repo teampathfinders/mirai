@@ -13,9 +13,10 @@ use std::{
 use tokio::net::UdpSocket;
 use tokio::{signal, task, time};
 use tokio_util::sync::CancellationToken;
+use crate::data::ServerData;
 
 use crate::error::{VexError, VexResult};
-use crate::raknet::packets::RawPacket;
+use crate::raknet::packets::{Decodable, RaknetPacket, RawPacket, UnconnectedPing, UnconnectedPong};
 use crate::util::AsyncDeque;
 use crate::worker::Worker;
 
@@ -30,6 +31,7 @@ const LEAVING_QUEUE_SIZE: usize = 25;
 pub const WORKER_COUNT: usize = 1;
 
 pub struct NetController {
+    data: Arc<ServerData>,
     global_token: CancellationToken,
     ipv4_socket: Arc<UdpSocket>,
     ipv4_port: u16,
@@ -42,12 +44,17 @@ pub struct NetController {
 }
 
 impl NetController {
-    pub async fn new(global_token: CancellationToken, ipv4_port: u16) -> VexResult<NetController> {
+    pub async fn new(
+        data: Arc<ServerData>,
+        global_token: CancellationToken,
+        ipv4_port: u16
+    ) -> VexResult<NetController> {
         let ipv4_socket =
             Arc::new(UdpSocket::bind(SocketAddrV4::new(IPV4_LOCAL_ADDR, ipv4_port)).await?);
         tracing::info!("Set up IPv4 socket on port {ipv4_port}");
 
         Ok(NetController {
+            data,
             global_token,
             ipv4_socket,
             ipv4_port,
@@ -89,7 +96,23 @@ impl NetController {
         let id = packet.packet_id().ok_or(VexError::InvalidRequest("Packet is empty".to_string()))?;
         tracing::info!("{id}");
 
+        match id {
+            UnconnectedPing::ID => self.handle_unconnected_ping(packet).await?,
+            _ => todo!("Packet type not implemented")
+        }
+
         Ok(())
+    }
+
+    async fn handle_unconnected_ping(self: Arc<Self>, packet: RawPacket) -> VexResult<()> {
+        let ping = UnconnectedPing::decode(packet.buffer.clone())?;
+        let pong = UnconnectedPong::build()
+            .time(*ping.time())
+            .server_guid(self.data.guid())
+            .metadata(self.data.metadata()?)
+            .encode();
+
+        todo!();
     }
 
     /// Receives packets from IPv4 clients and adds them to the receive queue

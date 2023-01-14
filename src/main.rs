@@ -1,9 +1,10 @@
 mod config;
-mod controller;
+mod services;
 mod error;
 mod raknet;
 mod util;
 mod worker;
+mod data;
 
 use std::sync::atomic::{AtomicU16, Ordering};
 use std::time::Duration;
@@ -11,7 +12,7 @@ use std::time::Duration;
 use tokio::runtime;
 
 use crate::config::ServerConfig;
-use crate::controller::ServerController;
+use crate::services::ServerController;
 use error::VexResult;
 use raknet::NetController;
 

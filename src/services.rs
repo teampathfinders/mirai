@@ -5,10 +5,10 @@ use rand::Rng;
 use std::sync::{Arc, RwLock};
 use tokio::signal;
 use tokio_util::sync::CancellationToken;
+use crate::data::ServerData;
 
 pub struct ServerController {
-    guid: i64,
-    metadata: RwLock<String>,
+    data: Arc<ServerData>,
 
     global_token: CancellationToken,
     session_controller: Arc<SessionController>,
@@ -19,22 +19,15 @@ impl ServerController {
     pub async fn new(config: ServerConfig) -> VexResult<Self> {
         tracing::info!("Setting up services...");
 
-        let guid = rand::thread_rng().gen();
-        tracing::debug!("SERVER GUID: {:#0X}", guid as u64);
-
         let global_token = CancellationToken::new();
+        let data = Arc::new(ServerData::new()?);
 
         let controller = Self {
-            guid,
-            metadata: RwLock::new(String::new()),
-
-            session_controller: Arc::new(SessionController::new(global_token.clone(), config.max_players)?),
-            net_controller: Arc::new(NetController::new(global_token.clone(), config.ipv4_port).await?),
+            data: data.clone(),
+            session_controller: Arc::new(SessionController::new(data.clone(), global_token.clone(), config.max_players)?),
+            net_controller: Arc::new(NetController::new(data.clone(), global_token.clone(), config.ipv4_port).await?),
             global_token,
         };
-
-        // Generate initial metadata
-        controller.refresh_metadata("Default description")?;
 
         Ok(controller)
     }
@@ -53,25 +46,6 @@ impl ServerController {
     /// Shut down the server by cancelling the global token
     pub async fn shutdown(&self) {
         self.global_token.cancel();
-    }
-
-    fn refresh_metadata(&self, description: &str) -> VexResult<()> {
-        let new_id = format!(
-            "MCPE;Vex Dedicated Server;{};{};{};{};{};{};Survival;1;{};{};",
-            NETWORK_VERSION,
-            CLIENT_VERSION_STRING,
-            self.session_controller.player_count(),
-            self.session_controller.max_player_count(),
-            self.guid,
-            description,
-            self.net_controller.ipv4_port(),
-            19133
-        );
-
-        let mut lock = self.metadata.write()?;
-        *lock = new_id;
-
-        Ok(())
     }
 
     /// Register handler to shut down server on Ctrl-C signal

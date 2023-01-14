@@ -4,14 +4,14 @@ use bytes::{BufMut, BytesMut};
 
 encodable!(
     0x1c,
-    pub struct UnconnectedPong<'a> {
+    pub struct UnconnectedPong {
         time: i64,
         server_guid: i64,
-        metadata: &'a str
+        metadata: String
     }
 );
 
-impl Encodable for UnconnectedPong<'_> {
+impl Encodable for UnconnectedPong {
     fn encode(&self) -> BytesMut {
         let mut buffer = BytesMut::with_capacity(1 + 8 + 8 + 16 + 2 + self.metadata.len());
 
