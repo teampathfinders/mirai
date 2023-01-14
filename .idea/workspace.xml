@@ -16,22 +16,14 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="eb8ce776-e64a-444b-a034-2036d6cbe18e" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/src/config.rs" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/controller.rs" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/raknet/mod.rs" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/raknet/sessions.rs" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/raknet/packets/packet.rs" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Cargo.lock" beforeDir="false" afterPath="$PROJECT_DIR$/Cargo.lock" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Cargo.toml" beforeDir="false" afterPath="$PROJECT_DIR$/Cargo.toml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/controller.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/controller.rs" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/error.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/error.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/main.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/network/manager.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/raknet/network.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/network/mod.rs" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/network/worker.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/worker.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/packets/mod.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/raknet/packets/mod.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/packets/traits.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/raknet/packets/traits.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/packets/unconnected_ping.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/raknet/packets/unconnected_ping.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/packets/unconnected_pong.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/raknet/packets/unconnected_pong.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/raknet/network.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/raknet/network.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/raknet/packets/mod.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/raknet/packets/mod.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/raknet/sessions.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/raknet/sessions.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/worker.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/worker.rs" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -78,7 +70,7 @@
     &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,
     &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
     &quot;org.rust.cargo.project.model.PROJECT_DISCOVERY&quot;: &quot;true&quot;,
-    &quot;settings.editor.selected.configurable&quot;: &quot;reference.settings.ide.settings.new.ui&quot;,
+    &quot;settings.editor.selected.configurable&quot;: &quot;language.rust.cargo.check&quot;,
     &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;
   }
 }</component>
@@ -132,6 +124,7 @@
     </recent_temporary>
   </component>
   <component name="RustProjectSettings">
+    <option name="externalLinter" value="Clippy" />
     <option name="toolchainHomeDirectory" value="$USER_HOME$/.cargo/bin" />
     <option name="version" value="2" />
   </component>
@@ -150,11 +143,18 @@
       <workItem from="1673221458073" duration="20000" />
       <workItem from="1673372840641" duration="6204000" />
       <workItem from="1673381853519" duration="3683000" />
-      <workItem from="1673551039923" duration="9263000" />
+      <workItem from="1673551039923" duration="11038000" />
+      <workItem from="1673697734117" duration="647000" />
+      <workItem from="1673698394434" duration="2000" />
+      <workItem from="1673727176511" duration="478000" />
     </task>
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
     <option name="version" value="3" />
+  </component>
+  <component name="XSLT-Support.FileAssociations.UIState">
+    <expand />
+    <select />
   </component>
 </project>

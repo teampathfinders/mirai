@@ -15,6 +15,7 @@ use tokio::{signal, task, time};
 use tokio_util::sync::CancellationToken;
 
 use crate::error::{VexError, VexResult};
+use crate::raknet::packets::RawPacket;
 use crate::util::AsyncDeque;
 use crate::worker::Worker;
 
@@ -27,12 +28,6 @@ const INCOMING_QUEUE_SIZE: usize = 25;
 const LEAVING_QUEUE_SIZE: usize = 25;
 
 pub const WORKER_COUNT: usize = 1;
-
-#[derive(Debug)]
-pub struct RawPacket {
-    buffer: BytesMut,
-    address: SocketAddr,
-}
 
 pub struct NetController {
     global_token: CancellationToken,
@@ -66,7 +61,7 @@ impl NetController {
         self.ipv4_port
     }
 
-    pub async fn start(&self) -> VexResult<()> {
+    pub async fn start(self: Arc<Self>) -> VexResult<()> {
         // let ipv6_socket = Arc::new(if let Some(port) = ipv6_port {
         //     Some(UdpSocket::bind(SocketAddrV6::new(IPV6_LOCAL_ADDR, port, 0, 0)).await?)
         // } else {
@@ -74,51 +69,32 @@ impl NetController {
         // });
 
         let receiver_task = {
-            let token = self.global_token.clone();
-            let ipv4_socket = self.ipv4_socket.clone();
-            let incoming_queue = self.inward_queue.clone();
-
+            let controller = self.clone();
             tokio::spawn(async move {
-                Self::v4_receiver_task(token, ipv4_socket, incoming_queue).await;
+                controller.v4_receiver_task().await
             })
         };
 
         let sender_task = {
-            let token = self.global_token.clone();
-            let ipv4_socket = self.ipv4_socket.clone();
-            let leaving_queue = self.outward_queue.clone();
-
             tokio::spawn(async move {
-                Self::v4_sender_task(token, ipv4_socket, leaving_queue).await;
+                self.v4_sender_task().await
             })
         };
-
-        {
-            let mut worker_handles = Vec::with_capacity(WORKER_COUNT);
-            for _ in 0..WORKER_COUNT {
-                worker_handles.push(Worker::new(
-                    self.global_token.clone(),
-                    self.inward_queue.clone(),
-                    self.outward_queue.clone(),
-                ));
-            }
-
-            for handle in worker_handles {
-                let _ = tokio::join!(handle);
-            }
-        }
 
         let _ = tokio::join!(receiver_task, sender_task);
         Ok(())
     }
 
+    async fn handle_offline_packet(self: Arc<Self>, packet: RawPacket) -> VexResult<()> {
+        let id = packet.packet_id().ok_or(VexError::InvalidRequest("Packet is empty".to_string()))?;
+        tracing::info!("{id}");
+
+        Ok(())
+    }
+
     /// Receives packets from IPv4 clients and adds them to the receive queue
-    async fn v4_receiver_task(
-        token: CancellationToken,
-        socket: Arc<UdpSocket>,
-        queue: Arc<AsyncDeque<RawPacket>>,
-    ) {
-        tracing::info!("V4 inward service online");
+    async fn v4_receiver_task(self: Arc<Self>) {
+        tracing::info!("Inward v4 service online");
 
         let mut receive_buffer = [0u8; RECV_BUF_SIZE];
 
@@ -126,7 +102,7 @@ impl NetController {
             // Wait on both the cancellation token and socket at the same time.
             // The token will immediately take over and stop the task when the server is shutting down.
             let (n, address) = tokio::select! {
-                result = socket.recv_from(&mut receive_buffer) => {
+                result = self.ipv4_socket.recv_from(&mut receive_buffer) => {
                      match result {
                         Ok(r) => r,
                         Err(e) => {
@@ -135,38 +111,40 @@ impl NetController {
                         }
                     }
                 },
-                _ = token.cancelled() => {
+                _ = self.global_token.cancelled() => {
                     break
                 }
             };
 
-            tracing::debug!("{n:?} bytes from {address:?}");
-            queue
-                .push(RawPacket {
-                    buffer: BytesMut::from(&receive_buffer[..n]),
-                    address,
-                })
-                .await;
+            let mut raw_packet = RawPacket {
+                buffer: BytesMut::from(&receive_buffer[..n]),
+                address
+            };
+
+            if raw_packet.is_offline_packet() {
+                let controller = self.clone();
+                tokio::spawn(async move {
+                    controller.handle_offline_packet(raw_packet).await;
+                });
+            } else {
+                todo!("Send packet to session");
+            }
         }
 
-        tracing::info!("IPv4 inward service shut down");
+        tracing::info!("Inward v4 service shut down");
     }
 
     /// Sends packets from the send queue
-    async fn v4_sender_task(
-        token: CancellationToken,
-        socket: Arc<UdpSocket>,
-        queue: Arc<AsyncDeque<RawPacket>>,
-    ) {
-        tracing::info!("V4 outward service online");
+    async fn v4_sender_task(self: Arc<Self>) {
+        tracing::info!("Outward v4 service online");
 
         loop {
             let task = tokio::select! {
-                _ = token.cancelled() => break,
-                t = queue.pop() => t
+                _ = self.global_token.cancelled() => break,
+                t = self.outward_queue.pop() => t
             };
 
-            match socket.send_to(&task.buffer, task.address).await {
+            match self.ipv4_socket.send_to(&task.buffer, task.address).await {
                 Ok(_) => (),
                 Err(e) => {
                     tracing::error!("Failed to send packet: {e:?}");
@@ -174,6 +152,6 @@ impl NetController {
             }
         }
 
-        tracing::info!("IPv4 outward service shut down");
+        tracing::info!("Outward v4 service shut down");
     }
 }

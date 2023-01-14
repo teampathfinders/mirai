@@ -25,6 +25,11 @@ impl SessionController {
         })
     }
 
+    pub async fn start(&self) -> VexResult<()> {
+        tracing::info!("Session service online");
+        Ok(())
+    }
+
     pub fn player_count(&self) -> usize {
         self.map.len()
     }

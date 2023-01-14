@@ -2,7 +2,7 @@ use crate::config::{ServerConfig, CLIENT_VERSION_STRING, NETWORK_VERSION};
 use crate::error::VexResult;
 use crate::raknet::{NetController, SessionController};
 use rand::Rng;
-use std::sync::RwLock;
+use std::sync::{Arc, RwLock};
 use tokio::signal;
 use tokio_util::sync::CancellationToken;
 
@@ -11,8 +11,8 @@ pub struct ServerController {
     metadata: RwLock<String>,
 
     global_token: CancellationToken,
-    session_controller: SessionController,
-    net_controller: NetController,
+    session_controller: Arc<SessionController>,
+    net_controller: Arc<NetController>,
 }
 
 impl ServerController {
@@ -28,8 +28,8 @@ impl ServerController {
             guid,
             metadata: RwLock::new(String::new()),
 
-            session_controller: SessionController::new(global_token.clone(), config.max_players)?,
-            net_controller: NetController::new(global_token.clone(), config.ipv4_port).await?,
+            session_controller: Arc::new(SessionController::new(global_token.clone(), config.max_players)?),
+            net_controller: Arc::new(NetController::new(global_token.clone(), config.ipv4_port).await?),
             global_token,
         };
 
@@ -42,7 +42,7 @@ impl ServerController {
     pub async fn run(&self) -> VexResult<()> {
         ServerController::register_shutdown_handler(self.global_token.clone());
 
-        let net_handle = self.net_controller.start();
+        let net_handle = self.net_controller.clone().start();
         let session_handle = self.session_controller.start();
 
         let _ = tokio::join!(net_handle, session_handle);

@@ -22,6 +22,8 @@ macro_rules! vex_check {
 pub enum VexError {
     #[error("Non-fatal assertion failed | {0}")]
     Assertion(String),
+    #[error("A client sent an invalid request | {0}")]
+    InvalidRequest(String),
     #[error("Synchronisation primitive failed | {0}")]
     SyncPrimitive(String),
     #[error(transparent)]
