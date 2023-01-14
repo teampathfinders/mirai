@@ -4,7 +4,7 @@ use crate::{decodable, vex_check};
 use bytes::{Buf, BufMut, BytesMut};
 
 decodable!(
-    0x01,
+     0x01,
     pub struct UnconnectedPing {
         time: i64,
         client_guid: i64

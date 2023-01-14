@@ -2,6 +2,13 @@ mod traits;
 mod unconnected_ping;
 mod unconnected_pong;
 mod packet;
+mod open_connection_request1;
+mod open_connection_reply1;
+mod open_connection_reply2;
+mod open_connection_request2;
+mod connection_request;
+mod connection_request_accepted;
+mod new_incoming_connection;
 
 pub use traits::*;
 pub use unconnected_ping::*;
