@@ -14,7 +14,6 @@ use tokio::runtime;
 use crate::config::ServerConfig;
 use crate::services::ServerController;
 use error::VexResult;
-use raknet::NetController;
 
 const IPV4_PORT: u16 = 19132;
 const IPV6_PORT: u16 = 19133;
