@@ -6,5 +6,5 @@ pub struct ConnectionRequest {
 }
 
 impl ConnectionRequest {
-    const ID: u8 = 0x09;
+    pub const ID: u8 = 0x09;
 }
