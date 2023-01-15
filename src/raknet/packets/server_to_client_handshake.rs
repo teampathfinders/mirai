@@ -1,10 +1,11 @@
 #[derive(Debug)]
-    pub struct PlayStatus {
-        pub Status	: i32,
+    pub struct servertoclienthandshake {
+        pub jwt_data	: i32,
+    // JWT String
 
     }
 
 
-impl PlayStatus {
-    pub const ID: u8 = 0x02;
+impl servertoclienthandshake {
+    pub const ID: u8 = 0x03;
 }

@@ -45,7 +45,7 @@ impl Session {
         !self.active.is_cancelled()
     }
 
-    async fn tick(self: Arc<Self>) -> VexResult<()> {
+    async fn tick(self: &Arc<Self>) -> VexResult<()> {
         Ok(())
     }
 }
