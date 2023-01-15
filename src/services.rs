@@ -1,6 +1,6 @@
 use crate::config::{ServerConfig, CLIENT_VERSION_STRING, NETWORK_VERSION};
 use crate::error::{VexError, VexResult};
-use crate::raknet::packets::{Decodable, OpenConnectionReply1, OpenConnectionReply2, OpenConnectionRequest1, OpenConnectionRequest2, RawPacket,  UnconnectedPong};
+use crate::raknet::packets::{Decodable, Encodable, OpenConnectionReply1, OpenConnectionReply2, OpenConnectionRequest1, OpenConnectionRequest2, RawPacket, UnconnectedPing, UnconnectedPong};
 use crate::raknet::SessionController;
 use crate::util::AsyncDeque;
 use bytes::BytesMut;
@@ -105,9 +105,9 @@ impl ServerController {
         let pong = UnconnectedPong {
             time: ping.time,
             server_guid: self.guid,
-            metadata: self.metadata(),
+            metadata: self.metadata()?,
         }
-        .encode();
+        .encode()?;
 
         self.ipv4_socket
             .send_to(pong.as_ref(), packet.address)
@@ -121,7 +121,7 @@ impl ServerController {
             mtu: request.mtu,
             server_guid: self.guid,
         }
-        .encode();
+        .encode()?;
 
         self.ipv4_socket
             .send_to(reply.as_ref(), packet.address)
@@ -135,8 +135,9 @@ impl ServerController {
             server_guid: self.guid,
             mtu: request.mtu,
             client_address: packet.address,
+            encryption_enabled: false
         }
-        .encode();
+        .encode()?;
 
         self.ipv4_socket
             .send_to(reply.as_ref(), packet.address)

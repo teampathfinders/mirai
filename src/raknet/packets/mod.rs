@@ -10,6 +10,7 @@ mod packet;
 mod traits;
 mod unconnected_ping;
 mod unconnected_pong;
+mod play_status;
 
 pub use connection_request::*;
 pub use connection_request_accepted::*;

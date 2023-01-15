@@ -1,11 +1,13 @@
-
-    pub struct OpenConnectionReply1 {
-        pub server_guid: i64,
-        pub security: bool,
-        pub mtu: u16,
+#[derive(Debug)]
+    pub struct Login {
+        pub protocol_version: i32,
+        pub chain_data: i32,
+        // JSON array of JWT Data,
+        pub skin_data: u16,
+    //     	JWT Data
     }
 
 
-impl OpenConnectionReply1 {
+impl Login {
     pub const ID: u8 = 0x01;
 }

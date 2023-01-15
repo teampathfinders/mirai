@@ -3,6 +3,7 @@ use crate::error::VexResult;
 use crate::raknet::packets::Decodable;
 use crate::vex_assert;
 
+#[derive(Debug)]
 pub struct OpenConnectionRequest1 {
     pub protocol_version: u8,
     pub mtu: u16,

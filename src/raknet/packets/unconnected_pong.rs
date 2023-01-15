@@ -2,6 +2,7 @@ use crate::raknet::packets::{Encodable, OFFLINE_MESSAGE_DATA};
 use bytes::{BufMut, BytesMut};
 use crate::error::VexResult;
 
+#[derive(Debug)]
 pub struct UnconnectedPong {
     pub time: i64,
     pub server_guid: i64,

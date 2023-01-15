@@ -16,15 +16,18 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="eb8ce776-e64a-444b-a034-2036d6cbe18e" name="Changes" comment="">
+      <change afterPath="$PROJECT_DIR$/src/raknet/packets/play_status.rs" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/error.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/error.rs" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/raknet/packets/connection_request.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/raknet/packets/connection_request.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/raknet/packets/open_connection_reply1.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/raknet/packets/open_connection_reply1.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/raknet/packets/connection_request_accepted.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/raknet/packets/connection_request_accepted.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/raknet/packets/login.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/raknet/packets/login.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/raknet/packets/mod.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/raknet/packets/mod.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/raknet/packets/new_incoming_connection.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/raknet/packets/new_incoming_connection.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/raknet/packets/open_connection_reply2.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/raknet/packets/open_connection_reply2.rs" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/raknet/packets/open_connection_request1.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/raknet/packets/open_connection_request1.rs" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/raknet/packets/open_connection_request2.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/raknet/packets/open_connection_request2.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/raknet/packets/traits.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/raknet/packets/traits.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/raknet/packets/unconnected_ping.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/raknet/packets/unconnected_ping.rs" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/raknet/packets/unconnected_pong.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/raknet/packets/unconnected_pong.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/services.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/services.rs" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -83,7 +86,24 @@
       <recent name="C:\Users\Ruben\Documents\programming\rs\msserver\src\network" />
     </key>
   </component>
-  <component name="RunManager" selected="Cargo.Run">
+  <component name="RunManager" selected="Cargo.Check">
+    <configuration name="Check" type="CargoCommandRunConfiguration" factoryName="Cargo Command">
+      <option name="command" value="check" />
+      <option name="workingDirectory" value="file://$PROJECT_DIR$" />
+      <option name="channel" value="DEFAULT" />
+      <option name="requiredFeatures" value="true" />
+      <option name="allFeatures" value="false" />
+      <option name="emulateTerminal" value="false" />
+      <option name="withSudo" value="false" />
+      <option name="buildTarget" value="REMOTE" />
+      <option name="backtrace" value="SHORT" />
+      <envs />
+      <option name="isRedirectInput" value="false" />
+      <option name="redirectInputPath" value="" />
+      <method v="2">
+        <option name="CARGO.BUILD_TASK_PROVIDER" enabled="true" />
+      </method>
+    </configuration>
     <configuration name="Expand vex::packets::traits" type="CargoCommandRunConfiguration" factoryName="Cargo Command" temporary="true">
       <option name="command" value="expand --bin vex --color=always --theme=Dracula --tests packets::traits" />
       <option name="workingDirectory" value="file://$PROJECT_DIR$" />
@@ -118,6 +138,11 @@
         <option name="CARGO.BUILD_TASK_PROVIDER" enabled="true" />
       </method>
     </configuration>
+    <list>
+      <item itemvalue="Cargo.Run" />
+      <item itemvalue="Cargo.Check" />
+      <item itemvalue="Cargo.Expand vex::packets::traits" />
+    </list>
     <recent_temporary>
       <list>
         <item itemvalue="Cargo.Expand vex::packets::traits" />
@@ -150,7 +175,7 @@
       <workItem from="1673727176511" duration="2608000" />
       <workItem from="1673729945398" duration="8214000" />
       <workItem from="1673784779913" duration="62000" />
-      <workItem from="1673811016171" duration="1155000" />
+      <workItem from="1673811016171" duration="1517000" />
     </task>
     <servers />
   </component>
