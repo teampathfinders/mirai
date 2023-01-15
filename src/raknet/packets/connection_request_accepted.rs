@@ -1,4 +1,4 @@
-use crate::encodable;
+
 use std::net::SocketAddr;
 
 pub struct ConnectionRequestAccepted {

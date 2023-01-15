@@ -1,4 +1,4 @@
-use crate::raknet::packets::RaknetPacket;
+
 
 pub struct ConnectionRequest {
     pub guid: i64,

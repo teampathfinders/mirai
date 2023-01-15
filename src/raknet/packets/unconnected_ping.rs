@@ -1,6 +1,6 @@
 use crate::error::VexResult;
-use crate::raknet::packets::{Decodable, Encodable, RaknetPacket};
-use crate::{decodable, vex_check};
+use crate::raknet::packets::{Decodable, Encodable};
+use crate::{vex_check};
 use bytes::{Buf, BufMut, BytesMut};
 
 decodable!(

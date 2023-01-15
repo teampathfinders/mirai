@@ -1,15 +1,15 @@
-use crate::raknet::packets::{Encodable, RaknetPacket, OFFLINE_MESSAGE_DATA};
-use crate::{__impl_general_packet, encodable};
+use crate::raknet::packets::{Encodable, OFFLINE_MESSAGE_DATA};
 use bytes::{BufMut, BytesMut};
 
-encodable!(
-    0x1c,
+
     pub struct UnconnectedPong {
         time: i64,
         server_guid: i64,
         metadata: String,
     }
-);
+impl UnconnectedPong {
+    pub const ID: u8 = 0x1c;
+}
 
 impl Encodable for UnconnectedPong {
     fn encode(&self) -> BytesMut {

@@ -1,4 +1,4 @@
-use crate::data::ServerData;
+
 use crate::error::VexResult;
 use dashmap::DashMap;
 use std::net::SocketAddr;
