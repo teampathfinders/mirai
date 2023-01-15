@@ -3,7 +3,7 @@ use thiserror::Error;
 pub type VexResult<T> = Result<T, VexError>;
 
 #[macro_export]
-macro_rules! vex_check {
+macro_rules! vex_assert {
     ($expression: expr, $message: expr) => {
         if ($expression) == false {
             return Err($crate::error::VexError::Assertion($message));
@@ -11,7 +11,7 @@ macro_rules! vex_check {
     };
 
     ($expression: expr) => {
-        vex_check!(
+        vex_assert!(
             $expression,
             format!("Assertion failed: {}", stringify!($expression))
         );

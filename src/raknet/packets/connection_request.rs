@@ -1,5 +1,3 @@
-
-
 pub struct ConnectionRequest {
     pub guid: i64,
     pub time: i64,

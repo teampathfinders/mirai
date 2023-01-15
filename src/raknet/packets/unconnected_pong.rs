@@ -1,18 +1,19 @@
 use crate::raknet::packets::{Encodable, OFFLINE_MESSAGE_DATA};
 use bytes::{BufMut, BytesMut};
+use crate::error::VexResult;
 
+pub struct UnconnectedPong {
+    pub time: i64,
+    pub server_guid: i64,
+    pub metadata: String,
+}
 
-    pub struct UnconnectedPong {
-        time: i64,
-        server_guid: i64,
-        metadata: String,
-    }
 impl UnconnectedPong {
     pub const ID: u8 = 0x1c;
 }
 
 impl Encodable for UnconnectedPong {
-    fn encode(&self) -> BytesMut {
+    fn encode(&self) -> VexResult<BytesMut> {
         let mut buffer = BytesMut::with_capacity(1 + 8 + 8 + 16 + 2 + self.metadata.len());
 
         buffer.put_u8(Self::ID);
@@ -22,6 +23,6 @@ impl Encodable for UnconnectedPong {
         buffer.put_u16(self.metadata.len() as u16);
         buffer.put(self.metadata.as_bytes());
 
-        buffer
+        Ok(buffer)
     }
 }
