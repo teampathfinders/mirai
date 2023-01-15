@@ -11,6 +11,7 @@ mod traits;
 mod unconnected_ping;
 mod unconnected_pong;
 mod play_status;
+mod server_to_client_handshake;
 
 pub use connection_request::*;
 pub use connection_request_accepted::*;
