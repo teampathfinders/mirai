@@ -1,7 +1,7 @@
 use crate::raknet::packets::{Encodable, OFFLINE_MESSAGE_DATA};
 use bytes::{BufMut, BytesMut};
 
-
+#[derive(Debug)]
     pub struct UnconnectedPong {
         time: i64,
         server_guid: i64,

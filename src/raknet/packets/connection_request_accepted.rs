@@ -1,6 +1,6 @@
 
 use std::net::SocketAddr;
-
+#[derive(Debug)]
 pub struct ConnectionRequestAccepted {
     pub client_address: SocketAddr,
     pub request_time: i64,

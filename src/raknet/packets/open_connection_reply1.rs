@@ -1,5 +1,5 @@
 
-
+#[derive(Debug)]
 pub struct OpenConnectionReply1 {
     pub server_guid: i64,
     pub security: bool,

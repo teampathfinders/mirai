@@ -1,6 +1,6 @@
 
 use std::net::SocketAddr;
-
+#[derive(Debug)]
 pub struct OpenConnectionRequest2 {
     pub server_address: SocketAddr,
     pub mtu: u16,
