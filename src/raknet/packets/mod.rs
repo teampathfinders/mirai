@@ -17,6 +17,7 @@ mod disconnect;
 mod resource_packs_info;
 mod resource_pack_client_response;
 mod resource_pack_stack;
+mod start_game;
 
 pub use connection_request::*;
 pub use connection_request_accepted::*;
