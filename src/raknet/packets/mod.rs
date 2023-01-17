@@ -8,7 +8,6 @@ mod open_connection_reply1;
 mod open_connection_reply2;
 mod open_connection_request1;
 mod open_connection_request2;
-mod packet;
 mod play_status;
 mod resource_pack_client_response;
 mod resource_pack_stack;
@@ -26,11 +25,12 @@ pub use open_connection_reply1::*;
 pub use open_connection_reply2::*;
 pub use open_connection_request1::*;
 pub use open_connection_request2::*;
-pub use packet::*;
+pub use crate::raknet::packet::*;
 pub use traits::*;
 pub use unconnected_ping::*;
 pub use unconnected_pong::*;
 
+pub const RAKNET_VERSION: u8 = 10;
 pub const OFFLINE_MESSAGE_DATA: &[u8] = &[
     0x00, 0xff, 0xff, 0x00, 0xfe, 0xfe, 0xfe, 0xfe, 0xfd, 0xfd, 0xfd, 0xfd, 0x12, 0x34, 0x56, 0x78,
 ];

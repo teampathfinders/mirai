@@ -4,13 +4,17 @@ use crate::util::ReadAddress;
 use crate::vex_assert;
 use bytes::{Buf, BytesMut};
 
+/// Sent by the client, in response to [`OpenConnectionReply2`](super::OpenConnectionReply2).
 #[derive(Debug)]
 pub struct OpenConnectionRequest2 {
+    /// MTU of the connection.
     pub mtu: u16,
+    /// GUID of the client.
     pub client_guid: i64,
 }
 
 impl OpenConnectionRequest2 {
+    /// Unique identifier of the packet.
     pub const ID: u8 = 0x07;
 }
 

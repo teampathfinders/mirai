@@ -11,7 +11,7 @@ use std::sync::atomic::{AtomicU16, Ordering};
 use tokio::runtime;
 
 use crate::config::ServerConfig;
-use crate::services::ServerController;
+use crate::services::ServerInstance;
 use error::VexResult;
 
 const IPV4_PORT: u16 = 19132;
@@ -22,9 +22,10 @@ const CONFIG: ServerConfig = ServerConfig {
     ipv4_port: 19132,
 };
 
+/// The asynchronous entrypoint that is ran by Tokio.
 async fn app_main() -> VexResult<()> {
     loop {
-        let controller = ServerController::new(CONFIG).await?;
+        let controller = ServerInstance::new(CONFIG).await?;
         match controller.run().await {
             Ok(_) => {
                 tracing::info!("Received OK for shutdown, not restarting controller");
@@ -59,10 +60,12 @@ fn main() -> VexResult<()> {
     runtime.block_on(app_main())
 }
 
+/// Initialises logging with tokio-console.
 #[cfg(feature = "tokio-console")]
 fn init_logging() {
     use tracing_subscriber::layer::SubscriberExt;
     use tracing_subscriber::util::SubscriberInitExt;
+    use std::time::Duration;
 
     let console_layer = console_subscriber::Builder::default()
         .retention(Duration::from_secs(1))
@@ -81,6 +84,7 @@ fn init_logging() {
     tracing::info!("Tracing (with console) enabled");
 }
 
+/// Initialises logging without tokio-console.
 #[cfg(not(feature = "tokio-console"))]
 fn init_logging() {
     tracing_subscriber::fmt()

@@ -1,13 +1,16 @@
 use std::collections::VecDeque;
 use tokio::sync::{Mutex, Semaphore};
 
-///
+/// Queue that supports async blocking pop operations.
 pub struct AsyncDeque<T> {
+    /// The queue itself.
     deque: Mutex<VecDeque<T>>,
+    /// Keeps track of the amount of items currently in the queue.
     permits: Semaphore,
 }
 
 impl<T> AsyncDeque<T> {
+    /// Creates a new queue with the specified capacity
     pub fn new(capacity: usize) -> Self {
         Self {
             deque: Mutex::new(VecDeque::with_capacity(capacity)),
@@ -32,12 +35,16 @@ impl<T> AsyncDeque<T> {
     pub async fn try_pop(&self) -> Option<T> {
         self.permits
             .try_acquire()
-            .map_or(None, |p| Some(p.forget()))?;
+            .map_or(None, |p| {
+                p.forget();
+                Some(())
+            })?;
 
         let mut lock = self.deque.lock().await;
         Some(lock.pop_front().unwrap())
     }
 
+    /// Pushes an item into the queue.
     pub async fn push(&self, item: T) {
         {
             let mut lock = self.deque.lock().await;

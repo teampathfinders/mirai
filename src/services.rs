@@ -19,21 +19,29 @@ const IPV6_LOCAL_ADDR: Ipv6Addr = Ipv6Addr::new(0, 0, 0, 0, 0, 0, 0, 1);
 
 const RECV_BUF_SIZE: usize = 4096;
 
-pub struct ServerController {
+/// Global instance that manages all data and services of the server.
+pub struct ServerInstance {
+    /// Randomised GUID, required by Minecraft
     guid: i64,
+    /// String containing info displayed in the server tab.
     metadata: RwLock<String>,
-
+    /// IPv4 UDP socket
     ipv4_socket: Arc<UdpSocket>,
+    /// Port the IPv4 service is hosted on.
     ipv4_port: u16,
-
+    /// Queue for incoming packets.
     inward_queue: Arc<AsyncDeque<RawPacket>>,
+    /// Queue for packets waiting to be sent.
     outward_queue: Arc<AsyncDeque<RawPacket>>,
-
+    /// Token indicating whether the server is still running.
+    /// All services listen to this token to determine whether they should shut down.
     global_token: CancellationToken,
+    /// Service that manages all player sessions.
     session_controller: Arc<SessionController>,
 }
 
-impl ServerController {
+impl ServerInstance {
+    /// Creates a new server
     pub async fn new(config: ServerConfig) -> VexResult<Arc<Self>> {
         tracing::info!("Setting up services...");
 
@@ -62,8 +70,9 @@ impl ServerController {
         Ok(Arc::new(server))
     }
 
+    /// Run the server
     pub async fn run(self: Arc<Self>) -> VexResult<()> {
-        ServerController::register_shutdown_handler(self.global_token.clone());
+        ServerInstance::register_shutdown_handler(self.global_token.clone());
 
         let receiver_task = {
             let controller = self.clone();
@@ -87,6 +96,7 @@ impl ServerController {
         self.global_token.cancel();
     }
 
+    /// Processes any packets that are sent before a session has been created.
     async fn handle_offline_packet(self: Arc<Self>, packet: RawPacket) -> VexResult<()> {
         let id = packet
             .packet_id()
@@ -103,6 +113,7 @@ impl ServerController {
         Ok(())
     }
 
+    /// Responds to the [`UnconnectedPing`] packet with [`UnconnectedPong`].
     async fn handle_unconnected_ping(self: Arc<Self>, packet: RawPacket) -> VexResult<()> {
         let ping = UnconnectedPing::decode(packet.buffer.clone())?;
         let pong = UnconnectedPong {
@@ -118,6 +129,7 @@ impl ServerController {
         Ok(())
     }
 
+    /// Responds to the [`OpenConnectionRequest1`] packet with [`OpenConnectionReply1`].
     async fn handle_open_connection_request1(self: Arc<Self>, packet: RawPacket) -> VexResult<()> {
         let request = OpenConnectionRequest1::decode(packet.buffer.clone())?;
         let reply = OpenConnectionReply1 {
@@ -132,6 +144,9 @@ impl ServerController {
         Ok(())
     }
 
+    /// Responds to the [`OpenConnectionRequest2`] packet with [`OpenConnectionReply2`].
+    /// This is also when a session is created for the client.
+    /// From this point, all packets are encoded in a [`Frame`](crate::raknet::Frame).
     async fn handle_open_connection_request2(self: Arc<Self>, packet: RawPacket) -> VexResult<()> {
         let request = OpenConnectionRequest2::decode(packet.buffer.clone())?;
         let reply = OpenConnectionReply2 {

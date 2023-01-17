@@ -22,6 +22,7 @@ pub struct OrderInfo {
 #[derive(Debug)]
 pub struct Frame {
     pub sequence_number: u32,
+    /// Reliability of this packet.
     pub reliability: Reliability,
 
     // Fragments =====================
@@ -38,6 +39,7 @@ pub struct Frame {
     /// Channel to perform ordering in
     pub order_channel: u8,
 
+    /// Raw bytes of the body.
     pub body: BytesMut,
 }
 
