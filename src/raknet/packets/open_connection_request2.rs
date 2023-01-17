@@ -1,9 +1,9 @@
-use std::net::SocketAddr;
-use bytes::{Buf, BytesMut};
 use crate::error::VexResult;
 use crate::raknet::packets::Decodable;
 use crate::util::ReadAddress;
 use crate::vex_assert;
+use bytes::{Buf, BytesMut};
+use std::net::SocketAddr;
 
 #[derive(Debug)]
 pub struct OpenConnectionRequest2 {
@@ -24,8 +24,6 @@ impl Decodable for OpenConnectionRequest2 {
         let mtu = buffer.get_u16();
         let client_guid = buffer.get_i64();
 
-        Ok(Self {
-            mtu, client_guid
-        })
+        Ok(Self { mtu, client_guid })
     }
 }

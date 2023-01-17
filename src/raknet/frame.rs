@@ -1,5 +1,5 @@
-use bytes::BytesMut;
 use crate::raknet::Reliability;
+use bytes::BytesMut;
 
 pub struct FragmentInfo {
     /// Unique ID of the compound
@@ -7,14 +7,14 @@ pub struct FragmentInfo {
     /// Amount of fragments in this compound
     pub compound_size: i32,
     /// Index of the fragment in the compound
-    pub index: i32
+    pub index: i32,
 }
 
 pub struct OrderInfo {
     /// Index in the channel
     pub index: u32,
     /// Channel to put the packet in
-    pub channel: u8
+    pub channel: u8,
 }
 
 #[derive(Debug)]

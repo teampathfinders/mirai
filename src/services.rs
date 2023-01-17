@@ -1,6 +1,9 @@
 use crate::config::{ServerConfig, CLIENT_VERSION_STRING, NETWORK_VERSION};
 use crate::error::{VexError, VexResult};
-use crate::raknet::packets::{Decodable, Encodable, OpenConnectionReply1, OpenConnectionReply2, OpenConnectionRequest1, OpenConnectionRequest2, RawPacket, UnconnectedPing, UnconnectedPong};
+use crate::raknet::packets::{
+    Decodable, Encodable, OpenConnectionReply1, OpenConnectionReply2, OpenConnectionRequest1,
+    OpenConnectionRequest2, RawPacket, UnconnectedPing, UnconnectedPong,
+};
 use crate::raknet::SessionController;
 use crate::util::AsyncDeque;
 use bytes::BytesMut;
@@ -135,7 +138,7 @@ impl ServerController {
             server_guid: self.guid,
             mtu: request.mtu,
             client_address: packet.address,
-            encryption_enabled: false
+            encryption_enabled: false,
         }
         .encode()?;
 

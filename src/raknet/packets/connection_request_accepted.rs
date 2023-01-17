@@ -1,4 +1,3 @@
-
 use std::net::SocketAddr;
 #[derive(Debug)]
 pub struct ConnectionRequestAccepted {

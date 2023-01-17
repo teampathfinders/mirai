@@ -1,6 +1,6 @@
-use bytes::{BufMut, BytesMut};
 use crate::error::VexResult;
 use crate::raknet::packets::{Encodable, OFFLINE_MESSAGE_DATA};
+use bytes::{BufMut, BytesMut};
 
 #[derive(Debug)]
 pub struct OpenConnectionReply1 {

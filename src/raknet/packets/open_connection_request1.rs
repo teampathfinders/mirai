@@ -1,7 +1,7 @@
-use bytes::{Buf, BytesMut};
 use crate::error::VexResult;
 use crate::raknet::packets::Decodable;
 use crate::vex_assert;
+use bytes::{Buf, BytesMut};
 
 #[derive(Debug)]
 pub struct OpenConnectionRequest1 {
@@ -22,7 +22,8 @@ impl Decodable for OpenConnectionRequest1 {
         let mtu = buffer.len() as u16 - 18 + 46; // Size of padding + 46
 
         Ok(Self {
-            protocol_version, mtu
+            protocol_version,
+            mtu,
         })
     }
 }

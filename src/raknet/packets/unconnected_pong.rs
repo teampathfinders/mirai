@@ -1,6 +1,6 @@
+use crate::error::VexResult;
 use crate::raknet::packets::{Encodable, OFFLINE_MESSAGE_DATA};
 use bytes::{BufMut, BytesMut};
-use crate::error::VexResult;
 
 #[derive(Debug)]
 pub struct UnconnectedPong {

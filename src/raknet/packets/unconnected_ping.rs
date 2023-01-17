@@ -1,6 +1,6 @@
 use crate::error::VexResult;
 use crate::raknet::packets::{Decodable, Encodable};
-use crate::{vex_assert};
+use crate::vex_assert;
 use bytes::{Buf, BufMut, BytesMut};
 
 #[derive(Debug)]
