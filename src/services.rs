@@ -172,7 +172,7 @@ impl ServerController {
                 }
             };
 
-            let mut raw_packet = RawPacket {
+            let raw_packet = RawPacket {
                 buffer: BytesMut::from(&receive_buffer[..n]),
                 address,
             };
@@ -180,7 +180,12 @@ impl ServerController {
             if raw_packet.is_offline_packet() {
                 let controller = self.clone();
                 tokio::spawn(async move {
-                    controller.handle_offline_packet(raw_packet).await;
+                    match controller.handle_offline_packet(raw_packet).await {
+                        Ok(_) => (),
+                        Err(e) => tracing::error!(
+                            "Error occurred while processing offline packet: {e:?}"
+                        )
+                    }
                 });
             } else {
                 todo!("Send packet to session");

@@ -1,9 +1,17 @@
 use crate::error::{VexError, VexResult};
-use bytes::{Buf, BufMut, Bytes, BytesMut};
-use std::io::Read;
+use bytes::{Buf, BufMut};
 use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr};
 
 pub trait ReadAddress: Buf {
+    /// Reads an IP address from a buffer.
+    /// Format:
+    ///
+    /// * One byte for IP type (4 or 6),
+    /// * If IPv4, 4 bytes for the 4 octets,
+    /// * If IPv6, 16 bytes for the 4 octets,
+    /// * Unsigned short for port.
+    ///
+    /// This method fails if the IP type is a value other than 4 or 6.
     fn get_addr(&mut self) -> VexResult<SocketAddr> {
         let ip_type = self.get_u8();
         let ip_addr = match ip_type {
@@ -23,6 +31,9 @@ pub trait ReadAddress: Buf {
 }
 
 pub trait WriteAddress: BufMut {
+    /// Writes an IP address into a buffer.
+    ///
+    /// IP format described in [`get_addr`](ReadAddress::get_addr).
     fn put_addr(&mut self, addr: SocketAddr)
     where
         Self: Sized,
@@ -42,5 +53,7 @@ pub trait WriteAddress: BufMut {
     }
 }
 
+/// Implement [`ReadAddress`] for all types that implement [`Buf`].
 impl<T: Buf> ReadAddress for T {}
+/// Implement [`WriteAddress`] for all types that implement [`BufMut`].
 impl<T: BufMut> WriteAddress for T {}

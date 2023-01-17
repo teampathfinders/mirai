@@ -1,12 +1,12 @@
+#![allow(dead_code)]
+
 mod config;
 mod error;
 mod raknet;
 mod services;
 mod util;
-mod worker;
 
 use std::sync::atomic::{AtomicU16, Ordering};
-use std::time::Duration;
 
 use tokio::runtime;
 
@@ -83,9 +83,6 @@ fn init_logging() {
 
 #[cfg(not(feature = "tokio-console"))]
 fn init_logging() {
-    use tracing::Level;
-    use tracing_subscriber::util::SubscriberInitExt;
-
     tracing_subscriber::fmt()
         .with_target(false)
         .with_max_level(tracing::Level::DEBUG)

@@ -1,6 +1,6 @@
 #[derive(Debug)]
 pub struct PlayStatus {
-    pub Status: i32,
+    pub status: i32,
 }
 
 impl PlayStatus {

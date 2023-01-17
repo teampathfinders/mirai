@@ -3,7 +3,6 @@ use crate::raknet::packets::Decodable;
 use crate::util::ReadAddress;
 use crate::vex_assert;
 use bytes::{Buf, BytesMut};
-use std::net::SocketAddr;
 
 #[derive(Debug)]
 pub struct OpenConnectionRequest2 {

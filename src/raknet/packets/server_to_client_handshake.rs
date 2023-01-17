@@ -1,9 +1,9 @@
 #[derive(Debug)]
-pub struct servertoclienthandshake {
+pub struct ServerToClientHandshake {
     pub jwt_data: i32,
     // JWT String
 }
 
-impl servertoclienthandshake {
+impl ServerToClientHandshake {
     pub const ID: u8 = 0x03;
 }
