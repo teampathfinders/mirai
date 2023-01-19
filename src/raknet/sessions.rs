@@ -10,14 +10,17 @@ const TICK_INTERVAL: Duration = Duration::from_millis(1000 / 50);
 #[derive(Debug)]
 pub struct Session {
     address: SocketAddr,
+    client_guid: i64,
+
     last_update: Instant,
     active: CancellationToken,
 }
 
 impl Session {
-    pub fn new(address: SocketAddr) -> Arc<Self> {
+    pub fn new(address: SocketAddr, client_guid: i64) -> Arc<Self> {
         let session = Arc::new(Self {
             address,
+            client_guid,
             last_update: Instant::now(),
             active: CancellationToken::new(),
         });
@@ -36,6 +39,7 @@ impl Session {
             });
         }
 
+        tracing::info!("Session {client_guid:X} created");
         session
     }
 
@@ -51,7 +55,7 @@ impl Session {
 
 pub struct SessionController {
     global_token: CancellationToken,
-    map: DashMap<SocketAddr, Session>,
+    map: DashMap<SocketAddr, Arc<Session>>,
     max_player_count: usize,
 }
 
@@ -67,9 +71,9 @@ impl SessionController {
         })
     }
 
-    pub async fn start(&self) -> VexResult<()> {
-        tracing::info!("Session service online");
-        Ok(())
+    pub fn add_session(&self, address: SocketAddr, client_guid: i64) {
+        let session = Session::new(address, client_guid);
+        self.map.insert(address, session);
     }
 
     pub fn player_count(&self) -> usize {

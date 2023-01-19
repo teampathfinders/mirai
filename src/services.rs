@@ -84,9 +84,7 @@ impl ServerInstance {
             tokio::spawn(async move { controller.v4_sender_task().await })
         };
 
-        let session_handle = self.session_controller.start();
-
-        let _ = tokio::join!(receiver_task, sender_task, session_handle);
+        let _ = tokio::join!(receiver_task, sender_task);
 
         Ok(())
     }
@@ -107,7 +105,7 @@ impl ServerInstance {
             UnconnectedPing::ID => self.handle_unconnected_ping(packet).await?,
             OpenConnectionRequest1::ID => self.handle_open_connection_request1(packet).await?,
             OpenConnectionRequest2::ID => self.handle_open_connection_request2(packet).await?,
-            _ => todo!("Packet type not implemented"),
+            _ => unimplemented!("Packet type not implemented"),
         }
 
         Ok(())
@@ -157,9 +155,11 @@ impl ServerInstance {
         }
         .encode()?;
 
+        self.session_controller.add_session(packet.address, request.client_guid);
         self.ipv4_socket
             .send_to(reply.as_ref(), packet.address)
             .await?;
+
         Ok(())
     }
 
