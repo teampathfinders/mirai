@@ -53,9 +53,9 @@ pub struct Frame {
     /// Unique ID of the the compound
     pub compound_id: u16,
     /// Amount of fragments in the compound
-    pub compound_size: i32,
+    pub compound_size: u32,
     /// Index of the fragment in this compound
-    pub compound_index: i32,
+    pub compound_index: u32,
 
     // Ordering ======================
     /// Index in the order channel
@@ -101,9 +101,9 @@ impl Frame {
         let mut compound_id = 0;
         let mut compound_index = 0;
         if is_compound {
-            compound_size = buffer.get_i32();
+            compound_size = buffer.get_u32();
             compound_id = buffer.get_u16();
-            compound_index = buffer.get_i32();
+            compound_index = buffer.get_u32();
         }
 
         let mut chunks = buffer.chunks(length as usize);

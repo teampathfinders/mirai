@@ -9,7 +9,7 @@ use std::net::SocketAddr;
 use std::sync::Arc;
 use std::time::{Duration, Instant};
 use tokio_util::sync::CancellationToken;
-use crate::raknet::{Frame, FrameSet};
+use crate::raknet::{CompoundCollector, Frame, FrameSet};
 use crate::raknet::packets::{Ack, Decodable, Nack};
 
 const INTERNAL_TICK_INTERVAL: Duration = Duration::from_millis(1000 / 20);
@@ -24,6 +24,7 @@ pub struct Session {
     last_update: RwLock<Instant>,
     active: CancellationToken,
 
+    compound_collector: CompoundCollector,
     queue: AsyncDeque<BytesMut>,
 }
 
@@ -34,6 +35,7 @@ impl Session {
             guid: client_guid,
             last_update: RwLock::new(Instant::now()),
             active: CancellationToken::new(),
+            compound_collector: CompoundCollector::new(),
             queue: AsyncDeque::new(5),
         });
 
@@ -93,8 +95,10 @@ impl Session {
 
     async fn handle_frame_set(&self, task: BytesMut) -> VexResult<()> {
         let frame_set = FrameSet::decode(task)?;
-        for frame in &frame_set.frames {
-
+        for frame in frame_set.frames {
+            if frame.is_compound {
+                self.compound_collector.insert(frame);
+            }
         }
 
         Ok(())
