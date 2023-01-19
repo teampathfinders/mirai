@@ -18,6 +18,7 @@ mod traits;
 mod unconnected_ping;
 mod unconnected_pong;
 
+pub use crate::raknet::packet::*;
 pub use connection_request::*;
 pub use connection_request_accepted::*;
 pub use new_incoming_connection::*;
@@ -25,7 +26,6 @@ pub use open_connection_reply1::*;
 pub use open_connection_reply2::*;
 pub use open_connection_request1::*;
 pub use open_connection_request2::*;
-pub use crate::raknet::packet::*;
 pub use traits::*;
 pub use unconnected_ping::*;
 pub use unconnected_pong::*;

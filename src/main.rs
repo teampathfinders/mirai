@@ -28,12 +28,11 @@ async fn app_main() -> VexResult<()> {
         let controller = ServerInstance::new(CONFIG).await?;
         match controller.run().await {
             Ok(_) => {
-                tracing::info!("Received OK for shutdown, not restarting controller");
                 break;
             }
             Err(e) => {
-                tracing::error!("Seems like the controller panicked, attempting to restart it...");
-                tracing::error!("Crash cause: {e:?}");
+                tracing::error!("The server probably crashed, restarting it...");
+                tracing::error!("Cause: {e:?}");
             }
         }
     }
@@ -63,25 +62,23 @@ fn main() -> VexResult<()> {
 /// Initialises logging with tokio-console.
 #[cfg(feature = "tokio-console")]
 fn init_logging() {
+    use std::time::Duration;
     use tracing_subscriber::layer::SubscriberExt;
     use tracing_subscriber::util::SubscriberInitExt;
-    use std::time::Duration;
 
     let console_layer = console_subscriber::Builder::default()
         .retention(Duration::from_secs(1))
         .recording_path("console_trace.log")
         .spawn();
 
-    let fmt = tracing_subscriber::fmt::layer()
-        .with_target(false)
-        .with_thread_names(true);
+    let fmt = tracing_subscriber::fmt::layer().with_target(false);
 
     tracing_subscriber::registry()
         .with(console_layer)
         .with(fmt)
         .init();
 
-    tracing::info!("Tracing (with console) enabled");
+    tracing::info!("Tokio console enabled");
 }
 
 /// Initialises logging without tokio-console.
@@ -90,8 +87,5 @@ fn init_logging() {
     tracing_subscriber::fmt()
         .with_target(false)
         .with_max_level(tracing::Level::DEBUG)
-        .with_thread_names(true)
         .init();
-
-    tracing::info!("Tracing (without console) enabled");
 }

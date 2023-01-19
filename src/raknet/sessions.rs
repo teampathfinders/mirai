@@ -1,34 +1,45 @@
 use crate::error::VexResult;
+use crate::raknet::packet::RawPacket;
+use crate::util::AsyncDeque;
+use crate::vex_error;
+use bytes::BytesMut;
 use dashmap::DashMap;
+use parking_lot::RwLock;
 use std::net::SocketAddr;
 use std::sync::Arc;
 use std::time::{Duration, Instant};
 use tokio_util::sync::CancellationToken;
 
-const TICK_INTERVAL: Duration = Duration::from_millis(1000 / 50);
+const INTERNAL_TICK_INTERVAL: Duration = Duration::from_millis(1000 / 20);
+const TICK_INTERVAL: Duration = Duration::from_millis(1000 / 20);
+const SESSION_TIMEOUT: Duration = Duration::from_secs(5);
 
 #[derive(Debug)]
 pub struct Session {
     address: SocketAddr,
-    client_guid: i64,
+    guid: i64,
 
-    last_update: Instant,
+    last_update: RwLock<Instant>,
     active: CancellationToken,
+
+    queue: AsyncDeque<BytesMut>,
 }
 
 impl Session {
     pub fn new(address: SocketAddr, client_guid: i64) -> Arc<Self> {
         let session = Arc::new(Self {
             address,
-            client_guid,
-            last_update: Instant::now(),
+            guid: client_guid,
+            last_update: RwLock::new(Instant::now()),
             active: CancellationToken::new(),
+            queue: AsyncDeque::new(5),
         });
 
+        // Session ticker
         {
             let session = session.clone();
             tokio::spawn(async move {
-                let mut interval = tokio::time::interval(TICK_INTERVAL);
+                let mut interval = tokio::time::interval(INTERNAL_TICK_INTERVAL);
                 while !session.active.is_cancelled() {
                     match session.tick().await {
                         Ok(_) => (),
@@ -36,6 +47,25 @@ impl Session {
                     }
                     interval.tick().await;
                 }
+
+                tracing::info!("Session ticker closed");
+            });
+        }
+
+        // Packet processor
+        {
+            let session = session.clone();
+            tokio::spawn(async move {
+                let mut interval = tokio::time::interval(TICK_INTERVAL);
+                while !session.active.is_cancelled() {
+                    match session.process_packet().await {
+                        Ok(_) => (),
+                        Err(e) => tracing::error!("{e}"),
+                    }
+                    interval.tick().await;
+                }
+
+                tracing::info!("Session processor closed");
             });
         }
 
@@ -43,13 +73,37 @@ impl Session {
         session
     }
 
+    async fn process_packet(self: &Arc<Self>) -> VexResult<()> {
+        let task = tokio::select! {
+            _ = self.active.cancelled() => {
+                return Ok(())
+            },
+            task = self.queue.pop() => task
+        };
+        // *self.last_update.write() = Instant::now();
+
+        tracing::info!("New packet received");
+        Ok(())
+    }
+
+    /// Performs tasks not related to packet processing
+    async fn tick(self: &Arc<Self>) -> VexResult<()> {
+        // Session has timed out
+        if Instant::now().duration_since(*self.last_update.read()) > SESSION_TIMEOUT {
+            self.active.cancel();
+            tracing::info!("Session timed out");
+        }
+
+        Ok(())
+    }
+
     #[inline]
     pub fn active(&self) -> bool {
         !self.active.is_cancelled()
     }
 
-    async fn tick(self: &Arc<Self>) -> VexResult<()> {
-        Ok(())
+    fn forward(self: &Arc<Self>, buffer: BytesMut) {
+        self.queue.push(buffer);
     }
 }
 
@@ -74,6 +128,19 @@ impl SessionController {
     pub fn add_session(&self, address: SocketAddr, client_guid: i64) {
         let session = Session::new(address, client_guid);
         self.map.insert(address, session);
+    }
+
+    pub fn forward_packet(&self, packet: RawPacket) -> VexResult<()> {
+        self.map
+            .get(&packet.address)
+            .map(|r| {
+                let session = r.value();
+                session.forward(packet.buffer);
+            })
+            .ok_or(vex_error!(
+                InvalidRequest,
+                "Attempted to forward packet for non-existent session"
+            ))
     }
 
     pub fn player_count(&self) -> usize {

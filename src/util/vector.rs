@@ -1,7 +1,7 @@
 /// Type and size independent vector type
 #[derive(Debug, Clone)]
 pub struct Vector<T, const N: usize> {
-    components: [T; N]
+    components: [T; N],
 }
 
 /// 32-bit float vector with 2 components

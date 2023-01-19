@@ -1,7 +1,9 @@
+use parking_lot::Mutex;
 use std::collections::VecDeque;
-use tokio::sync::{Mutex, Semaphore};
+use tokio::sync::Semaphore;
 
 /// Queue that supports async blocking pop operations.
+#[derive(Debug)]
 pub struct AsyncDeque<T> {
     /// The queue itself.
     deque: Mutex<VecDeque<T>>,
@@ -20,34 +22,33 @@ impl<T> AsyncDeque<T> {
 
     /// Waits for an item to be available and pops it from the queue.
     pub async fn pop(&self) -> T {
-        let permit = self.permits
+        let permit = self
+            .permits
             .acquire()
             .await
             .expect("AsyncDeque semaphore was closed while the queue was still in use");
 
         permit.forget();
 
-        let mut lock = self.deque.lock().await;
+        let mut lock = self.deque.lock();
         lock.pop_front().unwrap()
     }
 
     /// Attempts to pop an item from the queue, returning None if there are no items.
-    pub async fn try_pop(&self) -> Option<T> {
-        self.permits
-            .try_acquire()
-            .map_or(None, |p| {
-                p.forget();
-                Some(())
-            })?;
+    pub fn try_pop(&self) -> Option<T> {
+        self.permits.try_acquire().map_or(None, |p| {
+            p.forget();
+            Some(())
+        })?;
 
-        let mut lock = self.deque.lock().await;
+        let mut lock = self.deque.lock();
         Some(lock.pop_front().unwrap())
     }
 
     /// Pushes an item into the queue.
-    pub async fn push(&self, item: T) {
+    pub fn push(&self, item: T) {
         {
-            let mut lock = self.deque.lock().await;
+            let mut lock = self.deque.lock();
             lock.push_back(item);
         }
 

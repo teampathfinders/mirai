@@ -1,7 +1,7 @@
-use crate::raknet::Reliability;
-use bytes::BytesMut;
 use crate::error::VexResult;
 use crate::raknet::packets::{Decodable, Encodable};
+use crate::raknet::Reliability;
+use bytes::BytesMut;
 
 pub struct FragmentInfo {
     /// Unique ID of the compound
@@ -44,7 +44,10 @@ pub struct Frame {
 }
 
 impl Decodable for Frame {
-    fn decode(mut buffer: BytesMut) -> VexResult<Self> where Self: Sized {
+    fn decode(mut buffer: BytesMut) -> VexResult<Self>
+    where
+        Self: Sized,
+    {
         todo!("Frame decoder implementation")
     }
 }

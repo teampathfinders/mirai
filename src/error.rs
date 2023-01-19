@@ -21,6 +21,13 @@ macro_rules! vex_assert {
     };
 }
 
+#[macro_export]
+macro_rules! vex_error {
+    ($error_type: ident, $content: expr) => {
+        $crate::error::VexError::$error_type($content.to_string())
+    };
+}
+
 #[derive(Debug, Error)]
 pub enum VexError {
     /// An assertion has failed.

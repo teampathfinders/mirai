@@ -1,5 +1,5 @@
 use crate::error::VexResult;
-use crate::raknet::packets::{Decodable};
+use crate::raknet::packets::Decodable;
 use crate::vex_assert;
 use bytes::{Buf, BytesMut};
 

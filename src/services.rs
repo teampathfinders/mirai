@@ -7,9 +7,10 @@ use crate::raknet::packets::{
 use crate::raknet::SessionController;
 use crate::util::AsyncDeque;
 use bytes::BytesMut;
+use parking_lot::RwLock;
 use rand::Rng;
 use std::net::{Ipv4Addr, Ipv6Addr, SocketAddrV4};
-use std::sync::{Arc, RwLock};
+use std::sync::Arc;
 use tokio::net::UdpSocket;
 use tokio::signal;
 use tokio_util::sync::CancellationToken;
@@ -65,7 +66,7 @@ impl ServerInstance {
             )?),
             global_token,
         };
-        server.refresh_metadata("Default description")?;
+        server.refresh_metadata("Default description");
 
         Ok(Arc::new(server))
     }
@@ -84,6 +85,7 @@ impl ServerInstance {
             tokio::spawn(async move { controller.v4_sender_task().await })
         };
 
+        tracing::info!("All services running");
         let _ = tokio::join!(receiver_task, sender_task);
 
         Ok(())
@@ -99,7 +101,6 @@ impl ServerInstance {
         let id = packet
             .packet_id()
             .ok_or(VexError::InvalidRequest("Packet is empty".to_string()))?;
-        tracing::info!("{id:0x?}");
 
         match id {
             UnconnectedPing::ID => self.handle_unconnected_ping(packet).await?,
@@ -117,7 +118,7 @@ impl ServerInstance {
         let pong = UnconnectedPong {
             time: ping.time,
             server_guid: self.guid,
-            metadata: self.metadata()?,
+            metadata: self.metadata(),
         }
         .encode()?;
 
@@ -155,7 +156,8 @@ impl ServerInstance {
         }
         .encode()?;
 
-        self.session_controller.add_session(packet.address, request.client_guid);
+        self.session_controller
+            .add_session(packet.address, request.client_guid);
         self.ipv4_socket
             .send_to(reply.as_ref(), packet.address)
             .await?;
@@ -165,8 +167,6 @@ impl ServerInstance {
 
     /// Receives packets from IPv4 clients and adds them to the receive queue
     async fn v4_receiver_task(self: Arc<Self>) {
-        tracing::info!("Inward v4 service online");
-
         let mut receive_buffer = [0u8; RECV_BUF_SIZE];
 
         loop {
@@ -197,23 +197,25 @@ impl ServerInstance {
                 tokio::spawn(async move {
                     match controller.handle_offline_packet(raw_packet).await {
                         Ok(_) => (),
-                        Err(e) => tracing::error!(
-                            "Error occurred while processing offline packet: {e:?}"
-                        )
+                        Err(e) => {
+                            tracing::error!("Error occurred while processing offline packet: {e:?}")
+                        }
                     }
                 });
             } else {
-                todo!("Send packet to session");
+                match self.session_controller.forward_packet(raw_packet) {
+                    Ok(_) => (),
+                    Err(e) => {
+                        tracing::error!("{}", e.to_string());
+                        continue;
+                    }
+                }
             }
         }
-
-        tracing::info!("Inward v4 service shut down");
     }
 
     /// Sends packets from the send queue
     async fn v4_sender_task(self: Arc<Self>) {
-        tracing::info!("Outward v4 service online");
-
         loop {
             let task = tokio::select! {
                 _ = self.global_token.cancelled() => break,
@@ -227,11 +229,9 @@ impl ServerInstance {
                 }
             }
         }
-
-        tracing::info!("Outward v4 service shut down");
     }
 
-    fn refresh_metadata(&self, description: &str) -> VexResult<()> {
+    fn refresh_metadata(&self, description: &str) {
         let new_id = format!(
             "MCPE;Vex Dedicated Server;{};{};{};{};{};{};Survival;1;{};{};",
             NETWORK_VERSION,
@@ -247,25 +247,21 @@ impl ServerInstance {
             19133
         );
 
-        let mut lock = self.metadata.write()?;
+        let mut lock = self.metadata.write();
         *lock = new_id;
-
-        Ok(())
     }
 
-    fn metadata(&self) -> VexResult<String> {
-        let lock = self.metadata.read()?;
-        Ok((*lock).clone())
+    #[inline]
+    fn metadata(&self) -> String {
+        (*self.metadata.read()).clone()
     }
 
     /// Register handler to shut down server on Ctrl-C signal
     fn register_shutdown_handler(token: CancellationToken) {
-        tracing::info!("Registered shutdown handler");
-
         tokio::spawn(async move {
             tokio::select! {
                 _ = signal::ctrl_c() => {
-                    tracing::info!("Ctrl-C detected, token cancelled, shutting down services...");
+                    tracing::info!("Shutting down services...");
                     token.cancel();
                 },
                 _ = token.cancelled() => {
