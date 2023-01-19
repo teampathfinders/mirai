@@ -81,18 +81,18 @@ impl Frame {
         let length = buffer.get_u16() / 8;
 
         let mut reliable_index = 0;
-        if reliability.reliable() {
+        if reliability.is_reliable() {
             reliable_index = buffer.get_u24_le();
         }
 
         let mut sequence_index = 0;
-        if reliability.sequenced() {
+        if reliability.is_sequenced() {
             sequence_index = buffer.get_u24_le();
         }
 
         let mut order_index = 0;
         let mut order_channel = 0;
-        if reliability.ordered() {
+        if reliability.is_ordered() {
             order_index = buffer.get_u24_le();
             order_channel = buffer.get_u8();
         }

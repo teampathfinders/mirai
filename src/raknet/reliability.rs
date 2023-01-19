@@ -52,17 +52,17 @@ impl TryFrom<u8> for Reliability {
 
 impl Reliability {
     /// Returns whether this reliability is reliable.
-    pub fn reliable(self) -> bool {
+    pub fn is_reliable(self) -> bool {
         !matches!(self, Unreliable | UnreliableSequenced)
     }
 
     /// Returns whether this reliability is ordered.
-    pub fn ordered(self) -> bool {
+    pub fn is_ordered(self) -> bool {
         matches!(self, ReliableOrdered)
     }
 
     /// Returns whether this reliability is sequenced.
-    pub fn sequenced(self) -> bool {
+    pub fn is_sequenced(self) -> bool {
         matches!(self, UnreliableSequenced | ReliableSequenced)
     }
 }

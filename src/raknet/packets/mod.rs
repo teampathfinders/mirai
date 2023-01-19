@@ -1,3 +1,4 @@
+mod acknowledgements;
 mod client_to_server_handshake;
 mod connection_request;
 mod connection_request_accepted;
@@ -19,6 +20,7 @@ mod unconnected_ping;
 mod unconnected_pong;
 
 pub use crate::raknet::packet::*;
+pub use acknowledgements::*;
 pub use connection_request::*;
 pub use connection_request_accepted::*;
 pub use new_incoming_connection::*;

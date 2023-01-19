@@ -10,7 +10,7 @@ use std::sync::Arc;
 use std::time::{Duration, Instant};
 use tokio_util::sync::CancellationToken;
 use crate::raknet::{Frame, FrameSet};
-use crate::raknet::packets::Decodable;
+use crate::raknet::packets::{Ack, Decodable, Nack};
 
 const INTERNAL_TICK_INTERVAL: Duration = Duration::from_millis(1000 / 20);
 const TICK_INTERVAL: Duration = Duration::from_millis(1000 / 20);
@@ -75,7 +75,7 @@ impl Session {
         session
     }
 
-    async fn process_packet(self: &Arc<Self>) -> VexResult<()> {
+    async fn process_packet(&self) -> VexResult<()> {
         let task = tokio::select! {
             _ = self.active.cancelled() => {
                 return Ok(())
@@ -84,10 +84,28 @@ impl Session {
         };
         *self.last_update.write() = Instant::now();
 
-        let decoded = FrameSet::decode(task);
-        tracing::info!("{decoded:?}");
+        match *task.first().unwrap() {
+            Ack::ID => self.handle_ack(task).await,
+            Nack::ID => self.handle_nack(task).await,
+            _ => self.handle_frame_set(task).await
+        }
+    }
+
+    async fn handle_frame_set(&self, task: BytesMut) -> VexResult<()> {
+        let frame_set = FrameSet::decode(task)?;
+        for frame in &frame_set.frames {
+
+        }
 
         Ok(())
+    }
+
+    async fn handle_ack(&self, task: BytesMut) -> VexResult<()> {
+        todo!("Handle ack");
+    }
+
+    async fn handle_nack(&self, task: BytesMut) -> VexResult<()> {
+        todo!("Handle nack");
     }
 
     /// Performs tasks not related to packet processing

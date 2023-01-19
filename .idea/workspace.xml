@@ -15,11 +15,11 @@
     <cargoProject FILE="$PROJECT_DIR$/Cargo.toml" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="eb8ce776-e64a-444b-a034-2036d6cbe18e" name="Changes" comment="Implemented u24 deserialisation">
+    <list default="true" id="eb8ce776-e64a-444b-a034-2036d6cbe18e" name="Changes" comment="Implemented frame set decoder">
+      <change afterPath="$PROJECT_DIR$/src/raknet/packets/acknowledgements.rs" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/raknet/frame.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/raknet/frame.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/raknet/packets/open_connection_request1.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/raknet/packets/open_connection_request1.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/raknet/packets/open_connection_request2.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/raknet/packets/open_connection_request2.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/raknet/packets/mod.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/raknet/packets/mod.rs" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/raknet/reliability.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/raknet/reliability.rs" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/raknet/sessions.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/raknet/sessions.rs" afterDir="false" />
     </list>
@@ -70,7 +70,7 @@
     "node.js.selected.package.tslint": "(autodetect)",
     "nodejs_package_manager_path": "npm",
     "org.rust.cargo.project.model.PROJECT_DISCOVERY": "true",
-    "settings.editor.selected.configurable": "MakefileSettings",
+    "settings.editor.selected.configurable": "language.rust.cargo.check",
     "vue.rearranger.settings.migration": "true"
   }
 }]]></component>
@@ -191,7 +191,8 @@
   <component name="VcsManagerConfiguration">
     <MESSAGE value="Working on session ticker and processor" />
     <MESSAGE value="Implemented u24 deserialisation" />
-    <option name="LAST_COMMIT_MESSAGE" value="Implemented u24 deserialisation" />
+    <MESSAGE value="Implemented frame set decoder" />
+    <option name="LAST_COMMIT_MESSAGE" value="Implemented frame set decoder" />
   </component>
   <component name="XSLT-Support.FileAssociations.UIState">
     <expand />
