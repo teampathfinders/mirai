@@ -85,6 +85,7 @@ impl Session {
         *self.last_update.write() = Instant::now();
 
         let decoded = FrameSet::decode(task);
+        tracing::info!("{decoded:?}");
 
         Ok(())
     }

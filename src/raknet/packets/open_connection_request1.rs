@@ -27,7 +27,7 @@ impl Decodable for OpenConnectionRequest1 {
     fn decode(mut buffer: BytesMut) -> VexResult<Self> {
         vex_assert!(buffer.get_u8() == Self::ID);
 
-        buffer.get_u128(); // Skip magic
+        buffer.advance(16); // Skip magic
         let protocol_version = buffer.get_u8();
         let mtu = buffer.len() as u16 - 18 + 46; // Size of padding + 46
 

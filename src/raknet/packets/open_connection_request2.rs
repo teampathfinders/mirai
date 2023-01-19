@@ -22,7 +22,7 @@ impl Decodable for OpenConnectionRequest2 {
     fn decode(mut buffer: BytesMut) -> VexResult<Self> {
         vex_assert!(buffer.get_u8() == Self::ID);
 
-        buffer.get_u128(); // Skip magic
+        buffer.advance(16); // Skip magic
         buffer.get_addr()?; // Skip server address
         let mtu = buffer.get_u16();
         let client_guid = buffer.get_i64();

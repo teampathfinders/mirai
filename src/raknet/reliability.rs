@@ -43,7 +43,7 @@ impl TryFrom<u8> for Reliability {
             4 => ReliableSequenced,
             _ => {
                 return Err(VexError::InvalidRequest(
-                    "Invalid reliability ID".to_string(),
+                    format!("Invalid reliability ID {value}")
                 ))
             }
         })
