@@ -1,5 +1,6 @@
 use bytes::BytesMut;
 use std::net::SocketAddr;
+use crate::raknet::FRAME_BIT_FLAG;
 
 #[derive(Debug)]
 pub struct RawPacket {
@@ -10,7 +11,7 @@ pub struct RawPacket {
 impl RawPacket {
     #[inline]
     pub fn is_offline_packet(&self) -> bool {
-        self.buffer.first().map_or(false, |f| f & 0x80 == 0)
+        self.buffer.first().map_or(false, |f| f & FRAME_BIT_FLAG == 0)
     }
 
     #[inline]

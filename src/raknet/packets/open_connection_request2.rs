@@ -1,6 +1,6 @@
 use crate::error::VexResult;
 use crate::raknet::packets::Decodable;
-use crate::util::ReadAddress;
+use crate::util::ReadExtensions;
 use crate::vex_assert;
 use bytes::{Buf, BytesMut};
 

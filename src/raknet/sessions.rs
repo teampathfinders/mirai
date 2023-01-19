@@ -9,6 +9,8 @@ use std::net::SocketAddr;
 use std::sync::Arc;
 use std::time::{Duration, Instant};
 use tokio_util::sync::CancellationToken;
+use crate::raknet::{Frame, FrameSet};
+use crate::raknet::packets::Decodable;
 
 const INTERNAL_TICK_INTERVAL: Duration = Duration::from_millis(1000 / 20);
 const TICK_INTERVAL: Duration = Duration::from_millis(1000 / 20);
@@ -80,9 +82,10 @@ impl Session {
             },
             task = self.queue.pop() => task
         };
-        // *self.last_update.write() = Instant::now();
+        *self.last_update.write() = Instant::now();
 
-        tracing::info!("New packet received");
+        let decoded = FrameSet::decode(task);
+
         Ok(())
     }
 

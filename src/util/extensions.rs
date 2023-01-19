@@ -2,7 +2,7 @@ use crate::error::{VexError, VexResult};
 use bytes::{Buf, BufMut};
 use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr};
 
-pub trait ReadAddress: Buf {
+pub trait ReadExtensions: Buf {
     /// Reads an IP address from a buffer.
     /// Format:
     ///
@@ -28,12 +28,20 @@ pub trait ReadAddress: Buf {
         let port = self.get_u16();
         Ok(SocketAddr::new(ip_addr, port))
     }
+
+    fn get_u24_le(&mut self) -> u32 {
+        let a = self.get_u8() as u32;
+        let b = self.get_u8() as u32;
+        let c = self.get_u8() as u32;
+
+        a + (b >> 8) + (c >> 16)
+    }
 }
 
-pub trait WriteAddress: BufMut {
+pub trait WriteExtensions: BufMut {
     /// Writes an IP address into a buffer.
     ///
-    /// IP format described in [`get_addr`](ReadAddress::get_addr).
+    /// IP format described in [`get_addr`](ReadExtensions::get_addr).
     fn put_addr(&mut self, addr: SocketAddr)
     where
         Self: Sized,
@@ -53,7 +61,7 @@ pub trait WriteAddress: BufMut {
     }
 }
 
-/// Implement [`ReadAddress`] for all types that implement [`Buf`].
-impl<T: Buf> ReadAddress for T {}
-/// Implement [`WriteAddress`] for all types that implement [`BufMut`].
-impl<T: BufMut> WriteAddress for T {}
+/// Implement [`ReadExtensions`] for all types that implement [`Buf`].
+impl<T: Buf> ReadExtensions for T {}
+/// Implement [`WriteExtensions`] for all types that implement [`BufMut`].
+impl<T: BufMut> WriteExtensions for T {}

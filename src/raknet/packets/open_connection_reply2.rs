@@ -1,6 +1,6 @@
 use crate::error::VexResult;
 use crate::raknet::packets::{Encodable, OFFLINE_MESSAGE_DATA};
-use crate::util::WriteAddress;
+use crate::util::WriteExtensions;
 use bytes::{BufMut, BytesMut};
 use std::net::SocketAddr;
 
