@@ -1,5 +1,7 @@
 use crate::error::VexResult;
 use crate::raknet::packet::RawPacket;
+use crate::raknet::packets::{Ack, AckRecord, Decodable, Nack};
+use crate::raknet::{CompoundCollector, Frame, FrameSet};
 use crate::util::AsyncDeque;
 use crate::vex_error;
 use bytes::BytesMut;
@@ -7,10 +9,9 @@ use dashmap::DashMap;
 use parking_lot::RwLock;
 use std::net::SocketAddr;
 use std::sync::Arc;
+use std::sync::atomic::{AtomicU32, Ordering};
 use std::time::{Duration, Instant};
 use tokio_util::sync::CancellationToken;
-use crate::raknet::{CompoundCollector, Frame, FrameSet};
-use crate::raknet::packets::{Ack, Decodable, Nack};
 
 const INTERNAL_TICK_INTERVAL: Duration = Duration::from_millis(1000 / 20);
 const TICK_INTERVAL: Duration = Duration::from_millis(1000 / 20);
@@ -24,6 +25,8 @@ pub struct Session {
     last_update: RwLock<Instant>,
     active: CancellationToken,
 
+    last_sequence: AtomicU32,
+
     compound_collector: CompoundCollector,
     queue: AsyncDeque<BytesMut>,
 }
@@ -35,6 +38,7 @@ impl Session {
             guid: client_guid,
             last_update: RwLock::new(Instant::now()),
             active: CancellationToken::new(),
+            last_sequence: AtomicU32::new(0),
             compound_collector: CompoundCollector::new(),
             queue: AsyncDeque::new(5),
         });
@@ -89,19 +93,46 @@ impl Session {
         match *task.first().unwrap() {
             Ack::ID => self.handle_ack(task).await,
             Nack::ID => self.handle_nack(task).await,
-            _ => self.handle_frame_set(task).await
+            _ => self.handle_frame_set(task).await,
         }
     }
 
     async fn handle_frame_set(&self, task: BytesMut) -> VexResult<()> {
         let frame_set = FrameSet::decode(task)?;
+        self.last_sequence.store(frame_set.sequence_number, Ordering::SeqCst);
+
         for frame in frame_set.frames {
+            if frame.reliability.is_sequenced() && frame.sequence_index < self.last_sequence.load(Ordering::SeqCst) {
+                // Discard packet
+                continue
+            }
+
+            if frame.reliability.is_reliable() {
+                // Send ACK
+                let acknowledgement = Ack {
+                    records: vec![
+                        AckRecord::Single(frame.reliable_index)
+                    ]
+                };
+            }
+
+            if frame.reliability.is_ordered() {
+                // Add packet to order queue
+            }
+
             if frame.is_compound {
-                self.compound_collector.insert(frame);
+                match self.compound_collector.insert(frame) {
+                    Some(p) => self.handle_packet(p).await?,
+                    None => ()
+                }
             }
         }
 
         Ok(())
+    }
+
+    async fn handle_packet(&self, task: BytesMut) -> VexResult<()> {
+
     }
 
     async fn handle_ack(&self, task: BytesMut) -> VexResult<()> {

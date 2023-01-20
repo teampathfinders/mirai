@@ -15,11 +15,16 @@
     <cargoProject FILE="$PROJECT_DIR$/Cargo.toml" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="eb8ce776-e64a-444b-a034-2036d6cbe18e" name="Changes" comment="Implemented acknowledgement packets.&#10;Working on frame set processing">
-      <change afterPath="$PROJECT_DIR$/src/raknet/compound_collector.rs" afterDir="false" />
+    <list default="true" id="eb8ce776-e64a-444b-a034-2036d6cbe18e" name="Changes" comment="Implemented compound collector">
+      <change afterPath="$PROJECT_DIR$/src/raknet/order_channel.rs" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/raknet/packets/incompatible_protocol.rs" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/raknet/compound_collector.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/raknet/compound_collector.rs" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/raknet/frame.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/raknet/frame.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/raknet/mod.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/raknet/mod.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/raknet/packet.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/raknet/packet.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/raknet/packets/acknowledgements.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/raknet/packets/acknowledgements.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/raknet/packets/mod.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/raknet/packets/mod.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/raknet/reliability.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/raknet/reliability.rs" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/raknet/sessions.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/raknet/sessions.rs" afterDir="false" />
     </list>
     <list id="5ea80ab6-242d-4220-8770-a42d5b241561" name="Changes by EJADA_A008" comment="" />
@@ -216,7 +221,8 @@
     <MESSAGE value="Implemented u24 deserialisation" />
     <MESSAGE value="Implemented frame set decoder" />
     <MESSAGE value="Implemented acknowledgement packets.&#10;Working on frame set processing" />
-    <option name="LAST_COMMIT_MESSAGE" value="Implemented acknowledgement packets.&#10;Working on frame set processing" />
+    <MESSAGE value="Implemented compound collector" />
+    <option name="LAST_COMMIT_MESSAGE" value="Implemented compound collector" />
   </component>
   <component name="XSLT-Support.FileAssociations.UIState">
     <expand />

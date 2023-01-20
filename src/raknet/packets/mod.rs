@@ -18,8 +18,10 @@ mod start_game;
 mod traits;
 mod unconnected_ping;
 mod unconnected_pong;
+mod incompatible_protocol;
 
 pub use crate::raknet::packet::*;
+pub use incompatible_protocol::*;
 pub use acknowledgements::*;
 pub use connection_request::*;
 pub use connection_request_accepted::*;

@@ -1,10 +1,10 @@
-use std::io::Read;
 use crate::error::VexResult;
 use crate::raknet::packets::{Decodable, Encodable};
 use crate::raknet::Reliability;
-use bytes::{Buf, BufMut, BytesMut};
-use crate::util::{ReadExtensions};
+use crate::util::ReadExtensions;
 use crate::vex_assert;
+use bytes::{Buf, BufMut, BytesMut};
+use std::io::Read;
 
 pub const FRAME_BIT_FLAG: u8 = 0x80;
 pub const COMPOUND_BIT_FLAG: u8 = 0b0001;
@@ -12,7 +12,7 @@ pub const COMPOUND_BIT_FLAG: u8 = 0b0001;
 #[derive(Debug)]
 pub struct FrameSet {
     pub sequence_number: u32,
-    pub frames: Vec<Frame>
+    pub frames: Vec<Frame>,
 }
 
 impl Decodable for FrameSet {
@@ -28,7 +28,8 @@ impl Decodable for FrameSet {
         // }
 
         Ok(Self {
-            sequence_number, frames
+            sequence_number,
+            frames,
         })
     }
 }

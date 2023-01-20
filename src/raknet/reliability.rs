@@ -42,9 +42,9 @@ impl TryFrom<u8> for Reliability {
             3 => ReliableOrdered,
             4 => ReliableSequenced,
             _ => {
-                return Err(VexError::InvalidRequest(
-                    format!("Invalid reliability ID {value}")
-                ))
+                return Err(VexError::InvalidRequest(format!(
+                    "Invalid reliability ID {value}"
+                )))
             }
         })
     }
@@ -58,7 +58,7 @@ impl Reliability {
 
     /// Returns whether this reliability is ordered.
     pub fn is_ordered(self) -> bool {
-        matches!(self, ReliableOrdered)
+        matches!(self, ReliableOrdered | ReliableSequenced | UnreliableSequenced)
     }
 
     /// Returns whether this reliability is sequenced.
