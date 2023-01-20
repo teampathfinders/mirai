@@ -6,6 +6,9 @@ mod raknet;
 mod services;
 mod util;
 
+#[cfg(test)]
+mod test;
+
 use std::sync::atomic::{AtomicU16, Ordering};
 
 use tokio::runtime;

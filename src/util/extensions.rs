@@ -34,7 +34,7 @@ pub trait ReadExtensions: Buf {
         let b = self.get_u8() as u32;
         let c = self.get_u8() as u32;
 
-        a + (b >> 8) + (c >> 16)
+        a | (b << 8) | (c << 16)
     }
 }
 
@@ -58,6 +58,18 @@ pub trait WriteExtensions: BufMut {
         }
 
         self.put_u16(addr.port());
+    }
+
+    fn put_u24_le(&mut self, value: u32) {
+        assert!(value < 2u32.pow(24));
+
+        let a = value & 0xff;
+        let b = (value >> 8) & 0xff;
+        let c = (value >> 16) & 0xff;
+
+        self.put_u8(a as u8);
+        self.put_u8(b as u8);
+        self.put_u8(c as u8);
     }
 }
 

@@ -1,6 +1,7 @@
 use bytes::{BufMut, BytesMut};
 use crate::error::VexResult;
 use crate::raknet::packets::Encodable;
+use crate::util::WriteExtensions;
 
 #[derive(Debug)]
 pub enum AckRecord {
@@ -27,12 +28,12 @@ impl Encodable for Ack {
             match record {
                 AckRecord::Single(id) => {
                     buffer.put_u8(1); // Is single
-                    buffer.put_u24_le(id);
+                    buffer.put_u24_le(*id);
                 },
                 AckRecord::Range(start, end) => {
                     buffer.put_u8(0); // Is range
-                    buffer.put_u24_le(start);
-                    buffer.put_u24_le(end);
+                    buffer.put_u24_le(*start);
+                    buffer.put_u24_le(*end);
                 }
             }
         }
