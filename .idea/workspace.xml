@@ -15,13 +15,18 @@
     <cargoProject FILE="$PROJECT_DIR$/Cargo.toml" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="eb8ce776-e64a-444b-a034-2036d6cbe18e" name="Changes" comment="Implemented ACK encoder and IncompatibleProtocol">
-      <change afterPath="$PROJECT_DIR$/src/test.rs" afterDir="false" />
+    <list default="true" id="eb8ce776-e64a-444b-a034-2036d6cbe18e" name="Changes" comment="Implemented put_u24_le and extension tests">
+      <change afterPath="$PROJECT_DIR$/.idea/codeStyles/codeStyleConfig.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/.idea/copyright/Pathfinders.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/.idea/copyright/profiles_settings.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/main.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/raknet/compound_collector.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/raknet/compound_collector.rs" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/raknet/packets/acknowledgements.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/raknet/packets/acknowledgements.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/raknet/packets/incompatible_protocol.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/raknet/packets/incompatible_protocol.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/raknet/packets/mod.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/raknet/packets/mod.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/raknet/reliability.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/raknet/reliability.rs" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/raknet/sessions.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/raknet/sessions.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/services.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/services.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/test.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/test.rs" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/util/extensions.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/util/extensions.rs" afterDir="false" />
     </list>
     <list id="5ea80ab6-242d-4220-8770-a42d5b241561" name="Changes by EJADA_A008" comment="" />
@@ -70,9 +75,11 @@
   <component name="PropertiesComponent"><![CDATA[{
   "keyToString": {
     "ASKED_ADD_EXTERNAL_FILES": "true",
+    "ASKED_SHARE_PROJECT_CONFIGURATION_FILES": "true",
     "RunOnceActivity.OpenProjectViewOnStart": "true",
     "RunOnceActivity.ShowReadmeOnStart": "true",
     "RunOnceActivity.cidr.known.project.marker": "true",
+    "SHARE_PROJECT_CONFIGURATION_FILES": "true",
     "WebServerToolWindowFactoryState": "false",
     "cf.first.check.clang-format": "false",
     "cidr.known.project.marker": "true",
@@ -84,7 +91,7 @@
     "node.js.selected.package.tslint": "(autodetect)",
     "nodejs_package_manager_path": "npm",
     "org.rust.cargo.project.model.PROJECT_DISCOVERY": "true",
-    "settings.editor.selected.configurable": "language.rust.cargo.check",
+    "settings.editor.selected.configurable": "project.propVCSSupport.CommitDialog",
     "vue.rearranger.settings.migration": "true"
   }
 }]]></component>
@@ -202,6 +209,9 @@
   <component name="TypeScriptGeneratedFilesManager">
     <option name="version" value="3" />
   </component>
+  <component name="UpdateCopyrightCheckinHandler">
+    <option name="UPDATE_COPYRIGHT" value="true" />
+  </component>
   <component name="Vcs.Log.Tabs.Properties">
     <option name="TAB_STATES">
       <map>
@@ -214,13 +224,19 @@
     </option>
   </component>
   <component name="VcsManagerConfiguration">
+    <option name="CHECK_CODE_CLEANUP_BEFORE_PROJECT_COMMIT" value="true" />
+    <option name="CHECK_NEW_TODO" value="false" />
     <MESSAGE value="Working on session ticker and processor" />
     <MESSAGE value="Implemented u24 deserialisation" />
     <MESSAGE value="Implemented frame set decoder" />
     <MESSAGE value="Implemented acknowledgement packets.&#10;Working on frame set processing" />
     <MESSAGE value="Implemented compound collector" />
     <MESSAGE value="Implemented ACK encoder and IncompatibleProtocol" />
-    <option name="LAST_COMMIT_MESSAGE" value="Implemented ACK encoder and IncompatibleProtocol" />
+    <MESSAGE value="Implemented put_u24_le and extension tests" />
+    <option name="LAST_COMMIT_MESSAGE" value="Implemented put_u24_le and extension tests" />
+    <option name="OPTIMIZE_IMPORTS_BEFORE_PROJECT_COMMIT" value="true" />
+    <option name="REFORMAT_BEFORE_PROJECT_COMMIT" value="true" />
+    <option name="REARRANGE_BEFORE_PROJECT_COMMIT" value="true" />
   </component>
   <component name="XSLT-Support.FileAssociations.UIState">
     <expand />

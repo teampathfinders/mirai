@@ -1,6 +1,8 @@
-use crate::error::{VexError, VexResult};
-use bytes::{Buf, BufMut};
 use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr};
+
+use bytes::{Buf, BufMut};
+
+use crate::error::{VexError, VexResult};
 
 pub trait ReadExtensions: Buf {
     /// Reads an IP address from a buffer.

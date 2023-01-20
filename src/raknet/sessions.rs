@@ -1,17 +1,19 @@
-use crate::error::VexResult;
-use crate::raknet::packet::RawPacket;
-use crate::raknet::packets::{Ack, AckRecord, Decodable, Nack};
-use crate::raknet::{CompoundCollector, Frame, FrameSet};
-use crate::util::AsyncDeque;
-use crate::vex_error;
-use bytes::BytesMut;
-use dashmap::DashMap;
-use parking_lot::RwLock;
 use std::net::SocketAddr;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicU32, Ordering};
 use std::time::{Duration, Instant};
+
+use bytes::BytesMut;
+use dashmap::DashMap;
+use parking_lot::RwLock;
 use tokio_util::sync::CancellationToken;
+
+use crate::error::VexResult;
+use crate::raknet::{CompoundCollector, Frame, FrameSet};
+use crate::raknet::packet::RawPacket;
+use crate::raknet::packets::{Ack, AckRecord, Decodable, Nack};
+use crate::util::AsyncDeque;
+use crate::vex_error;
 
 const INTERNAL_TICK_INTERVAL: Duration = Duration::from_millis(1000 / 20);
 const TICK_INTERVAL: Duration = Duration::from_millis(1000 / 20);
@@ -99,20 +101,21 @@ impl Session {
 
     async fn handle_frame_set(&self, task: BytesMut) -> VexResult<()> {
         let frame_set = FrameSet::decode(task)?;
-        self.last_sequence.store(frame_set.sequence_number, Ordering::SeqCst);
+        self.last_sequence
+            .store(frame_set.sequence_number, Ordering::SeqCst);
 
         for frame in frame_set.frames {
-            if frame.reliability.is_sequenced() && frame.sequence_index < self.last_sequence.load(Ordering::SeqCst) {
+            if frame.reliability.is_sequenced()
+                && frame.sequence_index < self.last_sequence.load(Ordering::SeqCst)
+            {
                 // Discard packet
-                continue
+                continue;
             }
 
             if frame.reliability.is_reliable() {
                 // Send ACK
                 let acknowledgement = Ack {
-                    records: vec![
-                        AckRecord::Single(frame.reliable_index)
-                    ]
+                    records: vec![AckRecord::Single(frame.reliable_index)],
                 };
             }
 
@@ -123,7 +126,7 @@ impl Session {
             if frame.is_compound {
                 match self.compound_collector.insert(frame) {
                     Some(p) => self.handle_packet(p).await?,
-                    None => ()
+                    None => (),
                 }
             }
         }

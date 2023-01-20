@@ -1,6 +1,7 @@
-use crate::raknet::Frame;
 use bytes::BytesMut;
 use dashmap::DashMap;
+
+use crate::raknet::Frame;
 
 #[derive(Debug)]
 pub struct CompoundCollector {
@@ -29,7 +30,6 @@ impl CompoundCollector {
 
         let is_complete = !fragment_list.iter().any(|f| f.is_empty());
         if is_complete {
-
             let final_size = fragment_list.iter().fold(0, |acc, f| acc + f.len());
             let mut final_buffer = BytesMut::with_capacity(final_size);
 

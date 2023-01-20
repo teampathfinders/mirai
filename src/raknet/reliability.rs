@@ -1,9 +1,9 @@
+use Reliability::*;
+
 use crate::error::VexError;
 use crate::raknet::Reliability::{
     Reliable, ReliableOrdered, ReliableSequenced, UnreliableSequenced,
 };
-
-use Reliability::*;
 
 /// Describes how reliable transport of this packet should be.
 /// Higher reliability takes more resources, but also has more reliability guarantees.
@@ -58,7 +58,10 @@ impl Reliability {
 
     /// Returns whether this reliability is ordered.
     pub fn is_ordered(self) -> bool {
-        matches!(self, ReliableOrdered | ReliableSequenced | UnreliableSequenced)
+        matches!(
+            self,
+            ReliableOrdered | ReliableSequenced | UnreliableSequenced
+        )
     }
 
     /// Returns whether this reliability is sequenced.

@@ -1,9 +1,10 @@
 use bytes::{BufMut, BytesMut};
+
 use crate::error::VexResult;
 use crate::raknet::packets::{Encodable, OFFLINE_MESSAGE_DATA, RAKNET_VERSION};
 
 pub struct IncompatibleProtocol {
-    pub server_guid: i64
+    pub server_guid: i64,
 }
 
 impl IncompatibleProtocol {
