@@ -1,5 +1,14 @@
 #![allow(dead_code)]
 
+use std::sync::atomic::{AtomicU16, Ordering};
+
+use tokio::runtime;
+
+use error::VexResult;
+
+use crate::config::ServerConfig;
+use crate::services::ServerInstance;
+
 mod config;
 mod error;
 mod raknet;
@@ -9,17 +18,11 @@ mod util;
 #[cfg(test)]
 mod test;
 
-use std::sync::atomic::{AtomicU16, Ordering};
-
-use tokio::runtime;
-
-use crate::config::ServerConfig;
-use crate::services::ServerInstance;
-use error::VexResult;
-
+/// Default Minecraft IPv4 port
 const IPV4_PORT: u16 = 19132;
+/// Default Minecraft IPv6 port
 const IPV6_PORT: u16 = 19133;
-
+/// Default configuration
 const CONFIG: ServerConfig = ServerConfig {
     max_players: 10,
     ipv4_port: 19132,
@@ -43,6 +46,7 @@ async fn app_main() -> VexResult<()> {
     Ok(())
 }
 
+/// Program entrypoint
 fn main() -> VexResult<()> {
     init_logging();
 

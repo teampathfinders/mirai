@@ -5,18 +5,24 @@ use crate::raknet::packets::{Decodable, Encodable};
 use crate::util::{ReadExtensions, WriteExtensions};
 use crate::vex_assert;
 
+/// Record containing IDs of confirmed packets.
 #[derive(Debug)]
 pub enum AckRecord {
+    /// A single ID
     Single(u32),
+    /// Range of IDs
     Range(u32, u32),
 }
 
+/// Confirms that packets have been received.
 #[derive(Debug)]
 pub struct Ack {
+    /// Records containing IDs of received packets.
     pub records: Vec<AckRecord>,
 }
 
 impl Ack {
+    /// Unique identifier for this packet.
     pub const ID: u8 = 0xc0;
 }
 
@@ -56,10 +62,7 @@ impl Decodable for Ack {
             if is_range {
                 records.push(AckRecord::Single(buffer.get_u24_le()));
             } else {
-                records.push(AckRecord::Range(
-                    buffer.get_u24_le(),
-                    buffer.get_u24_le(),
-                ));
+                records.push(AckRecord::Range(buffer.get_u24_le(), buffer.get_u24_le()));
             }
         }
 
@@ -67,12 +70,15 @@ impl Decodable for Ack {
     }
 }
 
+/// Notifiers the recipient of possibly lost packets.
 #[derive(Debug)]
 pub struct Nack {
+    /// Records containing the missing IDs
     pub records: Vec<AckRecord>,
 }
 
 impl Nack {
+    /// Unique identifier of this packet.
     pub const ID: u8 = 0xa0;
 }
 
@@ -112,10 +118,7 @@ impl Decodable for Nack {
             if is_range {
                 records.push(AckRecord::Single(buffer.get_u24_le()));
             } else {
-                records.push(AckRecord::Range(
-                    buffer.get_u24_le(),
-                    buffer.get_u24_le(),
-                ));
+                records.push(AckRecord::Range(buffer.get_u24_le(), buffer.get_u24_le()));
             }
         }
 

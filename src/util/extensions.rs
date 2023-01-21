@@ -4,6 +4,9 @@ use bytes::{Buf, BufMut};
 
 use crate::error::{VexError, VexResult};
 
+/// Provides extra functions for byte buffers.
+/// This trait implements read functions for exotic formats and
+/// IP addresses that the default [`Bytes`](bytes::Bytes) implementation does not provide.
 pub trait ReadExtensions: Buf {
     /// Reads an IP address from a buffer.
     /// Format:
@@ -31,6 +34,7 @@ pub trait ReadExtensions: Buf {
         Ok(SocketAddr::new(ip_addr, port))
     }
 
+    /// Reads a 24-bit unsigned little-endian integer from the buffer.
     fn get_u24_le(&mut self) -> u32 {
         let a = self.get_u8() as u32;
         let b = self.get_u8() as u32;
@@ -40,6 +44,9 @@ pub trait ReadExtensions: Buf {
     }
 }
 
+/// Provides extra functions for byte buffers.
+/// This trait implements write functions for exotic formats and
+/// IP addresses that the default [`BytesMut`](bytes::BytesMut) implementation does not provide.
 pub trait WriteExtensions: BufMut {
     /// Writes an IP address into a buffer.
     ///
@@ -62,6 +69,7 @@ pub trait WriteExtensions: BufMut {
         self.put_u16(addr.port());
     }
 
+    /// Writes a 24-bit unsigned little-endian integer to the buffer.
     fn put_u24_le(&mut self, value: u32) {
         assert!(value < 2u32.pow(24));
 

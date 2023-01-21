@@ -1,31 +1,36 @@
+use std::io::Read;
+
+use bytes::{Buf, BufMut, BytesMut};
+
 use crate::error::VexResult;
 use crate::raknet::packets::{Decodable, Encodable};
 use crate::raknet::Reliability;
 use crate::util::ReadExtensions;
 use crate::vex_assert;
-use bytes::{Buf, BufMut, BytesMut};
-use std::io::Read;
 
+/// Bit flag indicating that the packet is encapsulated in a frame.
 pub const FRAME_BIT_FLAG: u8 = 0x80;
+/// Bit flag indicating that the packet is fragmented.
 pub const COMPOUND_BIT_FLAG: u8 = 0b0001;
 
+/// Contains a set of frames.
 #[derive(Debug)]
-pub struct FrameSet {
+pub struct FrameBatch {
     pub sequence_number: u32,
+    /// Individual frames
     pub frames: Vec<Frame>,
 }
 
-impl Decodable for FrameSet {
+impl Decodable for FrameBatch {
     fn decode(mut buffer: BytesMut) -> VexResult<Self> {
         vex_assert!(buffer.get_u8() & 0x80 != 0);
 
         let sequence_number = buffer.get_u24_le();
         let mut frames = Vec::new();
 
-        frames.push(Frame::decode(&mut buffer)?);
-        // while buffer.has_remaining() {
-        //     frames.push(Frame::decode(&mut buffer)?);
-        // }
+        while buffer.has_remaining() {
+            frames.push(Frame::decode(&mut buffer)?);
+        }
 
         Ok(Self {
             sequence_number,
@@ -34,12 +39,15 @@ impl Decodable for FrameSet {
     }
 }
 
-impl Encodable for FrameSet {
+impl Encodable for FrameBatch {
     fn encode(&self) -> VexResult<BytesMut> {
         todo!("FrameSet encoder");
     }
 }
 
+/// Encapsulates game packets.
+///
+/// A frame provides extra metadata for the Raknet reliability layer.
 #[derive(Debug)]
 pub struct Frame {
     /// Reliability of this packet.

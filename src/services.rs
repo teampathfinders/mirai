@@ -1,21 +1,25 @@
-use crate::config::{ServerConfig, CLIENT_VERSION_STRING, NETWORK_VERSION};
+use std::net::{Ipv4Addr, Ipv6Addr, SocketAddrV4};
+use std::sync::Arc;
+
+use bytes::BytesMut;
+use parking_lot::RwLock;
+use rand::Rng;
+use tokio::net::UdpSocket;
+use tokio::signal;
+use tokio_util::sync::CancellationToken;
+
+use crate::config::{CLIENT_VERSION_STRING, NETWORK_VERSION, ServerConfig};
 use crate::error::{VexError, VexResult};
 use crate::raknet::packets::{
     Decodable, Encodable, OpenConnectionReply1, OpenConnectionReply2, OpenConnectionRequest1,
     OpenConnectionRequest2, RawPacket, UnconnectedPing, UnconnectedPong,
 };
-use crate::raknet::SessionController;
+use crate::raknet::SessionTracker;
 use crate::util::AsyncDeque;
-use bytes::BytesMut;
-use parking_lot::RwLock;
-use rand::Rng;
-use std::net::{Ipv4Addr, Ipv6Addr, SocketAddrV4};
-use std::sync::Arc;
-use tokio::net::UdpSocket;
-use tokio::signal;
-use tokio_util::sync::CancellationToken;
 
+/// Local IPv4 address
 pub const IPV4_LOCAL_ADDR: Ipv4Addr = Ipv4Addr::new(127, 0, 0, 1);
+/// Local IPv6 address
 pub const IPV6_LOCAL_ADDR: Ipv6Addr = Ipv6Addr::new(0, 0, 0, 0, 0, 0, 0, 1);
 
 const RECV_BUF_SIZE: usize = 4096;
@@ -38,7 +42,7 @@ pub struct ServerInstance {
     /// All services listen to this token to determine whether they should shut down.
     global_token: CancellationToken,
     /// Service that manages all player sessions.
-    session_controller: Arc<SessionController>,
+    session_controller: Arc<SessionTracker>,
 }
 
 impl ServerInstance {
@@ -60,7 +64,7 @@ impl ServerInstance {
             inward_queue: Arc::new(AsyncDeque::new(10)),
             outward_queue: Arc::new(AsyncDeque::new(10)),
 
-            session_controller: Arc::new(SessionController::new(
+            session_controller: Arc::new(SessionTracker::new(
                 global_token.clone(),
                 config.max_players,
             )?),

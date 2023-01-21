@@ -21,6 +21,15 @@ macro_rules! vex_assert {
     };
 }
 
+/// Shorthand used to create error messages
+///
+/// # Example
+/// ```
+/// fn fail() -> VexResult<()> {
+///     return Err(vex_error!(InvalidRequest, "Received an invalid request!"))
+/// }
+/// ```
+///
 #[macro_export]
 macro_rules! vex_error {
     ($error_type: ident, $content: expr) => {
@@ -28,6 +37,7 @@ macro_rules! vex_error {
     };
 }
 
+/// Custom error type
 #[derive(Debug, Error)]
 pub enum VexError {
     /// An assertion has failed.
