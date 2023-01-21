@@ -7,11 +7,12 @@ use crate::raknet::Reliability::{
 
 /// Describes how reliable transport of this packet should be.
 /// Higher reliability takes more resources, but also has more reliability guarantees.
-#[derive(Debug, PartialEq, Copy, Clone)]
+#[derive(Debug, PartialEq, Copy, Clone, Default)]
 pub enum Reliability {
     /// Send the frame using raw UDP.
     /// These packets can arrive in the wrong order or not arrive at all.
     /// Absolutely no guarantees are made and therefore this is also the least reliable.
+    #[default]
     Unreliable,
     /// Same guarantees as [`Unreliable`],
     /// but this makes sure that old packets are discarded

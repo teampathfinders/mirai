@@ -48,7 +48,7 @@ impl Encodable for FrameBatch {
 /// Encapsulates game packets.
 ///
 /// A frame provides extra metadata for the Raknet reliability layer.
-#[derive(Debug)]
+#[derive(Debug, Default, Clone)]
 pub struct Frame {
     /// Reliability of this packet.
     pub reliability: Reliability,

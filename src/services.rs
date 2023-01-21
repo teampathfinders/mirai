@@ -1,5 +1,6 @@
 use std::net::{Ipv4Addr, Ipv6Addr, SocketAddrV4};
 use std::sync::Arc;
+use std::time::{Duration, SystemTime};
 
 use bytes::BytesMut;
 use parking_lot::RwLock;
@@ -23,6 +24,7 @@ pub const IPV4_LOCAL_ADDR: Ipv4Addr = Ipv4Addr::new(127, 0, 0, 1);
 pub const IPV6_LOCAL_ADDR: Ipv6Addr = Ipv6Addr::new(0, 0, 0, 0, 0, 0, 0, 1);
 
 const RECV_BUF_SIZE: usize = 4096;
+const METADATA_REFRESH_INTERVAL: Duration = Duration::from_secs(2);
 
 /// Global instance that manages all data and services of the server.
 pub struct ServerInstance {
@@ -70,7 +72,6 @@ impl ServerInstance {
             )?),
             global_token,
         };
-        server.refresh_metadata("Default description");
 
         Ok(Arc::new(server))
     }
@@ -89,7 +90,13 @@ impl ServerInstance {
             tokio::spawn(async move { controller.v4_sender_task().await })
         };
 
+        {
+            let controller = self.clone();
+            tokio::spawn(async move { controller.metadata_refresh_task().await });
+        }
+
         tracing::info!("All services running");
+        // The metadata task is not important for shutdown, we don't have to wait for it.
         let _ = tokio::join!(receiver_task, sender_task);
 
         Ok(())
@@ -235,19 +242,26 @@ impl ServerInstance {
         }
     }
 
+    /// Refreshes the server description and player counts on a specified interval.
+    async fn metadata_refresh_task(self: Arc<Self>) {
+        let mut interval = tokio::time::interval(METADATA_REFRESH_INTERVAL);
+        while !self.global_token.is_cancelled() {
+            let description = format!("balls {}", self.session_controller.session_count());
+            self.refresh_metadata(&description);
+            interval.tick().await;
+        }
+    }
+
     fn refresh_metadata(&self, description: &str) {
         let new_id = format!(
-            "MCPE;Vex Dedicated Server;{};{};{};{};{};{};Survival;1;{};{};",
+            "MCPE;{};{};{};{};{};{};Vex Dedicated Server;Survival;1;{};{};",
+            description,
             NETWORK_VERSION,
             CLIENT_VERSION_STRING,
-            // self.session_controller.player_count(),
-            // self.session_controller.max_player_count(),
-            0,
-            10,
+            self.session_controller.session_count(),
+            self.session_controller.max_session_count(),
             self.guid,
-            description,
-            // self.ipv4_port,
-            19132,
+            self.ipv4_port,
             19133
         );
 

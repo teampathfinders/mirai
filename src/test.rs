@@ -3,6 +3,7 @@ use std::net::{IpAddr, SocketAddr};
 use bytes::BytesMut;
 
 use crate::error::VexResult;
+use crate::raknet::{Frame, OrderChannel};
 use crate::services::{IPV4_LOCAL_ADDR, IPV6_LOCAL_ADDR};
 use crate::util::{ReadExtensions, WriteExtensions};
 
@@ -32,4 +33,23 @@ fn read_write_addr() -> VexResult<()> {
     assert_eq!(buffer.get_addr()?, ipv4_test);
     assert_eq!(buffer.get_addr()?, ipv6_test);
     Ok(())
+}
+
+#[test]
+fn order_channel() {
+    let mut test_frame = Frame::default();
+    let mut channel = OrderChannel::new();
+
+    test_frame.order_index = 0;
+    assert!(channel.insert(test_frame.clone()).is_some());
+
+    test_frame.order_index = 2;
+    assert!(channel.insert(test_frame.clone()).is_none());
+
+    test_frame.order_index = 1;
+    let output = channel.insert(test_frame).unwrap();
+
+    assert_eq!(output.len(), 2);
+    assert_eq!(output[0].order_index, 1);
+    assert_eq!(output[1].order_index, 2);
 }
