@@ -16,7 +16,7 @@ use crate::raknet::{
     SendQueue,
 };
 use crate::raknet::packet::RawPacket;
-use crate::raknet::packets::{Ack, AckRecord, ConnectionRequest, Decodable, Encodable, Nack, RaknetDisconnect};
+use crate::raknet::packets::{Ack, AckRecord, ConnectionRequest, ConnectionRequestAccepted, Decodable, Encodable, Nack, RaknetDisconnect};
 use crate::util::AsyncDeque;
 use crate::vex_error;
 
@@ -230,15 +230,13 @@ impl Session {
     async fn process_game_packet(&self, mut task: BytesMut) -> VexResult<()> {
         tracing::info!("Received game packet: {task:?}");
 
-        let packet_id = task.get_u8();
+        let packet_id = *task.first().expect("Game packet buffer was empty");
         match packet_id {
             RaknetDisconnect::ID => {
                 tracing::debug!("Session {:X} requested disconnect", self.guid);
                 self.flag_for_close();
             }
-            ConnectionRequest::ID => {
-                todo!()
-            },
+            ConnectionRequest::ID => self.handle_connection_request(task).await?,
             id => {
                 tracing::info!("ID: {}", id);
                 todo!("Other game packet IDs")
@@ -250,6 +248,19 @@ impl Session {
             Frame::new(Reliability::ReliableOrdered, BytesMut::new()),
         );
 
+        Ok(())
+    }
+
+    async fn handle_connection_request(&self, task: BytesMut) -> VexResult<()> {
+        let request = ConnectionRequest::decode(task)?;
+        let response = ConnectionRequestAccepted {
+            client_address: self.address,
+            request_time: request.time,
+        }.encode()?;
+
+        self.send_queue.insert(SendPriority::Medium, Frame::new(
+            Reliability::Reliable, response,
+        ));
         Ok(())
     }
 

@@ -1,8 +1,18 @@
-use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr};
+use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr, SocketAddrV4};
 
 use bytes::{Buf, BufMut};
+use lazy_static::lazy_static;
 
 use crate::error::{VexError, VexResult};
+
+pub const IPV4_MEM_SIZE: usize = 1 + 4 + 2;
+pub const IPV6_MEM_SIZE: usize = 1 + 16 + 2;
+
+lazy_static! {
+    pub static ref EMPTY_IPV4_ADDRESS: SocketAddr = SocketAddr::V4(SocketAddrV4::new(
+        Ipv4Addr::new(255, 255, 255, 255), 19132
+    ));
+}
 
 /// Provides extra functions for byte buffers.
 /// This trait implements read functions for exotic formats and
