@@ -1,3 +1,4 @@
+use std::io::Read;
 use std::net::SocketAddr;
 use std::sync::{Arc, Weak};
 use std::sync::atomic::{AtomicU32, AtomicU64, Ordering};
@@ -11,7 +12,8 @@ use tokio_util::sync::CancellationToken;
 
 use crate::error::VexResult;
 use crate::raknet::{
-    CompoundCollector, Frame, FrameBatch, OrderChannel, Reliability, SendPriority, SendQueue,
+    CompoundCollector, Frame, FrameBatch, OrderChannel, RecoveryQueue, Reliability, SendPriority,
+    SendQueue,
 };
 use crate::raknet::packet::RawPacket;
 use crate::raknet::packets::{Ack, AckRecord, Decodable, Encodable, Nack, RaknetDisconnect};
@@ -67,6 +69,7 @@ pub struct Session {
     send_queue: SendQueue,
     /// Keeps track of all unprocessed received packets.
     receive_queue: AsyncDeque<BytesMut>,
+    recovery_queue: RecoveryQueue,
 }
 
 impl Session {
@@ -92,6 +95,7 @@ impl Session {
             order_channels: Default::default(),
             send_queue: SendQueue::new(),
             receive_queue: AsyncDeque::new(5),
+            recovery_queue: RecoveryQueue::new(),
         });
 
         // Session ticker
@@ -242,7 +246,9 @@ impl Session {
     ///
     /// This function unregisters the specified packet IDs from the recovery queue.
     async fn process_ack(&self, task: BytesMut) -> VexResult<()> {
-        todo!("Handle ack");
+        let ack = Ack::decode(task)?;
+        self.recovery_queue.confirm(&ack.records);
+        Ok(())
     }
 
     /// Processes a negative acknowledgement received from the client.
@@ -250,7 +256,11 @@ impl Session {
     /// This function makes sure the packet is retrieved from the recovery queue and sent to the
     /// client again.
     async fn process_nack(&self, task: BytesMut) -> VexResult<()> {
-        todo!("Handle nack");
+        let nack = Nack::decode(task)?;
+        let batch = self.recovery_queue.recover(&nack.records);
+
+        self.send_queue.insert_batch(SendPriority::Medium, batch);
+        Ok(())
     }
 
     /// Performs tasks not related to packet processing
@@ -285,28 +295,77 @@ impl Session {
     }
 
     async fn flush_send_queue(&self, tick: u64) -> VexResult<()> {
-        // TODO: Batch packets
-        {
-            let frames = self.send_queue.flush(SendPriority::High);
-            for mut frame in frames {
-                if frame.body.len() + std::mem::size_of::<Frame>() > self.mtu as usize {
-                    todo!("Create compound");
-                }
-                if frame.reliability.is_reliable() {
-                    todo!("Add to recovery queue");
-                }
-                if frame.reliability.is_ordered() {
-                    let order_index =
-                        self.order_channels[frame.order_channel as usize].get_server_index();
-                    frame.order_index = order_index;
-                }
-                if frame.reliability.is_sequenced() {
-                    let sequence_index = self
-                        .last_assigned_sequence_index
-                        .fetch_add(1, Ordering::SeqCst);
-                    frame.sequence_index = sequence_index;
-                }
+        // TODO: Handle errors properly
+        let frames = self.send_queue.flush(SendPriority::High);
+        self.send_frames(frames).await?;
+
+        if tick % 2 == 0 {
+            let frames = self.send_queue.flush(SendPriority::Medium);
+            self.send_frames(frames).await?;
+        }
+
+        if tick % 4 == 0 {
+            let frames = self.send_queue.flush(SendPriority::Low);
+            self.send_frames(frames).await?;
+        }
+
+        Ok(())
+    }
+
+    async fn send_frames(&self, frames: Vec<Frame>) -> VexResult<()> {
+        // TODO: Handle errors properly
+        let max_batch_size = self.mtu as usize - std::mem::size_of::<FrameBatch>();
+        let mut batch = FrameBatch {
+            batch_number: self
+                .last_assigned_batch_number
+                .fetch_add(1, Ordering::SeqCst),
+            frames: vec![],
+        };
+
+        for mut frame in frames {
+            let frame_size = frame.body.len() + std::mem::size_of::<Frame>();
+
+            if frame_size > self.mtu as usize {
+                todo!("Create compound");
             }
+            if frame.reliability.is_ordered() {
+                let order_index =
+                    self.order_channels[frame.order_channel as usize].get_server_index();
+                frame.order_index = order_index;
+            }
+            if frame.reliability.is_sequenced() {
+                let sequence_index = self
+                    .last_assigned_sequence_index
+                    .fetch_add(1, Ordering::SeqCst);
+                frame.sequence_index = sequence_index;
+            }
+            if frame.reliability.is_reliable() {
+                self.recovery_queue.insert(frame.clone());
+            }
+
+            if batch.estimate_size() + frame_size < max_batch_size {
+                batch.frames.push(frame);
+            } else {
+                let encoded = batch.encode()?;
+                tracing::info!("{:?}", FrameBatch::decode(encoded.clone())?);
+
+                // TODO: Add IPv6 support
+                self.ipv4_socket.send_to(&encoded, self.address).await?;
+
+                batch = FrameBatch {
+                    batch_number: self
+                        .last_assigned_batch_number
+                        .fetch_add(1, Ordering::SeqCst),
+                    frames: vec![],
+                };
+            }
+        }
+
+        // Send remaining packets not sent by loop
+        if !batch.frames.is_empty() {
+            let encoded = batch.encode()?;
+            // TODO: Add IPv6 support
+            self.ipv4_socket.send_to(&encoded, self.address).await?;
         }
 
         Ok(())

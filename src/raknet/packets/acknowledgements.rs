@@ -1,3 +1,5 @@
+use std::ops::Range;
+
 use bytes::{Buf, BufMut, BytesMut};
 
 use crate::error::VexResult;
@@ -11,7 +13,7 @@ pub enum AckRecord {
     /// A single ID
     Single(u32),
     /// Range of IDs
-    Range(u32, u32),
+    Range(Range<u32>),
 }
 
 /// Confirms that packets have been received.
@@ -38,10 +40,10 @@ impl Encodable for Ack {
                     buffer.put_u8(1); // Is single
                     buffer.put_u24_le(*id);
                 }
-                AckRecord::Range(start, end) => {
+                AckRecord::Range(range) => {
                     buffer.put_u8(0); // Is range
-                    buffer.put_u24_le(*start);
-                    buffer.put_u24_le(*end);
+                    buffer.put_u24_le(range.start);
+                    buffer.put_u24_le(range.end);
                 }
             }
         }
@@ -62,7 +64,7 @@ impl Decodable for Ack {
             if is_range {
                 records.push(AckRecord::Single(buffer.get_u24_le()));
             } else {
-                records.push(AckRecord::Range(buffer.get_u24_le(), buffer.get_u24_le()));
+                records.push(AckRecord::Range(buffer.get_u24_le()..buffer.get_u24_le()));
             }
         }
 
@@ -94,10 +96,10 @@ impl Encodable for Nack {
                     buffer.put_u8(1); // Is single
                     buffer.put_u24_le(*id);
                 }
-                AckRecord::Range(start, end) => {
+                AckRecord::Range(range) => {
                     buffer.put_u8(0); // Is range
-                    buffer.put_u24_le(*start);
-                    buffer.put_u24_le(*end);
+                    buffer.put_u24_le(range.start);
+                    buffer.put_u24_le(range.end);
                 }
             }
         }
@@ -118,7 +120,7 @@ impl Decodable for Nack {
             if is_range {
                 records.push(AckRecord::Single(buffer.get_u24_le()));
             } else {
-                records.push(AckRecord::Range(buffer.get_u24_le(), buffer.get_u24_le()));
+                records.push(AckRecord::Range(buffer.get_u24_le()..buffer.get_u24_le()));
             }
         }
 

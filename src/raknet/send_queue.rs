@@ -54,6 +54,26 @@ impl SendQueue {
         }
     }
 
+    pub fn insert_batch(&self, priority: SendPriority, batch: Vec<Frame>) {
+        match priority {
+            SendPriority::High => {
+                let mut deque = batch.into();
+                let mut lock = self.high_priority.lock();
+                lock.append(&mut deque);
+            }
+            SendPriority::Medium => {
+                let mut deque = batch.into();
+                let mut lock = self.medium_priority.lock();
+                lock.append(&mut deque);
+            }
+            SendPriority::Low => {
+                let mut deque = batch.into();
+                let mut lock = self.low_priority.lock();
+                lock.append(&mut deque);
+            }
+        }
+    }
+
     pub fn flush(&self, priority: SendPriority) -> Vec<Frame> {
         match priority {
             SendPriority::High => {

@@ -21,6 +21,17 @@ pub struct FrameBatch {
     pub frames: Vec<Frame>,
 }
 
+impl FrameBatch {
+    /// Gives a rough estimate of the size of this batch in bytes.
+    /// This estimate will always be greater than the actual size of the batch.
+    pub fn estimate_size(&self) -> usize {
+        std::mem::size_of::<FrameBatch>()
+            + self.frames.iter().fold(0, |acc, f| {
+            acc + std::mem::size_of::<Frame>() + f.body.len()
+        })
+    }
+}
+
 impl Decodable for FrameBatch {
     fn decode(mut buffer: BytesMut) -> VexResult<Self> {
         vex_assert!(buffer.get_u8() & 0x80 != 0);
