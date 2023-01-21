@@ -61,7 +61,7 @@ pub struct Session {
     active: CancellationToken,
     last_assigned_batch_number: AtomicU32,
     last_assigned_sequence_index: AtomicU32,
-    last_assigned_reliable_index: AtomicU32,
+    acknowledgment_index: AtomicU32,
     /// Latest sequence index that was received.
     /// Sequenced packets with sequence numbers less than this one will be discarded.
     last_client_batch_number: AtomicU32,
@@ -95,7 +95,7 @@ impl Session {
             last_assigned_batch_number: AtomicU32::new(0),
             last_assigned_sequence_index: AtomicU32::new(0),
             last_client_batch_number: AtomicU32::new(0),
-            last_assigned_reliable_index: AtomicU32::new(0),
+            acknowledgment_index: AtomicU32::new(0),
             compound_collector: CompoundCollector::new(),
             order_channels: Default::default(),
             send_queue: SendQueue::new(),
@@ -243,13 +243,6 @@ impl Session {
             }
         }
 
-        let a = [129u8];
-
-        self.send_queue.insert(
-            SendPriority::High,
-            Frame::new(Reliability::ReliableOrdered, BytesMut::from(a.as_ref())),
-        );
-
         Ok(())
     }
 
@@ -327,17 +320,20 @@ impl Session {
 
     async fn flush_send_queue(&self, tick: u64) -> VexResult<()> {
         // TODO: Handle errors properly
-        let frames = self.send_queue.flush(SendPriority::High);
-        self.send_frames(frames).await?;
-
-        if tick % 2 == 0 {
-            let frames = self.send_queue.flush(SendPriority::Medium);
+        if let Some(frames) = self.send_queue.flush(SendPriority::High) {
             self.send_frames(frames).await?;
         }
 
+        if tick % 2 == 0 {
+            if let Some(frames) = self.send_queue.flush(SendPriority::Medium) {
+                self.send_frames(frames).await?;
+            }
+        }
+
         if tick % 4 == 0 {
-            let frames = self.send_queue.flush(SendPriority::Low);
-            self.send_frames(frames).await?;
+            if let Some(frames) = self.send_queue.flush(SendPriority::Low) {
+                self.send_frames(frames).await?;
+            }
         }
 
         Ok(())
@@ -371,11 +367,9 @@ impl Session {
                 frame.sequence_index = sequence_index;
             }
             if frame.reliability.is_reliable() {
-                frame.reliable_index = self.last_assigned_reliable_index.fetch_add(1, Ordering::SeqCst);
+                frame.reliable_index = self.acknowledgment_index.fetch_add(1, Ordering::SeqCst);
                 self.recovery_queue.insert(frame.clone());
             }
-
-            tracing::info!("frame {frame:?}");
 
             if batch.estimate_size() + frame_size < max_batch_size {
                 tracing::info!("push");

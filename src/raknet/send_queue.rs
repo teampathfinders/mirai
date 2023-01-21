@@ -74,19 +74,31 @@ impl SendQueue {
         }
     }
 
-    pub fn flush(&self, priority: SendPriority) -> Vec<Frame> {
+    pub fn flush(&self, priority: SendPriority) -> Option<Vec<Frame>> {
         match priority {
             SendPriority::High => {
                 let mut lock = self.high_priority.lock();
-                lock.drain(0..).collect::<Vec<_>>()
+                if lock.is_empty() {
+                    None
+                } else {
+                    Some(lock.drain(0..).collect::<Vec<_>>())
+                }
             }
             SendPriority::Medium => {
                 let mut lock = self.medium_priority.lock();
-                lock.drain(0..).collect::<Vec<_>>()
+                if lock.is_empty() {
+                    None
+                } else {
+                    Some(lock.drain(0..).collect::<Vec<_>>())
+                }
             }
             SendPriority::Low => {
                 let mut lock = self.low_priority.lock();
-                lock.drain(0..).collect::<Vec<_>>()
+                if lock.is_empty() {
+                    None
+                } else {
+                    Some(lock.drain(0..).collect::<Vec<_>>())
+                }
             }
         }
     }

@@ -15,9 +15,10 @@
     <cargoProject FILE="$PROJECT_DIR$/Cargo.toml" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="eb8ce776-e64a-444b-a034-2036d6cbe18e" name="Changes" comment="Implemented Frame and FrameBatch encoders">
+    <list default="true" id="eb8ce776-e64a-444b-a034-2036d6cbe18e" name="Changes" comment="Fixed one of the two received NACKs">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/raknet/packets/acknowledgements.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/raknet/packets/acknowledgements.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/raknet/frame.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/raknet/frame.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/raknet/send_queue.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/raknet/send_queue.rs" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/raknet/sessions.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/raknet/sessions.rs" afterDir="false" />
     </list>
     <list id="5ea80ab6-242d-4220-8770-a42d5b241561" name="Changes by EJADA_A008" comment="" />
@@ -238,7 +239,8 @@
     <MESSAGE value="Fixed issues with ACK decoder and added game packet processing to system" />
     <MESSAGE value="Implemented ConnectionRequest response" />
     <MESSAGE value="Implemented Frame and FrameBatch encoders" />
-    <option name="LAST_COMMIT_MESSAGE" value="Implemented Frame and FrameBatch encoders" />
+    <MESSAGE value="Fixed one of the two received NACKs" />
+    <option name="LAST_COMMIT_MESSAGE" value="Fixed one of the two received NACKs" />
     <option name="OPTIMIZE_IMPORTS_BEFORE_PROJECT_COMMIT" value="true" />
     <option name="REFORMAT_BEFORE_PROJECT_COMMIT" value="true" />
     <option name="REARRANGE_BEFORE_PROJECT_COMMIT" value="true" />
@@ -248,7 +250,7 @@
       <breakpoints>
         <line-breakpoint enabled="true" type="com.jetbrains.cidr.execution.debugger.OCBreakpointType">
           <url>file://$PROJECT_DIR$/src/raknet/sessions.rs</url>
-          <line>379</line>
+          <line>373</line>
           <option name="timeStamp" value="16" />
         </line-breakpoint>
       </breakpoints>

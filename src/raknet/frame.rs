@@ -52,6 +52,8 @@ impl Decodable for FrameBatch {
 
 impl Encodable for FrameBatch {
     fn encode(&self) -> VexResult<BytesMut> {
+        tracing::error!("Encoding {self:?}");
+
         let mut buffer = BytesMut::new();
 
         buffer.put_u8(FRAME_BIT_FLAG);
