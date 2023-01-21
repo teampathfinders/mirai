@@ -15,11 +15,17 @@
     <cargoProject FILE="$PROJECT_DIR$/Cargo.toml" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="eb8ce776-e64a-444b-a034-2036d6cbe18e" name="Changes" comment="Fixed one of the two received NACKs">
+    <list default="true" id="eb8ce776-e64a-444b-a034-2036d6cbe18e" name="Changes" comment="Fixed continuously increasing batch numbers">
+      <change afterPath="$PROJECT_DIR$/src/raknet/packets/connected_ping.rs" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/raknet/packets/connected_pong.rs" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/main.rs" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/raknet/frame.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/raknet/frame.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/raknet/send_queue.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/raknet/send_queue.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/raknet/order_channel.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/raknet/order_channel.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/raknet/packets/mod.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/raknet/packets/mod.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/raknet/packets/new_incoming_connection.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/raknet/packets/new_incoming_connection.rs" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/raknet/sessions.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/raknet/sessions.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/util/extensions.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/util/extensions.rs" afterDir="false" />
     </list>
     <list id="5ea80ab6-242d-4220-8770-a42d5b241561" name="Changes by EJADA_A008" comment="" />
     <option name="SHOW_DIALOG" value="false" />
@@ -40,11 +46,11 @@
   <component name="Git.Settings">
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
   </component>
-  <component name="GitHubPullRequestSearchHistory"><![CDATA[{
-  "lastFilter": {
-    "state": "OPEN"
+  <component name="GitHubPullRequestSearchHistory">{
+  &quot;lastFilter&quot;: {
+    &quot;state&quot;: &quot;OPEN&quot;
   }
-}]]></component>
+}</component>
   <component name="GithubPullRequestsUISettings">
     <option name="selectedUrlAndAccountId">
       <UrlAndAccount>
@@ -67,29 +73,29 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent"><![CDATA[{
-  "keyToString": {
-    "ASKED_ADD_EXTERNAL_FILES": "true",
-    "ASKED_SHARE_PROJECT_CONFIGURATION_FILES": "true",
-    "RunOnceActivity.OpenProjectViewOnStart": "true",
-    "RunOnceActivity.ShowReadmeOnStart": "true",
-    "RunOnceActivity.cidr.known.project.marker": "true",
-    "SHARE_PROJECT_CONFIGURATION_FILES": "true",
-    "WebServerToolWindowFactoryState": "false",
-    "cf.first.check.clang-format": "false",
-    "cidr.known.project.marker": "true",
-    "codeWithMe.voiceChat.enabledByDefault": "false",
-    "last_opened_file_path": "C:/Users/Ruben/Documents/programming/rs/vex",
-    "node.js.detected.package.eslint": "true",
-    "node.js.detected.package.tslint": "true",
-    "node.js.selected.package.eslint": "(autodetect)",
-    "node.js.selected.package.tslint": "(autodetect)",
-    "nodejs_package_manager_path": "npm",
-    "org.rust.cargo.project.model.PROJECT_DISCOVERY": "true",
-    "settings.editor.selected.configurable": "preferences.lookFeel",
-    "vue.rearranger.settings.migration": "true"
+  <component name="PropertiesComponent">{
+  &quot;keyToString&quot;: {
+    &quot;ASKED_ADD_EXTERNAL_FILES&quot;: &quot;true&quot;,
+    &quot;ASKED_SHARE_PROJECT_CONFIGURATION_FILES&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.OpenProjectViewOnStart&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.cidr.known.project.marker&quot;: &quot;true&quot;,
+    &quot;SHARE_PROJECT_CONFIGURATION_FILES&quot;: &quot;true&quot;,
+    &quot;WebServerToolWindowFactoryState&quot;: &quot;false&quot;,
+    &quot;cf.first.check.clang-format&quot;: &quot;false&quot;,
+    &quot;cidr.known.project.marker&quot;: &quot;true&quot;,
+    &quot;codeWithMe.voiceChat.enabledByDefault&quot;: &quot;false&quot;,
+    &quot;last_opened_file_path&quot;: &quot;C:/Users/Ruben/Documents/programming/rs/vex&quot;,
+    &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
+    &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,
+    &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
+    &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,
+    &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
+    &quot;org.rust.cargo.project.model.PROJECT_DISCOVERY&quot;: &quot;true&quot;,
+    &quot;settings.editor.selected.configurable&quot;: &quot;preferences.lookFeel&quot;,
+    &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;
   }
-}]]></component>
+}</component>
   <component name="RecentsManager">
     <key name="CopyFile.RECENT_KEYS">
       <recent name="C:\Users\Ruben\Documents\programming\rs\vex\src\raknet\packets" />
@@ -240,21 +246,11 @@
     <MESSAGE value="Implemented ConnectionRequest response" />
     <MESSAGE value="Implemented Frame and FrameBatch encoders" />
     <MESSAGE value="Fixed one of the two received NACKs" />
-    <option name="LAST_COMMIT_MESSAGE" value="Fixed one of the two received NACKs" />
+    <MESSAGE value="Fixed continuously increasing batch numbers" />
+    <option name="LAST_COMMIT_MESSAGE" value="Fixed continuously increasing batch numbers" />
     <option name="OPTIMIZE_IMPORTS_BEFORE_PROJECT_COMMIT" value="true" />
     <option name="REFORMAT_BEFORE_PROJECT_COMMIT" value="true" />
     <option name="REARRANGE_BEFORE_PROJECT_COMMIT" value="true" />
-  </component>
-  <component name="XDebuggerManager">
-    <breakpoint-manager>
-      <breakpoints>
-        <line-breakpoint enabled="true" type="com.jetbrains.cidr.execution.debugger.OCBreakpointType">
-          <url>file://$PROJECT_DIR$/src/raknet/sessions.rs</url>
-          <line>373</line>
-          <option name="timeStamp" value="16" />
-        </line-breakpoint>
-      </breakpoints>
-    </breakpoint-manager>
   </component>
   <component name="XSLT-Support.FileAssociations.UIState">
     <expand />

@@ -1,4 +1,6 @@
 pub use acknowledgements::*;
+pub use connected_ping::*;
+pub use connected_pong::*;
 pub use connection_request::*;
 pub use connection_request_accepted::*;
 pub use disconnect::*;
@@ -14,6 +16,8 @@ pub use unconnected_pong::*;
 
 pub use crate::raknet::packet::*;
 
+mod connected_pong;
+mod connected_ping;
 mod acknowledgements;
 mod client_to_server_handshake;
 mod connection_request;
@@ -37,6 +41,7 @@ mod unconnected_ping;
 mod unconnected_pong;
 
 pub const RAKNET_VERSION: u8 = 10;
+pub const COMPRESSED_PACKET: u8 = 0xfe;
 pub const OFFLINE_MESSAGE_DATA: &[u8] = &[
     0x00, 0xff, 0xff, 0x00, 0xfe, 0xfe, 0xfe, 0xfe, 0xfd, 0xfd, 0xfd, 0xfd, 0x12, 0x34, 0x56, 0x78,
 ];

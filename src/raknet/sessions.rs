@@ -2,7 +2,7 @@ use std::io::Read;
 use std::net::SocketAddr;
 use std::sync::{Arc, Weak};
 use std::sync::atomic::{AtomicU32, AtomicU64, Ordering};
-use std::time::{Duration, Instant};
+use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 
 use bytes::{Buf, BytesMut};
 use dashmap::DashMap;
@@ -16,10 +16,7 @@ use crate::raknet::{
     SendQueue,
 };
 use crate::raknet::packet::RawPacket;
-use crate::raknet::packets::{
-    Ack, AckRecord, ConnectionRequest, ConnectionRequestAccepted, Decodable, Encodable, Nack,
-    RaknetDisconnect,
-};
+use crate::raknet::packets::{Ack, AckRecord, COMPRESSED_PACKET, ConnectedPing, ConnectedPong, ConnectionRequest, ConnectionRequestAccepted, Decodable, Encodable, Nack, NewIncomingConnection, RaknetDisconnect};
 use crate::util::AsyncDeque;
 use crate::vex_error;
 
@@ -217,6 +214,7 @@ impl Session {
             }
 
             if frame.is_compound {
+                tracing::info!("Received compound");
                 if let Some(p) = self.compound_collector.insert(frame.clone()) {
                     self.process_game_packet(p).await?
                 }
@@ -237,8 +235,11 @@ impl Session {
                 self.flag_for_close();
             }
             ConnectionRequest::ID => self.handle_connection_request(task).await?,
+            NewIncomingConnection::ID => self.handle_new_incoming_connection(task).await?,
+            ConnectedPing::ID => self.handle_connected_ping(task).await?,
+            COMPRESSED_PACKET => self.handle_compressed_packet(task).await?,
             id => {
-                tracing::info!("ID: {}", id);
+                tracing::info!("ID: {} {:?}", id, task.as_ref());
                 todo!("Other game packet IDs")
             }
         }
@@ -261,13 +262,39 @@ impl Session {
         Ok(())
     }
 
+    async fn handle_new_incoming_connection(&self, task: BytesMut) -> VexResult<()> {
+        let request = NewIncomingConnection::decode(task)?;
+        tracing::info!("{request:?}");
+        Ok(())
+    }
+
+    async fn handle_connected_ping(&self, task: BytesMut) -> VexResult<()> {
+        let ping = ConnectedPing::decode(task)?;
+        let pong = ConnectedPong {
+            ping_time: ping.time,
+            pong_time: ping.time,
+        };
+
+        let pong = pong.encode()?;
+
+        self.send_queue.insert(
+            SendPriority::Low,
+            Frame::new(Reliability::Unreliable, pong),
+        );
+        Ok(())
+    }
+
+    async fn handle_compressed_packet(&self, task: BytesMut) -> VexResult<()> {
+        tracing::info!("Received compressed packet: {task:?}");
+        Ok(())
+    }
+
     /// Processes an acknowledgement received from the client.
     ///
     /// This function unregisters the specified packet IDs from the recovery queue.
     async fn process_ack(&self, task: BytesMut) -> VexResult<()> {
         let ack = Ack::decode(task)?;
         self.recovery_queue.confirm(&ack.records);
-        tracing::info!("Confirmed packets: {:?}", ack.records);
 
         Ok(())
     }
@@ -277,8 +304,6 @@ impl Session {
     /// This function makes sure the packet is retrieved from the recovery queue and sent to the
     /// client again.
     async fn process_nack(&self, task: BytesMut) -> VexResult<()> {
-        tracing::warn!("Received NACK");
-
         let nack = Nack::decode(task)?;
         let batch = self.recovery_queue.recover(&nack.records);
         tracing::info!("Recovered packets: {:?}", nack.records);
@@ -372,7 +397,6 @@ impl Session {
             }
 
             if batch.estimate_size() + frame_size < max_batch_size {
-                tracing::info!("push");
                 batch.frames.push(frame);
             } else {
                 let encoded = batch.encode()?;

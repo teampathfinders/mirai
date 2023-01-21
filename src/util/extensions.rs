@@ -29,7 +29,7 @@ pub trait ReadExtensions: Buf {
     fn get_addr(&mut self) -> VexResult<SocketAddr> {
         let ip_type = self.get_u8();
         let ip_addr = match ip_type {
-            4 => IpAddr::V4(Ipv4Addr::from(self.get_u32())),
+            4 => IpAddr::V4(Ipv4Addr::from(!self.get_u32())),
             6 => IpAddr::V6(Ipv6Addr::from(self.get_u128())),
             _ => {
                 return Err(VexError::InvalidRequest(format!(

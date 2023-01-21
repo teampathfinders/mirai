@@ -53,8 +53,6 @@ impl OrderChannel {
                         .1,
                 );
             }
-
-            tracing::info!("Removed {ready_count:?} packets from order channel");
             return Some(ready);
         }
 

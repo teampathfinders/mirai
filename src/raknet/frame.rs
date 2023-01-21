@@ -36,12 +36,16 @@ impl Decodable for FrameBatch {
     fn decode(mut buffer: BytesMut) -> VexResult<Self> {
         vex_assert!(buffer.get_u8() & 0x80 != 0);
 
+        tracing::info!("Decoding batch");
+
         let batch_number = buffer.get_u24_le();
         let mut frames = Vec::new();
 
         while buffer.has_remaining() {
             frames.push(Frame::decode(&mut buffer)?);
         }
+
+        assert_eq!(buffer.remaining(), 0);
 
         Ok(Self {
             batch_number,
@@ -52,8 +56,6 @@ impl Decodable for FrameBatch {
 
 impl Encodable for FrameBatch {
     fn encode(&self) -> VexResult<BytesMut> {
-        tracing::error!("Encoding {self:?}");
-
         let mut buffer = BytesMut::new();
 
         buffer.put_u8(FRAME_BIT_FLAG);
@@ -116,7 +118,7 @@ impl Frame {
 
         let reliability = Reliability::try_from(flags >> 5)?;
         let is_compound = flags & COMPOUND_BIT_FLAG != 0;
-        let length = buffer.get_u16() / 8;
+        let length = (buffer.get_u16() as f32 / 8.0).ceil() as usize;
 
         let mut reliable_index = 0;
         if reliability.is_reliable() {
@@ -144,12 +146,15 @@ impl Frame {
             compound_index = buffer.get_u32();
         }
 
-        let mut chunks = buffer.chunks(length as usize);
-        let body = BytesMut::from(chunks.next().unwrap());
+        let mut body = BytesMut::with_capacity(length as usize);
+        body.resize(length as usize, 0u8);
 
+        let position = buffer.len() - buffer.remaining();
+
+        body.copy_from_slice(&buffer.as_ref()[position..(position + length as usize)]);
         buffer.advance(length as usize);
 
-        Ok(Self {
+        let frame = Self {
             reliability,
             reliable_index,
             sequence_index,
@@ -160,7 +165,10 @@ impl Frame {
             order_index,
             order_channel,
             body,
-        })
+        };
+
+        tracing::info!("{frame:?}");
+        Ok(frame)
     }
 
     fn encode(&self, buffer: &mut BytesMut) -> VexResult<()> {
