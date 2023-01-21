@@ -11,7 +11,7 @@ use crate::vex_assert;
 /// Bit flag indicating that the packet is encapsulated in a frame.
 pub const FRAME_BIT_FLAG: u8 = 0x80;
 /// Bit flag indicating that the packet is fragmented.
-pub const COMPOUND_BIT_FLAG: u8 = 0b0001;
+pub const COMPOUND_BIT_FLAG: u8 = 0b00010000;
 
 /// Contains a set of frames.
 #[derive(Debug)]
@@ -36,7 +36,7 @@ impl Decodable for FrameBatch {
     fn decode(mut buffer: BytesMut) -> VexResult<Self> {
         vex_assert!(buffer.get_u8() & 0x80 != 0);
 
-        tracing::info!("Decoding batch");
+        tracing::info!("Decoding batch {:x?}", buffer.as_ref());
 
         let batch_number = buffer.get_u24_le();
         let mut frames = Vec::new();
@@ -44,7 +44,6 @@ impl Decodable for FrameBatch {
         while buffer.has_remaining() {
             frames.push(Frame::decode(&mut buffer)?);
         }
-
         assert_eq!(buffer.remaining(), 0);
 
         Ok(Self {
@@ -110,10 +109,7 @@ impl Frame {
         }
     }
 
-    fn decode(buffer: &mut BytesMut) -> VexResult<Self>
-        where
-            Self: Sized,
-    {
+    fn decode(buffer: &mut BytesMut) -> VexResult<Self> {
         let flags = buffer.get_u8();
 
         let reliability = Reliability::try_from(flags >> 5)?;

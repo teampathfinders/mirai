@@ -1161,6 +1161,7 @@ dependencies = [
  "bytes",
  "console-subscriber",
  "dashmap",
+ "flate2",
  "lazy_static",
  "parking_lot",
  "paste",

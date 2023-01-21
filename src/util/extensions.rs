@@ -28,19 +28,29 @@ pub trait ReadExtensions: Buf {
     /// This method fails if the IP type is a value other than 4 or 6.
     fn get_addr(&mut self) -> VexResult<SocketAddr> {
         let ip_type = self.get_u8();
-        let ip_addr = match ip_type {
-            4 => IpAddr::V4(Ipv4Addr::from(!self.get_u32())),
-            6 => IpAddr::V6(Ipv6Addr::from(self.get_u128())),
+        Ok(match ip_type {
+            4 => {
+                let addr = IpAddr::V4(Ipv4Addr::from(self.get_u32()));
+                let port = self.get_u16();
+
+                SocketAddr::new(addr, port)
+            },
+            6 => {
+                self.advance(2); // IP family (AF_INET6)
+                let port = self.get_u16();
+                self.advance(4); // Flow information
+                let addr = IpAddr::V6(Ipv6Addr::from(self.get_u128()));
+                self.advance(4); // Scope ID
+
+                SocketAddr::new(addr, port)
+            },
             _ => {
                 return Err(VexError::InvalidRequest(format!(
                     "Invalid IP type: {}",
                     ip_type
                 )))
             }
-        };
-
-        let port = self.get_u16();
-        Ok(SocketAddr::new(ip_addr, port))
+        })
     }
 
     /// Reads a 24-bit unsigned little-endian integer from the buffer.
@@ -68,14 +78,17 @@ pub trait WriteExtensions: BufMut {
             SocketAddr::V4(addr_v4) => {
                 self.put_u8(4);
                 self.put(addr_v4.ip().octets().as_ref());
+                self.put_u16(addr.port());
             }
             SocketAddr::V6(addr_v6) => {
                 self.put_u8(6);
+                self.put_u16(23); // AF_INET6 family
+                self.put_u16(addr.port());
+                self.put_u32(0); // Flow information
                 self.put(addr_v6.ip().octets().as_ref());
+                self.put_u32(0); // Scope information
             }
         }
-
-        self.put_u16(addr.port());
     }
 
     /// Writes a 24-bit unsigned little-endian integer to the buffer.

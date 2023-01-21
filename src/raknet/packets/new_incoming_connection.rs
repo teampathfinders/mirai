@@ -4,13 +4,14 @@ use bytes::{Buf, BytesMut};
 
 use crate::error::VexResult;
 use crate::raknet::packets::Decodable;
-use crate::util::ReadExtensions;
+use crate::util::{EMPTY_IPV4_ADDRESS, ReadExtensions};
 use crate::vex_assert;
 
 #[derive(Debug)]
 pub struct NewIncomingConnection {
     pub server_address: SocketAddr,
-    pub internal_address: SocketAddr,
+    pub client_timestamp: i64,
+    pub server_timestamp: i64,
 }
 
 impl NewIncomingConnection {
@@ -22,11 +23,17 @@ impl Decodable for NewIncomingConnection {
         vex_assert!(buffer.get_u8() == Self::ID);
 
         let server_address = buffer.get_addr()?;
-        let internal_address = buffer.get_addr()?;
+        for _ in 0..20 {
+            buffer.get_addr()?;
+        }
+
+        let client_timestamp = buffer.get_i64();
+        let server_timestamp = buffer.get_i64();
 
         Ok(Self {
             server_address,
-            internal_address,
+            client_timestamp,
+            server_timestamp,
         })
     }
 }

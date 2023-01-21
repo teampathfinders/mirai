@@ -6,6 +6,7 @@ use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 
 use bytes::{Buf, BytesMut};
 use dashmap::DashMap;
+use flate2::read::{DeflateDecoder, ZlibDecoder};
 use parking_lot::RwLock;
 use tokio::net::UdpSocket;
 use tokio_util::sync::CancellationToken;
@@ -16,7 +17,10 @@ use crate::raknet::{
     SendQueue,
 };
 use crate::raknet::packet::RawPacket;
-use crate::raknet::packets::{Ack, AckRecord, COMPRESSED_PACKET, ConnectedPing, ConnectedPong, ConnectionRequest, ConnectionRequestAccepted, Decodable, Encodable, Nack, NewIncomingConnection, RaknetDisconnect};
+use crate::raknet::packets::{
+    Ack, AckRecord, COMPRESSED_PACKET, ConnectedPing, ConnectedPong, ConnectionRequest,
+    ConnectionRequestAccepted, Decodable, Encodable, Nack, NewIncomingConnection, RaknetDisconnect,
+};
 use crate::util::AsyncDeque;
 use crate::vex_error;
 
@@ -228,6 +232,8 @@ impl Session {
 
     /// Processes an unencapsulated game packet.
     async fn process_game_packet(&self, mut task: BytesMut) -> VexResult<()> {
+        let bytes = task.as_ref();
+
         let packet_id = *task.first().expect("Game packet buffer was empty");
         match packet_id {
             RaknetDisconnect::ID => {
@@ -277,15 +283,18 @@ impl Session {
 
         let pong = pong.encode()?;
 
-        self.send_queue.insert(
-            SendPriority::Low,
-            Frame::new(Reliability::Unreliable, pong),
-        );
+        self.send_queue
+            .insert(SendPriority::Low, Frame::new(Reliability::Unreliable, pong));
         Ok(())
     }
 
     async fn handle_compressed_packet(&self, task: BytesMut) -> VexResult<()> {
-        tracing::info!("Received compressed packet: {task:?}");
+        tracing::info!("Received compressed packet: {:x?}", task.as_ref());
+
+        let mut deflate = DeflateDecoder::new(task.as_ref());
+        let mut decompressed = Vec::with_capacity(deflate.total_out() as usize);
+        deflate.read_to_end(&mut decompressed)?;
+
         Ok(())
     }
 

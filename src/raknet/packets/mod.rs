@@ -16,10 +16,10 @@ pub use unconnected_pong::*;
 
 pub use crate::raknet::packet::*;
 
-mod connected_pong;
-mod connected_ping;
 mod acknowledgements;
 mod client_to_server_handshake;
+mod connected_ping;
+mod connected_pong;
 mod connection_request;
 mod connection_request_accepted;
 mod disconnect;
