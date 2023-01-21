@@ -6,7 +6,7 @@ use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 
 use bytes::{Buf, BytesMut};
 use dashmap::DashMap;
-use flate2::read::{DeflateDecoder, ZlibDecoder};
+use flate2::read::{DeflateDecoder, DeflateEncoder, GzDecoder, ZlibDecoder};
 use parking_lot::RwLock;
 use tokio::net::UdpSocket;
 use tokio_util::sync::CancellationToken;
@@ -291,9 +291,9 @@ impl Session {
     async fn handle_compressed_packet(&self, task: BytesMut) -> VexResult<()> {
         tracing::info!("Received compressed packet: {:x?}", task.as_ref());
 
-        let mut deflate = ZlibDecoder::new(task.as_ref());
-        let mut decompressed = Vec::with_capacity(deflate.total_out() as usize);
-        deflate.read_to_end(&mut decompressed)?;
+        let mut decompressor = snap::raw::Decoder::new();
+        let decompressed = decompressor.decompress_vec(task.as_ref()).unwrap();
+        tracing::error!("decompressed {decompressed:?}");
 
         Ok(())
     }

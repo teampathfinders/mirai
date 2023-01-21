@@ -11,7 +11,11 @@ use tokio_util::sync::CancellationToken;
 
 use crate::config::{CLIENT_VERSION_STRING, NETWORK_VERSION, ServerConfig};
 use crate::error::{VexError, VexResult};
-use crate::raknet::packets::{Decodable, Encodable, IncompatibleProtocol, OpenConnectionReply1, OpenConnectionReply2, OpenConnectionRequest1, OpenConnectionRequest2, RAKNET_VERSION, RawPacket, UnconnectedPing, UnconnectedPong};
+use crate::raknet::packets::{
+    Decodable, Encodable, IncompatibleProtocol, OpenConnectionReply1, OpenConnectionReply2,
+    OpenConnectionRequest1, OpenConnectionRequest2, RAKNET_VERSION, RawPacket, UnconnectedPing,
+    UnconnectedPong,
+};
 use crate::raknet::SessionTracker;
 use crate::util::AsyncDeque;
 
@@ -141,11 +145,14 @@ impl ServerInstance {
         let request = OpenConnectionRequest1::decode(packet.buffer.clone())?;
         if request.protocol_version != RAKNET_VERSION {
             let reply = IncompatibleProtocol {
-                server_guid: self.guid
-            }.encode()?;
+                server_guid: self.guid,
+            }
+                .encode()?;
 
-            self.ipv4_socket.send_to(reply.as_ref(), packet.address).await?;
-            return Ok(())
+            self.ipv4_socket
+                .send_to(reply.as_ref(), packet.address)
+                .await?;
+            return Ok(());
         }
 
         let reply = OpenConnectionReply1 {

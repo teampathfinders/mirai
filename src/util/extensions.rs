@@ -34,7 +34,7 @@ pub trait ReadExtensions: Buf {
                 let port = self.get_u16();
 
                 SocketAddr::new(addr, port)
-            },
+            }
             6 => {
                 self.advance(2); // IP family (AF_INET6)
                 let port = self.get_u16();
@@ -43,7 +43,7 @@ pub trait ReadExtensions: Buf {
                 self.advance(4); // Scope ID
 
                 SocketAddr::new(addr, port)
-            },
+            }
             _ => {
                 return Err(VexError::InvalidRequest(format!(
                     "Invalid IP type: {}",

@@ -5,6 +5,7 @@ pub use connection_request::*;
 pub use connection_request_accepted::*;
 pub use disconnect::*;
 pub use incompatible_protocol::*;
+pub use network_settings::*;
 pub use new_incoming_connection::*;
 pub use open_connection_reply1::*;
 pub use open_connection_reply2::*;
@@ -16,6 +17,7 @@ pub use unconnected_pong::*;
 
 pub use crate::raknet::packet::*;
 
+mod network_settings;
 mod acknowledgements;
 mod client_to_server_handshake;
 mod connected_ping;
@@ -40,7 +42,7 @@ mod traits;
 mod unconnected_ping;
 mod unconnected_pong;
 
-pub const RAKNET_VERSION: u8 = 10;
+pub const RAKNET_VERSION: u8 = 11;
 pub const COMPRESSED_PACKET: u8 = 0xfe;
 pub const OFFLINE_MESSAGE_DATA: &[u8] = &[
     0x00, 0xff, 0xff, 0x00, 0xfe, 0xfe, 0xfe, 0xfe, 0xfd, 0xfd, 0xfd, 0xfd, 0x12, 0x34, 0x56, 0x78,

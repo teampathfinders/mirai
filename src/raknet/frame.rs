@@ -114,7 +114,7 @@ impl Frame {
 
         let reliability = Reliability::try_from(flags >> 5)?;
         let is_compound = flags & COMPOUND_BIT_FLAG != 0;
-        let length = (buffer.get_u16() as f32 / 8.0).ceil() as usize;
+        let length = buffer.get_u16() / 8;
 
         let mut reliable_index = 0;
         if reliability.is_reliable() {
