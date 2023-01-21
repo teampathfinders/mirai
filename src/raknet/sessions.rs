@@ -61,9 +61,10 @@ pub struct Session {
     active: CancellationToken,
     last_assigned_batch_number: AtomicU32,
     last_assigned_sequence_index: AtomicU32,
+    last_assigned_reliable_index: AtomicU32,
     /// Latest sequence index that was received.
     /// Sequenced packets with sequence numbers less than this one will be discarded.
-    last_client_sequence_index: AtomicU32,
+    last_client_batch_number: AtomicU32,
     /// Collects fragmented packets.
     compound_collector: CompoundCollector,
     /// Channels used to order packets.
@@ -93,7 +94,8 @@ impl Session {
             active: CancellationToken::new(),
             last_assigned_batch_number: AtomicU32::new(0),
             last_assigned_sequence_index: AtomicU32::new(0),
-            last_client_sequence_index: AtomicU32::new(0),
+            last_client_batch_number: AtomicU32::new(0),
+            last_assigned_reliable_index: AtomicU32::new(0),
             compound_collector: CompoundCollector::new(),
             order_channels: Default::default(),
             send_queue: SendQueue::new(),
@@ -166,14 +168,12 @@ impl Session {
     /// * Acknowledging reliable packets
     async fn process_frame_batch(&self, task: BytesMut) -> VexResult<()> {
         let batch = FrameBatch::decode(task)?;
-        self.last_client_sequence_index
-            .store(batch.batch_number, Ordering::SeqCst);
-
-        tracing::debug!("{batch:?}");
+        self.last_client_batch_number
+            .fetch_max(batch.batch_number, Ordering::SeqCst);
 
         for frame in batch.frames {
             if frame.reliability.is_sequenced()
-                && frame.sequence_index < self.last_client_sequence_index.load(Ordering::SeqCst)
+                && frame.sequence_index < self.last_client_batch_number.load(Ordering::SeqCst)
             {
                 // Discard packet
                 continue;
@@ -197,7 +197,6 @@ impl Session {
                 self.ipv4_socket
                     .send_to(acknowledgement.as_ref(), self.address)
                     .await?;
-                tracing::info!("Sent ack {:?}", Ack::decode(acknowledgement));
             }
 
             // TODO: Handle errors in processing properly
@@ -231,8 +230,6 @@ impl Session {
 
     /// Processes an unencapsulated game packet.
     async fn process_game_packet(&self, mut task: BytesMut) -> VexResult<()> {
-        tracing::info!("Received game packet: {task:?}");
-
         let packet_id = *task.first().expect("Game packet buffer was empty");
         match packet_id {
             RaknetDisconnect::ID => {
@@ -287,6 +284,8 @@ impl Session {
     /// This function makes sure the packet is retrieved from the recovery queue and sent to the
     /// client again.
     async fn process_nack(&self, task: BytesMut) -> VexResult<()> {
+        tracing::warn!("Received NACK");
+
         let nack = Nack::decode(task)?;
         let batch = self.recovery_queue.recover(&nack.records);
         tracing::info!("Recovered packets: {:?}", nack.records);
@@ -372,14 +371,17 @@ impl Session {
                 frame.sequence_index = sequence_index;
             }
             if frame.reliability.is_reliable() {
+                frame.reliable_index = self.last_assigned_reliable_index.fetch_add(1, Ordering::SeqCst);
                 self.recovery_queue.insert(frame.clone());
             }
 
+            tracing::info!("frame {frame:?}");
+
             if batch.estimate_size() + frame_size < max_batch_size {
+                tracing::info!("push");
                 batch.frames.push(frame);
             } else {
                 let encoded = batch.encode()?;
-                tracing::info!("{:?}", FrameBatch::decode(encoded.clone())?);
 
                 // TODO: Add IPv6 support
                 self.ipv4_socket.send_to(&encoded, self.address).await?;
@@ -414,7 +416,7 @@ impl Session {
 #[derive(Debug)]
 pub struct SessionTracker {
     /// Whether the server is running.
-    /// Once this token is cancelled, the tracker will cancel all the sessions' invidiual tokens.
+    /// Once this token is cancelled, the tracker will cancel all the sessions' individual tokens.
     global_token: CancellationToken,
     /// Map of all tracked sessions, listed by IP address.
     session_list: Arc<DashMap<SocketAddr, Arc<Session>>>,

@@ -68,8 +68,6 @@ impl Decodable for Ack {
             }
         }
 
-        tracing::info!("records {records:?}");
-
         Ok(Ack { records })
     }
 }
