@@ -1,5 +1,5 @@
 use std::net::SocketAddr;
-use std::sync::Arc;
+use std::sync::{Arc, Weak};
 use std::sync::atomic::{AtomicU32, Ordering};
 use std::time::{Duration, Instant};
 
@@ -28,6 +28,7 @@ const TICK_INTERVAL: Duration = Duration::from_millis(1000 / 20);
 const SESSION_TIMEOUT: Duration = Duration::from_secs(5);
 
 const ORDER_CHANNEL_COUNT: usize = 5;
+const GARBAGE_COLLECT_INTERVAL: Duration = Duration::from_secs(10);
 
 /// Sessions directly correspond to clients connected to the server.
 ///
@@ -85,6 +86,9 @@ impl Session {
                     }
                     interval.tick().await;
                 }
+
+
+                tracing::info!("Session {:X} closed", session.guid);
             });
         }
 
@@ -242,8 +246,13 @@ impl Session {
     ///
     /// If this returns false, any remaining associated processes should be stopped as soon as possible.
     #[inline]
-    pub fn active(&self) -> bool {
+    pub fn is_active(&self) -> bool {
         !self.active.is_cancelled()
+    }
+
+    #[inline]
+    pub fn get_guid(&self) -> i64 {
+        self.guid
     }
 
     /// Called by the [`SessionTracker`] to forward packets from the network service to
@@ -254,12 +263,13 @@ impl Session {
 }
 
 /// Keeps track of all sessions on the server.
+#[derive(Debug)]
 pub struct SessionTracker {
     /// Whether the server is running.
     /// Once this token is cancelled, the tracker will cancel all the sessions' invidiual tokens.
     global_token: CancellationToken,
     /// Map of all tracked sessions, listed by IP address.
-    session_list: DashMap<SocketAddr, Arc<Session>>,
+    session_list: Arc<DashMap<SocketAddr, Arc<Session>>>,
     /// Maximum amount of sessions that this tracker will accept.
     max_session_count: usize,
 }
@@ -270,9 +280,17 @@ impl SessionTracker {
         global_token: CancellationToken,
         max_session_count: usize,
     ) -> VexResult<SessionTracker> {
+        let session_list = Arc::new(DashMap::new());
+        {
+            let session_list = session_list.clone();
+            tokio::spawn(async move {
+                SessionTracker::garbage_collector(session_list).await;
+            });
+        }
+
         Ok(SessionTracker {
             global_token,
-            session_list: DashMap::new(),
+            session_list,
             max_session_count,
         })
     }
@@ -305,5 +323,16 @@ impl SessionTracker {
     /// Returns the maximum amount of sessions this tracker will allow.
     pub fn max_session_count(&self) -> usize {
         self.max_session_count
+    }
+
+    async fn garbage_collector(session_list: Arc<DashMap<SocketAddr, Arc<Session>>>) -> ! {
+        let mut interval = tokio::time::interval(GARBAGE_COLLECT_INTERVAL);
+        loop {
+            session_list.retain(|_, session| -> bool {
+                session.is_active()
+            });
+
+            interval.tick().await;
+        }
     }
 }
