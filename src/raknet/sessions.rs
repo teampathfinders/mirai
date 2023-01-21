@@ -291,7 +291,7 @@ impl Session {
     async fn handle_compressed_packet(&self, task: BytesMut) -> VexResult<()> {
         tracing::info!("Received compressed packet: {:x?}", task.as_ref());
 
-        let mut deflate = DeflateDecoder::new(task.as_ref());
+        let mut deflate = ZlibDecoder::new(task.as_ref());
         let mut decompressed = Vec::with_capacity(deflate.total_out() as usize);
         deflate.read_to_end(&mut decompressed)?;
 

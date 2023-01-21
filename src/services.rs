@@ -11,10 +11,7 @@ use tokio_util::sync::CancellationToken;
 
 use crate::config::{CLIENT_VERSION_STRING, NETWORK_VERSION, ServerConfig};
 use crate::error::{VexError, VexResult};
-use crate::raknet::packets::{
-    Decodable, Encodable, OpenConnectionReply1, OpenConnectionReply2, OpenConnectionRequest1,
-    OpenConnectionRequest2, RawPacket, UnconnectedPing, UnconnectedPong,
-};
+use crate::raknet::packets::{Decodable, Encodable, IncompatibleProtocol, OpenConnectionReply1, OpenConnectionReply2, OpenConnectionRequest1, OpenConnectionRequest2, RAKNET_VERSION, RawPacket, UnconnectedPing, UnconnectedPong};
 use crate::raknet::SessionTracker;
 use crate::util::AsyncDeque;
 
@@ -142,11 +139,20 @@ impl ServerInstance {
     /// Responds to the [`OpenConnectionRequest1`] packet with [`OpenConnectionReply1`].
     async fn handle_open_connection_request1(self: Arc<Self>, packet: RawPacket) -> VexResult<()> {
         let request = OpenConnectionRequest1::decode(packet.buffer.clone())?;
+        if request.protocol_version != RAKNET_VERSION {
+            let reply = IncompatibleProtocol {
+                server_guid: self.guid
+            }.encode()?;
+
+            self.ipv4_socket.send_to(reply.as_ref(), packet.address).await?;
+            return Ok(())
+        }
+
         let reply = OpenConnectionReply1 {
             mtu: request.mtu,
             server_guid: self.guid,
         }
-        .encode()?;
+            .encode()?;
 
         self.ipv4_socket
             .send_to(reply.as_ref(), packet.address)

@@ -6,7 +6,7 @@ use lazy_static::lazy_static;
 use crate::error::{VexError, VexResult};
 
 pub const IPV4_MEM_SIZE: usize = 1 + 4 + 2;
-pub const IPV6_MEM_SIZE: usize = 1 + 16 + 2;
+pub const IPV6_MEM_SIZE: usize = 1 + 2 + 2 + 4 + 16 + 4;
 
 lazy_static! {
     pub static ref EMPTY_IPV4_ADDRESS: SocketAddr =
