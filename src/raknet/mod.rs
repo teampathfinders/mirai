@@ -7,9 +7,9 @@ pub use sessions::*;
 
 mod compound_collector;
 mod frame;
+mod order_channel;
 mod packet;
 pub mod packets;
 mod reliability;
 mod send_queue;
 mod sessions;
-mod order_channel;

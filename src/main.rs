@@ -1,5 +1,3 @@
-#![allow(dead_code)]
-
 use std::sync::atomic::{AtomicU16, Ordering};
 
 use tokio::runtime;

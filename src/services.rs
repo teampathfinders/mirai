@@ -165,10 +165,14 @@ impl ServerInstance {
             client_address: packet.address,
             encryption_enabled: false,
         }
-        .encode()?;
+            .encode()?;
 
-        self.session_controller
-            .add_session(packet.address, request.client_guid);
+        self.session_controller.add_session(
+            self.ipv4_socket.clone(),
+            packet.address,
+            request.mtu,
+            request.client_guid,
+        );
         self.ipv4_socket
             .send_to(reply.as_ref(), packet.address)
             .await?;

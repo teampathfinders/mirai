@@ -16,7 +16,7 @@ pub const COMPOUND_BIT_FLAG: u8 = 0b0001;
 /// Contains a set of frames.
 #[derive(Debug)]
 pub struct FrameBatch {
-    pub sequence_number: u32,
+    pub batch_number: u32,
     /// Individual frames
     pub frames: Vec<Frame>,
 }
@@ -25,7 +25,7 @@ impl Decodable for FrameBatch {
     fn decode(mut buffer: BytesMut) -> VexResult<Self> {
         vex_assert!(buffer.get_u8() & 0x80 != 0);
 
-        let sequence_number = buffer.get_u24_le();
+        let batch_number = buffer.get_u24_le();
         let mut frames = Vec::new();
 
         while buffer.has_remaining() {
@@ -33,7 +33,7 @@ impl Decodable for FrameBatch {
         }
 
         Ok(Self {
-            sequence_number,
+            batch_number,
             frames,
         })
     }
@@ -77,9 +77,18 @@ pub struct Frame {
 }
 
 impl Frame {
+    /// Creates a new frame.
+    pub fn new(reliability: Reliability, body: BytesMut) -> Self {
+        Self {
+            reliability,
+            body,
+            ..Default::default()
+        }
+    }
+
     fn decode(buffer: &mut BytesMut) -> VexResult<Self>
-    where
-        Self: Sized,
+        where
+            Self: Sized,
     {
         let flags = buffer.get_u8();
 

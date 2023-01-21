@@ -8,7 +8,10 @@ use crate::raknet::Frame;
 #[derive(Debug, Default)]
 pub struct OrderChannel {
     channel: DashMap<u32, Frame>,
+    /// Last complete index received from client.
     last_complete: AtomicU32,
+    /// Last index assigned by server.
+    last_server_index: AtomicU32,
 }
 
 impl OrderChannel {
@@ -16,7 +19,12 @@ impl OrderChannel {
         Self {
             channel: DashMap::new(),
             last_complete: AtomicU32::new(0),
+            last_server_index: AtomicU32::new(0),
         }
+    }
+
+    pub fn get_server_index(&self) -> u32 {
+        self.last_server_index.fetch_add(1, Ordering::SeqCst)
     }
 
     pub fn insert(&self, frame: Frame) -> Option<Vec<Frame>> {
@@ -38,7 +46,12 @@ impl OrderChannel {
         if ready_count != 0 {
             let mut ready = Vec::with_capacity(ready_count as usize);
             for i in old_index..current_index {
-                ready.push(self.channel.remove(&i).expect("Packet not found in order channel").1);
+                ready.push(
+                    self.channel
+                        .remove(&i)
+                        .expect("Packet not found in order channel")
+                        .1,
+                );
             }
 
             tracing::info!("Removed {ready_count:?} packets from order channel");
