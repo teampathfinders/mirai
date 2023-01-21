@@ -16,7 +16,10 @@ use crate::raknet::{
     SendQueue,
 };
 use crate::raknet::packet::RawPacket;
-use crate::raknet::packets::{Ack, AckRecord, ConnectionRequest, ConnectionRequestAccepted, Decodable, Encodable, Nack, RaknetDisconnect};
+use crate::raknet::packets::{
+    Ack, AckRecord, ConnectionRequest, ConnectionRequestAccepted, Decodable, Encodable, Nack,
+    RaknetDisconnect,
+};
 use crate::util::AsyncDeque;
 use crate::vex_error;
 
@@ -240,12 +243,14 @@ impl Session {
             id => {
                 tracing::info!("ID: {}", id);
                 todo!("Other game packet IDs")
-            },
+            }
         }
+
+        let a = [129u8];
 
         self.send_queue.insert(
             SendPriority::High,
-            Frame::new(Reliability::ReliableOrdered, BytesMut::new()),
+            Frame::new(Reliability::ReliableOrdered, BytesMut::from(a.as_ref())),
         );
 
         Ok(())
@@ -256,11 +261,13 @@ impl Session {
         let response = ConnectionRequestAccepted {
             client_address: self.address,
             request_time: request.time,
-        }.encode()?;
+        }
+            .encode()?;
 
-        self.send_queue.insert(SendPriority::Medium, Frame::new(
-            Reliability::Reliable, response,
-        ));
+        self.send_queue.insert(
+            SendPriority::Medium,
+            Frame::new(Reliability::Reliable, response),
+        );
         Ok(())
     }
 

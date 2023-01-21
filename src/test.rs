@@ -1,9 +1,9 @@
 use std::net::{IpAddr, SocketAddr};
 
-use bytes::BytesMut;
+use bytes::{Buf, BufMut, BytesMut};
 
 use crate::error::VexResult;
-use crate::raknet::{Frame, OrderChannel};
+use crate::raknet::{Frame, OrderChannel, Reliability};
 use crate::services::{IPV4_LOCAL_ADDR, IPV6_LOCAL_ADDR};
 use crate::util::{ReadExtensions, WriteExtensions};
 
@@ -18,6 +18,17 @@ fn read_write_u24_le() {
     assert_eq!(buffer.get_u24_le(), 125);
     assert_eq!(buffer.get_u24_le(), 50250);
     assert_eq!(buffer.get_u24_le(), 1097359);
+
+    let mut buffer = BytesMut::new();
+    let orig = 4u8;
+    let shifted = orig << 5;
+    buffer.put_u8(shifted);
+
+    let mut buffer = buffer.freeze();
+    let read = buffer.get_u8() >> 5;
+    println!("{shifted:b} {read:b}");
+
+    assert_eq!(orig, read);
 }
 
 #[test]

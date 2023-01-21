@@ -20,12 +20,14 @@ impl ConnectionRequestAccepted {
 
 impl Encodable for ConnectionRequestAccepted {
     fn encode(&self) -> VexResult<BytesMut> {
-        let mut buffer = BytesMut::with_capacity(1 + IPV6_MEM_SIZE + 2 + 10 * IPV4_MEM_SIZE + 8 + 8);
+        let mut buffer =
+            BytesMut::with_capacity(1 + IPV6_MEM_SIZE + 2 + 10 * IPV4_MEM_SIZE + 8 + 8);
 
         buffer.put_u8(Self::ID);
         buffer.put_addr(self.client_address);
         buffer.put_i16(0); // System index
-        for _ in 0..10 { // 10 internal IDs
+        for _ in 0..10 {
+            // 10 internal IDs
             buffer.put_addr(*EMPTY_IPV4_ADDRESS);
         }
         buffer.put_i64(self.request_time);

@@ -21,9 +21,6 @@ impl Decodable for ConnectionRequest {
         let guid = buffer.get_i64();
         let time = buffer.get_i64();
 
-        Ok(Self {
-            guid,
-            time,
-        })
+        Ok(Self { guid, time })
     }
 }

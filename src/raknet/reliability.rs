@@ -22,13 +22,13 @@ pub enum Reliability {
     /// Makes sure that packets arrive using acknowledgements.
     /// This does not guarantee proper order of packets.
     Reliable,
-    /// Guarantees that packets arrive and discards old packets.
-    ReliableSequenced,
     /// Guarantees that packets actually arrive and are also processed in the correct order.
     /// Unlike sequenced reliabilities, this does not discard old packets.
     /// Instead it waits for the older packets to arrive before processing new ones.
     /// This option is the most reliable.
     ReliableOrdered,
+    /// Guarantees that packets arrive and discards old packets.
+    ReliableSequenced,
 }
 
 /// Converts a byte to reliability.

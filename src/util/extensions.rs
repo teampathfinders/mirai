@@ -9,9 +9,8 @@ pub const IPV4_MEM_SIZE: usize = 1 + 4 + 2;
 pub const IPV6_MEM_SIZE: usize = 1 + 16 + 2;
 
 lazy_static! {
-    pub static ref EMPTY_IPV4_ADDRESS: SocketAddr = SocketAddr::V4(SocketAddrV4::new(
-        Ipv4Addr::new(255, 255, 255, 255), 19132
-    ));
+    pub static ref EMPTY_IPV4_ADDRESS: SocketAddr =
+        SocketAddr::V4(SocketAddrV4::new(Ipv4Addr::new(255, 255, 255, 255), 19132));
 }
 
 /// Provides extra functions for byte buffers.

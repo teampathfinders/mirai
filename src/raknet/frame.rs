@@ -5,7 +5,7 @@ use bytes::{Buf, BufMut, BytesMut};
 use crate::error::VexResult;
 use crate::raknet::packets::{Decodable, Encodable};
 use crate::raknet::Reliability;
-use crate::util::ReadExtensions;
+use crate::util::{ReadExtensions, WriteExtensions};
 use crate::vex_assert;
 
 /// Bit flag indicating that the packet is encapsulated in a frame.
@@ -52,7 +52,16 @@ impl Decodable for FrameBatch {
 
 impl Encodable for FrameBatch {
     fn encode(&self) -> VexResult<BytesMut> {
-        todo!("FrameSet encoder");
+        let mut buffer = BytesMut::new();
+
+        buffer.put_u8(FRAME_BIT_FLAG);
+        buffer.put_u24_le(self.batch_number);
+
+        for frame in &self.frames {
+            frame.encode(&mut buffer)?;
+        }
+
+        Ok(buffer)
     }
 }
 
@@ -151,10 +160,33 @@ impl Frame {
             body,
         })
     }
-}
 
-impl Encodable for Frame {
-    fn encode(&self) -> VexResult<BytesMut> {
-        todo!("Frame encoder implementation")
+    fn encode(&self, buffer: &mut BytesMut) -> VexResult<()> {
+        let reliability = (self.reliability as u8) << 5;
+        let mut flags = reliability;
+        if self.is_compound {
+            flags |= COMPOUND_BIT_FLAG;
+        }
+
+        buffer.put_u8(flags);
+        buffer.put_u16(self.body.len() as u16 * 8);
+        if self.reliability.is_reliable() {
+            buffer.put_u24_le(self.reliable_index);
+        }
+        if self.reliability.is_sequenced() {
+            buffer.put_u24_le(self.sequence_index);
+        }
+        if self.reliability.is_ordered() {
+            buffer.put_u24_le(self.order_index);
+            buffer.put_u8(self.order_channel);
+        }
+        if self.is_compound {
+            buffer.put_u32(self.compound_size);
+            buffer.put_u16(self.compound_id);
+            buffer.put_u32(self.compound_index);
+        }
+
+        buffer.put(self.body.as_ref());
+        Ok(())
     }
 }
