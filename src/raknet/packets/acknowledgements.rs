@@ -62,11 +62,13 @@ impl Decodable for Ack {
         for _ in 0..record_count {
             let is_range = buffer.get_u8() == 0;
             if is_range {
-                records.push(AckRecord::Single(buffer.get_u24_le()));
-            } else {
                 records.push(AckRecord::Range(buffer.get_u24_le()..buffer.get_u24_le()));
+            } else {
+                records.push(AckRecord::Single(buffer.get_u24_le()));
             }
         }
+
+        tracing::info!("records {records:?}");
 
         Ok(Ack { records })
     }

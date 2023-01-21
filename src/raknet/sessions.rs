@@ -16,7 +16,7 @@ use crate::raknet::{
     SendQueue,
 };
 use crate::raknet::packet::RawPacket;
-use crate::raknet::packets::{Ack, AckRecord, Decodable, Encodable, Nack, RaknetDisconnect};
+use crate::raknet::packets::{Ack, AckRecord, ConnectionRequest, Decodable, Encodable, Nack, RaknetDisconnect};
 use crate::util::AsyncDeque;
 use crate::vex_error;
 
@@ -162,11 +162,13 @@ impl Session {
     /// * Discarding old sequenced frames
     /// * Acknowledging reliable packets
     async fn process_frame_batch(&self, task: BytesMut) -> VexResult<()> {
-        let frame_set = FrameBatch::decode(task)?;
+        let batch = FrameBatch::decode(task)?;
         self.last_client_sequence_index
-            .store(frame_set.batch_number, Ordering::SeqCst);
+            .store(batch.batch_number, Ordering::SeqCst);
 
-        for frame in frame_set.frames {
+        tracing::debug!("{batch:?}");
+
+        for frame in batch.frames {
             if frame.reliability.is_sequenced()
                 && frame.sequence_index < self.last_client_sequence_index.load(Ordering::SeqCst)
             {
@@ -192,6 +194,7 @@ impl Session {
                 self.ipv4_socket
                     .send_to(acknowledgement.as_ref(), self.address)
                     .await?;
+                tracing::info!("Sent ack {:?}", Ack::decode(acknowledgement));
             }
 
             // TODO: Handle errors in processing properly
@@ -212,10 +215,12 @@ impl Session {
             }
 
             if frame.is_compound {
-                if let Some(p) = self.compound_collector.insert(frame) {
+                if let Some(p) = self.compound_collector.insert(frame.clone()) {
                     self.process_game_packet(p).await?
                 }
             }
+
+            self.process_game_packet(frame.body.clone()).await?;
         }
 
         Ok(())
@@ -231,7 +236,13 @@ impl Session {
                 tracing::debug!("Session {:X} requested disconnect", self.guid);
                 self.flag_for_close();
             }
-            _ => todo!("Other game packet IDs"),
+            ConnectionRequest::ID => {
+                todo!()
+            },
+            id => {
+                tracing::info!("ID: {}", id);
+                todo!("Other game packet IDs")
+            },
         }
 
         self.send_queue.insert(
@@ -248,6 +259,8 @@ impl Session {
     async fn process_ack(&self, task: BytesMut) -> VexResult<()> {
         let ack = Ack::decode(task)?;
         self.recovery_queue.confirm(&ack.records);
+        tracing::info!("Confirmed packets: {:?}", ack.records);
+
         Ok(())
     }
 
@@ -258,6 +271,7 @@ impl Session {
     async fn process_nack(&self, task: BytesMut) -> VexResult<()> {
         let nack = Nack::decode(task)?;
         let batch = self.recovery_queue.recover(&nack.records);
+        tracing::info!("Recovered packets: {:?}", nack.records);
 
         self.send_queue.insert_batch(SendPriority::Medium, batch);
         Ok(())
