@@ -1,6 +1,7 @@
 pub use acknowledgements::*;
 pub use connection_request::*;
 pub use connection_request_accepted::*;
+pub use disconnect::*;
 pub use incompatible_protocol::*;
 pub use new_incoming_connection::*;
 pub use open_connection_reply1::*;

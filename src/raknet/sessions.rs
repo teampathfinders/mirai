@@ -3,15 +3,15 @@ use std::sync::Arc;
 use std::sync::atomic::{AtomicU32, Ordering};
 use std::time::{Duration, Instant};
 
-use bytes::BytesMut;
+use bytes::{Buf, BytesMut};
 use dashmap::DashMap;
 use parking_lot::RwLock;
 use tokio_util::sync::CancellationToken;
 
 use crate::error::VexResult;
-use crate::raknet::{CompoundCollector, FrameBatch, SendPriority, SendQueue};
+use crate::raknet::{CompoundCollector, FrameBatch, OrderChannel, SendPriority, SendQueue};
 use crate::raknet::packet::RawPacket;
-use crate::raknet::packets::{Ack, AckRecord, Decodable, Encodable, Nack};
+use crate::raknet::packets::{Ack, AckRecord, Decodable, Encodable, Nack, RaknetDisconnect};
 use crate::util::AsyncDeque;
 use crate::vex_error;
 
@@ -26,6 +26,8 @@ const TICK_INTERVAL: Duration = Duration::from_millis(1000 / 20);
 /// They will stop responding to the server, but will not explicitly send a disconnect request.
 /// Hence, they have to be disconnected manually after the timeout passes.
 const SESSION_TIMEOUT: Duration = Duration::from_secs(5);
+
+const ORDER_CHANNEL_COUNT: usize = 5;
 
 /// Sessions directly correspond to clients connected to the server.
 ///
@@ -49,6 +51,7 @@ pub struct Session {
     last_sequence: AtomicU32,
     /// Collects fragmented packets.
     compound_collector: CompoundCollector,
+    order_channels: [OrderChannel; ORDER_CHANNEL_COUNT],
     /// Keeps track of all packets that are waiting to be sent.
     send_queue: SendQueue,
     /// Keeps track of all unprocessed received packets.
@@ -65,6 +68,7 @@ impl Session {
             active: CancellationToken::new(),
             last_sequence: AtomicU32::new(0),
             compound_collector: CompoundCollector::new(),
+            order_channels: Default::default(),
             send_queue: SendQueue::new(),
             receive_queue: AsyncDeque::new(5),
         });
@@ -81,8 +85,6 @@ impl Session {
                     }
                     interval.tick().await;
                 }
-
-                tracing::info!("Session ticker closed");
             });
         }
 
@@ -98,8 +100,6 @@ impl Session {
                     }
                     interval.tick().await;
                 }
-
-                tracing::info!("Session processor closed");
             });
         }
 
@@ -166,8 +166,20 @@ impl Session {
                     .insert(SendPriority::Medium, acknowledgement);
             }
 
-            if frame.reliability.is_ordered() {
+            // TODO: Handle errors in processing properly
+
+            // Sequenced implies ordered
+            if frame.reliability.is_ordered() || frame.reliability.is_sequenced() {
+                assert_ne!(frame.is_compound, true); // TODO: Figure this out
+
                 // Add packet to order queue
+                if let Some(ready) = self.order_channels[frame.order_channel as usize].insert(frame) {
+                    for packet in ready {
+                        self.process_game_packet(packet.body).await?;
+                    }
+                }
+
+                continue
             }
 
             if frame.is_compound {
@@ -181,8 +193,19 @@ impl Session {
     }
 
     /// Processes an unencapsulated game packet.
-    async fn process_game_packet(&self, task: BytesMut) -> VexResult<()> {
-        todo!("Handle packet");
+    async fn process_game_packet(&self, mut task: BytesMut) -> VexResult<()> {
+        tracing::info!("Received game packet: {task:?}");
+
+        let packet_id = task.get_u8();
+        match packet_id {
+            RaknetDisconnect::ID => {
+                tracing::debug!("Session {:X} requested disconnect", self.guid);
+                self.flag_for_close();
+            },
+            _ => todo!("Other game packet IDs")
+        }
+
+        Ok(())
     }
 
     /// Processes an acknowledgement received from the client.
@@ -204,11 +227,15 @@ impl Session {
     async fn tick(self: &Arc<Self>) -> VexResult<()> {
         // Session has timed out
         if Instant::now().duration_since(*self.last_update.read()) > SESSION_TIMEOUT {
-            self.active.cancel();
+            self.flag_for_close();
             tracing::info!("Session timed out");
         }
 
         Ok(())
+    }
+
+    pub fn flag_for_close(&self) {
+        self.active.cancel();
     }
 
     /// Returns whether the session is currently active.

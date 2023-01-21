@@ -83,8 +83,6 @@ impl Frame {
     {
         let flags = buffer.get_u8();
 
-        tracing::info!("{}", buffer.remaining());
-
         let reliability = Reliability::try_from(flags >> 5)?;
         let is_compound = flags & COMPOUND_BIT_FLAG != 0;
         let length = buffer.get_u16() / 8;
@@ -117,6 +115,8 @@ impl Frame {
 
         let mut chunks = buffer.chunks(length as usize);
         let body = BytesMut::from(chunks.next().unwrap());
+
+        buffer.advance(length as usize);
 
         Ok(Self {
             reliability,
