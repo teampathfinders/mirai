@@ -15,16 +15,10 @@
     <cargoProject FILE="$PROJECT_DIR$/Cargo.toml" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="eb8ce776-e64a-444b-a034-2036d6cbe18e" name="Changes" comment="Fixed length encoding not including header size">
+    <list default="true" id="eb8ce776-e64a-444b-a034-2036d6cbe18e" name="Changes" comment="Switched reliability layer to using batch numbers instead of indices">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Cargo.lock" beforeDir="false" afterPath="$PROJECT_DIR$/Cargo.lock" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Cargo.toml" beforeDir="false" afterPath="$PROJECT_DIR$/Cargo.toml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/config.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/config.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/packets/game_packet.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/packets/game_packet.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/raknet/compound_collector.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/raknet/compound_collector.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/raknet/frame.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/raknet/frame.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/raknet/header.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/raknet/header.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/raknet/recovery_queue.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/raknet/recovery_queue.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/packets/network_settings.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/packets/network_settings.rs" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/raknet/sessions.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/raknet/sessions.rs" afterDir="false" />
     </list>
     <list id="5ea80ab6-242d-4220-8770-a42d5b241561" name="Changes by EJADA_A008" comment="" />
@@ -264,7 +258,6 @@
   <component name="VcsManagerConfiguration">
     <option name="CHECK_CODE_CLEANUP_BEFORE_PROJECT_COMMIT" value="true" />
     <option name="CHECK_NEW_TODO" value="false" />
-    <MESSAGE value="Implemented put_u24_le and extension tests" />
     <MESSAGE value="Implemented rest of encoders/decoders for ack and nack" />
     <MESSAGE value="Documented majority of the undocumented code" />
     <MESSAGE value="Implemented order channel" />
@@ -289,7 +282,8 @@
     <MESSAGE value="Added game packet encoding" />
     <MESSAGE value="Added proper header and length encoding" />
     <MESSAGE value="Fixed length encoding not including header size" />
-    <option name="LAST_COMMIT_MESSAGE" value="Fixed length encoding not including header size" />
+    <MESSAGE value="Switched reliability layer to using batch numbers instead of indices" />
+    <option name="LAST_COMMIT_MESSAGE" value="Switched reliability layer to using batch numbers instead of indices" />
     <option name="OPTIMIZE_IMPORTS_BEFORE_PROJECT_COMMIT" value="true" />
     <option name="REFORMAT_BEFORE_PROJECT_COMMIT" value="true" />
     <option name="REARRANGE_BEFORE_PROJECT_COMMIT" value="true" />

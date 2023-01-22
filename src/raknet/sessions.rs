@@ -305,18 +305,50 @@ impl Session {
     fn handle_game_packet(&self, mut task: BytesMut) -> VexResult<()> {
         vex_assert!(task.get_u8() == 0xfe);
 
+        let compression_threshold = SERVER_CONFIG.read().compression_threshold;
+        if compression_threshold != 0 && task.len() > compression_threshold as usize {
+            // Packet is compressed
+            match SERVER_CONFIG.read().compression_algorithm {
+                CompressionAlgorithm::Snappy => {
+                    let mut reader = snap::raw::Decoder::new();
+                    let decompressed = reader.decompress_vec(task.as_ref()).unwrap();
+                    tracing::info!("Decompressed {} bytes", decompressed.len());
+                }
+                CompressionAlgorithm::Deflate => {
+                    tracing::info!("{:X?}", &task.as_ref()[..6]);
+
+                    let mut reader = flate2::read::DeflateDecoder::new(task.as_ref());
+                    let mut decompressed = Vec::new();
+                    reader.read_to_end(&mut decompressed).unwrap();
+                    let mut buffer = BytesMut::new();
+                    buffer.extend_from_slice(decompressed.as_ref());
+
+                    let length = buffer.get_var_u32()?;
+                    let header = Header::decode(&mut buffer);
+                    // tracing::info!("{buffer:X?}");
+                    tracing::info!("{header:?}");
+                }
+            }
+
+            todo!()
+        }
+
         // tracing::info!("Received game packet: {:x?}", task.as_ref());
         let length = task.get_var_u32()?;
-        let remaining = task.remaining();
-        vex_assert!(remaining >= length as usize,
-            format!("Packet body size is less than specified. Specified {length} bytes, but received {remaining}")
-        );
-
         let header = Header::decode(&mut task)?;
-        match header.id {
-            RequestNetworkSettings::ID => self.handle_request_network_settings(task),
-            _ => todo!("Other game packets"),
+
+        tracing::info!("{header:?}");
+
+        if header.id == RequestNetworkSettings::ID {
+            self.handle_request_network_settings(task)
+        } else {
+            todo!()
         }
+
+        // let remaining = task.remaining();
+        // vex_assert!(remaining >= length as usize,
+        //     format!("Packet body size is less than specified. Specified {length} bytes, but received {remaining}")
+        // );
     }
 
     fn handle_request_network_settings(&self, mut task: BytesMut) -> VexResult<()> {

@@ -11,7 +11,7 @@ use crate::raknet::packets::Encodable;
 #[derive(Debug, Copy, Clone)]
 pub enum CompressionAlgorithm {
     /// The Deflate/Zlib compression algorithm.
-    Flate,
+    Deflate,
     /// The Snappy compression algorithm.
     /// Available since Minecraft 1.19.30.
     Snappy,
