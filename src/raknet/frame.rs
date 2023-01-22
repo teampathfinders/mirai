@@ -36,8 +36,6 @@ impl Decodable for FrameBatch {
     fn decode(mut buffer: BytesMut) -> VexResult<Self> {
         vex_assert!(buffer.get_u8() & 0x80 != 0);
 
-        tracing::info!("Decoding batch {:x?}", buffer.as_ref());
-
         let batch_number = buffer.get_u24_le();
         let mut frames = Vec::new();
 
@@ -163,7 +161,6 @@ impl Frame {
             body,
         };
 
-        tracing::info!("{frame:?}");
         Ok(frame)
     }
 

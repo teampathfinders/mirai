@@ -9,7 +9,7 @@ pub type VexResult<T> = Result<T, VexError>;
 macro_rules! vex_assert {
     ($expression: expr, $message: expr) => {
         if ($expression) == false {
-            return Err($crate::error::VexError::AssertionError($message));
+            return Err($crate::error::VexError::AssertionError($message.into()));
         }
     };
 
@@ -33,7 +33,7 @@ macro_rules! vex_assert {
 #[macro_export]
 macro_rules! vex_error {
     ($error_type: ident, $content: expr) => {
-        $crate::error::VexError::$error_type($content.to_string())
+        $crate::error::VexError::$error_type($content.into())
     };
 }
 
@@ -41,7 +41,7 @@ macro_rules! vex_error {
 #[derive(Debug, Error)]
 pub enum VexError {
     /// An assertion has failed.
-    #[error("Non-fatal assertion failed | {0}")]
+    #[error("Assertion failed | {0}")]
     AssertionError(String),
     /// The server received an invalid request.
     #[error("A client sent an invalid request | {0}")]

@@ -11,12 +11,14 @@ pub use open_connection_reply1::*;
 pub use open_connection_reply2::*;
 pub use open_connection_request1::*;
 pub use open_connection_request2::*;
+pub use request_network_settings::*;
 pub use traits::*;
 pub use unconnected_ping::*;
 pub use unconnected_pong::*;
 
 pub use crate::raknet::packet::*;
 
+mod request_network_settings;
 mod network_settings;
 mod acknowledgements;
 mod client_to_server_handshake;

@@ -4,6 +4,7 @@ use bytes::{Buf, BufMut};
 use lazy_static::lazy_static;
 
 use crate::error::{VexError, VexResult};
+use crate::vex_error;
 
 pub const IPV4_MEM_SIZE: usize = 1 + 4 + 2;
 pub const IPV6_MEM_SIZE: usize = 1 + 2 + 2 + 4 + 16 + 4;
@@ -51,6 +52,21 @@ pub trait ReadExtensions: Buf {
                 )))
             }
         })
+    }
+
+    fn get_var_u32(&mut self) -> VexResult<u32> {
+        let mut v = 0;
+        let mut i = 0;
+        while i < 35 {
+            let b = self.get_u8();
+            v |= ((b & 0x7f) as u32) << i;
+            if b & 0x80 == 0 {
+                return Ok(v)
+            }
+            i += 7;
+        }
+
+        Err(vex_error!(InvalidRequest, "Variable 32-bit integer did not end after 5 bytes"))
     }
 
     /// Reads a 24-bit unsigned little-endian integer from the buffer.

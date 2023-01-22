@@ -11,18 +11,15 @@ use parking_lot::RwLock;
 use tokio::net::UdpSocket;
 use tokio_util::sync::CancellationToken;
 
+use crate::{vex_assert, vex_error};
 use crate::error::VexResult;
 use crate::raknet::{
     CompoundCollector, Frame, FrameBatch, OrderChannel, RecoveryQueue, Reliability, SendPriority,
     SendQueue,
 };
 use crate::raknet::packet::RawPacket;
-use crate::raknet::packets::{
-    Ack, AckRecord, COMPRESSED_PACKET, ConnectedPing, ConnectedPong, ConnectionRequest,
-    ConnectionRequestAccepted, Decodable, Encodable, Nack, NewIncomingConnection, RaknetDisconnect,
-};
-use crate::util::AsyncDeque;
-use crate::vex_error;
+use crate::raknet::packets::{Ack, AckRecord, COMPRESSED_PACKET, ConnectedPing, ConnectedPong, ConnectionRequest, ConnectionRequestAccepted, Decodable, DisconnectNotification, Encodable, Nack, NewIncomingConnection, RequestNetworkSettings};
+use crate::util::{AsyncDeque, ReadExtensions};
 
 /// Tick interval of the internal session ticker.
 const INTERNAL_TICK_INTERVAL: Duration = Duration::from_millis(1000 / 20);
@@ -210,7 +207,7 @@ impl Session {
                 if let Some(ready) = self.order_channels[frame.order_channel as usize].insert(frame)
                 {
                     for packet in ready {
-                        self.process_game_packet(packet.body).await?;
+                        self.process_unframed_packet(packet.body).await?;
                     }
                 }
 
@@ -220,30 +217,30 @@ impl Session {
             if frame.is_compound {
                 tracing::info!("Received compound");
                 if let Some(p) = self.compound_collector.insert(frame.clone()) {
-                    self.process_game_packet(p).await?
+                    self.process_unframed_packet(p).await?
                 }
             }
 
-            self.process_game_packet(frame.body.clone()).await?;
+            self.process_unframed_packet(frame.body.clone()).await?;
         }
 
         Ok(())
     }
 
     /// Processes an unencapsulated game packet.
-    async fn process_game_packet(&self, mut task: BytesMut) -> VexResult<()> {
+    async fn process_unframed_packet(&self, mut task: BytesMut) -> VexResult<()> {
         let bytes = task.as_ref();
 
         let packet_id = *task.first().expect("Game packet buffer was empty");
         match packet_id {
-            RaknetDisconnect::ID => {
+            DisconnectNotification::ID => {
                 tracing::debug!("Session {:X} requested disconnect", self.guid);
                 self.flag_for_close();
             }
             ConnectionRequest::ID => self.handle_connection_request(task).await?,
             NewIncomingConnection::ID => self.handle_new_incoming_connection(task).await?,
             ConnectedPing::ID => self.handle_connected_ping(task).await?,
-            COMPRESSED_PACKET => self.handle_compressed_packet(task).await?,
+            COMPRESSED_PACKET => self.handle_game_packet(task).await?,
             id => {
                 tracing::info!("ID: {} {:?}", id, task.as_ref());
                 todo!("Other game packet IDs")
@@ -270,7 +267,6 @@ impl Session {
 
     async fn handle_new_incoming_connection(&self, task: BytesMut) -> VexResult<()> {
         let request = NewIncomingConnection::decode(task)?;
-        tracing::info!("{request:?}");
         Ok(())
     }
 
@@ -288,13 +284,29 @@ impl Session {
         Ok(())
     }
 
-    async fn handle_compressed_packet(&self, task: BytesMut) -> VexResult<()> {
-        tracing::info!("Received compressed packet: {:x?}", task.as_ref());
+    async fn handle_game_packet(&self, mut task: BytesMut) -> VexResult<()> {
+        vex_assert!(task.get_u8() == 0xfe);
 
-        let mut decompressor = snap::raw::Decoder::new();
-        let decompressed = decompressor.decompress_vec(task.as_ref()).unwrap();
-        tracing::error!("decompressed {decompressed:?}");
+        tracing::info!("Received game packet: {:x?}", task.as_ref());
 
+        let length = task.get_var_u32()?;
+        let remaining = task.remaining();
+        vex_assert!(remaining >= length as usize,
+            format!("Packet body size is less than specified. Specified {length} bytes, but received {remaining}")
+        );
+
+        tracing::info!("Length: {length}");
+
+        let packet_id = *task.first().unwrap();
+        match packet_id {
+            RequestNetworkSettings::ID => self.handle_request_network_settings(task).await,
+            _ => todo!("Other game packets")
+        }
+    }
+
+    async fn handle_request_network_settings(&self, mut task: BytesMut) -> VexResult<()> {
+        let request = RequestNetworkSettings::decode(task)?;
+        tracing::debug!("{request:?}");
         Ok(())
     }
 
