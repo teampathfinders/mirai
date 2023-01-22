@@ -4,7 +4,7 @@ use bytes::{Buf, BufMut, BytesMut};
 
 use crate::error::VexResult;
 use crate::raknet::{Frame, FrameBatch, OrderChannel, Reliability};
-use crate::raknet::packets::{ConnectedPing, Decodable, NewIncomingConnection};
+use crate::raknet::packets::{Decodable, NewIncomingConnection, OnlinePing};
 use crate::services::{IPV4_LOCAL_ADDR, IPV6_LOCAL_ADDR};
 use crate::util::{ReadExtensions, WriteExtensions};
 

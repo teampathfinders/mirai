@@ -5,15 +5,15 @@ use crate::raknet::packets::Decodable;
 use crate::vex_assert;
 
 #[derive(Debug)]
-pub struct ConnectedPing {
+pub struct OnlinePing {
     pub time: i64,
 }
 
-impl ConnectedPing {
+impl OnlinePing {
     pub const ID: u8 = 0x00;
 }
 
-impl Decodable for ConnectedPing {
+impl Decodable for OnlinePing {
     fn decode(mut buffer: BytesMut) -> VexResult<Self> {
         vex_assert!(buffer.get_u8() == Self::ID);
 

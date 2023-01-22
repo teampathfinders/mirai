@@ -13,12 +13,12 @@ use tokio_util::sync::CancellationToken;
 
 use crate::{vex_assert, vex_error};
 use crate::error::VexResult;
-use crate::raknet::{
-    CompoundCollector, Frame, FrameBatch, OrderChannel, RecoveryQueue, Reliability, SendPriority,
-    SendQueue,
-};
+use crate::packets::RequestNetworkSettings;
+use crate::raknet::{CompoundCollector, Frame, FrameBatch, Header, OrderChannel, RecoveryQueue, Reliability, SendPriority, SendQueue};
 use crate::raknet::packet::RawPacket;
-use crate::raknet::packets::{Ack, AckRecord, COMPRESSED_PACKET, ConnectedPing, ConnectedPong, ConnectionRequest, ConnectionRequestAccepted, Decodable, DisconnectNotification, Encodable, Nack, NewIncomingConnection, RequestNetworkSettings};
+use crate::raknet::packets::{Ack, AckRecord, Decodable, Encodable, Nack};
+use crate::raknet::packets::{ConnectionRequest, ConnectionRequestAccepted, DisconnectNotification, NewIncomingConnection};
+use crate::raknet::packets::{OnlinePing, OnlinePong};
 use crate::util::{AsyncDeque, ReadExtensions};
 
 /// Tick interval of the internal session ticker.
@@ -239,7 +239,7 @@ impl Session {
             }
             ConnectionRequest::ID => self.handle_connection_request(task).await?,
             NewIncomingConnection::ID => self.handle_new_incoming_connection(task).await?,
-            ConnectedPing::ID => self.handle_connected_ping(task).await?,
+            OnlinePing::ID => self.handle_connected_ping(task).await?,
             COMPRESSED_PACKET => self.handle_game_packet(task).await?,
             id => {
                 tracing::info!("ID: {} {:?}", id, task.as_ref());
@@ -271,8 +271,8 @@ impl Session {
     }
 
     async fn handle_connected_ping(&self, task: BytesMut) -> VexResult<()> {
-        let ping = ConnectedPing::decode(task)?;
-        let pong = ConnectedPong {
+        let ping = OnlinePing::decode(task)?;
+        let pong = OnlinePong {
             ping_time: ping.time,
             pong_time: ping.time,
         };
@@ -295,10 +295,8 @@ impl Session {
             format!("Packet body size is less than specified. Specified {length} bytes, but received {remaining}")
         );
 
-        tracing::info!("Length: {length}");
-
-        let packet_id = *task.first().unwrap();
-        match packet_id {
+        let header = Header::decode(&mut task)?;
+        match header.id {
             RequestNetworkSettings::ID => self.handle_request_network_settings(task).await,
             _ => todo!("Other game packets")
         }

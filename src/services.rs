@@ -11,11 +11,8 @@ use tokio_util::sync::CancellationToken;
 
 use crate::config::{CLIENT_VERSION_STRING, NETWORK_VERSION, ServerConfig};
 use crate::error::{VexError, VexResult};
-use crate::raknet::packets::{
-    Decodable, Encodable, IncompatibleProtocol, OpenConnectionReply1, OpenConnectionReply2,
-    OpenConnectionRequest1, OpenConnectionRequest2, RAKNET_VERSION, RawPacket, UnconnectedPing,
-    UnconnectedPong,
-};
+use crate::raknet::packets::{IncompatibleProtocol, OfflinePing, OfflinePong, OpenConnectionReply1, OpenConnectionReply2, OpenConnectionRequest1, OpenConnectionRequest2};
+use crate::raknet::packets::{Decodable, Encodable, RAKNET_VERSION, RawPacket};
 use crate::raknet::SessionTracker;
 use crate::util::AsyncDeque;
 
@@ -115,7 +112,7 @@ impl ServerInstance {
             .ok_or(VexError::InvalidRequest("Packet is empty".to_string()))?;
 
         match id {
-            UnconnectedPing::ID => self.handle_unconnected_ping(packet).await?,
+            OfflinePing::ID => self.handle_unconnected_ping(packet).await?,
             OpenConnectionRequest1::ID => self.handle_open_connection_request1(packet).await?,
             OpenConnectionRequest2::ID => self.handle_open_connection_request2(packet).await?,
             _ => unimplemented!("Packet type not implemented"),
@@ -124,15 +121,15 @@ impl ServerInstance {
         Ok(())
     }
 
-    /// Responds to the [`UnconnectedPing`] packet with [`UnconnectedPong`].
+    /// Responds to the [`OfflinePing`] packet with [`OfflinePong`].
     async fn handle_unconnected_ping(self: Arc<Self>, packet: RawPacket) -> VexResult<()> {
-        let ping = UnconnectedPing::decode(packet.buffer.clone())?;
-        let pong = UnconnectedPong {
+        let ping = OfflinePing::decode(packet.buffer.clone())?;
+        let pong = OfflinePong {
             time: ping.time,
             server_guid: self.guid,
             metadata: self.metadata(),
         }
-        .encode()?;
+            .encode()?;
 
         self.ipv4_socket
             .send_to(pong.as_ref(), packet.address)

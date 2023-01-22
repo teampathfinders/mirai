@@ -4,16 +4,16 @@ use crate::error::VexResult;
 use crate::raknet::packets::Encodable;
 
 #[derive(Debug)]
-pub struct ConnectedPong {
+pub struct OnlinePong {
     pub ping_time: i64,
     pub pong_time: i64,
 }
 
-impl ConnectedPong {
+impl OnlinePong {
     pub const ID: u8 = 0x03;
 }
 
-impl Encodable for ConnectedPong {
+impl Encodable for OnlinePong {
     fn encode(&self) -> VexResult<BytesMut> {
         let mut buffer = BytesMut::with_capacity(1 + 8 + 8);
 

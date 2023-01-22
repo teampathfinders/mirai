@@ -12,6 +12,7 @@ mod error;
 mod raknet;
 mod services;
 mod util;
+mod packets;
 
 #[cfg(test)]
 mod test;

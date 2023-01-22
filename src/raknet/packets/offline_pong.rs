@@ -1,12 +1,13 @@
-use crate::error::VexResult;
-use crate::raknet::packets::{Encodable, OFFLINE_MESSAGE_DATA};
 use bytes::{BufMut, BytesMut};
 
-/// Response to [`UnconnectedPing`](super::UnconnectedPing).
+use crate::error::VexResult;
+use crate::raknet::packets::{Encodable, OFFLINE_MESSAGE_DATA};
+
+/// Response to [`OfflinePing`](super::OfflinePing).
 #[derive(Debug)]
-pub struct UnconnectedPong {
+pub struct OfflinePong {
     /// Timestamp of when the ping was sent.
-    /// This should be given the same value as [`UnconnectedPing::time`](super::UnconnectedPing::time).
+    /// This should be given the same value as [`OfflinePing::time`](super::OfflinePing::time).
     pub time: i64,
     /// Randomised GUID of the server.
     /// Corresponds to [`ServerInstance::guid`](crate::ServerInstance::guid)
@@ -16,12 +17,12 @@ pub struct UnconnectedPong {
     pub metadata: String,
 }
 
-impl UnconnectedPong {
+impl OfflinePong {
     /// Unique identifier of this packet.
     pub const ID: u8 = 0x1c;
 }
 
-impl Encodable for UnconnectedPong {
+impl Encodable for OfflinePong {
     fn encode(&self) -> VexResult<BytesMut> {
         let mut buffer = BytesMut::with_capacity(1 + 8 + 8 + 16 + 2 + self.metadata.len());
 

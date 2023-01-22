@@ -1,13 +1,14 @@
+use bytes::{Buf, BytesMut};
+
 use crate::error::VexResult;
 use crate::raknet::packets::Decodable;
 use crate::vex_assert;
-use bytes::{Buf, BytesMut};
 
 /// Sent to retrieve information about the server
 /// while the user is in Minecraft's server tab.
-/// An [`UnconnectedPong`](super::UnconnectedPong) packet should be sent in response.
+/// An [`OfflinePong`](super::OfflinePong) packet should be sent in response.
 #[derive(Debug)]
-pub struct UnconnectedPing {
+pub struct OfflinePing {
     /// Time when this ping was sent.
     /// Used to measure server latency.
     pub time: i64,
@@ -18,12 +19,12 @@ pub struct UnconnectedPing {
     pub client_guid: i64,
 }
 
-impl UnconnectedPing {
+impl OfflinePing {
     /// Unique identifier of this packet.
     pub const ID: u8 = 0x01;
 }
 
-impl Decodable for UnconnectedPing {
+impl Decodable for OfflinePing {
     fn decode(mut buffer: BytesMut) -> VexResult<Self> {
         vex_assert!(buffer.get_u8() == Self::ID);
 

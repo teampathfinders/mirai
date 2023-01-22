@@ -15,17 +15,30 @@
     <cargoProject FILE="$PROJECT_DIR$/Cargo.toml" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="eb8ce776-e64a-444b-a034-2036d6cbe18e" name="Changes" comment="Added NetworkSettings packet">
-      <change afterPath="$PROJECT_DIR$/src/raknet/header.rs" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/raknet/packets/request_network_settings.rs" afterDir="false" />
+    <list default="true" id="eb8ce776-e64a-444b-a034-2036d6cbe18e" name="Changes" comment="Implemented varuint32 and packet length decoding">
+      <change afterPath="$PROJECT_DIR$/src/packets/mod.rs" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/error.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/error.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/raknet/frame.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/raknet/frame.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/raknet/mod.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/raknet/mod.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/main.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/raknet/header.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/raknet/header.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/raknet/packets/client_to_server_handshake.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/packets/client_to_server_handshake.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/raknet/packets/connected_ping.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/raknet/packets/online_ping.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/raknet/packets/connected_pong.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/raknet/packets/online_pong.rs" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/raknet/packets/disconnect.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/raknet/packets/disconnect.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/raknet/packets/login.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/packets/login.rs" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/raknet/packets/mod.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/raknet/packets/mod.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/raknet/packets/network_settings.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/packets/network_settings.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/raknet/packets/play_status.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/packets/play_status.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/raknet/packets/request_network_settings.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/packets/request_network_settings.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/raknet/packets/resource_pack_client_response.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/packets/resource_pack_client_response.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/raknet/packets/resource_pack_stack.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/packets/resource_pack_stack.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/raknet/packets/resource_packs_info.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/packets/resource_packs_info.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/raknet/packets/server_to_client_handshake.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/packets/server_to_client_handshake.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/raknet/packets/start_game.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/packets/start_game.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/raknet/packets/unconnected_ping.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/raknet/packets/offline_ping.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/raknet/packets/unconnected_pong.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/raknet/packets/offline_pong.rs" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/raknet/sessions.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/raknet/sessions.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/util/extensions.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/util/extensions.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/services.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/services.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/test.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/test.rs" afterDir="false" />
     </list>
     <list id="5ea80ab6-242d-4220-8770-a42d5b241561" name="Changes by EJADA_A008" comment="" />
     <option name="SHOW_DIALOG" value="false" />
@@ -101,10 +114,11 @@
       <recent name="C:\Users\Ruben\Documents\programming\rs\vex\src\raknet\packets" />
     </key>
     <key name="MoveFile.RECENT_KEYS">
+      <recent name="C:\Users\Ruben\Documents\programming\rs\vex\src\raknet\packets" />
+      <recent name="C:\Users\Ruben\Documents\programming\rs\vex\src\packets" />
+      <recent name="C:\Users\Ruben\Documents\programming\rs\vex\src\raknet\packets\online" />
+      <recent name="C:\Users\Ruben\Documents\programming\rs\vex\src\raknet\packets\offline" />
       <recent name="C:\Users\Ruben\Documents\programming\rs\vex\src\raknet" />
-      <recent name="C:\Users\Ruben\Documents\programming\rs\vex\src" />
-      <recent name="C:\Users\Ruben\Documents\programming\rs\vex\src\scheduler" />
-      <recent name="C:\Users\Ruben\Documents\programming\rs\msserver\src\network" />
     </key>
   </component>
   <component name="RunManager" selected="Cargo.Run">
@@ -251,7 +265,8 @@
     <MESSAGE value="Fixed NewIncomingConnection and IPv6 encoding/decoding" />
     <MESSAGE value="Added IncompatibleProtocol error to login sequence" />
     <MESSAGE value="Added NetworkSettings packet" />
-    <option name="LAST_COMMIT_MESSAGE" value="Added NetworkSettings packet" />
+    <MESSAGE value="Implemented varuint32 and packet length decoding" />
+    <option name="LAST_COMMIT_MESSAGE" value="Implemented varuint32 and packet length decoding" />
     <option name="OPTIMIZE_IMPORTS_BEFORE_PROJECT_COMMIT" value="true" />
     <option name="REFORMAT_BEFORE_PROJECT_COMMIT" value="true" />
     <option name="REARRANGE_BEFORE_PROJECT_COMMIT" value="true" />
