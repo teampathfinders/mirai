@@ -11,7 +11,7 @@ use crate::vex_assert;
 /// Bit flag indicating that the packet is encapsulated in a frame.
 pub const FRAME_BIT_FLAG: u8 = 0x80;
 /// Bit flag indicating that the packet is fragmented.
-pub const COMPOUND_BIT_FLAG: u8 = 0b00010000;
+pub const COMPOUND_BIT_FLAG: u8 = 0b0001_0000;
 
 /// Contains a set of frames.
 #[derive(Debug)]
@@ -59,7 +59,7 @@ impl Encodable for FrameBatch {
         buffer.put_u24_le(self.batch_number);
 
         for frame in &self.frames {
-            frame.encode(&mut buffer)?;
+            frame.encode(&mut buffer);
         }
 
         Ok(buffer)
@@ -164,7 +164,7 @@ impl Frame {
         Ok(frame)
     }
 
-    fn encode(&self, buffer: &mut BytesMut) -> VexResult<()> {
+    fn encode(&self, buffer: &mut BytesMut) {
         let reliability = (self.reliability as u8) << 5;
         let mut flags = reliability;
         if self.is_compound {
@@ -190,6 +190,5 @@ impl Frame {
         }
 
         buffer.put(self.body.as_ref());
-        Ok(())
     }
 }

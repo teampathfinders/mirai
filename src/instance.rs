@@ -50,9 +50,7 @@ pub struct ServerInstance {
 
 impl ServerInstance {
     /// Creates a new server
-    pub async fn new(
-        ipv4_port: u16, max_players: usize,
-    ) -> VexResult<Arc<Self>> {
+    pub async fn new(ipv4_port: u16, max_players: usize) -> VexResult<Arc<Self>> {
         tracing::info!("Setting up services...");
 
         let global_token = CancellationToken::new();
@@ -64,15 +62,12 @@ impl ServerInstance {
             metadata: RwLock::new(String::new()),
 
             ipv4_socket,
-            ipv4_port: ipv4_port,
+            ipv4_port,
 
             inward_queue: Arc::new(AsyncDeque::new(10)),
             outward_queue: Arc::new(AsyncDeque::new(10)),
 
-            session_controller: Arc::new(SessionTracker::new(
-                global_token.clone(),
-                max_players,
-            )?),
+            session_controller: Arc::new(SessionTracker::new(global_token.clone(), max_players)),
             global_token,
         };
 
@@ -106,7 +101,7 @@ impl ServerInstance {
     }
 
     /// Shut down the server by cancelling the global token
-    pub async fn shutdown(&self) {
+    pub fn shutdown(&self) {
         self.global_token.cancel();
     }
 
@@ -228,7 +223,9 @@ impl ServerInstance {
                     match controller.handle_offline_packet(raw_packet).await {
                         Ok(_) => (),
                         Err(e) => {
-                            tracing::error!("Error occurred while processing offline packet: {e:?}")
+                            tracing::error!(
+                                "Error occurred while processing offline packet: {e:?}"
+                            );
                         }
                     }
                 });

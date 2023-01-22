@@ -23,7 +23,7 @@ impl RecoveryQueue {
         for record in records {
             match record {
                 AckRecord::Single(id) => {
-                    self.frames.remove(&id);
+                    self.frames.remove(id);
                 }
                 AckRecord::Range(range) => {
                     for id in range.clone() {
@@ -39,7 +39,7 @@ impl RecoveryQueue {
         for record in records {
             match record {
                 AckRecord::Single(id) => {
-                    if let Some(frame) = self.frames.get(&id) {
+                    if let Some(frame) = self.frames.get(id) {
                         recovered.push(frame.value().clone());
                     }
                 }

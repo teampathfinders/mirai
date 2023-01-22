@@ -1,5 +1,3 @@
-use Reliability::*;
-
 use crate::error::VexError;
 use crate::raknet::Reliability::{
     Reliable, ReliableOrdered, ReliableSequenced, UnreliableSequenced,
@@ -37,11 +35,11 @@ impl TryFrom<u8> for Reliability {
 
     fn try_from(value: u8) -> Result<Self, Self::Error> {
         Ok(match value {
-            0 => Unreliable,
-            1 => UnreliableSequenced,
-            2 => Reliable,
-            3 => ReliableOrdered,
-            4 => ReliableSequenced,
+            0 => Self::Unreliable,
+            1 => Self::UnreliableSequenced,
+            2 => Self::Reliable,
+            3 => Self::ReliableOrdered,
+            4 => Self::ReliableSequenced,
             _ => {
                 return Err(VexError::InvalidRequest(format!(
                     "Invalid reliability ID {value}"
@@ -54,19 +52,19 @@ impl TryFrom<u8> for Reliability {
 impl Reliability {
     /// Returns whether this reliability is reliable.
     pub fn is_reliable(self) -> bool {
-        !matches!(self, Unreliable | UnreliableSequenced)
+        !matches!(self, Self::Unreliable | Self::UnreliableSequenced)
     }
 
     /// Returns whether this reliability is ordered.
     pub fn is_ordered(self) -> bool {
         matches!(
             self,
-            ReliableOrdered | ReliableSequenced | UnreliableSequenced
+            Self::ReliableOrdered | Self::ReliableSequenced | Self::UnreliableSequenced
         )
     }
 
     /// Returns whether this reliability is sequenced.
     pub fn is_sequenced(self) -> bool {
-        matches!(self, UnreliableSequenced | ReliableSequenced)
+        matches!(self, Self::UnreliableSequenced | Self::ReliableSequenced)
     }
 }

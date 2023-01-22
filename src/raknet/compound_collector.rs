@@ -34,7 +34,7 @@ impl CompoundCollector {
 
         fragment_list.insert(fragment.compound_index as usize, fragment.body);
 
-        let is_complete = !fragment_list.iter().any(|f| f.is_empty());
+        let is_complete = !fragment_list.iter().any(BytesMut::is_empty);
         if is_complete {
             let final_size = fragment_list.iter().fold(0, |acc, f| acc + f.len());
             let mut final_buffer = BytesMut::with_capacity(final_size);

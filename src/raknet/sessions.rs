@@ -156,8 +156,8 @@ impl Session {
         *self.last_update.write() = Instant::now();
 
         match *task.first().unwrap() {
-            Ack::ID => self.process_ack(task).await,
-            Nack::ID => self.process_nack(task).await,
+            Ack::ID => self.process_ack(task),
+            Nack::ID => self.process_nack(task),
             _ => self.process_frame_batch(task).await,
         }
     }
@@ -222,7 +222,7 @@ impl Session {
             if frame.is_compound {
                 tracing::info!("Received compound");
                 if let Some(p) = self.compound_collector.insert(frame.clone()) {
-                    self.process_unframed_packet(p).await?
+                    self.process_unframed_packet(p).await?;
                 }
             }
 
@@ -242,9 +242,9 @@ impl Session {
                 tracing::debug!("Session {:X} requested disconnect", self.guid);
                 self.flag_for_close();
             }
-            ConnectionRequest::ID => self.handle_connection_request(task).await?,
-            NewIncomingConnection::ID => self.handle_new_incoming_connection(task).await?,
-            OnlinePing::ID => self.handle_connected_ping(task).await?,
+            ConnectionRequest::ID => self.handle_connection_request(task)?,
+            NewIncomingConnection::ID => self.handle_new_incoming_connection(task)?,
+            OnlinePing::ID => self.handle_connected_ping(task)?,
             GAME_PACKET_ID => self.handle_game_packet(task).await?,
             id => {
                 tracing::info!("ID: {} {:?}", id, task.as_ref());
@@ -255,7 +255,7 @@ impl Session {
         Ok(())
     }
 
-    async fn handle_connection_request(&self, task: BytesMut) -> VexResult<()> {
+    fn handle_connection_request(&self, task: BytesMut) -> VexResult<()> {
         let request = ConnectionRequest::decode(task)?;
         let response = ConnectionRequestAccepted {
             client_address: self.address,
@@ -270,12 +270,12 @@ impl Session {
         Ok(())
     }
 
-    async fn handle_new_incoming_connection(&self, task: BytesMut) -> VexResult<()> {
+    fn handle_new_incoming_connection(&self, task: BytesMut) -> VexResult<()> {
         let request = NewIncomingConnection::decode(task)?;
         Ok(())
     }
 
-    async fn handle_connected_ping(&self, task: BytesMut) -> VexResult<()> {
+    fn handle_connected_ping(&self, task: BytesMut) -> VexResult<()> {
         let ping = OnlinePing::decode(task)?;
         let pong = OnlinePong {
             ping_time: ping.time,
@@ -302,12 +302,12 @@ impl Session {
 
         let header = Header::decode(&mut task)?;
         match header.id {
-            RequestNetworkSettings::ID => self.handle_request_network_settings(task).await,
+            RequestNetworkSettings::ID => self.handle_request_network_settings(task),
             _ => todo!("Other game packets"),
         }
     }
 
-    async fn handle_request_network_settings(&self, mut task: BytesMut) -> VexResult<()> {
+    fn handle_request_network_settings(&self, mut task: BytesMut) -> VexResult<()> {
         let request = RequestNetworkSettings::decode(task)?;
         tracing::debug!("{request:?}");
         Ok(())
@@ -316,7 +316,7 @@ impl Session {
     /// Processes an acknowledgement received from the client.
     ///
     /// This function unregisters the specified packet IDs from the recovery queue.
-    async fn process_ack(&self, task: BytesMut) -> VexResult<()> {
+    fn process_ack(&self, task: BytesMut) -> VexResult<()> {
         let ack = Ack::decode(task)?;
         self.recovery_queue.confirm(&ack.records);
 
@@ -327,7 +327,7 @@ impl Session {
     ///
     /// This function makes sure the packet is retrieved from the recovery queue and sent to the
     /// client again.
-    async fn process_nack(&self, task: BytesMut) -> VexResult<()> {
+    fn process_nack(&self, task: BytesMut) -> VexResult<()> {
         let nack = Nack::decode(task)?;
         let batch = self.recovery_queue.recover(&nack.records);
         tracing::info!("Recovered packets: {:?}", nack.records);
@@ -468,10 +468,7 @@ pub struct SessionTracker {
 
 impl SessionTracker {
     /// Creates a new session tracker.
-    pub fn new(
-        global_token: CancellationToken,
-        max_session_count: usize,
-    ) -> VexResult<SessionTracker> {
+    pub fn new(global_token: CancellationToken, max_session_count: usize) -> Self {
         let session_list = Arc::new(DashMap::new());
         {
             let session_list = session_list.clone();
@@ -480,11 +477,11 @@ impl SessionTracker {
             });
         }
 
-        Ok(SessionTracker {
+        Self {
             global_token,
             session_list,
             max_session_count,
-        })
+        }
     }
 
     /// Creates a new session and adds it to the tracker.

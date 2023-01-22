@@ -1,3 +1,7 @@
+#![allow(dead_code)]
+#![allow(unused)]
+#![warn(clippy::pedantic)]
+
 use std::sync::atomic::{AtomicU16, Ordering};
 
 use tokio::runtime;
@@ -7,9 +11,9 @@ use error::VexResult;
 use crate::instance::ServerInstance;
 
 mod error;
+mod instance;
 mod packets;
 mod raknet;
-mod instance;
 mod util;
 
 #[cfg(test)]

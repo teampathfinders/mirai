@@ -7,7 +7,7 @@ use crate::raknet::packets::{Encodable, OFFLINE_MESSAGE_DATA, RAKNET_VERSION};
 /// with the version used by the server ([`RAKNET_VERSION`]).
 ///
 /// This packet should be sent in response to [`OpenConnectionRequest1`](super::OpenConnectionRequest1)
-/// if the protocol_version field does not match the server's version.
+/// if the [`protocol_version`](super::OpenConnectionRequest1::protocol_version) field does not match the server's version.
 pub struct IncompatibleProtocol {
     /// Randomly generated GUID of the server.
     /// Corresponds to [`ServerInstance::guid`](crate::ServerInstance::guid).

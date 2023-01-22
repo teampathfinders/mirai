@@ -15,27 +15,17 @@
     <cargoProject FILE="$PROJECT_DIR$/Cargo.toml" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="eb8ce776-e64a-444b-a034-2036d6cbe18e" name="Changes" comment="Files reorganised&#10;Added header and RequestNetworkSettings decoding">
-      <change afterPath="$PROJECT_DIR$/src/packets/disconnect.rs" afterDir="false" />
+    <list default="true" id="eb8ce776-e64a-444b-a034-2036d6cbe18e" name="Changes" comment="Removed config.rs file">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Cargo.lock" beforeDir="false" afterPath="$PROJECT_DIR$/Cargo.lock" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/config.rs" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/instance.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/instance.rs" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/main.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/main.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/packets/mod.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/packets/mod.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/packets/network_settings.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/packets/network_settings.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/packets/request_network_settings.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/packets/request_network_settings.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/raknet/compound_collector.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/raknet/compound_collector.rs" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/raknet/frame.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/raknet/frame.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/raknet/header.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/raknet/header.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/raknet/mod.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/raknet/mod.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/raknet/packets/connection_request_accepted.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/raknet/packets/connection_request_accepted.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/raknet/packets/disconnect.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/raknet/packets/disconnect.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/raknet/packets/mod.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/raknet/packets/mod.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/raknet/packets/new_incoming_connection.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/raknet/packets/new_incoming_connection.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/raknet/packets/incompatible_protocol.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/raknet/packets/incompatible_protocol.rs" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/raknet/recovery_queue.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/raknet/recovery_queue.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/raknet/reliability.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/raknet/reliability.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/raknet/send_queue.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/raknet/send_queue.rs" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/raknet/sessions.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/raknet/sessions.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/services.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/instance.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/test.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/test.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/util/extensions.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/util/extensions.rs" afterDir="false" />
     </list>
     <list id="5ea80ab6-242d-4220-8770-a42d5b241561" name="Changes by EJADA_A008" comment="" />
     <option name="SHOW_DIALOG" value="false" />
@@ -274,7 +264,6 @@
   <component name="VcsManagerConfiguration">
     <option name="CHECK_CODE_CLEANUP_BEFORE_PROJECT_COMMIT" value="true" />
     <option name="CHECK_NEW_TODO" value="false" />
-    <MESSAGE value="Implemented u24 deserialisation" />
     <MESSAGE value="Implemented frame set decoder" />
     <MESSAGE value="Implemented acknowledgement packets.&#10;Working on frame set processing" />
     <MESSAGE value="Implemented compound collector" />
@@ -299,7 +288,8 @@
     <MESSAGE value="Added NetworkSettings packet" />
     <MESSAGE value="Implemented varuint32 and packet length decoding" />
     <MESSAGE value="Files reorganised&#10;Added header and RequestNetworkSettings decoding" />
-    <option name="LAST_COMMIT_MESSAGE" value="Files reorganised&#10;Added header and RequestNetworkSettings decoding" />
+    <MESSAGE value="Removed config.rs file" />
+    <option name="LAST_COMMIT_MESSAGE" value="Removed config.rs file" />
     <option name="OPTIMIZE_IMPORTS_BEFORE_PROJECT_COMMIT" value="true" />
     <option name="REFORMAT_BEFORE_PROJECT_COMMIT" value="true" />
     <option name="REARRANGE_BEFORE_PROJECT_COMMIT" value="true" />
