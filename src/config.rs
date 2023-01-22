@@ -16,7 +16,7 @@ pub struct ServerConfig {
 lazy_static! {
     pub static ref SERVER_CONFIG: RwLock<ServerConfig> = RwLock::new(ServerConfig {
         max_players: 10,
-        compression_algorithm: CompressionAlgorithm::Snappy,
+        compression_algorithm: CompressionAlgorithm::Flate,
         compression_threshold: 1, // Compress all packets
         client_throttle: ClientThrottleSettings { // Disable client throttling
             enabled: false,

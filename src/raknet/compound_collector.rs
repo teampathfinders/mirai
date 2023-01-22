@@ -1,12 +1,16 @@
-use bytes::BytesMut;
+use bytes::{BufMut, BytesMut};
 use dashmap::DashMap;
 
 use crate::raknet::Frame;
+use crate::vex_error;
+
+// type Fragment = (u32, BytesMut);
+type Fragment = BytesMut;
 
 /// Keeps track of packet fragments, merging them when all fragments have been received.
 #[derive(Debug)]
 pub struct CompoundCollector {
-    compounds: DashMap<u16, Vec<BytesMut>>,
+    compounds: DashMap<u16, Vec<Fragment>>,
 }
 
 impl CompoundCollector {
@@ -21,32 +25,104 @@ impl CompoundCollector {
     ///
     /// If this fragment makes the compound complete, all fragments will be merged
     /// and the completed packet will be returned.
-    pub fn insert(&self, fragment: Frame) -> Option<BytesMut> {
-        let mut fragment_list = self
-            .compounds
-            .entry(fragment.compound_id)
-            .or_insert_with(|| {
-                let mut vec = Vec::with_capacity(fragment.compound_size as usize);
-                vec.resize(fragment.compound_size as usize, BytesMut::new());
+    pub fn insert(&self, mut frame: Frame) -> Option<Frame> {
+        // let is_completed = {
+        //     let mut entry = self
+        //         .compounds
+        //         .entry(frame.compound_id)
+        //         .or_insert_with(|| {
+        //             Vec::with_capacity(frame.compound_size as usize)
+        //         });
+        //
+        //     let mut fragments = entry.value_mut();
+        //
+        //     // Verify that the fragment index is valid
+        //     if frame.compound_index >= frame.compound_size {
+        //         return None
+        //     }
+        //
+        //     tracing::info!("Received fragment {}/{}", frame.compound_index, frame.compound_size);
+        //
+        //     fragments.push((frame.compound_index, frame.body.clone()));
+        //     fragments.len() >= frame.compound_size as usize
+        // };
+        //
+        // if is_completed {
+        //     let mut kv = self
+        //         .compounds
+        //         .remove(&frame.compound_id)
+        //         .expect("Compound ID was not found in collector");
+        //
+        //     let fragments = &mut kv.1;
+        //
+        //     // Calculate total body size
+        //     let total_size = fragments.iter().fold(0, |acc, f| acc + f.1.len());
+        //
+        //     frame.body.clear();
+        //     frame.body.reserve(total_size - frame.body.capacity());
+        //
+        //     // Sort fragments in the correct order
+        //     fragments.sort_unstable_by_key(|k| k.0);
+        //
+        //     // Merge all fragments
+        //     for mut fragment in fragments.iter() {
+        //         frame.body.put(fragment.1.as_ref());
+        //     }
+        //
+        //     tracing::info!("Merged {} fragments into a {} byte compound", frame.compound_size, frame.body.len());
+        //
+        //     frame.is_compound = false;
+        //     return Some(frame)
+        // }
+        //
+        // None
 
-                vec
-            });
+        let is_completed = {
+            let mut entry = self
+                .compounds
+                .entry(frame.compound_id)
+                .or_insert_with(|| {
+                    let mut vec = Vec::with_capacity(frame.compound_size as usize);
+                    vec.resize(frame.compound_size as usize, BytesMut::new());
+                    vec
+                });
 
-        fragment_list.insert(fragment.compound_index as usize, fragment.body);
+            let mut fragments = entry.value_mut();
 
-        let is_complete = !fragment_list.iter().any(BytesMut::is_empty);
-        if is_complete {
-            let final_size = fragment_list.iter().fold(0, |acc, f| acc + f.len());
-            let mut final_buffer = BytesMut::with_capacity(final_size);
-
-            for buffer in fragment_list.value() {
-                final_buffer.extend_from_slice(buffer);
+            // Verify that the fragment index is valid
+            if frame.compound_index >= frame.compound_size {
+                return None
             }
 
-            self.compounds.remove(&fragment.compound_id);
-            Some(final_buffer)
-        } else {
-            None
+            fragments[frame.compound_index as usize] = frame.body.clone();
+            !fragments.iter().any(BytesMut::is_empty)
+        };
+
+        if is_completed {
+            let mut kv = self
+                .compounds
+                .remove(&frame.compound_id)
+                .expect("Compound ID was not found in collector");
+
+            let fragments = &mut kv.1;
+
+            // Calculate total body size
+            let total_size = fragments.iter().fold(0, |acc, f| acc + f.len());
+
+            frame.body.clear();
+            frame.body.reserve(total_size - frame.body.capacity());
+
+            // Merge all fragments
+            for mut fragment in fragments.iter() {
+                frame.body.put(fragment.as_ref());
+            }
+
+            tracing::info!("Merged {} fragments into a {} byte compound", frame.compound_size, frame.body.len());
+
+            frame.is_compound = false;
+            return Some(frame)
         }
+
+        None
     }
 }

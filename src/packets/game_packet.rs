@@ -37,7 +37,7 @@ impl<T: GamePacket> Packet<T> {
 impl<T: GamePacket + Encodable> Encodable for Packet<T> {
     fn encode(&self) -> VexResult<BytesMut> {
         let mut buffer = BytesMut::new();
-        let header = self.header.encode()?;
+        let header = self.header.encode();
         let body = self.internal_packet.encode()?;
 
         buffer.put_u8(Self::ID);

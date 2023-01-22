@@ -1,11 +1,11 @@
 use dashmap::DashMap;
 
-use crate::raknet::Frame;
+use crate::raknet::{Frame, FrameBatch};
 use crate::raknet::packets::AckRecord;
 
 #[derive(Debug)]
 pub struct RecoveryQueue {
-    frames: DashMap<u32, Frame>,
+    frames: DashMap<u32, FrameBatch>,
 }
 
 impl RecoveryQueue {
@@ -15,8 +15,8 @@ impl RecoveryQueue {
         }
     }
 
-    pub fn insert(&self, frame: Frame) {
-        self.frames.insert(frame.reliable_index, frame);
+    pub fn insert(&self, batch: FrameBatch) {
+        self.frames.insert(batch.get_batch_number(), batch);
     }
 
     pub fn confirm(&self, records: &Vec<AckRecord>) {
@@ -34,20 +34,20 @@ impl RecoveryQueue {
         }
     }
 
-    pub fn recover(&self, records: &Vec<AckRecord>) -> Vec<Frame> {
+    pub fn recover(&self, records: &Vec<AckRecord>) -> Vec<FrameBatch> {
         let mut recovered = Vec::new();
         for record in records {
             match record {
                 AckRecord::Single(id) => {
                     if let Some(frame) = self.frames.get(id) {
-                        recovered.push(frame.value().clone());
+                        recovered.push((*frame.value()).clone());
                     }
                 }
                 AckRecord::Range(range) => {
                     recovered.reserve(range.len());
                     for id in range.clone() {
                         if let Some(frame) = self.frames.get(&id) {
-                            recovered.push(frame.value().clone());
+                            recovered.push((*frame.value()).clone());
                         }
                     }
                 }

@@ -14,7 +14,7 @@ pub const FRAME_BIT_FLAG: u8 = 0x80;
 pub const COMPOUND_BIT_FLAG: u8 = 0b0001_0000;
 
 /// Contains a set of frames.
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Clone)]
 pub struct FrameBatch {
     batch_number: u32,
     /// Individual frames
