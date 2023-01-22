@@ -1,5 +1,6 @@
-use crate::error::VexResult;
 use bytes::BytesMut;
+
+use crate::error::VexResult;
 
 /// Trait that all server to client packets should implement.
 pub trait Encodable {

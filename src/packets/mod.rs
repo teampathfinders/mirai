@@ -9,7 +9,11 @@ pub use resource_pack_stack::*;
 pub use resource_packs_info::*;
 pub use server_to_client_handshake::*;
 pub use start_game::*;
+pub use game_packet::*;
+pub use traits::*;
 
+mod traits;
+mod game_packet;
 mod client_to_server_handshake;
 mod disconnect;
 mod login;

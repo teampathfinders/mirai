@@ -8,6 +8,7 @@ use rand::Rng;
 use tokio::net::UdpSocket;
 use tokio::signal;
 use tokio_util::sync::CancellationToken;
+use crate::config::SERVER_CONFIG;
 
 use crate::error::{VexError, VexResult};
 use crate::packets::{CLIENT_VERSION_STRING, NETWORK_VERSION};
@@ -270,13 +271,14 @@ impl ServerInstance {
 
     fn refresh_metadata(&self, description: &str) {
         let new_id = format!(
-            "MCPE;{};{};{};{};{};{};Vex Dedicated Server;Survival;1;{};{};",
+            "MCPE;{};{};{};{};{};{};{};Survival;1;{};{};",
             description,
             NETWORK_VERSION,
             CLIENT_VERSION_STRING,
             self.session_controller.session_count(),
             self.session_controller.max_session_count(),
             self.guid,
+            SERVER_CONFIG.read().server_name,
             self.ipv4_port,
             19133
         );

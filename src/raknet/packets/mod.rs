@@ -13,8 +13,8 @@ pub use open_connection_reply1::*;
 pub use open_connection_reply2::*;
 pub use open_connection_request1::*;
 pub use open_connection_request2::*;
-pub use traits::*;
-pub use traits::*;
+pub use crate::raknet::traits::*;
+pub use crate::raknet::traits::*;
 
 pub use crate::raknet::packet::*;
 
@@ -32,7 +32,6 @@ mod open_connection_reply1;
 mod open_connection_reply2;
 mod open_connection_request1;
 mod open_connection_request2;
-mod traits;
 
 pub const RAKNET_VERSION: u8 = 11;
 pub const OFFLINE_MESSAGE_DATA: &[u8] = &[

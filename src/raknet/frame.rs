@@ -14,11 +14,11 @@ pub const FRAME_BIT_FLAG: u8 = 0x80;
 pub const COMPOUND_BIT_FLAG: u8 = 0b0001_0000;
 
 /// Contains a set of frames.
-#[derive(Debug)]
+#[derive(Debug, Default)]
 pub struct FrameBatch {
-    pub batch_number: u32,
+    batch_number: u32,
     /// Individual frames
-    pub frames: Vec<Frame>,
+    frames: Vec<Frame>,
 }
 
 impl FrameBatch {
@@ -29,6 +29,28 @@ impl FrameBatch {
             + self.frames.iter().fold(0, |acc, f| {
             acc + std::mem::size_of::<Frame>() + f.body.len()
         })
+    }
+
+    pub fn batch_number(mut self, batch_number: u32) -> Self {
+        self.batch_number = batch_number;
+        self
+    }
+
+    pub fn get_batch_number(&self) -> u32 {
+        self.batch_number
+    }
+
+    pub fn push(mut self, frame: Frame) -> Self {
+        self.frames.push(frame);
+        self
+    }
+
+    pub fn get_frames(&self) -> &[Frame] {
+        &self.frames
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.frames.is_empty()
     }
 }
 

@@ -30,4 +30,8 @@ impl Header {
             target_subclient,
         })
     }
+
+    pub fn encode(&self, buffer: &mut BytesMut) {
+        todo!()
+    }
 }

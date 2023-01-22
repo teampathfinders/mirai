@@ -15,16 +15,20 @@
     <cargoProject FILE="$PROJECT_DIR$/Cargo.toml" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="eb8ce776-e64a-444b-a034-2036d6cbe18e" name="Changes" comment="Removed config.rs file">
+    <list default="true" id="eb8ce776-e64a-444b-a034-2036d6cbe18e" name="Changes" comment="Fixed many clippy warnings">
+      <change afterPath="$PROJECT_DIR$/src/config.rs" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/packets/game_packet.rs" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/packets/traits.rs" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/instance.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/instance.rs" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/main.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/main.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/raknet/compound_collector.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/raknet/compound_collector.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/packets/mod.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/packets/mod.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/packets/network_settings.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/packets/network_settings.rs" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/raknet/frame.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/raknet/frame.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/raknet/packets/incompatible_protocol.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/raknet/packets/incompatible_protocol.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/raknet/recovery_queue.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/raknet/recovery_queue.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/raknet/reliability.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/raknet/reliability.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/raknet/send_queue.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/raknet/send_queue.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/raknet/header.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/raknet/header.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/raknet/mod.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/raknet/mod.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/raknet/packets/mod.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/raknet/packets/mod.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/raknet/packets/traits.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/raknet/traits.rs" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/raknet/sessions.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/raknet/sessions.rs" afterDir="false" />
     </list>
     <list id="5ea80ab6-242d-4220-8770-a42d5b241561" name="Changes by EJADA_A008" comment="" />
@@ -101,11 +105,11 @@
       <recent name="C:\Users\Ruben\Documents\programming\rs\vex\src\raknet\packets" />
     </key>
     <key name="MoveFile.RECENT_KEYS">
+      <recent name="C:\Users\Ruben\Documents\programming\rs\vex\src\raknet" />
       <recent name="C:\Users\Ruben\Documents\programming\rs\vex\src\raknet\packets" />
       <recent name="C:\Users\Ruben\Documents\programming\rs\vex\src\packets" />
       <recent name="C:\Users\Ruben\Documents\programming\rs\vex\src\raknet\packets\online" />
       <recent name="C:\Users\Ruben\Documents\programming\rs\vex\src\raknet\packets\offline" />
-      <recent name="C:\Users\Ruben\Documents\programming\rs\vex\src\raknet" />
     </key>
   </component>
   <component name="RunManager" selected="Cargo.Run">
@@ -264,7 +268,6 @@
   <component name="VcsManagerConfiguration">
     <option name="CHECK_CODE_CLEANUP_BEFORE_PROJECT_COMMIT" value="true" />
     <option name="CHECK_NEW_TODO" value="false" />
-    <MESSAGE value="Implemented frame set decoder" />
     <MESSAGE value="Implemented acknowledgement packets.&#10;Working on frame set processing" />
     <MESSAGE value="Implemented compound collector" />
     <MESSAGE value="Implemented ACK encoder and IncompatibleProtocol" />
@@ -289,7 +292,8 @@
     <MESSAGE value="Implemented varuint32 and packet length decoding" />
     <MESSAGE value="Files reorganised&#10;Added header and RequestNetworkSettings decoding" />
     <MESSAGE value="Removed config.rs file" />
-    <option name="LAST_COMMIT_MESSAGE" value="Removed config.rs file" />
+    <MESSAGE value="Fixed many clippy warnings" />
+    <option name="LAST_COMMIT_MESSAGE" value="Fixed many clippy warnings" />
     <option name="OPTIMIZE_IMPORTS_BEFORE_PROJECT_COMMIT" value="true" />
     <option name="REFORMAT_BEFORE_PROJECT_COMMIT" value="true" />
     <option name="REARRANGE_BEFORE_PROJECT_COMMIT" value="true" />

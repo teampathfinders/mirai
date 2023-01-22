@@ -12,8 +12,9 @@ use tokio::net::UdpSocket;
 use tokio_util::sync::CancellationToken;
 
 use crate::{vex_assert, vex_error};
+use crate::config::SERVER_CONFIG;
 use crate::error::VexResult;
-use crate::packets::{GAME_PACKET_ID, RequestNetworkSettings};
+use crate::packets::{GAME_PACKET_ID, NetworkSettings, Packet, RequestNetworkSettings};
 use crate::raknet::{
     CompoundCollector, Frame, FrameBatch, Header, OrderChannel, RecoveryQueue, Reliability,
     SendPriority, SendQueue,
@@ -48,7 +49,10 @@ const GARBAGE_COLLECT_INTERVAL: Duration = Duration::from_secs(10);
 ///
 #[derive(Debug)]
 pub struct Session {
+    /// Current tick of this session, this is increased by one every time the session
+    /// processes packets.
     current_tick: AtomicU64,
+    /// IPv4 socket of the server.
     ipv4_socket: Arc<UdpSocket>,
     /// IP address of this session.
     address: SocketAddr,
@@ -62,12 +66,15 @@ pub struct Session {
     last_update: RwLock<Instant>,
     /// Indicates whether this session is active.
     active: CancellationToken,
-    last_assigned_batch_number: AtomicU32,
-    last_assigned_sequence_index: AtomicU32,
+    /// Batch number last assigned by the server.
+    batch_number: AtomicU32,
+    /// Sequence index last assigned by the server.
+    sequence_index: AtomicU32,
+    /// Acknowledgment index last used by the server.
     acknowledgment_index: AtomicU32,
     /// Latest sequence index that was received.
     /// Sequenced packets with sequence numbers less than this one will be discarded.
-    last_client_batch_number: AtomicU32,
+    client_batch_number: AtomicU32,
     /// Collects fragmented packets.
     compound_collector: CompoundCollector,
     /// Channels used to order packets.
@@ -76,6 +83,7 @@ pub struct Session {
     send_queue: SendQueue,
     /// Keeps track of all unprocessed received packets.
     receive_queue: AsyncDeque<BytesMut>,
+    /// Queue that stores packets in case they need to be recovered due to packet loss.
     recovery_queue: RecoveryQueue,
 }
 
@@ -95,9 +103,9 @@ impl Session {
             guid: client_guid,
             last_update: RwLock::new(Instant::now()),
             active: CancellationToken::new(),
-            last_assigned_batch_number: AtomicU32::new(0),
-            last_assigned_sequence_index: AtomicU32::new(0),
-            last_client_batch_number: AtomicU32::new(0),
+            batch_number: AtomicU32::new(0),
+            sequence_index: AtomicU32::new(0),
+            client_batch_number: AtomicU32::new(0),
             acknowledgment_index: AtomicU32::new(0),
             compound_collector: CompoundCollector::new(),
             order_channels: Default::default(),
@@ -171,12 +179,12 @@ impl Session {
     /// * Acknowledging reliable packets
     async fn process_frame_batch(&self, task: BytesMut) -> VexResult<()> {
         let batch = FrameBatch::decode(task)?;
-        self.last_client_batch_number
-            .fetch_max(batch.batch_number, Ordering::SeqCst);
+        self.client_batch_number
+            .fetch_max(batch.get_batch_number(), Ordering::SeqCst);
 
-        for frame in batch.frames {
+        for frame in batch.get_frames() {
             if frame.reliability.is_sequenced()
-                && frame.sequence_index < self.last_client_batch_number.load(Ordering::SeqCst)
+                && frame.sequence_index < self.client_batch_number.load(Ordering::SeqCst)
             {
                 // Discard packet
                 continue;
@@ -209,10 +217,10 @@ impl Session {
                 assert!(!frame.is_compound); // TODO: Figure this out
 
                 // Add packet to order queue
-                if let Some(ready) = self.order_channels[frame.order_channel as usize].insert(frame)
+                if let Some(ready) = self.order_channels[frame.order_channel as usize].insert(frame.clone())
                 {
                     for packet in ready {
-                        self.process_unframed_packet(packet.body).await?;
+                        self.process_unframed_packet(packet.body)?;
                     }
                 }
 
@@ -222,18 +230,18 @@ impl Session {
             if frame.is_compound {
                 tracing::info!("Received compound");
                 if let Some(p) = self.compound_collector.insert(frame.clone()) {
-                    self.process_unframed_packet(p).await?;
+                    self.process_unframed_packet(p)?;
                 }
             }
 
-            self.process_unframed_packet(frame.body.clone()).await?;
+            self.process_unframed_packet(frame.body.clone())?;
         }
 
         Ok(())
     }
 
     /// Processes an unencapsulated game packet.
-    async fn process_unframed_packet(&self, mut task: BytesMut) -> VexResult<()> {
+    fn process_unframed_packet(&self, mut task: BytesMut) -> VexResult<()> {
         let bytes = task.as_ref();
 
         let packet_id = *task.first().expect("Game packet buffer was empty");
@@ -245,7 +253,7 @@ impl Session {
             ConnectionRequest::ID => self.handle_connection_request(task)?,
             NewIncomingConnection::ID => self.handle_new_incoming_connection(task)?,
             OnlinePing::ID => self.handle_connected_ping(task)?,
-            GAME_PACKET_ID => self.handle_game_packet(task).await?,
+            GAME_PACKET_ID => self.handle_game_packet(task)?,
             id => {
                 tracing::info!("ID: {} {:?}", id, task.as_ref());
                 todo!("Other game packet IDs")
@@ -289,7 +297,7 @@ impl Session {
         Ok(())
     }
 
-    async fn handle_game_packet(&self, mut task: BytesMut) -> VexResult<()> {
+    fn handle_game_packet(&self, mut task: BytesMut) -> VexResult<()> {
         vex_assert!(task.get_u8() == 0xfe);
 
         tracing::info!("Received game packet: {:x?}", task.as_ref());
@@ -309,7 +317,22 @@ impl Session {
 
     fn handle_request_network_settings(&self, mut task: BytesMut) -> VexResult<()> {
         let request = RequestNetworkSettings::decode(task)?;
-        tracing::debug!("{request:?}");
+        let reply = {
+            let lock = SERVER_CONFIG.read();
+            Packet::new(
+                NetworkSettings {
+                    compression_algorithm: lock.compression_algorithm,
+                    compression_threshold: lock.compression_threshold,
+                    client_throttle: lock.client_throttle,
+                })
+                .subclients(0, 0)
+                .encode()?
+        };
+
+        self.send_queue.insert(
+            SendPriority::Medium,
+            Frame::new(Reliability::Reliable, reply),
+        );
         Ok(())
     }
 
@@ -391,12 +414,8 @@ impl Session {
     async fn send_frames(&self, frames: Vec<Frame>) -> VexResult<()> {
         // TODO: Handle errors properly
         let max_batch_size = self.mtu as usize - std::mem::size_of::<FrameBatch>();
-        let mut batch = FrameBatch {
-            batch_number: self
-                .last_assigned_batch_number
-                .fetch_add(1, Ordering::SeqCst),
-            frames: vec![],
-        };
+        let mut batch = FrameBatch::default()
+            .batch_number(self.batch_number.fetch_add(1, Ordering::SeqCst));
 
         for mut frame in frames {
             let frame_size = frame.body.len() + std::mem::size_of::<Frame>();
@@ -411,7 +430,7 @@ impl Session {
             }
             if frame.reliability.is_sequenced() {
                 let sequence_index = self
-                    .last_assigned_sequence_index
+                    .sequence_index
                     .fetch_add(1, Ordering::SeqCst);
                 frame.sequence_index = sequence_index;
             }
@@ -421,24 +440,20 @@ impl Session {
             }
 
             if batch.estimate_size() + frame_size < max_batch_size {
-                batch.frames.push(frame);
+                batch = batch.push(frame);
             } else {
                 let encoded = batch.encode()?;
 
                 // TODO: Add IPv6 support
                 self.ipv4_socket.send_to(&encoded, self.address).await?;
 
-                batch = FrameBatch {
-                    batch_number: self
-                        .last_assigned_batch_number
-                        .fetch_add(1, Ordering::SeqCst),
-                    frames: vec![],
-                };
+                batch = FrameBatch::default()
+                    .batch_number(self.batch_number.fetch_add(1, Ordering::SeqCst));
             }
         }
 
         // Send remaining packets not sent by loop
-        if !batch.frames.is_empty() {
+        if !batch.is_empty() {
             let encoded = batch.encode()?;
             // TODO: Add IPv6 support
             self.ipv4_socket.send_to(&encoded, self.address).await?;

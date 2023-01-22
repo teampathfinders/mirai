@@ -17,3 +17,4 @@ mod recovery_queue;
 mod reliability;
 mod send_queue;
 mod sessions;
+mod traits;

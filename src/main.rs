@@ -10,6 +10,7 @@ use error::VexResult;
 
 use crate::instance::ServerInstance;
 
+mod config;
 mod error;
 mod instance;
 mod packets;
