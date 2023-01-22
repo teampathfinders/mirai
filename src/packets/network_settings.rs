@@ -1,7 +1,7 @@
 use bytes::{BufMut, BytesMut};
 
 use crate::error::VexResult;
-use crate::packets::{GameEncodable, GamePacket};
+use crate::packets::GamePacket;
 use crate::raknet::packets::Encodable;
 
 /// Supported compression algorithms.
@@ -50,9 +50,9 @@ impl GamePacket for NetworkSettings {
     const ID: u32 = 0x8f;
 }
 
-impl GameEncodable for NetworkSettings {
-    fn encode(&self, buffer: &mut BytesMut) -> VexResult<()> {
-        buffer.reserve(2 + 2 + 1 + 1 + 4);
+impl Encodable for NetworkSettings {
+    fn encode(&self) -> VexResult<BytesMut> {
+        let mut buffer = BytesMut::with_capacity(2 + 2 + 1 + 1 + 4);
 
         buffer.put_u16(self.compression_threshold);
         buffer.put_u16(self.compression_algorithm as u16);
@@ -60,6 +60,6 @@ impl GameEncodable for NetworkSettings {
         buffer.put_u8(self.client_throttle.threshold);
         buffer.put_f32(self.client_throttle.scalar);
 
-        Ok(())
+        Ok(buffer)
     }
 }

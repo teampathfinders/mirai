@@ -1,11 +1,11 @@
-use bytes::BytesMut;
+use bytes::{BufMut, BytesMut};
 
 use crate::error::VexResult;
-use crate::util::ReadExtensions;
+use crate::util::{ReadExtensions, WriteExtensions};
 
 /// Game packets are prefixed with a length and a header.
 /// The header contains the packet ID and target/subclient IDs in case of splitscreen multiplayer.
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub struct Header {
     /// Packet ID
     pub id: u32,
@@ -19,6 +19,7 @@ impl Header {
     /// Decodes the header.
     pub fn decode(buffer: &mut BytesMut) -> VexResult<Self> {
         let value = buffer.get_var_u32()?;
+        println!("decode {value:#025b}");
 
         let id = value & 0x3ff;
         let sender_subclient = ((value >> 10) & 0x3) as u8;
@@ -26,12 +27,24 @@ impl Header {
 
         Ok(Self {
             id,
-            sender_subclient,
-            target_subclient,
+            sender_subclient: sender_subclient as u8,
+            target_subclient: target_subclient as u8,
         })
     }
 
     pub fn encode(&self, buffer: &mut BytesMut) {
-        todo!()
+        let value = self.id |
+            ((self.sender_subclient as u32) << 10) |
+            ((self.target_subclient as u32) << 12);
+
+        println!("encode {value:#025b}");
+
+        {
+            let id = value & 0x3ff;
+            let sender_subclient = value;
+            let target_subclient = (value >> 12);
+        }
+
+        buffer.put_var_u32(value);
     }
 }

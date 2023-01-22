@@ -14,7 +14,7 @@ use tokio_util::sync::CancellationToken;
 use crate::{vex_assert, vex_error};
 use crate::config::SERVER_CONFIG;
 use crate::error::VexResult;
-use crate::packets::{GAME_PACKET_ID, NetworkSettings, Packet, RequestNetworkSettings};
+use crate::packets::{CompressionAlgorithm, GAME_PACKET_ID, NetworkSettings, Packet, RequestNetworkSettings};
 use crate::raknet::{
     CompoundCollector, Frame, FrameBatch, Header, OrderChannel, RecoveryQueue, Reliability,
     SendPriority, SendQueue,
@@ -309,6 +309,8 @@ impl Session {
         );
 
         let header = Header::decode(&mut task)?;
+        tracing::info!("header: {header:?}");
+
         match header.id {
             RequestNetworkSettings::ID => self.handle_request_network_settings(task),
             _ => todo!("Other game packets"),
@@ -317,17 +319,28 @@ impl Session {
 
     fn handle_request_network_settings(&self, mut task: BytesMut) -> VexResult<()> {
         let request = RequestNetworkSettings::decode(task)?;
-        let reply = {
+        let mut reply = {
             let lock = SERVER_CONFIG.read();
-            Packet::new(
+            let pk = Packet::new(
                 NetworkSettings {
-                    compression_algorithm: lock.compression_algorithm,
-                    compression_threshold: lock.compression_threshold,
+                    // compression_algorithm: lock.compression_algorithm,
+                    // compression_threshold: lock.compression_threshold,
+                    compression_algorithm: CompressionAlgorithm::Flate,
+                    compression_threshold: 0,
                     client_throttle: lock.client_throttle,
                 })
-                .subclients(0, 0)
-                .encode()?
+                .subclients(0, 0);
+
+            tracing::info!("{pk:x?}");
+            pk.encode()?
         };
+
+        // tracing::info!("{:x?}", reply.as_ref());
+        // {
+        //     reply.advance(1);
+        //     let header = Header::decode(&mut reply)?;
+        //     tracing::info!("Header {header:x?}");
+        // }
 
         self.send_queue.insert(
             SendPriority::Medium,

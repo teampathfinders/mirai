@@ -3,8 +3,8 @@ use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr, SocketAddrV4};
 use bytes::{Buf, BufMut};
 use lazy_static::lazy_static;
 
+use crate::{vex_assert, vex_error};
 use crate::error::{VexError, VexResult};
-use crate::vex_error;
 
 pub const IPV4_MEM_SIZE: usize = 1 + 4 + 2;
 pub const IPV6_MEM_SIZE: usize = 1 + 2 + 2 + 4 + 16 + 4;
@@ -108,6 +108,14 @@ pub trait WriteExtensions: BufMut {
                 self.put_u32(0); // Scope information
             }
         }
+    }
+
+    fn put_var_u32(&mut self, mut value: u32) {
+        while value >= 0x80 {
+            self.put_u8(((value) as u8) | 0x80);
+            value >>= 7;
+        }
+        self.put_u8(value as u8);
     }
 
     /// Writes a 24-bit unsigned little-endian integer to the buffer.

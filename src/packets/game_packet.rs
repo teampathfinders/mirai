@@ -1,11 +1,13 @@
 use bytes::{Buf, BufMut, BytesMut};
 
 use crate::error::VexResult;
-use crate::packets::{GAME_PACKET_ID, GameDecodable, GameEncodable, GamePacket, RequestNetworkSettings};
+use crate::packets::{GAME_PACKET_ID, GamePacket, RequestNetworkSettings};
 use crate::raknet::Header;
 use crate::raknet::packets::{Decodable, Encodable};
+use crate::util::WriteExtensions;
 use crate::vex_assert;
 
+#[derive(Debug)]
 pub struct Packet<T: GamePacket> {
     header: Header,
     internal_packet: T,
@@ -21,7 +23,7 @@ impl<T: GamePacket> Packet<T> {
                 target_subclient: 0,
                 sender_subclient: 0,
             },
-            internal_packet: internal_packet,
+            internal_packet,
         }
     }
 
@@ -32,13 +34,15 @@ impl<T: GamePacket> Packet<T> {
     }
 }
 
-impl<T: GamePacket + GameEncodable> Encodable for Packet<T> {
+impl<T: GamePacket + Encodable> Encodable for Packet<T> {
     fn encode(&self) -> VexResult<BytesMut> {
         let mut buffer = BytesMut::new();
+        let body = self.internal_packet.encode()?;
 
         buffer.put_u8(Self::ID);
+        buffer.put_var_u32(body.len() as u32);
         self.header.encode(&mut buffer);
-        self.internal_packet.encode(&mut buffer)?;
+        buffer.put(body);
 
         Ok(buffer)
     }
