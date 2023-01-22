@@ -13,11 +13,16 @@ use tokio_util::sync::CancellationToken;
 
 use crate::{vex_assert, vex_error};
 use crate::error::VexResult;
-use crate::packets::RequestNetworkSettings;
-use crate::raknet::{CompoundCollector, Frame, FrameBatch, Header, OrderChannel, RecoveryQueue, Reliability, SendPriority, SendQueue};
+use crate::packets::{GAME_PACKET_ID, RequestNetworkSettings};
+use crate::raknet::{
+    CompoundCollector, Frame, FrameBatch, Header, OrderChannel, RecoveryQueue, Reliability,
+    SendPriority, SendQueue,
+};
 use crate::raknet::packet::RawPacket;
 use crate::raknet::packets::{Ack, AckRecord, Decodable, Encodable, Nack};
-use crate::raknet::packets::{ConnectionRequest, ConnectionRequestAccepted, DisconnectNotification, NewIncomingConnection};
+use crate::raknet::packets::{
+    ConnectionRequest, ConnectionRequestAccepted, DisconnectNotification, NewIncomingConnection,
+};
 use crate::raknet::packets::{OnlinePing, OnlinePong};
 use crate::util::{AsyncDeque, ReadExtensions};
 
@@ -240,7 +245,7 @@ impl Session {
             ConnectionRequest::ID => self.handle_connection_request(task).await?,
             NewIncomingConnection::ID => self.handle_new_incoming_connection(task).await?,
             OnlinePing::ID => self.handle_connected_ping(task).await?,
-            COMPRESSED_PACKET => self.handle_game_packet(task).await?,
+            GAME_PACKET_ID => self.handle_game_packet(task).await?,
             id => {
                 tracing::info!("ID: {} {:?}", id, task.as_ref());
                 todo!("Other game packet IDs")
@@ -298,7 +303,7 @@ impl Session {
         let header = Header::decode(&mut task)?;
         match header.id {
             RequestNetworkSettings::ID => self.handle_request_network_settings(task).await,
-            _ => todo!("Other game packets")
+            _ => todo!("Other game packets"),
         }
     }
 

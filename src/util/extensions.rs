@@ -61,12 +61,15 @@ pub trait ReadExtensions: Buf {
             let b = self.get_u8();
             v |= ((b & 0x7f) as u32) << i;
             if b & 0x80 == 0 {
-                return Ok(v)
+                return Ok(v);
             }
             i += 7;
         }
 
-        Err(vex_error!(InvalidRequest, "Variable 32-bit integer did not end after 5 bytes"))
+        Err(vex_error!(
+            InvalidRequest,
+            "Variable 32-bit integer did not end after 5 bytes"
+        ))
     }
 
     /// Reads a 24-bit unsigned little-endian integer from the buffer.

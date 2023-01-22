@@ -19,23 +19,22 @@ pub use traits::*;
 pub use crate::raknet::packet::*;
 
 mod acknowledgements;
-mod traits;
-mod online_ping;
-mod online_pong;
-mod disconnect;
 mod connection_request;
 mod connection_request_accepted;
+mod disconnect;
 mod incompatible_protocol;
+mod new_incoming_connection;
+mod offline_ping;
+mod offline_pong;
+mod online_ping;
+mod online_pong;
 mod open_connection_reply1;
 mod open_connection_reply2;
 mod open_connection_request1;
 mod open_connection_request2;
-mod offline_ping;
-mod offline_pong;
-mod new_incoming_connection;
+mod traits;
 
 pub const RAKNET_VERSION: u8 = 11;
-pub const COMPRESSED_PACKET: u8 = 0xfe;
 pub const OFFLINE_MESSAGE_DATA: &[u8] = &[
     0x00, 0xff, 0xff, 0x00, 0xfe, 0xfe, 0xfe, 0xfe, 0xfd, 0xfd, 0xfd, 0xfd, 0x12, 0x34, 0x56, 0x78,
 ];

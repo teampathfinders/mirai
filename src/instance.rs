@@ -9,10 +9,13 @@ use tokio::net::UdpSocket;
 use tokio::signal;
 use tokio_util::sync::CancellationToken;
 
-use crate::config::{CLIENT_VERSION_STRING, NETWORK_VERSION, ServerConfig};
 use crate::error::{VexError, VexResult};
-use crate::raknet::packets::{IncompatibleProtocol, OfflinePing, OfflinePong, OpenConnectionReply1, OpenConnectionReply2, OpenConnectionRequest1, OpenConnectionRequest2};
+use crate::packets::{CLIENT_VERSION_STRING, NETWORK_VERSION};
 use crate::raknet::packets::{Decodable, Encodable, RAKNET_VERSION, RawPacket};
+use crate::raknet::packets::{
+    IncompatibleProtocol, OfflinePing, OfflinePong, OpenConnectionReply1, OpenConnectionReply2,
+    OpenConnectionRequest1, OpenConnectionRequest2,
+};
 use crate::raknet::SessionTracker;
 use crate::util::AsyncDeque;
 
@@ -47,26 +50,28 @@ pub struct ServerInstance {
 
 impl ServerInstance {
     /// Creates a new server
-    pub async fn new(config: ServerConfig) -> VexResult<Arc<Self>> {
+    pub async fn new(
+        ipv4_port: u16, max_players: usize,
+    ) -> VexResult<Arc<Self>> {
         tracing::info!("Setting up services...");
 
         let global_token = CancellationToken::new();
         let ipv4_socket =
-            Arc::new(UdpSocket::bind(SocketAddrV4::new(IPV4_LOCAL_ADDR, config.ipv4_port)).await?);
+            Arc::new(UdpSocket::bind(SocketAddrV4::new(IPV4_LOCAL_ADDR, ipv4_port)).await?);
 
         let server = Self {
             guid: rand::thread_rng().gen(),
             metadata: RwLock::new(String::new()),
 
             ipv4_socket,
-            ipv4_port: config.ipv4_port,
+            ipv4_port: ipv4_port,
 
             inward_queue: Arc::new(AsyncDeque::new(10)),
             outward_queue: Arc::new(AsyncDeque::new(10)),
 
             session_controller: Arc::new(SessionTracker::new(
                 global_token.clone(),
-                config.max_players,
+                max_players,
             )?),
             global_token,
         };

@@ -4,15 +4,13 @@ use tokio::runtime;
 
 use error::VexResult;
 
-use crate::config::ServerConfig;
-use crate::services::ServerInstance;
+use crate::instance::ServerInstance;
 
-mod config;
 mod error;
-mod raknet;
-mod services;
-mod util;
 mod packets;
+mod raknet;
+mod instance;
+mod util;
 
 #[cfg(test)]
 mod test;
@@ -21,16 +19,11 @@ mod test;
 const IPV4_PORT: u16 = 19132;
 /// Default Minecraft IPv6 port
 const IPV6_PORT: u16 = 19133;
-/// Default configuration
-const CONFIG: ServerConfig = ServerConfig {
-    max_players: 10,
-    ipv4_port: 19132,
-};
 
 /// The asynchronous entrypoint that is ran by Tokio.
 async fn app_main() -> VexResult<()> {
     loop {
-        let controller = ServerInstance::new(CONFIG).await?;
+        let controller = ServerInstance::new(IPV4_PORT, 100).await?;
         match controller.run().await {
             Ok(_) => {
                 break;

@@ -15,30 +15,27 @@
     <cargoProject FILE="$PROJECT_DIR$/Cargo.toml" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="eb8ce776-e64a-444b-a034-2036d6cbe18e" name="Changes" comment="Implemented varuint32 and packet length decoding">
-      <change afterPath="$PROJECT_DIR$/src/packets/mod.rs" afterDir="false" />
+    <list default="true" id="eb8ce776-e64a-444b-a034-2036d6cbe18e" name="Changes" comment="Files reorganised&#10;Added header and RequestNetworkSettings decoding">
+      <change afterPath="$PROJECT_DIR$/src/packets/disconnect.rs" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Cargo.lock" beforeDir="false" afterPath="$PROJECT_DIR$/Cargo.lock" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/config.rs" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/src/main.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/main.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/packets/mod.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/packets/mod.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/packets/network_settings.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/packets/network_settings.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/packets/request_network_settings.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/packets/request_network_settings.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/raknet/frame.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/raknet/frame.rs" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/raknet/header.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/raknet/header.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/raknet/packets/client_to_server_handshake.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/packets/client_to_server_handshake.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/raknet/packets/connected_ping.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/raknet/packets/online_ping.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/raknet/packets/connected_pong.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/raknet/packets/online_pong.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/raknet/mod.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/raknet/mod.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/raknet/packets/connection_request_accepted.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/raknet/packets/connection_request_accepted.rs" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/raknet/packets/disconnect.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/raknet/packets/disconnect.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/raknet/packets/login.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/packets/login.rs" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/raknet/packets/mod.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/raknet/packets/mod.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/raknet/packets/network_settings.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/packets/network_settings.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/raknet/packets/play_status.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/packets/play_status.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/raknet/packets/request_network_settings.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/packets/request_network_settings.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/raknet/packets/resource_pack_client_response.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/packets/resource_pack_client_response.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/raknet/packets/resource_pack_stack.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/packets/resource_pack_stack.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/raknet/packets/resource_packs_info.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/packets/resource_packs_info.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/raknet/packets/server_to_client_handshake.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/packets/server_to_client_handshake.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/raknet/packets/start_game.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/packets/start_game.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/raknet/packets/unconnected_ping.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/raknet/packets/offline_ping.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/raknet/packets/unconnected_pong.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/raknet/packets/offline_pong.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/raknet/packets/new_incoming_connection.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/raknet/packets/new_incoming_connection.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/raknet/recovery_queue.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/raknet/recovery_queue.rs" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/raknet/sessions.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/raknet/sessions.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/services.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/services.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/services.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/instance.rs" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/test.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/test.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/util/extensions.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/util/extensions.rs" afterDir="false" />
     </list>
     <list id="5ea80ab6-242d-4220-8770-a42d5b241561" name="Changes by EJADA_A008" comment="" />
     <option name="SHOW_DIALOG" value="false" />
@@ -139,6 +136,23 @@
         <option name="CARGO.BUILD_TASK_PROVIDER" enabled="true" />
       </method>
     </configuration>
+    <configuration name="Clean" type="CargoCommandRunConfiguration" factoryName="Cargo Command">
+      <option name="command" value="clean" />
+      <option name="workingDirectory" value="file://$PROJECT_DIR$" />
+      <option name="channel" value="DEFAULT" />
+      <option name="requiredFeatures" value="true" />
+      <option name="allFeatures" value="false" />
+      <option name="emulateTerminal" value="false" />
+      <option name="withSudo" value="false" />
+      <option name="buildTarget" value="REMOTE" />
+      <option name="backtrace" value="SHORT" />
+      <envs />
+      <option name="isRedirectInput" value="false" />
+      <option name="redirectInputPath" value="" />
+      <method v="2">
+        <option name="CARGO.BUILD_TASK_PROVIDER" enabled="true" />
+      </method>
+    </configuration>
     <configuration name="Expand vex::packets::traits" type="CargoCommandRunConfiguration" factoryName="Cargo Command" temporary="true">
       <option name="command" value="expand --bin vex --color=always --theme=Dracula --tests packets::traits" />
       <option name="workingDirectory" value="file://$PROJECT_DIR$" />
@@ -156,8 +170,25 @@
         <option name="CARGO.BUILD_TASK_PROVIDER" enabled="true" />
       </method>
     </configuration>
-    <configuration name="Run" type="CargoCommandRunConfiguration" factoryName="Cargo Command">
-      <option name="command" value="run --package vex --bin vex" />
+    <configuration name="Run" type="CargoCommandRunConfiguration" factoryName="Cargo Command" nameIsGenerated="true">
+      <option name="command" value="run" />
+      <option name="workingDirectory" value="file://$PROJECT_DIR$" />
+      <option name="channel" value="DEFAULT" />
+      <option name="requiredFeatures" value="true" />
+      <option name="allFeatures" value="false" />
+      <option name="emulateTerminal" value="false" />
+      <option name="withSudo" value="false" />
+      <option name="buildTarget" value="REMOTE" />
+      <option name="backtrace" value="SHORT" />
+      <envs />
+      <option name="isRedirectInput" value="false" />
+      <option name="redirectInputPath" value="" />
+      <method v="2">
+        <option name="CARGO.BUILD_TASK_PROVIDER" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="Test" type="CargoCommandRunConfiguration" factoryName="Cargo Command">
+      <option name="command" value="test" />
       <option name="workingDirectory" value="file://$PROJECT_DIR$" />
       <option name="channel" value="DEFAULT" />
       <option name="requiredFeatures" value="true" />
@@ -174,8 +205,10 @@
       </method>
     </configuration>
     <list>
-      <item itemvalue="Cargo.Run" />
       <item itemvalue="Cargo.Check" />
+      <item itemvalue="Cargo.Run" />
+      <item itemvalue="Cargo.Clean" />
+      <item itemvalue="Cargo.Test" />
       <item itemvalue="Cargo.Expand vex::packets::traits" />
     </list>
     <recent_temporary>
@@ -241,7 +274,6 @@
   <component name="VcsManagerConfiguration">
     <option name="CHECK_CODE_CLEANUP_BEFORE_PROJECT_COMMIT" value="true" />
     <option name="CHECK_NEW_TODO" value="false" />
-    <MESSAGE value="Working on session ticker and processor" />
     <MESSAGE value="Implemented u24 deserialisation" />
     <MESSAGE value="Implemented frame set decoder" />
     <MESSAGE value="Implemented acknowledgement packets.&#10;Working on frame set processing" />
@@ -266,7 +298,8 @@
     <MESSAGE value="Added IncompatibleProtocol error to login sequence" />
     <MESSAGE value="Added NetworkSettings packet" />
     <MESSAGE value="Implemented varuint32 and packet length decoding" />
-    <option name="LAST_COMMIT_MESSAGE" value="Implemented varuint32 and packet length decoding" />
+    <MESSAGE value="Files reorganised&#10;Added header and RequestNetworkSettings decoding" />
+    <option name="LAST_COMMIT_MESSAGE" value="Files reorganised&#10;Added header and RequestNetworkSettings decoding" />
     <option name="OPTIMIZE_IMPORTS_BEFORE_PROJECT_COMMIT" value="true" />
     <option name="REFORMAT_BEFORE_PROJECT_COMMIT" value="true" />
     <option name="REARRANGE_BEFORE_PROJECT_COMMIT" value="true" />
