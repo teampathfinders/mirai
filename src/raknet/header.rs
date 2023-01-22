@@ -32,7 +32,7 @@ impl Header {
         })
     }
 
-    pub fn encode(&self, buffer: &mut BytesMut) {
+    pub fn encode(&self) -> VexResult<BytesMut> {
         let value = self.id |
             ((self.sender_subclient as u32) << 10) |
             ((self.target_subclient as u32) << 12);
@@ -45,6 +45,9 @@ impl Header {
             let target_subclient = (value >> 12);
         }
 
+        let mut buffer = BytesMut::new();
         buffer.put_var_u32(value);
+
+        Ok(buffer)
     }
 }
