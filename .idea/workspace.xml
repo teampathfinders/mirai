@@ -15,12 +15,20 @@
     <cargoProject FILE="$PROJECT_DIR$/Cargo.toml" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="eb8ce776-e64a-444b-a034-2036d6cbe18e" name="Changes" comment="Implemented Deflate decompression">
+    <list default="true" id="eb8ce776-e64a-444b-a034-2036d6cbe18e" name="Changes" comment="Implemented login token claims">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Cargo.lock" beforeDir="false" afterPath="$PROJECT_DIR$/Cargo.lock" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Cargo.toml" beforeDir="false" afterPath="$PROJECT_DIR$/Cargo.toml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/config.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/config.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/packets/disconnect.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/packets/disconnect.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/packets/game_packet.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/packets/game_packet.rs" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/packets/login.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/packets/login.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/raknet/frame.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/raknet/frame.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/packets/mod.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/packets/mod.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/packets/play_status.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/packets/play_status.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/packets/server_to_client_handshake.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/packets/server_to_client_handshake.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/raknet/compound_collector.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/raknet/compound_collector.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/raknet/packets/mod.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/raknet/packets/mod.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/raknet/packets/online_ping.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/packets/online_ping.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/raknet/packets/online_pong.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/packets/online_pong.rs" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/raknet/sessions.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/raknet/sessions.rs" afterDir="false" />
     </list>
     <list id="5ea80ab6-242d-4220-8770-a42d5b241561" name="Changes by EJADA_A008" comment="" />
@@ -97,9 +105,9 @@
       <recent name="C:\Users\Ruben\Documents\programming\rs\vex\src\raknet\packets" />
     </key>
     <key name="MoveFile.RECENT_KEYS">
+      <recent name="C:\Users\Ruben\Documents\programming\rs\vex\src\packets" />
       <recent name="C:\Users\Ruben\Documents\programming\rs\vex\src\raknet" />
       <recent name="C:\Users\Ruben\Documents\programming\rs\vex\src\raknet\packets" />
-      <recent name="C:\Users\Ruben\Documents\programming\rs\vex\src\packets" />
       <recent name="C:\Users\Ruben\Documents\programming\rs\vex\src\raknet\packets\online" />
       <recent name="C:\Users\Ruben\Documents\programming\rs\vex\src\raknet\packets\offline" />
     </key>
@@ -260,7 +268,6 @@
   <component name="VcsManagerConfiguration">
     <option name="CHECK_CODE_CLEANUP_BEFORE_PROJECT_COMMIT" value="true" />
     <option name="CHECK_NEW_TODO" value="false" />
-    <MESSAGE value="Documented majority of the undocumented code" />
     <MESSAGE value="Implemented order channel" />
     <MESSAGE value="Added session tracker garbage collector" />
     <MESSAGE value="Added order channel test and fixed its inconsistencies" />
@@ -285,7 +292,8 @@
     <MESSAGE value="Fixed length encoding not including header size" />
     <MESSAGE value="Switched reliability layer to using batch numbers instead of indices" />
     <MESSAGE value="Implemented Deflate decompression" />
-    <option name="LAST_COMMIT_MESSAGE" value="Implemented Deflate decompression" />
+    <MESSAGE value="Implemented login token claims" />
+    <option name="LAST_COMMIT_MESSAGE" value="Implemented login token claims" />
     <option name="OPTIMIZE_IMPORTS_BEFORE_PROJECT_COMMIT" value="true" />
     <option name="REFORMAT_BEFORE_PROJECT_COMMIT" value="true" />
     <option name="REARRANGE_BEFORE_PROJECT_COMMIT" value="true" />

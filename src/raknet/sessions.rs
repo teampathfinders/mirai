@@ -1,5 +1,6 @@
 use std::io::Read;
 use std::net::SocketAddr;
+use std::num::NonZeroU64;
 use std::sync::{Arc, Weak};
 use std::sync::atomic::{AtomicU32, AtomicU64, Ordering};
 use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
@@ -15,7 +16,7 @@ use tokio_util::sync::CancellationToken;
 use crate::{vex_assert, vex_error};
 use crate::config::SERVER_CONFIG;
 use crate::error::VexResult;
-use crate::packets::{ClientThrottleSettings, CompressionAlgorithm, GAME_PACKET_ID, GamePacket, Login, NetworkSettings, Packet, RequestNetworkSettings};
+use crate::packets::{ClientThrottleSettings, CompressionAlgorithm, Disconnect, GAME_PACKET_ID, GamePacket, Login, NetworkSettings, Packet, PlayStatus, RequestNetworkSettings, Status};
 use crate::raknet::{
     CompoundCollector, Frame, FrameBatch, Header, OrderChannel, RecoveryQueue, Reliability,
     SendPriority, SendQueue,
@@ -50,6 +51,9 @@ const GARBAGE_COLLECT_INTERVAL: Duration = Duration::from_secs(10);
 ///
 #[derive(Debug)]
 pub struct Session {
+    xuid: RwLock<Option<NonZeroU64>>,
+    uuid: RwLock<String>,
+    display_name: RwLock<String>,
     /// Current tick of this session, this is increased by one every time the session
     /// processes packets.
     current_tick: AtomicU64,
@@ -97,6 +101,9 @@ impl Session {
         client_guid: i64,
     ) -> Arc<Self> {
         let session = Arc::new(Self {
+            xuid: RwLock::new(None),
+            display_name: RwLock::new(String::new()),
+            uuid: RwLock::new(String::new()),
             current_tick: AtomicU64::new(0),
             ipv4_socket,
             address,
@@ -149,6 +156,28 @@ impl Session {
 
         tracing::info!("Session {client_guid:X} created");
         session
+    }
+
+    pub fn get_uuid(&self) -> Option<String> {
+        let uuid = self.display_name.read();
+        if uuid.is_empty() {
+            None
+        } else {
+            Some(uuid.clone())
+        }
+    }
+
+    pub fn get_xuid(&self) -> Option<u64> {
+        self.xuid.read().map(|u| u.get())
+    }
+
+    pub fn get_username(&self) -> Option<String> {
+        let username = self.display_name.read();
+        if username.is_empty() {
+            None
+        } else {
+            Some(username.clone())
+        }
     }
 
     /// Processes the raw packet coming directly from the network.
@@ -341,29 +370,55 @@ impl Session {
 
     fn handle_login(&self, mut task: BytesMut) -> VexResult<()> {
         let request = Login::decode(task)?;
-        tracing::info!("Login: {request:?}");
+        *self.display_name.write() = request.display_name;
+        *self.xuid.write() = Some(NonZeroU64::new(request.xuid).unwrap());
+        *self.uuid.write() = request.uuid;
+
+        let reply = Packet::new(
+            Disconnect {
+                kick_message: "disconnectionScreen.notAuthenticated".to_string(),
+                hide_disconnect_screen: false,
+            }
+        ).subclients(0, 0).encode()?;
+
+        self.send_queue.insert(SendPriority::Medium, Frame::new(Reliability::ReliableOrdered, reply));
 
         Ok(())
     }
 
     fn handle_request_network_settings(&self, mut task: BytesMut) -> VexResult<()> {
         let request = RequestNetworkSettings::decode(task)?;
-        let mut reply = {
-            let lock = SERVER_CONFIG.read();
-            Packet::new(
-                NetworkSettings {
-                    compression_algorithm: lock.compression_algorithm,
-                    compression_threshold: lock.compression_threshold,
-                    client_throttle: lock.client_throttle,
-                })
-                .subclients(0, 0)
-                .encode()?
-        };
+        // TODO: Disconnect client if incompatible protocol.
 
-        self.send_queue.insert(
-            SendPriority::Medium,
-            Frame::new(Reliability::Reliable, reply),
-        );
+        // let mut reply = {
+        //     let lock = SERVER_CONFIG.read();
+        //     Packet::new(
+        //         NetworkSettings {
+        //             compression_algorithm: lock.compression_algorithm,
+        //             compression_threshold: lock.compression_threshold,
+        //             client_throttle: lock.client_throttle,
+        //         })
+        //         .subclients(0, 0)
+        //         .encode()?
+        // };
+        //
+        // self.send_queue.insert(
+        //     SendPriority::Medium,
+        //     Frame::new(Reliability::Reliable, reply),
+        // );
+
+        let reply = Packet::new(
+            PlayStatus {
+                status: Status::LoginSuccess
+            }
+        )
+            .subclients(0, 0)
+            .encode()?;
+
+        tracing::info!("{reply:?}");
+
+        self.send_queue.insert(SendPriority::Medium, Frame::new(Reliability::Reliable, reply));
+
         Ok(())
     }
 
@@ -479,7 +534,9 @@ impl Session {
             if batch.estimate_size() + frame_size < max_batch_size {
                 batch = batch.push(frame);
             } else {
-                self.recovery_queue.insert(batch.clone());
+                if has_reliable_packet {
+                    self.recovery_queue.insert(batch.clone());
+                }
                 let encoded = batch.encode()?;
 
                 // TODO: Add IPv6 support
@@ -493,7 +550,9 @@ impl Session {
 
         // Send remaining packets not sent by loop
         if !batch.is_empty() {
-            self.recovery_queue.insert(batch.clone());
+            if has_reliable_packet {
+                self.recovery_queue.insert(batch.clone());
+            }
             let encoded = batch.encode()?;
             // TODO: Add IPv6 support
             self.ipv4_socket.send_to(&encoded, self.address).await?;

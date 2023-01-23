@@ -1,5 +1,6 @@
 pub use client_to_server_handshake::*;
 pub use disconnect::*;
+pub use game_packet::*;
 pub use login::*;
 pub use network_settings::*;
 pub use play_status::*;
@@ -9,7 +10,6 @@ pub use resource_pack_stack::*;
 pub use resource_packs_info::*;
 pub use server_to_client_handshake::*;
 pub use start_game::*;
-pub use game_packet::*;
 pub use traits::*;
 
 mod traits;
@@ -25,6 +25,8 @@ mod resource_pack_stack;
 mod resource_packs_info;
 mod server_to_client_handshake;
 mod start_game;
+pub mod online_ping;
+pub mod online_pong;
 
 pub const GAME_PACKET_ID: u8 = 0xfe;
 pub const CLIENT_VERSION_STRING: &str = "1.19";

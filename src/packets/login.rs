@@ -1,11 +1,12 @@
 use base64::Engine;
 use bytes::{Buf, BytesMut};
 use serde_derive::Deserialize;
+
+use crate::{vex_assert, vex_error};
 use crate::error::VexResult;
 use crate::packets::GamePacket;
 use crate::raknet::packets::Decodable;
 use crate::util::ReadExtensions;
-use crate::{vex_assert, vex_error};
 
 #[derive(serde::Deserialize, Debug)]
 pub struct JsonClientData {
@@ -34,8 +35,8 @@ pub struct TokenChain {
 pub struct Login {
     pub protocol_version: u32,
     pub xuid: u64,
-    pub uuid: u128,
-    pub name: String,
+    pub uuid: String,
+    pub display_name: String,
 }
 
 impl GamePacket for Login {
@@ -45,20 +46,21 @@ impl GamePacket for Login {
 impl Decodable for Login {
     fn decode(mut buffer: BytesMut) -> VexResult<Self> {
         let protocol_version = buffer.get_u32();
-        tracing::info!("protocol version {protocol_version}");
-
         buffer.get_var_u32()?;
 
-        let client_data = decode_identity_data(&mut buffer)?;
-        tracing::info!("{client_data:?}");
-        todo!()
+        let claims_data = decode_identity_data(&mut buffer)?;
+
+        Ok(Self {
+            protocol_version,
+            xuid: claims_data.client_data.xuid.parse().unwrap(),
+            uuid: claims_data.client_data.uuid,
+            display_name: claims_data.client_data.display_name,
+        })
     }
 }
 
 fn decode_identity_data(buffer: &mut BytesMut) -> VexResult<TokenClaims> {
     let token_length = buffer.get_u32_le();
-    tracing::info!("token length {token_length}");
-
     let position = buffer.len() - buffer.remaining();
     let token = &buffer.as_ref()[position..(position + token_length as usize)];
 

@@ -4,7 +4,7 @@ use crate::error::VexResult;
 use crate::packets::{GAME_PACKET_ID, GamePacket, RequestNetworkSettings};
 use crate::raknet::Header;
 use crate::raknet::packets::{Decodable, Encodable};
-use crate::util::WriteExtensions;
+use crate::util::{ReadExtensions, WriteExtensions};
 use crate::vex_assert;
 
 #[derive(Debug)]
