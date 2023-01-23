@@ -22,9 +22,8 @@ impl Encodable for Disconnect {
     fn encode(&self) -> VexResult<BytesMut> {
         let mut buffer = BytesMut::with_capacity(1 + 4 + self.kick_message.len());
 
-        buffer.put_u8(self.hide_disconnect_screen as u8);
-        buffer.put_var_u32(self.kick_message.len() as u32);
-        buffer.put(self.kick_message.as_bytes());
+        buffer.put_bool(self.hide_disconnect_screen);
+        buffer.put_string(&self.kick_message);
 
         Ok(buffer)
     }

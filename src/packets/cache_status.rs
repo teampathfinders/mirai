@@ -3,6 +3,7 @@ use bytes::{Buf, BytesMut};
 use crate::error::VexResult;
 use crate::packets::GamePacket;
 use crate::raknet::packets::{Decodable, Encodable};
+use crate::util::ReadExtensions;
 
 /// Sent during login to let the server know whether the client supports caching.
 #[derive(Debug)]
@@ -17,7 +18,7 @@ impl GamePacket for ClientCacheStatus {
 
 impl Decodable for ClientCacheStatus {
     fn decode(mut buffer: BytesMut) -> VexResult<Self> {
-        let support = buffer.get_u8() == 1;
+        let support = buffer.get_bool();
 
         Ok(Self {
             support

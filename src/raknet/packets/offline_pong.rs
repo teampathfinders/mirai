@@ -2,6 +2,7 @@ use bytes::{BufMut, BytesMut};
 
 use crate::error::VexResult;
 use crate::raknet::packets::{Encodable, OFFLINE_MESSAGE_DATA};
+use crate::util::WriteExtensions;
 
 /// Response to [`OfflinePing`](super::OfflinePing).
 #[derive(Debug)]
@@ -30,8 +31,7 @@ impl Encodable for OfflinePong {
         buffer.put_i64(self.time);
         buffer.put_i64(self.server_guid);
         buffer.put(OFFLINE_MESSAGE_DATA);
-        buffer.put_u16(self.metadata.len() as u16);
-        buffer.put(self.metadata.as_bytes());
+        buffer.put_raknet_string(&self.metadata);
 
         Ok(buffer)
     }

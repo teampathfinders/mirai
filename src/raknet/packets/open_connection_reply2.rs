@@ -1,8 +1,10 @@
+use std::net::SocketAddr;
+
+use bytes::{BufMut, BytesMut};
+
 use crate::error::VexResult;
 use crate::raknet::packets::{Encodable, OFFLINE_MESSAGE_DATA};
 use crate::util::WriteExtensions;
-use bytes::{BufMut, BytesMut};
-use std::net::SocketAddr;
 
 /// Sent in response ot [`OpenConnectionRequest2`](super::OpenConnectionRequest2).
 #[derive(Debug)]
@@ -33,7 +35,7 @@ impl Encodable for OpenConnectionReply2 {
         buffer.put_i64(self.server_guid);
         buffer.put_addr(self.client_address);
         buffer.put_u16(self.mtu);
-        buffer.put_u8(self.encryption_enabled as u8);
+        buffer.put_bool(self.encryption_enabled);
 
         Ok(buffer)
     }

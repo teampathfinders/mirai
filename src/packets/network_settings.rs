@@ -3,6 +3,7 @@ use bytes::{BufMut, BytesMut};
 use crate::error::VexResult;
 use crate::packets::GamePacket;
 use crate::raknet::packets::Encodable;
+use crate::util::WriteExtensions;
 
 /// Supported compression algorithms.
 ///
@@ -56,7 +57,7 @@ impl Encodable for NetworkSettings {
 
         buffer.put_u16(self.compression_threshold);
         buffer.put_u16(self.compression_algorithm as u16);
-        buffer.put_u8(self.client_throttle.enabled as u8);
+        buffer.put_bool(self.client_throttle.enabled);
         buffer.put_u8(self.client_throttle.threshold);
         buffer.put_f32(self.client_throttle.scalar);
 

@@ -54,6 +54,40 @@ pub trait ReadExtensions: Buf {
         })
     }
 
+    /// Reads a boolean from the stream.
+    fn get_bool(&mut self) -> bool {
+        self.get_u8() == 1
+    }
+
+    /// Reads a UTF-8 string prefixed with a varint specifying its length.
+    /// This should be used for strings encoded by Minecraft.
+    ///
+    /// It can fail if the varint could not be read correctly.
+    ///
+    /// See [`get_raknet_string`] for an alternative for Raknet.
+    fn get_string(&mut self) -> VexResult<String> {
+        let length = self.get_var_u32()? as usize;
+        let buffer = &self.chunk()[..length];
+        let string = String::from_utf8_lossy(buffer).to_string();
+
+        self.advance(length);
+        Ok(string)
+    }
+
+    /// Reads a UTF-8 string encoded with an unsigned short in front, specifying its length.
+    /// This should be used for strings encoded by Raknet.
+    ///
+    /// See [`get_string`] for an alternative for Minecraft.
+    fn get_raknet_string(&mut self) -> String {
+        let length = self.get_u16() as usize;
+        let buffer = &self.chunk()[..length];
+        let string = String::from_utf8_lossy(buffer).to_string();
+
+        self.advance(length);
+        string
+    }
+
+    /// Reads a variable size unsigned big endian 32-bit integer from the stream.
     fn get_var_u32(&mut self) -> VexResult<u32> {
         let mut v = 0;
         let mut i = 0;
@@ -85,13 +119,13 @@ pub trait ReadExtensions: Buf {
 /// Provides extra functions for byte buffers.
 /// This trait implements write functions for exotic formats and
 /// IP addresses that the default [`BytesMut`](bytes::BytesMut) implementation does not provide.
-pub trait WriteExtensions: BufMut {
+pub trait WriteExtensions: BufMut + Sized {
     /// Writes an IP address into a buffer.
     ///
     /// IP format described in [`get_addr`](ReadExtensions::get_addr).
     fn put_addr(&mut self, addr: SocketAddr)
-    where
-        Self: Sized,
+        where
+            Self: Sized,
     {
         match addr {
             SocketAddr::V4(addr_v4) => {
@@ -110,6 +144,30 @@ pub trait WriteExtensions: BufMut {
         }
     }
 
+    /// Writes a boolean to the stream.
+    fn put_bool(&mut self, value: bool) {
+        self.put_u8(value as u8);
+    }
+
+    /// Writes a varint-prefixed string to the stream.
+    /// This should be used for strings designated for Minecraft.
+    ///
+    /// See [`put_raknet_string`] for an alternative for Raknet.
+    fn put_string(&mut self, value: &str) {
+        self.put_var_u32(value.len() as u32);
+        self.put(value.as_bytes());
+    }
+
+    /// Writes a short-prefixed string to the stream.
+    /// This should be used for strings designated for Raknet.
+    ///
+    /// See [`put_string`] for an alternative for Minecraft.
+    fn put_raknet_string(&mut self, value: &str) {
+        self.put_u16(value.len() as u16);
+        self.put(value.as_bytes());
+    }
+
+    /// Writes a variable size unsigned big endian 32-bit integer to the stream.
     fn put_var_u32(&mut self, mut value: u32) {
         while value >= 0x80 {
             self.put_u8(((value) as u8) | 0x80);

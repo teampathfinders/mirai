@@ -371,6 +371,8 @@ impl Session {
 
     fn handle_client_cache_status(&self, mut task: BytesMut) -> VexResult<()> {
         let request = ClientCacheStatus::decode(task)?;
+        tracing::debug!("{request:?}");
+
         // Unused
 
         Ok(())
