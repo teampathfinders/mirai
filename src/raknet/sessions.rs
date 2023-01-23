@@ -16,7 +16,7 @@ use tokio_util::sync::CancellationToken;
 use crate::{vex_assert, vex_error};
 use crate::config::SERVER_CONFIG;
 use crate::error::VexResult;
-use crate::packets::{ClientThrottleSettings, CompressionAlgorithm, Disconnect, GAME_PACKET_ID, GamePacket, Login, NetworkSettings, Packet, PlayStatus, RequestNetworkSettings, Status};
+use crate::packets::{ClientCacheStatus, ClientThrottleSettings, CompressionAlgorithm, Disconnect, GAME_PACKET_ID, GamePacket, Login, NetworkSettings, Packet, PlayStatus, RequestNetworkSettings, Status};
 use crate::raknet::{
     CompoundCollector, Frame, FrameBatch, Header, OrderChannel, RecoveryQueue, Reliability,
     SendPriority, SendQueue,
@@ -364,8 +364,16 @@ impl Session {
         match header.id {
             RequestNetworkSettings::ID => self.handle_request_network_settings(task),
             Login::ID => self.handle_login(task),
+            ClientCacheStatus::ID => self.handle_client_cache_status(task),
             _ => todo!()
         }
+    }
+
+    fn handle_client_cache_status(&self, mut task: BytesMut) -> VexResult<()> {
+        let request = ClientCacheStatus::decode(task)?;
+        // Unused
+
+        Ok(())
     }
 
     fn handle_login(&self, mut task: BytesMut) -> VexResult<()> {
@@ -374,38 +382,12 @@ impl Session {
         *self.xuid.write() = Some(NonZeroU64::new(request.xuid).unwrap());
         *self.uuid.write() = request.uuid;
 
-        let reply = Packet::new(
-            Disconnect {
-                kick_message: "disconnectionScreen.notAuthenticated".to_string(),
-                hide_disconnect_screen: false,
-            }
-        ).subclients(0, 0).encode()?;
-
-        self.send_queue.insert(SendPriority::Medium, Frame::new(Reliability::ReliableOrdered, reply));
-
         Ok(())
     }
 
     fn handle_request_network_settings(&self, mut task: BytesMut) -> VexResult<()> {
         let request = RequestNetworkSettings::decode(task)?;
         // TODO: Disconnect client if incompatible protocol.
-
-        // let mut reply = {
-        //     let lock = SERVER_CONFIG.read();
-        //     Packet::new(
-        //         NetworkSettings {
-        //             compression_algorithm: lock.compression_algorithm,
-        //             compression_threshold: lock.compression_threshold,
-        //             client_throttle: lock.client_throttle,
-        //         })
-        //         .subclients(0, 0)
-        //         .encode()?
-        // };
-        //
-        // self.send_queue.insert(
-        //     SendPriority::Medium,
-        //     Frame::new(Reliability::Reliable, reply),
-        // );
 
         let reply = Packet::new(
             PlayStatus {
@@ -418,6 +400,23 @@ impl Session {
         tracing::info!("{reply:?}");
 
         self.send_queue.insert(SendPriority::Medium, Frame::new(Reliability::Reliable, reply));
+
+        let mut reply = {
+            let lock = SERVER_CONFIG.read();
+            Packet::new(
+                NetworkSettings {
+                    compression_algorithm: lock.compression_algorithm,
+                    compression_threshold: lock.compression_threshold,
+                    client_throttle: lock.client_throttle,
+                })
+                .subclients(0, 0)
+                .encode()?
+        };
+
+        self.send_queue.insert(
+            SendPriority::Medium,
+            Frame::new(Reliability::Reliable, reply),
+        );
 
         Ok(())
     }
