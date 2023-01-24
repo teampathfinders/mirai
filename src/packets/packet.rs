@@ -34,14 +34,17 @@ impl<T: GamePacket> Packet<T> {
     }
 }
 
+// 0xfe ID
+// Batch byte size
+// List of header + packet
+
 impl<T: GamePacket + Encodable> Encodable for Packet<T> {
     fn encode(&self) -> VexResult<BytesMut> {
         let mut buffer = BytesMut::new();
         let header = self.header.encode();
         let body = self.internal_packet.encode()?;
 
-        buffer.put_u8(Self::ID);
-        buffer.put_var_u32((header.len() + body.len()) as u32);
+        buffer.put_var_u32(header.len() as u32 + body.len() as u32);
         buffer.put(header);
         buffer.put(body);
 

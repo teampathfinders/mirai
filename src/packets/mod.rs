@@ -1,9 +1,10 @@
+pub use batch::*;
 pub use cache_status::*;
 pub use client_to_server_handshake::*;
 pub use disconnect::*;
-pub use game_packet::*;
 pub use login::*;
 pub use network_settings::*;
+pub use packet::*;
 pub use play_status::*;
 pub use request_network_settings::*;
 pub use resource_pack_client_response::*;
@@ -13,9 +14,10 @@ pub use server_to_client_handshake::*;
 pub use start_game::*;
 pub use traits::*;
 
+mod batch;
 mod cache_status;
 mod traits;
-mod game_packet;
+mod packet;
 mod client_to_server_handshake;
 mod disconnect;
 mod login;

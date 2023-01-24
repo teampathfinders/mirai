@@ -6,7 +6,7 @@ use std::sync::atomic::{AtomicU32, AtomicU64, Ordering};
 use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 
 use async_recursion::async_recursion;
-use bytes::{Buf, BytesMut};
+use bytes::{Buf, BufMut, BytesMut};
 use dashmap::DashMap;
 use flate2::read::{DeflateDecoder, DeflateEncoder, GzDecoder, ZlibDecoder};
 use parking_lot::RwLock;
@@ -16,7 +16,7 @@ use tokio_util::sync::CancellationToken;
 use crate::{vex_assert, vex_error};
 use crate::config::SERVER_CONFIG;
 use crate::error::VexResult;
-use crate::packets::{ClientCacheStatus, ClientThrottleSettings, CompressionAlgorithm, Disconnect, GAME_PACKET_ID, GamePacket, Login, NetworkSettings, Packet, PlayStatus, RequestNetworkSettings, Status};
+use crate::packets::{ClientCacheStatus, ClientThrottleSettings, CompressionAlgorithm, Disconnect, GAME_PACKET_ID, GamePacket, Login, NetworkSettings, Packet, PacketBatch, PlayStatus, RequestNetworkSettings, ResourcePacksInfo, Status};
 use crate::raknet::{
     CompoundCollector, Frame, FrameBatch, Header, OrderChannel, RecoveryQueue, Reliability,
     SendPriority, SendQueue,
@@ -27,7 +27,7 @@ use crate::raknet::packets::{
     ConnectionRequest, ConnectionRequestAccepted, DisconnectNotification, NewIncomingConnection,
 };
 use crate::raknet::packets::{OnlinePing, OnlinePong};
-use crate::util::{AsyncDeque, ReadExtensions};
+use crate::util::{AsyncDeque, ReadExtensions, WriteExtensions};
 
 /// Tick interval of the internal session ticker.
 const INTERNAL_TICK_INTERVAL: Duration = Duration::from_millis(1000 / 20);
@@ -193,7 +193,8 @@ impl Session {
         };
         *self.last_update.write() = Instant::now();
 
-        match *task.first().unwrap() {
+        let packet_id = *task.first().unwrap();
+        match packet_id {
             Ack::ID => self.process_ack(task),
             Nack::ID => self.process_nack(task).await,
             _ => self.process_frame_batch(task).await,
@@ -280,14 +281,14 @@ impl Session {
 
         let packet_id = *task.first().expect("Game packet buffer was empty");
         match packet_id {
+            GAME_PACKET_ID => self.handle_game_packet(task)?,
             DisconnectNotification::ID => {
                 tracing::debug!("Session {:X} requested disconnect", self.guid);
                 self.flag_for_close();
             }
             ConnectionRequest::ID => self.handle_connection_request(task)?,
             NewIncomingConnection::ID => self.handle_new_incoming_connection(task)?,
-            OnlinePing::ID => self.handle_connected_ping(task)?,
-            GAME_PACKET_ID => self.handle_game_packet(task)?,
+            OnlinePing::ID => self.handle_online_ping(task)?,
             id => {
                 tracing::info!("ID: {} {:?}", id, task.as_ref());
                 todo!("Other game packet IDs")
@@ -317,7 +318,7 @@ impl Session {
         Ok(())
     }
 
-    fn handle_connected_ping(&self, task: BytesMut) -> VexResult<()> {
+    fn handle_online_ping(&self, task: BytesMut) -> VexResult<()> {
         let ping = OnlinePing::decode(task)?;
         let pong = OnlinePong {
             ping_time: ping.time,
@@ -371,7 +372,7 @@ impl Session {
 
     fn handle_client_cache_status(&self, mut task: BytesMut) -> VexResult<()> {
         let request = ClientCacheStatus::decode(task)?;
-        tracing::debug!("{request:?}");
+        tracing::debug!("{request:?} {self:?}");
 
         // Unused
 
@@ -380,9 +381,38 @@ impl Session {
 
     fn handle_login(&self, mut task: BytesMut) -> VexResult<()> {
         let request = Login::decode(task)?;
+        tracing::info!("Login {request:?}");
+
         *self.display_name.write() = request.display_name;
         *self.xuid.write() = Some(NonZeroU64::new(request.xuid).unwrap());
         *self.uuid.write() = request.uuid;
+
+        // let reply = Packet::new(
+        //     PlayStatus {
+        //         status: Status::FailedClient
+        //     }
+        // )
+        //     .subclients(0, 0)
+        //     .encode()?;
+        //
+        // self.send_queue.insert(SendPriority::Medium, Frame::new(Reliability::ReliableOrdered, reply));
+        //
+        // let reply = {
+        //     Packet::new(
+        //         ResourcePacksInfo {
+        //             required: false,
+        //             forcing_server_packs: false,
+        //             scripting_enabled: false,
+        //             resource_info: vec![],
+        //             behavior_info: vec![]
+        //         }
+        //     ).subclients(0, 0).encode()?
+        // };
+        //
+        // self.send_queue.insert(
+        //     SendPriority::Medium,
+        //     Frame::new(Reliability::ReliableOrdered, reply)
+        // );
 
         Ok(())
     }
@@ -390,18 +420,6 @@ impl Session {
     fn handle_request_network_settings(&self, mut task: BytesMut) -> VexResult<()> {
         let request = RequestNetworkSettings::decode(task)?;
         // TODO: Disconnect client if incompatible protocol.
-
-        let reply = Packet::new(
-            PlayStatus {
-                status: Status::LoginSuccess
-            }
-        )
-            .subclients(0, 0)
-            .encode()?;
-
-        tracing::info!("{reply:?}");
-
-        self.send_queue.insert(SendPriority::Medium, Frame::new(Reliability::Reliable, reply));
 
         let mut reply = {
             let lock = SERVER_CONFIG.read();
@@ -412,12 +430,15 @@ impl Session {
                     client_throttle: lock.client_throttle,
                 })
                 .subclients(0, 0)
-                .encode()?
         };
+
+        let mut batch = PacketBatch::new()
+            .add(reply)?
+            .encode()?;
 
         self.send_queue.insert(
             SendPriority::Medium,
-            Frame::new(Reliability::Reliable, reply),
+            Frame::new(Reliability::ReliableOrdered, batch),
         );
 
         Ok(())
@@ -557,6 +578,23 @@ impl Session {
             let encoded = batch.encode()?;
             // TODO: Add IPv6 support
             self.ipv4_socket.send_to(&encoded, self.address).await?;
+
+            {
+                let decoded_batch = FrameBatch::decode(encoded).unwrap();
+                tracing::info!("decoded_batch {decoded_batch:?}");
+
+                for frame in decoded_batch.get_frames() {
+                    if *frame.body.first().unwrap() == 0xfe {
+                        let mut frame = frame.clone();
+                        frame.body.advance(1);
+
+                        tracing::info!("{:X?}", frame.body.as_ref());
+                        let length = frame.body.get_var_u32().unwrap();
+                        let header = Header::decode(&mut frame.body).unwrap();
+                        tracing::info!("sent {header:?}, length {length}");
+                    }
+                }
+            }
         }
 
         Ok(())

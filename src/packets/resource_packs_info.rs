@@ -62,12 +62,12 @@ pub struct ResourcePacksInfo {
     pub required: bool,
     /// Indicates whether there are packs that make use of scripting.
     pub scripting_enabled: bool,
-    /// List of behavior packs
-    pub behavior_info: Vec<ResourcePack>,
-    /// List of resource packs.
-    pub resource_info: Vec<BehaviorPack>,
     /// Unknown what this does.
     pub forcing_server_packs: bool,
+    /// List of behavior packs
+    pub behavior_info: Vec<BehaviorPack>,
+    /// List of resource packs.
+    pub resource_info: Vec<ResourcePack>,
 }
 
 impl GamePacket for ResourcePacksInfo {
@@ -78,8 +78,32 @@ impl Encodable for ResourcePacksInfo {
     fn encode(&self) -> VexResult<BytesMut> {
         let mut buffer = BytesMut::new();
 
-        buffer.put_u8(self.required as u8);
+        buffer.put_bool(self.required);
+        buffer.put_bool(self.scripting_enabled);
+        buffer.put_bool(self.forcing_server_packs);
 
+        buffer.put_u16(self.behavior_info.len() as u16);
+        for pack in &self.behavior_info {
+            buffer.put_string(&pack.uuid);
+            buffer.put_string(&pack.version);
+            buffer.put_u64(pack.size);
+            buffer.put_string(&pack.content_key);
+            buffer.put_string(&pack.subpack_name);
+            buffer.put_string(&pack.content_identity);
+            buffer.put_bool(pack.has_scripts);
+        }
+
+        buffer.put_u16(self.resource_info.len() as u16);
+        for pack in &self.resource_info {
+            buffer.put_string(&pack.uuid);
+            buffer.put_string(&pack.version);
+            buffer.put_u64(pack.size);
+            buffer.put_string(&pack.content_key);
+            buffer.put_string(&pack.subpack_name);
+            buffer.put_string(&pack.content_identity);
+            buffer.put_bool(pack.has_scripts);
+            buffer.put_bool(pack.rtx_enabled);
+        }
 
         Ok(buffer)
     }
