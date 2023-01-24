@@ -1,7 +1,7 @@
 use lazy_static::lazy_static;
 use parking_lot::RwLock;
 
-use crate::packets::{ClientThrottleSettings, CompressionAlgorithm};
+use crate::network::packets::{ClientThrottleSettings, CompressionAlgorithm};
 
 /// Global service that contains all configuration settings
 pub struct ServerConfig {
@@ -23,7 +23,7 @@ lazy_static! {
             threshold: 0,
             scalar: 0.0
         },
-        enable_encryption: false,
+        enable_encryption: true,
         server_name: "Pathfinders"
     });
 }

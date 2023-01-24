@@ -8,16 +8,21 @@ use rand::Rng;
 use tokio::net::UdpSocket;
 use tokio::signal;
 use tokio_util::sync::CancellationToken;
-use crate::config::SERVER_CONFIG;
 
+use crate::config::SERVER_CONFIG;
 use crate::error::{VexError, VexResult};
-use crate::packets::{CLIENT_VERSION_STRING, NETWORK_VERSION};
-use crate::raknet::packets::{Decodable, Encodable, RAKNET_VERSION, RawPacket};
-use crate::raknet::packets::{
-    IncompatibleProtocol, OfflinePing, OfflinePong, OpenConnectionReply1, OpenConnectionReply2,
-    OpenConnectionRequest1, OpenConnectionRequest2,
-};
-use crate::raknet::SessionTracker;
+use crate::network::packets::{CLIENT_VERSION_STRING, NETWORK_VERSION};
+use crate::network::raknet::packets::incompatible_protocol::IncompatibleProtocol;
+use crate::network::raknet::packets::offline_ping::OfflinePing;
+use crate::network::raknet::packets::offline_pong::OfflinePong;
+use crate::network::raknet::packets::open_connection_reply1::OpenConnectionReply1;
+use crate::network::raknet::packets::open_connection_reply2::OpenConnectionReply2;
+use crate::network::raknet::packets::open_connection_request1::OpenConnectionRequest1;
+use crate::network::raknet::packets::open_connection_request2::OpenConnectionRequest2;
+use crate::network::raknet::packets::RAKNET_VERSION;
+use crate::network::raknet::raw::RawPacket;
+use crate::network::session::tracker::SessionTracker;
+use crate::network::traits::{Decodable, Encodable};
 use crate::util::AsyncDeque;
 
 /// Local IPv4 address

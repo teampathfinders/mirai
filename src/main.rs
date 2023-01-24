@@ -13,8 +13,7 @@ use crate::instance::ServerInstance;
 mod config;
 mod error;
 mod instance;
-mod packets;
-mod raknet;
+mod network;
 mod util;
 
 #[cfg(test)]
