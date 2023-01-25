@@ -11,7 +11,7 @@ pub struct OpenConnectionRequest2 {
     /// MTU of the connection.
     pub mtu: u16,
     /// GUID of the client.
-    pub client_guid: i64,
+    pub client_guid: u64,
 }
 
 impl OpenConnectionRequest2 {
@@ -26,7 +26,7 @@ impl Decodable for OpenConnectionRequest2 {
         buffer.advance(16); // Skip magic
         buffer.get_addr()?; // Skip server address
         let mtu = buffer.get_u16();
-        let client_guid = buffer.get_i64();
+        let client_guid = buffer.get_u64();
 
         Ok(Self { mtu, client_guid })
     }

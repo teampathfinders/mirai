@@ -40,7 +40,7 @@ macro_rules! error {
 #[macro_export]
 macro_rules! bail {
     ($error_type: ident, $content: expr) => {
-        return Err($crate::error!($error_type, $content));
+        return Err($crate::error!($error_type, $content))
     };
 }
 
@@ -68,6 +68,12 @@ pub enum VexError {
 
 impl From<std::num::ParseIntError> for VexError {
     fn from(value: std::num::ParseIntError) -> Self {
+        Self::Other(value.to_string())
+    }
+}
+
+impl<T> From<tokio::sync::SetError<T>> for VexError {
+    fn from(value: tokio::sync::SetError<T>) -> Self {
         Self::Other(value.to_string())
     }
 }

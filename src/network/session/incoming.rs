@@ -27,8 +27,8 @@ impl Session {
     /// Processes the raw packet coming directly from the network.
     ///
     /// If a packet is an ACK or NACK type, it will be responded to accordingly (using [`Session::process_ack`] and [`Session::process_nack`]).
-    /// Frame batches are processed by [`Session::process_frame_batch`].
-    pub async fn process_raw_packet(&self) -> VexResult<()> {
+    /// Frame batches are processed by [`Session::handle_frame_batch`].
+    pub async fn handle_raw_packet(&self) -> VexResult<()> {
         let task = tokio::select! {
             _ = self.active.cancelled() => {
                 return Ok(())
@@ -41,7 +41,7 @@ impl Session {
         match packet_id {
             Ack::ID => self.process_ack(task),
             Nack::ID => self.process_nack(task).await,
-            _ => self.process_frame_batch(task).await,
+            _ => self.handle_frame_batch(task).await,
         }
     }
 
@@ -52,20 +52,20 @@ impl Session {
     /// * Inserting packets into the compound collector
     /// * Discarding old sequenced frames
     /// * Acknowledging reliable packets
-    async fn process_frame_batch(&self, task: BytesMut) -> VexResult<()> {
+    async fn handle_frame_batch(&self, task: BytesMut) -> VexResult<()> {
         let batch = FrameBatch::decode(task)?;
         self.client_batch_number
             .fetch_max(batch.get_batch_number(), Ordering::SeqCst);
 
         for frame in batch.get_frames() {
-            self.process_frame(frame, batch.get_batch_number()).await?;
+            self.handle_frame(frame, batch.get_batch_number()).await?;
         }
 
         Ok(())
     }
 
     #[async_recursion]
-    async fn process_frame(&self, frame: &Frame, batch_number: u32) -> VexResult<()> {
+    async fn handle_frame(&self, frame: &Frame, batch_number: u32) -> VexResult<()> {
         if frame.reliability.is_sequenced()
             && frame.sequence_index < self.client_batch_number.load(Ordering::SeqCst)
         {
@@ -95,7 +95,7 @@ impl Session {
 
         if frame.is_compound {
             if let Some(p) = self.compound_collector.insert(frame.clone()) {
-                return self.process_frame(&p, batch_number).await;
+                return self.handle_frame(&p, batch_number).await;
             }
 
             return Ok(());
@@ -110,18 +110,18 @@ impl Session {
                 self.order_channels[frame.order_channel as usize].insert(frame.clone())
             {
                 for packet in ready {
-                    self.process_unframed_packet(packet.body)?;
+                    self.handle_unframed_packet(packet.body)?;
                 }
             }
             return Ok(());
         }
 
-        self.process_unframed_packet(frame.body.clone())?;
+        self.handle_unframed_packet(frame.body.clone())?;
         Ok(())
     }
 
     /// Processes an unencapsulated game packet.
-    fn process_unframed_packet(&self, mut task: BytesMut) -> VexResult<()> {
+    fn handle_unframed_packet(&self, mut task: BytesMut) -> VexResult<()> {
         let bytes = task.as_ref();
 
         let packet_id = *task.first().expect("Game packet buffer was empty");

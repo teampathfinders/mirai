@@ -64,6 +64,7 @@ pub struct IdentityData {
     pub xuid: u64,
     pub identity: String,
     pub display_name: String,
+    pub title_id: u32,
     pub public_key: String,
 }
 
@@ -97,6 +98,7 @@ impl Decodable for Login {
             identity: IdentityData {
                 identity: identity_data.client_data.uuid,
                 xuid: identity_data.client_data.xuid.parse()?,
+                title_id: identity_data.client_data.title_id.parse()?,
                 display_name: identity_data.client_data.display_name,
                 public_key: identity_data.public_key,
             },
@@ -127,6 +129,8 @@ pub struct RawIdentityData {
     pub display_name: String,
     #[serde(rename = "identity")]
     pub uuid: String,
+    #[serde(rename = "titleId")]
+    pub title_id: String,
 }
 
 #[derive(serde::Deserialize, Debug)]
@@ -266,35 +270,3 @@ fn parse_user_data(buffer: &mut BytesMut, public_key: &str) -> VexResult<UserTok
 
     Ok(user_data)
 }
-
-// fn decode_identity_data(buffer: &mut BytesMut) -> VexResult<TokenClaims> {
-//     // TODO: Verify Mojang and Xbox public keys
-//
-//     let token_length = buffer.get_u32_le();
-//     let position = buffer.len() - buffer.remaining();
-//     let token = &buffer.as_ref()[position..(position + token_length as usize)];
-//
-//     let chains = match serde_json::from_slice::<TokenChain>(token) {
-//         Ok(c) => c,
-//         Err(e) => {
-//             return Err(vex_error!(InvalidRequest, format!("Invalid JSON: {e}")));
-//         }
-//     };
-//
-//     let base64_engine = base64::engine::general_purpose::STANDARD_NO_PAD;
-//     for (index, chain) in chains.chain.iter().enumerate() {
-//         let mut split = chain.split('.');
-//         if let Some(second) = split.nth(1) {
-//             if let Ok(decoded) = base64_engine.decode(second) {
-//                 if let Ok(json) = serde_json::from_slice(&decoded) {
-//                     return Ok(json);
-//                 }
-//             }
-//         }
-//     }
-//
-//     Err(vex_error!(
-//         InvalidRequest,
-//         "No identity data was found in the login tokens"
-//     ))
-// }

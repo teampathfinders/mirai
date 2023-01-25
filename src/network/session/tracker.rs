@@ -49,7 +49,7 @@ impl SessionTracker {
         ipv4_socket: Arc<UdpSocket>,
         address: SocketAddr,
         mtu: u16,
-        client_guid: i64,
+        client_guid: u64,
     ) {
         let session = Session::new(ipv4_socket, address, mtu, client_guid);
         self.session_list.insert(address, session);

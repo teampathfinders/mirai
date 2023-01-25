@@ -4,9 +4,7 @@ use bytes::BytesMut;
 
 use crate::config::SERVER_CONFIG;
 use crate::error::VexResult;
-use crate::network::packets::{
-    ClientCacheStatus, Login, NetworkSettings, Packet, PacketBatch, RequestNetworkSettings,
-};
+use crate::network::packets::{ClientCacheStatus, Login, NetworkSettings, Packet, PacketBatch, RequestNetworkSettings, ServerToClientHandshake};
 use crate::network::raknet::frame::Frame;
 use crate::network::raknet::reliability::Reliability;
 use crate::network::session::send_queue::SendPriority;
@@ -25,11 +23,10 @@ impl Session {
 
     pub fn handle_login(&self, mut task: BytesMut) -> VexResult<()> {
         let request = Login::decode(task)?;
-        tracing::info!("Login {request:?}");
+        tracing::info!("{request:?}");
 
-        // *self.display_name.write() = Some(request.display_name);
-        // *self.xuid.write() = Some(NonZeroU64::new(request.xuid).unwrap());
-        // *self.uuid.write() = Some(request.uuid);
+        self.identity.set(request.identity)?;
+        self.user_data.set(request.user_data)?;
 
         // TODO: Send handshakes
 
