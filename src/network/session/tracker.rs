@@ -32,7 +32,7 @@ impl SessionTracker {
         {
             let session_list = session_list.clone();
             tokio::spawn(async move {
-                SessionTracker::garbage_collector(session_list).await;
+                Self::garbage_collector(session_list).await;
             });
         }
 
@@ -75,7 +75,7 @@ impl SessionTracker {
     }
 
     /// Returns the maximum amount of sessions this tracker will allow.
-    pub fn max_session_count(&self) -> usize {
+    pub const fn max_session_count(&self) -> usize {
         self.max_session_count
     }
 

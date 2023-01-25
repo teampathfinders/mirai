@@ -40,18 +40,18 @@ impl FrameBatch {
     /// Gives a rough estimate of the size of this batch in bytes.
     /// This estimate will always be greater than the actual size of the batch.
     pub fn estimate_size(&self) -> usize {
-        std::mem::size_of::<FrameBatch>()
+        std::mem::size_of::<Self>()
             + self.frames.iter().fold(0, |acc, f| {
             acc + std::mem::size_of::<Frame>() + f.body.len()
         })
     }
 
-    pub fn batch_number(mut self, batch_number: u32) -> Self {
+    pub const fn batch_number(mut self, batch_number: u32) -> Self {
         self.batch_number = batch_number;
         self
     }
 
-    pub fn get_batch_number(&self) -> u32 {
+    pub const fn get_batch_number(&self) -> u32 {
         self.batch_number
     }
 
@@ -144,6 +144,7 @@ impl Frame {
         }
     }
 
+    #[allow(clippy::useless_let_if_seq)]
     fn decode(buffer: &mut BytesMut) -> VexResult<Self> {
         let flags = buffer.get_u8();
 

@@ -8,7 +8,7 @@ use crate::network::raknet::frame::Frame;
 
 /// Priority of the packet.
 /// This affects when they're sent.
-#[derive(Debug, Copy, Clone, PartialEq)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum SendPriority {
     /// High priority is flushed every session tick.
     High,

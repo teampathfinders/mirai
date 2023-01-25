@@ -82,7 +82,7 @@ impl ServerInstance {
 
     /// Run the server
     pub async fn run(self: Arc<Self>) -> VexResult<()> {
-        ServerInstance::register_shutdown_handler(self.global_token.clone());
+        Self::register_shutdown_handler(self.global_token.clone());
 
         let receiver_task = {
             let controller = self.clone();

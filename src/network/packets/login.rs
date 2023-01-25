@@ -16,8 +16,8 @@ const ENGINE: base64::engine::GeneralPurpose = base64::engine::general_purpose::
 #[derive(Debug)]
 pub enum DeviceOS {
     Android,
-    IOS,
-    OSX,
+    Ios,
+    Osx,
     FireOS,
     GearVR,
     HoloLens,
@@ -40,8 +40,8 @@ impl TryFrom<u8> for DeviceOS {
 
         Ok(match value {
             1 => Android,
-            2 => IOS,
-            3 => OSX,
+            2 => Ios,
+            3 => Osx,
             4 => FireOS,
             5 => GearVR,
             6 => HoloLens,

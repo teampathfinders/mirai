@@ -16,7 +16,7 @@ pub struct Packet<T: GamePacket> {
 impl<T: GamePacket> Packet<T> {
     pub const ID: u8 = 0xfe;
 
-    pub fn new(internal_packet: T) -> Self {
+    pub const fn new(internal_packet: T) -> Self {
         Self {
             header: Header {
                 id: T::ID,
@@ -27,7 +27,7 @@ impl<T: GamePacket> Packet<T> {
         }
     }
 
-    pub fn subclients(mut self, sender: u8, target: u8) -> Self {
+    pub const fn subclients(mut self, sender: u8, target: u8) -> Self {
         self.header.target_subclient = target;
         self.header.sender_subclient = sender;
         self

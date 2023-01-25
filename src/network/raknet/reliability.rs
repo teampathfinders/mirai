@@ -2,7 +2,7 @@ use crate::error::VexError;
 
 /// Describes how reliable transport of this packet should be.
 /// Higher reliability takes more resources, but also has more reliability guarantees.
-#[derive(Debug, PartialEq, Copy, Clone, Default)]
+#[derive(Debug, PartialEq, Eq, Copy, Clone, Default)]
 pub enum Reliability {
     /// Send the frame using raw UDP.
     /// These packets can arrive in the wrong order or not arrive at all.
@@ -48,12 +48,12 @@ impl TryFrom<u8> for Reliability {
 
 impl Reliability {
     /// Returns whether this reliability is reliable.
-    pub fn is_reliable(self) -> bool {
+    pub const fn is_reliable(self) -> bool {
         !matches!(self, Self::Unreliable | Self::UnreliableSequenced)
     }
 
     /// Returns whether this reliability is ordered.
-    pub fn is_ordered(self) -> bool {
+    pub const fn is_ordered(self) -> bool {
         matches!(
             self,
             Self::ReliableOrdered | Self::ReliableSequenced | Self::UnreliableSequenced
@@ -61,7 +61,7 @@ impl Reliability {
     }
 
     /// Returns whether this reliability is sequenced.
-    pub fn is_sequenced(self) -> bool {
+    pub const fn is_sequenced(self) -> bool {
         matches!(self, Self::UnreliableSequenced | Self::ReliableSequenced)
     }
 }

@@ -1,17 +1,18 @@
-use parking_lot::Mutex;
 use std::collections::VecDeque;
+
+use parking_lot::Mutex;
 use tokio::sync::Semaphore;
 
 /// Queue that supports async blocking pop operations.
 #[derive(Debug)]
-pub struct AsyncDeque<T> {
+pub struct AsyncDeque<T: Send> {
     /// The queue itself.
     deque: Mutex<VecDeque<T>>,
     /// Keeps track of the amount of items currently in the queue.
     permits: Semaphore,
 }
 
-impl<T> AsyncDeque<T> {
+impl<T: Send> AsyncDeque<T> {
     /// Creates a new queue with the specified capacity
     pub fn new(capacity: usize) -> Self {
         Self {

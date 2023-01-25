@@ -9,7 +9,7 @@ pub struct PacketBatch {
 }
 
 impl PacketBatch {
-    pub fn new() -> Self {
+    pub const fn new() -> Self {
         Self {
             packets: Vec::new(),
         }

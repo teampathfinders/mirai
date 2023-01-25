@@ -1,6 +1,7 @@
 #![allow(dead_code)]
 #![allow(unused)]
-#![warn(clippy::pedantic)]
+#![allow(clippy::module_inception)]
+#![warn(clippy::nursery)]
 
 use std::sync::atomic::{AtomicU16, Ordering};
 

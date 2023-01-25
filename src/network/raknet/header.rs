@@ -5,7 +5,7 @@ use crate::util::{ReadExtensions, WriteExtensions};
 
 /// Game packets are prefixed with a length and a header.
 /// The header contains the packet ID and target/subclient IDs in case of splitscreen multiplayer.
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Eq)]
 pub struct Header {
     /// Packet ID
     pub id: u32,
@@ -26,8 +26,8 @@ impl Header {
 
         Ok(Self {
             id,
-            sender_subclient: sender_subclient as u8,
-            target_subclient: target_subclient as u8,
+            sender_subclient,
+            target_subclient,
         })
     }
 

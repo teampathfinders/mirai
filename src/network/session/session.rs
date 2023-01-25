@@ -174,7 +174,7 @@ impl Session {
     }
 
     /// Returns the randomly generated GUID given by the client itself.
-    pub fn get_guid(&self) -> u64 {
+    pub const fn get_guid(&self) -> u64 {
         self.guid
     }
 

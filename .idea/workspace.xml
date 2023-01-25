@@ -15,17 +15,21 @@
     <cargoProject FILE="$PROJECT_DIR$/Cargo.toml" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="eb8ce776-e64a-444b-a034-2036d6cbe18e" name="Changes" comment="Partial user data decoding">
+    <list default="true" id="eb8ce776-e64a-444b-a034-2036d6cbe18e" name="Changes" comment="Replaced session data with once cells">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Cargo.lock" beforeDir="false" afterPath="$PROJECT_DIR$/Cargo.lock" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/error.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/error.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/instance.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/instance.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/main.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/network/packets/batch.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/network/packets/batch.rs" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/network/packets/login.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/network/packets/login.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/network/packets/server_to_client_handshake.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/network/packets/server_to_client_handshake.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/network/raknet/packets/open_connection_request2.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/network/raknet/packets/open_connection_request2.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/network/session/handlers/login.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/network/session/handlers/login.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/network/session/incoming.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/network/session/incoming.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/network/packets/packet.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/network/packets/packet.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/network/raknet/frame.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/network/raknet/frame.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/network/raknet/header.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/network/raknet/header.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/network/raknet/packets/acknowledgements.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/network/raknet/packets/acknowledgements.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/network/raknet/reliability.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/network/raknet/reliability.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/network/session/send_queue.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/network/session/send_queue.rs" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/network/session/session.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/network/session/session.rs" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/network/session/tracker.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/network/session/tracker.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/util/async_queue.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/util/async_queue.rs" afterDir="false" />
     </list>
     <list id="5ea80ab6-242d-4220-8770-a42d5b241561" name="Changes by EJADA_A008" comment="" />
     <option name="SHOW_DIALOG" value="false" />
@@ -266,7 +270,6 @@
   <component name="VcsManagerConfiguration">
     <option name="CHECK_CODE_CLEANUP_BEFORE_PROJECT_COMMIT" value="true" />
     <option name="CHECK_NEW_TODO" value="false" />
-    <MESSAGE value="Fixed one of the two received NACKs" />
     <MESSAGE value="Fixed continuously increasing batch numbers" />
     <MESSAGE value="Implemented connected ping and pong" />
     <MESSAGE value="Fixed NewIncomingConnection and IPv6 encoding/decoding" />
@@ -291,7 +294,8 @@
     <MESSAGE value="Token chain signature verification" />
     <MESSAGE value="User data token decoding" />
     <MESSAGE value="Partial user data decoding" />
-    <option name="LAST_COMMIT_MESSAGE" value="Partial user data decoding" />
+    <MESSAGE value="Replaced session data with once cells" />
+    <option name="LAST_COMMIT_MESSAGE" value="Replaced session data with once cells" />
     <option name="OPTIMIZE_IMPORTS_BEFORE_PROJECT_COMMIT" value="true" />
     <option name="REFORMAT_BEFORE_PROJECT_COMMIT" value="true" />
     <option name="REARRANGE_BEFORE_PROJECT_COMMIT" value="true" />

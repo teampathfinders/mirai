@@ -68,7 +68,7 @@ impl Decodable for Ack {
             }
         }
 
-        Ok(Ack { records })
+        Ok(Self { records })
     }
 }
 
@@ -124,6 +124,6 @@ impl Decodable for Nack {
             }
         }
 
-        Ok(Nack { records })
+        Ok(Self { records })
     }
 }
