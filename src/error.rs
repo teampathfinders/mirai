@@ -41,7 +41,7 @@ macro_rules! error {
 macro_rules! bail {
     ($error_type: ident, $content: expr) => {
         return Err($crate::error!($error_type, $content));
-    }
+    };
 }
 
 /// Custom error type

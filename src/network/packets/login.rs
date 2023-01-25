@@ -24,7 +24,7 @@ pub struct Login {
     pub xuid: u64,
     pub uuid: String,
     pub display_name: String,
-    pub public_key: String
+    pub public_key: String,
 }
 
 impl GamePacket for Login {
@@ -37,7 +37,6 @@ impl Decodable for Login {
         buffer.get_var_u32()?;
 
         parse_identity_data(&mut buffer).unwrap();
-
 
         todo!();
 
@@ -84,21 +83,20 @@ pub struct IdentityTokenPayload {
 fn verify_first_token(token: &str) -> VexResult<String> {
     // Decode JWT header to get X5U.
     let header = jsonwebtoken::decode_header(token)?;
-    let base64 = header.x5u.ok_or(
-        error!(InvalidRequest, "Missing X.509 certificate URL in token")
-    )?;
+    let base64 = header.x5u.ok_or(error!(
+        InvalidRequest,
+        "Missing X.509 certificate URL in token"
+    ))?;
     let bytes = ENGINE.decode(base64)?;
-
     // Public key that can be used to verify the token.
     let public_key = spki::SubjectPublicKeyInfo::try_from(bytes.as_ref())?;
+
     let decoding_key = DecodingKey::from_ec_der(public_key.subject_public_key);
     let mut validation = Validation::new(Algorithm::ES384);
     validation.validate_exp = true;
     validation.validate_nbf = true;
 
     let payload = jsonwebtoken::decode::<KeyTokenPayload>(token, &decoding_key, &validation)?;
-    tracing::info!("{payload:?}");
-
     Ok(payload.claims.public_key)
 }
 
@@ -108,6 +106,7 @@ fn verify_first_token(token: &str) -> VexResult<String> {
 fn verify_second_token(token: &str, key: &str) -> VexResult<String> {
     let bytes = ENGINE.decode(key)?;
     let public_key = spki::SubjectPublicKeyInfo::try_from(bytes.as_ref())?;
+
     let decoding_key = DecodingKey::from_ec_der(public_key.subject_public_key);
     let mut validation = Validation::new(Algorithm::ES384);
     validation.set_issuer(&["Mojang"]);
@@ -115,14 +114,17 @@ fn verify_second_token(token: &str, key: &str) -> VexResult<String> {
     validation.validate_exp = true;
 
     let payload = jsonwebtoken::decode::<KeyTokenPayload>(token, &decoding_key, &validation)?;
-    tracing::info!("{payload:?}");
-
     Ok(payload.claims.public_key)
 }
 
+/// The third token contains the client's actual public key and extra data.
+/// The extraData field contains the XUID, client identity (UUID) and the display name.
+///
+/// Just like the second one, this token can be verified using the identityPublicKey from the last token.
 fn verify_third_token(token: &str, key: &str) -> VexResult<IdentityTokenPayload> {
     let bytes = ENGINE.decode(key)?;
     let public_key = spki::SubjectPublicKeyInfo::try_from(bytes.as_ref())?;
+
     let decoding_key = DecodingKey::from_ec_der(public_key.subject_public_key);
     let mut validation = Validation::new(Algorithm::ES384);
     validation.set_issuer(&["Mojang"]);
@@ -130,8 +132,30 @@ fn verify_third_token(token: &str, key: &str) -> VexResult<IdentityTokenPayload>
     validation.validate_exp = true;
 
     let payload = jsonwebtoken::decode::<IdentityTokenPayload>(token, &decoding_key, &validation)?;
-    tracing::info!("{payload:?}");
+    Ok(payload.claims)
+}
 
+#[derive(serde::Deserialize, Debug)]
+struct UserTokenPayload {
+    #[serde(rename = "DeviceOS")]
+    device_os: u8,
+    #[serde(rename = "LanguageCode")]
+    language_code: String,
+    #[serde(rename = "ServerAddress")]
+    server_address: String,
+}
+
+fn verify_fourth_token(token: &str, key: &str) -> VexResult<UserTokenPayload> {
+    let bytes = ENGINE.decode(key)?;
+    let public_key = spki::SubjectPublicKeyInfo::try_from(bytes.as_ref())?;
+
+    let decoding_key = DecodingKey::from_ec_der(public_key.subject_public_key);
+    let mut validation = Validation::new(Algorithm::ES384);
+
+    // No special header data included in this token, don't verify anything.
+    validation.required_spec_claims.clear();
+
+    let payload = jsonwebtoken::decode::<UserTokenPayload>(token, &decoding_key, &validation)?;
     Ok(payload.claims)
 }
 
@@ -142,15 +166,18 @@ fn parse_identity_data(buffer: &mut BytesMut) -> VexResult<()> {
 
     let tokens = serde_json::from_slice::<TokenChain>(token)?;
     if tokens.chain.is_empty() {
-        bail!(InvalidRequest, format!("Client sent {} tokens, expected 3", tokens.chain.len()));
+        bail!(
+            InvalidRequest,
+            format!("Client sent {} tokens, expected 3", tokens.chain.len())
+        );
     }
     tracing::info!("{tokens:?}");
 
-    match tokens.chain.len() {
+    let identity_data = match tokens.chain.len() {
         1 => {
             // Client is not signed into Xbox.
             bail!(InvalidRequest, "Client is not signed into Xbox");
-        },
+        }
         3 => {
             // Verify the first token and decode the public key for the next token.
             // This public key must be equal to Mojang's public key to verify that the second
@@ -161,47 +188,22 @@ fn parse_identity_data(buffer: &mut BytesMut) -> VexResult<()> {
             }
 
             key = verify_second_token(&tokens.chain[1], &key)?;
+            verify_third_token(&tokens.chain[2], &key)?
+        }
+        _ => bail!(InvalidRequest, "Unexpected token count"),
+    };
 
-            let identity_data = verify_third_token(&tokens.chain[2], &key)?;
-        },
-        _ => bail!(InvalidRequest, "Unexpected token count")
-    }
-
-    todo!();
-
-    // let client_token = jsonwebtoken::decode_header(&tokens.chain[0])?;
-    // let raw_client_key = client_token.x5u.ok_or(error!(InvalidRequest, "Missing x5u in client-signed token"))?;
-    // let decoded_raw = ENGINE.decode(raw_client_key).unwrap();
-    // let info = spki::SubjectPublicKeyInfo::try_from(decoded_raw.as_ref()).unwrap();
-    // tracing::debug!("{info:?}");
-    //
-    // let decoding_key = DecodingKey::from_ec_der(info.subject_public_key);
-    // let validation = Validation::new(Algorithm::ES384);
-    // let client_token = jsonwebtoken::decode::<KeyTokenPayload>(&tokens.chain[0], &decoding_key, &validation).unwrap();
-    // tracing::info!("{client_token:?}");
+    // Raw token
 
     buffer.advance(token_length as usize);
 
-    // Skin data
-    // =========================
-
     let raw_token_length = buffer.get_u32_le();
-    tracing::info!("Raw length {raw_token_length}");
+    let position = buffer.len() - buffer.remaining();
+    let raw_token = &buffer.as_ref()[position..(position + raw_token_length as usize)];
+    let raw_token_string = String::from_utf8_lossy(raw_token);
 
-    // let x509 = openssl::ec::EcKey::public_key_from_der(&ENGINE.decode(MOJANG_PUBLIC_KEY).unwrap()).unwrap();
-    //
-    // let client_token = &tokens.chain[0];
-    // let header = jsonwebtoken::decode_header(&client_token).unwrap();
-    // let public_key = get_public_key(header.x5u.unwrap().as_bytes()).unwrap();
-    //
-    // for token in tokens.chain {
-    //     let split = token.split('.');
-    //     for part in split {
-    //         if let Ok(decoded) = ENGINE.decode(part) {
-    //             tracing::info!("{}", String::from_utf8_lossy(&decoded).to_string());
-    //         }
-    //     }
-    // }
+    let user_data = verify_fourth_token(raw_token_string.as_ref(), &identity_data.public_key)?;
+    tracing::info!("{user_data:?}");
 
     todo!();
 
