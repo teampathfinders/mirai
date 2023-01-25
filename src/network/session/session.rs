@@ -12,8 +12,9 @@ use tokio_util::sync::CancellationToken;
 
 use crate::error;
 use crate::error::VexResult;
-use crate::network::packets::{DeviceOS, IdentityData, UserData};
+use crate::network::packets::DeviceOS;
 use crate::network::session::compound_collector::CompoundCollector;
+use crate::network::session::crypto::login::{IdentityData, UserData};
 use crate::network::session::order_channel::OrderChannel;
 use crate::network::session::recovery_queue::RecoveryQueue;
 use crate::network::session::send_queue::SendQueue;
@@ -143,7 +144,8 @@ impl Session {
     ///
     /// Warning: An internal RwLock is kept in a read state until the return value of this function is dropped.
     pub fn get_identity(&self) -> VexResult<&str> {
-        let identity = self.identity
+        let identity = self
+            .identity
             .get()
             .ok_or(error!(Other, "Identity ID has not been initialised yet"))?;
         Ok(identity.identity.as_str())
@@ -153,7 +155,8 @@ impl Session {
     ///
     /// Warning: An internal RwLock is kept in a read state until the return value of this function is dropped.
     pub fn get_xuid(&self) -> VexResult<u64> {
-        let identity = self.identity
+        let identity = self
+            .identity
             .get()
             .ok_or(error!(Other, "XUID has not been initialised yet"))?;
         Ok(identity.xuid)
@@ -163,7 +166,8 @@ impl Session {
     ///
     /// Warning: An internal RwLock is kept in a read state until the return value of this function is dropped.
     pub fn get_display_name(&self) -> VexResult<&str> {
-        let identity = self.identity
+        let identity = self
+            .identity
             .get()
             .ok_or(error!(Other, "Display name has not been initialised yet"))?;
         Ok(identity.display_name.as_str())

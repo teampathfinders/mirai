@@ -1,10 +1,14 @@
 use std::num::NonZeroU64;
 
 use bytes::BytesMut;
+use x25519_dalek::{EphemeralSecret, PublicKey};
 
 use crate::config::SERVER_CONFIG;
 use crate::error::VexResult;
-use crate::network::packets::{ClientCacheStatus, Login, NetworkSettings, Packet, PacketBatch, RequestNetworkSettings, ServerToClientHandshake};
+use crate::network::packets::{
+    ClientCacheStatus, Login, NetworkSettings, Packet, PacketBatch, RequestNetworkSettings,
+    ServerToClientHandshake,
+};
 use crate::network::raknet::frame::Frame;
 use crate::network::raknet::reliability::Reliability;
 use crate::network::session::send_queue::SendPriority;
@@ -29,6 +33,10 @@ impl Session {
         self.user_data.set(request.user_data)?;
 
         // TODO: Send handshakes
+
+        let server_secret = EphemeralSecret::new(rand_core::OsRng);
+        let server_public = PublicKey::from(&server_secret);
+        // let shared_secret =
 
         Ok(())
     }
