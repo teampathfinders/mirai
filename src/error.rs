@@ -84,6 +84,12 @@ impl From<jsonwebtoken::errors::Error> for VexError {
     }
 }
 
+impl From<spki::Error> for VexError {
+    fn from(value: spki::Error) -> Self {
+        Self::InvalidRequest(value.to_string())
+    }
+}
+
 // impl From<openssl::error::ErrorStack> for VexError {
 //     fn from(value: openssl::error::ErrorStack) -> Self {
 //         Self::InvalidRequest(value.to_string())
