@@ -4,7 +4,7 @@ use bytes::{Buf, BytesMut};
 
 use crate::error::VexResult;
 use crate::network::traits::Decodable;
-use crate::util::{EMPTY_IPV4_ADDRESS, ReadExtensions};
+use crate::util::{ReadExtensions, EMPTY_IPV4_ADDRESS};
 use crate::vex_assert;
 
 #[derive(Debug)]

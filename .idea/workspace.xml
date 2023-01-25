@@ -15,19 +15,20 @@
     <cargoProject FILE="$PROJECT_DIR$/Cargo.toml" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="eb8ce776-e64a-444b-a034-2036d6cbe18e" name="Changes" comment="Fixed clippy warnings">
-      <change afterPath="$PROJECT_DIR$/src/network/session/crypto/encrypt.rs" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/network/session/crypto/login.rs" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/network/session/crypto/mod.rs" afterDir="false" />
+    <list default="true" id="eb8ce776-e64a-444b-a034-2036d6cbe18e" name="Changes" comment="Moved token code to auth directory">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Cargo.lock" beforeDir="false" afterPath="$PROJECT_DIR$/Cargo.lock" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Cargo.toml" beforeDir="false" afterPath="$PROJECT_DIR$/Cargo.toml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/instance.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/instance.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/main.rs" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/network/packets/login.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/network/packets/login.rs" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/network/packets/server_to_client_handshake.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/network/packets/server_to_client_handshake.rs" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/network/raknet/frame.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/network/raknet/frame.rs" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/network/raknet/packets/connection_request_accepted.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/network/raknet/packets/connection_request_accepted.rs" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/network/raknet/packets/new_incoming_connection.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/network/raknet/packets/new_incoming_connection.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/network/session/crypto/encrypt.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/crypto/encrypt.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/network/session/crypto/login.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/crypto/login.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/network/session/crypto/mod.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/crypto/mod.rs" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/network/session/handlers/login.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/network/session/handlers/login.rs" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/network/session/handlers/raknet.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/network/session/handlers/raknet.rs" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/network/session/incoming.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/network/session/incoming.rs" afterDir="false" />
@@ -109,11 +110,11 @@
       <recent name="C:\Users\Ruben\Documents\programming\rs\vex\src\raknet\packets" />
     </key>
     <key name="MoveFile.RECENT_KEYS">
+      <recent name="C:\Users\Ruben\Documents\programming\rs\vex\src" />
       <recent name="C:\Users\Ruben\Documents\programming\rs\vex\src\network\session" />
       <recent name="C:\Users\Ruben\Documents\programming\rs\vex\src\network" />
       <recent name="C:\Users\Ruben\Documents\programming\rs\vex\src\packets" />
       <recent name="C:\Users\Ruben\Documents\programming\rs\vex\src\raknet" />
-      <recent name="C:\Users\Ruben\Documents\programming\rs\vex\src\raknet\packets" />
     </key>
   </component>
   <component name="RunManager" selected="Cargo.Run">
@@ -274,7 +275,6 @@
   <component name="VcsManagerConfiguration">
     <option name="CHECK_CODE_CLEANUP_BEFORE_PROJECT_COMMIT" value="true" />
     <option name="CHECK_NEW_TODO" value="false" />
-    <MESSAGE value="Implemented connected ping and pong" />
     <MESSAGE value="Fixed NewIncomingConnection and IPv6 encoding/decoding" />
     <MESSAGE value="Added IncompatibleProtocol error to login sequence" />
     <MESSAGE value="Added NetworkSettings packet" />
@@ -299,7 +299,8 @@
     <MESSAGE value="Partial user data decoding" />
     <MESSAGE value="Replaced session data with once cells" />
     <MESSAGE value="Fixed clippy warnings" />
-    <option name="LAST_COMMIT_MESSAGE" value="Fixed clippy warnings" />
+    <MESSAGE value="Moved token code to auth directory" />
+    <option name="LAST_COMMIT_MESSAGE" value="Moved token code to auth directory" />
     <option name="OPTIMIZE_IMPORTS_BEFORE_PROJECT_COMMIT" value="true" />
     <option name="REFORMAT_BEFORE_PROJECT_COMMIT" value="true" />
     <option name="REARRANGE_BEFORE_PROJECT_COMMIT" value="true" />

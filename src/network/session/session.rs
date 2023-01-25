@@ -1,7 +1,7 @@
 use std::net::SocketAddr;
 use std::num::NonZeroU64;
-use std::sync::Arc;
 use std::sync::atomic::{AtomicU32, AtomicU64, Ordering};
+use std::sync::Arc;
 use std::time::{Duration, Instant};
 
 use bytes::BytesMut;
@@ -10,11 +10,11 @@ use tokio::net::UdpSocket;
 use tokio::sync::OnceCell;
 use tokio_util::sync::CancellationToken;
 
+use crate::crypto::login::{IdentityData, UserData};
 use crate::error;
 use crate::error::VexResult;
 use crate::network::packets::DeviceOS;
 use crate::network::session::compound_collector::CompoundCollector;
-use crate::network::session::crypto::login::{IdentityData, UserData};
 use crate::network::session::order_channel::OrderChannel;
 use crate::network::session::recovery_queue::RecoveryQueue;
 use crate::network::session::send_queue::SendQueue;

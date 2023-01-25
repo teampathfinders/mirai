@@ -1,15 +1,15 @@
 use base64::Engine;
 use bytes::{Buf, BytesMut};
 use jsonwebtoken::{Algorithm, DecodingKey, Validation};
-use serde_derive::Deserialize;
+use serde::Deserialize;
 use spki::SubjectPublicKeyInfo;
 
-use crate::{bail, error, vex_assert};
+use crate::crypto::login::{parse_identity_data, parse_user_data, IdentityData, UserData};
 use crate::error::{VexError, VexResult};
 use crate::network::packets::GamePacket;
-use crate::network::session::crypto::login::{IdentityData, parse_identity_data, parse_user_data, UserData};
 use crate::network::traits::Decodable;
 use crate::util::ReadExtensions;
+use crate::{bail, error, vex_assert};
 
 #[derive(Debug)]
 pub enum DeviceOS {

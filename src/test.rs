@@ -5,8 +5,8 @@ use bytes::{Buf, BufMut, BytesMut};
 
 use crate::error::VexResult;
 use crate::instance::{IPV4_LOCAL_ADDR, IPV6_LOCAL_ADDR};
-use crate::network::raknet::{Frame, FrameBatch, Header, OrderChannel, Reliability};
 use crate::network::raknet::packets::{Decodable, NewIncomingConnection, OnlinePing};
+use crate::network::raknet::{Frame, FrameBatch, Header, OrderChannel, Reliability};
 use crate::util::{ReadExtensions, WriteExtensions};
 
 #[test]

@@ -7,4 +7,3 @@ pub mod recovery_queue;
 pub mod send_queue;
 pub mod session;
 pub mod tracker;
-pub mod crypto;

@@ -7,11 +7,11 @@ use bytes::{Buf, BytesMut};
 
 use crate::config::SERVER_CONFIG;
 use crate::error::VexResult;
-use crate::network::packets::{
-    ClientCacheStatus, CompressionAlgorithm, GAME_PACKET_ID, GamePacket, Login,
-    RequestNetworkSettings,
-};
 use crate::network::packets::online_ping::OnlinePing;
+use crate::network::packets::{
+    ClientCacheStatus, CompressionAlgorithm, GamePacket, Login, RequestNetworkSettings,
+    GAME_PACKET_ID,
+};
 use crate::network::raknet::frame::{Frame, FrameBatch};
 use crate::network::raknet::header::Header;
 use crate::network::raknet::packets::acknowledgements::{Ack, AckRecord, Nack};

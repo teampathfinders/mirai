@@ -6,7 +6,7 @@ use bytes::{BufMut, BytesMut};
 use crate::error::VexResult;
 use crate::instance::IPV4_LOCAL_ADDR;
 use crate::network::traits::Encodable;
-use crate::util::{EMPTY_IPV4_ADDRESS, IPV4_MEM_SIZE, IPV6_MEM_SIZE, WriteExtensions};
+use crate::util::{WriteExtensions, EMPTY_IPV4_ADDRESS, IPV4_MEM_SIZE, IPV6_MEM_SIZE};
 
 #[derive(Debug)]
 pub struct ConnectionRequestAccepted {

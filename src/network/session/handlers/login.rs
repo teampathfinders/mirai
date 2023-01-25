@@ -1,9 +1,9 @@
 use std::num::NonZeroU64;
 
 use bytes::BytesMut;
-use x25519_dalek::{EphemeralSecret, PublicKey};
 
 use crate::config::SERVER_CONFIG;
+use crate::crypto::encrypt::key_exchange;
 use crate::error::VexResult;
 use crate::network::packets::{
     ClientCacheStatus, Login, NetworkSettings, Packet, PacketBatch, RequestNetworkSettings,
@@ -29,14 +29,16 @@ impl Session {
         let request = Login::decode(task)?;
         tracing::info!("{request:?}");
 
+        // let reply = Packet::new(ServerToClientHandshake {
+        //
+        // });
+
+        key_exchange(&request.identity.public_key)?;
+
         self.identity.set(request.identity)?;
         self.user_data.set(request.user_data)?;
 
-        // TODO: Send handshakes
-
-        let server_secret = EphemeralSecret::new(rand_core::OsRng);
-        let server_public = PublicKey::from(&server_secret);
-        // let shared_secret =
+        // let reply = reply.encode()?;
 
         Ok(())
     }

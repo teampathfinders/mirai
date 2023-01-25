@@ -12,6 +12,7 @@ use error::VexResult;
 use crate::instance::ServerInstance;
 
 mod config;
+mod crypto;
 mod error;
 mod instance;
 mod network;
