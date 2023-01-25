@@ -88,17 +88,13 @@ impl Session {
 
             {
                 let decoded_batch = FrameBatch::decode(encoded).unwrap();
-                tracing::info!("decoded_batch {decoded_batch:?}");
-
                 for frame in decoded_batch.get_frames() {
                     if *frame.body.first().unwrap() == 0xfe {
                         let mut frame = frame.clone();
                         frame.body.advance(1);
 
-                        tracing::info!("{:X?}", frame.body.as_ref());
                         let length = frame.body.get_var_u32().unwrap();
                         let header = Header::decode(&mut frame.body).unwrap();
-                        tracing::info!("sent {header:?}, length {length}");
                     }
                 }
             }

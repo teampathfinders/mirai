@@ -26,15 +26,22 @@ macro_rules! vex_assert {
 /// # Example
 /// ```
 /// fn fail() -> VexResult<()> {
-///     return Err(vex_error!(InvalidRequest, "Received an invalid request!"))
+///     return Err(error!(InvalidRequest, "Received an invalid request!"))
 /// }
 /// ```
 ///
 #[macro_export]
-macro_rules! vex_error {
+macro_rules! error {
     ($error_type: ident, $content: expr) => {
         $crate::error::VexError::$error_type($content.into())
     };
+}
+
+#[macro_export]
+macro_rules! bail {
+    ($error_type: ident, $content: expr) => {
+        return Err($crate::error!($error_type, $content));
+    }
 }
 
 /// Custom error type
@@ -59,9 +66,26 @@ pub enum VexError {
     Other,
 }
 
-/// Allow converting poison errors to [`VexError`].
-impl<T> From<std::sync::PoisonError<T>> for VexError {
-    fn from(error: std::sync::PoisonError<T>) -> VexError {
-        VexError::SyncPrimitive(error.to_string())
+impl From<serde_json::Error> for VexError {
+    fn from(value: serde_json::Error) -> Self {
+        Self::InvalidRequest(value.to_string())
     }
 }
+
+impl From<base64::DecodeError> for VexError {
+    fn from(value: base64::DecodeError) -> Self {
+        Self::InvalidRequest(value.to_string())
+    }
+}
+
+impl From<jsonwebtoken::errors::Error> for VexError {
+    fn from(value: jsonwebtoken::errors::Error) -> Self {
+        Self::InvalidRequest(value.to_string())
+    }
+}
+
+// impl From<openssl::error::ErrorStack> for VexError {
+//     fn from(value: openssl::error::ErrorStack) -> Self {
+//         Self::InvalidRequest(value.to_string())
+//     }
+// }

@@ -6,10 +6,10 @@ use dashmap::DashMap;
 use tokio::net::UdpSocket;
 use tokio_util::sync::CancellationToken;
 
+use crate::error;
 use crate::error::VexResult;
 use crate::network::raknet::raw::RawPacket;
 use crate::network::session::session::Session;
-use crate::vex_error;
 
 const GARBAGE_COLLECT_INTERVAL: Duration = Duration::from_secs(10);
 
@@ -63,7 +63,7 @@ impl SessionTracker {
                 let session = r.value();
                 session.receive_queue.push(packet.buffer);
             })
-            .ok_or(vex_error!(
+            .ok_or(error!(
                 InvalidRequest,
                 "Attempted to forward packet for non-existent session"
             ))

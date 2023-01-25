@@ -171,8 +171,6 @@ impl Session {
         let length = task.get_var_u32()?;
         let header = Header::decode(&mut task)?;
 
-        tracing::info!("{header:?}");
-
         match header.id {
             RequestNetworkSettings::ID => self.handle_request_network_settings(task),
             Login::ID => self.handle_login(task),

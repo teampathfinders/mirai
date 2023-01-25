@@ -3,7 +3,7 @@ use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr, SocketAddrV4};
 use bytes::{Buf, BufMut};
 use lazy_static::lazy_static;
 
-use crate::{vex_assert, vex_error};
+use crate::{error, vex_assert};
 use crate::error::{VexError, VexResult};
 
 pub const IPV4_MEM_SIZE: usize = 1 + 4 + 2;
@@ -100,7 +100,7 @@ pub trait ReadExtensions: Buf {
             i += 7;
         }
 
-        Err(vex_error!(
+        Err(error!(
             InvalidRequest,
             "Variable 32-bit integer did not end after 5 bytes"
         ))
