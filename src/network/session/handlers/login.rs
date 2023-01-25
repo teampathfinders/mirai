@@ -27,9 +27,9 @@ impl Session {
         let request = Login::decode(task)?;
         tracing::info!("Login {request:?}");
 
-        *self.display_name.write() = Some(request.display_name);
-        *self.xuid.write() = Some(NonZeroU64::new(request.xuid).unwrap());
-        *self.uuid.write() = Some(request.uuid);
+        // *self.display_name.write() = Some(request.display_name);
+        // *self.xuid.write() = Some(NonZeroU64::new(request.xuid).unwrap());
+        // *self.uuid.write() = Some(request.uuid);
 
         // TODO: Send handshakes
 
@@ -51,7 +51,6 @@ impl Session {
         };
 
         let mut batch = PacketBatch::new().add(reply)?.encode()?;
-
         self.send_queue.insert(
             SendPriority::Medium,
             Frame::new(Reliability::ReliableOrdered, batch),

@@ -5,7 +5,7 @@ use serde_derive::Deserialize;
 use spki::SubjectPublicKeyInfo;
 
 use crate::{bail, error, vex_assert};
-use crate::error::VexResult;
+use crate::error::{VexError, VexResult};
 use crate::network::packets::GamePacket;
 use crate::network::traits::Decodable;
 use crate::util::ReadExtensions;
@@ -13,18 +13,71 @@ use crate::util::ReadExtensions;
 pub const MOJANG_PUBLIC_KEY: &str = "MHYwEAYHKoZIzj0CAQYFK4EEACIDYgAE8ELkixyLcwlZryUQcu1TvPOmI2B7vX83ndnWRUaXm74wFfa5f/lwQNTfrLVHa2PmenpGI6JhIMUJaWZrjmMj90NoKNFSNBuKdm8rYiXsfaz3K36x/1U26HpG0ZxK/V1V";
 const ENGINE: base64::engine::GeneralPurpose = base64::engine::general_purpose::STANDARD_NO_PAD;
 
-#[derive(serde::Deserialize, Debug)]
-pub struct TokenChain {
-    pub chain: Vec<String>,
+#[derive(Debug)]
+pub enum DeviceOS {
+    Android,
+    IOS,
+    OSX,
+    FireOS,
+    GearVR,
+    HoloLens,
+    Win10,
+    Win32,
+    Dedicated,
+    TvOS,
+    PlayStation,
+    Nx,
+    Xbox,
+    WindowsPhone,
+    Linux,
+}
+
+impl TryFrom<u8> for DeviceOS {
+    type Error = VexError;
+
+    fn try_from(value: u8) -> Result<Self, Self::Error> {
+        use DeviceOS::*;
+
+        Ok(match value {
+            1 => Android,
+            2 => IOS,
+            3 => OSX,
+            4 => FireOS,
+            5 => GearVR,
+            6 => HoloLens,
+            7 => Win10,
+            8 => Win32,
+            9 => Dedicated,
+            10 => TvOS,
+            11 => PlayStation,
+            12 => Nx,
+            13 => Xbox,
+            14 => WindowsPhone,
+            15 => Linux,
+            _ => bail!(InvalidRequest, "Invalid device OS")
+        })
+    }
+}
+
+#[derive(Debug)]
+pub struct IdentityData {
+    pub xuid: u64,
+    pub identity: String,
+    pub display_name: String,
+    pub public_key: String,
+}
+
+#[derive(Debug)]
+pub struct UserData {
+    pub device_os: DeviceOS,
+    pub language_code: String,
 }
 
 #[derive(Debug)]
 pub struct Login {
     pub protocol_version: u32,
-    pub xuid: u64,
-    pub uuid: String,
-    pub display_name: String,
-    pub public_key: String,
+    pub identity: IdentityData,
+    pub user_data: UserData,
 }
 
 impl GamePacket for Login {
@@ -36,19 +89,28 @@ impl Decodable for Login {
         let protocol_version = buffer.get_u32();
         buffer.get_var_u32()?;
 
-        parse_identity_data(&mut buffer).unwrap();
+        let identity_data = parse_identity_data(&mut buffer)?;
+        let user_data = parse_user_data(&mut buffer, &identity_data.public_key)?;
 
-        todo!();
-
-        // let claims_data = decode_identity_data(&mut buffer)?;
-        //
-        // Ok(Self {
-        //     protocol_version,
-        //     xuid: claims_data.client_data.xuid.parse().unwrap(),
-        //     uuid: claims_data.client_data.uuid,
-        //     display_name: claims_data.client_data.display_name,
-        // })
+        Ok(Self {
+            protocol_version,
+            identity: IdentityData {
+                identity: identity_data.client_data.uuid,
+                xuid: identity_data.client_data.xuid.parse()?,
+                display_name: identity_data.client_data.display_name,
+                public_key: identity_data.public_key,
+            },
+            user_data: UserData {
+                device_os: DeviceOS::try_from(user_data.device_os)?,
+                language_code: user_data.language_code,
+            },
+        })
     }
+}
+
+#[derive(serde::Deserialize, Debug)]
+pub struct TokenChain {
+    pub chain: Vec<String>,
 }
 
 #[derive(serde::Deserialize, Debug)]
@@ -58,13 +120,11 @@ pub struct KeyTokenPayload {
 }
 
 #[derive(serde::Deserialize, Debug)]
-pub struct IdentityData {
+pub struct RawIdentityData {
     #[serde(rename = "XUID")]
     pub xuid: String,
-
     #[serde(rename = "displayName")]
     pub display_name: String,
-
     #[serde(rename = "identity")]
     pub uuid: String,
 }
@@ -72,7 +132,7 @@ pub struct IdentityData {
 #[derive(serde::Deserialize, Debug)]
 pub struct IdentityTokenPayload {
     #[serde(rename = "extraData")]
-    pub client_data: IdentityData,
+    pub client_data: RawIdentityData,
     #[serde(rename = "identityPublicKey")]
     pub public_key: String,
 }
@@ -159,7 +219,7 @@ fn verify_fourth_token(token: &str, key: &str) -> VexResult<UserTokenPayload> {
     Ok(payload.claims)
 }
 
-fn parse_identity_data(buffer: &mut BytesMut) -> VexResult<()> {
+fn parse_identity_data(buffer: &mut BytesMut) -> VexResult<IdentityTokenPayload> {
     let token_length = buffer.get_u32_le();
     let position = buffer.len() - buffer.remaining();
     let token = &buffer.as_ref()[position..(position + token_length as usize)];
@@ -171,7 +231,7 @@ fn parse_identity_data(buffer: &mut BytesMut) -> VexResult<()> {
             format!("Client sent {} tokens, expected 3", tokens.chain.len())
         );
     }
-    tracing::info!("{tokens:?}");
+    buffer.advance(token_length as usize);
 
     let identity_data = match tokens.chain.len() {
         1 => {
@@ -193,21 +253,18 @@ fn parse_identity_data(buffer: &mut BytesMut) -> VexResult<()> {
         _ => bail!(InvalidRequest, "Unexpected token count"),
     };
 
-    // Raw token
+    Ok(identity_data)
+}
 
-    buffer.advance(token_length as usize);
-
-    let raw_token_length = buffer.get_u32_le();
+fn parse_user_data(buffer: &mut BytesMut, public_key: &str) -> VexResult<UserTokenPayload> {
+    let token_length = buffer.get_u32_le();
     let position = buffer.len() - buffer.remaining();
-    let raw_token = &buffer.as_ref()[position..(position + raw_token_length as usize)];
-    let raw_token_string = String::from_utf8_lossy(raw_token);
+    let token = &buffer.as_ref()[position..(position + token_length as usize)];
+    let token_string = String::from_utf8_lossy(token);
 
-    let user_data = verify_fourth_token(raw_token_string.as_ref(), &identity_data.public_key)?;
-    tracing::info!("{user_data:?}");
+    let user_data = verify_fourth_token(token_string.as_ref(), public_key)?;
 
-    todo!();
-
-    Ok(())
+    Ok(user_data)
 }
 
 // fn decode_identity_data(buffer: &mut BytesMut) -> VexResult<TokenClaims> {

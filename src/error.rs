@@ -62,8 +62,14 @@ pub enum VexError {
     #[error(transparent)]
     Io(#[from] std::io::Error),
     /// Any error that does not fit in the previous categories.
-    #[error("Unknown error")]
-    Other,
+    #[error("{0}")]
+    Other(String),
+}
+
+impl From<std::num::ParseIntError> for VexError {
+    fn from(value: std::num::ParseIntError) -> Self {
+        Self::Other(value.to_string())
+    }
 }
 
 impl From<serde_json::Error> for VexError {

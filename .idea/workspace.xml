@@ -15,21 +15,11 @@
     <cargoProject FILE="$PROJECT_DIR$/Cargo.toml" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="eb8ce776-e64a-444b-a034-2036d6cbe18e" name="Changes" comment="Token chain signature verification">
+    <list default="true" id="eb8ce776-e64a-444b-a034-2036d6cbe18e" name="Changes" comment="User data token decoding">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/error.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/error.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/instance.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/instance.rs" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/network/packets/login.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/network/packets/login.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/network/packets/server_to_client_handshake.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/network/packets/server_to_client_handshake.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/network/raknet/frame.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/network/raknet/frame.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/network/raknet/packets/connection_request_accepted.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/network/raknet/packets/connection_request_accepted.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/network/raknet/packets/new_incoming_connection.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/network/raknet/packets/new_incoming_connection.rs" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/network/session/handlers/login.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/network/session/handlers/login.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/network/session/handlers/raknet.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/network/session/handlers/raknet.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/network/session/incoming.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/network/session/incoming.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/network/session/session.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/network/session/session.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/test.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/test.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/util/extensions.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/util/extensions.rs" afterDir="false" />
     </list>
     <list id="5ea80ab6-242d-4220-8770-a42d5b241561" name="Changes by EJADA_A008" comment="" />
     <option name="SHOW_DIALOG" value="false" />
@@ -96,7 +86,7 @@
     &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,
     &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
     &quot;org.rust.cargo.project.model.PROJECT_DISCOVERY&quot;: &quot;true&quot;,
-    &quot;settings.editor.selected.configurable&quot;: &quot;preferences.lookFeel&quot;,
+    &quot;settings.editor.selected.configurable&quot;: &quot;preferences.pluginManager&quot;,
     &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;
   }
 }</component>
@@ -270,7 +260,6 @@
   <component name="VcsManagerConfiguration">
     <option name="CHECK_CODE_CLEANUP_BEFORE_PROJECT_COMMIT" value="true" />
     <option name="CHECK_NEW_TODO" value="false" />
-    <MESSAGE value="Implemented ConnectionRequest response" />
     <MESSAGE value="Implemented Frame and FrameBatch encoders" />
     <MESSAGE value="Fixed one of the two received NACKs" />
     <MESSAGE value="Fixed continuously increasing batch numbers" />
@@ -295,7 +284,8 @@
     <MESSAGE value="Reorganised project structure" />
     <MESSAGE value="SPKI + client-signed JWT verification" />
     <MESSAGE value="Token chain signature verification" />
-    <option name="LAST_COMMIT_MESSAGE" value="Token chain signature verification" />
+    <MESSAGE value="User data token decoding" />
+    <option name="LAST_COMMIT_MESSAGE" value="User data token decoding" />
     <option name="OPTIMIZE_IMPORTS_BEFORE_PROJECT_COMMIT" value="true" />
     <option name="REFORMAT_BEFORE_PROJECT_COMMIT" value="true" />
     <option name="REARRANGE_BEFORE_PROJECT_COMMIT" value="true" />
