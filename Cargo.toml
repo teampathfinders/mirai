@@ -28,5 +28,6 @@ serde_json = "1.0.91"
 serde = "1.0.152"
 base64 = "0.21.0"
 spki = "0.6.0"
-p384 = { version = "0.12.0", features = ["ecdh"] }
+p384 = { version = "0.12.0", features = ["ecdh", "ecdsa"] }
 sha2 = "0.10.6"
+ecdsa = "0.15.1"

@@ -1,7 +1,7 @@
 use std::net::SocketAddr;
 use std::num::NonZeroU64;
-use std::sync::atomic::{AtomicU32, AtomicU64, Ordering};
 use std::sync::Arc;
+use std::sync::atomic::{AtomicU32, AtomicU64, Ordering};
 use std::time::{Duration, Instant};
 
 use bytes::BytesMut;
@@ -41,6 +41,7 @@ const ORDER_CHANNEL_COUNT: usize = 5;
 ///
 #[derive(Debug)]
 pub struct Session {
+    // pub private_key: OnceCell<>,
     pub identity: OnceCell<IdentityData>,
     pub user_data: OnceCell<UserData>,
     /// Current tick of this session, this is increased by one every time the session

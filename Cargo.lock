@@ -98,7 +98,7 @@ version = "0.3.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1cae3e661676ffbacb30f1a824089a8c9150e71017f7e1e38f2aa32009188d34"
 dependencies = [
- "async-trait",
+    "async-trait",
     "bytes",
     "futures-util",
     "http",
@@ -200,16 +200,16 @@ dependencies = [
  "crossbeam-channel",
  "crossbeam-utils",
  "futures",
- "hdrhistogram",
- "humantime",
- "prost-types",
- "serde",
- "serde_json",
- "thread_local",
- "tokio",
- "tokio-stream",
- "tonic",
- "tracing",
+    "hdrhistogram",
+    "humantime",
+    "prost-types",
+    "serde",
+    "serde_json",
+    "thread_local",
+    "tokio",
+    "tokio-stream",
+    "tonic",
+    "tracing",
     "tracing-core",
     "tracing-subscriber",
 ]
@@ -288,8 +288,8 @@ dependencies = [
     "cfg-if",
     "hashbrown",
     "lock_api",
- "once_cell",
- "parking_lot_core",
+    "once_cell",
+    "parking_lot_core",
 ]
 
 [[package]]
@@ -1081,10 +1081,10 @@ dependencies = [
     "cc",
     "libc",
     "once_cell",
- "spin",
- "untrusted",
- "web-sys",
- "winapi",
+    "spin",
+    "untrusted",
+    "web-sys",
+    "winapi",
 ]
 
 [[package]]
@@ -1198,7 +1198,7 @@ dependencies = [
     "num-bigint",
     "num-traits",
     "thiserror",
- "time",
+    "time",
 ]
 
 [[package]]
@@ -1594,6 +1594,7 @@ dependencies = [
     "bytes",
     "console-subscriber",
     "dashmap",
+    "ecdsa",
     "flate2",
     "jsonwebtoken",
     "lazy_static",

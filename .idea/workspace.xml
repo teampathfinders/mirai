@@ -15,27 +15,12 @@
     <cargoProject FILE="$PROJECT_DIR$/Cargo.toml" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="eb8ce776-e64a-444b-a034-2036d6cbe18e" name="Changes" comment="Moved token code to auth directory">
+    <list default="true" id="eb8ce776-e64a-444b-a034-2036d6cbe18e" name="Changes" comment="Figuring out diffie-hellman key exchange">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Cargo.lock" beforeDir="false" afterPath="$PROJECT_DIR$/Cargo.lock" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Cargo.toml" beforeDir="false" afterPath="$PROJECT_DIR$/Cargo.toml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/instance.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/instance.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/main.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/network/packets/login.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/network/packets/login.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/network/packets/server_to_client_handshake.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/network/packets/server_to_client_handshake.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/network/raknet/frame.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/network/raknet/frame.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/network/raknet/packets/connection_request_accepted.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/network/raknet/packets/connection_request_accepted.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/network/raknet/packets/new_incoming_connection.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/network/raknet/packets/new_incoming_connection.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/network/session/crypto/encrypt.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/crypto/encrypt.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/network/session/crypto/login.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/crypto/login.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/network/session/crypto/mod.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/crypto/mod.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/network/session/handlers/login.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/network/session/handlers/login.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/network/session/handlers/raknet.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/network/session/handlers/raknet.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/network/session/incoming.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/network/session/incoming.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/network/session/mod.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/network/session/mod.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/crypto/encrypt.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/crypto/encrypt.rs" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/network/session/session.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/network/session/session.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/test.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/test.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/util/extensions.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/util/extensions.rs" afterDir="false" />
     </list>
     <list id="5ea80ab6-242d-4220-8770-a42d5b241561" name="Changes by EJADA_A008" comment="" />
     <option name="SHOW_DIALOG" value="false" />
@@ -56,10 +41,10 @@
   <component name="Git.Settings">
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
   </component>
-  <component name="GitHubPullRequestSearchHistory"><![CDATA[{
-  "lastFilter": {
+  <component name="GitHubPullRequestSearchHistory">{
+  &quot;lastFilter&quot;: {
   }
-}]]></component>
+}</component>
   <component name="GithubPullRequestsUISettings">
     <option name="selectedUrlAndAccountId">
       <UrlAndAccount>
@@ -82,29 +67,29 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent"><![CDATA[{
-  "keyToString": {
-    "ASKED_ADD_EXTERNAL_FILES": "true",
-    "ASKED_SHARE_PROJECT_CONFIGURATION_FILES": "true",
-    "RunOnceActivity.OpenProjectViewOnStart": "true",
-    "RunOnceActivity.ShowReadmeOnStart": "true",
-    "RunOnceActivity.cidr.known.project.marker": "true",
-    "SHARE_PROJECT_CONFIGURATION_FILES": "true",
-    "WebServerToolWindowFactoryState": "false",
-    "cf.first.check.clang-format": "false",
-    "cidr.known.project.marker": "true",
-    "codeWithMe.voiceChat.enabledByDefault": "false",
-    "last_opened_file_path": "C:/Users/Ruben/Documents/programming/rs/vex",
-    "node.js.detected.package.eslint": "true",
-    "node.js.detected.package.tslint": "true",
-    "node.js.selected.package.eslint": "(autodetect)",
-    "node.js.selected.package.tslint": "(autodetect)",
-    "nodejs_package_manager_path": "npm",
-    "org.rust.cargo.project.model.PROJECT_DISCOVERY": "true",
-    "settings.editor.selected.configurable": "reference.settingsdialog.IDE.editor.colors.Color Scheme Font",
-    "vue.rearranger.settings.migration": "true"
+  <component name="PropertiesComponent">{
+  &quot;keyToString&quot;: {
+    &quot;ASKED_ADD_EXTERNAL_FILES&quot;: &quot;true&quot;,
+    &quot;ASKED_SHARE_PROJECT_CONFIGURATION_FILES&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.OpenProjectViewOnStart&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.cidr.known.project.marker&quot;: &quot;true&quot;,
+    &quot;SHARE_PROJECT_CONFIGURATION_FILES&quot;: &quot;true&quot;,
+    &quot;WebServerToolWindowFactoryState&quot;: &quot;false&quot;,
+    &quot;cf.first.check.clang-format&quot;: &quot;false&quot;,
+    &quot;cidr.known.project.marker&quot;: &quot;true&quot;,
+    &quot;codeWithMe.voiceChat.enabledByDefault&quot;: &quot;false&quot;,
+    &quot;last_opened_file_path&quot;: &quot;C:/Users/Ruben/Documents/programming/rs/vex&quot;,
+    &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
+    &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,
+    &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
+    &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,
+    &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
+    &quot;org.rust.cargo.project.model.PROJECT_DISCOVERY&quot;: &quot;true&quot;,
+    &quot;settings.editor.selected.configurable&quot;: &quot;preferences.pluginManager&quot;,
+    &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;
   }
-}]]></component>
+}</component>
   <component name="RecentsManager">
     <key name="CopyFile.RECENT_KEYS">
       <recent name="C:\Users\Ruben\Documents\programming\rs\vex\src\raknet\packets" />
@@ -275,7 +260,6 @@
   <component name="VcsManagerConfiguration">
     <option name="CHECK_CODE_CLEANUP_BEFORE_PROJECT_COMMIT" value="true" />
     <option name="CHECK_NEW_TODO" value="false" />
-    <MESSAGE value="Fixed NewIncomingConnection and IPv6 encoding/decoding" />
     <MESSAGE value="Added IncompatibleProtocol error to login sequence" />
     <MESSAGE value="Added NetworkSettings packet" />
     <MESSAGE value="Implemented varuint32 and packet length decoding" />
@@ -300,7 +284,8 @@
     <MESSAGE value="Replaced session data with once cells" />
     <MESSAGE value="Fixed clippy warnings" />
     <MESSAGE value="Moved token code to auth directory" />
-    <option name="LAST_COMMIT_MESSAGE" value="Moved token code to auth directory" />
+    <MESSAGE value="Figuring out diffie-hellman key exchange" />
+    <option name="LAST_COMMIT_MESSAGE" value="Figuring out diffie-hellman key exchange" />
     <option name="OPTIMIZE_IMPORTS_BEFORE_PROJECT_COMMIT" value="true" />
     <option name="REFORMAT_BEFORE_PROJECT_COMMIT" value="true" />
     <option name="REARRANGE_BEFORE_PROJECT_COMMIT" value="true" />
