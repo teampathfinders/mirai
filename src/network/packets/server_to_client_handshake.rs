@@ -6,16 +6,20 @@ use crate::network::traits::Encodable;
 use crate::util::WriteExtensions;
 
 #[derive(Debug)]
-pub struct ServerToClientHandshake {
-
+pub struct ServerToClientHandshake<'a> {
+    pub jwt: &'a str,
 }
 
-impl GamePacket for ServerToClientHandshake {
+impl GamePacket for ServerToClientHandshake<'_> {
     const ID: u32 = 0x03;
 }
 
-impl Encodable for ServerToClientHandshake {
+impl Encodable for ServerToClientHandshake<'_> {
     fn encode(&self) -> VexResult<BytesMut> {
-        todo!();
+        let mut buffer = BytesMut::with_capacity(2 + self.jwt.len());
+
+        buffer.put_raknet_string(self.jwt);
+
+        Ok(buffer)
     }
 }

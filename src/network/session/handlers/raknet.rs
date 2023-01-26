@@ -23,8 +23,10 @@ impl Session {
 
         self.send_queue.insert(
             SendPriority::Medium,
-            Frame::new(Reliability::Reliable, response),
+            Frame::new(Reliability::ReliableOrdered, response),
         );
+        tracing::trace!("Accepted connection request");
+
         Ok(())
     }
 

@@ -17,13 +17,13 @@ lazy_static! {
     pub static ref SERVER_CONFIG: RwLock<ServerConfig> = RwLock::new(ServerConfig {
         max_players: 10,
         compression_algorithm: CompressionAlgorithm::Deflate,
-        compression_threshold: 512, // Compress all packets larger than 512 bytes
+        compression_threshold: 1024, // Compress all packets larger than 512 bytes
         client_throttle: ClientThrottleSettings { // Disable client throttling
             enabled: false,
             threshold: 0,
             scalar: 0.0
         },
-        enable_encryption: true,
+        enable_encryption: false,
         server_name: "Pathfinders"
     });
 }

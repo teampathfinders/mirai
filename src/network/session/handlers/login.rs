@@ -3,12 +3,9 @@ use std::num::NonZeroU64;
 use bytes::BytesMut;
 
 use crate::config::SERVER_CONFIG;
-use crate::crypto::encrypt::key_exchange;
+use crate::crypto::encrypt::perform_key_exchange;
 use crate::error::VexResult;
-use crate::network::packets::{
-    ClientCacheStatus, Login, NetworkSettings, Packet, PacketBatch, RequestNetworkSettings,
-    ServerToClientHandshake,
-};
+use crate::network::packets::{ClientCacheStatus, Login, NetworkSettings, Packet, PacketBatch, PlayStatus, RequestNetworkSettings, ServerToClientHandshake, Status};
 use crate::network::raknet::frame::Frame;
 use crate::network::raknet::reliability::Reliability;
 use crate::network::session::send_queue::SendPriority;
@@ -29,16 +26,20 @@ impl Session {
         let request = Login::decode(task)?;
         tracing::info!("{request:?}");
 
-        // let reply = Packet::new(ServerToClientHandshake {
-        //
-        // });
+        let data = perform_key_exchange(&request.identity.public_key)?;
+        tracing::info!("server_jwt {}", data.jwt);
 
-        key_exchange(&request.identity.public_key)?;
+        let reply = Packet::new(ServerToClientHandshake {
+            jwt: data.jwt.as_str()
+        }).subclients(0, 0).encode()?;
+
+        self.send_queue.insert(
+            SendPriority::Medium,
+            Frame::new(Reliability::ReliableOrdered, reply),
+        );
 
         self.identity.set(request.identity)?;
         self.user_data.set(request.user_data)?;
-
-        // let reply = reply.encode()?;
 
         Ok(())
     }
@@ -54,14 +55,15 @@ impl Session {
                 compression_threshold: lock.compression_threshold,
                 client_throttle: lock.client_throttle,
             })
-                .subclients(0, 0)
+                .subclients(0, 0).encode()?
         };
 
-        let mut batch = PacketBatch::new().add(reply)?.encode()?;
+        // let mut batch = PacketBatch::new().add(reply)?.encode()?;
         self.send_queue.insert(
             SendPriority::Medium,
-            Frame::new(Reliability::ReliableOrdered, batch),
+            Frame::new(Reliability::ReliableOrdered, reply),
         );
+        tracing::trace!("Sent network settings");
 
         Ok(())
     }

@@ -44,7 +44,9 @@ impl<T: GamePacket + Encodable> Encodable for Packet<T> {
         let header = self.header.encode();
         let body = self.internal_packet.encode()?;
 
+        buffer.put_u8(Self::ID);
         buffer.put_var_u32(header.len() as u32 + body.len() as u32);
+        // buffer.put_var_u32(body.len() as u32);
         buffer.put(header);
         buffer.put(body);
 

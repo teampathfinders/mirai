@@ -2,9 +2,9 @@ use base64::Engine;
 use bytes::{Buf, BytesMut};
 use jsonwebtoken::{Algorithm, DecodingKey, Validation};
 
+use crate::{bail, error};
 use crate::error::VexResult;
 use crate::network::packets::DeviceOS;
-use crate::{bail, error};
 
 pub const MOJANG_PUBLIC_KEY: &str = "MHYwEAYHKoZIzj0CAQYFK4EEACIDYgAE8ELkixyLcwlZryUQcu1TvPOmI2B7vX83ndnWRUaXm74wFfa5f/lwQNTfrLVHa2PmenpGI6JhIMUJaWZrjmMj90NoKNFSNBuKdm8rYiXsfaz3K36x/1U26HpG0ZxK/V1V";
 const BASE64_ENGINE: base64::engine::GeneralPurpose =
@@ -70,12 +70,15 @@ pub struct UserTokenPayload {
 /// It is extracted from the header of the token and used to verify its signature.
 /// The payload of the token contains a new key which is used to verify the next token.
 fn verify_first_token(token: &str) -> VexResult<String> {
+    tracing::info!("{token}");
+
     // Decode JWT header to get X5U.
     let header = jsonwebtoken::decode_header(token)?;
     let base64 = header.x5u.ok_or(error!(
         InvalidRequest,
         "Missing X.509 certificate URL in token"
     ))?;
+    tracing::trace!("{base64}");
     let bytes = BASE64_ENGINE.decode(base64)?;
     // Public key that can be used to verify the token.
     let public_key = spki::SubjectPublicKeyInfo::try_from(bytes.as_ref())?;
@@ -93,6 +96,8 @@ fn verify_first_token(token: &str) -> VexResult<String> {
 /// (or the identityPublicKey from the previous token).
 /// This token contains another identityPublicKey which is the public key for the third token.
 fn verify_second_token(token: &str, key: &str) -> VexResult<String> {
+    tracing::trace!("{key}");
+
     let bytes = BASE64_ENGINE.decode(key)?;
     let public_key = spki::SubjectPublicKeyInfo::try_from(bytes.as_ref())?;
 
@@ -111,6 +116,8 @@ fn verify_second_token(token: &str, key: &str) -> VexResult<String> {
 ///
 /// Just like the second one, this token can be verified using the identityPublicKey from the last token.
 fn verify_third_token(token: &str, key: &str) -> VexResult<IdentityTokenPayload> {
+    tracing::trace!("{key}");
+
     let bytes = BASE64_ENGINE.decode(key)?;
     let public_key = spki::SubjectPublicKeyInfo::try_from(bytes.as_ref())?;
 
@@ -125,6 +132,8 @@ fn verify_third_token(token: &str, key: &str) -> VexResult<IdentityTokenPayload>
 }
 
 fn verify_fourth_token(token: &str, key: &str) -> VexResult<UserTokenPayload> {
+    tracing::trace!("{key}");
+
     let bytes = BASE64_ENGINE.decode(key)?;
     let public_key = spki::SubjectPublicKeyInfo::try_from(bytes.as_ref())?;
 

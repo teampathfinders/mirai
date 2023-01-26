@@ -83,21 +83,11 @@ impl Session {
                 self.recovery_queue.insert(batch.clone());
             }
             let encoded = batch.encode()?;
+
+            tracing::info!("{:0x?}", encoded.as_ref());
+
             // TODO: Add IPv6 support
             self.ipv4_socket.send_to(&encoded, self.address).await?;
-
-            {
-                let decoded_batch = FrameBatch::decode(encoded).unwrap();
-                for frame in decoded_batch.get_frames() {
-                    if *frame.body.first().unwrap() == 0xfe {
-                        let mut frame = frame.clone();
-                        frame.body.advance(1);
-
-                        let length = frame.body.get_var_u32().unwrap();
-                        let header = Header::decode(&mut frame.body).unwrap();
-                    }
-                }
-            }
         }
 
         Ok(())
