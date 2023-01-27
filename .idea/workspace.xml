@@ -15,10 +15,24 @@
     <cargoProject FILE="$PROJECT_DIR$/Cargo.toml" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="eb8ce776-e64a-444b-a034-2036d6cbe18e" name="Changes" comment="* open_connection_reply2.rs: Subtracted 74 from MTU size.&#10;* connection_request_accepted.rs: Changed address count from 10 to 20.&#10;* network_settings.rs: Changed compression threshold from var_u32 to u16">
+    <list default="true" id="eb8ce776-e64a-444b-a034-2036d6cbe18e" name="Changes" comment="compound_collector.rs: Fixed ACK duplication.">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/network/session/compound_collector.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/network/session/compound_collector.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/config.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/config.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/crypto/encrypt.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/crypto/encrypt.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/crypto/login.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/crypto/login.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/instance.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/instance.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/network/packets/packet.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/network/packets/packet.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/network/packets/server_to_client_handshake.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/network/packets/server_to_client_handshake.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/network/raknet/frame.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/network/raknet/frame.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/network/raknet/packets/connection_request_accepted.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/network/raknet/packets/connection_request_accepted.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/network/raknet/packets/open_connection_reply2.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/network/raknet/packets/open_connection_reply2.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/network/session/handlers/login.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/network/session/handlers/login.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/network/session/handlers/raknet.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/network/session/handlers/raknet.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/network/session/incoming.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/network/session/incoming.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/network/session/leaving.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/network/session/leaving.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/network/session/session.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/network/session/session.rs" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/test.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/test.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/util/extensions.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/util/extensions.rs" afterDir="false" />
     </list>
     <list id="5ea80ab6-242d-4220-8770-a42d5b241561" name="Changes by EJADA_A008" comment="" />
     <option name="SHOW_DIALOG" value="false" />
@@ -258,7 +272,6 @@
   <component name="VcsManagerConfiguration">
     <option name="CHECK_CODE_CLEANUP_BEFORE_PROJECT_COMMIT" value="true" />
     <option name="CHECK_NEW_TODO" value="false" />
-    <MESSAGE value="Files reorganised&#10;Added header and RequestNetworkSettings decoding" />
     <MESSAGE value="Removed config.rs file" />
     <MESSAGE value="Fixed many clippy warnings" />
     <MESSAGE value="Added game packet encoding" />
@@ -283,7 +296,8 @@
     <MESSAGE value="Implemented key exchange?" />
     <MESSAGE value="Backup" />
     <MESSAGE value="* open_connection_reply2.rs: Subtracted 74 from MTU size.&#10;* connection_request_accepted.rs: Changed address count from 10 to 20.&#10;* network_settings.rs: Changed compression threshold from var_u32 to u16" />
-    <option name="LAST_COMMIT_MESSAGE" value="* open_connection_reply2.rs: Subtracted 74 from MTU size.&#10;* connection_request_accepted.rs: Changed address count from 10 to 20.&#10;* network_settings.rs: Changed compression threshold from var_u32 to u16" />
+    <MESSAGE value="compound_collector.rs: Fixed ACK duplication." />
+    <option name="LAST_COMMIT_MESSAGE" value="compound_collector.rs: Fixed ACK duplication." />
     <option name="OPTIMIZE_IMPORTS_BEFORE_PROJECT_COMMIT" value="true" />
     <option name="REFORMAT_BEFORE_PROJECT_COMMIT" value="true" />
     <option name="REARRANGE_BEFORE_PROJECT_COMMIT" value="true" />

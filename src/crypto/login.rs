@@ -78,7 +78,6 @@ fn verify_first_token(token: &str) -> VexResult<String> {
         InvalidRequest,
         "Missing X.509 certificate URL in token"
     ))?;
-    tracing::trace!("{base64}");
     let bytes = BASE64_ENGINE.decode(base64)?;
     // Public key that can be used to verify the token.
     let public_key = spki::SubjectPublicKeyInfo::try_from(bytes.as_ref())?;
@@ -96,8 +95,6 @@ fn verify_first_token(token: &str) -> VexResult<String> {
 /// (or the identityPublicKey from the previous token).
 /// This token contains another identityPublicKey which is the public key for the third token.
 fn verify_second_token(token: &str, key: &str) -> VexResult<String> {
-    tracing::trace!("{key}");
-
     let bytes = BASE64_ENGINE.decode(key)?;
     let public_key = spki::SubjectPublicKeyInfo::try_from(bytes.as_ref())?;
 
@@ -116,8 +113,6 @@ fn verify_second_token(token: &str, key: &str) -> VexResult<String> {
 ///
 /// Just like the second one, this token can be verified using the identityPublicKey from the last token.
 fn verify_third_token(token: &str, key: &str) -> VexResult<IdentityTokenPayload> {
-    tracing::trace!("{key}");
-
     let bytes = BASE64_ENGINE.decode(key)?;
     let public_key = spki::SubjectPublicKeyInfo::try_from(bytes.as_ref())?;
 
@@ -132,8 +127,6 @@ fn verify_third_token(token: &str, key: &str) -> VexResult<IdentityTokenPayload>
 }
 
 fn verify_fourth_token(token: &str, key: &str) -> VexResult<UserTokenPayload> {
-    tracing::trace!("{key}");
-
     let bytes = BASE64_ENGINE.decode(key)?;
     let public_key = spki::SubjectPublicKeyInfo::try_from(bytes.as_ref())?;
 

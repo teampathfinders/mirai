@@ -84,8 +84,6 @@ impl Session {
             }
             let encoded = batch.encode()?;
 
-            tracing::info!("{:0x?}", encoded.as_ref());
-
             // TODO: Add IPv6 support
             self.ipv4_socket.send_to(&encoded, self.address).await?;
         }

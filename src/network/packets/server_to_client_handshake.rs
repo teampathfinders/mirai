@@ -18,7 +18,7 @@ impl Encodable for ServerToClientHandshake<'_> {
     fn encode(&self) -> VexResult<BytesMut> {
         let mut buffer = BytesMut::with_capacity(2 + self.jwt.len());
 
-        buffer.put_raknet_string(self.jwt);
+        buffer.put_string(self.jwt);
 
         Ok(buffer)
     }

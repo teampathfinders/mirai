@@ -14,7 +14,7 @@ use spki::der::SecretDocument;
 
 use crate::error::VexResult;
 
-const ENGINE: base64::engine::GeneralPurpose = base64::engine::general_purpose::STANDARD;
+const ENGINE: base64::engine::GeneralPurpose = base64::engine::general_purpose::STANDARD_NO_PAD;
 
 #[derive(serde::Serialize, Debug)]
 struct EncryptionTokenPayload<'a> {

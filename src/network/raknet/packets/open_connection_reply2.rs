@@ -17,7 +17,7 @@ pub struct OpenConnectionReply2 {
     pub client_address: SocketAddr,
     /// MTU of the connection.
     /// This value should be the same as [`OpenConnectionRequest2::mtu`](super::OpenConnectionRequest2::mtu).
-    pub mtu: u16
+    pub mtu: u16,
 }
 
 impl OpenConnectionReply2 {
