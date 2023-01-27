@@ -30,7 +30,7 @@ impl Decodable for OpenConnectionRequest1 {
 
         buffer.advance(16); // Skip magic
         let protocol_version = buffer.get_u8();
-        let mtu = buffer.len() as u16 - 18 + 46; // Size of padding + 46
+        let mtu = buffer.len() as u16 - 18 - 28;
 
         Ok(Self {
             protocol_version,

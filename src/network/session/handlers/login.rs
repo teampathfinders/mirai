@@ -1,11 +1,14 @@
 use std::num::NonZeroU64;
 
-use bytes::BytesMut;
+use bytes::{BufMut, BytesMut};
 
 use crate::config::SERVER_CONFIG;
 use crate::crypto::encrypt::perform_key_exchange;
 use crate::error::VexResult;
-use crate::network::packets::{ClientCacheStatus, Login, NetworkSettings, Packet, PacketBatch, PlayStatus, RequestNetworkSettings, ServerToClientHandshake, Status};
+use crate::network::packets::{
+    ClientCacheStatus, Login, NetworkSettings, Packet, PacketBatch, PlayStatus,
+    RequestNetworkSettings, ServerToClientHandshake, Status,
+};
 use crate::network::raknet::frame::Frame;
 use crate::network::raknet::reliability::Reliability;
 use crate::network::session::send_queue::SendPriority;
@@ -30,8 +33,10 @@ impl Session {
         tracing::info!("server_jwt {}", data.jwt);
 
         let reply = Packet::new(ServerToClientHandshake {
-            jwt: data.jwt.as_str()
-        }).subclients(0, 0).encode()?;
+            jwt: data.jwt.as_str(),
+        })
+            .subclients(0, 0)
+            .encode()?;
 
         self.send_queue.insert(
             SendPriority::Medium,
@@ -55,7 +60,8 @@ impl Session {
                 compression_threshold: lock.compression_threshold,
                 client_throttle: lock.client_throttle,
             })
-                .subclients(0, 0).encode()?
+                .subclients(0, 0)
+                .encode()?
         };
 
         // let mut batch = PacketBatch::new().add(reply)?.encode()?;

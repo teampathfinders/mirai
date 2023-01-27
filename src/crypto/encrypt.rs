@@ -31,7 +31,9 @@ pub struct EncryptionData {
 }
 
 pub fn perform_key_exchange(client_raw_public_key: &str) -> VexResult<EncryptionData> {
-    let salt = (0..16).map(|_| OsRng.sample(Alphanumeric) as char).collect::<String>();
+    let salt = (0..16)
+        .map(|_| OsRng.sample(Alphanumeric) as char)
+        .collect::<String>();
 
     let private_key: SigningKey<NistP384> = ecdsa::SigningKey::random(&mut OsRng);
     let der_private_key = private_key.to_pkcs8_der().unwrap();
@@ -50,8 +52,7 @@ pub fn perform_key_exchange(client_raw_public_key: &str) -> VexResult<Encryption
 
     let encoding_key = jsonwebtoken::EncodingKey::from_ec_der(&der_private_key.to_bytes());
     let claims = EncryptionTokenPayload {
-        salt: &ENGINE.encode(salt)
-        // salt: &salt
+        salt: &ENGINE.encode(salt), // salt: &salt
     };
 
     let jwt = jsonwebtoken::encode(&header, &claims, &encoding_key).unwrap();
@@ -71,10 +72,7 @@ pub fn perform_key_exchange(client_raw_public_key: &str) -> VexResult<Encryption
     // let mut okm = [0u8; 32];
     // secret_hash.expand(&[], &mut okm).unwrap();
 
-    Ok(EncryptionData {
-        jwt,
-
-    })
+    Ok(EncryptionData { jwt })
 }
 
 // /// Perform the Diffie-Hellman key exchange

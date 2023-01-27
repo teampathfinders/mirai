@@ -23,7 +23,7 @@ lazy_static! {
             threshold: 0,
             scalar: 0.0
         },
-        enable_encryption: false,
+        enable_encryption: true,
         server_name: "Pathfinders"
     });
 }

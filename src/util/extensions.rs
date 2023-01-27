@@ -3,8 +3,8 @@ use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr, SocketAddrV4};
 use bytes::{Buf, BufMut};
 use lazy_static::lazy_static;
 
-use crate::error::{VexError, VexResult};
 use crate::{error, vex_assert};
+use crate::error::{VexError, VexResult};
 
 pub const IPV4_MEM_SIZE: usize = 1 + 4 + 2;
 pub const IPV6_MEM_SIZE: usize = 1 + 2 + 2 + 4 + 16 + 4;
@@ -12,6 +12,15 @@ pub const IPV6_MEM_SIZE: usize = 1 + 2 + 2 + 4 + 16 + 4;
 lazy_static! {
     pub static ref EMPTY_IPV4_ADDRESS: SocketAddr =
         SocketAddr::V4(SocketAddrV4::new(Ipv4Addr::new(255, 255, 255, 255), 19132));
+}
+
+pub const fn size_of_var_u32(mut value: u32) -> usize {
+    let mut v = 1;
+    while (value & !0x7f) != 0 {
+        value = value >> 7;
+        v += 1;
+    }
+    v
 }
 
 /// Provides extra functions for byte buffers.

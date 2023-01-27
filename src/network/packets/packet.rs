@@ -4,7 +4,7 @@ use crate::error::VexResult;
 use crate::network::packets::GamePacket;
 use crate::network::raknet::header::Header;
 use crate::network::traits::Encodable;
-use crate::util::{ReadExtensions, WriteExtensions};
+use crate::util::{ReadExtensions, size_of_var_u32, WriteExtensions};
 use crate::vex_assert;
 
 #[derive(Debug)]
@@ -34,10 +34,6 @@ impl<T: GamePacket> Packet<T> {
     }
 }
 
-// 0xfe ID
-// Batch byte size
-// List of header + packet
-
 impl<T: GamePacket + Encodable> Encodable for Packet<T> {
     fn encode(&self) -> VexResult<BytesMut> {
         let mut buffer = BytesMut::new();
@@ -46,7 +42,7 @@ impl<T: GamePacket + Encodable> Encodable for Packet<T> {
 
         buffer.put_u8(Self::ID);
         buffer.put_var_u32(header.len() as u32 + body.len() as u32);
-        // buffer.put_var_u32(body.len() as u32);
+
         buffer.put(header);
         buffer.put(body);
 

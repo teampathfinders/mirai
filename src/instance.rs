@@ -179,7 +179,6 @@ impl ServerInstance {
             server_guid: self.guid,
             mtu: request.mtu,
             client_address: packet.address,
-            encryption_enabled: false,
         }
             .encode()?;
 

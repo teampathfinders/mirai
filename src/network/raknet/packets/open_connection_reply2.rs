@@ -17,9 +17,7 @@ pub struct OpenConnectionReply2 {
     pub client_address: SocketAddr,
     /// MTU of the connection.
     /// This value should be the same as [`OpenConnectionRequest2::mtu`](super::OpenConnectionRequest2::mtu).
-    pub mtu: u16,
-    /// Whether the connection should be encrypted.
-    pub encryption_enabled: bool,
+    pub mtu: u16
 }
 
 impl OpenConnectionReply2 {
@@ -36,7 +34,7 @@ impl Encodable for OpenConnectionReply2 {
         buffer.put_i64(self.server_guid);
         buffer.put_addr(self.client_address);
         buffer.put_u16(self.mtu);
-        buffer.put_bool(self.encryption_enabled);
+        buffer.put_bool(false); // Encryption not enabled, must be false to continue login sequence
 
         Ok(buffer)
     }

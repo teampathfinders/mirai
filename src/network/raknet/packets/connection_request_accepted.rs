@@ -6,7 +6,7 @@ use bytes::{BufMut, BytesMut};
 use crate::error::VexResult;
 use crate::instance::IPV4_LOCAL_ADDR;
 use crate::network::traits::Encodable;
-use crate::util::{WriteExtensions, EMPTY_IPV4_ADDRESS, IPV4_MEM_SIZE, IPV6_MEM_SIZE};
+use crate::util::{EMPTY_IPV4_ADDRESS, IPV4_MEM_SIZE, IPV6_MEM_SIZE, WriteExtensions};
 
 #[derive(Debug)]
 pub struct ConnectionRequestAccepted {
@@ -26,8 +26,8 @@ impl Encodable for ConnectionRequestAccepted {
         buffer.put_u8(Self::ID);
         buffer.put_addr(self.client_address);
         buffer.put_i16(0); // System index
-        for _ in 0..10 {
-            // 10 internal IDs
+        for _ in 0..20 {
+            // 20 internal IDs
             buffer.put_addr(*EMPTY_IPV4_ADDRESS);
         }
         buffer.put_i64(self.request_time);

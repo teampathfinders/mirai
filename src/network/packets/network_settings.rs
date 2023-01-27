@@ -10,12 +10,13 @@ use crate::util::WriteExtensions;
 /// Snappy is fast, but has produces lower compression ratios.
 /// Flate is slow, but produces high compression ratios.
 #[derive(Debug, Copy, Clone)]
+#[repr(u8)]
 pub enum CompressionAlgorithm {
     /// The Deflate/Zlib compression algorithm.
-    Deflate,
+    Deflate = 0,
     /// The Snappy compression algorithm.
     /// Available since Minecraft 1.19.30.
-    Snappy,
+    Snappy = 1,
 }
 
 /// Settings for client throttling.
@@ -60,6 +61,8 @@ impl Encodable for NetworkSettings {
         buffer.put_bool(self.client_throttle.enabled);
         buffer.put_u8(self.client_throttle.threshold);
         buffer.put_f32(self.client_throttle.scalar);
+
+        tracing::info!("{:X?}", buffer.as_ref());
 
         Ok(buffer)
     }
