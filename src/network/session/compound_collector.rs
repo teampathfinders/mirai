@@ -3,6 +3,7 @@ use dashmap::DashMap;
 
 use crate::error;
 use crate::network::raknet::frame::Frame;
+use crate::network::raknet::reliability::Reliability;
 
 // type Fragment = (u32, BytesMut);
 type Fragment = BytesMut;
@@ -63,7 +64,12 @@ impl CompoundCollector {
                 frame.body.put(fragment.as_ref());
             }
 
+            // Set compound tag to false to make sure the completed packet isn't added into the
+            // collector again.
             frame.is_compound = false;
+            // Set reliability to unreliable to prevent duplicated acknowledgements
+            frame.reliability = Reliability::Unreliable;
+
             return Some(frame);
         }
 
