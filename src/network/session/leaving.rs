@@ -6,7 +6,7 @@ use crate::error::VexResult;
 use crate::network::header::Header;
 use crate::network::packets::{GamePacket, Packet, PacketBatch};
 use crate::network::raknet::{Frame, FrameBatch};
-use crate::network::raknet::packets::{Ack, AckRecord};
+use crate::network::raknet::packets::{Acknowledgement, AcknowledgementRecord};
 use crate::network::raknet::Reliability;
 use crate::network::session::send_queue::SendPriority;
 use crate::network::session::session::Session;
@@ -109,14 +109,14 @@ impl Session {
             if !is_last && id + 1 == confirmed[index + 1] {
                 consecutive.push(*id);
             } else if consecutive.is_empty() {
-                records.push(AckRecord::Single(*id));
+                records.push(AcknowledgementRecord::Single(*id));
             } else {
-                records.push(AckRecord::Range(consecutive[0]..*id));
+                records.push(AcknowledgementRecord::Range(consecutive[0]..*id));
                 consecutive.clear();
             }
         }
 
-        let ack = Ack { records }.encode()?;
+        let ack = Acknowledgement { records }.encode()?;
         self.ipv4_socket.send_to(&ack, self.address).await?;
 
         Ok(())

@@ -11,6 +11,7 @@ use crate::network::packets::GamePacket;
 use crate::network::traits::Decodable;
 use crate::util::ReadExtensions;
 
+/// Device operating system
 #[derive(Debug)]
 pub enum DeviceOS {
     Android,

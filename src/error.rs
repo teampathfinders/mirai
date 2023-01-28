@@ -46,6 +46,7 @@ macro_rules! bail {
 
 /// Custom error type
 #[derive(Debug, Error)]
+#[non_exhaustive]
 pub enum VexError {
     /// An assertion has failed.
     #[error("Assertion failed | {0}")]

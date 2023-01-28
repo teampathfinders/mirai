@@ -1,7 +1,7 @@
 use dashmap::DashMap;
 
 use crate::network::raknet::FrameBatch;
-use crate::network::raknet::packets::AckRecord;
+use crate::network::raknet::packets::AcknowledgementRecord;
 
 #[derive(Debug)]
 pub struct RecoveryQueue {
@@ -19,13 +19,13 @@ impl RecoveryQueue {
         self.frames.insert(batch.get_batch_number(), batch);
     }
 
-    pub fn confirm(&self, records: &Vec<AckRecord>) {
+    pub fn confirm(&self, records: &Vec<AcknowledgementRecord>) {
         for record in records {
             match record {
-                AckRecord::Single(id) => {
+                AcknowledgementRecord::Single(id) => {
                     self.frames.remove(id);
                 }
-                AckRecord::Range(range) => {
+                AcknowledgementRecord::Range(range) => {
                     for id in range.clone() {
                         self.frames.remove(&id);
                     }
@@ -34,16 +34,16 @@ impl RecoveryQueue {
         }
     }
 
-    pub fn recover(&self, records: &Vec<AckRecord>) -> Vec<FrameBatch> {
+    pub fn recover(&self, records: &Vec<AcknowledgementRecord>) -> Vec<FrameBatch> {
         let mut recovered = Vec::new();
         for record in records {
             match record {
-                AckRecord::Single(id) => {
+                AcknowledgementRecord::Single(id) => {
                     if let Some(frame) = self.frames.get(id) {
                         recovered.push((*frame.value()).clone());
                     }
                 }
-                AckRecord::Range(range) => {
+                AcknowledgementRecord::Range(range) => {
                     recovered.reserve(range.len());
                     for id in range.clone() {
                         if let Some(frame) = self.frames.get(&id) {

@@ -31,6 +31,7 @@ impl Header {
         })
     }
 
+    /// Encodes the header.
     pub fn encode(&self) -> BytesMut {
         let value = self.id
             | ((self.sender_subclient as u32) << 10)

@@ -7,13 +7,17 @@ use crate::network::traits::Encodable;
 use crate::util::{ReadExtensions, size_of_var_u32, WriteExtensions};
 use crate::vex_assert;
 
+/// A game packet.
 #[derive(Debug)]
 pub struct Packet<T: GamePacket> {
+    /// Contains the packet ID and subclient IDs.
     header: Header,
+    /// Actual packet data.
     internal_packet: T,
 }
 
 impl<T: GamePacket> Packet<T> {
+    /// Creates a new packet.
     pub const fn new(internal_packet: T) -> Self {
         Self {
             header: Header {
@@ -25,6 +29,7 @@ impl<T: GamePacket> Packet<T> {
         }
     }
 
+    /// Sets the subclient IDs.
     pub const fn subclients(mut self, sender: u8, target: u8) -> Self {
         self.header.target_subclient = target;
         self.header.sender_subclient = sender;

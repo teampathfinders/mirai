@@ -17,6 +17,7 @@ use crate::network::session::session::Session;
 use crate::network::traits::{Decodable, Encodable};
 
 impl Session {
+    /// Handles a [`ClientCacheStatus`] packet.
     pub fn handle_client_cache_status(&self, mut task: BytesMut) -> VexResult<()> {
         let request = ClientCacheStatus::decode(task)?;
         tracing::debug!("{request:?} {self:?}");
@@ -26,6 +27,7 @@ impl Session {
         Ok(())
     }
 
+    /// Handles a [`Login`] packet.
     pub async fn handle_login(&self, mut task: BytesMut) -> VexResult<()> {
         let request = Login::decode(task)?;
         tracing::info!("{} has joined the server", request.identity.display_name);
@@ -48,6 +50,7 @@ impl Session {
         Ok(())
     }
 
+    /// Handles a [`RequestNetworkSettings`] packet.
     pub fn handle_request_network_settings(&self, mut task: BytesMut) -> VexResult<()> {
         let request = RequestNetworkSettings::decode(task)?;
         // TODO: Disconnect client if incompatible protocol.

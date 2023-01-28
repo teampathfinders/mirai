@@ -15,7 +15,7 @@ use crate::network::packets::{
 };
 use crate::network::packets::OnlinePing;
 use crate::network::raknet::{Frame, FrameBatch};
-use crate::network::raknet::packets::{Ack, AckRecord, Nack};
+use crate::network::raknet::packets::{Acknowledgement, AcknowledgementRecord, NegativeAcknowledgement};
 use crate::network::raknet::packets::ConnectionRequest;
 use crate::network::raknet::packets::DisconnectNotification;
 use crate::network::raknet::packets::NewIncomingConnection;
@@ -39,8 +39,8 @@ impl Session {
 
         let packet_id = *task.first().unwrap();
         match packet_id {
-            Ack::ID => self.handle_ack(task),
-            Nack::ID => self.handle_nack(task).await,
+            Acknowledgement::ID => self.handle_ack(task),
+            NegativeAcknowledgement::ID => self.handle_nack(task).await,
             _ => self.handle_frame_batch(task).await,
         }
     }

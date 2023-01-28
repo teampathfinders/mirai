@@ -6,36 +6,52 @@ use crate::{bail, error};
 use crate::error::VexResult;
 use crate::network::packets::DeviceOS;
 
+/// Mojang's public key.
+/// Used to verify the second token in the identity chain.
 pub const MOJANG_PUBLIC_KEY: &str = "MHYwEAYHKoZIzj0CAQYFK4EEACIDYgAE8ELkixyLcwlZryUQcu1TvPOmI2B7vX83ndnWRUaXm74wFfa5f/lwQNTfrLVHa2PmenpGI6JhIMUJaWZrjmMj90NoKNFSNBuKdm8rYiXsfaz3K36x/1U26HpG0ZxK/V1V";
+
 const BASE64_ENGINE: base64::engine::GeneralPurpose =
     base64::engine::general_purpose::STANDARD_NO_PAD;
 
+/// Data contained in the identity token chain.
 #[derive(Debug)]
 pub struct IdentityData {
+    /// Xbox account ID.
     pub xuid: u64,
+    /// UUID unique for this player.
     pub identity: String,
+    /// Xbox username.
     pub display_name: String,
+    /// ID related to the user's platform.
     pub title_id: u32,
+    /// Public key used for token verification and encryption.
     pub public_key: String,
 }
 
+/// Data contained in the user data token.
 #[derive(Debug)]
 pub struct UserData {
+    /// Operating system of the client.
     pub device_os: DeviceOS,
+    /// Language in ISO format (i.e. en_GB)
     pub language_code: String,
 }
 
+/// A chain of JSON web tokens.
 #[derive(serde::Deserialize, Debug)]
 pub struct TokenChain {
+    /// Chain of JWTs.
     pub chain: Vec<String>,
 }
 
+/// Used to extract the public key from the identity tokens.
 #[derive(serde::Deserialize, Debug)]
 pub struct KeyTokenPayload {
     #[serde(rename = "identityPublicKey")]
     pub public_key: String,
 }
 
+/// Data extracted from the "extraData" field in the last token in the identity chain.
 #[derive(serde::Deserialize, Debug)]
 pub struct RawIdentityData {
     #[serde(rename = "XUID")]
@@ -48,6 +64,7 @@ pub struct RawIdentityData {
     pub title_id: String,
 }
 
+/// Used to extract the identity data and public key from the last identity token.
 #[derive(serde::Deserialize, Debug)]
 pub struct IdentityTokenPayload {
     #[serde(rename = "extraData")]
@@ -56,6 +73,7 @@ pub struct IdentityTokenPayload {
     pub public_key: String,
 }
 
+/// Used to extract data from the user data token.
 #[derive(serde::Deserialize, Debug)]
 pub struct UserTokenPayload {
     #[serde(rename = "DeviceOS")]
@@ -124,6 +142,7 @@ fn verify_third_token(token: &str, key: &str) -> VexResult<IdentityTokenPayload>
     Ok(payload.claims)
 }
 
+/// Verifies and decodes the user data token.
 fn verify_fourth_token(token: &str, key: &str) -> VexResult<UserTokenPayload> {
     let bytes = BASE64_ENGINE.decode(key)?;
     let public_key = spki::SubjectPublicKeyInfo::try_from(bytes.as_ref())?;
@@ -138,6 +157,9 @@ fn verify_fourth_token(token: &str, key: &str) -> VexResult<UserTokenPayload> {
     Ok(payload.claims)
 }
 
+/// Parses the identification data contained in the first token chain.
+///
+/// This contains such as the XUID, display name and public key.
 pub fn parse_identity_data(buffer: &mut BytesMut) -> VexResult<IdentityTokenPayload> {
     let token_length = buffer.get_u32_le();
     let position = buffer.len() - buffer.remaining();
@@ -175,6 +197,8 @@ pub fn parse_identity_data(buffer: &mut BytesMut) -> VexResult<IdentityTokenPayl
     Ok(identity_data)
 }
 
+/// Parses the user data token from the login packet.
+/// This token contains the user's operating system, language, skin and more.
 pub fn parse_user_data(buffer: &mut BytesMut, public_key: &str) -> VexResult<UserTokenPayload> {
     let token_length = buffer.get_u32_le();
     let position = buffer.len() - buffer.remaining();

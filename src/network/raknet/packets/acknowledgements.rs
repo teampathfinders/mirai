@@ -9,7 +9,7 @@ use crate::vex_assert;
 
 /// Record containing IDs of confirmed packets.
 #[derive(Debug)]
-pub enum AckRecord {
+pub enum AcknowledgementRecord {
     /// A single ID
     Single(u32),
     /// Range of IDs
@@ -18,17 +18,17 @@ pub enum AckRecord {
 
 /// Confirms that packets have been received.
 #[derive(Debug)]
-pub struct Ack {
+pub struct Acknowledgement {
     /// Records containing IDs of received packets.
-    pub records: Vec<AckRecord>,
+    pub records: Vec<AcknowledgementRecord>,
 }
 
-impl Ack {
+impl Acknowledgement {
     /// Unique identifier for this packet.
     pub const ID: u8 = 0xc0;
 }
 
-impl Encodable for Ack {
+impl Encodable for Acknowledgement {
     fn encode(&self) -> VexResult<BytesMut> {
         let mut buffer = BytesMut::with_capacity(10);
 
@@ -36,11 +36,11 @@ impl Encodable for Ack {
         buffer.put_i16(self.records.len() as i16);
         for record in &self.records {
             match record {
-                AckRecord::Single(id) => {
+                AcknowledgementRecord::Single(id) => {
                     buffer.put_u8(1); // Is single
                     buffer.put_u24_le(*id);
                 }
-                AckRecord::Range(range) => {
+                AcknowledgementRecord::Range(range) => {
                     buffer.put_u8(0); // Is range
                     buffer.put_u24_le(range.start);
                     buffer.put_u24_le(range.end);
@@ -52,7 +52,7 @@ impl Encodable for Ack {
     }
 }
 
-impl Decodable for Ack {
+impl Decodable for Acknowledgement {
     fn decode(mut buffer: BytesMut) -> VexResult<Self> {
         vex_assert!(buffer.get_u8() == Self::ID);
 
@@ -62,9 +62,9 @@ impl Decodable for Ack {
         for _ in 0..record_count {
             let is_range = buffer.get_u8() == 0;
             if is_range {
-                records.push(AckRecord::Range(buffer.get_u24_le()..buffer.get_u24_le()));
+                records.push(AcknowledgementRecord::Range(buffer.get_u24_le()..buffer.get_u24_le()));
             } else {
-                records.push(AckRecord::Single(buffer.get_u24_le()));
+                records.push(AcknowledgementRecord::Single(buffer.get_u24_le()));
             }
         }
 
@@ -74,17 +74,17 @@ impl Decodable for Ack {
 
 /// Notifiers the recipient of possibly lost packets.
 #[derive(Debug)]
-pub struct Nack {
+pub struct NegativeAcknowledgement {
     /// Records containing the missing IDs
-    pub records: Vec<AckRecord>,
+    pub records: Vec<AcknowledgementRecord>,
 }
 
-impl Nack {
+impl NegativeAcknowledgement {
     /// Unique identifier of this packet.
     pub const ID: u8 = 0xa0;
 }
 
-impl Encodable for Nack {
+impl Encodable for NegativeAcknowledgement {
     fn encode(&self) -> VexResult<BytesMut> {
         let mut buffer = BytesMut::with_capacity(10);
 
@@ -92,11 +92,11 @@ impl Encodable for Nack {
         buffer.put_i16(self.records.len() as i16);
         for record in &self.records {
             match record {
-                AckRecord::Single(id) => {
+                AcknowledgementRecord::Single(id) => {
                     buffer.put_u8(1); // Is single
                     buffer.put_u24_le(*id);
                 }
-                AckRecord::Range(range) => {
+                AcknowledgementRecord::Range(range) => {
                     buffer.put_u8(0); // Is range
                     buffer.put_u24_le(range.start);
                     buffer.put_u24_le(range.end);
@@ -108,7 +108,7 @@ impl Encodable for Nack {
     }
 }
 
-impl Decodable for Nack {
+impl Decodable for NegativeAcknowledgement {
     fn decode(mut buffer: BytesMut) -> VexResult<Self> {
         vex_assert!(buffer.get_u8() == Self::ID);
 
@@ -118,9 +118,9 @@ impl Decodable for Nack {
         for _ in 0..record_count {
             let is_range = buffer.get_u8() == 0;
             if is_range {
-                records.push(AckRecord::Single(buffer.get_u24_le()));
+                records.push(AcknowledgementRecord::Single(buffer.get_u24_le()));
             } else {
-                records.push(AckRecord::Range(buffer.get_u24_le()..buffer.get_u24_le()));
+                records.push(AcknowledgementRecord::Range(buffer.get_u24_le()..buffer.get_u24_le()));
             }
         }
 

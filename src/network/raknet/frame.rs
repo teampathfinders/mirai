@@ -10,15 +10,24 @@ use crate::vex_assert;
 
 /// Bit flag indicating that the packet is encapsulated in a frame.
 pub const CONNECTED_PEER_BIT_FLAG: u8 = 0x80;
+/// Set if the packet is an acknowledgement.
 pub const ACK_BIT_FLAG: u8 = 0x40;
+/// Set if the packet is a negative acknowledgement.
 pub const NACK_BIT_FLAG: u8 = 0x20;
-pub const PAIR_BIT_FLAG: u8 = 0x10;
+/// Set when the packet is a compound.
+pub const COMPOUND_BIT_FLAG: u8 = 0x10;
+
+/// Unknown what this is.
+/// Possibly used for Raknet congestion control.
 pub const CONTINUOUS_SEND_BIT_FLAG: u8 = 0x08;
+/// Unknown what this is.
+/// Possibly used for Raknet congestion control.
 pub const NEEDS_B_AND_AS_BIT_FLAG: u8 = 0x04;
 
 /// Contains a set of frames.
 #[derive(Debug, Default, Clone)]
 pub struct FrameBatch {
+    /// Unique ID of this frame batch.
     batch_number: u32,
     /// Individual frames
     frames: Vec<Frame>,
@@ -133,7 +142,7 @@ impl Frame {
         let flags = buffer.get_u8();
 
         let reliability = Reliability::try_from(flags >> 5)?;
-        let is_compound = flags & PAIR_BIT_FLAG != 0;
+        let is_compound = flags & COMPOUND_BIT_FLAG != 0;
         let length = buffer.get_u16() / 8;
 
         let mut reliable_index = 0;
@@ -190,7 +199,7 @@ impl Frame {
         let reliability = (self.reliability as u8) << 5;
         let mut flags = reliability;
         if self.is_compound {
-            flags |= PAIR_BIT_FLAG;
+            flags |= COMPOUND_BIT_FLAG;
         }
 
         buffer.put_u8(flags);

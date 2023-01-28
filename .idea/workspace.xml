@@ -15,49 +15,30 @@
     <cargoProject FILE="$PROJECT_DIR$/Cargo.toml" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="eb8ce776-e64a-444b-a034-2036d6cbe18e" name="Changes" comment="compound_collector.rs: Removed ack duplication hack.&#10;&#10;This hack is no longer needed, because ack batching will get rid of duplicates.">
+    <list default="true" id="eb8ce776-e64a-444b-a034-2036d6cbe18e" name="Changes" comment="Changed project to use glob exports of private modules">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/config.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/config.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/crypto/encrypt.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/crypto/encrypt.rs" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/crypto/login.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/crypto/login.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/crypto/mod.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/crypto/mod.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/instance.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/instance.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/network/mod.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/network/mod.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/error.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/error.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/network/header.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/network/header.rs" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/network/packets/batch.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/network/packets/batch.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/network/packets/client_to_server_handshake.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/network/packets/client_to_server_handshake.rs" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/network/packets/login.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/network/packets/login.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/network/packets/mod.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/network/packets/mod.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/network/packets/online_ping.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/network/packets/online_ping.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/network/packets/online_pong.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/network/packets/online_pong.rs" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/network/packets/packet.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/network/packets/packet.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/network/packets/play_status.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/network/packets/play_status.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/network/packets/resource_pack_client_response.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/network/packets/resource_pack_client_response.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/network/packets/server_to_client_handshake.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/network/packets/server_to_client_handshake.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/network/packets/traits.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/network/packets/traits.rs" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/network/raknet/frame.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/network/raknet/frame.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/network/raknet/header.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/network/header.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/network/raknet/mod.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/network/raknet/mod.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/network/raknet/packets/connection_request.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/network/raknet/packets/connection_request.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/network/raknet/packets/connection_request_accepted.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/network/raknet/packets/connection_request_accepted.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/network/raknet/packets/incompatible_protocol.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/network/raknet/packets/incompatible_protocol.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/network/raknet/packets/mod.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/network/raknet/packets/mod.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/network/raknet/packets/new_incoming_connection.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/network/raknet/packets/new_incoming_connection.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/network/raknet/packets/offline_ping.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/network/raknet/packets/offline_ping.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/network/raknet/packets/offline_pong.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/network/raknet/packets/offline_pong.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/network/raknet/packets/open_connection_reply1.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/network/raknet/packets/open_connection_reply1.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/network/raknet/packets/open_connection_reply2.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/network/raknet/packets/open_connection_reply2.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/network/raknet/packets/open_connection_request1.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/network/raknet/packets/open_connection_request1.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/network/raknet/packets/open_connection_request2.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/network/raknet/packets/open_connection_request2.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/network/raknet/raw.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/network/raknet/raw.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/network/raknet/reliability.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/network/raknet/reliability.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/network/session/compound_collector.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/network/session/compound_collector.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/network/raknet/packets/acknowledgements.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/network/raknet/packets/acknowledgements.rs" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/network/session/handlers/acknowledge.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/network/session/handlers/acknowledge.rs" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/network/session/handlers/login.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/network/session/handlers/login.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/network/session/handlers/mod.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/network/session/handlers/mod.rs" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/network/session/handlers/raknet.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/network/session/handlers/raknet.rs" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/network/session/incoming.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/network/session/incoming.rs" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/network/session/leaving.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/network/session/leaving.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/network/session/mod.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/network/session/mod.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/network/session/order_channel.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/network/session/order_channel.rs" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/network/session/recovery_queue.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/network/session/recovery_queue.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/network/session/send_queue.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/network/session/send_queue.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/network/session/session.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/network/session/session.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/network/session/tracker.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/network/session/tracker.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/test.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/test.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/util/extensions.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/util/extensions.rs" afterDir="false" />
     </list>
     <list id="5ea80ab6-242d-4220-8770-a42d5b241561" name="Changes by EJADA_A008" comment="" />
     <option name="SHOW_DIALOG" value="false" />
@@ -297,7 +278,6 @@
   <component name="VcsManagerConfiguration">
     <option name="CHECK_CODE_CLEANUP_BEFORE_PROJECT_COMMIT" value="true" />
     <option name="CHECK_NEW_TODO" value="false" />
-    <MESSAGE value="Implemented ClientCacheStatus" />
     <MESSAGE value="Added string and boolean functions to stream extensions" />
     <MESSAGE value="Added PacketBatch" />
     <MESSAGE value="Reorganised project structure" />
@@ -322,7 +302,8 @@
     <MESSAGE value="leaving.rs: Implemented acknowledgement batching." />
     <MESSAGE value="batch.rs: Implemented packet compression" />
     <MESSAGE value="compound_collector.rs: Removed ack duplication hack.&#10;&#10;This hack is no longer needed, because ack batching will get rid of duplicates." />
-    <option name="LAST_COMMIT_MESSAGE" value="compound_collector.rs: Removed ack duplication hack.&#10;&#10;This hack is no longer needed, because ack batching will get rid of duplicates." />
+    <MESSAGE value="Changed project to use glob exports of private modules" />
+    <option name="LAST_COMMIT_MESSAGE" value="Changed project to use glob exports of private modules" />
     <option name="OPTIMIZE_IMPORTS_BEFORE_PROJECT_COMMIT" value="true" />
     <option name="REFORMAT_BEFORE_PROJECT_COMMIT" value="true" />
     <option name="REARRANGE_BEFORE_PROJECT_COMMIT" value="true" />

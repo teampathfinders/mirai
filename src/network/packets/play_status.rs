@@ -7,10 +7,16 @@ use crate::util::WriteExtensions;
 
 #[derive(Debug, Copy, Clone)]
 pub enum Status {
+    /// Sent by the server after receiving the [`ClientToServerHandshake`](super::ClientToServerHandshake) packet.
+    /// This indicates the client has successfully logged in.
     LoginSuccess,
+    /// Displays "Could not connect: Outdated client!"
     FailedClient,
+    /// Displays "Could not connect: Outdated server!"
     FailedServer,
+    /// Sent after world data to spawn the player.
     PlayerSpawn,
+    /// Displays "Unable to connect to world."
     FailedInvalidTenant,
     FailedVanillaEdu,
     FailedIncompatible,
@@ -19,8 +25,10 @@ pub enum Status {
     FailedVanillaToEditorMismatch,
 }
 
+/// Sends a status update to the client.
 #[derive(Debug)]
 pub struct PlayStatus {
+    /// Status to send to the client.
     pub status: Status,
 }
 

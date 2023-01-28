@@ -16,6 +16,7 @@ pub struct PacketBatch {
 }
 
 impl PacketBatch {
+    /// ID of this packet.
     pub const ID: u8 = 0xfe;
 
     /// Creates a new packet batch.

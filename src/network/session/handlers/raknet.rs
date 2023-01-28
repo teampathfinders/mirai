@@ -14,6 +14,7 @@ use crate::network::session::session::Session;
 use crate::network::traits::{Decodable, Encodable};
 
 impl Session {
+    /// Handles a [`ConnectionRequest`] packet.
     pub fn handle_connection_request(&self, task: BytesMut) -> VexResult<()> {
         let request = ConnectionRequest::decode(task)?;
         let response = ConnectionRequestAccepted {
@@ -28,11 +29,13 @@ impl Session {
         Ok(())
     }
 
+    /// Handles a [`NewIncomingConnection`] packet.
     pub fn handle_new_incoming_connection(&self, task: BytesMut) -> VexResult<()> {
         let request = NewIncomingConnection::decode(task)?;
         Ok(())
     }
 
+    /// Handles an [`OnlinePing`] packet.
     pub fn handle_online_ping(&self, task: BytesMut) -> VexResult<()> {
         let ping = OnlinePing::decode(task)?;
         let pong = OnlinePong {

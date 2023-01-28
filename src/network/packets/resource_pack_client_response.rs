@@ -5,5 +5,6 @@ pub struct ResourcePackClientResponse {
 }
 
 impl ResourcePackClientResponse {
+    /// Unique ID of this packet.
     pub const ID: u8 = 0x08;
 }
