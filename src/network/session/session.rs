@@ -123,8 +123,6 @@ impl Session {
                     }
                     interval.tick().await;
                 }
-
-                tracing::info!("Session {:X} closed", session.guid);
             });
         }
 
@@ -189,7 +187,10 @@ impl Session {
     }
 
     /// Signals to the session that it needs to close.
-    pub fn flag_for_close(&self) {
+    pub fn disconnect(&self) {
+        if let Ok(display_name) = self.get_display_name() {
+            tracing::info!("{} has disconnected", display_name);
+        }
         self.active.cancel();
     }
 
@@ -207,8 +208,7 @@ impl Session {
 
         // Session has timed out
         if Instant::now().duration_since(*self.last_update.read()) > SESSION_TIMEOUT {
-            self.flag_for_close();
-            tracing::info!("Session timed out");
+            self.disconnect();
         }
 
         self.flush().await?;

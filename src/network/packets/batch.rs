@@ -56,8 +56,6 @@ impl Encodable for PacketBatch {
             // Compress the packets
             compressed.put(match algorithm {
                 CompressionAlgorithm::Deflate => {
-                    tracing::info!("Compressing {:X?}", buffer.as_ref());
-
                     let mut writer = DeflateEncoder::new(Vec::new(), Compression::best());
                     writer.write_all(&buffer.as_ref()[1..])?;
 

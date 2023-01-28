@@ -68,7 +68,7 @@ impl CompoundCollector {
             // collector again.
             frame.is_compound = false;
             // Set reliability to unreliable to prevent duplicated acknowledgements
-            frame.reliability = Reliability::Unreliable;
+            // frame.reliability = Reliability::Unreliable;
 
             return Some(frame);
         }

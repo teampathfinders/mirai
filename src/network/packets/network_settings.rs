@@ -62,8 +62,6 @@ impl Encodable for NetworkSettings {
         buffer.put_u8(self.client_throttle.threshold);
         buffer.put_f32(self.client_throttle.scalar);
 
-        tracing::info!("{:X?}", buffer.as_ref());
-
         Ok(buffer)
     }
 }

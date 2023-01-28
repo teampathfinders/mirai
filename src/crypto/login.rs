@@ -70,8 +70,6 @@ pub struct UserTokenPayload {
 /// It is extracted from the header of the token and used to verify its signature.
 /// The payload of the token contains a new key which is used to verify the next token.
 fn verify_first_token(token: &str) -> VexResult<String> {
-    tracing::info!("{token}");
-
     // Decode JWT header to get X5U.
     let header = jsonwebtoken::decode_header(token)?;
     let base64 = header.x5u.ok_or(error!(

@@ -25,6 +25,8 @@ impl Session {
 
     pub async fn handle_login(&self, mut task: BytesMut) -> VexResult<()> {
         let request = Login::decode(task)?;
+        tracing::info!("{} has joined the server", request.identity.display_name);
+
         let data = perform_key_exchange(&request.identity.public_key)?;
 
         self.identity.set(request.identity)?;
@@ -36,6 +38,7 @@ impl Session {
         self.send_packet(ServerToClientHandshake {
             jwt: data.jwt.as_str()
         })?;
+        tracing::trace!("Sent handshake");
 
         Ok(())
     }
