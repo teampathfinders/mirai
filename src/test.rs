@@ -6,9 +6,9 @@ use flate2::read::DeflateDecoder;
 
 use crate::error::VexResult;
 use crate::instance::{IPV4_LOCAL_ADDR, IPV6_LOCAL_ADDR};
-use crate::network::packets::CompressionAlgorithm::Deflate;
-use crate::network::raknet::frame::{Frame, FrameBatch};
-use crate::network::raknet::header::Header;
+use crate::network::CompressionAlgorithm::Deflate;
+use crate::network::frame::{Frame, FrameBatch};
+use crate::network::header::Header;
 use crate::network::session::order_channel::OrderChannel;
 use crate::network::traits::Decodable;
 use crate::util::{ReadExtensions, WriteExtensions};

@@ -1,15 +1,15 @@
 use bytes::{BufMut, BytesMut};
 
 use crate::error::VexResult;
-use crate::network::raknet::packets::OFFLINE_MESSAGE_DATA;
+use crate::network::raknet::OFFLINE_MESSAGE_DATA;
 use crate::network::traits::Encodable;
 use crate::util::WriteExtensions;
 
-/// Response to [`OfflinePing`](super::OfflinePing).
+/// Response to [`OfflinePing`](super::offline_ping::OfflinePing).
 #[derive(Debug)]
 pub struct OfflinePong {
     /// Timestamp of when the ping was sent.
-    /// This should be given the same value as [`OfflinePing::time`](super::OfflinePing::time).
+    /// This should be given the same value as [`OfflinePing::time`](super::offline_ping::OfflinePing::time).
     pub time: i64,
     /// Randomised GUID of the server.
     /// Corresponds to [`ServerInstance::guid`](crate::ServerInstance::guid)

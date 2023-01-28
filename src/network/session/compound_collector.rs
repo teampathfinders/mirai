@@ -2,8 +2,8 @@ use bytes::{BufMut, BytesMut};
 use dashmap::DashMap;
 
 use crate::error;
-use crate::network::raknet::frame::Frame;
-use crate::network::raknet::reliability::Reliability;
+use crate::network::raknet::Frame;
+use crate::network::raknet::Reliability;
 
 // type Fragment = (u32, BytesMut);
 type Fragment = BytesMut;

@@ -4,11 +4,14 @@ use std::sync::atomic::Ordering;
 use bytes::{BufMut, BytesMut};
 
 use crate::config::SERVER_CONFIG;
-use crate::crypto::encrypt::perform_key_exchange;
+use crate::crypto::perform_key_exchange;
 use crate::error::VexResult;
-use crate::network::packets::{ClientCacheStatus, GamePacket, Login, NetworkSettings, Packet, PacketBatch, PlayStatus, RequestNetworkSettings, ServerToClientHandshake, Status};
-use crate::network::raknet::frame::{Frame, FrameBatch};
-use crate::network::raknet::reliability::Reliability;
+use crate::network::packets::{
+    ClientCacheStatus, GamePacket, Login, NetworkSettings, Packet, PacketBatch, PlayStatus,
+    RequestNetworkSettings, ServerToClientHandshake, Status,
+};
+use crate::network::raknet::{Frame, FrameBatch};
+use crate::network::raknet::Reliability;
 use crate::network::session::send_queue::SendPriority;
 use crate::network::session::session::Session;
 use crate::network::traits::{Decodable, Encodable};
@@ -36,8 +39,10 @@ impl Session {
         self.flush().await?;
 
         self.send_packet(ServerToClientHandshake {
-            jwt: data.jwt.as_str()
+            jwt: data.jwt.as_str(),
         })?;
+        self.encryption_enabled.store(true, Ordering::SeqCst);
+
         tracing::trace!("Sent handshake");
 
         Ok(())

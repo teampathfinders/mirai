@@ -1,13 +1,13 @@
 use bytes::BytesMut;
 
 use crate::error::VexResult;
-use crate::network::packets::online_ping::OnlinePing;
-use crate::network::packets::online_pong::OnlinePong;
-use crate::network::raknet::frame::Frame;
-use crate::network::raknet::packets::connection_request::ConnectionRequest;
-use crate::network::raknet::packets::connection_request_accepted::ConnectionRequestAccepted;
-use crate::network::raknet::packets::new_incoming_connection::NewIncomingConnection;
-use crate::network::raknet::reliability::Reliability;
+use crate::network::packets::OnlinePing;
+use crate::network::packets::OnlinePong;
+use crate::network::raknet::Frame;
+use crate::network::raknet::packets::ConnectionRequest;
+use crate::network::raknet::packets::ConnectionRequestAccepted;
+use crate::network::raknet::packets::NewIncomingConnection;
+use crate::network::raknet::Reliability;
 use crate::network::session::leaving::PacketConfig;
 use crate::network::session::send_queue::SendPriority;
 use crate::network::session::session::Session;
@@ -19,7 +19,8 @@ impl Session {
         let response = ConnectionRequestAccepted {
             client_address: self.address,
             request_time: request.time,
-        }.encode()?;
+        }
+            .encode()?;
 
         self.send_raw_buffer(response);
         tracing::trace!("Accepted connection request");
@@ -40,10 +41,13 @@ impl Session {
         };
 
         let pong = pong.encode()?;
-        self.send_raw_buffer_with_config(pong, PacketConfig {
-            reliability: Reliability::Unreliable,
-            priority: SendPriority::Low,
-        });
+        self.send_raw_buffer_with_config(
+            pong,
+            PacketConfig {
+                reliability: Reliability::Unreliable,
+                priority: SendPriority::Low,
+            },
+        );
 
         Ok(())
     }

@@ -2,7 +2,7 @@ use std::net::SocketAddr;
 
 use bytes::BytesMut;
 
-use crate::network::raknet::frame::CONNECTED_PEER_BIT_FLAG;
+use crate::network::raknet::CONNECTED_PEER_BIT_FLAG;
 
 /// Raw byte data received directly from the UDP socket.
 #[derive(Debug)]
@@ -14,7 +14,7 @@ pub struct RawPacket {
 }
 
 impl RawPacket {
-    /// Checks whether this frame is encapsulated in a [`Frame`](crate::raknet::Frame).
+    /// Checks whether this frame is encapsulated in a [`Frame`](super::frame::Frame).
     #[inline]
     pub fn is_offline_packet(&self) -> bool {
         self.buffer

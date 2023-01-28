@@ -10,7 +10,7 @@ use tokio::net::UdpSocket;
 use tokio::sync::OnceCell;
 use tokio_util::sync::CancellationToken;
 
-use crate::crypto::login::{IdentityData, UserData};
+use crate::crypto::{IdentityData, UserData};
 use crate::error;
 use crate::error::VexResult;
 use crate::network::packets::DeviceOS;
@@ -78,11 +78,12 @@ pub struct Session {
     /// Keeps track of all packets that are waiting to be sent.
     pub send_queue: SendQueue,
     pub confirmed_packets: Mutex<Vec<u32>>,
+    pub encryption_enabled: AtomicBool,
     pub compression_enabled: AtomicBool,
     /// Keeps track of all unprocessed received packets.
     pub receive_queue: AsyncDeque<BytesMut>,
     /// Queue that stores packets in case they need to be recovered due to packet loss.
-    pub recovery_queue: RecoveryQueue
+    pub recovery_queue: RecoveryQueue,
 }
 
 impl Session {
@@ -105,6 +106,7 @@ impl Session {
             order_channels: Default::default(),
             send_queue: SendQueue::new(),
             confirmed_packets: Mutex::new(Vec::new()),
+            encryption_enabled: AtomicBool::new(false),
             compression_enabled: AtomicBool::new(false),
             receive_queue: AsyncDeque::new(5),
             address,
@@ -215,7 +217,7 @@ impl Session {
         Ok(())
     }
 
-    /// Called by the [`SessionTracker`] to forward packets from the network service to
+    /// Called by the [`SessionTracker`](super::tracker::SessionTracker) to forward packets from the network service to
     /// the session corresponding to the client.
     pub fn on_packet_received(self: &Arc<Self>, buffer: BytesMut) {
         self.receive_queue.push(buffer);

@@ -54,17 +54,20 @@ impl Encodable for PacketBatch {
             compressed.put_u8(0xfe);
 
             // Compress the packets
-            compressed.put(match algorithm {
-                CompressionAlgorithm::Deflate => {
-                    let mut writer = DeflateEncoder::new(Vec::new(), Compression::best());
-                    writer.write_all(&buffer.as_ref()[1..])?;
+            compressed.put(
+                match algorithm {
+                    CompressionAlgorithm::Deflate => {
+                        let mut writer = DeflateEncoder::new(Vec::new(), Compression::best());
+                        writer.write_all(&buffer.as_ref()[1..])?;
 
-                    writer.finish()?
-                },
-                CompressionAlgorithm::Snappy => {
-                    todo!("Snappy compression");
+                        writer.finish()?
+                    }
+                    CompressionAlgorithm::Snappy => {
+                        todo!("Snappy compression");
+                    }
                 }
-            }.as_slice());
+                    .as_slice(),
+            );
 
             buffer = compressed;
         }

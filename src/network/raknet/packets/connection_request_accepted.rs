@@ -8,12 +8,12 @@ use crate::instance::IPV4_LOCAL_ADDR;
 use crate::network::traits::Encodable;
 use crate::util::{EMPTY_IPV4_ADDRESS, IPV4_MEM_SIZE, IPV6_MEM_SIZE, WriteExtensions};
 
-/// Sent in response to [`ConnectionRequest`](super::ConnectionRequest).
+/// Sent in response to [`ConnectionRequest`](super::connection_request::ConnectionRequest).
 #[derive(Debug)]
 pub struct ConnectionRequestAccepted {
     /// IP address of the client.
     pub client_address: SocketAddr,
-    /// Corresponds to [`ConnectionRequest::time`](super::ConnectionRequest::time).
+    /// Corresponds to [`ConnectionRequest::time`](super::connection_request::ConnectionRequest::time).
     pub request_time: i64,
 }
 

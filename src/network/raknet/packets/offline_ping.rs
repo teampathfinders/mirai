@@ -6,7 +6,7 @@ use crate::vex_assert;
 
 /// Sent to retrieve information about the server
 /// while the user is in Minecraft's server tab.
-/// An [`OfflinePong`](super::OfflinePong) packet should be sent in response.
+/// An [`OfflinePong`](super::offline_pong::OfflinePong) packet should be sent in response.
 #[derive(Debug)]
 pub struct OfflinePing {
     /// Time when this ping was sent.

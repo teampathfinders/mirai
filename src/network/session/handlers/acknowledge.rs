@@ -1,7 +1,7 @@
 use bytes::BytesMut;
 
 use crate::error::VexResult;
-use crate::network::raknet::packets::acknowledgements::{Ack, Nack};
+use crate::network::raknet::packets::{Ack, Nack};
 use crate::network::session::session::Session;
 use crate::network::traits::{Decodable, Encodable};
 

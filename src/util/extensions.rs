@@ -73,7 +73,7 @@ pub trait ReadExtensions: Buf {
     ///
     /// It can fail if the varint could not be read correctly.
     ///
-    /// See [`get_raknet_string`] for an alternative for Raknet.
+    /// See [`get_raknet_string`](ReadExtensions::get_raknet_string) for an alternative for Raknet.
     fn get_string(&mut self) -> VexResult<String> {
         let length = self.get_var_u32()? as usize;
         let buffer = &self.chunk()[..length];
@@ -86,7 +86,7 @@ pub trait ReadExtensions: Buf {
     /// Reads a UTF-8 string encoded with an unsigned short in front, specifying its length.
     /// This should be used for strings encoded by Raknet.
     ///
-    /// See [`get_string`] for an alternative for Minecraft.
+    /// See [`get_string`](ReadExtensions::get_string) for an alternative for Minecraft.
     fn get_raknet_string(&mut self) -> String {
         let length = self.get_u16() as usize;
         let buffer = &self.chunk()[..length];
@@ -161,7 +161,7 @@ pub trait WriteExtensions: BufMut + Sized {
     /// Writes a varint-prefixed string to the stream.
     /// This should be used for strings designated for Minecraft.
     ///
-    /// See [`put_raknet_string`] for an alternative for Raknet.
+    /// See [`put_raknet_string`](WriteExtensions::put_raknet_string) for an alternative for Raknet.
     fn put_string(&mut self, value: &str) {
         self.put_var_u32(value.len() as u32);
         self.put(value.as_bytes());
@@ -170,7 +170,7 @@ pub trait WriteExtensions: BufMut + Sized {
     /// Writes a short-prefixed string to the stream.
     /// This should be used for strings designated for Raknet.
     ///
-    /// See [`put_string`] for an alternative for Minecraft.
+    /// See [`put_string`](WriteExtensions::put_string) for an alternative for Minecraft.
     fn put_raknet_string(&mut self, value: &str) {
         self.put_u16(value.len() as u16);
         self.put(value.as_bytes());

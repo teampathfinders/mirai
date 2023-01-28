@@ -1,17 +1,17 @@
 use bytes::{BufMut, BytesMut};
 
 use crate::error::VexResult;
-use crate::network::raknet::packets::OFFLINE_MESSAGE_DATA;
+use crate::network::raknet::OFFLINE_MESSAGE_DATA;
 use crate::network::traits::Encodable;
 
-/// Sent in response to [`OpenConnectionRequest1`](super::OpenConnectionReply1).
+/// Sent in response to [`OpenConnectionRequest1`](super::open_connection_request1::OpenConnectionRequest1).
 #[derive(Debug)]
 pub struct OpenConnectionReply1 {
     /// GUID of the server.
     /// Corresponds to [`ServerInstance::guid`](crate::ServerInstance::guid).
     pub server_guid: i64,
     /// MTU of the connection.
-    /// This should be given the same value as [`OpenConnectionRequest1::mtu`](super::OpenConnectionRequest1::mtu).
+    /// This should be given the same value as [`OpenConnectionRequest1::mtu`](super::open_connection_request1::OpenConnectionRequest1::mtu).
     pub mtu: u16,
 }
 
@@ -27,7 +27,9 @@ impl Encodable for OpenConnectionReply1 {
         buffer.put_u8(Self::ID);
         buffer.put(OFFLINE_MESSAGE_DATA);
         buffer.put_i64(self.server_guid);
-        buffer.put_u8(0); // Disable security, required for login sequence
+        // Disable security, required for login sequence.
+        // Encryption will be enabled later on.
+        buffer.put_u8(0);
         buffer.put_u16(self.mtu);
 
         Ok(buffer)

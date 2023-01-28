@@ -2,7 +2,7 @@ use bytes::{Buf, BufMut, BytesMut};
 
 use crate::error::VexResult;
 use crate::network::packets::GamePacket;
-use crate::network::raknet::header::Header;
+use crate::network::raknet::Header;
 use crate::network::traits::Encodable;
 use crate::util::{ReadExtensions, size_of_var_u32, WriteExtensions};
 use crate::vex_assert;

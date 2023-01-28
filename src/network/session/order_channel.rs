@@ -3,7 +3,7 @@ use std::sync::atomic::{AtomicU32, Ordering};
 use bytes::BytesMut;
 use dashmap::DashMap;
 
-use crate::network::raknet::frame::Frame;
+use crate::network::raknet::Frame;
 
 #[derive(Debug, Default)]
 pub struct OrderChannel {

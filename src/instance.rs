@@ -11,18 +11,18 @@ use tokio_util::sync::CancellationToken;
 
 use crate::config::SERVER_CONFIG;
 use crate::error::{VexError, VexResult};
+use crate::network::{Decodable, Encodable};
 use crate::network::packets::{CLIENT_VERSION_STRING, NETWORK_VERSION};
-use crate::network::raknet::packets::incompatible_protocol::IncompatibleProtocol;
-use crate::network::raknet::packets::offline_ping::OfflinePing;
-use crate::network::raknet::packets::offline_pong::OfflinePong;
-use crate::network::raknet::packets::open_connection_reply1::OpenConnectionReply1;
-use crate::network::raknet::packets::open_connection_reply2::OpenConnectionReply2;
-use crate::network::raknet::packets::open_connection_request1::OpenConnectionRequest1;
-use crate::network::raknet::packets::open_connection_request2::OpenConnectionRequest2;
-use crate::network::raknet::packets::RAKNET_VERSION;
-use crate::network::raknet::raw::RawPacket;
-use crate::network::session::tracker::SessionTracker;
-use crate::network::traits::{Decodable, Encodable};
+use crate::network::raknet::packets::IncompatibleProtocol;
+use crate::network::raknet::packets::OfflinePing;
+use crate::network::raknet::packets::OfflinePong;
+use crate::network::raknet::packets::OpenConnectionReply1;
+use crate::network::raknet::packets::OpenConnectionReply2;
+use crate::network::raknet::packets::OpenConnectionRequest1;
+use crate::network::raknet::packets::OpenConnectionRequest2;
+use crate::network::raknet::RAKNET_VERSION;
+use crate::network::raknet::RawPacket;
+use crate::network::session::SessionTracker;
 use crate::util::AsyncDeque;
 
 /// Local IPv4 address
@@ -172,7 +172,7 @@ impl ServerInstance {
 
     /// Responds to the [`OpenConnectionRequest2`] packet with [`OpenConnectionReply2`].
     /// This is also when a session is created for the client.
-    /// From this point, all packets are encoded in a [`Frame`](crate::raknet::Frame).
+    /// From this point, all packets are encoded in a [`Frame`](crate::network::raknet::Frame).
     async fn handle_open_connection_request2(self: Arc<Self>, packet: RawPacket) -> VexResult<()> {
         let request = OpenConnectionRequest2::decode(packet.buffer.clone())?;
         let reply = OpenConnectionReply2 {

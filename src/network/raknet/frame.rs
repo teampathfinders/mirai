@@ -3,7 +3,7 @@ use std::io::Read;
 use bytes::{Buf, BufMut, BytesMut};
 
 use crate::error::VexResult;
-use crate::network::raknet::reliability::Reliability;
+use crate::network::raknet::Reliability;
 use crate::network::traits::{Decodable, Encodable};
 use crate::util::{ReadExtensions, WriteExtensions};
 use crate::vex_assert;

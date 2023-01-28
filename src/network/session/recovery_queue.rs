@@ -1,7 +1,7 @@
 use dashmap::DashMap;
 
-use crate::network::raknet::frame::FrameBatch;
-use crate::network::raknet::packets::acknowledgements::AckRecord;
+use crate::network::raknet::FrameBatch;
+use crate::network::raknet::packets::AckRecord;
 
 #[derive(Debug)]
 pub struct RecoveryQueue {

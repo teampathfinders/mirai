@@ -5,7 +5,7 @@ use crate::network::traits::Decodable;
 use crate::vex_assert;
 
 /// Sent by the client to initiate a full connection.
-/// [`ConnectionRequestAccepted`](super::ConnectionRequestAccepted) should be sent in response.
+/// [`ConnectionRequestAccepted`](super::connection_request_accepted::ConnectionRequestAccepted) should be sent in response.
 #[derive(Debug)]
 pub struct ConnectionRequest {
     /// Client-provided GUID.

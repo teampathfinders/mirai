@@ -3,11 +3,11 @@ use std::net::SocketAddr;
 use bytes::{BufMut, BytesMut};
 
 use crate::error::VexResult;
-use crate::network::raknet::packets::OFFLINE_MESSAGE_DATA;
+use crate::network::raknet::OFFLINE_MESSAGE_DATA;
 use crate::network::traits::Encodable;
 use crate::util::WriteExtensions;
 
-/// Sent in response ot [`OpenConnectionRequest2`](super::OpenConnectionRequest2).
+/// Sent in response ot [`OpenConnectionRequest2`](super::open_connection_request2::OpenConnectionRequest2).
 #[derive(Debug)]
 pub struct OpenConnectionReply2 {
     /// GUID of the server.
@@ -16,7 +16,7 @@ pub struct OpenConnectionReply2 {
     /// IP address of the client.
     pub client_address: SocketAddr,
     /// MTU of the connection.
-    /// This value should be the same as [`OpenConnectionRequest2::mtu`](super::OpenConnectionRequest2::mtu).
+    /// This value should be the same as [`OpenConnectionRequest2::mtu`](super::open_connection_request2::OpenConnectionRequest2::mtu).
     pub mtu: u16,
 }
 

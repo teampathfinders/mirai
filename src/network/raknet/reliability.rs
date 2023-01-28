@@ -9,7 +9,7 @@ pub enum Reliability {
     /// Absolutely no guarantees are made and therefore this is also the least reliable.
     #[default]
     Unreliable,
-    /// Same guarantees as [`Unreliable`],
+    /// Same guarantees as [`Unreliable`](Reliability::Unreliable),
     /// but this makes sure that old packets are discarded
     /// by keeping track of the ID of the newest packets.
     /// This reliability will cause the most packet loss.

@@ -8,7 +8,7 @@ use tokio_util::sync::CancellationToken;
 
 use crate::error;
 use crate::error::VexResult;
-use crate::network::raknet::raw::RawPacket;
+use crate::network::raknet::RawPacket;
 use crate::network::session::session::Session;
 
 const GARBAGE_COLLECT_INTERVAL: Duration = Duration::from_secs(10);

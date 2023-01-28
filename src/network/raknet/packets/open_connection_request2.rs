@@ -5,7 +5,7 @@ use crate::network::traits::Decodable;
 use crate::util::ReadExtensions;
 use crate::vex_assert;
 
-/// Sent by the client, in response to [`OpenConnectionReply2`](super::OpenConnectionReply2).
+/// Sent by the client, in response to [`OpenConnectionReply2`](super::open_connection_reply2::OpenConnectionReply2).
 #[derive(Debug)]
 pub struct OpenConnectionRequest2 {
     /// MTU of the connection.

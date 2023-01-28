@@ -1,14 +1,14 @@
 use bytes::{BufMut, BytesMut};
 
 use crate::error::VexResult;
-use crate::network::raknet::packets::{OFFLINE_MESSAGE_DATA, RAKNET_VERSION};
+use crate::network::raknet::{OFFLINE_MESSAGE_DATA, RAKNET_VERSION};
 use crate::network::traits::Encodable;
 
 /// Notifies the client that they're using a version of the Raknet protocol that is incompatible
 /// with the version used by the server ([`RAKNET_VERSION`]).
 ///
-/// This packet should be sent in response to [`OpenConnectionRequest1`](super::OpenConnectionRequest1)
-/// if the [`protocol_version`](super::OpenConnectionRequest1::protocol_version) field does not match the server's version.
+/// This packet should be sent in response to [`OpenConnectionRequest1`](super::open_connection_request1::OpenConnectionRequest1)
+/// if the [`protocol_version`](super::open_connection_request1::OpenConnectionRequest1::protocol_version) field does not match the server's version.
 pub struct IncompatibleProtocol {
     /// Randomly generated GUID of the server.
     /// Corresponds to [`ServerInstance::guid`](crate::ServerInstance::guid).

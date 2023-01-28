@@ -4,7 +4,7 @@ use std::sync::Arc;
 use parking_lot::Mutex;
 use tokio::net::UdpSocket;
 
-use crate::network::raknet::frame::Frame;
+use crate::network::raknet::Frame;
 
 /// Priority of the packet.
 /// This affects when they're sent.

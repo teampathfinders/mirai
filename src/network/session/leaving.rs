@@ -3,11 +3,11 @@ use std::sync::atomic::Ordering;
 use bytes::{Buf, BytesMut};
 
 use crate::error::VexResult;
+use crate::network::header::Header;
 use crate::network::packets::{GamePacket, Packet, PacketBatch};
-use crate::network::raknet::frame::{Frame, FrameBatch};
-use crate::network::raknet::header::Header;
-use crate::network::raknet::packets::acknowledgements::{Ack, AckRecord};
-use crate::network::raknet::reliability::Reliability;
+use crate::network::raknet::{Frame, FrameBatch};
+use crate::network::raknet::packets::{Ack, AckRecord};
+use crate::network::raknet::Reliability;
 use crate::network::session::send_queue::SendPriority;
 use crate::network::session::session::Session;
 use crate::network::traits::{Decodable, Encodable};
@@ -20,7 +20,7 @@ pub struct PacketConfig {
 
 const DEFAULT_CONFIG: PacketConfig = PacketConfig {
     reliability: Reliability::ReliableOrdered,
-    priority: SendPriority::Medium
+    priority: SendPriority::Medium,
 };
 
 impl Session {
@@ -31,9 +31,12 @@ impl Session {
     }
 
     /// Sends a game packet with custom reliability and priority
-    pub fn send_packet_with_config<T: GamePacket + Encodable>(&self, packet: T, config: PacketConfig) -> VexResult<()> {
-        let packet = Packet::new(packet)
-            .subclients(0, 0);
+    pub fn send_packet_with_config<T: GamePacket + Encodable>(
+        &self,
+        packet: T,
+        config: PacketConfig,
+    ) -> VexResult<()> {
+        let packet = Packet::new(packet).subclients(0, 0);
 
         let batch = PacketBatch::new(self.compression_enabled.load(Ordering::SeqCst))
             .add(packet)?
@@ -51,10 +54,8 @@ impl Session {
 
     /// Sends a raw buffer with custom reliability and priority.
     pub fn send_raw_buffer_with_config(&self, buffer: BytesMut, config: PacketConfig) {
-        self.send_queue.insert_raw(
-            config.priority,
-            Frame::new(config.reliability, buffer),
-        );
+        self.send_queue
+            .insert_raw(config.priority, Frame::new(config.reliability, buffer));
     }
 
     /// Flushes the send queue.
@@ -89,7 +90,7 @@ impl Session {
         let mut confirmed = {
             let mut lock = self.confirmed_packets.lock();
             if lock.is_empty() {
-                return Ok(())
+                return Ok(());
             }
 
             let mut confirmed = Vec::new();
@@ -110,16 +111,12 @@ impl Session {
             } else if consecutive.is_empty() {
                 records.push(AckRecord::Single(*id));
             } else {
-                records.push(AckRecord::Range(
-                    consecutive[0]..*id
-                ));
+                records.push(AckRecord::Range(consecutive[0]..*id));
                 consecutive.clear();
             }
         }
 
-        let ack = Ack {
-            records
-        }.encode()?;
+        let ack = Ack { records }.encode()?;
         self.ipv4_socket.send_to(&ack, self.address).await?;
 
         Ok(())
