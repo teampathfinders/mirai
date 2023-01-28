@@ -1,16 +1,55 @@
 use std::sync::atomic::Ordering;
 
-use bytes::Buf;
+use bytes::{Buf, BytesMut};
 
 use crate::error::VexResult;
+use crate::network::packets::{GamePacket, Packet, PacketBatch};
 use crate::network::raknet::frame::{Frame, FrameBatch};
 use crate::network::raknet::header::Header;
+use crate::network::raknet::reliability::Reliability;
 use crate::network::session::send_queue::SendPriority;
 use crate::network::session::session::Session;
 use crate::network::traits::{Decodable, Encodable};
 use crate::util::ReadExtensions;
 
+pub struct PacketConfig {
+    pub reliability: Reliability,
+    pub priority: SendPriority,
+}
+
+const DEFAULT_CONFIG: PacketConfig = PacketConfig {
+    reliability: Reliability::ReliableOrdered,
+    priority: SendPriority::Medium,
+};
+
 impl Session {
+    pub fn send_packet<T: GamePacket + Encodable>(&self, packet: T) -> VexResult<()> {
+        self.send_packet_with_config(packet, DEFAULT_CONFIG)
+    }
+
+    pub fn send_packet_with_config<T: GamePacket + Encodable>(&self, packet: T, config: PacketConfig) -> VexResult<()> {
+        let packet = Packet::new(packet)
+            .subclients(0, 0);
+
+        let batch = PacketBatch::new()
+            .add(packet)?
+            .encode()?;
+
+        Ok(())
+    }
+
+    pub fn send_raw_buffer(&self, buffer: BytesMut) {
+        self.send_raw_buffer_with_config(buffer, DEFAULT_CONFIG);
+    }
+
+    pub fn send_raw_buffer_with_config(&self, buffer: BytesMut, config: PacketConfig) {
+        self.send_queue.insert_raw(
+            config.priority,
+            Frame::new(config.reliability, buffer),
+        );
+    }
+
+
     pub async fn flush_send_queue(&self, tick: u64) -> VexResult<()> {
         // TODO: Handle errors properly
         if let Some(frames) = self.send_queue.flush(SendPriority::High) {

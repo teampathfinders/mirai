@@ -41,8 +41,9 @@ const ORDER_CHANNEL_COUNT: usize = 5;
 ///
 #[derive(Debug)]
 pub struct Session {
-    // pub private_key: OnceCell<>,
+    /// Identity data such as XUID and display name.
     pub identity: OnceCell<IdentityData>,
+    /// Extra user data, such as device OS and skin.
     pub user_data: OnceCell<UserData>,
     /// Current tick of this session, this is increased by one every time the session
     /// processes packets.
@@ -79,7 +80,7 @@ pub struct Session {
     /// Keeps track of all unprocessed received packets.
     pub receive_queue: AsyncDeque<BytesMut>,
     /// Queue that stores packets in case they need to be recovered due to packet loss.
-    pub recovery_queue: RecoveryQueue,
+    pub recovery_queue: RecoveryQueue
 }
 
 impl Session {
