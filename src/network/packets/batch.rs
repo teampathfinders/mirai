@@ -4,17 +4,22 @@ use crate::error::VexResult;
 use crate::network::packets::{GamePacket, Packet};
 use crate::network::traits::Encodable;
 
+/// Batch of game packets.
 pub struct PacketBatch {
     packets: Vec<BytesMut>,
 }
 
 impl PacketBatch {
+    pub const ID: u8 = 0xfe;
+
+    /// Creates a new packet batch.
     pub const fn new() -> Self {
         Self {
             packets: Vec::new(),
         }
     }
 
+    /// Adds a packet to the batch.
     pub fn add<T: GamePacket + Encodable>(mut self, packet: Packet<T>) -> VexResult<Self> {
         let mut encoded = packet.encode()?;
         self.packets.push(encoded);

@@ -5,7 +5,7 @@ use std::sync::atomic::{AtomicU32, AtomicU64, Ordering};
 use std::time::{Duration, Instant};
 
 use bytes::BytesMut;
-use parking_lot::RwLock;
+use parking_lot::{Mutex, RwLock};
 use tokio::net::UdpSocket;
 use tokio::sync::OnceCell;
 use tokio_util::sync::CancellationToken;
@@ -77,6 +77,7 @@ pub struct Session {
     pub order_channels: [OrderChannel; ORDER_CHANNEL_COUNT],
     /// Keeps track of all packets that are waiting to be sent.
     pub send_queue: SendQueue,
+    pub confirmed_packets: Mutex<Vec<u32>>,
     /// Keeps track of all unprocessed received packets.
     pub receive_queue: AsyncDeque<BytesMut>,
     /// Queue that stores packets in case they need to be recovered due to packet loss.
@@ -102,6 +103,7 @@ impl Session {
             compound_collector: Default::default(),
             order_channels: Default::default(),
             send_queue: SendQueue::new(),
+            confirmed_packets: Mutex::new(Vec::new()),
             receive_queue: AsyncDeque::new(5),
             address,
             recovery_queue: RecoveryQueue::new(),

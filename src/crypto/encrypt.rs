@@ -18,11 +18,7 @@ const ENGINE: base64::engine::GeneralPurpose = base64::engine::general_purpose::
 
 #[derive(serde::Serialize, Debug)]
 struct EncryptionTokenPayload<'a> {
-    salt: &'a str,
-    // exp: u64,
-    // nbf: u64,
-    // #[serde(rename = "identityPublicKey")]
-    // identity_public_key: &'a str
+    salt: &'a str
 }
 
 pub struct EncryptionData {

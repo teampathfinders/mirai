@@ -6,6 +6,7 @@ use crate::error::VexResult;
 use crate::network::packets::{GamePacket, Packet, PacketBatch};
 use crate::network::raknet::frame::{Frame, FrameBatch};
 use crate::network::raknet::header::Header;
+use crate::network::raknet::packets::acknowledgements::{Ack, AckRecord};
 use crate::network::raknet::reliability::Reliability;
 use crate::network::session::send_queue::SendPriority;
 use crate::network::session::session::Session;
@@ -75,6 +76,51 @@ impl Session {
                 self.send_raw_frames(frames).await?;
             }
         }
+
+        // Send acknowledgements
+        if tick % 20 == 0 {
+            self.flush_acknowledgements().await?;
+        }
+
+        Ok(())
+    }
+
+    async fn flush_acknowledgements(&self) -> VexResult<()> {
+        let mut confirmed = {
+            let mut lock = self.confirmed_packets.lock();
+            if lock.is_empty() {
+                return Ok(())
+            }
+
+            let mut confirmed = Vec::new();
+            std::mem::swap(lock.as_mut(), &mut confirmed);
+
+            confirmed
+        };
+        confirmed.dedup();
+
+        let mut records = Vec::new();
+        let mut consecutive = Vec::new();
+        for (index, id) in confirmed.iter().enumerate() {
+            let is_last = index == confirmed.len() - 1;
+
+            // Is range
+            if !is_last && id + 1 == confirmed[index + 1] {
+                consecutive.push(*id);
+            } else if consecutive.is_empty() {
+                records.push(AckRecord::Single(*id));
+            } else {
+                records.push(AckRecord::Range(
+                    consecutive[0]..*id
+                ));
+                consecutive.clear();
+            }
+        }
+
+        let ack = Ack {
+            records
+        }.encode()?;
+        self.ipv4_socket.send_to(&ack, self.address).await?;
 
         Ok(())
     }

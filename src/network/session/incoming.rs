@@ -26,7 +26,7 @@ use crate::vex_assert;
 impl Session {
     /// Processes the raw packet coming directly from the network.
     ///
-    /// If a packet is an ACK or NACK type, it will be responded to accordingly (using [`Session::process_ack`] and [`Session::process_nack`]).
+    /// If a packet is an ACK or NACK type, it will be responded to accordingly (using [`Session::handle_ack`] and [`Session::handle_nack`]).
     /// Frame batches are processed by [`Session::handle_frame_batch`].
     pub async fn handle_raw_packet(&self) -> VexResult<()> {
         let task = tokio::select! {
@@ -39,8 +39,8 @@ impl Session {
 
         let packet_id = *task.first().unwrap();
         match packet_id {
-            Ack::ID => self.process_ack(task),
-            Nack::ID => self.process_nack(task).await,
+            Ack::ID => self.handle_ack(task),
+            Nack::ID => self.handle_nack(task).await,
             _ => self.handle_frame_batch(task).await,
         }
     }
@@ -74,23 +74,9 @@ impl Session {
         }
 
         if frame.reliability.is_reliable() {
-            // Send ACK
-            let encoded = Ack {
-                records: vec![AckRecord::Single(batch_number)],
-            }
-                .encode();
-
-            let acknowledgement = match encoded {
-                Ok(a) => a,
-                Err(e) => {
-                    tracing::error!("{e}");
-                    return Ok(());
-                }
-            };
-
-            self.ipv4_socket
-                .send_to(acknowledgement.as_ref(), self.address)
-                .await?;
+            // Confirm packet
+            let mut lock = self.confirmed_packets.lock();
+            lock.push(batch_number);
         }
 
         if frame.is_compound {

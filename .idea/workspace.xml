@@ -15,9 +15,16 @@
     <cargoProject FILE="$PROJECT_DIR$/Cargo.toml" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="eb8ce776-e64a-444b-a034-2036d6cbe18e" name="Changes" comment="Handlers now using new packet sending functions">
+    <list default="true" id="eb8ce776-e64a-444b-a034-2036d6cbe18e" name="Changes" comment="login.rs: Flush packets before encryption">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/network/session/handlers/login.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/network/session/handlers/login.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/crypto/encrypt.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/crypto/encrypt.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/network/packets/batch.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/network/packets/batch.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/network/packets/packet.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/network/packets/packet.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/network/raknet/frame.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/network/raknet/frame.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/network/raknet/packets/connection_request.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/network/raknet/packets/connection_request.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/network/raknet/packets/connection_request_accepted.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/network/raknet/packets/connection_request_accepted.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/network/raknet/packets/new_incoming_connection.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/network/raknet/packets/new_incoming_connection.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/network/session/handlers/acknowledge.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/network/session/handlers/acknowledge.rs" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/network/session/incoming.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/network/session/incoming.rs" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/network/session/leaving.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/network/session/leaving.rs" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/network/session/session.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/network/session/session.rs" afterDir="false" />
@@ -260,7 +267,6 @@
   <component name="VcsManagerConfiguration">
     <option name="CHECK_CODE_CLEANUP_BEFORE_PROJECT_COMMIT" value="true" />
     <option name="CHECK_NEW_TODO" value="false" />
-    <MESSAGE value="Switched reliability layer to using batch numbers instead of indices" />
     <MESSAGE value="Implemented Deflate decompression" />
     <MESSAGE value="Implemented login token claims" />
     <MESSAGE value="Moved play status update to network settings reponse" />
@@ -285,7 +291,8 @@
     <MESSAGE value="send_queue.rs: Removed insert_batch" />
     <MESSAGE value="leaving.rs: Added new packet sending functions" />
     <MESSAGE value="Handlers now using new packet sending functions" />
-    <option name="LAST_COMMIT_MESSAGE" value="Handlers now using new packet sending functions" />
+    <MESSAGE value="login.rs: Flush packets before encryption" />
+    <option name="LAST_COMMIT_MESSAGE" value="login.rs: Flush packets before encryption" />
     <option name="OPTIMIZE_IMPORTS_BEFORE_PROJECT_COMMIT" value="true" />
     <option name="REFORMAT_BEFORE_PROJECT_COMMIT" value="true" />
     <option name="REARRANGE_BEFORE_PROJECT_COMMIT" value="true" />

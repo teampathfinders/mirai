@@ -16,18 +16,6 @@ pub const PAIR_BIT_FLAG: u8 = 0x10;
 pub const CONTINUOUS_SEND_BIT_FLAG: u8 = 0x08;
 pub const NEEDS_B_AND_AS_BIT_FLAG: u8 = 0x04;
 
-// On a new connection, call Init()
-// On a periodic interval (SYN time is the best) call Update(). Also call ShouldSendACKs(), and send buffered ACKS if it returns true.
-// Call OnSendAck() when sending acks.
-// When you want to send or resend data, call GetNumberOfBytesToSend(). It will return you enough bytes to keep you busy for \a estimatedTimeToNextTick. You can send more than this to fill out a datagram, or to send packet pairs
-// Call OnSendBytes() when sending datagrams.
-// When data arrives, record the sequence number and buffer an ACK for it, to be sent from Update() if ShouldSendACKs() returns true
-// Every 16 packets that you send, send two of them back to back (a packet pair) as long as both packets are the same size. If you don't have two packets the same size, it is fine to defer this until you do.
-// When you get a packet, call OnGotPacket(). If the packet is also either of a packet pair, call OnGotPacketPair()
-// If you get a packet, and the sequence number is not 1 + the last sequence number, send a NAK. On the remote system, call OnNAK() and resend that message.
-// If you get an ACK, remove that message from retransmission. Call OnNonDuplicateAck().
-// If a message is not ACKed for GetRTOForRetransmission(), resend it
-
 /// Contains a set of frames.
 #[derive(Debug, Default, Clone)]
 pub struct FrameBatch {
@@ -113,8 +101,6 @@ pub struct Frame {
 
     pub reliable_index: u32,
     pub sequence_index: u32,
-
-    // Fragments =====================
     /// Whether the frame is fragmented/compounded
     pub is_compound: bool,
     /// Unique ID of the the compound
@@ -123,13 +109,10 @@ pub struct Frame {
     pub compound_size: u32,
     /// Index of the fragment in this compound
     pub compound_index: u32,
-
-    // Ordering ======================
     /// Index in the order channel
     pub order_index: u32,
     /// Channel to perform ordering in
     pub order_channel: u8,
-
     /// Raw bytes of the body.
     pub body: BytesMut,
 }
@@ -144,6 +127,7 @@ impl Frame {
         }
     }
 
+    /// Decodes the frame.
     #[allow(clippy::useless_let_if_seq)]
     fn decode(buffer: &mut BytesMut) -> VexResult<Self> {
         let flags = buffer.get_u8();
@@ -201,6 +185,7 @@ impl Frame {
         Ok(frame)
     }
 
+    /// Encodes the frame.
     fn encode(&self, buffer: &mut BytesMut) {
         let reliability = (self.reliability as u8) << 5;
         let mut flags = reliability;

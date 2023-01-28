@@ -14,8 +14,6 @@ pub struct Packet<T: GamePacket> {
 }
 
 impl<T: GamePacket> Packet<T> {
-    pub const ID: u8 = 0xfe;
-
     pub const fn new(internal_packet: T) -> Self {
         Self {
             header: Header {

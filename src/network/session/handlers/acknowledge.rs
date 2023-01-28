@@ -9,7 +9,7 @@ impl Session {
     /// Processes an acknowledgement received from the client.
     ///
     /// This function unregisters the specified packet IDs from the recovery queue.
-    pub fn process_ack(&self, task: BytesMut) -> VexResult<()> {
+    pub fn handle_ack(&self, task: BytesMut) -> VexResult<()> {
         let ack = Ack::decode(task)?;
         self.recovery_queue.confirm(&ack.records);
 
@@ -20,7 +20,7 @@ impl Session {
     ///
     /// This function makes sure the packet is retrieved from the recovery queue and sent to the
     /// client again.
-    pub async fn process_nack(&self, task: BytesMut) -> VexResult<()> {
+    pub async fn handle_nack(&self, task: BytesMut) -> VexResult<()> {
         let nack = Nack::decode(task)?;
         let frame_batches = self.recovery_queue.recover(&nack.records);
         tracing::info!("Recovered packets: {:?}", nack.records);

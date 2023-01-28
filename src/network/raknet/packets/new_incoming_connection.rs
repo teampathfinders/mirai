@@ -4,17 +4,20 @@ use bytes::{Buf, BytesMut};
 
 use crate::error::VexResult;
 use crate::network::traits::Decodable;
-use crate::util::{ReadExtensions, EMPTY_IPV4_ADDRESS};
+use crate::util::{EMPTY_IPV4_ADDRESS, ReadExtensions};
 use crate::vex_assert;
 
+/// Confirms that the connection was successfully initiated.
 #[derive(Debug)]
 pub struct NewIncomingConnection {
+    /// IP address of the server.
     pub server_address: SocketAddr,
     pub client_timestamp: i64,
     pub server_timestamp: i64,
 }
 
 impl NewIncomingConnection {
+    /// Unique ID of this packet.
     pub const ID: u8 = 0x13;
 }
 
