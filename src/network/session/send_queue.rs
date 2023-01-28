@@ -38,7 +38,7 @@ impl SendQueue {
     }
 
     /// Inserts a new packet into the send queue.
-    pub fn insert(&self, priority: SendPriority, frame: Frame) {
+    pub fn insert_raw(&self, priority: SendPriority, frame: Frame) {
         match priority {
             SendPriority::High => {
                 let mut lock = self.high_priority.lock();
@@ -51,26 +51,6 @@ impl SendQueue {
             SendPriority::Low => {
                 let mut lock = self.low_priority.lock();
                 lock.push_back(frame);
-            }
-        }
-    }
-
-    pub fn insert_batch(&self, priority: SendPriority, batch: Vec<Frame>) {
-        match priority {
-            SendPriority::High => {
-                let mut deque = batch.into();
-                let mut lock = self.high_priority.lock();
-                lock.append(&mut deque);
-            }
-            SendPriority::Medium => {
-                let mut deque = batch.into();
-                let mut lock = self.medium_priority.lock();
-                lock.append(&mut deque);
-            }
-            SendPriority::Low => {
-                let mut deque = batch.into();
-                let mut lock = self.low_priority.lock();
-                lock.append(&mut deque);
             }
         }
     }

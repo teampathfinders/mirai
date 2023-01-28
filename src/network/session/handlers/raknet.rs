@@ -21,7 +21,7 @@ impl Session {
         }
             .encode()?;
 
-        self.send_queue.insert(
+        self.send_queue.insert_raw(
             SendPriority::Medium,
             Frame::new(Reliability::ReliableOrdered, response),
         );
@@ -45,7 +45,7 @@ impl Session {
         let pong = pong.encode()?;
 
         self.send_queue
-            .insert(SendPriority::Low, Frame::new(Reliability::Unreliable, pong));
+            .insert_raw(SendPriority::Low, Frame::new(Reliability::Unreliable, pong));
         Ok(())
     }
 }

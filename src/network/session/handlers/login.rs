@@ -38,7 +38,7 @@ impl Session {
             .subclients(0, 0)
             .encode()?;
 
-        self.send_queue.insert(
+        self.send_queue.insert_raw(
             SendPriority::Medium,
             Frame::new(Reliability::ReliableOrdered, reply),
         );
@@ -65,7 +65,7 @@ impl Session {
         };
 
         // let mut batch = PacketBatch::new().add(reply)?.encode()?;
-        self.send_queue.insert(
+        self.send_queue.insert_raw(
             SendPriority::Medium,
             Frame::new(Reliability::ReliableOrdered, reply),
         );

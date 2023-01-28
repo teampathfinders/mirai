@@ -14,26 +14,25 @@ impl Session {
     pub async fn flush_send_queue(&self, tick: u64) -> VexResult<()> {
         // TODO: Handle errors properly
         if let Some(frames) = self.send_queue.flush(SendPriority::High) {
-            self.send_frames(frames).await?;
+            self.send_raw_frames(frames).await?;
         }
 
         if tick % 2 == 0 {
             if let Some(frames) = self.send_queue.flush(SendPriority::Medium) {
-                self.send_frames(frames).await?;
+                self.send_raw_frames(frames).await?;
             }
         }
 
         if tick % 4 == 0 {
             if let Some(frames) = self.send_queue.flush(SendPriority::Low) {
-                self.send_frames(frames).await?;
+                self.send_raw_frames(frames).await?;
             }
         }
 
         Ok(())
     }
 
-    async fn send_frames(&self, frames: Vec<Frame>) -> VexResult<()> {
-        // TODO: Handle errors properly
+    async fn send_raw_frames(&self, frames: Vec<Frame>) -> VexResult<()> {
         let max_batch_size = self.mtu as usize - std::mem::size_of::<FrameBatch>();
         let mut batch =
             FrameBatch::default().batch_number(self.batch_number.fetch_add(1, Ordering::SeqCst));

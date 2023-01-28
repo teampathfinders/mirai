@@ -17,7 +17,7 @@ lazy_static! {
     pub static ref SERVER_CONFIG: RwLock<ServerConfig> = RwLock::new(ServerConfig {
         max_players: 10,
         compression_algorithm: CompressionAlgorithm::Deflate,
-        compression_threshold: 5000, // Compress all packets larger than 512 bytes
+        compression_threshold: 1, // Compress all packets larger than 512 bytes
         client_throttle: ClientThrottleSettings { // Disable client throttling
             enabled: false,
             threshold: 0,
