@@ -35,7 +35,7 @@ impl Session {
         let packet = Packet::new(packet)
             .subclients(0, 0);
 
-        let batch = PacketBatch::new()
+        let batch = PacketBatch::new(self.compression_enabled.load(Ordering::SeqCst))
             .add(packet)?
             .encode()?;
 
@@ -175,8 +175,6 @@ impl Session {
                 self.recovery_queue.insert(batch.clone());
             }
             let encoded = batch.encode()?;
-
-            tracing::trace!("{:X?}", encoded.as_ref());
 
             // TODO: Add IPv6 support
             self.ipv4_socket.send_to(&encoded, self.address).await?;

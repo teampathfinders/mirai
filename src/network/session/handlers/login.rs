@@ -1,4 +1,5 @@
 use std::num::NonZeroU64;
+use std::sync::atomic::Ordering;
 
 use bytes::{BufMut, BytesMut};
 
@@ -24,8 +25,6 @@ impl Session {
 
     pub async fn handle_login(&self, mut task: BytesMut) -> VexResult<()> {
         let request = Login::decode(task)?;
-        tracing::info!("{request:?}");
-
         let data = perform_key_exchange(&request.identity.public_key)?;
 
         self.identity.set(request.identity)?;
@@ -55,6 +54,8 @@ impl Session {
         };
 
         self.send_packet(response)?;
+        self.compression_enabled.store(true, Ordering::SeqCst);
+
         tracing::trace!("Sent network settings");
 
         Ok(())

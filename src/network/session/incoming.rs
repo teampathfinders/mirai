@@ -130,20 +130,17 @@ impl Session {
     }
 
     async fn handle_game_packet(&self, mut task: BytesMut) -> VexResult<()> {
-        tracing::info!("Received {:x?}", task.as_ref());
-
         vex_assert!(task.get_u8() == 0xfe);
 
+        let compression_enabled = self.compression_enabled.load(Ordering::SeqCst);
         let compression_threshold = SERVER_CONFIG.read().compression_threshold;
-        if compression_threshold != 0 && task.len() > compression_threshold as usize {
+        if compression_enabled && compression_threshold != 0 && task.len() > compression_threshold as usize {
             // Packet is compressed
             let decompressed = match SERVER_CONFIG.read().compression_algorithm {
                 CompressionAlgorithm::Snappy => {
                     todo!("Snappy decompression");
                 }
                 CompressionAlgorithm::Deflate => {
-                    tracing::info!("{:X?}", task.as_ref());
-
                     let mut reader = flate2::read::DeflateDecoder::new(task.as_ref());
                     let mut decompressed = Vec::new();
                     reader.read_to_end(&mut decompressed).unwrap();

@@ -267,7 +267,7 @@ impl ServerInstance {
     async fn metadata_refresh_task(self: Arc<Self>) {
         let mut interval = tokio::time::interval(METADATA_REFRESH_INTERVAL);
         while !self.global_token.is_cancelled() {
-            let description = format!("balls {}", self.session_controller.session_count());
+            let description = format!("{} players", self.session_controller.session_count());
             self.refresh_metadata(&description);
             interval.tick().await;
         }
