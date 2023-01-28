@@ -19,7 +19,7 @@ pub struct PacketConfig {
 
 const DEFAULT_CONFIG: PacketConfig = PacketConfig {
     reliability: Reliability::ReliableOrdered,
-    priority: SendPriority::Medium,
+    priority: SendPriority::Medium
 };
 
 impl Session {
@@ -35,6 +35,7 @@ impl Session {
             .add(packet)?
             .encode()?;
 
+        self.send_raw_buffer_with_config(batch, config);
         Ok(())
     }
 
@@ -51,7 +52,6 @@ impl Session {
 
 
     pub async fn flush_send_queue(&self, tick: u64) -> VexResult<()> {
-        // TODO: Handle errors properly
         if let Some(frames) = self.send_queue.flush(SendPriority::High) {
             self.send_raw_frames(frames).await?;
         }
@@ -121,6 +121,8 @@ impl Session {
                 self.recovery_queue.insert(batch.clone());
             }
             let encoded = batch.encode()?;
+
+            tracing::trace!("{:X?}", encoded.as_ref());
 
             // TODO: Add IPv6 support
             self.ipv4_socket.send_to(&encoded, self.address).await?;

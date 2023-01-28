@@ -8,6 +8,7 @@ use crate::network::raknet::packets::connection_request::ConnectionRequest;
 use crate::network::raknet::packets::connection_request_accepted::ConnectionRequestAccepted;
 use crate::network::raknet::packets::new_incoming_connection::NewIncomingConnection;
 use crate::network::raknet::reliability::Reliability;
+use crate::network::session::leaving::PacketConfig;
 use crate::network::session::send_queue::SendPriority;
 use crate::network::session::session::Session;
 use crate::network::traits::{Decodable, Encodable};
@@ -18,13 +19,9 @@ impl Session {
         let response = ConnectionRequestAccepted {
             client_address: self.address,
             request_time: request.time,
-        }
-            .encode()?;
+        }.encode()?;
 
-        self.send_queue.insert_raw(
-            SendPriority::Medium,
-            Frame::new(Reliability::ReliableOrdered, response),
-        );
+        self.send_raw_buffer(response);
         tracing::trace!("Accepted connection request");
 
         Ok(())
@@ -43,9 +40,11 @@ impl Session {
         };
 
         let pong = pong.encode()?;
+        self.send_raw_buffer_with_config(pong, PacketConfig {
+            reliability: Reliability::Unreliable,
+            priority: SendPriority::Low,
+        });
 
-        self.send_queue
-            .insert_raw(SendPriority::Low, Frame::new(Reliability::Unreliable, pong));
         Ok(())
     }
 }

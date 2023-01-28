@@ -144,7 +144,7 @@ impl Session {
     }
 
     fn handle_game_packet(&self, mut task: BytesMut) -> VexResult<()> {
-        tracing::info!("Received {:x}", task.first().unwrap());
+        tracing::info!("Received {:x?}", task.as_ref());
 
         vex_assert!(task.get_u8() == 0xfe);
 
@@ -156,6 +156,8 @@ impl Session {
                     todo!("Snappy decompression");
                 }
                 CompressionAlgorithm::Deflate => {
+                    tracing::info!("{:X?}", task.as_ref());
+
                     let mut reader = flate2::read::DeflateDecoder::new(task.as_ref());
                     let mut decompressed = Vec::new();
                     reader.read_to_end(&mut decompressed).unwrap();

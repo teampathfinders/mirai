@@ -27,21 +27,13 @@ impl Session {
         tracing::info!("{request:?}");
 
         let data = perform_key_exchange(&request.identity.public_key)?;
-        tracing::info!("server_jwt {}", data.jwt);
-
-        let reply = Packet::new(ServerToClientHandshake {
-            jwt: data.jwt.as_str(),
-        })
-            .subclients(0, 0)
-            .encode()?;
-
-        self.send_queue.insert_raw(
-            SendPriority::Medium,
-            Frame::new(Reliability::ReliableOrdered, reply),
-        );
 
         self.identity.set(request.identity)?;
         self.user_data.set(request.user_data)?;
+
+        self.send_packet(ServerToClientHandshake {
+            jwt: data.jwt.as_str()
+        })?;
 
         Ok(())
     }
@@ -50,22 +42,16 @@ impl Session {
         let request = RequestNetworkSettings::decode(task)?;
         // TODO: Disconnect client if incompatible protocol.
 
-        let mut reply = {
+        let response = {
             let lock = SERVER_CONFIG.read();
-            Packet::new(NetworkSettings {
+            NetworkSettings {
                 compression_algorithm: lock.compression_algorithm,
                 compression_threshold: lock.compression_threshold,
                 client_throttle: lock.client_throttle,
-            })
-                .subclients(0, 0)
-                .encode()?
+            }
         };
 
-        // let mut batch = PacketBatch::new().add(reply)?.encode()?;
-        self.send_queue.insert_raw(
-            SendPriority::Medium,
-            Frame::new(Reliability::ReliableOrdered, reply),
-        );
+        self.send_packet(response)?;
         tracing::trace!("Sent network settings");
 
         Ok(())
