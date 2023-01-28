@@ -110,23 +110,23 @@ impl Session {
                 self.order_channels[frame.order_channel as usize].insert(frame.clone())
             {
                 for packet in ready {
-                    self.handle_unframed_packet(packet.body)?;
+                    self.handle_unframed_packet(packet.body).await?;
                 }
             }
             return Ok(());
         }
 
-        self.handle_unframed_packet(frame.body.clone())?;
+        self.handle_unframed_packet(frame.body.clone()).await?;
         Ok(())
     }
 
     /// Processes an unencapsulated game packet.
-    fn handle_unframed_packet(&self, mut task: BytesMut) -> VexResult<()> {
+    async fn handle_unframed_packet(&self, mut task: BytesMut) -> VexResult<()> {
         let bytes = task.as_ref();
 
         let packet_id = *task.first().expect("Game packet buffer was empty");
         match packet_id {
-            GAME_PACKET_ID => self.handle_game_packet(task)?,
+            GAME_PACKET_ID => self.handle_game_packet(task).await?,
             DisconnectNotification::ID => {
                 tracing::debug!("Session {:X} requested disconnect", self.guid);
                 self.flag_for_close();
@@ -143,7 +143,7 @@ impl Session {
         Ok(())
     }
 
-    fn handle_game_packet(&self, mut task: BytesMut) -> VexResult<()> {
+    async fn handle_game_packet(&self, mut task: BytesMut) -> VexResult<()> {
         tracing::info!("Received {:x?}", task.as_ref());
 
         vex_assert!(task.get_u8() == 0xfe);
@@ -165,19 +165,19 @@ impl Session {
                 }
             };
 
-            self.handle_decompressed_game_packet(decompressed)
+            self.handle_decompressed_game_packet(decompressed).await
         } else {
-            self.handle_decompressed_game_packet(task)
+            self.handle_decompressed_game_packet(task).await
         }
     }
 
-    fn handle_decompressed_game_packet(&self, mut task: BytesMut) -> VexResult<()> {
+    async fn handle_decompressed_game_packet(&self, mut task: BytesMut) -> VexResult<()> {
         let length = task.get_var_u32()?;
         let header = Header::decode(&mut task)?;
 
         match header.id {
             RequestNetworkSettings::ID => self.handle_request_network_settings(task),
-            Login::ID => self.handle_login(task),
+            Login::ID => self.handle_login(task).await,
             ClientCacheStatus::ID => self.handle_client_cache_status(task),
             _ => todo!(),
         }

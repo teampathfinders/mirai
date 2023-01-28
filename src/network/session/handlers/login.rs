@@ -22,7 +22,7 @@ impl Session {
         Ok(())
     }
 
-    pub fn handle_login(&self, mut task: BytesMut) -> VexResult<()> {
+    pub async fn handle_login(&self, mut task: BytesMut) -> VexResult<()> {
         let request = Login::decode(task)?;
         tracing::info!("{request:?}");
 
@@ -30,6 +30,9 @@ impl Session {
 
         self.identity.set(request.identity)?;
         self.user_data.set(request.user_data)?;
+
+        // Flush all unencrypted packets before enabling encryption.
+        self.flush().await?;
 
         self.send_packet(ServerToClientHandshake {
             jwt: data.jwt.as_str()

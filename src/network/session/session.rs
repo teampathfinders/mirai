@@ -207,7 +207,7 @@ impl Session {
             tracing::info!("Session timed out");
         }
 
-        self.flush_send_queue(current_tick).await?;
+        self.flush().await?;
         Ok(())
     }
 
