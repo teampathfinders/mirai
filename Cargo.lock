@@ -121,7 +121,7 @@ version = "0.3.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1cae3e661676ffbacb30f1a824089a8c9150e71017f7e1e38f2aa32009188d34"
 dependencies = [
- "async-trait",
+    "async-trait",
     "bytes",
     "futures-util",
     "http",
@@ -1689,8 +1689,8 @@ dependencies = [
     "spki",
     "tokio",
     "tokio-util",
- "tracing",
- "tracing-subscriber",
+    "tracing",
+    "tracing-subscriber",
 ]
 
 [[package]]
