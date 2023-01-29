@@ -15,35 +15,10 @@
     <cargoProject FILE="$PROJECT_DIR$/Cargo.toml" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="eb8ce776-e64a-444b-a034-2036d6cbe18e" name="Changes" comment="encrypt.rs: Implemented decryption">
+    <list default="true" id="eb8ce776-e64a-444b-a034-2036d6cbe18e" name="Changes" comment="Added some extra sanity checks">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Cargo.lock" beforeDir="false" afterPath="$PROJECT_DIR$/Cargo.lock" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/crypto/encrypt.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/crypto/encrypt.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/crypto/login.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/crypto/login.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/crypto/mod.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/crypto/mod.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/instance.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/instance.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/network/mod.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/network/mod.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/network/packets/batch.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/network/packets/batch.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/network/packets/login.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/network/packets/login.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/network/packets/packet.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/network/packets/packet.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/network/packets/play_status.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/network/packets/play_status.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/network/raknet/frame.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/network/raknet/frame.rs" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/network/raknet/packets/acknowledgements.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/network/raknet/packets/acknowledgements.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/network/raknet/packets/connection_request_accepted.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/network/raknet/packets/connection_request_accepted.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/network/raknet/packets/mod.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/network/raknet/packets/mod.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/network/raknet/packets/new_incoming_connection.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/network/raknet/packets/new_incoming_connection.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/network/session/handlers/login.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/network/session/handlers/login.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/network/session/handlers/mod.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/network/session/handlers/mod.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/network/session/handlers/raknet.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/network/session/handlers/raknet.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/network/session/incoming.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/network/session/incoming.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/network/session/leaving.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/network/session/leaving.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/network/session/mod.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/network/session/mod.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/network/session/recovery_queue.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/network/session/recovery_queue.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/network/session/session.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/network/session/session.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/network/session/tracker.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/network/session/tracker.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/network/traits.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/network/traits.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/test.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/test.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/util/async_queue.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/util/async_queue.rs" afterDir="false" />
     </list>
     <list id="5ea80ab6-242d-4220-8770-a42d5b241561" name="Changes by EJADA_A008" comment="" />
     <option name="SHOW_DIALOG" value="false" />
@@ -283,7 +258,6 @@
   <component name="VcsManagerConfiguration">
     <option name="CHECK_CODE_CLEANUP_BEFORE_PROJECT_COMMIT" value="true" />
     <option name="CHECK_NEW_TODO" value="false" />
-    <MESSAGE value="Moved token code to auth directory" />
     <MESSAGE value="Figuring out diffie-hellman key exchange" />
     <MESSAGE value="Implemented key exchange?" />
     <MESSAGE value="Backup" />
@@ -308,7 +282,8 @@
     <MESSAGE value="login.rs: Implemented disconnect on version mismatch." />
     <MESSAGE value="encrypt.rs: Implemented checksum computation" />
     <MESSAGE value="encrypt.rs: Implemented decryption" />
-    <option name="LAST_COMMIT_MESSAGE" value="encrypt.rs: Implemented decryption" />
+    <MESSAGE value="Added some extra sanity checks" />
+    <option name="LAST_COMMIT_MESSAGE" value="Added some extra sanity checks" />
     <option name="OPTIMIZE_IMPORTS_BEFORE_PROJECT_COMMIT" value="true" />
     <option name="REFORMAT_BEFORE_PROJECT_COMMIT" value="true" />
     <option name="REARRANGE_BEFORE_PROJECT_COMMIT" value="true" />
