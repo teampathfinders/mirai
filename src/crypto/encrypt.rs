@@ -1,4 +1,5 @@
 use std::fmt::{Debug, Formatter, Write};
+use std::io::Read;
 use std::sync::atomic::{AtomicU16, AtomicU32, AtomicU64, Ordering};
 
 use anyhow::{bail, Context};
@@ -8,6 +9,7 @@ use cipher::StreamCipher;
 use ctr::cipher::KeyIvInit;
 use ecdsa::elliptic_curve::pkcs8::EncodePrivateKey;
 use ecdsa::SigningKey;
+use flate2::read::DeflateDecoder;
 use jsonwebtoken::{Algorithm, DecodingKey, EncodingKey, Validation};
 use lazy_static::lazy_static;
 use p384::{NistP384, SecretKey};
@@ -110,12 +112,20 @@ impl Encryptor {
             private_key.as_nonzero_scalar(),
             client_public_key.as_affine(),
         );
-        let secret_hash = shared_secret.extract::<Sha256>(Some(salt.as_bytes()));
+        // let secret_hash = shared_secret.extract::<Sha256>(Some(salt.as_bytes()));
 
         let mut secret = [0u8; 32];
-        match secret_hash.expand(&[], &mut secret) {
-            Ok(_) => (),
-            Err(e) => bail!("Failed to expand shared secret hash: {e}")
+        // match secret_hash.expand(&[], &mut secret) {
+        //     Ok(_) => (),
+        //     Err(e) => bail!("Failed to expand shared secret hash: {e}")
+        // }
+
+        {
+            let mut hasher = Sha256::new();
+            hasher.update(salt);
+            hasher.update(shared_secret.raw_secret_bytes().as_slice());
+
+            secret.copy_from_slice(&hasher.finalize()[..32]);
         }
 
         // Initialisation vector is composed of the first 12 bytes of the secret and 0x0000000002
@@ -134,19 +144,25 @@ impl Encryptor {
     pub fn decrypt(&self, mut buffer: BytesMut) -> BytesMut {
         assert!(buffer.len() > 9);
 
-        tracing::info!("{:x?}", buffer.as_ref());
-
         // let mut buffer = Vec::new();
         self.cipher
             .lock()
             .apply_keystream(buffer.as_mut());
 
+        {
+            let mut decompressor = DeflateDecoder::new(buffer.as_ref());
+            let mut decompressed = Vec::new();
+            decompressor.read_to_end(&mut decompressed).unwrap();
+
+            tracing::info!("{:x?}", decompressed);
+        }
+
         tracing::info!("{:x?}", buffer.as_ref());
 
         let checksum = &buffer.as_ref()[buffer.len() - 8..];
-        let computed_checksum = self.compute_checksum(&buffer[..buffer.len() - 8]);
+        let computed_checksum = self.compute_checksum(buffer.as_ref());
 
-        tracing::info!("Checksums: {:x?} {:x?}", checksum, computed_checksum);
+        tracing::info!("Checksums:\n{:x?}\n{:x?}", checksum, computed_checksum);
 
         todo!();
     }
@@ -164,9 +180,8 @@ impl Encryptor {
     /// Computes the SHA-256 checksum of the packet.
     fn compute_checksum(&self, data: &[u8]) -> [u8; 8] {
         let mut hasher = Sha256::new();
-        hasher.update(2i64.to_le_bytes());
-        // hasher.update(self.counter.load(Ordering::SeqCst).to_le_bytes());
-        hasher.update(data);
+        hasher.update(0u64.to_le_bytes());
+        hasher.update(&data[..data.len() - 8]);
         hasher.update(self.secret);
 
         let mut checksum = [0u8; 8];
