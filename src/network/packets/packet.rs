@@ -1,6 +1,5 @@
 use bytes::{Buf, BufMut, BytesMut};
 
-use crate::error::VexResult;
 use crate::network::packets::GamePacket;
 use crate::network::raknet::Header;
 use crate::network::traits::Encodable;
@@ -38,7 +37,7 @@ impl<T: GamePacket> Packet<T> {
 }
 
 impl<T: GamePacket + Encodable> Encodable for Packet<T> {
-    fn encode(&self) -> VexResult<BytesMut> {
+    fn encode(&self) -> anyhow::Result<BytesMut> {
         let mut buffer = BytesMut::new();
         let header = self.header.encode();
         let body = self.internal_packet.encode()?;

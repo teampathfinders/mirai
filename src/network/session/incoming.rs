@@ -2,12 +2,11 @@ use std::io::Read;
 use std::sync::atomic::Ordering;
 use std::time::Instant;
 
+use anyhow::{bail, Context};
 use async_recursion::async_recursion;
 use bytes::{Buf, BytesMut};
 
-use crate::{bail, vex_assert};
 use crate::config::SERVER_CONFIG;
-use crate::error::VexResult;
 use crate::network::header::Header;
 use crate::network::packets::{
     ClientCacheStatus, CompressionAlgorithm, GAME_PACKET_ID, GamePacket, Login,
@@ -22,13 +21,14 @@ use crate::network::raknet::packets::NewIncomingConnection;
 use crate::network::session::session::Session;
 use crate::network::traits::{Decodable, Encodable};
 use crate::util::ReadExtensions;
+use crate::vex_assert;
 
 impl Session {
     /// Processes the raw packet coming directly from the network.
     ///
     /// If a packet is an ACK or NACK type, it will be responded to accordingly (using [`Session::handle_ack`] and [`Session::handle_nack`]).
     /// Frame batches are processed by [`Session::handle_frame_batch`].
-    pub async fn handle_raw_packet(&self) -> VexResult<()> {
+    pub async fn handle_raw_packet(&self) -> anyhow::Result<()> {
         let task = tokio::select! {
             _ = self.active.cancelled() => {
                 return Ok(())
@@ -52,7 +52,7 @@ impl Session {
     /// * Inserting packets into the compound collector
     /// * Discarding old sequenced frames
     /// * Acknowledging reliable packets
-    async fn handle_frame_batch(&self, task: BytesMut) -> VexResult<()> {
+    async fn handle_frame_batch(&self, task: BytesMut) -> anyhow::Result<()> {
         let batch = FrameBatch::decode(task)?;
         self.client_batch_number
             .fetch_max(batch.get_batch_number(), Ordering::SeqCst);
@@ -65,7 +65,7 @@ impl Session {
     }
 
     #[async_recursion]
-    async fn handle_frame(&self, frame: &Frame, batch_number: u32) -> VexResult<()> {
+    async fn handle_frame(&self, frame: &Frame, batch_number: u32) -> anyhow::Result<()> {
         if frame.reliability.is_sequenced()
             && frame.sequence_index < self.client_batch_number.load(Ordering::SeqCst)
         {
@@ -107,7 +107,7 @@ impl Session {
     }
 
     /// Processes an unencapsulated game packet.
-    async fn handle_unframed_packet(&self, mut task: BytesMut) -> VexResult<()> {
+    async fn handle_unframed_packet(&self, mut task: BytesMut) -> anyhow::Result<()> {
         let bytes = task.as_ref();
 
         let packet_id = *task.first().expect("Game packet buffer was empty");
@@ -126,7 +126,7 @@ impl Session {
         Ok(())
     }
 
-    async fn handle_game_packet(&self, mut task: BytesMut) -> VexResult<()> {
+    async fn handle_game_packet(&self, mut task: BytesMut) -> anyhow::Result<()> {
         vex_assert!(task.get_u8() == 0xfe);
 
         let encryption_enabled = self.encryption_enabled.load(Ordering::SeqCst);
@@ -149,10 +149,9 @@ impl Session {
                 CompressionAlgorithm::Deflate => {
                     let mut reader = flate2::read::DeflateDecoder::new(task.as_ref());
                     let mut decompressed = Vec::new();
-                    match reader.read_to_end(&mut decompressed) {
-                        Ok(_) => (),
-                        Err(e) => bail!(InvalidRequest, "Failed to decompress packet with Deflate"),
-                    }
+                    reader.read_to_end(&mut decompressed)
+                        .context("Failed to decompress packet using Deflate")?;
+
                     BytesMut::from(decompressed.as_slice())
                 }
             };
@@ -163,7 +162,7 @@ impl Session {
         }
     }
 
-    async fn handle_decompressed_game_packet(&self, mut task: BytesMut) -> VexResult<()> {
+    async fn handle_decompressed_game_packet(&self, mut task: BytesMut) -> anyhow::Result<()> {
         let length = task.get_var_u32()?;
         let header = Header::decode(&mut task)?;
 

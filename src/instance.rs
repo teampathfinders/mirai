@@ -2,6 +2,7 @@ use std::net::{Ipv4Addr, Ipv6Addr, SocketAddrV4};
 use std::sync::Arc;
 use std::time::{Duration, SystemTime};
 
+use anyhow::anyhow;
 use bytes::BytesMut;
 use parking_lot::RwLock;
 use rand::Rng;
@@ -10,7 +11,6 @@ use tokio::signal;
 use tokio_util::sync::CancellationToken;
 
 use crate::config::SERVER_CONFIG;
-use crate::error::{VexError, VexResult};
 use crate::network::{Decodable, Encodable};
 use crate::network::packets::{CLIENT_VERSION_STRING, NETWORK_VERSION};
 use crate::network::raknet::packets::IncompatibleProtocol;
@@ -56,7 +56,7 @@ pub struct ServerInstance {
 
 impl ServerInstance {
     /// Creates a new server
-    pub async fn new(ipv4_port: u16, max_players: usize) -> VexResult<Arc<Self>> {
+    pub async fn new(ipv4_port: u16, max_players: usize) -> anyhow::Result<Arc<Self>> {
         tracing::info!("Setting up services...");
 
         let global_token = CancellationToken::new();
@@ -81,7 +81,7 @@ impl ServerInstance {
     }
 
     /// Run the server
-    pub async fn run(self: Arc<Self>) -> VexResult<()> {
+    pub async fn run(self: Arc<Self>) -> anyhow::Result<()> {
         Self::register_shutdown_handler(self.global_token.clone());
 
         let receiver_task = {
@@ -112,10 +112,10 @@ impl ServerInstance {
     }
 
     /// Processes any packets that are sent before a session has been created.
-    async fn handle_offline_packet(self: Arc<Self>, packet: RawPacket) -> VexResult<()> {
+    async fn handle_offline_packet(self: Arc<Self>, packet: RawPacket) -> anyhow::Result<()> {
         let id = packet
             .packet_id()
-            .ok_or(VexError::InvalidRequest("Packet is empty".to_string()))?;
+            .ok_or(anyhow!("Packet is missing payload"))?;
 
         match id {
             OfflinePing::ID => self.handle_unconnected_ping(packet).await?,
@@ -128,7 +128,7 @@ impl ServerInstance {
     }
 
     /// Responds to the [`OfflinePing`] packet with [`OfflinePong`].
-    async fn handle_unconnected_ping(self: Arc<Self>, packet: RawPacket) -> VexResult<()> {
+    async fn handle_unconnected_ping(self: Arc<Self>, packet: RawPacket) -> anyhow::Result<()> {
         let ping = OfflinePing::decode(packet.buffer.clone())?;
         let pong = OfflinePong {
             time: ping.time,
@@ -144,7 +144,7 @@ impl ServerInstance {
     }
 
     /// Responds to the [`OpenConnectionRequest1`] packet with [`OpenConnectionReply1`].
-    async fn handle_open_connection_request1(self: Arc<Self>, packet: RawPacket) -> VexResult<()> {
+    async fn handle_open_connection_request1(self: Arc<Self>, packet: RawPacket) -> anyhow::Result<()> {
         let request = OpenConnectionRequest1::decode(packet.buffer.clone())?;
         if request.protocol_version != RAKNET_VERSION {
             let reply = IncompatibleProtocol {
@@ -173,7 +173,7 @@ impl ServerInstance {
     /// Responds to the [`OpenConnectionRequest2`] packet with [`OpenConnectionReply2`].
     /// This is also when a session is created for the client.
     /// From this point, all packets are encoded in a [`Frame`](crate::network::raknet::Frame).
-    async fn handle_open_connection_request2(self: Arc<Self>, packet: RawPacket) -> VexResult<()> {
+    async fn handle_open_connection_request2(self: Arc<Self>, packet: RawPacket) -> anyhow::Result<()> {
         let request = OpenConnectionRequest2::decode(packet.buffer.clone())?;
         let reply = OpenConnectionReply2 {
             server_guid: self.guid,

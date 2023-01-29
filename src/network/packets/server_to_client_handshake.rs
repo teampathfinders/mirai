@@ -1,6 +1,5 @@
 use bytes::{BufMut, BytesMut};
 
-use crate::error::VexResult;
 use crate::network::packets::GamePacket;
 use crate::network::traits::Encodable;
 use crate::util::WriteExtensions;
@@ -19,7 +18,7 @@ impl GamePacket for ServerToClientHandshake<'_> {
 }
 
 impl Encodable for ServerToClientHandshake<'_> {
-    fn encode(&self) -> VexResult<BytesMut> {
+    fn encode(&self) -> anyhow::Result<BytesMut> {
         let mut buffer = BytesMut::with_capacity(2 + self.jwt.len());
 
         buffer.put_string(self.jwt);

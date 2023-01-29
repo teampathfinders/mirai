@@ -1,4 +1,4 @@
-use crate::error::VexError;
+use anyhow::bail;
 
 /// Describes how reliable transport of this packet should be.
 /// Higher reliability takes more resources, but also has more reliability guarantees.
@@ -28,7 +28,7 @@ pub enum Reliability {
 
 /// Converts a byte to reliability.
 impl TryFrom<u8> for Reliability {
-    type Error = VexError;
+    type Error = anyhow::Error;
 
     fn try_from(value: u8) -> Result<Self, Self::Error> {
         Ok(match value {
@@ -38,9 +38,7 @@ impl TryFrom<u8> for Reliability {
             3 => Self::ReliableOrdered,
             4 => Self::ReliableSequenced,
             _ => {
-                return Err(VexError::InvalidRequest(format!(
-                    "Invalid reliability ID {value}"
-                )))
+                bail!("Invalid reliability ID {value}, expected 0-4");
             }
         })
     }

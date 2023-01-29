@@ -6,7 +6,6 @@ use jsonwebtoken::jwk::KeyOperations::Encrypt;
 
 use crate::config::SERVER_CONFIG;
 use crate::crypto::Encryptor;
-use crate::error::VexResult;
 use crate::network::packets::{
     ClientCacheStatus, GamePacket, Login, NetworkSettings, Packet, PacketBatch, PlayStatus,
     RequestNetworkSettings, ServerToClientHandshake, Status,
@@ -19,7 +18,7 @@ use crate::network::traits::{Decodable, Encodable};
 
 impl Session {
     /// Handles a [`ClientCacheStatus`] packet.
-    pub fn handle_client_cache_status(&self, mut task: BytesMut) -> VexResult<()> {
+    pub fn handle_client_cache_status(&self, mut task: BytesMut) -> anyhow::Result<()> {
         let request = ClientCacheStatus::decode(task)?;
         tracing::debug!("{request:?} {self:?}");
 
@@ -29,7 +28,7 @@ impl Session {
     }
 
     /// Handles a [`Login`] packet.
-    pub async fn handle_login(&self, mut task: BytesMut) -> VexResult<()> {
+    pub async fn handle_login(&self, mut task: BytesMut) -> anyhow::Result<()> {
         let request = Login::decode(task)?;
         tracing::info!("{} has joined the server", request.identity.display_name);
 
@@ -52,7 +51,7 @@ impl Session {
     }
 
     /// Handles a [`RequestNetworkSettings`] packet.
-    pub fn handle_request_network_settings(&self, mut task: BytesMut) -> VexResult<()> {
+    pub fn handle_request_network_settings(&self, mut task: BytesMut) -> anyhow::Result<()> {
         let request = RequestNetworkSettings::decode(task)?;
         // TODO: Disconnect client if incompatible protocol.
 

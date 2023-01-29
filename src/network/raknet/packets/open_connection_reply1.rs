@@ -1,6 +1,5 @@
 use bytes::{BufMut, BytesMut};
 
-use crate::error::VexResult;
 use crate::network::raknet::OFFLINE_MESSAGE_DATA;
 use crate::network::traits::Encodable;
 
@@ -21,7 +20,7 @@ impl OpenConnectionReply1 {
 }
 
 impl Encodable for OpenConnectionReply1 {
-    fn encode(&self) -> VexResult<BytesMut> {
+    fn encode(&self) -> anyhow::Result<BytesMut> {
         let mut buffer = BytesMut::with_capacity(1 + 16 + 8 + 1 + 2);
 
         buffer.put_u8(Self::ID);

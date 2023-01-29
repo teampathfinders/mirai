@@ -1,5 +1,6 @@
 use std::fmt::{Debug, Formatter, Write};
 
+use anyhow::bail;
 use base64::Engine;
 use ecdsa::elliptic_curve::pkcs8::EncodePrivateKey;
 use ecdsa::SigningKey;
@@ -13,8 +14,6 @@ use rand::Rng;
 use rand::rngs::OsRng;
 use spki::{DecodePublicKey, EncodePublicKey};
 use spki::der::SecretDocument;
-
-use crate::error::VexResult;
 
 const ENGINE: base64::engine::GeneralPurpose = base64::engine::general_purpose::STANDARD_NO_PAD;
 
@@ -50,7 +49,7 @@ impl Encryptor {
     ///
     /// This shared secret is hashed using with SHA-256 and the salt contained in the JWT.
     /// The produced hash can then be used to encrypt packets.
-    pub fn new(client_public_key_der: &str) -> VexResult<(Self, String)> {
+    pub fn new(client_public_key_der: &str) -> anyhow::Result<(Self, String)> {
         // Generate a random salt using a cryptographically secure generator.
         let salt = (0..16)
             .map(|_| OsRng.sample(Alphanumeric) as char)
@@ -59,12 +58,18 @@ impl Encryptor {
         // Generate a random private key for the session.
         let private_key: SigningKey<NistP384> = ecdsa::SigningKey::random(&mut OsRng);
         // Convert the key to the PKCS#8 DER format used by Minecraft.
-        let private_key_der = private_key.to_pkcs8_der()?;
+        let private_key_der = match private_key.to_pkcs8_der() {
+            Ok(k) => k,
+            Err(e) => bail!("Failed to convert private to PKCS#8 DER format: {e}")
+        };
 
         // Extract and convert the public key, which will be sent to the client.
         let public_key = private_key.verifying_key();
         let public_key_der = {
-            let binary_der = public_key.to_public_key_der()?;
+            let binary_der = match public_key.to_public_key_der() {
+                Ok(d) => d,
+                Err(e) => bail!("Failed to convert public key to DER format: {e}")
+            };
             ENGINE.encode(binary_der)
         };
 
@@ -82,7 +87,10 @@ impl Encryptor {
         let jwt = jsonwebtoken::encode(&header, &claims, &signing_key)?;
         let client_public_key = {
             let bytes = ENGINE.decode(client_public_key_der)?;
-            PublicKey::from_public_key_der(&bytes)?
+            match PublicKey::from_public_key_der(&bytes) {
+                Ok(k) => k,
+                Err(e) => bail!("Failed to read DER-encoded client public key: {e}")
+            }
         };
 
         // Perform the key exchange
@@ -93,7 +101,10 @@ impl Encryptor {
         let secret_hash = shared_secret.extract::<sha2::Sha256>(Some(salt.as_bytes()));
 
         let mut okm = [0u8; 32];
-        secret_hash.expand(&[], &mut okm)?;
+        match secret_hash.expand(&[], &mut okm) {
+            Ok(h) => h,
+            Err(e) => bail!("Failed to expand shared secret hash: {e}")
+        }
 
         /// Minecraft uses the first 16 bytes of the hash for encryption.
         let mut secret = [0u8; 16];

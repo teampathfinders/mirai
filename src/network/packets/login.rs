@@ -1,15 +1,15 @@
+use anyhow::bail;
 use base64::Engine;
 use bytes::{Buf, BytesMut};
 use jsonwebtoken::{Algorithm, DecodingKey, Validation};
 use serde::Deserialize;
 use spki::SubjectPublicKeyInfo;
 
-use crate::{bail, error, vex_assert};
 use crate::crypto::{IdentityData, parse_identity_data, parse_user_data, UserData};
-use crate::error::{VexError, VexResult};
 use crate::network::packets::GamePacket;
 use crate::network::traits::Decodable;
 use crate::util::ReadExtensions;
+use crate::vex_assert;
 
 /// Device operating system
 #[derive(Debug)]
@@ -32,7 +32,7 @@ pub enum DeviceOS {
 }
 
 impl TryFrom<u8> for DeviceOS {
-    type Error = VexError;
+    type Error = anyhow::Error;
 
     fn try_from(value: u8) -> Result<Self, Self::Error> {
         use DeviceOS::*;
@@ -53,7 +53,7 @@ impl TryFrom<u8> for DeviceOS {
             13 => Xbox,
             14 => WindowsPhone,
             15 => Linux,
-            _ => bail!(InvalidRequest, "Invalid device OS"),
+            _ => bail!("Invalid device OS {}, expected 1-15", value),
         })
     }
 }
@@ -70,7 +70,7 @@ impl GamePacket for Login {
 }
 
 impl Decodable for Login {
-    fn decode(mut buffer: BytesMut) -> VexResult<Self> {
+    fn decode(mut buffer: BytesMut) -> anyhow::Result<Self> {
         let protocol_version = buffer.get_u32();
         buffer.get_var_u32()?;
 

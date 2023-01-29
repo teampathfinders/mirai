@@ -5,7 +5,6 @@ use flate2::Compression;
 use flate2::write::DeflateEncoder;
 
 use crate::config::SERVER_CONFIG;
-use crate::error::VexResult;
 use crate::network::packets::{CompressionAlgorithm, GamePacket, Packet};
 use crate::network::traits::Encodable;
 
@@ -28,7 +27,7 @@ impl PacketBatch {
     }
 
     /// Adds a packet to the batch.
-    pub fn add<T: GamePacket + Encodable>(mut self, packet: Packet<T>) -> VexResult<Self> {
+    pub fn add<T: GamePacket + Encodable>(mut self, packet: Packet<T>) -> anyhow::Result<Self> {
         let mut encoded = packet.encode()?;
         self.packets.push(encoded);
 
@@ -37,7 +36,7 @@ impl PacketBatch {
 }
 
 impl Encodable for PacketBatch {
-    fn encode(&self) -> VexResult<BytesMut> {
+    fn encode(&self) -> anyhow::Result<BytesMut> {
         let mut buffer = BytesMut::new();
 
         buffer.put_u8(0xfe);

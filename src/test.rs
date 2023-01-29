@@ -4,7 +4,6 @@ use std::net::{IpAddr, SocketAddr};
 use bytes::{Buf, BufMut, BytesMut};
 use flate2::read::DeflateDecoder;
 
-use crate::error::VexResult;
 use crate::instance::{IPV4_LOCAL_ADDR, IPV6_LOCAL_ADDR};
 use crate::network::CompressionAlgorithm::Deflate;
 use crate::network::frame::{Frame, FrameBatch};
@@ -50,7 +49,7 @@ fn read_write_u24_le() {
 }
 
 #[test]
-fn read_write_addr() -> VexResult<()> {
+fn read_write_addr() -> anyhow::Result<()> {
     let ipv4_test = SocketAddr::new(IpAddr::V4(IPV4_LOCAL_ADDR), 19132);
     let ipv6_test = SocketAddr::new(IpAddr::V6(IPV6_LOCAL_ADDR), 19133);
 

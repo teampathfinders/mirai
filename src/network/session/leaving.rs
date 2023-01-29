@@ -2,7 +2,6 @@ use std::sync::atomic::Ordering;
 
 use bytes::{Buf, BytesMut};
 
-use crate::error::VexResult;
 use crate::network::header::Header;
 use crate::network::packets::{GamePacket, Packet, PacketBatch};
 use crate::network::raknet::{Frame, FrameBatch};
@@ -26,7 +25,7 @@ const DEFAULT_CONFIG: PacketConfig = PacketConfig {
 impl Session {
     /// Sends a game packet with default settings
     /// (reliable ordered and medium priority)
-    pub fn send_packet<T: GamePacket + Encodable>(&self, packet: T) -> VexResult<()> {
+    pub fn send_packet<T: GamePacket + Encodable>(&self, packet: T) -> anyhow::Result<()> {
         self.send_packet_with_config(packet, DEFAULT_CONFIG)
     }
 
@@ -35,7 +34,7 @@ impl Session {
         &self,
         packet: T,
         config: PacketConfig,
-    ) -> VexResult<()> {
+    ) -> anyhow::Result<()> {
         let packet = Packet::new(packet).subclients(0, 0);
 
         let batch = PacketBatch::new(self.compression_enabled.load(Ordering::SeqCst))
@@ -59,7 +58,7 @@ impl Session {
     }
 
     /// Flushes the send queue.
-    pub async fn flush(&self) -> VexResult<()> {
+    pub async fn flush(&self) -> anyhow::Result<()> {
         let tick = self.current_tick.load(Ordering::SeqCst);
 
         if let Some(frames) = self.send_queue.flush(SendPriority::High) {
@@ -86,7 +85,7 @@ impl Session {
         Ok(())
     }
 
-    async fn flush_acknowledgements(&self) -> VexResult<()> {
+    async fn flush_acknowledgements(&self) -> anyhow::Result<()> {
         let mut confirmed = {
             let mut lock = self.confirmed_packets.lock();
             if lock.is_empty() {
@@ -122,7 +121,7 @@ impl Session {
         Ok(())
     }
 
-    async fn send_raw_frames(&self, frames: Vec<Frame>) -> VexResult<()> {
+    async fn send_raw_frames(&self, frames: Vec<Frame>) -> anyhow::Result<()> {
         let max_batch_size = self.mtu as usize - std::mem::size_of::<FrameBatch>();
         let mut batch =
             FrameBatch::default().batch_number(self.batch_number.fetch_add(1, Ordering::SeqCst));

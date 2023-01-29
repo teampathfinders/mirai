@@ -1,10 +1,10 @@
 use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr, SocketAddrV4};
 
+use anyhow::bail;
 use bytes::{Buf, BufMut};
 use lazy_static::lazy_static;
 
 use crate::{error, vex_assert};
-use crate::error::{VexError, VexResult};
 
 pub const IPV4_MEM_SIZE: usize = 1 + 4 + 2;
 pub const IPV6_MEM_SIZE: usize = 1 + 2 + 2 + 4 + 16 + 4;
@@ -36,7 +36,7 @@ pub trait ReadExtensions: Buf {
     /// * Unsigned short for port.
     ///
     /// This method fails if the IP type is a value other than 4 or 6.
-    fn get_addr(&mut self) -> VexResult<SocketAddr> {
+    fn get_addr(&mut self) -> anyhow::Result<SocketAddr> {
         let ip_type = self.get_u8();
         Ok(match ip_type {
             4 => {
@@ -55,10 +55,7 @@ pub trait ReadExtensions: Buf {
                 SocketAddr::new(addr, port)
             }
             _ => {
-                return Err(VexError::InvalidRequest(format!(
-                    "Invalid IP type: {}",
-                    ip_type
-                )))
+                bail!("Invalid IP type {ip_type}, expected either 4 or 6");
             }
         })
     }
@@ -74,7 +71,7 @@ pub trait ReadExtensions: Buf {
     /// It can fail if the varint could not be read correctly.
     ///
     /// See [`get_raknet_string`](ReadExtensions::get_raknet_string) for an alternative for Raknet.
-    fn get_string(&mut self) -> VexResult<String> {
+    fn get_string(&mut self) -> anyhow::Result<String> {
         let length = self.get_var_u32()? as usize;
         let buffer = &self.chunk()[..length];
         let string = String::from_utf8_lossy(buffer).to_string();
@@ -97,7 +94,7 @@ pub trait ReadExtensions: Buf {
     }
 
     /// Reads a variable size unsigned big endian 32-bit integer from the stream.
-    fn get_var_u32(&mut self) -> VexResult<u32> {
+    fn get_var_u32(&mut self) -> anyhow::Result<u32> {
         let mut v = 0;
         let mut i = 0;
         while i < 35 {
@@ -109,10 +106,7 @@ pub trait ReadExtensions: Buf {
             i += 7;
         }
 
-        Err(error!(
-            InvalidRequest,
-            "Variable 32-bit integer did not end after 5 bytes"
-        ))
+        bail!("Variable 32-bit integer did not end after 5 bytes")
     }
 
     /// Reads a 24-bit unsigned little-endian integer from the buffer.

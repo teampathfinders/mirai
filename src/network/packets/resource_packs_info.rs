@@ -1,6 +1,5 @@
 use bytes::{BufMut, BytesMut};
 
-use crate::error::VexResult;
 use crate::network::packets::GamePacket;
 use crate::network::traits::Encodable;
 use crate::util::WriteExtensions;
@@ -75,7 +74,7 @@ impl GamePacket for ResourcePacksInfo {
 }
 
 impl Encodable for ResourcePacksInfo {
-    fn encode(&self) -> VexResult<BytesMut> {
+    fn encode(&self) -> anyhow::Result<BytesMut> {
         let mut buffer = BytesMut::new();
 
         buffer.put_bool(self.required);

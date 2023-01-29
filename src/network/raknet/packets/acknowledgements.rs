@@ -2,7 +2,6 @@ use std::ops::Range;
 
 use bytes::{Buf, BufMut, BytesMut};
 
-use crate::error::VexResult;
 use crate::network::traits::{Decodable, Encodable};
 use crate::util::{ReadExtensions, WriteExtensions};
 use crate::vex_assert;
@@ -29,7 +28,7 @@ impl Acknowledgement {
 }
 
 impl Encodable for Acknowledgement {
-    fn encode(&self) -> VexResult<BytesMut> {
+    fn encode(&self) -> anyhow::Result<BytesMut> {
         let mut buffer = BytesMut::with_capacity(10);
 
         buffer.put_u8(Self::ID);
@@ -53,7 +52,7 @@ impl Encodable for Acknowledgement {
 }
 
 impl Decodable for Acknowledgement {
-    fn decode(mut buffer: BytesMut) -> VexResult<Self> {
+    fn decode(mut buffer: BytesMut) -> anyhow::Result<Self> {
         vex_assert!(buffer.get_u8() == Self::ID);
 
         let record_count = buffer.get_u16();
@@ -85,7 +84,7 @@ impl NegativeAcknowledgement {
 }
 
 impl Encodable for NegativeAcknowledgement {
-    fn encode(&self) -> VexResult<BytesMut> {
+    fn encode(&self) -> anyhow::Result<BytesMut> {
         let mut buffer = BytesMut::with_capacity(10);
 
         buffer.put_u8(Self::ID);
@@ -109,7 +108,7 @@ impl Encodable for NegativeAcknowledgement {
 }
 
 impl Decodable for NegativeAcknowledgement {
-    fn decode(mut buffer: BytesMut) -> VexResult<Self> {
+    fn decode(mut buffer: BytesMut) -> anyhow::Result<Self> {
         vex_assert!(buffer.get_u8() == Self::ID);
 
         let record_count = buffer.get_u16();

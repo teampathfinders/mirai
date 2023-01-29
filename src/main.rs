@@ -7,8 +7,6 @@ use std::sync::atomic::{AtomicU16, Ordering};
 
 use tokio::runtime;
 
-use error::VexResult;
-
 use crate::instance::ServerInstance;
 
 mod config;
@@ -27,7 +25,7 @@ const IPV4_PORT: u16 = 19132;
 const IPV6_PORT: u16 = 19133;
 
 /// The asynchronous entrypoint that is ran by Tokio.
-async fn app_main() -> VexResult<()> {
+async fn app_main() -> anyhow::Result<()> {
     loop {
         let controller = ServerInstance::new(IPV4_PORT, 100).await?;
         match controller.run().await {
@@ -45,7 +43,7 @@ async fn app_main() -> VexResult<()> {
 }
 
 /// Program entrypoint
-fn main() -> VexResult<()> {
+fn main() -> anyhow::Result<()> {
     init_logging();
 
     let runtime = runtime::Builder::new_multi_thread()

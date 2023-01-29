@@ -1,6 +1,5 @@
 use bytes::{Buf, BytesMut};
 
-use crate::error::VexResult;
 use crate::network::traits::Decodable;
 use crate::vex_assert;
 
@@ -17,7 +16,7 @@ impl OnlinePing {
 }
 
 impl Decodable for OnlinePing {
-    fn decode(mut buffer: BytesMut) -> VexResult<Self> {
+    fn decode(mut buffer: BytesMut) -> anyhow::Result<Self> {
         vex_assert!(buffer.get_u8() == Self::ID);
 
         let time = buffer.get_i64();

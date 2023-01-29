@@ -1,6 +1,5 @@
 use bytes::{Buf, BytesMut};
 
-use crate::error::VexResult;
 use crate::network::traits::Decodable;
 use crate::vex_assert;
 
@@ -17,7 +16,7 @@ impl RequestNetworkSettings {
 }
 
 impl Decodable for RequestNetworkSettings {
-    fn decode(mut buffer: BytesMut) -> VexResult<Self> {
+    fn decode(mut buffer: BytesMut) -> anyhow::Result<Self> {
         let protocol_version = buffer.get_u32();
 
         Ok(Self { protocol_version })

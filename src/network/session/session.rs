@@ -4,6 +4,7 @@ use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, AtomicU32, AtomicU64, Ordering};
 use std::time::{Duration, Instant};
 
+use anyhow::anyhow;
 use bytes::BytesMut;
 use parking_lot::{Mutex, RwLock};
 use tokio::net::UdpSocket;
@@ -12,7 +13,6 @@ use tokio_util::sync::CancellationToken;
 
 use crate::crypto::{IdentityData, UserData};
 use crate::error;
-use crate::error::VexResult;
 use crate::network::packets::DeviceOS;
 use crate::network::session::compound_collector::CompoundCollector;
 use crate::network::session::order_channel::OrderChannel;
@@ -149,33 +149,33 @@ impl Session {
     /// Retrieves the identity of the client.
     ///
     /// Warning: An internal RwLock is kept in a read state until the return value of this function is dropped.
-    pub fn get_identity(&self) -> VexResult<&str> {
+    pub fn get_identity(&self) -> anyhow::Result<&str> {
         let identity = self
             .identity
             .get()
-            .ok_or(error!(Other, "Identity ID has not been initialised yet"))?;
+            .ok_or(anyhow!("Identity ID has not been initialised yet"))?;
         Ok(identity.identity.as_str())
     }
 
     /// Retrievs the XUID of the client.
     ///
     /// Warning: An internal RwLock is kept in a read state until the return value of this function is dropped.
-    pub fn get_xuid(&self) -> VexResult<u64> {
+    pub fn get_xuid(&self) -> anyhow::Result<u64> {
         let identity = self
             .identity
             .get()
-            .ok_or(error!(Other, "XUID has not been initialised yet"))?;
+            .ok_or(anyhow!("XUID has not been initialised yet"))?;
         Ok(identity.xuid)
     }
 
     /// Retrieves the display name of the client.
     ///
     /// Warning: An internal RwLock is kept in a read state until the return value of this function is dropped.
-    pub fn get_display_name(&self) -> VexResult<&str> {
+    pub fn get_display_name(&self) -> anyhow::Result<&str> {
         let identity = self
             .identity
             .get()
-            .ok_or(error!(Other, "Display name has not been initialised yet"))?;
+            .ok_or(anyhow!("Display name has not been initialised yet"))?;
         Ok(identity.display_name.as_str())
     }
 
@@ -205,7 +205,7 @@ impl Session {
     }
 
     /// Performs tasks not related to packet processing
-    async fn tick(self: &Arc<Self>) -> VexResult<()> {
+    async fn tick(self: &Arc<Self>) -> anyhow::Result<()> {
         let current_tick = self.current_tick.fetch_add(1, Ordering::SeqCst);
 
         // Session has timed out
