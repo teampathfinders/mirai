@@ -23,4 +23,3 @@ mod open_connection_reply1;
 mod open_connection_reply2;
 mod open_connection_request1;
 mod open_connection_request2;
-

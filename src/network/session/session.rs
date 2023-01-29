@@ -181,11 +181,16 @@ impl Session {
     }
 
     pub fn get_encryptor(&self) -> anyhow::Result<&Encryptor> {
-        self.encryptor.get().ok_or(anyhow!("Encryption has not been initialised yet"))
+        self.encryptor
+            .get()
+            .ok_or(anyhow!("Encryption has not been initialised yet"))
     }
 
     pub fn get_device_os(&self) -> anyhow::Result<DeviceOS> {
-        let data = self.user_data.get().ok_or(anyhow!("User data has not been initialised yet"))?;
+        let data = self
+            .user_data
+            .get()
+            .ok_or(anyhow!("User data has not been initialised yet"))?;
         Ok(data.device_os)
     }
 

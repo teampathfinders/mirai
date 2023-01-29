@@ -90,14 +90,15 @@ pub struct UserTokenPayload {
 fn verify_first_token(token: &str) -> anyhow::Result<String> {
     // Decode JWT header to get X5U.
     let header = jsonwebtoken::decode_header(token)?;
-    let base64 = header.x5u.ok_or(anyhow!(
-        "Missing X.509 certificate URL (x5u)"
-    )).context("Failed to extract client public key from first token in JWT chain")?;
+    let base64 = header
+        .x5u
+        .ok_or(anyhow!("Missing X.509 certificate URL (x5u)"))
+        .context("Failed to extract client public key from first token in JWT chain")?;
     let bytes = BASE64_ENGINE.decode(base64)?;
     // Public key that can be used to verify the token.
     let public_key = match spki::SubjectPublicKeyInfo::try_from(bytes.as_ref()) {
         Ok(p) => p,
-        Err(e) => bail!("Invalid client public key")
+        Err(e) => bail!("Invalid client public key"),
     };
 
     let decoding_key = DecodingKey::from_ec_der(public_key.subject_public_key);
@@ -116,7 +117,7 @@ fn verify_second_token(token: &str, key: &str) -> anyhow::Result<String> {
     let bytes = BASE64_ENGINE.decode(key)?;
     let public_key = match spki::SubjectPublicKeyInfo::try_from(bytes.as_ref()) {
         Ok(p) => p,
-        Err(e) => bail!("Invalid client public key")
+        Err(e) => bail!("Invalid client public key"),
     };
 
     let decoding_key = DecodingKey::from_ec_der(public_key.subject_public_key);
@@ -126,7 +127,9 @@ fn verify_second_token(token: &str, key: &str) -> anyhow::Result<String> {
     validation.validate_exp = true;
 
     let payload = jsonwebtoken::decode::<KeyTokenPayload>(token, &decoding_key, &validation)
-        .context("Failed to verify second token. Either it has been tampered with, or it is invalid")?;
+        .context(
+            "Failed to verify second token. Either it has been tampered with, or it is invalid",
+        )?;
 
     Ok(payload.claims.public_key)
 }
@@ -139,7 +142,7 @@ fn verify_third_token(token: &str, key: &str) -> anyhow::Result<IdentityTokenPay
     let bytes = BASE64_ENGINE.decode(key)?;
     let public_key = match spki::SubjectPublicKeyInfo::try_from(bytes.as_ref()) {
         Ok(p) => p,
-        Err(e) => bail!("Invalid client public key")
+        Err(e) => bail!("Invalid client public key"),
     };
 
     let decoding_key = DecodingKey::from_ec_der(public_key.subject_public_key);
@@ -149,7 +152,9 @@ fn verify_third_token(token: &str, key: &str) -> anyhow::Result<IdentityTokenPay
     validation.validate_exp = true;
 
     let payload = jsonwebtoken::decode::<IdentityTokenPayload>(token, &decoding_key, &validation)
-        .context("Failed to verify third token. Either it has been tampered with, or it is invalid")?;
+        .context(
+            "Failed to verify third token. Either it has been tampered with, or it is invalid",
+        )?;
     Ok(payload.claims)
 }
 
@@ -158,7 +163,7 @@ fn verify_fourth_token(token: &str, key: &str) -> anyhow::Result<UserTokenPayloa
     let bytes = BASE64_ENGINE.decode(key)?;
     let public_key = match spki::SubjectPublicKeyInfo::try_from(bytes.as_ref()) {
         Ok(p) => p,
-        Err(e) => bail!("Invalid client public key")
+        Err(e) => bail!("Invalid client public key"),
     };
 
     let decoding_key = DecodingKey::from_ec_der(public_key.subject_public_key);
@@ -168,7 +173,9 @@ fn verify_fourth_token(token: &str, key: &str) -> anyhow::Result<UserTokenPayloa
     validation.required_spec_claims.clear();
 
     let payload = jsonwebtoken::decode::<UserTokenPayload>(token, &decoding_key, &validation)
-        .context("Failed to verify user data token. Either it has been tampered with, or it is invalid")?;
+        .context(
+            "Failed to verify user data token. Either it has been tampered with, or it is invalid",
+        )?;
     Ok(payload.claims)
 }
 
@@ -213,7 +220,10 @@ pub fn parse_identity_data(buffer: &mut BytesMut) -> anyhow::Result<IdentityToke
 
 /// Parses the user data token from the login packet.
 /// This token contains the user's operating system, language, skin, etc.
-pub fn parse_user_data(buffer: &mut BytesMut, public_key: &str) -> anyhow::Result<UserTokenPayload> {
+pub fn parse_user_data(
+    buffer: &mut BytesMut,
+    public_key: &str,
+) -> anyhow::Result<UserTokenPayload> {
     let token_length = buffer.get_u32_le();
     let position = buffer.len() - buffer.remaining();
     let token = &buffer.as_ref()[position..(position + token_length as usize)];

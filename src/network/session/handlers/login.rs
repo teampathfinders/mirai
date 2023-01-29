@@ -7,7 +7,10 @@ use jsonwebtoken::jwk::KeyOperations::Encrypt;
 
 use crate::config::SERVER_CONFIG;
 use crate::crypto::Encryptor;
-use crate::network::packets::{ClientCacheStatus, GamePacket, Login, NETWORK_VERSION, NetworkSettings, Packet, PacketBatch, PlayStatus, RequestNetworkSettings, ServerToClientHandshake, Status};
+use crate::network::packets::{
+    ClientCacheStatus, GamePacket, Login, NETWORK_VERSION, NetworkSettings, Packet, PacketBatch,
+    PlayStatus, RequestNetworkSettings, ServerToClientHandshake, Status,
+};
 use crate::network::raknet::{Frame, FrameBatch};
 use crate::network::raknet::Reliability;
 use crate::network::session::send_queue::SendPriority;
@@ -38,10 +41,9 @@ impl Session {
         // Flush all unencrypted packets before enabling encryption.
         self.flush().await?;
 
-        self.send_packet(ServerToClientHandshake {
-            jwt: jwt.as_str(),
-        })?;
-        self.encryptor.set(encryptor)
+        self.send_packet(ServerToClientHandshake { jwt: jwt.as_str() })?;
+        self.encryptor
+            .set(encryptor)
             .context("Encryptor was already set")?;
 
         tracing::trace!("Sent handshake");
@@ -55,14 +57,14 @@ impl Session {
         if request.protocol_version != NETWORK_VERSION {
             if request.protocol_version > NETWORK_VERSION {
                 let response = PlayStatus {
-                    status: Status::FailedServer
+                    status: Status::FailedServer,
                 };
                 self.send_packet(response)?;
 
                 bail!("Client is using a newer protocol, disconnecting them...");
             } else {
                 let response = PlayStatus {
-                    status: Status::FailedClient
+                    status: Status::FailedClient,
                 };
                 self.send_packet(response)?;
 

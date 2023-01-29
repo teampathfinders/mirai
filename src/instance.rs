@@ -151,7 +151,10 @@ impl ServerInstance {
     }
 
     /// Responds to the [`OpenConnectionRequest1`] packet with [`OpenConnectionReply1`].
-    async fn handle_open_connection_request1(self: Arc<Self>, packet: RawPacket) -> anyhow::Result<()> {
+    async fn handle_open_connection_request1(
+        self: Arc<Self>,
+        packet: RawPacket,
+    ) -> anyhow::Result<()> {
         let request = OpenConnectionRequest1::decode(packet.buffer.clone())?;
         if request.protocol_version != RAKNET_VERSION {
             let reply = IncompatibleProtocol {
@@ -180,7 +183,10 @@ impl ServerInstance {
     /// Responds to the [`OpenConnectionRequest2`] packet with [`OpenConnectionReply2`].
     /// This is also when a session is created for the client.
     /// From this point, all packets are encoded in a [`Frame`](crate::network::raknet::Frame).
-    async fn handle_open_connection_request2(self: Arc<Self>, packet: RawPacket) -> anyhow::Result<()> {
+    async fn handle_open_connection_request2(
+        self: Arc<Self>,
+        packet: RawPacket,
+    ) -> anyhow::Result<()> {
         let request = OpenConnectionRequest2::decode(packet.buffer.clone())?;
         let reply = OpenConnectionReply2 {
             server_guid: self.guid,

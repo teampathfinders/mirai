@@ -15,7 +15,6 @@ pub const ACK_BIT_FLAG: u8 = 0x40;
 pub const NACK_BIT_FLAG: u8 = 0x20;
 /// Set when the packet is a compound.
 pub const COMPOUND_BIT_FLAG: u8 = 0x10;
-
 /// Unknown what this is.
 /// Possibly used for Raknet congestion control.
 pub const CONTINUOUS_SEND_BIT_FLAG: u8 = 0x08;

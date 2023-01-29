@@ -32,7 +32,10 @@ impl<T: Send> AsyncDeque<T> {
         permit.forget();
 
         let mut lock = self.deque.lock();
-        lock.pop_front().unwrap()
+
+        // Safe to unwrap because we can be 100% sure the queue contains an item.
+        lock.pop_front()
+            .expect("AsyncDeque was empty, but had open permits")
     }
 
     /// Attempts to pop an item from the queue, returning None if there are no items.
@@ -43,7 +46,12 @@ impl<T: Send> AsyncDeque<T> {
         })?;
 
         let mut lock = self.deque.lock();
-        Some(lock.pop_front().unwrap())
+
+        // Safe to unwrap because we can be 100% sure that the queue contains an item.
+        Some(
+            lock.pop_front()
+                .expect("AsyncDeque was empty, but had open permits"),
+        )
     }
 
     /// Pushes an item into the queue.

@@ -37,7 +37,7 @@ impl SessionTracker {
 
         Self {
             global_token,
-            session_list
+            session_list,
         }
     }
 
@@ -61,9 +61,7 @@ impl SessionTracker {
                 let session = r.value();
                 session.receive_queue.push(packet.buffer);
             })
-            .ok_or_else(|| anyhow!(
-                "Attempted to forward packet to non-existent session"
-            ))
+            .ok_or_else(|| anyhow!("Attempted to forward packet to non-existent session"))
     }
 
     /// Returns how many clients are currently connected this tracker.

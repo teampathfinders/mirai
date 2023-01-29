@@ -26,7 +26,8 @@ use spki::der::SecretDocument;
 type Aes256Ctr64LE = ctr::Ctr64LE<aes::Aes256>;
 
 /// Use the default Base64 format with no padding.
-const BASE64_ENGINE: base64::engine::GeneralPurpose = base64::engine::general_purpose::STANDARD_NO_PAD;
+const BASE64_ENGINE: base64::engine::GeneralPurpose =
+    base64::engine::general_purpose::STANDARD_NO_PAD;
 
 /// Payload of the encryption handshake token
 #[derive(serde::Serialize, Debug)]
@@ -74,7 +75,7 @@ impl Encryptor {
         // Convert the key to the PKCS#8 DER format used by Minecraft.
         let private_key_der = match private_key.to_pkcs8_der() {
             Ok(k) => k,
-            Err(e) => bail!("Failed to convert private to PKCS#8 DER format: {e}")
+            Err(e) => bail!("Failed to convert private to PKCS#8 DER format: {e}"),
         };
 
         // Extract and convert the public key, which will be sent to the client.
@@ -82,7 +83,7 @@ impl Encryptor {
         let public_key_der = {
             let binary_der = match public_key.to_public_key_der() {
                 Ok(d) => d,
-                Err(e) => bail!("Failed to convert public key to DER format: {e}")
+                Err(e) => bail!("Failed to convert public key to DER format: {e}"),
             };
             BASE64_ENGINE.encode(binary_der)
         };
@@ -95,15 +96,17 @@ impl Encryptor {
         // Create a JWT encoding key using the session's private key.
         let signing_key = jsonwebtoken::EncodingKey::from_ec_der(&private_key_der.to_bytes());
         let claims = EncryptionTokenClaims {
-            salt: &BASE64_ENGINE.encode(&salt)
+            salt: &BASE64_ENGINE.encode(&salt),
         };
 
         let jwt = jsonwebtoken::encode(&header, &claims, &signing_key)?;
+        tracing::info!("{jwt:?}");
+
         let client_public_key = {
             let bytes = BASE64_ENGINE.decode(client_public_key_der)?;
             match PublicKey::from_public_key_der(&bytes) {
                 Ok(k) => k,
-                Err(e) => bail!("Failed to read DER-encoded client public key: {e}")
+                Err(e) => bail!("Failed to read DER-encoded client public key: {e}"),
             }
         };
 
@@ -134,33 +137,28 @@ impl Encryptor {
         iv[12..].copy_from_slice(&[0x00, 0x00, 0x00, 0x02]);
 
         let cipher = Aes256Ctr64LE::new(&secret.into(), &iv.into());
-        Ok((Self {
-            iv,
-            cipher: Mutex::new(cipher),
-            secret,
-        }, jwt))
+        Ok((
+            Self {
+                iv,
+                cipher: Mutex::new(cipher),
+                secret,
+            },
+            jwt,
+        ))
     }
 
-    pub fn decrypt(&self, mut buffer: BytesMut) -> BytesMut {
-        assert!(buffer.len() > 9);
-
-        // let mut buffer = Vec::new();
-        self.cipher
-            .lock()
-            .apply_keystream(buffer.as_mut());
-
-        {
-            let mut decompressor = DeflateDecoder::new(buffer.as_ref());
-            let mut decompressed = Vec::new();
-            decompressor.read_to_end(&mut decompressed).unwrap();
-
-            tracing::info!("{:x?}", decompressed);
+    pub fn decrypt(&self, mut buffer: BytesMut) -> anyhow::Result<BytesMut> {
+        if buffer.len() < 8 {
+            bail!("Encrypted buffer must be at least 8 bytes");
         }
 
-        tracing::info!("{:x?}", buffer.as_ref());
+        // let mut buffer = Vec::new();
+        self.cipher.lock().apply_keystream(buffer.as_mut());
 
         let checksum = &buffer.as_ref()[buffer.len() - 8..];
         let computed_checksum = self.compute_checksum(buffer.as_ref());
+
+        if !checksum.eq(&computed_checksum) {}
 
         tracing::info!("Checksums:\n{:x?}\n{:x?}", checksum, computed_checksum);
 

@@ -14,7 +14,9 @@ use crate::network::packets::{
 };
 use crate::network::packets::OnlinePing;
 use crate::network::raknet::{Frame, FrameBatch};
-use crate::network::raknet::packets::{Acknowledgement, AcknowledgementRecord, NegativeAcknowledgement};
+use crate::network::raknet::packets::{
+    Acknowledgement, AcknowledgementRecord, NegativeAcknowledgement,
+};
 use crate::network::raknet::packets::ConnectionRequest;
 use crate::network::raknet::packets::DisconnectNotification;
 use crate::network::raknet::packets::NewIncomingConnection;
@@ -29,7 +31,7 @@ impl Session {
     /// If a packet is an ACK or NACK type, it will be responded to accordingly (using [`Session::handle_ack`] and [`Session::handle_nack`]).
     /// Frame batches are processed by [`Session::handle_frame_batch`].
     pub async fn handle_raw_packet(&self) -> anyhow::Result<()> {
-        let task = tokio::select! {
+        let packet = tokio::select! {
             _ = self.active.cancelled() => {
                 return Ok(())
             },
@@ -37,11 +39,15 @@ impl Session {
         };
         *self.last_update.write() = Instant::now();
 
-        let packet_id = *task.first().unwrap();
+        if packet.is_empty() {
+            bail!("Packet must not be empty");
+        }
+
+        let packet_id = *packet.first().unwrap();
         match packet_id {
-            Acknowledgement::ID => self.handle_ack(task),
-            NegativeAcknowledgement::ID => self.handle_nack(task).await,
-            _ => self.handle_frame_batch(task).await,
+            Acknowledgement::ID => self.handle_ack(packet),
+            NegativeAcknowledgement::ID => self.handle_nack(packet).await,
+            _ => self.handle_frame_batch(packet).await,
         }
     }
 
@@ -117,29 +123,37 @@ impl Session {
             ConnectionRequest::ID => self.handle_connection_request(task)?,
             NewIncomingConnection::ID => self.handle_new_incoming_connection(task)?,
             OnlinePing::ID => self.handle_online_ping(task)?,
-            id => {
-                tracing::info!("ID: {} {:?}", id, task.as_ref());
-                todo!("Other game packet IDs")
-            }
+            id => bail!("Invalid Raknet packet ID: {}", id),
         }
 
         Ok(())
     }
 
-    async fn handle_game_packet(&self, mut task: BytesMut) -> anyhow::Result<()> {
-        vex_assert!(task.get_u8() == 0xfe);
+    async fn handle_game_packet(&self, mut packet: BytesMut) -> anyhow::Result<()> {
+        vex_assert!(packet.get_u8() == 0xfe);
 
         // Decrypt packet
         if self.encryptor.initialized() {
-            let encryptor = self.encryptor.get().unwrap();
-            task = encryptor.decrypt(task);
+            // Safe to unwrap because the encryptor is confirmed to exist.
+            let encryptor = self
+                .encryptor
+                .get()
+                .expect("Encryptor was destroyed while it was in use");
+
+            packet = match encryptor.decrypt(packet) {
+                Ok(t) => t,
+                Err(e) => {
+                    todo!("Disconnect client because of invalid packet");
+                }
+            }
         }
 
         let compression_enabled = self.compression_enabled.load(Ordering::SeqCst);
         let compression_threshold = SERVER_CONFIG.read().compression_threshold;
+
         if compression_enabled
             && compression_threshold != 0
-            && task.len() > compression_threshold as usize
+            && packet.len() > compression_threshold as usize
         {
             // Packet is compressed
             let decompressed = match SERVER_CONFIG.read().compression_algorithm {
@@ -147,9 +161,10 @@ impl Session {
                     todo!("Snappy decompression");
                 }
                 CompressionAlgorithm::Deflate => {
-                    let mut reader = flate2::read::DeflateDecoder::new(task.as_ref());
+                    let mut reader = flate2::read::DeflateDecoder::new(packet.as_ref());
                     let mut decompressed = Vec::new();
-                    reader.read_to_end(&mut decompressed)
+                    reader
+                        .read_to_end(&mut decompressed)
                         .context("Failed to decompress packet using Deflate")?;
 
                     BytesMut::from(decompressed.as_slice())
@@ -158,7 +173,7 @@ impl Session {
 
             self.handle_decompressed_game_packet(decompressed).await
         } else {
-            self.handle_decompressed_game_packet(task).await
+            self.handle_decompressed_game_packet(packet).await
         }
     }
 

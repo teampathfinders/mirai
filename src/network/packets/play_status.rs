@@ -24,7 +24,7 @@ pub enum Status {
     /// Displays "Wow this server is popular! Check back later to see if space opens up. Server Full."
     FailedServerFull,
     /// Displays "The server is not in Editor Mode. Failed to connect."
-    FailedEditorToVanillaMismatch
+    FailedEditorToVanillaMismatch,
 }
 
 /// Sends a status update to the client.

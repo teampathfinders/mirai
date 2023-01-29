@@ -61,7 +61,9 @@ impl Decodable for Acknowledgement {
         for _ in 0..record_count {
             let is_range = buffer.get_u8() == 0;
             if is_range {
-                records.push(AcknowledgementRecord::Range(buffer.get_u24_le()..buffer.get_u24_le()));
+                records.push(AcknowledgementRecord::Range(
+                    buffer.get_u24_le()..buffer.get_u24_le(),
+                ));
             } else {
                 records.push(AcknowledgementRecord::Single(buffer.get_u24_le()));
             }
@@ -119,7 +121,9 @@ impl Decodable for NegativeAcknowledgement {
             if is_range {
                 records.push(AcknowledgementRecord::Single(buffer.get_u24_le()));
             } else {
-                records.push(AcknowledgementRecord::Range(buffer.get_u24_le()..buffer.get_u24_le()));
+                records.push(AcknowledgementRecord::Range(
+                    buffer.get_u24_le()..buffer.get_u24_le(),
+                ));
             }
         }
 
