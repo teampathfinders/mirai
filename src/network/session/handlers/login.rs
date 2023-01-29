@@ -1,15 +1,13 @@
 use std::num::NonZeroU64;
 use std::sync::atomic::Ordering;
 
+use anyhow::bail;
 use bytes::{BufMut, BytesMut};
 use jsonwebtoken::jwk::KeyOperations::Encrypt;
 
 use crate::config::SERVER_CONFIG;
 use crate::crypto::Encryptor;
-use crate::network::packets::{
-    ClientCacheStatus, GamePacket, Login, NetworkSettings, Packet, PacketBatch, PlayStatus,
-    RequestNetworkSettings, ServerToClientHandshake, Status,
-};
+use crate::network::packets::{ClientCacheStatus, GamePacket, Login, NETWORK_VERSION, NetworkSettings, Packet, PacketBatch, PlayStatus, RequestNetworkSettings, ServerToClientHandshake, Status};
 use crate::network::raknet::{Frame, FrameBatch};
 use crate::network::raknet::Reliability;
 use crate::network::session::send_queue::SendPriority;
@@ -53,6 +51,24 @@ impl Session {
     /// Handles a [`RequestNetworkSettings`] packet.
     pub fn handle_request_network_settings(&self, mut task: BytesMut) -> anyhow::Result<()> {
         let request = RequestNetworkSettings::decode(task)?;
+        if request.protocol_version != NETWORK_VERSION {
+            if request.protocol_version > NETWORK_VERSION {
+                let response = PlayStatus {
+                    status: Status::FailedServer
+                };
+                self.send_packet(response)?;
+
+                bail!("Client is using a newer protocol, disconnecting them...");
+            } else {
+                let response = PlayStatus {
+                    status: Status::FailedClient
+                };
+                self.send_packet(response)?;
+
+                bail!("Client is using an older protocol, disconnecting them...");
+            }
+        }
+
         // TODO: Disconnect client if incompatible protocol.
 
         let response = {
