@@ -2,9 +2,10 @@ use std::num::NonZeroU64;
 use std::sync::atomic::Ordering;
 
 use bytes::{BufMut, BytesMut};
+use jsonwebtoken::jwk::KeyOperations::Encrypt;
 
 use crate::config::SERVER_CONFIG;
-use crate::crypto::perform_key_exchange;
+use crate::crypto::Encryptor;
 use crate::error::VexResult;
 use crate::network::packets::{
     ClientCacheStatus, GamePacket, Login, NetworkSettings, Packet, PacketBatch, PlayStatus,
@@ -32,7 +33,7 @@ impl Session {
         let request = Login::decode(task)?;
         tracing::info!("{} has joined the server", request.identity.display_name);
 
-        let data = perform_key_exchange(&request.identity.public_key)?;
+        let (encryptor, jwt) = Encryptor::new(&request.identity.public_key)?;
 
         self.identity.set(request.identity)?;
         self.user_data.set(request.user_data)?;
@@ -41,7 +42,7 @@ impl Session {
         self.flush().await?;
 
         self.send_packet(ServerToClientHandshake {
-            jwt: data.jwt.as_str(),
+            jwt: jwt.as_str(),
         })?;
         self.encryption_enabled.store(true, Ordering::SeqCst);
 

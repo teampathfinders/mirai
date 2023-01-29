@@ -103,6 +103,12 @@ impl From<spki::Error> for VexError {
     }
 }
 
+impl From<p384::pkcs8::Error> for VexError {
+    fn from(value: p384::pkcs8::Error) -> Self {
+        Self::Other(value.to_string())
+    }
+}
+
 // impl From<openssl::error::ErrorStack> for VexError {
 //     fn from(value: openssl::error::ErrorStack) -> Self {
 //         Self::InvalidRequest(value.to_string())
