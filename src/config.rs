@@ -5,6 +5,10 @@ use crate::network::packets::{ClientThrottleSettings, CompressionAlgorithm};
 
 /// Global service that contains all configuration settings
 pub struct ServerConfig {
+    /// Port to bind the IPv4 socket to.
+    pub ipv4_port: u16,
+    /// Port to bind the IPv6 socket to.
+    pub ipv6_port: u16,
     /// Max player count.
     pub max_players: usize,
     /// Compression algorithm to use (either Snappy or Deflate).
@@ -24,6 +28,8 @@ pub struct ServerConfig {
 lazy_static! {
     /// Current server configuration
     pub static ref SERVER_CONFIG: RwLock<ServerConfig> = RwLock::new(ServerConfig {
+        ipv4_port: 19132,
+        ipv6_port: 19133,
         max_players: 10,
         compression_algorithm: CompressionAlgorithm::Deflate,
         compression_threshold: 1, // Compress all packets

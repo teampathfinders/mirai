@@ -56,7 +56,12 @@ pub struct ServerInstance {
 
 impl ServerInstance {
     /// Creates a new server
-    pub async fn new(ipv4_port: u16, max_players: usize) -> anyhow::Result<Arc<Self>> {
+    pub async fn new() -> anyhow::Result<Arc<Self>> {
+        let (ipv4_port, _ipv6_port) = {
+            let lock = SERVER_CONFIG.read();
+            (lock.ipv4_port, lock.ipv6_port)
+        };
+
         tracing::info!("Setting up services...");
 
         let global_token = CancellationToken::new();
@@ -73,7 +78,7 @@ impl ServerInstance {
             inward_queue: Arc::new(AsyncDeque::new(10)),
             outward_queue: Arc::new(AsyncDeque::new(10)),
 
-            session_controller: Arc::new(SessionTracker::new(global_token.clone(), max_players)),
+            session_controller: Arc::new(SessionTracker::new(global_token.clone())),
             global_token,
         };
 

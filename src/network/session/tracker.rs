@@ -7,6 +7,7 @@ use dashmap::DashMap;
 use tokio::net::UdpSocket;
 use tokio_util::sync::CancellationToken;
 
+use crate::config::SERVER_CONFIG;
 use crate::error;
 use crate::network::raknet::RawPacket;
 use crate::network::session::session::Session;
@@ -21,13 +22,11 @@ pub struct SessionTracker {
     global_token: CancellationToken,
     /// Map of all tracked sessions, listed by IP address.
     session_list: Arc<DashMap<SocketAddr, Arc<Session>>>,
-    /// Maximum amount of sessions that this tracker will accept.
-    max_session_count: usize,
 }
 
 impl SessionTracker {
     /// Creates a new session tracker.
-    pub fn new(global_token: CancellationToken, max_session_count: usize) -> Self {
+    pub fn new(global_token: CancellationToken) -> Self {
         let session_list = Arc::new(DashMap::new());
         {
             let session_list = session_list.clone();
@@ -38,8 +37,7 @@ impl SessionTracker {
 
         Self {
             global_token,
-            session_list,
-            max_session_count,
+            session_list
         }
     }
 
@@ -63,7 +61,7 @@ impl SessionTracker {
                 let session = r.value();
                 session.receive_queue.push(packet.buffer);
             })
-            .ok_or(anyhow!(
+            .ok_or_else(|| anyhow!(
                 "Attempted to forward packet to non-existent session"
             ))
     }
@@ -74,8 +72,8 @@ impl SessionTracker {
     }
 
     /// Returns the maximum amount of sessions this tracker will allow.
-    pub const fn max_session_count(&self) -> usize {
-        self.max_session_count
+    pub fn max_session_count(&self) -> usize {
+        SERVER_CONFIG.read().max_players
     }
 
     async fn garbage_collector(session_list: Arc<DashMap<SocketAddr, Arc<Session>>>) -> ! {

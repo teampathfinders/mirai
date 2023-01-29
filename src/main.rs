@@ -19,15 +19,10 @@ mod util;
 #[cfg(test)]
 mod test;
 
-/// Default Minecraft IPv4 port
-const IPV4_PORT: u16 = 19132;
-/// Default Minecraft IPv6 port
-const IPV6_PORT: u16 = 19133;
-
 /// The asynchronous entrypoint that is ran by Tokio.
 async fn app_main() -> anyhow::Result<()> {
     loop {
-        let controller = ServerInstance::new(IPV4_PORT, 100).await?;
+        let controller = ServerInstance::new().await?;
         match controller.run().await {
             Ok(_) => {
                 break;
