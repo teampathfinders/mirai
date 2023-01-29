@@ -1,19 +1,27 @@
 use std::fmt::{Debug, Formatter, Write};
+use std::sync::atomic::{AtomicU16, AtomicU32, AtomicU64, Ordering};
 
-use anyhow::bail;
+use anyhow::{bail, Context};
 use base64::Engine;
+use bytes::{BufMut, BytesMut};
+use cipher::StreamCipher;
+use ctr::cipher::KeyIvInit;
 use ecdsa::elliptic_curve::pkcs8::EncodePrivateKey;
 use ecdsa::SigningKey;
 use jsonwebtoken::{Algorithm, DecodingKey, EncodingKey, Validation};
 use lazy_static::lazy_static;
 use p384::{NistP384, SecretKey};
-use p384::ecdh::diffie_hellman;
+use p384::ecdh::{diffie_hellman, SharedSecret};
 use p384::PublicKey;
+use parking_lot::Mutex;
 use rand::distributions::Alphanumeric;
 use rand::Rng;
 use rand::rngs::OsRng;
+use sha2::{Digest, Sha256};
 use spki::{DecodePublicKey, EncodePublicKey};
 use spki::der::SecretDocument;
+
+type Aes256Ctr64LE = ctr::Ctr64LE<aes::Aes256>;
 
 /// Use the default Base64 format with no padding.
 const BASE64_ENGINE: base64::engine::GeneralPurpose = base64::engine::general_purpose::STANDARD_NO_PAD;
@@ -26,7 +34,9 @@ struct EncryptionTokenClaims<'a> {
 
 /// Used to encrypt and decrypt packets with AES.
 pub struct Encryptor {
-    secret: [u8; 16],
+    cipher: Mutex<Aes256Ctr64LE>,
+    iv: [u8; 16],
+    secret: [u8; 32],
 }
 
 impl Debug for Encryptor {
@@ -100,20 +110,68 @@ impl Encryptor {
             private_key.as_nonzero_scalar(),
             client_public_key.as_affine(),
         );
-        let secret_hash = shared_secret.extract::<sha2::Sha256>(Some(salt.as_bytes()));
+        let secret_hash = shared_secret.extract::<Sha256>(Some(salt.as_bytes()));
 
-        let mut okm = [0u8; 32];
-        match secret_hash.expand(&[], &mut okm) {
-            Ok(h) => h,
+        let mut secret = [0u8; 32];
+        match secret_hash.expand(&[], &mut secret) {
+            Ok(_) => (),
             Err(e) => bail!("Failed to expand shared secret hash: {e}")
         }
 
-        /// Minecraft uses the first 16 bytes of the hash for encryption.
-        let mut secret = [0u8; 16];
-        secret.copy_from_slice(&okm[..16]);
+        // Initialisation vector is composed of the first 12 bytes of the secret and 0x0000000002
+        let mut iv = [0u8; 16];
+        iv[..12].copy_from_slice(&secret[..12]);
+        iv[12..].copy_from_slice(&[0x00, 0x00, 0x00, 0x02]);
 
+        let cipher = Aes256Ctr64LE::new(&secret.into(), &iv.into());
         Ok((Self {
-            secret
+            iv,
+            cipher: Mutex::new(cipher),
+            secret,
         }, jwt))
+    }
+
+    pub fn decrypt(&self, mut buffer: BytesMut) -> BytesMut {
+        assert!(buffer.len() > 9);
+
+        tracing::info!("{:x?}", buffer.as_ref());
+
+        // let mut buffer = Vec::new();
+        self.cipher
+            .lock()
+            .apply_keystream(buffer.as_mut());
+
+        tracing::info!("{:x?}", buffer.as_ref());
+
+        let checksum = &buffer.as_ref()[buffer.len() - 8..];
+        let computed_checksum = self.compute_checksum(&buffer[..buffer.len() - 8]);
+
+        tracing::info!("Checksums: {:x?} {:x?}", checksum, computed_checksum);
+
+        todo!();
+    }
+
+    pub fn encrypt(&self, mut buffer: BytesMut) -> BytesMut {
+        // self.counter.fetch_add(1, Ordering::SeqCst);
+        let checksum = self.compute_checksum(&buffer);
+
+        buffer.put(checksum.as_ref());
+        // self.cipher.encrypt();
+
+        todo!("Encryption")
+    }
+
+    /// Computes the SHA-256 checksum of the packet.
+    fn compute_checksum(&self, data: &[u8]) -> [u8; 8] {
+        let mut hasher = Sha256::new();
+        hasher.update(2i64.to_le_bytes());
+        // hasher.update(self.counter.load(Ordering::SeqCst).to_le_bytes());
+        hasher.update(data);
+        hasher.update(self.secret);
+
+        let mut checksum = [0u8; 8];
+        checksum.copy_from_slice(&hasher.finalize()[..8]);
+
+        checksum
     }
 }

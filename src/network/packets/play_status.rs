@@ -15,13 +15,16 @@ pub enum Status {
     FailedServer,
     /// Sent after world data to spawn the player.
     PlayerSpawn,
-    /// Displays "Unable to connect to world."
+    /// Displays "Unable to connect. You do not have access to this world."
     FailedInvalidTenant,
+    /// Displays "The server is not running Minecraft: Education Edition. Failed to connect."
     FailedVanillaEdu,
+    /// Displays "The server is running an incompatible edition of Minecraft. Failed to connect."
     FailedIncompatible,
+    /// Displays "Wow this server is popular! Check back later to see if space opens up. Server Full."
     FailedServerFull,
-    FailedEditorToVanillaMismatch,
-    FailedVanillaToEditorMismatch,
+    /// Displays "The server is not in Editor Mode. Failed to connect."
+    FailedEditorToVanillaMismatch
 }
 
 /// Sends a status update to the client.
@@ -39,7 +42,7 @@ impl Encodable for PlayStatus {
     fn encode(&self) -> anyhow::Result<BytesMut> {
         let mut buffer = BytesMut::with_capacity(4);
 
-        buffer.put_i32(self.status as i32);
+        buffer.put_u32(self.status as u32);
 
         Ok(buffer)
     }

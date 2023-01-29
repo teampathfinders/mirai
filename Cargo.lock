@@ -323,8 +323,17 @@ version = "0.1.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1bfb12502f3fc46cca1bb51ac28df9d618d813cdc3d2f25b9fe775a34af26bb3"
 dependencies = [
- "generic-array",
- "typenum",
+    "generic-array",
+    "typenum",
+]
+
+[[package]]
+name = "ctr"
+version = "0.9.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0369ee1ad671834580515889b80f2ea915f23b8be8d0daa4bbaf2ac5c7590835"
+dependencies = [
+    "cipher",
 ]
 
 [[package]]
@@ -333,9 +342,9 @@ version = "5.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "907076dfda823b0b36d2a1bb5f90c96660a5bbcd7729e10727f07858f22c4edc"
 dependencies = [
- "cfg-if",
- "hashbrown",
- "lock_api",
+    "cfg-if",
+    "hashbrown",
+    "lock_api",
  "once_cell",
  "parking_lot_core",
 ]
@@ -1672,7 +1681,9 @@ dependencies = [
     "async-recursion",
     "base64 0.21.0",
     "bytes",
+    "cipher",
     "console-subscriber",
+    "ctr",
     "dashmap",
     "ecdsa",
     "flate2",

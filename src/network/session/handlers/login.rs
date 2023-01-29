@@ -1,7 +1,7 @@
 use std::num::NonZeroU64;
 use std::sync::atomic::Ordering;
 
-use anyhow::bail;
+use anyhow::{bail, Context};
 use bytes::{BufMut, BytesMut};
 use jsonwebtoken::jwk::KeyOperations::Encrypt;
 
@@ -41,7 +41,8 @@ impl Session {
         self.send_packet(ServerToClientHandshake {
             jwt: jwt.as_str(),
         })?;
-        self.encryption_enabled.store(true, Ordering::SeqCst);
+        self.encryptor.set(encryptor)
+            .context("Encryptor was already set")?;
 
         tracing::trace!("Sent handshake");
 

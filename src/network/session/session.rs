@@ -11,7 +11,7 @@ use tokio::net::UdpSocket;
 use tokio::sync::OnceCell;
 use tokio_util::sync::CancellationToken;
 
-use crate::crypto::{IdentityData, UserData};
+use crate::crypto::{Encryptor, IdentityData, UserData};
 use crate::error;
 use crate::network::packets::DeviceOS;
 use crate::network::session::compound_collector::CompoundCollector;
@@ -45,6 +45,8 @@ pub struct Session {
     pub identity: OnceCell<IdentityData>,
     /// Extra user data, such as device OS and skin.
     pub user_data: OnceCell<UserData>,
+    /// Used to encrypt and decrypt packets.
+    pub encryptor: OnceCell<Encryptor>,
     /// Current tick of this session, this is increased by one every time the session
     /// processes packets.
     pub current_tick: AtomicU64,
@@ -78,7 +80,6 @@ pub struct Session {
     /// Keeps track of all packets that are waiting to be sent.
     pub send_queue: SendQueue,
     pub confirmed_packets: Mutex<Vec<u32>>,
-    pub encryption_enabled: AtomicBool,
     pub compression_enabled: AtomicBool,
     /// Keeps track of all unprocessed received packets.
     pub receive_queue: AsyncDeque<BytesMut>,
@@ -92,6 +93,7 @@ impl Session {
         let session = Arc::new(Self {
             identity: OnceCell::new(),
             user_data: OnceCell::new(),
+            encryptor: OnceCell::new(),
             current_tick: AtomicU64::new(0),
             ipv4_socket,
             mtu,
@@ -106,7 +108,6 @@ impl Session {
             order_channels: Default::default(),
             send_queue: SendQueue::new(),
             confirmed_packets: Mutex::new(Vec::new()),
-            encryption_enabled: AtomicBool::new(false),
             compression_enabled: AtomicBool::new(false),
             receive_queue: AsyncDeque::new(5),
             address,
@@ -179,8 +180,13 @@ impl Session {
         Ok(identity.display_name.as_str())
     }
 
-    pub fn get_device_os(&self) -> DeviceOS {
-        todo!()
+    pub fn get_encryptor(&self) -> anyhow::Result<&Encryptor> {
+        self.encryptor.get().ok_or(anyhow!("Encryption has not been initialised yet"))
+    }
+
+    pub fn get_device_os(&self) -> anyhow::Result<DeviceOS> {
+        let data = self.user_data.get().ok_or(anyhow!("User data has not been initialised yet"))?;
+        Ok(data.device_os)
     }
 
     /// Returns the randomly generated GUID given by the client itself.

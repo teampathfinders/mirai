@@ -188,6 +188,8 @@ pub fn parse_identity_data(buffer: &mut BytesMut) -> anyhow::Result<IdentityToke
 
     let identity_data = match tokens.chain.len() {
         1 => {
+            // TODO: Disconnect player if not signed into Xbox Live.
+
             // Client is not signed into Xbox.
             bail!("User must be signed into Xbox Live");
         }

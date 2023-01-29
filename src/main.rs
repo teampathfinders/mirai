@@ -3,6 +3,8 @@
 #![allow(clippy::module_inception)]
 #![warn(clippy::nursery)]
 
+extern crate core;
+
 use std::sync::atomic::{AtomicU16, Ordering};
 
 use tokio::runtime;

@@ -129,10 +129,10 @@ impl Session {
     async fn handle_game_packet(&self, mut task: BytesMut) -> anyhow::Result<()> {
         vex_assert!(task.get_u8() == 0xfe);
 
-        let encryption_enabled = self.encryption_enabled.load(Ordering::SeqCst);
-        if encryption_enabled {
-            // Decrypt packet
-            todo!("Packet decryption");
+        // Decrypt packet
+        if self.encryptor.initialized() {
+            let encryptor = self.encryptor.get().unwrap();
+            task = encryptor.decrypt(task);
         }
 
         let compression_enabled = self.compression_enabled.load(Ordering::SeqCst);

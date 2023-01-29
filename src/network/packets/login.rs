@@ -12,7 +12,7 @@ use crate::util::ReadExtensions;
 use crate::vex_assert;
 
 /// Device operating system
-#[derive(Debug)]
+#[derive(Debug, Copy, Clone)]
 pub enum DeviceOS {
     Android,
     Ios,
