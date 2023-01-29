@@ -6,18 +6,22 @@ use lazy_static::lazy_static;
 
 use crate::{error, vex_assert};
 
+/// Size of an IPv4 address in bytes.
 pub const IPV4_MEM_SIZE: usize = 1 + 4 + 2;
+/// Size of an IPv6 address in bytes.
 pub const IPV6_MEM_SIZE: usize = 1 + 2 + 2 + 4 + 16 + 4;
 
 lazy_static! {
+    /// Constant IP address, set to 255.255.255:19132
     pub static ref EMPTY_IPV4_ADDRESS: SocketAddr =
         SocketAddr::V4(SocketAddrV4::new(Ipv4Addr::new(255, 255, 255, 255), 19132));
 }
 
+/// Determines the size of a varuint32.
 pub const fn size_of_var_u32(mut value: u32) -> usize {
     let mut v = 1;
     while (value & !0x7f) != 0 {
-        value = value >> 7;
+        value >>= 7;
         v += 1;
     }
     v
@@ -32,7 +36,7 @@ pub trait ReadExtensions: Buf {
     ///
     /// * One byte for IP type (4 or 6),
     /// * If IPv4, 4 bytes for the 4 octets,
-    /// * If IPv6, 16 bytes for the 4 octets,
+    /// * If IPv6, 16 bytes for the 16 octets, 4 bytes for flow information and 4 bytes for scope ID,
     /// * Unsigned short for port.
     ///
     /// This method fails if the IP type is a value other than 4 or 6.
@@ -126,10 +130,7 @@ pub trait WriteExtensions: BufMut + Sized {
     /// Writes an IP address into a buffer.
     ///
     /// IP format described in [`get_addr`](ReadExtensions::get_addr).
-    fn put_addr(&mut self, addr: SocketAddr)
-        where
-            Self: Sized,
-    {
+    fn put_addr(&mut self, addr: SocketAddr) {
         match addr {
             SocketAddr::V4(addr_v4) => {
                 self.put_u8(4);

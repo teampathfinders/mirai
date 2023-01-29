@@ -7,6 +7,7 @@ use crate::vex_assert;
 /// An [`OnlinePong`](super::OnlinePong) packet should be sent in response.
 #[derive(Debug)]
 pub struct OnlinePing {
+    /// Timestamp of when the ping was sent.
     pub time: i64,
 }
 

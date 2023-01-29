@@ -9,6 +9,7 @@ use crate::network::packets::DeviceOS;
 /// Used to verify the second token in the identity chain.
 pub const MOJANG_PUBLIC_KEY: &str = "MHYwEAYHKoZIzj0CAQYFK4EEACIDYgAE8ELkixyLcwlZryUQcu1TvPOmI2B7vX83ndnWRUaXm74wFfa5f/lwQNTfrLVHa2PmenpGI6JhIMUJaWZrjmMj90NoKNFSNBuKdm8rYiXsfaz3K36x/1U26HpG0ZxK/V1V";
 
+/// Use the default Base64 format with no padding.
 const BASE64_ENGINE: base64::engine::GeneralPurpose =
     base64::engine::general_purpose::STANDARD_NO_PAD;
 
@@ -209,7 +210,7 @@ pub fn parse_identity_data(buffer: &mut BytesMut) -> anyhow::Result<IdentityToke
 }
 
 /// Parses the user data token from the login packet.
-/// This token contains the user's operating system, language, skin and more.
+/// This token contains the user's operating system, language, skin, etc.
 pub fn parse_user_data(buffer: &mut BytesMut, public_key: &str) -> anyhow::Result<UserTokenPayload> {
     let token_length = buffer.get_u32_le();
     let position = buffer.len() - buffer.remaining();

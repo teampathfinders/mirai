@@ -10,7 +10,9 @@ use crate::network::traits::Encodable;
 
 /// Batch of game packets.
 pub struct PacketBatch {
+    /// Whether packets in this batch should be compressed.
     compression_enabled: bool,
+    /// Packets contained in the batch.
     packets: Vec<BytesMut>,
 }
 

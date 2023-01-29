@@ -18,12 +18,15 @@ pub enum DeviceOS {
     Ios,
     Osx,
     FireOS,
+    /// Samsung's GearVR
     GearVR,
     HoloLens,
+    /// Windows 10/11 UWP variant of the game
     Win10,
     Win32,
     Dedicated,
     TvOS,
+    /// Sometimes called Orbis.
     PlayStation,
     Nx,
     Xbox,
@@ -58,10 +61,13 @@ impl TryFrom<u8> for DeviceOS {
     }
 }
 
+/// Packet received by the client before initiating encryption.
+/// A [`ServerToClientHandshake`](super::ServerToClientHandshake) should be sent in response.
 #[derive(Debug)]
 pub struct Login {
-    pub protocol_version: u32,
+    /// Identity data (Xbox account ID, username, etc.)
     pub identity: IdentityData,
+    /// User data (device OS, skin, etc.)
     pub user_data: UserData,
 }
 
@@ -71,14 +77,13 @@ impl GamePacket for Login {
 
 impl Decodable for Login {
     fn decode(mut buffer: BytesMut) -> anyhow::Result<Self> {
-        let protocol_version = buffer.get_u32();
+        buffer.advance(4); // Skip protocol version, use the one in RequestNetworkSettings instead.
         buffer.get_var_u32()?;
 
         let identity_data = parse_identity_data(&mut buffer)?;
         let user_data = parse_user_data(&mut buffer, &identity_data.public_key)?;
 
         Ok(Self {
-            protocol_version,
             identity: IdentityData {
                 identity: identity_data.client_data.uuid,
                 xuid: identity_data.client_data.xuid.parse()?,

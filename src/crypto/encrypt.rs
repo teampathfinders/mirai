@@ -15,7 +15,8 @@ use rand::rngs::OsRng;
 use spki::{DecodePublicKey, EncodePublicKey};
 use spki::der::SecretDocument;
 
-const ENGINE: base64::engine::GeneralPurpose = base64::engine::general_purpose::STANDARD_NO_PAD;
+/// Use the default Base64 format with no padding.
+const BASE64_ENGINE: base64::engine::GeneralPurpose = base64::engine::general_purpose::STANDARD_NO_PAD;
 
 /// Payload of the encryption handshake token
 #[derive(serde::Serialize, Debug)]
@@ -23,12 +24,13 @@ struct EncryptionTokenClaims<'a> {
     salt: &'a str,
 }
 
+/// Used to encrypt and decrypt packets with AES.
 pub struct Encryptor {
     secret: [u8; 16],
 }
 
 impl Debug for Encryptor {
-    /// Do not log secret key
+    /// Allow usage in debug derived structs, but prevent logging the secret.
     fn fmt(&self, fmt: &mut Formatter<'_>) -> std::fmt::Result {
         fmt.write_str("Encryptor")
     }
@@ -70,7 +72,7 @@ impl Encryptor {
                 Ok(d) => d,
                 Err(e) => bail!("Failed to convert public key to DER format: {e}")
             };
-            ENGINE.encode(binary_der)
+            BASE64_ENGINE.encode(binary_der)
         };
 
         // The typ header is set to none to match the official server software.
@@ -81,12 +83,12 @@ impl Encryptor {
         // Create a JWT encoding key using the session's private key.
         let signing_key = jsonwebtoken::EncodingKey::from_ec_der(&private_key_der.to_bytes());
         let claims = EncryptionTokenClaims {
-            salt: &ENGINE.encode(&salt)
+            salt: &BASE64_ENGINE.encode(&salt)
         };
 
         let jwt = jsonwebtoken::encode(&header, &claims, &signing_key)?;
         let client_public_key = {
-            let bytes = ENGINE.decode(client_public_key_der)?;
+            let bytes = BASE64_ENGINE.decode(client_public_key_der)?;
             match PublicKey::from_public_key_der(&bytes) {
                 Ok(k) => k,
                 Err(e) => bail!("Failed to read DER-encoded client public key: {e}")

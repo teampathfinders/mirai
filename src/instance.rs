@@ -29,8 +29,10 @@ use crate::util::AsyncDeque;
 pub const IPV4_LOCAL_ADDR: Ipv4Addr = Ipv4Addr::new(127, 0, 0, 1);
 /// Local IPv6 address
 pub const IPV6_LOCAL_ADDR: Ipv6Addr = Ipv6Addr::new(0, 0, 0, 0, 0, 0, 0, 1);
-
+/// Size of the UDP receive buffer.
 const RECV_BUF_SIZE: usize = 4096;
+/// Refresh rate of the server's metadata.
+/// This data is displayed in the server menu.
 const METADATA_REFRESH_INTERVAL: Duration = Duration::from_secs(2);
 
 /// Global instance that manages all data and services of the server.
@@ -278,6 +280,7 @@ impl ServerInstance {
         }
     }
 
+    /// Generates a new metadata string using the given description and new player count.
     fn refresh_metadata(&self, description: &str) {
         let new_id = format!(
             "MCPE;{};{};{};{};{};{};{};Survival;1;{};{};",
@@ -296,6 +299,7 @@ impl ServerInstance {
         *lock = new_id;
     }
 
+    /// Returns the current metadata string.
     #[inline]
     fn metadata(&self) -> String {
         (*self.metadata.read()).clone()
