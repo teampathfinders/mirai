@@ -38,7 +38,8 @@ struct EncryptionTokenClaims<'a> {
 /// Used to encrypt and decrypt packets with AES.
 pub struct Encryptor {
     cipher: Mutex<Aes256Ctr64LE>,
-    iv: [u8; 16],
+    /// Doesn't seem like there is a way to access the internal counter of the cipher.
+    pub counter: AtomicU64,
     secret: [u8; 32],
 }
 
@@ -129,7 +130,7 @@ impl Encryptor {
         let cipher = Aes256Ctr64LE::new(&secret.into(), &iv.into());
         Ok((
             Self {
-                iv,
+                counter: AtomicU64::new(0),
                 cipher: Mutex::new(cipher),
                 secret,
             },
@@ -158,24 +159,29 @@ impl Encryptor {
     }
 
     pub fn encrypt(&self, mut buffer: BytesMut) -> BytesMut {
-        // self.counter.fetch_add(1, Ordering::SeqCst);
         let checksum = self.compute_checksum(&buffer);
 
         buffer.put(checksum.as_ref());
-        // self.cipher.encrypt();
+        self.cipher
+            .lock()
+            .apply_keystream(buffer.as_mut());
 
-        todo!("Encryption")
+        buffer
     }
 
     /// Computes the SHA-256 checksum of the packet.
     fn compute_checksum(&self, data: &[u8]) -> [u8; 8] {
+        tracing::info!("ctr: {}", self.counter.load(Ordering::SeqCst));
+
         let mut hasher = Sha256::new();
-        hasher.update(0u64.to_le_bytes());
+        hasher.update(self.counter.fetch_add(1, Ordering::SeqCst).to_le_bytes());
         hasher.update(&data[..data.len() - 8]);
         hasher.update(self.secret);
 
         let mut checksum = [0u8; 8];
         checksum.copy_from_slice(&hasher.finalize()[..8]);
+
+        tracing::info!("Checksum {checksum:X?}");
 
         checksum
     }
