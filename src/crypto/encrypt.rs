@@ -5,7 +5,7 @@ use std::sync::atomic::{AtomicU16, AtomicU32, AtomicU64, Ordering};
 use anyhow::{bail, Context};
 use base64::Engine;
 use bytes::{BufMut, BytesMut};
-use cipher::StreamCipher;
+use cipher::{StreamCipher, StreamCipherSeekCore};
 use ctr::cipher::KeyIvInit;
 use ecdsa::elliptic_curve::pkcs8::EncodePrivateKey;
 use ecdsa::SigningKey;
@@ -143,10 +143,11 @@ impl Encryptor {
             bail!("Encrypted buffer must be at least 8 bytes");
         }
 
+        let counter = self.get_counter();
         self.cipher.lock().apply_keystream(buffer.as_mut());
 
         let checksum = &buffer.as_ref()[buffer.len() - 8..];
-        let computed_checksum = self.compute_checksum(buffer.as_ref());
+        let computed_checksum = self.compute_checksum(buffer.as_ref(), counter);
 
         if !checksum.eq(&computed_checksum) {
             bail!("Encryption checksums do not match");
@@ -159,9 +160,10 @@ impl Encryptor {
     }
 
     pub fn encrypt(&self, mut buffer: BytesMut) -> BytesMut {
-        let checksum = self.compute_checksum(&buffer);
+        let checksum = self.compute_checksum(&buffer, self.get_counter());
 
         buffer.put(checksum.as_ref());
+
         self.cipher
             .lock()
             .apply_keystream(buffer.as_mut());
@@ -169,19 +171,19 @@ impl Encryptor {
         buffer
     }
 
-    /// Computes the SHA-256 checksum of the packet.
-    fn compute_checksum(&self, data: &[u8]) -> [u8; 8] {
-        tracing::info!("ctr: {}", self.counter.load(Ordering::SeqCst));
+    fn get_counter(&self) -> u64 {
+        self.cipher.lock().get_core().get_block_pos()
+    }
 
+    /// Computes the SHA-256 checksum of the packet.
+    fn compute_checksum(&self, data: &[u8], counter: u64) -> [u8; 8] {
         let mut hasher = Sha256::new();
-        hasher.update(self.counter.fetch_add(1, Ordering::SeqCst).to_le_bytes());
+        hasher.update(counter.to_le_bytes());
         hasher.update(&data[..data.len() - 8]);
         hasher.update(self.secret);
 
         let mut checksum = [0u8; 8];
         checksum.copy_from_slice(&hasher.finalize()[..8]);
-
-        tracing::info!("Checksum {checksum:X?}");
 
         checksum
     }
