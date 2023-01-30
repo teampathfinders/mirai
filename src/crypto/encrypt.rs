@@ -142,17 +142,19 @@ impl Encryptor {
             bail!("Encrypted buffer must be at least 8 bytes");
         }
 
-        // let mut buffer = Vec::new();
         self.cipher.lock().apply_keystream(buffer.as_mut());
 
         let checksum = &buffer.as_ref()[buffer.len() - 8..];
         let computed_checksum = self.compute_checksum(buffer.as_ref());
 
-        if !checksum.eq(&computed_checksum) {}
+        if !checksum.eq(&computed_checksum) {
+            bail!("Encryption checksums do not match");
+        }
 
-        tracing::info!("Checksums:\n{:x?}\n{:x?}", checksum, computed_checksum);
+        // Remove checksum from data.
+        buffer.truncate(buffer.len() - 8);
 
-        bail!("unimplemented")
+        Ok(buffer)
     }
 
     pub fn encrypt(&self, mut buffer: BytesMut) -> BytesMut {

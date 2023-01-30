@@ -8,10 +8,7 @@ use bytes::{Buf, BytesMut};
 
 use crate::config::SERVER_CONFIG;
 use crate::network::header::Header;
-use crate::network::packets::{
-    ClientCacheStatus, CompressionAlgorithm, GAME_PACKET_ID, GamePacket, Login,
-    RequestNetworkSettings,
-};
+use crate::network::packets::{ClientCacheStatus, ClientToServerHandshake, CompressionAlgorithm, GAME_PACKET_ID, GamePacket, Login, RequestNetworkSettings};
 use crate::network::packets::OnlinePing;
 use crate::network::raknet::{Frame, FrameBatch};
 use crate::network::raknet::packets::{
@@ -144,7 +141,7 @@ impl Session {
                 Ok(t) => t,
                 Err(e) => {
                     // TODO
-                    bail!("Disconnect client because of invalid packet");
+                    todo!("Disconnect client because of invalid packet");
                 }
             }
         }
@@ -178,15 +175,16 @@ impl Session {
         }
     }
 
-    async fn handle_decompressed_game_packet(&self, mut task: BytesMut) -> anyhow::Result<()> {
-        let length = task.get_var_u32()?;
-        let header = Header::decode(&mut task)?;
+    async fn handle_decompressed_game_packet(&self, mut packet: BytesMut) -> anyhow::Result<()> {
+        let length = packet.get_var_u32()?;
+        let header = Header::decode(&mut packet)?;
 
         match header.id {
-            RequestNetworkSettings::ID => self.handle_request_network_settings(task),
-            Login::ID => self.handle_login(task).await,
-            ClientCacheStatus::ID => self.handle_client_cache_status(task),
-            _ => todo!(),
+            RequestNetworkSettings::ID => self.handle_request_network_settings(packet),
+            Login::ID => self.handle_login(packet).await,
+            ClientToServerHandshake::ID => self.handle_client_to_server_handshake(packet),
+            ClientCacheStatus::ID => self.handle_client_cache_status(packet),
+            id => bail!("Invalid game packet: {id:#04x}"),
         }
     }
 }

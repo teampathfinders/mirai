@@ -7,10 +7,7 @@ use jsonwebtoken::jwk::KeyOperations::Encrypt;
 
 use crate::config::SERVER_CONFIG;
 use crate::crypto::Encryptor;
-use crate::network::packets::{
-    ClientCacheStatus, GamePacket, Login, NETWORK_VERSION, NetworkSettings, Packet, PacketBatch,
-    PlayStatus, RequestNetworkSettings, ServerToClientHandshake, Status,
-};
+use crate::network::packets::{ClientCacheStatus, ClientToServerHandshake, GamePacket, Login, NETWORK_VERSION, NetworkSettings, Packet, PacketBatch, PlayStatus, RequestNetworkSettings, ServerToClientHandshake, Status};
 use crate::network::raknet::{Frame, FrameBatch};
 use crate::network::raknet::Reliability;
 use crate::network::session::send_queue::SendPriority;
@@ -28,6 +25,18 @@ impl Session {
         Ok(())
     }
 
+    pub fn handle_client_to_server_handshake(&self, mut packet: BytesMut) -> anyhow::Result<()> {
+        ClientToServerHandshake::decode(packet)?;
+        tracing::trace!("Successfully initiated encryption");
+
+        let response = PlayStatus {
+            status: Status::LoginSuccess
+        };
+        self.send_packet(response)?;
+
+        Ok(())
+    }
+
     /// Handles a [`Login`] packet.
     pub async fn handle_login(&self, mut task: BytesMut) -> anyhow::Result<()> {
         let request = Login::decode(task)?;
@@ -38,15 +47,12 @@ impl Session {
         self.identity.set(request.identity)?;
         self.user_data.set(request.user_data)?;
 
-        // Flush all unencrypted packets before enabling encryption.
-        self.flush().await?;
-
         self.send_packet(ServerToClientHandshake { jwt: jwt.as_str() })?;
         self.encryptor
             .set(encryptor)
             .context("Encryptor was already set")?;
 
-        tracing::trace!("Sent handshake");
+        tracing::trace!("Initiating encryption...");
 
         Ok(())
     }
