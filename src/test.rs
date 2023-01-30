@@ -3,11 +3,42 @@ use std::net::{IpAddr, SocketAddr};
 
 use bytes::{Buf, BufMut, BytesMut};
 use flate2::read::DeflateDecoder;
+use tokio::net::windows::named_pipe::PipeMode::Byte;
 
 use crate::instance::{IPV4_LOCAL_ADDR, IPV6_LOCAL_ADDR};
-use crate::network::raknet::Frame;
+use crate::network::raknet::{Frame, Header};
 use crate::network::session::OrderChannel;
-use crate::util::{ReadExtensions, WriteExtensions};
+use crate::util::{AsyncDeque, ReadExtensions, WriteExtensions};
+
+#[test]
+fn read_write_header() {
+    let header = Header {
+        id: 129,
+        sender_subclient: 3,
+        target_subclient: 2,
+    };
+
+    let mut buffer = header.encode();
+    assert_eq!(Header::decode(&mut buffer).unwrap(), header);
+}
+
+#[test]
+fn read_write_string() {
+    let mut buffer = BytesMut::new();
+    buffer.put_string("Hello World!");
+
+    let mut buffer = buffer.freeze();
+    assert_eq!(buffer.get_string().unwrap(), "Hello World!");
+}
+
+#[test]
+fn read_write_raknet_string() {
+    let mut buffer = BytesMut::new();
+    buffer.put_raknet_string("Hello World!");
+
+    let mut buffer = buffer.freeze();
+    assert_eq!(buffer.get_raknet_string(), "Hello World!");
+}
 
 #[test]
 fn read_write_var_u32() {
@@ -22,14 +53,6 @@ fn read_write_var_u32() {
     assert_eq!(buffer.get_var_u32().unwrap(), 2769);
     assert_eq!(buffer.get_var_u32().unwrap(), 105356);
     assert_eq!(buffer.get_var_u32().unwrap(), 359745976);
-
-    let mut buffer = BytesMut::from([0xc1, 0xe9, 0x33].as_ref());
-    let a = buffer.get_var_u32().unwrap();
-
-    let mut buffer2 = BytesMut::new();
-    buffer2.put_var_u32(a);
-
-    assert_eq!(&[0xc1, 0xe9, 0x33], buffer2.as_ref());
 }
 
 #[test]

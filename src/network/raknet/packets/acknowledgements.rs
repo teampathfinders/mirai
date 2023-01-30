@@ -15,9 +15,10 @@ pub enum AcknowledgementRecord {
     Range(Range<u32>),
 }
 
-fn encode_records(mut buffer: BytesMut, records: &[AcknowledgementRecord])
-    -> anyhow::Result<BytesMut>
-{
+fn encode_records(
+    mut buffer: BytesMut,
+    records: &[AcknowledgementRecord],
+) -> anyhow::Result<BytesMut> {
     buffer.put_i16(records.len() as i16);
     for record in records {
         match record {

@@ -100,8 +100,6 @@ impl Encryptor {
         };
 
         let jwt = jsonwebtoken::encode(&header, &claims, &signing_key)?;
-        tracing::info!("{jwt:?}");
-
         let client_public_key = {
             let bytes = BASE64_ENGINE.decode(client_public_key_der)?;
             match PublicKey::from_public_key_der(&bytes) {
@@ -115,21 +113,13 @@ impl Encryptor {
             private_key.as_nonzero_scalar(),
             client_public_key.as_affine(),
         );
-        // let secret_hash = shared_secret.extract::<Sha256>(Some(salt.as_bytes()));
+
+        let mut hasher = Sha256::new();
+        hasher.update(salt);
+        hasher.update(shared_secret.raw_secret_bytes().as_slice());
 
         let mut secret = [0u8; 32];
-        // match secret_hash.expand(&[], &mut secret) {
-        //     Ok(_) => (),
-        //     Err(e) => bail!("Failed to expand shared secret hash: {e}")
-        // }
-
-        {
-            let mut hasher = Sha256::new();
-            hasher.update(salt);
-            hasher.update(shared_secret.raw_secret_bytes().as_slice());
-
-            secret.copy_from_slice(&hasher.finalize()[..32]);
-        }
+        secret.copy_from_slice(&hasher.finalize()[..32]);
 
         // Initialisation vector is composed of the first 12 bytes of the secret and 0x0000000002
         let mut iv = [0u8; 16];
@@ -162,7 +152,7 @@ impl Encryptor {
 
         tracing::info!("Checksums:\n{:x?}\n{:x?}", checksum, computed_checksum);
 
-        todo!();
+        bail!("unimplemented")
     }
 
     pub fn encrypt(&self, mut buffer: BytesMut) -> BytesMut {

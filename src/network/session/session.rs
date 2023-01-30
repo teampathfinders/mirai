@@ -126,6 +126,22 @@ impl Session {
                     }
                     interval.tick().await;
                 }
+
+                // Flush last acknowledgements before closing
+                match session.flush_acknowledgements().await {
+                    Ok(_) => (),
+                    Err(e) => {
+                        tracing::error!("Failed to flush last acknowledgements before session close");
+                    }
+                }
+
+                // Flush last packets before closing
+                match session.flush().await {
+                    Ok(_) => (),
+                    Err(e) => {
+                        tracing::error!("Failed to flush last packets before session close");
+                    }
+                }
             });
         }
 
@@ -154,7 +170,7 @@ impl Session {
         let identity = self
             .identity
             .get()
-            .ok_or(anyhow!("Identity ID has not been initialised yet"))?;
+            .ok_or_else(|| anyhow!("Identity ID has not been initialised yet"))?;
         Ok(identity.identity.as_str())
     }
 
@@ -165,7 +181,7 @@ impl Session {
         let identity = self
             .identity
             .get()
-            .ok_or(anyhow!("XUID has not been initialised yet"))?;
+            .ok_or_else(|| anyhow!("XUID has not been initialised yet"))?;
         Ok(identity.xuid)
     }
 
@@ -176,21 +192,21 @@ impl Session {
         let identity = self
             .identity
             .get()
-            .ok_or(anyhow!("Display name has not been initialised yet"))?;
+            .ok_or_else(|| anyhow!("Display name has not been initialised yet"))?;
         Ok(identity.display_name.as_str())
     }
 
     pub fn get_encryptor(&self) -> anyhow::Result<&Encryptor> {
         self.encryptor
             .get()
-            .ok_or(anyhow!("Encryption has not been initialised yet"))
+            .ok_or_else(|| anyhow!("Encryption has not been initialised yet"))
     }
 
     pub fn get_device_os(&self) -> anyhow::Result<DeviceOS> {
         let data = self
             .user_data
             .get()
-            .ok_or(anyhow!("User data has not been initialised yet"))?;
+            .ok_or_else(|| anyhow!("User data has not been initialised yet"))?;
         Ok(data.device_os)
     }
 
@@ -200,7 +216,7 @@ impl Session {
     }
 
     /// Signals to the session that it needs to close.
-    pub fn disconnect(&self) {
+    pub fn flag_for_close(&self) {
         if let Ok(display_name) = self.get_display_name() {
             tracing::info!("{} has disconnected", display_name);
         }
@@ -221,7 +237,7 @@ impl Session {
 
         // Session has timed out
         if Instant::now().duration_since(*self.last_update.read()) > SESSION_TIMEOUT {
-            self.disconnect();
+            self.flag_for_close();
         }
 
         self.flush().await?;

@@ -3,7 +3,7 @@ use bytes::{Buf, BufMut, BytesMut};
 use crate::network::packets::GamePacket;
 use crate::network::raknet::Header;
 use crate::network::traits::Encodable;
-use crate::util::{ReadExtensions, size_of_var_u32, WriteExtensions};
+use crate::util::{ReadExtensions, WriteExtensions};
 use crate::vex_assert;
 
 /// A game packet.

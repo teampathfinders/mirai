@@ -46,7 +46,7 @@ impl Session {
         self.send_raw_buffer_with_config(
             pong,
             PacketConfig {
-                reliability: Reliability::Unreliable,
+                reliability: Reliability::Reliable,
                 priority: SendPriority::Low,
             },
         );

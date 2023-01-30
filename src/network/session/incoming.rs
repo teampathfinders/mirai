@@ -119,7 +119,7 @@ impl Session {
         let packet_id = *task.first().expect("Game packet buffer was empty");
         match packet_id {
             GAME_PACKET_ID => self.handle_game_packet(task).await?,
-            DisconnectNotification::ID => self.disconnect(),
+            DisconnectNotification::ID => self.flag_for_close(),
             ConnectionRequest::ID => self.handle_connection_request(task)?,
             NewIncomingConnection::ID => self.handle_new_incoming_connection(task)?,
             OnlinePing::ID => self.handle_online_ping(task)?,
@@ -143,7 +143,8 @@ impl Session {
             packet = match encryptor.decrypt(packet) {
                 Ok(t) => t,
                 Err(e) => {
-                    todo!("Disconnect client because of invalid packet");
+                    // TODO
+                    bail!("Disconnect client because of invalid packet");
                 }
             }
         }

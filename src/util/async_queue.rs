@@ -21,6 +21,10 @@ impl<T: Send> AsyncDeque<T> {
         }
     }
 
+    pub fn is_empty(&self) -> bool {
+        self.permits.available_permits() == 0
+    }
+
     /// Waits for an item to be available and pops it from the queue.
     pub async fn pop(&self) -> T {
         let permit = self

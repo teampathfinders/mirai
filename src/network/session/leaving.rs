@@ -85,7 +85,7 @@ impl Session {
         Ok(())
     }
 
-    async fn flush_acknowledgements(&self) -> anyhow::Result<()> {
+    pub async fn flush_acknowledgements(&self) -> anyhow::Result<()> {
         let mut confirmed = {
             let mut lock = self.confirmed_packets.lock();
             if lock.is_empty() {

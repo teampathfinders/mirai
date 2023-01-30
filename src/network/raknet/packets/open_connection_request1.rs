@@ -14,7 +14,6 @@ pub struct OpenConnectionRequest1 {
     pub protocol_version: u8,
     /// Maximum Transfer Unit. Specifies the maximum size of packets that the connection can handle.
     /// The client keeps sending packets with continuously decreasing padding, until it receives a response.
-    /// For most connections this value will be 1472.
     pub mtu: u16,
 }
 
@@ -25,11 +24,12 @@ impl OpenConnectionRequest1 {
 
 impl Decodable for OpenConnectionRequest1 {
     fn decode(mut buffer: BytesMut) -> anyhow::Result<Self> {
+        let mtu = buffer.len() as u16 + 28;
+
         vex_assert!(buffer.get_u8() == Self::ID);
 
         buffer.advance(16); // Skip magic
         let protocol_version = buffer.get_u8();
-        let mtu = buffer.len() as u16 - 18 - 28;
 
         Ok(Self {
             protocol_version,

@@ -17,16 +17,6 @@ lazy_static! {
         SocketAddr::V4(SocketAddrV4::new(Ipv4Addr::new(255, 255, 255, 255), 19132));
 }
 
-/// Determines the size of a varuint32.
-pub const fn size_of_var_u32(mut value: u32) -> usize {
-    let mut v = 1;
-    while (value & !0x7f) != 0 {
-        value >>= 7;
-        v += 1;
-    }
-    v
-}
-
 /// Provides extra functions for byte buffers.
 /// This trait implements read functions for exotic formats and
 /// IP addresses that the default [`Bytes`](bytes::Bytes) implementation does not provide.

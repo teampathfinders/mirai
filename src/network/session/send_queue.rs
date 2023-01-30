@@ -1,5 +1,6 @@
 use std::collections::VecDeque;
 use std::sync::Arc;
+use std::sync::atomic::{AtomicBool, Ordering};
 
 use parking_lot::Mutex;
 use tokio::net::UdpSocket;
@@ -25,6 +26,9 @@ pub struct SendQueue {
     high_priority: Mutex<VecDeque<Frame>>,
     medium_priority: Mutex<VecDeque<Frame>>,
     low_priority: Mutex<VecDeque<Frame>>,
+
+    // Faster to use a single atomic than to try locking all 3 mutexes and checking if they're empty.
+    is_empty: AtomicBool,
 }
 
 impl SendQueue {
@@ -34,11 +38,18 @@ impl SendQueue {
             high_priority: Mutex::new(VecDeque::new()),
             medium_priority: Mutex::new(VecDeque::new()),
             low_priority: Mutex::new(VecDeque::new()),
+            is_empty: AtomicBool::new(true),
         }
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.is_empty.load(Ordering::SeqCst)
     }
 
     /// Inserts a new packet into the send queue.
     pub fn insert_raw(&self, priority: SendPriority, frame: Frame) {
+        self.is_empty.store(false, Ordering::SeqCst);
+
         match priority {
             SendPriority::High => {
                 let mut lock = self.high_priority.lock();
@@ -56,6 +67,8 @@ impl SendQueue {
     }
 
     pub fn flush(&self, priority: SendPriority) -> Option<Vec<Frame>> {
+        self.is_empty.store(true, Ordering::SeqCst);
+
         match priority {
             SendPriority::High => {
                 let mut lock = self.high_priority.lock();
