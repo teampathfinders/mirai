@@ -122,7 +122,7 @@ impl ServerInstance {
     async fn handle_offline_packet(self: Arc<Self>, packet: RawPacket) -> anyhow::Result<()> {
         let id = packet
             .packet_id()
-            .ok_or(anyhow!("Packet is missing payload"))?;
+            .ok_or_else(|| anyhow!("Packet is missing payload"))?;
 
         match id {
             OfflinePing::ID => self.handle_unconnected_ping(packet).await?,

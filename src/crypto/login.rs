@@ -92,7 +92,7 @@ fn verify_first_token(token: &str) -> anyhow::Result<String> {
     let header = jsonwebtoken::decode_header(token)?;
     let base64 = header
         .x5u
-        .ok_or(anyhow!("Missing X.509 certificate URL (x5u)"))
+        .ok_or_else(|| anyhow!("Missing X.509 certificate URL (x5u)"))
         .context("Failed to extract client public key from first token in JWT chain")?;
     let bytes = BASE64_ENGINE.decode(base64)?;
     // Public key that can be used to verify the token.

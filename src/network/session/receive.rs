@@ -1,9 +1,14 @@
+use std::io::Write;
 use std::sync::atomic::Ordering;
 
-use bytes::{Buf, BytesMut};
+use anyhow::Context;
+use bytes::{Buf, BufMut, BytesMut};
+use flate2::Compression;
+use flate2::write::DeflateEncoder;
 
+use crate::config::SERVER_CONFIG;
 use crate::network::header::Header;
-use crate::network::packets::{GamePacket, Packet, PacketBatch};
+use crate::network::packets::{CompressionAlgorithm, GAME_PACKET_ID, GamePacket, Packet};
 use crate::network::raknet::{Frame, FrameBatch};
 use crate::network::raknet::packets::{Acknowledgement, AcknowledgementRecord};
 use crate::network::raknet::Reliability;
@@ -37,11 +42,44 @@ impl Session {
     ) -> anyhow::Result<()> {
         let packet = Packet::new(packet).subclients(0, 0);
 
-        let batch = PacketBatch::new(self.compression_enabled.load(Ordering::SeqCst))
-            .add(packet)?
-            .encode()?;
+        let mut buffer = BytesMut::new();
+        buffer.put_u8(GAME_PACKET_ID);
 
-        self.send_raw_buffer_with_config(batch, config);
+        let mut packet_buffer = packet.encode()?;
+        if self.compression_enabled.load(Ordering::SeqCst) {
+            let (algorithm, threshold) = {
+                let config = SERVER_CONFIG.read();
+                (config.compression_algorithm, config.compression_threshold)
+            };
+
+            if packet_buffer.len() > threshold as usize {
+                // Compress packet
+                match SERVER_CONFIG.read().compression_algorithm {
+                    CompressionAlgorithm::Snappy => {
+                        todo!("Snappy compression")
+                    },
+                    CompressionAlgorithm::Deflate => {
+                        let mut writer = DeflateEncoder::new(
+                            Vec::new(), Compression::fast(),
+                        );
+
+                        writer.write_all(packet_buffer.as_ref())
+                            .context("Failed to compress packet using Deflate")?;
+
+                        packet_buffer = BytesMut::from(writer.finish()
+                            .context("Failed to flush Deflate encoder")?.as_slice());
+                    }
+                }
+            }
+        }
+
+        if let Some(encryptor) = self.encryptor.get() {
+            packet_buffer = encryptor.encrypt(packet_buffer);
+        }
+
+        buffer.put(packet_buffer);
+
+        self.send_raw_buffer_with_config(buffer, config);
         Ok(())
     }
 
