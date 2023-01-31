@@ -75,13 +75,6 @@ impl Session {
 
         if let Some(encryptor) = self.encryptor.get() {
             packet_buffer = encryptor.encrypt(packet_buffer);
-
-            // tracing::info!("{:X?}", packet_buffer.as_ref());
-            // let decrypted = encryptor.decrypt(packet_buffer.clone()).unwrap();
-            // encryptor.counter.fetch_sub(1, Ordering::SeqCst);
-            // tracing::info!("{:X?}", decrypted.as_ref());
-
-            // bail!("Failed to encrypt");
         }
 
         buffer.put(packet_buffer);

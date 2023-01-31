@@ -7,7 +7,7 @@ use jsonwebtoken::jwk::KeyOperations::Encrypt;
 
 use crate::config::SERVER_CONFIG;
 use crate::crypto::Encryptor;
-use crate::network::packets::{ClientCacheStatus, ClientToServerHandshake, GamePacket, Login, NETWORK_VERSION, NetworkSettings, Packet, PlayStatus, RequestNetworkSettings, ServerToClientHandshake, Status};
+use crate::network::packets::{ClientCacheStatus, ClientToServerHandshake, GamePacket, Login, NETWORK_VERSION, NetworkSettings, Packet, PlayStatus, RequestNetworkSettings, ResourcePacksInfo, ServerToClientHandshake, Status};
 use crate::network::raknet::{Frame, FrameBatch};
 use crate::network::raknet::Reliability;
 use crate::network::session::send_queue::SendPriority;
@@ -33,6 +33,16 @@ impl Session {
             status: Status::LoginSuccess
         };
         self.send_packet(response)?;
+
+        // TODO: Implement resource packs
+        let pack_info = ResourcePacksInfo {
+            required: false,
+            scripting_enabled: false,
+            forcing_server_packs: false,
+            behavior_info: vec![],
+            resource_info: vec![],
+        };
+        self.send_packet(pack_info)?;
 
         Ok(())
     }

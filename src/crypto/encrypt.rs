@@ -5,7 +5,7 @@ use std::sync::atomic::{AtomicU16, AtomicU32, AtomicU64, Ordering};
 use anyhow::{bail, Context};
 use base64::Engine;
 use bytes::{BufMut, BytesMut};
-use cipher::{StreamCipher, StreamCipherSeekCore};
+use cipher::{StreamCipher, StreamCipherSeek, StreamCipherSeekCore};
 use ctr::cipher::KeyIvInit;
 use ecdsa::elliptic_curve::pkcs8::EncodePrivateKey;
 use ecdsa::SigningKey;
@@ -37,9 +37,10 @@ struct EncryptionTokenClaims<'a> {
 
 /// Used to encrypt and decrypt packets with AES.
 pub struct Encryptor {
-    cipher: Mutex<Aes256Ctr64LE>,
+    cipher_decrypt: Mutex<Aes256Ctr64LE>,
+    cipher_encrypt: Mutex<Aes256Ctr64LE>,
     /// Doesn't seem like there is a way to access the internal counter of the cipher.
-    pub counter: AtomicU64,
+    counter: AtomicU64,
     secret: [u8; 32],
 }
 
@@ -131,7 +132,8 @@ impl Encryptor {
         Ok((
             Self {
                 counter: AtomicU64::new(0),
-                cipher: Mutex::new(cipher),
+                cipher_decrypt: Mutex::new(cipher.clone()),
+                cipher_encrypt: Mutex::new(cipher),
                 secret,
             },
             jwt,
@@ -143,11 +145,11 @@ impl Encryptor {
             bail!("Encrypted buffer must be at least 8 bytes");
         }
 
-        let counter = self.get_counter();
-        self.cipher.lock().apply_keystream(buffer.as_mut());
+        let counter = self.get_receive_counter();
+        self.cipher_decrypt.lock().apply_keystream(buffer.as_mut());
 
         let checksum = &buffer.as_ref()[buffer.len() - 8..];
-        let computed_checksum = self.compute_checksum(buffer.as_ref(), counter);
+        let computed_checksum = self.compute_checksum(&buffer.as_ref()[..buffer.len() - 8], counter);
 
         if !checksum.eq(&computed_checksum) {
             bail!("Encryption checksums do not match");
@@ -160,26 +162,33 @@ impl Encryptor {
     }
 
     pub fn encrypt(&self, mut buffer: BytesMut) -> BytesMut {
-        let checksum = self.compute_checksum(&buffer, self.get_counter());
+        let counter = self.get_send_counter();
+        let checksum = self.compute_checksum(&buffer, counter);
 
         buffer.put(checksum.as_ref());
-
-        self.cipher
-            .lock()
-            .apply_keystream(buffer.as_mut());
+        self.cipher_encrypt.lock().apply_keystream(buffer.as_mut());
 
         buffer
     }
 
-    fn get_counter(&self) -> u64 {
-        self.cipher.lock().get_core().get_block_pos()
+    fn get_send_counter(&self) -> u64 {
+        let counter = self.cipher_encrypt.lock().get_core().get_block_pos();
+
+        counter
+    }
+
+    fn get_receive_counter(&self) -> u64 {
+        let counter = self.cipher_decrypt.lock().get_core().get_block_pos();
+
+        tracing::info!("{counter}");
+        counter
     }
 
     /// Computes the SHA-256 checksum of the packet.
     fn compute_checksum(&self, data: &[u8], counter: u64) -> [u8; 8] {
         let mut hasher = Sha256::new();
         hasher.update(counter.to_le_bytes());
-        hasher.update(&data[..data.len() - 8]);
+        hasher.update(data);
         hasher.update(self.secret);
 
         let mut checksum = [0u8; 8];
