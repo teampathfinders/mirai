@@ -1,6 +1,6 @@
 use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr, SocketAddrV4};
 
-use anyhow::bail;
+use anyhow::{anyhow, bail};
 use bytes::{Buf, BufMut};
 use lazy_static::lazy_static;
 
@@ -87,7 +87,7 @@ pub trait ReadExtensions: Buf {
         string
     }
 
-    /// Reads a variable size unsigned big endian 32-bit integer from the stream.
+    /// Reads a variable size unsigned 32-bit integer from the stream.
     fn get_var_u32(&mut self) -> anyhow::Result<u32> {
         let mut v = 0;
         let mut i = 0;
@@ -101,6 +101,48 @@ pub trait ReadExtensions: Buf {
         }
 
         bail!("Variable 32-bit integer did not end after 5 bytes")
+    }
+
+    /// Reads a variable size signed 32-bit integer from the stream.
+    fn get_var_i32(&mut self) -> anyhow::Result<i32> {
+        let vx = self.get_var_u32()?;
+        let mut v = (vx >> 1) as i32; // TODO: Maybe this will panic. Use a transmute instead?
+
+        if vx & 1 != 0 {
+            v = !v;
+        }
+
+        Ok(v)
+    }
+
+    /// Reads a variable size unsigned 64-bit integer from the stream.
+    fn get_var_u64(&mut self) -> anyhow::Result<u64> {
+        let mut v = 0;
+        let mut i = 0;
+        while i < 70 {
+            let b = self.get_u8();
+            v |= ((b & 0x7f) as u64) << i;
+
+            if b & 0x80 == 0 {
+                return Ok(v)
+            }
+
+            i += 7;
+        }
+
+        bail!("Variable 64-bit integer did not end after 10 bytes")
+    }
+
+    /// Reads a variable size signed 64-bit integer from the stream.
+    fn get_var_i64(&mut self) -> anyhow::Result<i64> {
+        let vx = self.get_var_u64()?;
+        let mut v = (vx >> 1) as i64; // TODO: Maybe this will panic. Use a transmute instead?
+
+        if vx & 1 != 0 {
+            v = !v;
+        }
+
+        Ok(v)
     }
 
     /// Reads a 24-bit unsigned little-endian integer from the buffer.
@@ -161,13 +203,42 @@ pub trait WriteExtensions: BufMut + Sized {
         self.put(value.as_bytes());
     }
 
-    /// Writes a variable size unsigned big endian 32-bit integer to the stream.
+    /// Writes a variable size unsigned 32-bit integer to the stream.
     fn put_var_u32(&mut self, mut value: u32) {
         while value >= 0x80 {
-            self.put_u8(((value) as u8) | 0x80);
+            self.put_u8((value as u8) | 0x80);
             value >>= 7;
         }
         self.put_u8(value as u8);
+    }
+
+    /// Writes a variable size signed 32-bit integer to the stream.
+    fn put_var_i32(&mut self, mut value: i32) {
+        let mut ux = unsafe { std::mem::transmute::<i32, u32>(value) } << 1;
+        if value < 0 {
+            ux = !ux;
+        }
+
+        self.put_var_u32(ux);
+    }
+
+    /// Writes a variable size unsigned 64-bit integer to the stream.
+    fn put_var_u64(&mut self, mut value: u64) {
+        while value >= 0x80 {
+            self.put_u8((value as u8) | 0x80);
+            value >>= 7;
+        }
+        self.put_u8(value as u8);
+    }
+
+    /// Writes a variable size signed 64-bit integer to the stream.
+    fn put_var_i64(&mut self, mut value: i64) {
+        let mut ux = unsafe { std::mem::transmute::<i64, u64>(value) } << 1;
+        if value < 0 {
+            ux = !ux;
+        }
+
+        self.put_var_u64(ux);
     }
 
     /// Writes a 24-bit unsigned little-endian integer to the buffer.

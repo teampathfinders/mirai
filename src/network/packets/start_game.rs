@@ -1,3 +1,6 @@
+use bytes::BytesMut;
+use crate::network::Encodable;
+use crate::network::packets::GamePacket;
 use crate::util::{Vector2f, Vector3f};
 
 #[derive(Debug)]
@@ -65,6 +68,16 @@ pub struct StartGame {
     pub inventories_server_authoritative: bool,
 }
 
-impl StartGame {
-    pub const ID: u8 = 0x0B;
+impl GamePacket for StartGame {
+    const ID: u32 = 0x0B;
+}
+
+impl Encodable for StartGame {
+    fn encode(&self) -> anyhow::Result<BytesMut> {
+        let mut buffer = BytesMut::new();
+
+        todo!();
+
+        Ok(buffer)
+    }
 }

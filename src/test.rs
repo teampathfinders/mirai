@@ -56,6 +56,53 @@ fn read_write_var_u32() {
 }
 
 #[test]
+fn read_write_var_i32() {
+    let mut buffer = BytesMut::new();
+    buffer.put_var_i32(45);
+    buffer.put_var_i32(-2769);
+    buffer.put_var_i32(105356);
+    buffer.put_var_i32(-3597459);
+
+    let mut buffer = buffer.freeze();
+    assert_eq!(buffer.get_var_i32().unwrap(), 45);
+    assert_eq!(buffer.get_var_i32().unwrap(), -2769);
+    assert_eq!(buffer.get_var_i32().unwrap(), 105356);
+    assert_eq!(buffer.get_var_i32().unwrap(), -3597459);
+}
+
+#[test]
+fn read_write_var_u64() {
+    let mut buffer = BytesMut::new();
+    buffer.put_var_u64(45);
+    buffer.put_var_u64(2769);
+    buffer.put_var_u64(105356);
+    buffer.put_var_u64(359745976);
+    buffer.put_var_u64(35974597639766);
+
+    let mut buffer = buffer.freeze();
+    assert_eq!(buffer.get_var_u64().unwrap(), 45);
+    assert_eq!(buffer.get_var_u64().unwrap(), 2769);
+    assert_eq!(buffer.get_var_u64().unwrap(), 105356);
+    assert_eq!(buffer.get_var_u64().unwrap(), 359745976);
+    assert_eq!(buffer.get_var_u64().unwrap(), 35974597639766);
+}
+
+#[test]
+fn read_write_var_i64() {
+    let mut buffer = BytesMut::new();
+    buffer.put_var_i32(45);
+    buffer.put_var_i32(-2769);
+    buffer.put_var_i32(105356);
+    buffer.put_var_i32(-3597459);
+
+    let mut buffer = buffer.freeze();
+    assert_eq!(buffer.get_var_i32().unwrap(), 45);
+    assert_eq!(buffer.get_var_i32().unwrap(), -2769);
+    assert_eq!(buffer.get_var_i32().unwrap(), 105356);
+    assert_eq!(buffer.get_var_i32().unwrap(), -3597459);
+}
+
+#[test]
 fn read_write_u24_le() {
     let mut buffer = BytesMut::new();
     buffer.put_u24_le(125); // Test first byte only
