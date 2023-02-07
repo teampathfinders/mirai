@@ -141,7 +141,8 @@ impl Session {
                 Ok(t) => t,
                 Err(e) => {
                     // TODO
-                    todo!("Disconnect client because of invalid packet");
+                    bail!(e);
+                    // todo!("Disconnect client because of invalid packet");
                 }
             }
         }

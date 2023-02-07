@@ -23,7 +23,7 @@ use sha2::{Digest, Sha256};
 use spki::{DecodePublicKey, EncodePublicKey};
 use spki::der::SecretDocument;
 
-type Aes256Ctr64LE = ctr::Ctr64LE<aes::Aes256>;
+type Aes256CtrBE = ctr::Ctr64BE<aes::Aes256>;
 
 /// Use the default Base64 format with no padding.
 const BASE64_ENGINE: base64::engine::GeneralPurpose =
@@ -37,10 +37,11 @@ struct EncryptionTokenClaims<'a> {
 
 /// Used to encrypt and decrypt packets with AES.
 pub struct Encryptor {
-    cipher_decrypt: Mutex<Aes256Ctr64LE>,
-    cipher_encrypt: Mutex<Aes256Ctr64LE>,
+    cipher_decrypt: Mutex<Aes256CtrBE>,
+    cipher_encrypt: Mutex<Aes256CtrBE>,
     /// Doesn't seem like there is a way to access the internal counter of the cipher.
-    counter: AtomicU64,
+    send_counter: AtomicU64,
+    receive_counter: AtomicU64,
     secret: [u8; 32],
 }
 
@@ -128,10 +129,11 @@ impl Encryptor {
         iv[..12].copy_from_slice(&secret[..12]);
         iv[12..].copy_from_slice(&[0x00, 0x00, 0x00, 0x02]);
 
-        let cipher = Aes256Ctr64LE::new(&secret.into(), &iv.into());
+        let cipher = Aes256CtrBE::new(&secret.into(), &iv.into());
         Ok((
             Self {
-                counter: AtomicU64::new(0),
+                send_counter: AtomicU64::new(0),
+                receive_counter: AtomicU64::new(0),
                 cipher_decrypt: Mutex::new(cipher.clone()),
                 cipher_encrypt: Mutex::new(cipher),
                 secret,
@@ -141,12 +143,12 @@ impl Encryptor {
     }
 
     pub fn decrypt(&self, mut buffer: BytesMut) -> anyhow::Result<BytesMut> {
-        if buffer.len() < 8 {
-            bail!("Encrypted buffer must be at least 8 bytes");
+        if buffer.len() < 9 {
+            bail!("Encrypted buffer must be at least 9 bytes");
         }
 
-        let counter = self.get_receive_counter();
         self.cipher_decrypt.lock().apply_keystream(buffer.as_mut());
+        let counter = self.receive_counter.fetch_add(1, Ordering::SeqCst);
 
         let checksum = &buffer.as_ref()[buffer.len() - 8..];
         let computed_checksum = self.compute_checksum(&buffer.as_ref()[..buffer.len() - 8], counter);
@@ -162,7 +164,7 @@ impl Encryptor {
     }
 
     pub fn encrypt(&self, mut buffer: BytesMut) -> BytesMut {
-        let counter = self.get_send_counter();
+        let counter = self.send_counter.fetch_add(1, Ordering::SeqCst);
         let checksum = self.compute_checksum(&buffer, counter);
 
         buffer.put(checksum.as_ref());
@@ -180,8 +182,11 @@ impl Encryptor {
     fn get_receive_counter(&self) -> u64 {
         let counter = self.cipher_decrypt.lock().get_core().get_block_pos();
 
-        tracing::info!("{counter}");
         counter
+    }
+
+    fn get_counter(&self) -> u64 {
+        self.send_counter.load(Ordering::SeqCst)
     }
 
     /// Computes the SHA-256 checksum of the packet.
