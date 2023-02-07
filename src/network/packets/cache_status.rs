@@ -8,7 +8,7 @@ use crate::util::ReadExtensions;
 #[derive(Debug)]
 pub struct ClientCacheStatus {
     /// Whether the client supports the client-side blob cache.
-    pub support: bool,
+    pub supports_cache: bool,
 }
 
 impl GamePacket for ClientCacheStatus {
@@ -19,6 +19,6 @@ impl Decodable for ClientCacheStatus {
     fn decode(mut buffer: BytesMut) -> anyhow::Result<Self> {
         let support = buffer.get_bool();
 
-        Ok(Self { support })
+        Ok(Self { supports_cache: support })
     }
 }

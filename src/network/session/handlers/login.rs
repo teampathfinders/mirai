@@ -7,7 +7,7 @@ use jsonwebtoken::jwk::KeyOperations::Encrypt;
 
 use crate::config::SERVER_CONFIG;
 use crate::crypto::Encryptor;
-use crate::network::packets::{ClientCacheStatus, ClientToServerHandshake, GamePacket, Login, NETWORK_VERSION, NetworkSettings, Packet, PlayStatus, RequestNetworkSettings, ResourcePacksInfo, ServerToClientHandshake, Status};
+use crate::network::packets::{ClientCacheStatus, ClientToServerHandshake, GamePacket, Login, NETWORK_VERSION, NetworkSettings, Packet, PlayStatus, RequestNetworkSettings, ResourcePackClientResponse, ResourcePacksInfo, ServerToClientHandshake, Status};
 use crate::network::raknet::{Frame, FrameBatch};
 use crate::network::raknet::Reliability;
 use crate::network::session::send_queue::SendPriority;
@@ -16,11 +16,16 @@ use crate::network::traits::{Decodable, Encodable};
 
 impl Session {
     /// Handles a [`ClientCacheStatus`] packet.
-    pub fn handle_client_cache_status(&self, mut task: BytesMut) -> anyhow::Result<()> {
-        let request = ClientCacheStatus::decode(task)?;
-        tracing::debug!("{request:?} {self:?}");
-
+    pub fn handle_client_cache_status(&self, mut packet: BytesMut) -> anyhow::Result<()> {
+        let request = ClientCacheStatus::decode(packet)?;
         // Unused
+
+        Ok(())
+    }
+
+    pub fn handle_resource_pack_client_response(&self, mut packet: BytesMut) -> anyhow::Result<()> {
+        let request = ResourcePackClientResponse::decode(packet)?;
+        tracing::info!("{request:?}");
 
         Ok(())
     }
@@ -48,8 +53,8 @@ impl Session {
     }
 
     /// Handles a [`Login`] packet.
-    pub async fn handle_login(&self, mut task: BytesMut) -> anyhow::Result<()> {
-        let request = Login::decode(task)?;
+    pub async fn handle_login(&self, mut packet: BytesMut) -> anyhow::Result<()> {
+        let request = Login::decode(packet)?;
         tracing::info!("{} has joined the server", request.identity.display_name);
 
         let (encryptor, jwt) = Encryptor::new(&request.identity.public_key)?;
@@ -71,8 +76,8 @@ impl Session {
     }
 
     /// Handles a [`RequestNetworkSettings`] packet.
-    pub fn handle_request_network_settings(&self, mut task: BytesMut) -> anyhow::Result<()> {
-        let request = RequestNetworkSettings::decode(task)?;
+    pub fn handle_request_network_settings(&self, mut packet: BytesMut) -> anyhow::Result<()> {
+        let request = RequestNetworkSettings::decode(packet)?;
         if request.protocol_version != NETWORK_VERSION {
             if request.protocol_version > NETWORK_VERSION {
                 let response = PlayStatus {
