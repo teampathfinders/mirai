@@ -37,4 +37,4 @@ pub const GAME_PACKET_ID: u8 = 0xfe;
 /// Semver version that this server supports.
 pub const CLIENT_VERSION_STRING: &str = "1.19.60";
 /// Protocol version that this server supports.
-pub const NETWORK_VERSION: u32 = 560;
+pub const NETWORK_VERSION: u32 = 567;
