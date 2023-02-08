@@ -198,10 +198,6 @@ impl Encryptor {
         counter
     }
 
-    fn get_counter(&self) -> u64 {
-        self.send_counter.load(Ordering::SeqCst)
-    }
-
     /// Computes the SHA-256 checksum of the packet.
     fn compute_checksum(&self, data: &[u8], counter: u64) -> [u8; 8] {
         let mut hasher = Sha256::new();

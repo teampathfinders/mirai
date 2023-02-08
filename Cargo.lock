@@ -795,10 +795,10 @@ dependencies = [
 [[package]]
 name = "nbt"
 version = "0.1.0"
-source = "git+https://github.com/teampathfinders/nbt#8f4e0a32edc341bf348792a95470f36013fc2288"
+source = "git+https://github.com/teampathfinders/nbt#9660270bf4c19684108985c547ab517a594d4710"
 dependencies = [
- "bytes",
- "thiserror",
+    "bytes",
+    "thiserror",
 ]
 
 [[package]]
@@ -1335,11 +1335,12 @@ dependencies = [
 
 [[package]]
 name = "thread_local"
-version = "1.1.4"
+version = "1.1.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5516c27b78311c50bf42c071425c560ac799b11c30b31f87e3081965fe5e0180"
+checksum = "d805f96b7e61fce8728f142e213a3eb2f6b10538efff2d637c923efa4bfca048"
 dependencies = [
- "once_cell",
+    "cfg-if",
+    "once_cell",
 ]
 
 [[package]]

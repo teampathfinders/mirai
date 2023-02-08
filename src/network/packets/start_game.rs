@@ -137,19 +137,21 @@ impl PlayerMovementSettings {
 }
 
 #[derive(Debug, Clone)]
-pub enum BlockProperty {
-    // TODO
-}
-
-#[derive(Debug, Clone)]
 pub struct BlockEntry {
+    /// Name of the block.
     pub name: String,
-    pub properties: HashMap<String, BlockProperty>,
+    /// NBT compound containing properties.
+    pub properties: nbt::Value,
 }
 
 impl BlockEntry {
     pub fn encode(&self, buffer: &mut BytesMut) {
         buffer.put_string(&self.name);
+
+        nbt::RefTag {
+            name: "",
+            value: &self.properties,
+        }.encode_with_le(buffer);
     }
 }
 
@@ -236,6 +238,7 @@ pub struct StartGame {
     pub multiplayer_correlation_id: String,
     pub server_authoritative_inventory: bool,
     pub game_version: String,
+    pub property_data: nbt::Value,
     pub server_block_state_checksum: u64,
     pub world_template_id: u128,
     pub client_side_generation: bool,
@@ -250,23 +253,51 @@ impl Encodable for StartGame {
         let mut buffer = BytesMut::new();
 
         buffer.put_var_u64(self.entity_id);
+        // buffer.put_var_i64(0);
+
         buffer.put_var_u64(self.runtime_id);
+
         self.gamemode.encode(&mut buffer);
+        // buffer.put_var_i32(0);
+
         self.position.encode(&mut buffer);
+        // buffer.put_f32(0.0);
+        // buffer.put_f32(0.0);
+        // buffer.put_f32(0.0);
+
         self.rotation.encode(&mut buffer);
+        // buffer.put_f32(0.0);
+        // buffer.put_f32(0.0);
+
         buffer.put_u64(self.world_seed);
+        // buffer.put_i64(0);
+
         buffer.put_u16(self.spawn_biome_type);
+        // buffer.put_i16(0);
+
         buffer.put_string(&self.custom_biome_name);
+        // buffer.put_string("plains");
+
         self.dimension.encode(&mut buffer);
+        // buffer.put_var_i32(0);
+
         self.world_gamemode.encode(&mut buffer);
+        // buffer.put_var_i32(0);
+
         self.difficulty.encode(&mut buffer);
+        // buffer.put_var_i32(0);
+
         self.world_spawn.encode(&mut buffer);
+        // buffer.put_var_i32(0);
+        // buffer.put_var_u32(0);
+        // buffer.put_var_i32(0);
+
         buffer.put_bool(self.achievements_disabled);
         buffer.put_bool(self.editor_world);
         buffer.put_var_u32(self.day_cycle_lock_time);
         buffer.put_var_u32(self.education_offer);
         buffer.put_bool(self.education_features_enabled);
-        buffer.put_string(&self.education_production_id);
+        buffer.put_string("");
         buffer.put_f32(self.rain_level);
         buffer.put_f32(self.lightning_level);
         buffer.put_bool(self.confirmed_platform_locked_content);
@@ -291,7 +322,7 @@ impl Encodable for StartGame {
         buffer.put_bool(self.bonus_chest_enabled);
         buffer.put_bool(self.starter_map_enabled);
         self.permission_level.encode(&mut buffer);
-        buffer.put_var_u32(self.server_chunk_tick_range);
+        buffer.put_u32(self.server_chunk_tick_range);
         buffer.put_bool(self.has_locked_behavior_pack);
         buffer.put_bool(self.has_locked_resource_pack);
         buffer.put_bool(self.is_from_locked_world_template);
@@ -302,9 +333,13 @@ impl Encodable for StartGame {
         buffer.put_bool(self.persona_disabled);
         buffer.put_bool(self.custom_skins_disabled);
         buffer.put_string(&self.base_game_version);
-        buffer.put_u32(self.limited_world_width);
-        buffer.put_u32(self.limited_world_height);
+        // buffer.put_u32(self.limited_world_width);
+        buffer.put_u32(16);
+        // buffer.put_u32(self.limited_world_height);
+        buffer.put_u32(16);
         buffer.put_bool(self.has_new_nether);
+        buffer.put_string("");
+        buffer.put_string("");
         buffer.put_bool(self.force_experimental_gameplay); // TODO
         self.chat_restriction_level.encode(&mut buffer);
         buffer.put_bool(self.disable_player_interactions);
@@ -318,7 +353,7 @@ impl Encodable for StartGame {
 
         buffer.put_var_u32(self.block_properties.len() as u32);
         for block in &self.block_properties {
-            todo!();
+            block.encode(&mut buffer);
         }
 
         buffer.put_var_u32(self.item_properties.len() as u32);
@@ -329,9 +364,15 @@ impl Encodable for StartGame {
         buffer.put_string(&self.multiplayer_correlation_id);
         buffer.put_bool(self.server_authoritative_inventory);
         buffer.put_string(&self.game_version);
-        // TODO: PropertyData
+
+        nbt::RefTag {
+            name: "",
+            value: &self.property_data,
+        }.encode_with_le(&mut buffer);
+
         buffer.put_u64(self.server_block_state_checksum);
         buffer.put_u128(self.world_template_id);
+        buffer.put_bool(self.client_side_generation);
 
         Ok(buffer)
     }

@@ -1,5 +1,6 @@
 pub use cache_status::*;
 pub use client_to_server_handshake::*;
+pub use creative_content::*;
 pub use disconnect::*;
 pub use login::*;
 pub use network_settings::*;
@@ -31,6 +32,7 @@ mod resource_packs_info;
 mod server_to_client_handshake;
 mod start_game;
 mod traits;
+mod creative_content;
 
 /// ID of Minecraft game packets.
 pub const GAME_PACKET_ID: u8 = 0xfe;
