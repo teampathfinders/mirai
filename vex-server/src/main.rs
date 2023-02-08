@@ -9,15 +9,13 @@ use std::sync::atomic::{AtomicU16, Ordering};
 
 use tokio::runtime;
 
-use vex_common::error::VResult;
+use vex_common::VResult;
 
 use crate::instance::ServerInstance;
 
-mod config;
 mod crypto;
 mod instance;
 mod network;
-mod util;
 
 #[cfg(test)]
 mod test;

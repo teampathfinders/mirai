@@ -1636,11 +1636,13 @@ checksum = "49874b5167b65d7193b8aba1567f5c7d93d001cafc34600cee003eda787e483f"
 name = "vex-common"
 version = "0.1.0"
 dependencies = [
- "base64 0.21.0",
- "bytes",
- "jsonwebtoken",
- "serde_json",
- "tokio",
+    "base64 0.21.0",
+    "bytes",
+    "jsonwebtoken",
+    "lazy_static",
+    "parking_lot",
+    "serde_json",
+    "tokio",
 ]
 
 [[package]]
@@ -1655,12 +1657,15 @@ dependencies = [
 name = "vex-raknet"
 version = "0.1.0"
 dependencies = [
- "bytes",
- "dashmap",
- "parking_lot",
- "rand",
- "tokio",
- "vex-common",
+    "async-recursion",
+    "bytes",
+    "dashmap",
+    "parking_lot",
+    "rand",
+    "tokio",
+    "tokio-util",
+    "tracing",
+    "vex-common",
 ]
 
 [[package]]
@@ -1668,17 +1673,14 @@ name = "vex-server"
 version = "0.1.0"
 dependencies = [
  "aes",
- "async-recursion",
  "base64 0.21.0",
  "bytes",
  "cipher",
  "console-subscriber",
  "ctr",
- "dashmap",
  "ecdsa",
  "flate2",
  "jsonwebtoken",
- "lazy_static",
  "p384",
  "parking_lot",
  "rand",

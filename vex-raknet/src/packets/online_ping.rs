@@ -1,9 +1,6 @@
 use bytes::{Buf, BytesMut};
 
-use vex_common::error::VResult;
-use vex_common::traits::Decodable;
-
-use crate::vassert;
+use vex_common::{Decodable, vassert, VResult};
 
 /// Sent by the client or server to ping the other side.
 /// An [`OnlinePong`](super::OnlinePong) packet should be sent in response.

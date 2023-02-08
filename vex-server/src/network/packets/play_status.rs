@@ -1,7 +1,6 @@
 use bytes::{BufMut, BytesMut};
 
-use vex_common::error::VResult;
-use vex_common::traits::Encodable;
+use vex_common::{Encodable, VResult};
 
 use crate::network::packets::GamePacket;
 use crate::util::WriteExtensions;

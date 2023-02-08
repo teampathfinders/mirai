@@ -10,7 +10,6 @@ use ecdsa::elliptic_curve::pkcs8::EncodePrivateKey;
 use ecdsa::SigningKey;
 use flate2::read::DeflateDecoder;
 use jsonwebtoken::{Algorithm, DecodingKey, EncodingKey, Validation};
-use lazy_static::lazy_static;
 use p384::{NistP384, SecretKey};
 use p384::ecdh::{diffie_hellman, SharedSecret};
 use p384::PublicKey;
@@ -22,7 +21,8 @@ use sha2::{Digest, Sha256};
 use spki::{DecodePublicKey, EncodePublicKey};
 use spki::der::SecretDocument;
 
-use vex_common::error::VResult;
+use lazy_static::lazy_static;
+use vex_common::VResult;
 
 use crate::bail;
 

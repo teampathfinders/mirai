@@ -3,8 +3,7 @@ use bytes::{Buf, BytesMut};
 use jsonwebtoken::{Algorithm, DecodingKey, Validation};
 use spki::SubjectPublicKeyInfo;
 
-use vex_common::error::{VError, VResult};
-use vex_common::traits::Decodable;
+use vex_common::{bail, Decodable, ReadExtensions, VError, VResult};
 
 use crate::{bail, vassert};
 use crate::crypto::{IdentityData, parse_identity_data, parse_user_data, UserData};

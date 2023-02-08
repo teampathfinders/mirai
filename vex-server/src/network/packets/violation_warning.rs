@@ -1,6 +1,6 @@
 use bytes::BytesMut;
 
-use vex_common::error::{VError, VResult};
+use vex_common::{bail, Decodable, ReadExtensions, VError, VResult};
 
 use crate::bail;
 use crate::network::Decodable;

@@ -1,7 +1,6 @@
 use bytes::{BufMut, BytesMut};
 
-use vex_common::error::VResult;
-use vex_common::traits::Encodable;
+use vex_common::{Encodable, VResult};
 
 /// Sent by the server or client in response to an [`OnlinePing`](super::OnlinePing) packet.
 #[derive(Debug)]

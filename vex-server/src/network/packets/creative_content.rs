@@ -3,7 +3,8 @@ use std::collections::HashMap;
 use bytes::{BufMut, BytesMut};
 
 use nbt::Value;
-use vex_common::error::VResult;
+use vex_common::{Encodable, VResult, WriteExtensions};
+use vex_nbt::Value;
 
 use crate::network::Encodable;
 use crate::network::packets::GamePacket;

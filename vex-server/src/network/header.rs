@@ -1,6 +1,6 @@
 use bytes::{BufMut, BytesMut};
 
-use vex_common::error::VResult;
+use vex_common::{ReadExtensions, VResult, WriteExtensions};
 
 use crate::util::{ReadExtensions, WriteExtensions};
 

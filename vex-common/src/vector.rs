@@ -1,8 +1,6 @@
-use std::ops::Deref;
-
 use bytes::{BufMut, BytesMut};
 
-use crate::util::WriteExtensions;
+use crate::WriteExtensions;
 
 /// Type and size independent vector type
 #[derive(Debug, Clone)]

@@ -3,9 +3,7 @@ use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr, SocketAddrV4};
 use bytes::{Buf, BufMut};
 use lazy_static::lazy_static;
 
-use vex_common::error::VResult;
-
-use crate::{bail, error, vassert};
+use crate::{bail, error, vassert, VResult};
 
 /// Size of an IPv4 address in bytes.
 pub const IPV4_MEM_SIZE: usize = 1 + 4 + 2;

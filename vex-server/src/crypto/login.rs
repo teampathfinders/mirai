@@ -2,7 +2,7 @@ use base64::Engine;
 use bytes::{Buf, BytesMut};
 use jsonwebtoken::{Algorithm, DecodingKey, Validation};
 
-use vex_common::error::VResult;
+use vex_common::{bail, error, VResult};
 
 use crate::{bail, error};
 use crate::network::packets::DeviceOS;
