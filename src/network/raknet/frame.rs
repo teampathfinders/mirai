@@ -2,10 +2,11 @@ use std::io::Read;
 
 use bytes::{Buf, BufMut, BytesMut};
 
+use crate::error::VResult;
 use crate::network::raknet::Reliability;
 use crate::network::traits::{Decodable, Encodable};
 use crate::util::{ReadExtensions, WriteExtensions};
-use crate::vex_assert;
+use crate::vassert;
 
 /// Bit flag indicating that the packet is encapsulated in a frame.
 pub const CONNECTED_PEER_BIT_FLAG: u8 = 0x80;
@@ -65,8 +66,8 @@ impl FrameBatch {
 }
 
 impl Decodable for FrameBatch {
-    fn decode(mut buffer: BytesMut) -> anyhow::Result<Self> {
-        vex_assert!(buffer.get_u8() & 0x80 != 0);
+    fn decode(mut buffer: BytesMut) -> VResult<Self> {
+        vassert!(buffer.get_u8() & 0x80 != 0);
 
         let batch_number = buffer.get_u24_le();
         let mut frames = Vec::new();
@@ -84,7 +85,7 @@ impl Decodable for FrameBatch {
 }
 
 impl Encodable for FrameBatch {
-    fn encode(&self) -> anyhow::Result<BytesMut> {
+    fn encode(&self) -> VResult<BytesMut> {
         let mut buffer = BytesMut::new();
 
         buffer.put_u8(CONNECTED_PEER_BIT_FLAG);
@@ -136,7 +137,7 @@ impl Frame {
 
     /// Decodes the frame.
     #[allow(clippy::useless_let_if_seq)]
-    fn decode(buffer: &mut BytesMut) -> anyhow::Result<Self> {
+    fn decode(buffer: &mut BytesMut) -> VResult<Self> {
         let flags = buffer.get_u8();
 
         let reliability = Reliability::try_from(flags >> 5)?;

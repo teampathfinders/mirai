@@ -1,12 +1,12 @@
 use std::io::Write;
 use std::sync::atomic::Ordering;
 
-use anyhow::{bail, Context};
 use bytes::{Buf, BufMut, BytesMut};
 use flate2::Compression;
 use flate2::write::DeflateEncoder;
 
 use crate::config::SERVER_CONFIG;
+use crate::error::VResult;
 use crate::network::header::Header;
 use crate::network::packets::{CompressionAlgorithm, GAME_PACKET_ID, GamePacket, Packet};
 use crate::network::raknet::{Frame, FrameBatch};
@@ -30,7 +30,7 @@ const DEFAULT_CONFIG: PacketConfig = PacketConfig {
 impl Session {
     /// Sends a game packet with default settings
     /// (reliable ordered and medium priority)
-    pub fn send_packet<T: GamePacket + Encodable>(&self, packet: T) -> anyhow::Result<()> {
+    pub fn send_packet<T: GamePacket + Encodable>(&self, packet: T) -> VResult<()> {
         self.send_packet_with_config(packet, DEFAULT_CONFIG)
     }
 
@@ -39,7 +39,7 @@ impl Session {
         &self,
         packet: T,
         config: PacketConfig,
-    ) -> anyhow::Result<()> {
+    ) -> VResult<()> {
         let packet = Packet::new(packet).subclients(0, 0);
 
         let mut buffer = BytesMut::new();
@@ -63,11 +63,11 @@ impl Session {
                             Vec::new(), Compression::fast(),
                         );
 
-                        writer.write_all(packet_buffer.as_ref())
-                            .context("Failed to compress packet using Deflate")?;
+                        writer.write_all(packet_buffer.as_ref())?;
+                        // .context("Failed to compress packet using Deflate")?;
 
-                        packet_buffer = BytesMut::from(writer.finish()
-                            .context("Failed to flush Deflate encoder")?.as_slice());
+                        packet_buffer = BytesMut::from(writer.finish()?.as_slice());
+                        // .context("Failed to flush Deflate encoder")?.as_slice());
                     }
                 }
             }
@@ -96,7 +96,7 @@ impl Session {
     }
 
     /// Flushes the send queue.
-    pub async fn flush(&self) -> anyhow::Result<()> {
+    pub async fn flush(&self) -> VResult<()> {
         let tick = self.current_tick.load(Ordering::SeqCst);
 
         if let Some(frames) = self.send_queue.flush(SendPriority::High) {
@@ -123,7 +123,7 @@ impl Session {
         Ok(())
     }
 
-    pub async fn flush_acknowledgements(&self) -> anyhow::Result<()> {
+    pub async fn flush_acknowledgements(&self) -> VResult<()> {
         let mut confirmed = {
             let mut lock = self.confirmed_packets.lock();
             if lock.is_empty() {
@@ -159,7 +159,7 @@ impl Session {
         Ok(())
     }
 
-    async fn send_raw_frames(&self, frames: Vec<Frame>) -> anyhow::Result<()> {
+    async fn send_raw_frames(&self, frames: Vec<Frame>) -> VResult<()> {
         let max_batch_size = self.mtu as usize - std::mem::size_of::<FrameBatch>();
         let mut batch =
             FrameBatch::default().batch_number(self.batch_number.fetch_add(1, Ordering::SeqCst));

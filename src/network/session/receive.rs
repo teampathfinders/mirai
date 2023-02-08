@@ -2,11 +2,12 @@ use std::io::Read;
 use std::sync::atomic::Ordering;
 use std::time::Instant;
 
-use anyhow::{bail, Context};
 use async_recursion::async_recursion;
 use bytes::{Buf, BytesMut};
 
+use crate::{bail, error, vassert};
 use crate::config::SERVER_CONFIG;
+use crate::error::{VError, VResult};
 use crate::network::header::Header;
 use crate::network::packets::{ClientCacheStatus, ClientToServerHandshake, CompressionAlgorithm, GAME_PACKET_ID, GamePacket, Login, RequestNetworkSettings, ResourcePackClientResponse};
 use crate::network::packets::OnlinePing;
@@ -20,14 +21,13 @@ use crate::network::raknet::packets::NewIncomingConnection;
 use crate::network::session::session::Session;
 use crate::network::traits::{Decodable, Encodable};
 use crate::util::ReadExtensions;
-use crate::vex_assert;
 
 impl Session {
     /// Processes the raw packet coming directly from the network.
     ///
     /// If a packet is an ACK or NACK type, it will be responded to accordingly (using [`Session::handle_ack`] and [`Session::handle_nack`]).
     /// Frame batches are processed by [`Session::handle_frame_batch`].
-    pub async fn handle_raw_packet(&self) -> anyhow::Result<()> {
+    pub async fn handle_raw_packet(&self) -> VResult<()> {
         let packet = tokio::select! {
             _ = self.active.cancelled() => {
                 return Ok(())
@@ -37,7 +37,7 @@ impl Session {
         *self.last_update.write() = Instant::now();
 
         if packet.is_empty() {
-            bail!("Packet must not be empty");
+            bail!(BadPacket, "Packet is empty");
         }
 
         let packet_id = *packet.first().unwrap();
@@ -55,7 +55,7 @@ impl Session {
     /// * Inserting packets into the compound collector
     /// * Discarding old sequenced frames
     /// * Acknowledging reliable packets
-    async fn handle_frame_batch(&self, task: BytesMut) -> anyhow::Result<()> {
+    async fn handle_frame_batch(&self, task: BytesMut) -> VResult<()> {
         let batch = FrameBatch::decode(task)?;
         self.client_batch_number
             .fetch_max(batch.get_batch_number(), Ordering::SeqCst);
@@ -68,7 +68,7 @@ impl Session {
     }
 
     #[async_recursion]
-    async fn handle_frame(&self, frame: &Frame, batch_number: u32) -> anyhow::Result<()> {
+    async fn handle_frame(&self, frame: &Frame, batch_number: u32) -> VResult<()> {
         if frame.reliability.is_sequenced()
             && frame.sequence_index < self.client_batch_number.load(Ordering::SeqCst)
         {
@@ -110,7 +110,7 @@ impl Session {
     }
 
     /// Processes an unencapsulated game packet.
-    async fn handle_unframed_packet(&self, mut task: BytesMut) -> anyhow::Result<()> {
+    async fn handle_unframed_packet(&self, mut task: BytesMut) -> VResult<()> {
         let bytes = task.as_ref();
 
         let packet_id = *task.first().expect("Game packet buffer was empty");
@@ -120,14 +120,14 @@ impl Session {
             ConnectionRequest::ID => self.handle_connection_request(task)?,
             NewIncomingConnection::ID => self.handle_new_incoming_connection(task)?,
             OnlinePing::ID => self.handle_online_ping(task)?,
-            id => bail!("Invalid Raknet packet ID: {}", id),
+            id => bail!(BadPacket, "Invalid Raknet packet ID: {}", id),
         }
 
         Ok(())
     }
 
-    async fn handle_game_packet(&self, mut packet: BytesMut) -> anyhow::Result<()> {
-        vex_assert!(packet.get_u8() == 0xfe);
+    async fn handle_game_packet(&self, mut packet: BytesMut) -> VResult<()> {
+        vassert!(packet.get_u8() == 0xfe);
 
         // Decrypt packet
         if self.encryptor.initialized() {
@@ -140,8 +140,13 @@ impl Session {
             packet = match encryptor.decrypt(packet) {
                 Ok(t) => t,
                 Err(e) => {
+                    return Err(e);
+
+                    // if matches!(e, VError::BadPacket(_)) {
+                    //     todo!();
+                    // }
+
                     // TODO
-                    bail!(e);
                     // todo!("Disconnect client because of invalid packet");
                 }
             }
@@ -163,8 +168,8 @@ impl Session {
                     let mut reader = flate2::read::DeflateDecoder::new(packet.as_ref());
                     let mut decompressed = Vec::new();
                     reader
-                        .read_to_end(&mut decompressed)
-                        .context("Failed to decompress packet using Deflate")?;
+                        .read_to_end(&mut decompressed)?;
+                    // .context("Failed to decompress packet using Deflate")?;
 
                     BytesMut::from(decompressed.as_slice())
                 }
@@ -176,7 +181,7 @@ impl Session {
         }
     }
 
-    async fn handle_decompressed_game_packet(&self, mut packet: BytesMut) -> anyhow::Result<()> {
+    async fn handle_decompressed_game_packet(&self, mut packet: BytesMut) -> VResult<()> {
         let length = packet.get_var_u32()?;
         let header = Header::decode(&mut packet)?;
 
@@ -186,7 +191,7 @@ impl Session {
             ClientToServerHandshake::ID => self.handle_client_to_server_handshake(packet),
             ClientCacheStatus::ID => self.handle_client_cache_status(packet),
             ResourcePackClientResponse::ID => self.handle_resource_pack_client_response(packet),
-            id => bail!("Invalid game packet: {id:#04x}"),
+            id => bail!(BadPacket, "Invalid game packet: {id:#04x}"),
         }
     }
 }

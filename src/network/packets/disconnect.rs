@@ -1,5 +1,6 @@
 use bytes::{BufMut, BytesMut};
 
+use crate::error::VResult;
 use crate::network::packets::GamePacket;
 use crate::network::traits::Encodable;
 use crate::util::WriteExtensions;
@@ -18,7 +19,7 @@ impl GamePacket for Disconnect {
 }
 
 impl Encodable for Disconnect {
-    fn encode(&self) -> anyhow::Result<BytesMut> {
+    fn encode(&self) -> VResult<BytesMut> {
         let mut buffer = BytesMut::with_capacity(1 + 4 + self.kick_message.len());
 
         buffer.put_bool(self.hide_disconnect_screen);

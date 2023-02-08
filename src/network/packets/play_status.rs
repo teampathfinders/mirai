@@ -1,5 +1,6 @@
 use bytes::{BufMut, BytesMut};
 
+use crate::error::VResult;
 use crate::network::packets::GamePacket;
 use crate::network::traits::Encodable;
 use crate::util::WriteExtensions;
@@ -39,7 +40,7 @@ impl GamePacket for PlayStatus {
 }
 
 impl Encodable for PlayStatus {
-    fn encode(&self) -> anyhow::Result<BytesMut> {
+    fn encode(&self) -> VResult<BytesMut> {
         let mut buffer = BytesMut::with_capacity(4);
 
         buffer.put_u32(self.status as u32);

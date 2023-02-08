@@ -1,10 +1,10 @@
 use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr, SocketAddrV4};
 
-use anyhow::{anyhow, bail};
 use bytes::{Buf, BufMut};
 use lazy_static::lazy_static;
 
-use crate::{error, vex_assert};
+use crate::{bail, error, vassert};
+use crate::error::VResult;
 
 /// Size of an IPv4 address in bytes.
 pub const IPV4_MEM_SIZE: usize = 1 + 4 + 2;
@@ -30,7 +30,7 @@ pub trait ReadExtensions: Buf {
     /// * Unsigned short for port.
     ///
     /// This method fails if the IP type is a value other than 4 or 6.
-    fn get_addr(&mut self) -> anyhow::Result<SocketAddr> {
+    fn get_addr(&mut self) -> VResult<SocketAddr> {
         let ip_type = self.get_u8();
         Ok(match ip_type {
             4 => {
@@ -49,7 +49,7 @@ pub trait ReadExtensions: Buf {
                 SocketAddr::new(addr, port)
             }
             _ => {
-                bail!("Invalid IP type {ip_type}, expected either 4 or 6");
+                bail!(BadPacket, "Invalid IP type {ip_type}, expected either 4 or 6");
             }
         })
     }
@@ -65,7 +65,7 @@ pub trait ReadExtensions: Buf {
     /// It can fail if the varint could not be read correctly.
     ///
     /// See [`get_raknet_string`](ReadExtensions::get_raknet_string) for an alternative for Raknet.
-    fn get_string(&mut self) -> anyhow::Result<String> {
+    fn get_string(&mut self) -> VResult<String> {
         let length = self.get_var_u32()? as usize;
         let buffer = &self.chunk()[..length];
         let string = String::from_utf8_lossy(buffer).to_string();
@@ -88,7 +88,7 @@ pub trait ReadExtensions: Buf {
     }
 
     /// Reads a variable size unsigned 32-bit integer from the stream.
-    fn get_var_u32(&mut self) -> anyhow::Result<u32> {
+    fn get_var_u32(&mut self) -> VResult<u32> {
         let mut v = 0;
         let mut i = 0;
         while i < 35 {
@@ -100,11 +100,11 @@ pub trait ReadExtensions: Buf {
             i += 7;
         }
 
-        bail!("Variable 32-bit integer did not end after 5 bytes")
+        bail!(BadPacket, "Variable 32-bit integer did not end after 5 bytes")
     }
 
     /// Reads a variable size signed 32-bit integer from the stream.
-    fn get_var_i32(&mut self) -> anyhow::Result<i32> {
+    fn get_var_i32(&mut self) -> VResult<i32> {
         let vx = self.get_var_u32()?;
         let mut v = (vx >> 1) as i32; // TODO: Maybe this will panic. Use a transmute instead?
 
@@ -116,7 +116,7 @@ pub trait ReadExtensions: Buf {
     }
 
     /// Reads a variable size unsigned 64-bit integer from the stream.
-    fn get_var_u64(&mut self) -> anyhow::Result<u64> {
+    fn get_var_u64(&mut self) -> VResult<u64> {
         let mut v = 0;
         let mut i = 0;
         while i < 70 {
@@ -130,11 +130,11 @@ pub trait ReadExtensions: Buf {
             i += 7;
         }
 
-        bail!("Variable 64-bit integer did not end after 10 bytes")
+        bail!(BadPacket, "Variable 64-bit integer did not end after 10 bytes")
     }
 
     /// Reads a variable size signed 64-bit integer from the stream.
-    fn get_var_i64(&mut self) -> anyhow::Result<i64> {
+    fn get_var_i64(&mut self) -> VResult<i64> {
         let vx = self.get_var_u64()?;
         let mut v = (vx >> 1) as i64; // TODO: Maybe this will panic. Use a transmute instead?
 

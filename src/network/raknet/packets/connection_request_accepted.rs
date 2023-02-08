@@ -3,6 +3,7 @@ use std::time::{SystemTime, UNIX_EPOCH};
 
 use bytes::{BufMut, BytesMut};
 
+use crate::error::VResult;
 use crate::instance::IPV4_LOCAL_ADDR;
 use crate::network::traits::Encodable;
 use crate::util::{EMPTY_IPV4_ADDRESS, IPV4_MEM_SIZE, IPV6_MEM_SIZE, WriteExtensions};
@@ -22,7 +23,7 @@ impl ConnectionRequestAccepted {
 }
 
 impl Encodable for ConnectionRequestAccepted {
-    fn encode(&self) -> anyhow::Result<BytesMut> {
+    fn encode(&self) -> VResult<BytesMut> {
         let mut buffer =
             BytesMut::with_capacity(1 + IPV6_MEM_SIZE + 2 + 10 * IPV4_MEM_SIZE + 8 + 8);
 

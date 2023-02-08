@@ -2,7 +2,6 @@ use std::net::{Ipv4Addr, Ipv6Addr, SocketAddrV4};
 use std::sync::Arc;
 use std::time::{Duration, SystemTime};
 
-use anyhow::anyhow;
 use bytes::BytesMut;
 use parking_lot::RwLock;
 use rand::Rng;
@@ -11,6 +10,8 @@ use tokio::signal;
 use tokio_util::sync::CancellationToken;
 
 use crate::config::SERVER_CONFIG;
+use crate::error;
+use crate::error::VResult;
 use crate::network::{Decodable, Encodable};
 use crate::network::packets::{CLIENT_VERSION_STRING, NETWORK_VERSION};
 use crate::network::raknet::packets::IncompatibleProtocol;
@@ -36,6 +37,7 @@ const RECV_BUF_SIZE: usize = 4096;
 const METADATA_REFRESH_INTERVAL: Duration = Duration::from_secs(2);
 
 /// Global instance that manages all data and services of the server.
+#[derive(Debug)]
 pub struct ServerInstance {
     /// Randomised GUID, required by Minecraft
     guid: i64,
@@ -58,7 +60,7 @@ pub struct ServerInstance {
 
 impl ServerInstance {
     /// Creates a new server
-    pub async fn new() -> anyhow::Result<Arc<Self>> {
+    pub async fn new() -> VResult<Arc<Self>> {
         let (ipv4_port, _ipv6_port) = {
             let lock = SERVER_CONFIG.read();
             (lock.ipv4_port, lock.ipv6_port)
@@ -88,7 +90,7 @@ impl ServerInstance {
     }
 
     /// Run the server
-    pub async fn run(self: Arc<Self>) -> anyhow::Result<()> {
+    pub async fn run(self: Arc<Self>) -> VResult<()> {
         Self::register_shutdown_handler(self.global_token.clone());
 
         let receiver_task = {
@@ -119,10 +121,10 @@ impl ServerInstance {
     }
 
     /// Processes any packets that are sent before a session has been created.
-    async fn handle_offline_packet(self: Arc<Self>, packet: RawPacket) -> anyhow::Result<()> {
+    async fn handle_offline_packet(self: Arc<Self>, packet: RawPacket) -> VResult<()> {
         let id = packet
             .packet_id()
-            .ok_or_else(|| anyhow!("Packet is missing payload"))?;
+            .ok_or(error!(BadPacket, "Packet is missing payload"))?;
 
         match id {
             OfflinePing::ID => self.handle_unconnected_ping(packet).await?,
@@ -135,7 +137,7 @@ impl ServerInstance {
     }
 
     /// Responds to the [`OfflinePing`] packet with [`OfflinePong`].
-    async fn handle_unconnected_ping(self: Arc<Self>, packet: RawPacket) -> anyhow::Result<()> {
+    async fn handle_unconnected_ping(self: Arc<Self>, packet: RawPacket) -> VResult<()> {
         let ping = OfflinePing::decode(packet.buffer.clone())?;
         let pong = OfflinePong {
             time: ping.time,
@@ -151,10 +153,11 @@ impl ServerInstance {
     }
 
     /// Responds to the [`OpenConnectionRequest1`] packet with [`OpenConnectionReply1`].
+    #[tracing::instrument]
     async fn handle_open_connection_request1(
         self: Arc<Self>,
         packet: RawPacket,
-    ) -> anyhow::Result<()> {
+    ) -> VResult<()> {
         let request = OpenConnectionRequest1::decode(packet.buffer.clone())?;
         if request.protocol_version != RAKNET_VERSION {
             let reply = IncompatibleProtocol {
@@ -183,10 +186,11 @@ impl ServerInstance {
     /// Responds to the [`OpenConnectionRequest2`] packet with [`OpenConnectionReply2`].
     /// This is also when a session is created for the client.
     /// From this point, all packets are encoded in a [`Frame`](crate::network::raknet::Frame).
+    #[tracing::instrument]
     async fn handle_open_connection_request2(
         self: Arc<Self>,
         packet: RawPacket,
-    ) -> anyhow::Result<()> {
+    ) -> VResult<()> {
         let request = OpenConnectionRequest2::decode(packet.buffer.clone())?;
         let reply = OpenConnectionReply2 {
             server_guid: self.guid,
@@ -220,7 +224,7 @@ impl ServerInstance {
                      match result {
                         Ok(r) => r,
                         Err(e) => {
-                            tracing::error!("Failed to receive packet: {e:?}");
+                            tracing::error!("Could not receive packet: {e:?}");
                             continue;
                         }
                     }

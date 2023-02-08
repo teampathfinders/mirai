@@ -5,7 +5,6 @@ use crate::error;
 use crate::network::raknet::Frame;
 use crate::network::raknet::Reliability;
 
-// type Fragment = (u32, BytesMut);
 type Fragment = BytesMut;
 
 /// Keeps track of packet fragments, merging them when all fragments have been received.

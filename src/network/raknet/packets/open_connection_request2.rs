@@ -1,8 +1,9 @@
 use bytes::{Buf, BytesMut};
 
+use crate::error::VResult;
 use crate::network::traits::Decodable;
 use crate::util::ReadExtensions;
-use crate::vex_assert;
+use crate::vassert;
 
 /// Sent by the client, in response to [`OpenConnectionReply2`](super::open_connection_reply2::OpenConnectionReply2).
 #[derive(Debug)]
@@ -19,8 +20,8 @@ impl OpenConnectionRequest2 {
 }
 
 impl Decodable for OpenConnectionRequest2 {
-    fn decode(mut buffer: BytesMut) -> anyhow::Result<Self> {
-        vex_assert!(buffer.get_u8() == Self::ID);
+    fn decode(mut buffer: BytesMut) -> VResult<Self> {
+        vassert!(buffer.get_u8() == Self::ID);
 
         buffer.advance(16); // Skip magic
         buffer.get_addr()?; // Skip server address

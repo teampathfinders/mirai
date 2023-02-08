@@ -2,9 +2,10 @@ use std::ops::Range;
 
 use bytes::{Buf, BufMut, BytesMut};
 
+use crate::error::VResult;
 use crate::network::traits::{Decodable, Encodable};
 use crate::util::{ReadExtensions, WriteExtensions};
-use crate::vex_assert;
+use crate::vassert;
 
 /// Record containing IDs of confirmed packets.
 #[derive(Debug)]
@@ -18,7 +19,7 @@ pub enum AcknowledgementRecord {
 fn encode_records(
     mut buffer: BytesMut,
     records: &[AcknowledgementRecord],
-) -> anyhow::Result<BytesMut> {
+) -> BytesMut {
     buffer.put_i16(records.len() as i16);
     for record in records {
         match record {
@@ -34,7 +35,7 @@ fn encode_records(
         }
     }
 
-    Ok(buffer)
+    buffer
 }
 
 fn decode_records(mut buffer: BytesMut) -> Vec<AcknowledgementRecord> {
@@ -68,16 +69,16 @@ impl Acknowledgement {
 }
 
 impl Encodable for Acknowledgement {
-    fn encode(&self) -> anyhow::Result<BytesMut> {
+    fn encode(&self) -> VResult<BytesMut> {
         let mut buffer = BytesMut::with_capacity(10);
         buffer.put_u8(Self::ID);
-        encode_records(buffer, &self.records)
+        Ok(encode_records(buffer, &self.records))
     }
 }
 
 impl Decodable for Acknowledgement {
-    fn decode(mut buffer: BytesMut) -> anyhow::Result<Self> {
-        vex_assert!(buffer.get_u8() == Self::ID);
+    fn decode(mut buffer: BytesMut) -> VResult<Self> {
+        vassert!(buffer.get_u8() == Self::ID);
         let records = decode_records(buffer);
         Ok(Self { records })
     }
@@ -96,16 +97,16 @@ impl NegativeAcknowledgement {
 }
 
 impl Encodable for NegativeAcknowledgement {
-    fn encode(&self) -> anyhow::Result<BytesMut> {
+    fn encode(&self) -> VResult<BytesMut> {
         let mut buffer = BytesMut::with_capacity(10);
         buffer.put_u8(Self::ID);
-        encode_records(buffer, &self.records)
+        Ok(encode_records(buffer, &self.records))
     }
 }
 
 impl Decodable for NegativeAcknowledgement {
-    fn decode(mut buffer: BytesMut) -> anyhow::Result<Self> {
-        vex_assert!(buffer.get_u8() == Self::ID);
+    fn decode(mut buffer: BytesMut) -> VResult<Self> {
+        vassert!(buffer.get_u8() == Self::ID);
         let records = decode_records(buffer);
         Ok(Self { records })
     }

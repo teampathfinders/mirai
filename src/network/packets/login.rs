@@ -1,15 +1,15 @@
-use anyhow::bail;
 use base64::Engine;
 use bytes::{Buf, BytesMut};
 use jsonwebtoken::{Algorithm, DecodingKey, Validation};
 use serde::Deserialize;
 use spki::SubjectPublicKeyInfo;
 
+use crate::{bail, vassert};
 use crate::crypto::{IdentityData, parse_identity_data, parse_user_data, UserData};
+use crate::error::{VError, VResult};
 use crate::network::packets::GamePacket;
 use crate::network::traits::Decodable;
 use crate::util::ReadExtensions;
-use crate::vex_assert;
 
 /// Device operating system
 #[derive(Debug, Copy, Clone)]
@@ -35,9 +35,9 @@ pub enum DeviceOS {
 }
 
 impl TryFrom<u8> for DeviceOS {
-    type Error = anyhow::Error;
+    type Error = VError;
 
-    fn try_from(value: u8) -> Result<Self, Self::Error> {
+    fn try_from(value: u8) -> VResult<Self> {
         use DeviceOS::*;
 
         Ok(match value {
@@ -56,7 +56,7 @@ impl TryFrom<u8> for DeviceOS {
             13 => Xbox,
             14 => WindowsPhone,
             15 => Linux,
-            _ => bail!("Invalid device OS {}, expected 1-15", value),
+            _ => bail!(BadPacket, "Invalid device OS {}, expected 1-15", value),
         })
     }
 }
@@ -76,7 +76,7 @@ impl GamePacket for Login {
 }
 
 impl Decodable for Login {
-    fn decode(mut buffer: BytesMut) -> anyhow::Result<Self> {
+    fn decode(mut buffer: BytesMut) -> VResult<Self> {
         buffer.advance(4); // Skip protocol version, use the one in RequestNetworkSettings instead.
         buffer.get_var_u32()?;
 

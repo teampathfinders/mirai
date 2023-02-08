@@ -1,10 +1,11 @@
 use bytes::{Buf, BufMut, BytesMut};
 
+use crate::error::VResult;
 use crate::network::packets::GamePacket;
 use crate::network::raknet::Header;
 use crate::network::traits::Encodable;
 use crate::util::{ReadExtensions, WriteExtensions};
-use crate::vex_assert;
+use crate::vassert;
 
 /// A game packet.
 #[derive(Debug)]
@@ -37,7 +38,7 @@ impl<T: GamePacket> Packet<T> {
 }
 
 impl<T: GamePacket + Encodable> Encodable for Packet<T> {
-    fn encode(&self) -> anyhow::Result<BytesMut> {
+    fn encode(&self) -> VResult<BytesMut> {
         let mut buffer = BytesMut::new();
         let header = self.header.encode();
         let body = self.internal_packet.encode()?;

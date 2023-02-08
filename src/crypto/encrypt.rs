@@ -2,7 +2,6 @@ use std::fmt::{Debug, Formatter, Write};
 use std::io::Read;
 use std::sync::atomic::{AtomicU16, AtomicU32, AtomicU64, Ordering};
 
-use anyhow::{bail, Context};
 use base64::Engine;
 use bytes::{BufMut, BytesMut};
 use cipher::{StreamCipher, StreamCipherSeek, StreamCipherSeekCore};
@@ -22,6 +21,9 @@ use rand::rngs::OsRng;
 use sha2::{Digest, Sha256};
 use spki::{DecodePublicKey, EncodePublicKey};
 use spki::der::SecretDocument;
+
+use crate::bail;
+use crate::error::VResult;
 
 type Aes256CtrBE = ctr::Ctr64BE<aes::Aes256>;
 
@@ -67,7 +69,7 @@ impl Encryptor {
     ///
     /// This shared secret is hashed using with SHA-256 and the salt contained in the JWT.
     /// The produced hash can then be used to encrypt packets.
-    pub fn new(client_public_key_der: &str) -> anyhow::Result<(Self, String)> {
+    pub fn new(client_public_key_der: &str) -> VResult<(Self, String)> {
         // Generate a random salt using a cryptographically secure generator.
         let salt = (0..16)
             .map(|_| OsRng.sample(Alphanumeric) as char)
@@ -78,7 +80,7 @@ impl Encryptor {
         // Convert the key to the PKCS#8 DER format used by Minecraft.
         let private_key_der = match private_key.to_pkcs8_der() {
             Ok(k) => k,
-            Err(e) => bail!("Failed to convert private to PKCS#8 DER format: {e}"),
+            Err(e) => bail!(BadPacket, "Failed to convert private to PKCS#8 DER format: {e}"),
         };
 
         // Extract and convert the public key, which will be sent to the client.
@@ -86,7 +88,7 @@ impl Encryptor {
         let public_key_der = {
             let binary_der = match public_key.to_public_key_der() {
                 Ok(d) => d,
-                Err(e) => bail!("Failed to convert public key to DER format: {e}"),
+                Err(e) => bail!(BadPacket, "Failed to convert public key to DER format: {e}"),
             };
             BASE64_ENGINE.encode(binary_der)
         };
@@ -107,7 +109,7 @@ impl Encryptor {
             let bytes = BASE64_ENGINE.decode(client_public_key_der)?;
             match PublicKey::from_public_key_der(&bytes) {
                 Ok(k) => k,
-                Err(e) => bail!("Failed to read DER-encoded client public key: {e}"),
+                Err(e) => bail!(BadPacket, "Failed to read DER-encoded client public key: {e}"),
             }
         };
 
@@ -142,9 +144,9 @@ impl Encryptor {
         ))
     }
 
-    pub fn decrypt(&self, mut buffer: BytesMut) -> anyhow::Result<BytesMut> {
+    pub fn decrypt(&self, mut buffer: BytesMut) -> VResult<BytesMut> {
         if buffer.len() < 9 {
-            bail!("Encrypted buffer must be at least 9 bytes");
+            bail!(BadPacket, "Encrypted buffer must be at least 9 bytes, received {}", buffer.len());
         }
 
         self.cipher_decrypt.lock().apply_keystream(buffer.as_mut());
@@ -154,7 +156,7 @@ impl Encryptor {
         let computed_checksum = self.compute_checksum(&buffer.as_ref()[..buffer.len() - 8], counter);
 
         if !checksum.eq(&computed_checksum) {
-            bail!("Encryption checksums do not match");
+            bail!(BadPacket, "Encryption checksums do not match");
         }
 
         // Remove checksum from data.

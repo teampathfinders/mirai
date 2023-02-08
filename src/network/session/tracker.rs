@@ -2,13 +2,13 @@ use std::net::SocketAddr;
 use std::sync::Arc;
 use std::time::Duration;
 
-use anyhow::anyhow;
 use dashmap::DashMap;
 use tokio::net::UdpSocket;
 use tokio_util::sync::CancellationToken;
 
 use crate::config::SERVER_CONFIG;
 use crate::error;
+use crate::error::VResult;
 use crate::network::raknet::RawPacket;
 use crate::network::session::session::Session;
 
@@ -54,14 +54,14 @@ impl SessionTracker {
     }
 
     /// Forwards a packet from the network service to the correct session.
-    pub fn forward_packet(&self, packet: RawPacket) -> anyhow::Result<()> {
+    pub fn forward_packet(&self, packet: RawPacket) -> VResult<()> {
         self.session_list
             .get(&packet.address)
             .map(|r| {
                 let session = r.value();
                 session.receive_queue.push(packet.buffer);
             })
-            .ok_or_else(|| anyhow!("Attempted to forward packet to non-existent session"))
+            .ok_or(error!(NotConnected, "Attempted to forward packet to non-existent session"))
     }
 
     /// Returns how many clients are currently connected this tracker.

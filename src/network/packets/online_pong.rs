@@ -1,5 +1,6 @@
 use bytes::{BufMut, BytesMut};
 
+use crate::error::VResult;
 use crate::network::traits::Encodable;
 
 /// Sent by the server or client in response to an [`OnlinePing`](super::OnlinePing) packet.
@@ -17,7 +18,7 @@ impl OnlinePong {
 }
 
 impl Encodable for OnlinePong {
-    fn encode(&self) -> anyhow::Result<BytesMut> {
+    fn encode(&self) -> VResult<BytesMut> {
         let mut buffer = BytesMut::with_capacity(1 + 8 + 8);
 
         buffer.put_u8(Self::ID);

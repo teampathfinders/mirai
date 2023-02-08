@@ -9,6 +9,7 @@ use std::sync::atomic::{AtomicU16, Ordering};
 
 use tokio::runtime;
 
+use crate::error::VResult;
 use crate::instance::ServerInstance;
 
 mod config;
@@ -22,7 +23,7 @@ mod util;
 mod test;
 
 /// The asynchronous entrypoint that is ran by Tokio.
-async fn app_main() -> anyhow::Result<()> {
+async fn app_main() -> VResult<()> {
     loop {
         let controller = ServerInstance::new().await?;
         match controller.run().await {
@@ -40,7 +41,7 @@ async fn app_main() -> anyhow::Result<()> {
 }
 
 /// Program entrypoint
-fn main() -> anyhow::Result<()> {
+fn main() -> VResult<()> {
     init_logging();
 
     let runtime = runtime::Builder::new_multi_thread()

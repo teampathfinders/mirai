@@ -4,7 +4,6 @@ use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, AtomicU32, AtomicU64, Ordering};
 use std::time::{Duration, Instant};
 
-use anyhow::anyhow;
 use bytes::BytesMut;
 use parking_lot::{Mutex, RwLock};
 use tokio::net::UdpSocket;
@@ -13,6 +12,7 @@ use tokio_util::sync::CancellationToken;
 
 use crate::crypto::{Encryptor, IdentityData, UserData};
 use crate::error;
+use crate::error::VResult;
 use crate::network::packets::DeviceOS;
 use crate::network::session::compound_collector::CompoundCollector;
 use crate::network::session::order_channel::OrderChannel;
@@ -166,47 +166,47 @@ impl Session {
     /// Retrieves the identity of the client.
     ///
     /// Warning: An internal RwLock is kept in a read state until the return value of this function is dropped.
-    pub fn get_identity(&self) -> anyhow::Result<&str> {
+    pub fn get_identity(&self) -> VResult<&str> {
         let identity = self
             .identity
             .get()
-            .ok_or_else(|| anyhow!("Identity ID has not been initialised yet"))?;
+            .ok_or(error!(NotInitialized, "Identity ID has not been initialised yet"))?;
         Ok(identity.identity.as_str())
     }
 
     /// Retrievs the XUID of the client.
     ///
     /// Warning: An internal RwLock is kept in a read state until the return value of this function is dropped.
-    pub fn get_xuid(&self) -> anyhow::Result<u64> {
+    pub fn get_xuid(&self) -> VResult<u64> {
         let identity = self
             .identity
             .get()
-            .ok_or_else(|| anyhow!("XUID has not been initialised yet"))?;
+            .ok_or(error!(NotInitialized, "XUID has not been initialised yet"))?;
         Ok(identity.xuid)
     }
 
     /// Retrieves the display name of the client.
     ///
     /// Warning: An internal RwLock is kept in a read state until the return value of this function is dropped.
-    pub fn get_display_name(&self) -> anyhow::Result<&str> {
+    pub fn get_display_name(&self) -> VResult<&str> {
         let identity = self
             .identity
             .get()
-            .ok_or_else(|| anyhow!("Display name has not been initialised yet"))?;
+            .ok_or(error!(NotInitialized, "Display name has not been initialised yet"))?;
         Ok(identity.display_name.as_str())
     }
 
-    pub fn get_encryptor(&self) -> anyhow::Result<&Encryptor> {
+    pub fn get_encryptor(&self) -> VResult<&Encryptor> {
         self.encryptor
             .get()
-            .ok_or_else(|| anyhow!("Encryption has not been initialised yet"))
+            .ok_or(error!(NotInitialized, "Encryption has not been initialised yet"))
     }
 
-    pub fn get_device_os(&self) -> anyhow::Result<DeviceOS> {
+    pub fn get_device_os(&self) -> VResult<DeviceOS> {
         let data = self
             .user_data
             .get()
-            .ok_or_else(|| anyhow!("User data has not been initialised yet"))?;
+            .ok_or(error!(NotInitialized, "User data has not been initialised yet"))?;
         Ok(data.device_os)
     }
 
@@ -232,7 +232,7 @@ impl Session {
     }
 
     /// Performs tasks not related to packet processing
-    async fn tick(self: &Arc<Self>) -> anyhow::Result<()> {
+    async fn tick(self: &Arc<Self>) -> VResult<()> {
         let current_tick = self.current_tick.fetch_add(1, Ordering::SeqCst);
 
         // Session has timed out

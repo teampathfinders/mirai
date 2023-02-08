@@ -1,5 +1,6 @@
 use bytes::BytesMut;
 
+use crate::error::VResult;
 use crate::network::packets::OnlinePing;
 use crate::network::packets::OnlinePong;
 use crate::network::raknet::Frame;
@@ -14,7 +15,7 @@ use crate::network::traits::{Decodable, Encodable};
 
 impl Session {
     /// Handles a [`ConnectionRequest`] packet.
-    pub fn handle_connection_request(&self, task: BytesMut) -> anyhow::Result<()> {
+    pub fn handle_connection_request(&self, task: BytesMut) -> VResult<()> {
         let request = ConnectionRequest::decode(task)?;
         let response = ConnectionRequestAccepted {
             client_address: self.address,
@@ -29,13 +30,13 @@ impl Session {
     }
 
     /// Handles a [`NewIncomingConnection`] packet.
-    pub fn handle_new_incoming_connection(&self, task: BytesMut) -> anyhow::Result<()> {
+    pub fn handle_new_incoming_connection(&self, task: BytesMut) -> VResult<()> {
         let request = NewIncomingConnection::decode(task)?;
         Ok(())
     }
 
     /// Handles an [`OnlinePing`] packet.
-    pub fn handle_online_ping(&self, task: BytesMut) -> anyhow::Result<()> {
+    pub fn handle_online_ping(&self, task: BytesMut) -> VResult<()> {
         let ping = OnlinePing::decode(task)?;
         let pong = OnlinePong {
             ping_time: ping.time,

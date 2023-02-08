@@ -1,7 +1,8 @@
 use bytes::{Buf, BytesMut};
 
+use crate::error::VResult;
 use crate::network::traits::Decodable;
-use crate::vex_assert;
+use crate::vassert;
 
 /// Sent by the client when the users joins the server.
 #[derive(Debug)]
@@ -23,10 +24,10 @@ impl OpenConnectionRequest1 {
 }
 
 impl Decodable for OpenConnectionRequest1 {
-    fn decode(mut buffer: BytesMut) -> anyhow::Result<Self> {
+    fn decode(mut buffer: BytesMut) -> VResult<Self> {
         let mtu = buffer.len() as u16 + 28;
 
-        vex_assert!(buffer.get_u8() == Self::ID);
+        vassert!(buffer.get_u8() == Self::ID);
 
         buffer.advance(16); // Skip magic
         let protocol_version = buffer.get_u8();

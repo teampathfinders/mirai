@@ -2,6 +2,7 @@ use std::net::SocketAddr;
 
 use bytes::{BufMut, BytesMut};
 
+use crate::error::VResult;
 use crate::network::raknet::OFFLINE_MESSAGE_DATA;
 use crate::network::traits::Encodable;
 use crate::util::WriteExtensions;
@@ -25,7 +26,7 @@ impl OpenConnectionReply2 {
 }
 
 impl Encodable for OpenConnectionReply2 {
-    fn encode(&self) -> anyhow::Result<BytesMut> {
+    fn encode(&self) -> VResult<BytesMut> {
         let mut buffer = BytesMut::with_capacity(1 + 16 + 8 + 1 + 16 + 2 + 2 + 1);
 
         buffer.put_u8(Self::ID);

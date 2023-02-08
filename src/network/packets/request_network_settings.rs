@@ -1,7 +1,8 @@
 use bytes::{Buf, BytesMut};
 
+use crate::error::VResult;
 use crate::network::traits::Decodable;
-use crate::vex_assert;
+use crate::vassert;
 
 /// Sent by the client to request a [`NetworkSettings`](super::NetworkSettings) packet.
 #[derive(Debug)]
@@ -16,7 +17,7 @@ impl RequestNetworkSettings {
 }
 
 impl Decodable for RequestNetworkSettings {
-    fn decode(mut buffer: BytesMut) -> anyhow::Result<Self> {
+    fn decode(mut buffer: BytesMut) -> VResult<Self> {
         let protocol_version = buffer.get_u32();
 
         Ok(Self { protocol_version })

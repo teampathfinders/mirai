@@ -2,9 +2,10 @@ use std::net::SocketAddr;
 
 use bytes::{Buf, BytesMut};
 
+use crate::error::VResult;
 use crate::network::traits::Decodable;
 use crate::util::{EMPTY_IPV4_ADDRESS, ReadExtensions};
-use crate::vex_assert;
+use crate::vassert;
 
 /// Confirms that the connection was successfully initiated.
 #[derive(Debug)]
@@ -16,8 +17,8 @@ impl NewIncomingConnection {
 }
 
 impl Decodable for NewIncomingConnection {
-    fn decode(mut buffer: BytesMut) -> anyhow::Result<Self> {
-        vex_assert!(buffer.get_u8() == Self::ID);
+    fn decode(mut buffer: BytesMut) -> VResult<Self> {
+        vassert!(buffer.get_u8() == Self::ID);
 
         // No data in this packet is used, there is no point in decoding it
         Ok(Self)

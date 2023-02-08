@@ -1,5 +1,6 @@
 use bytes::{Buf, BytesMut};
 
+use crate::error::VResult;
 use crate::network::packets::GamePacket;
 use crate::network::traits::Decodable;
 use crate::util::ReadExtensions;
@@ -16,7 +17,7 @@ impl GamePacket for ClientCacheStatus {
 }
 
 impl Decodable for ClientCacheStatus {
-    fn decode(mut buffer: BytesMut) -> anyhow::Result<Self> {
+    fn decode(mut buffer: BytesMut) -> VResult<Self> {
         let support = buffer.get_bool();
 
         Ok(Self { supports_cache: support })

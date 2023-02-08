@@ -1,5 +1,6 @@
 use bytes::{BufMut, BytesMut};
 
+use crate::error::VResult;
 use crate::util::{ReadExtensions, WriteExtensions};
 
 /// Game packets are prefixed with a length and a header.
@@ -16,7 +17,7 @@ pub struct Header {
 
 impl Header {
     /// Decodes the header.
-    pub fn decode(buffer: &mut BytesMut) -> anyhow::Result<Self> {
+    pub fn decode(buffer: &mut BytesMut) -> VResult<Self> {
         let value = buffer.get_var_u32()?;
 
         let id = value & 0x3ff;

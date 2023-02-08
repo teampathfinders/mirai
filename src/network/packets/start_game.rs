@@ -2,6 +2,7 @@ use std::collections::HashMap;
 
 use bytes::{BufMut, BytesMut};
 
+use crate::error::VResult;
 use crate::network::Encodable;
 use crate::network::packets::{ExperimentData, GamePacket};
 use crate::util::{BlockPosition, Vector2f, Vector3f, WriteExtensions};
@@ -149,6 +150,7 @@ pub struct BlockEntry {
 impl BlockEntry {
     pub fn encode(&self, buffer: &mut BytesMut) {
         buffer.put_string(&self.name);
+
     }
 }
 
@@ -245,7 +247,7 @@ impl GamePacket for StartGame {
 }
 
 impl Encodable for StartGame {
-    fn encode(&self) -> anyhow::Result<BytesMut> {
+    fn encode(&self) -> VResult<BytesMut> {
         let mut buffer = BytesMut::new();
 
         buffer.put_var_u64(self.entity_id);

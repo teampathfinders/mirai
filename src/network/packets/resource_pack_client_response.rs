@@ -1,6 +1,7 @@
-use anyhow::{anyhow, bail};
 use bytes::{Buf, BytesMut};
 
+use crate::bail;
+use crate::error::{VError, VResult};
 use crate::network::Decodable;
 use crate::network::packets::GamePacket;
 use crate::util::ReadExtensions;
@@ -15,16 +16,16 @@ pub enum ResourcePackStatus {
 }
 
 impl TryFrom<u8> for ResourcePackStatus {
-    type Error = anyhow::Error;
+    type Error = VError;
 
-    fn try_from(value: u8) -> anyhow::Result<Self> {
+    fn try_from(value: u8) -> VResult<Self> {
         Ok(match value {
             0 => Self::None,
             1 => Self::Refused,
             2 => Self::SendPacks,
             3 => Self::HaveAllPacks,
             4 => Self::Completed,
-            _ => bail!("Invalid resource pack status: {value}")
+            _ => bail!(BadPacket, "Invalid resource pack status: {value}")
         })
     }
 }
@@ -41,7 +42,7 @@ impl GamePacket for ResourcePackClientResponse {
 }
 
 impl Decodable for ResourcePackClientResponse {
-    fn decode(mut buffer: BytesMut) -> anyhow::Result<Self> {
+    fn decode(mut buffer: BytesMut) -> VResult<Self> {
         let status = ResourcePackStatus::try_from(buffer.get_u8())?;
         let length = buffer.get_u16();
 

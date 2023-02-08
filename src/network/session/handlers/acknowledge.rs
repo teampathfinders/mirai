@@ -1,5 +1,6 @@
 use bytes::BytesMut;
 
+use crate::error::VResult;
 use crate::network::raknet::packets::{Acknowledgement, NegativeAcknowledgement};
 use crate::network::session::session::Session;
 use crate::network::traits::{Decodable, Encodable};
@@ -8,7 +9,7 @@ impl Session {
     /// Processes an acknowledgement received from the client.
     ///
     /// This function unregisters the specified packet IDs from the recovery queue.
-    pub fn handle_ack(&self, task: BytesMut) -> anyhow::Result<()> {
+    pub fn handle_ack(&self, task: BytesMut) -> VResult<()> {
         let ack = Acknowledgement::decode(task)?;
         self.recovery_queue.confirm(&ack.records);
 
@@ -19,7 +20,7 @@ impl Session {
     ///
     /// This function makes sure the packet is retrieved from the recovery queue and sent to the
     /// client again.
-    pub async fn handle_nack(&self, task: BytesMut) -> anyhow::Result<()> {
+    pub async fn handle_nack(&self, task: BytesMut) -> VResult<()> {
         let nack = NegativeAcknowledgement::decode(task)?;
         let frame_batches = self.recovery_queue.recover(&nack.records);
         tracing::info!("Recovered packets: {:?}", nack.records);

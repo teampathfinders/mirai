@@ -1,8 +1,9 @@
 use bytes::{Buf, BytesMut};
 
+use crate::error::VResult;
 use crate::network::Decodable;
 use crate::network::packets::GamePacket;
-use crate::vex_assert;
+use crate::vassert;
 
 /// Sent by the client in response to a [`ServerToClientHandshake`](super::ServerToClientHandshake)
 /// to confirm that encryption is working.
@@ -17,7 +18,7 @@ impl GamePacket for ClientToServerHandshake {
 }
 
 impl Decodable for ClientToServerHandshake {
-    fn decode(mut buffer: BytesMut) -> anyhow::Result<Self> {
+    fn decode(mut buffer: BytesMut) -> VResult<Self> {
         Ok(Self)
     }
 }

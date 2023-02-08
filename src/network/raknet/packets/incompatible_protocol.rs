@@ -1,5 +1,6 @@
 use bytes::{BufMut, BytesMut};
 
+use crate::error::VResult;
 use crate::network::raknet::{OFFLINE_MESSAGE_DATA, RAKNET_VERSION};
 use crate::network::traits::Encodable;
 
@@ -20,7 +21,7 @@ impl IncompatibleProtocol {
 }
 
 impl Encodable for IncompatibleProtocol {
-    fn encode(&self) -> anyhow::Result<BytesMut> {
+    fn encode(&self) -> VResult<BytesMut> {
         let mut buffer = BytesMut::with_capacity(1 + 1 + 16 + 8);
 
         buffer.put_u8(Self::ID);

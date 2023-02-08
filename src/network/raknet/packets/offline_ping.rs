@@ -1,7 +1,8 @@
 use bytes::{Buf, BytesMut};
 
+use crate::error::VResult;
 use crate::network::traits::Decodable;
-use crate::vex_assert;
+use crate::vassert;
 
 /// Sent to retrieve information about the server
 /// while the user is in Minecraft's server tab.
@@ -24,11 +25,11 @@ impl OfflinePing {
 }
 
 impl Decodable for OfflinePing {
-    fn decode(mut buffer: BytesMut) -> anyhow::Result<Self> {
-        vex_assert!(buffer.get_u8() == Self::ID);
+    fn decode(mut buffer: BytesMut) -> VResult<Self> {
+        vassert!(buffer.get_u8() == Self::ID);
 
         let time = buffer.get_i64();
-        buffer.get_u128(); // Skip offline message data
+        buffer.advance(16); // Skip offline message data
         let client_guid = buffer.get_i64();
 
         Ok(Self { time, client_guid })

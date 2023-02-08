@@ -1,5 +1,6 @@
 use bytes::{BufMut, BytesMut};
 
+use crate::error::VResult;
 use crate::network::raknet::OFFLINE_MESSAGE_DATA;
 use crate::network::traits::Encodable;
 use crate::util::WriteExtensions;
@@ -24,7 +25,7 @@ impl OfflinePong {
 }
 
 impl Encodable for OfflinePong {
-    fn encode(&self) -> anyhow::Result<BytesMut> {
+    fn encode(&self) -> VResult<BytesMut> {
         let mut buffer = BytesMut::with_capacity(1 + 8 + 8 + 16 + 2 + self.metadata.len());
 
         buffer.put_u8(Self::ID);

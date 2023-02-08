@@ -1,5 +1,6 @@
 use bytes::{BufMut, BytesMut};
 
+use crate::error::VResult;
 use crate::network::Encodable;
 use crate::network::packets::GamePacket;
 use crate::util::WriteExtensions;
@@ -54,7 +55,7 @@ impl GamePacket for ResourcePackStack {
 }
 
 impl Encodable for ResourcePackStack {
-    fn encode(&self) -> anyhow::Result<BytesMut> {
+    fn encode(&self) -> VResult<BytesMut> {
         let mut buffer = BytesMut::new();
 
         buffer.put_bool(self.forced_to_accept);
