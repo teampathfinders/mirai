@@ -95,14 +95,14 @@ impl Session {
                 };
                 self.send_packet(response)?;
 
-                bail!("Client is using a newer protocol, disconnecting them...");
+                bail!("Client is using a newer protocol ({} vs. {})", request.protocol_version, NETWORK_VERSION);
             } else {
                 let response = PlayStatus {
                     status: Status::FailedClient,
                 };
                 self.send_packet(response)?;
 
-                bail!("Client is using an older protocol, disconnecting them...");
+                bail!("Client is using an older protocol ({} vs. {})", request.protocol_version, NETWORK_VERSION);
             }
         }
 
