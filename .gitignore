@@ -1,4 +1,4 @@
-/.vscode
-/.idea
-/target
-/.cargo
+.vscode
+.idea
+.cargo
+target

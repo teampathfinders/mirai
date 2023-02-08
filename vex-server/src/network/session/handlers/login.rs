@@ -98,7 +98,7 @@ impl Session {
             template_content_identity: "".to_string(),
             is_trial: false,
             movement_settings: PlayerMovementSettings {
-                movement_type: PlayerMovementType::ClientAuthoritative,
+                movement_type: PlayerMovementType::ServerAuthoritative,
                 rewind_history_size: 0,
                 server_authoritative_breaking: true,
             },
@@ -106,7 +106,7 @@ impl Session {
             enchantment_seed: 0,
             block_properties: vec![],
             item_properties: vec![],
-            multiplayer_correlation_id: "".to_string(),
+            multiplayer_correlation_id: "5b39a9d6-f1a1-411a-b749-b30742f81771".to_string(),
             server_authoritative_inventory: false,
             game_version: "1.19.60".to_string(),
             property_data: nbt::Value::Compound(HashMap::new()),

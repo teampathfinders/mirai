@@ -47,8 +47,6 @@ pub enum WorldGenerator {
 
 impl WorldGenerator {
     pub fn encode(&self, buffer: &mut BytesMut) {
-        tracing::info!("aaa {}", *self as u32);
-
         buffer.put_var_u32(*self as u32);
     }
 }
@@ -337,16 +335,19 @@ impl Encodable for StartGame {
             item.encode(&mut buffer);
         }
 
-        // buffer.put_string(&self.multiplayer_correlation_id);
-        buffer.put_string("5b39a9d6-f1a1-411a-b749-b30742f81771");
+        buffer.put_string(&self.multiplayer_correlation_id);
 
         buffer.put_bool(self.server_authoritative_inventory);
         buffer.put_string(&self.game_version);
 
-        nbt::RefTag {
-            name: "",
-            value: &self.property_data,
-        }.encode_with_le(&mut buffer);
+        // nbt::RefTag {
+        //     name: "",
+        //     value: &self.property_data,
+        // }.encode_with_le(&mut buffer);
+
+        buffer.put_u8(0);
+        buffer.put_u8(0);
+        buffer.put_u8(0);
 
         buffer.put_u64(self.server_block_state_checksum);
         buffer.put_u128(self.world_template_id);
