@@ -5,3 +5,10 @@ edition = "2021"
 authors = ["RadiatedMonkey"]
 
 [dependencies]
+vex-common = { path = "../vex-common" }
+
+parking_lot = "0.12.1"
+tokio = { version = "1.25.0", features = ["net", "sync", "time", "macros"] }
+dashmap = "5.4.0"
+bytes = "1.4.0"
+rand = "0.8.5"

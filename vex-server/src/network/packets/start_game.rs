@@ -2,7 +2,8 @@ use std::collections::HashMap;
 
 use bytes::{BufMut, BytesMut};
 
-use crate::error::VResult;
+use vex_common::error::VResult;
+
 use crate::network::Encodable;
 use crate::network::packets::{ExperimentData, GamePacket};
 use crate::util::{BlockPosition, Vector2f, Vector3f, WriteExtensions};

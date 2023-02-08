@@ -5,7 +5,8 @@ use bytes::{Buf, BufMut, BytesMut};
 use flate2::read::DeflateDecoder;
 use tokio::net::windows::named_pipe::PipeMode::Byte;
 
-use crate::error::VResult;
+use vex_common::error::VResult;
+
 use crate::instance::{IPV4_LOCAL_ADDR, IPV6_LOCAL_ADDR};
 use crate::network::raknet::{Frame, Header};
 use crate::network::session::OrderChannel;

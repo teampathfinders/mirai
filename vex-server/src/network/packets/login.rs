@@ -3,11 +3,12 @@ use bytes::{Buf, BytesMut};
 use jsonwebtoken::{Algorithm, DecodingKey, Validation};
 use spki::SubjectPublicKeyInfo;
 
+use vex_common::error::{VError, VResult};
+use vex_common::traits::Decodable;
+
 use crate::{bail, vassert};
 use crate::crypto::{IdentityData, parse_identity_data, parse_user_data, UserData};
-use crate::error::{VError, VResult};
 use crate::network::packets::GamePacket;
-use crate::network::traits::Decodable;
 use crate::util::ReadExtensions;
 
 /// Device operating system

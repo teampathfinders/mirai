@@ -9,53 +9,21 @@ use tokio::net::UdpSocket;
 use tokio::signal;
 use tokio_util::sync::CancellationToken;
 
-use crate::config::SERVER_CONFIG;
-use crate::error;
-use crate::error::VResult;
-use crate::network::{Decodable, Encodable};
-use crate::network::packets::{CLIENT_VERSION_STRING, NETWORK_VERSION};
-use crate::network::raknet::packets::IncompatibleProtocol;
-use crate::network::raknet::packets::OfflinePing;
-use crate::network::raknet::packets::OfflinePong;
-use crate::network::raknet::packets::OpenConnectionReply1;
-use crate::network::raknet::packets::OpenConnectionReply2;
-use crate::network::raknet::packets::OpenConnectionRequest1;
-use crate::network::raknet::packets::OpenConnectionRequest2;
-use crate::network::raknet::RAKNET_VERSION;
-use crate::network::raknet::RawPacket;
-use crate::network::session::SessionTracker;
-use crate::util::AsyncDeque;
+use vex_common::error;
+use vex_common::VResult;
+use vex_raknet::Listener;
 
-/// Local IPv4 address
-pub const IPV4_LOCAL_ADDR: Ipv4Addr = Ipv4Addr::new(127, 0, 0, 1);
-/// Local IPv6 address
-pub const IPV6_LOCAL_ADDR: Ipv6Addr = Ipv6Addr::new(0, 0, 0, 0, 0, 0, 0, 1);
-/// Size of the UDP receive buffer.
-const RECV_BUF_SIZE: usize = 4096;
-/// Refresh rate of the server's metadata.
-/// This data is displayed in the server menu.
-const METADATA_REFRESH_INTERVAL: Duration = Duration::from_secs(2);
+use crate::config::SERVER_CONFIG;
+use crate::network::{Decodable, Encodable};
+use crate::util::AsyncDeque;
 
 /// Global instance that manages all data and services of the server.
 #[derive(Debug)]
 pub struct ServerInstance {
-    /// Randomised GUID, required by Minecraft
-    guid: i64,
-    /// String containing info displayed in the server tab.
-    metadata: RwLock<String>,
-    /// IPv4 UDP socket
-    ipv4_socket: Arc<UdpSocket>,
-    /// Port the IPv4 service is hosted on.
-    ipv4_port: u16,
-    /// Queue for incoming packets.
-    inward_queue: Arc<AsyncDeque<RawPacket>>,
-    /// Queue for packets waiting to be sent.
-    outward_queue: Arc<AsyncDeque<RawPacket>>,
+    raknet_listener: Listener,
     /// Token indicating whether the server is still running.
     /// All services listen to this token to determine whether they should shut down.
     global_token: CancellationToken,
-    /// Service that manages all player sessions.
-    session_controller: Arc<SessionTracker>,
 }
 
 impl ServerInstance {
@@ -67,22 +35,7 @@ impl ServerInstance {
         };
 
         let global_token = CancellationToken::new();
-        let ipv4_socket =
-            Arc::new(UdpSocket::bind(SocketAddrV4::new(IPV4_LOCAL_ADDR, ipv4_port)).await?);
 
-        let server = Self {
-            guid: rand::thread_rng().gen(),
-            metadata: RwLock::new(String::new()),
-
-            ipv4_socket,
-            ipv4_port,
-
-            inward_queue: Arc::new(AsyncDeque::new(10)),
-            outward_queue: Arc::new(AsyncDeque::new(10)),
-
-            session_controller: Arc::new(SessionTracker::new(global_token.clone())),
-            global_token,
-        };
 
         Ok(Arc::new(server))
     }
@@ -116,91 +69,6 @@ impl ServerInstance {
     /// Shut down the server by cancelling the global token
     pub fn shutdown(&self) {
         self.global_token.cancel();
-    }
-
-    /// Processes any packets that are sent before a session has been created.
-    async fn handle_offline_packet(self: Arc<Self>, packet: RawPacket) -> VResult<()> {
-        let id = packet
-            .packet_id()
-            .ok_or_else(|| error!(BadPacket, "Packet is missing payload"))?;
-
-        match id {
-            OfflinePing::ID => self.handle_unconnected_ping(packet).await?,
-            OpenConnectionRequest1::ID => self.handle_open_connection_request1(packet).await?,
-            OpenConnectionRequest2::ID => self.handle_open_connection_request2(packet).await?,
-            _ => unimplemented!("Packet type not implemented"),
-        }
-
-        Ok(())
-    }
-
-    /// Responds to the [`OfflinePing`] packet with [`OfflinePong`].
-    async fn handle_unconnected_ping(self: Arc<Self>, packet: RawPacket) -> VResult<()> {
-        let ping = OfflinePing::decode(packet.buffer.clone())?;
-        let pong = OfflinePong {
-            time: ping.time,
-            server_guid: self.guid,
-            metadata: self.metadata(),
-        }
-            .encode()?;
-
-        self.ipv4_socket
-            .send_to(pong.as_ref(), packet.address)
-            .await?;
-        Ok(())
-    }
-
-    /// Responds to the [`OpenConnectionRequest1`] packet with [`OpenConnectionReply1`].
-    async fn handle_open_connection_request1(self: Arc<Self>, packet: RawPacket) -> VResult<()> {
-        let request = OpenConnectionRequest1::decode(packet.buffer.clone())?;
-        if request.protocol_version != RAKNET_VERSION {
-            let reply = IncompatibleProtocol {
-                server_guid: self.guid,
-            }
-                .encode()?;
-
-            self.ipv4_socket
-                .send_to(reply.as_ref(), packet.address)
-                .await?;
-            return Ok(());
-        }
-
-        let reply = OpenConnectionReply1 {
-            mtu: request.mtu,
-            server_guid: self.guid,
-        }
-            .encode()?;
-
-        self.ipv4_socket
-            .send_to(reply.as_ref(), packet.address)
-            .await?;
-        Ok(())
-    }
-
-    /// Responds to the [`OpenConnectionRequest2`] packet with [`OpenConnectionReply2`].
-    /// This is also when a session is created for the client.
-    /// From this point, all packets are encoded in a [`Frame`](crate::network::raknet::Frame).
-
-    async fn handle_open_connection_request2(self: Arc<Self>, packet: RawPacket) -> VResult<()> {
-        let request = OpenConnectionRequest2::decode(packet.buffer.clone())?;
-        let reply = OpenConnectionReply2 {
-            server_guid: self.guid,
-            mtu: request.mtu,
-            client_address: packet.address,
-        }
-            .encode()?;
-
-        self.session_controller.add_session(
-            self.ipv4_socket.clone(),
-            packet.address,
-            request.mtu,
-            request.client_guid,
-        );
-        self.ipv4_socket
-            .send_to(reply.as_ref(), packet.address)
-            .await?;
-
-        Ok(())
     }
 
     /// Receives packets from IPv4 clients and adds them to the receive queue

@@ -1,8 +1,9 @@
 use bytes::{Buf, BytesMut};
 
-use crate::error::VResult;
+use vex_common::error::VResult;
+use vex_common::traits::Decodable;
+
 use crate::network::packets::GamePacket;
-use crate::network::traits::Decodable;
 use crate::util::ReadExtensions;
 
 /// Sent during login to let the server know whether the client supports caching.

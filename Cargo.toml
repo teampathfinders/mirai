@@ -2,7 +2,8 @@
 members = [
     "vex-nbt",
     "vex-raknet",
-    "vex-server"
+    "vex-server",
+    "vex-common"
 ]
 
 [profile.release]

@@ -9,6 +9,10 @@ authors = ["RadiatedMonkey"]
 tokio-console = ["console-subscriber"]
 
 [dependencies]
+vex-nbt = { path = "../vex-nbt" }
+vex-common = { path = "../vex-common" }
+vex-raknet = { path = "../vex-raknet" }
+
 bytes = "1.4.0"
 console-subscriber = { version = "0.1.8", optional = true }
 tokio = { version = "1.25.0", features = ["net", "rt-multi-thread", "macros", "time", "sync", "signal"] }
@@ -33,5 +37,4 @@ ecdsa = "0.15.1"
 cipher = "0.4.3"
 ctr = "0.9.2"
 aes = "0.8.2"
-nbt = { git = "https://github.com/teampathfinders/nbt" }
 thiserror = "1.0.38"

@@ -1,7 +1,8 @@
 use bytes::{Buf, BytesMut};
 
-use crate::error::VResult;
-use crate::network::traits::Decodable;
+use vex_common::error::VResult;
+use vex_common::traits::Decodable;
+
 use crate::vassert;
 
 /// Sent by the client or server to ping the other side.

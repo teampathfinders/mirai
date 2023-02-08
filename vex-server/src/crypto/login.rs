@@ -2,8 +2,9 @@ use base64::Engine;
 use bytes::{Buf, BytesMut};
 use jsonwebtoken::{Algorithm, DecodingKey, Validation};
 
+use vex_common::error::VResult;
+
 use crate::{bail, error};
-use crate::error::VResult;
 use crate::network::packets::DeviceOS;
 
 /// Mojang's public key.

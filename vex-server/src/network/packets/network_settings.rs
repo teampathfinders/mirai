@@ -1,8 +1,9 @@
 use bytes::{BufMut, BytesMut};
 
-use crate::error::VResult;
+use vex_common::error::VResult;
+use vex_common::traits::Encodable;
+
 use crate::network::packets::GamePacket;
-use crate::network::traits::Encodable;
 use crate::util::WriteExtensions;
 
 /// Supported compression algorithms.

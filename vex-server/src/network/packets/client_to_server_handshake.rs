@@ -1,6 +1,7 @@
 use bytes::{Buf, BytesMut};
 
-use crate::error::VResult;
+use vex_common::error::VResult;
+
 use crate::network::Decodable;
 use crate::network::packets::GamePacket;
 use crate::vassert;

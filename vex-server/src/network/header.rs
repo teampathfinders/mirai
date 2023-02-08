@@ -1,6 +1,7 @@
 use bytes::{BufMut, BytesMut};
 
-use crate::error::VResult;
+use vex_common::error::VResult;
+
 use crate::util::{ReadExtensions, WriteExtensions};
 
 /// Game packets are prefixed with a length and a header.

@@ -1,9 +1,10 @@
 use std::collections::HashMap;
 
 use bytes::{BufMut, BytesMut};
-use nbt::Value;
 
-use crate::error::VResult;
+use nbt::Value;
+use vex_common::error::VResult;
+
 use crate::network::Encodable;
 use crate::network::packets::GamePacket;
 use crate::util::WriteExtensions;
