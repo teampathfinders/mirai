@@ -25,7 +25,7 @@ impl TryFrom<u8> for ResourcePackStatus {
             2 => Self::SendPacks,
             3 => Self::HaveAllPacks,
             4 => Self::Completed,
-            _ => bail!(BadPacket, "Invalid resource pack status: {value}")
+            _ => bail!(BadPacket, "Invalid resource pack status: {value}"),
         })
     }
 }
@@ -51,9 +51,6 @@ impl Decodable for ResourcePackClientResponse {
             pack_ids.push(buffer.get_string()?);
         }
 
-        Ok(Self {
-            status,
-            pack_ids,
-        })
+        Ok(Self { status, pack_ids })
     }
 }

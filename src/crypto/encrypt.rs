@@ -80,7 +80,10 @@ impl Encryptor {
         // Convert the key to the PKCS#8 DER format used by Minecraft.
         let private_key_der = match private_key.to_pkcs8_der() {
             Ok(k) => k,
-            Err(e) => bail!(BadPacket, "Failed to convert private to PKCS#8 DER format: {e}"),
+            Err(e) => bail!(
+                BadPacket,
+                "Failed to convert private to PKCS#8 DER format: {e}"
+            ),
         };
 
         // Extract and convert the public key, which will be sent to the client.
@@ -109,7 +112,10 @@ impl Encryptor {
             let bytes = BASE64_ENGINE.decode(client_public_key_der)?;
             match PublicKey::from_public_key_der(&bytes) {
                 Ok(k) => k,
-                Err(e) => bail!(BadPacket, "Failed to read DER-encoded client public key: {e}"),
+                Err(e) => bail!(
+                    BadPacket,
+                    "Failed to read DER-encoded client public key: {e}"
+                ),
             }
         };
 
@@ -146,14 +152,19 @@ impl Encryptor {
 
     pub fn decrypt(&self, mut buffer: BytesMut) -> VResult<BytesMut> {
         if buffer.len() < 9 {
-            bail!(BadPacket, "Encrypted buffer must be at least 9 bytes, received {}", buffer.len());
+            bail!(
+                BadPacket,
+                "Encrypted buffer must be at least 9 bytes, received {}",
+                buffer.len()
+            );
         }
 
         self.cipher_decrypt.lock().apply_keystream(buffer.as_mut());
         let counter = self.receive_counter.fetch_add(1, Ordering::SeqCst);
 
         let checksum = &buffer.as_ref()[buffer.len() - 8..];
-        let computed_checksum = self.compute_checksum(&buffer.as_ref()[..buffer.len() - 8], counter);
+        let computed_checksum =
+            self.compute_checksum(&buffer.as_ref()[..buffer.len() - 8], counter);
 
         if !checksum.eq(&computed_checksum) {
             bail!(BadPacket, "Encryption checksums do not match");

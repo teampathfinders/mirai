@@ -13,7 +13,7 @@ use tokio_util::sync::CancellationToken;
 use crate::crypto::{Encryptor, IdentityData, UserData};
 use crate::error;
 use crate::error::VResult;
-use crate::network::packets::DeviceOS;
+use crate::network::packets::{DeviceOS, Disconnect};
 use crate::network::session::compound_collector::CompoundCollector;
 use crate::network::session::order_channel::OrderChannel;
 use crate::network::session::recovery_queue::RecoveryQueue;
@@ -131,7 +131,9 @@ impl Session {
                 match session.flush_acknowledgements().await {
                     Ok(_) => (),
                     Err(e) => {
-                        tracing::error!("Failed to flush last acknowledgements before session close");
+                        tracing::error!(
+                            "Failed to flush last acknowledgements before session close"
+                        );
                     }
                 }
 
@@ -170,18 +172,18 @@ impl Session {
         let identity = self
             .identity
             .get()
-            .ok_or(error!(NotInitialized, "Identity ID has not been initialised yet"))?;
+            .ok_or_else(|| error!(NotInitialized, "Identity ID has not been initialised yet"))?;
         Ok(identity.identity.as_str())
     }
 
-    /// Retrievs the XUID of the client.
+    /// Retrieves the XUID of the client.
     ///
     /// Warning: An internal RwLock is kept in a read state until the return value of this function is dropped.
     pub fn get_xuid(&self) -> VResult<u64> {
         let identity = self
             .identity
             .get()
-            .ok_or(error!(NotInitialized, "XUID has not been initialised yet"))?;
+            .ok_or_else(|| error!(NotInitialized, "XUID has not been initialised yet"))?;
         Ok(identity.xuid)
     }
 
@@ -192,21 +194,21 @@ impl Session {
         let identity = self
             .identity
             .get()
-            .ok_or(error!(NotInitialized, "Display name has not been initialised yet"))?;
+            .ok_or_else(|| error!(NotInitialized, "Display name has not been initialised yet"))?;
         Ok(identity.display_name.as_str())
     }
 
     pub fn get_encryptor(&self) -> VResult<&Encryptor> {
         self.encryptor
             .get()
-            .ok_or(error!(NotInitialized, "Encryption has not been initialised yet"))
+            .ok_or_else(|| error!(NotInitialized, "Encryption has not been initialised yet"))
     }
 
     pub fn get_device_os(&self) -> VResult<DeviceOS> {
         let data = self
             .user_data
             .get()
-            .ok_or(error!(NotInitialized, "User data has not been initialised yet"))?;
+            .ok_or_else(|| error!(NotInitialized, "User data has not been initialised yet"))?;
         Ok(data.device_os)
     }
 
@@ -221,6 +223,18 @@ impl Session {
             tracing::info!("{} has disconnected", display_name);
         }
         self.active.cancel();
+    }
+
+    /// Kicks the session from the server, displaying the given menu.
+    pub fn kick<S: Into<String>>(&self, message: S) -> VResult<()> {
+        let disconnect_packet = Disconnect {
+            kick_message: message.into(),
+            hide_disconnect_screen: false,
+        };
+        self.send_packet(disconnect_packet)?;
+        self.flag_for_close();
+
+        Ok(())
     }
 
     /// Returns whether the session is currently active.

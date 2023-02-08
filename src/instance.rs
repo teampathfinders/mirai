@@ -66,8 +66,6 @@ impl ServerInstance {
             (lock.ipv4_port, lock.ipv6_port)
         };
 
-        tracing::info!("Setting up services...");
-
         let global_token = CancellationToken::new();
         let ipv4_socket =
             Arc::new(UdpSocket::bind(SocketAddrV4::new(IPV4_LOCAL_ADDR, ipv4_port)).await?);
@@ -108,7 +106,7 @@ impl ServerInstance {
             tokio::spawn(async move { controller.metadata_refresh_task().await });
         }
 
-        tracing::info!("All services running");
+        tracing::info!("Server started");
         // The metadata task is not important for shutdown, we don't have to wait for it.
         let _ = tokio::join!(receiver_task, sender_task);
 
@@ -124,7 +122,7 @@ impl ServerInstance {
     async fn handle_offline_packet(self: Arc<Self>, packet: RawPacket) -> VResult<()> {
         let id = packet
             .packet_id()
-            .ok_or(error!(BadPacket, "Packet is missing payload"))?;
+            .ok_or_else(|| error!(BadPacket, "Packet is missing payload"))?;
 
         match id {
             OfflinePing::ID => self.handle_unconnected_ping(packet).await?,
@@ -153,11 +151,7 @@ impl ServerInstance {
     }
 
     /// Responds to the [`OpenConnectionRequest1`] packet with [`OpenConnectionReply1`].
-    #[tracing::instrument]
-    async fn handle_open_connection_request1(
-        self: Arc<Self>,
-        packet: RawPacket,
-    ) -> VResult<()> {
+    async fn handle_open_connection_request1(self: Arc<Self>, packet: RawPacket) -> VResult<()> {
         let request = OpenConnectionRequest1::decode(packet.buffer.clone())?;
         if request.protocol_version != RAKNET_VERSION {
             let reply = IncompatibleProtocol {
@@ -186,11 +180,8 @@ impl ServerInstance {
     /// Responds to the [`OpenConnectionRequest2`] packet with [`OpenConnectionReply2`].
     /// This is also when a session is created for the client.
     /// From this point, all packets are encoded in a [`Frame`](crate::network::raknet::Frame).
-    #[tracing::instrument]
-    async fn handle_open_connection_request2(
-        self: Arc<Self>,
-        packet: RawPacket,
-    ) -> VResult<()> {
+
+    async fn handle_open_connection_request2(self: Arc<Self>, packet: RawPacket) -> VResult<()> {
         let request = OpenConnectionRequest2::decode(packet.buffer.clone())?;
         let reply = OpenConnectionReply2 {
             server_guid: self.guid,
@@ -320,7 +311,7 @@ impl ServerInstance {
         tokio::spawn(async move {
             tokio::select! {
                 _ = signal::ctrl_c() => {
-                    tracing::info!("Shutting down services...");
+                    tracing::info!("Shutting down...");
                     token.cancel();
                 },
                 _ = token.cancelled() => {

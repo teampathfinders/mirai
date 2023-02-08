@@ -57,6 +57,7 @@ fn main() -> VResult<()> {
         .build()
         .expect("Failed to build runtime");
 
+    tracing::info!("Starting server...");
     runtime.block_on(app_main())
 }
 
@@ -87,7 +88,7 @@ fn init_logging() {
 fn init_logging() {
     tracing_subscriber::fmt()
         .with_target(false)
-        .with_max_level(tracing::Level::TRACE)
+        .with_max_level(tracing::Level::DEBUG)
         .with_file(true)
         .with_line_number(true)
         .init();

@@ -20,6 +20,8 @@ impl Decodable for ClientCacheStatus {
     fn decode(mut buffer: BytesMut) -> VResult<Self> {
         let support = buffer.get_bool();
 
-        Ok(Self { supports_cache: support })
+        Ok(Self {
+            supports_cache: support,
+        })
     }
 }

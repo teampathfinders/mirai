@@ -150,7 +150,6 @@ pub struct BlockEntry {
 impl BlockEntry {
     pub fn encode(&self, buffer: &mut BytesMut) {
         buffer.put_string(&self.name);
-
     }
 }
 

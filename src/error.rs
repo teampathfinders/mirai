@@ -1,3 +1,5 @@
+use std::backtrace::Backtrace;
+
 /// Verifies that the given expression evaluates to true,
 /// or returns an error
 #[macro_export]
@@ -69,18 +71,28 @@ pub enum VErrorKind {
 #[derive(Debug)]
 pub struct VError {
     kind: VErrorKind,
+    backtrace: Backtrace,
     message: String,
 }
 
 impl VError {
     #[inline]
     pub fn new(kind: VErrorKind, message: String) -> Self {
-        Self { kind, message }
+        Self {
+            kind,
+            message,
+            backtrace: Backtrace::capture(),
+        }
     }
 
     #[inline]
-    pub fn kind(&self) -> VErrorKind {
+    pub const fn kind(&self) -> VErrorKind {
         self.kind
+    }
+
+    #[inline]
+    pub const fn backtrace(&self) -> &Backtrace {
+        &self.backtrace
     }
 }
 
@@ -88,7 +100,7 @@ impl std::error::Error for VError {}
 
 impl std::fmt::Display for VError {
     fn fmt(&self, fmt: &mut std::fmt::Formatter) -> std::fmt::Result {
-        todo!()
+        write!(fmt, "{:?} | {}", self.kind, self.message)
     }
 }
 
@@ -102,11 +114,17 @@ impl From<std::io::Error> for VError {
     fn from(value: std::io::Error) -> Self {
         match value.kind() {
             std::io::ErrorKind::InvalidData => Self::new(VErrorKind::BadPacket, value.to_string()),
-            std::io::ErrorKind::AlreadyExists => Self::new(VErrorKind::AlreadyInitialized, value.to_string()),
+            std::io::ErrorKind::AlreadyExists => {
+                Self::new(VErrorKind::AlreadyInitialized, value.to_string())
+            }
             std::io::ErrorKind::AddrInUse => Self::new(VErrorKind::AlreadyInUse, value.to_string()),
-            std::io::ErrorKind::NotConnected => Self::new(VErrorKind::NotConnected, value.to_string()),
-            std::io::ErrorKind::ConnectionAborted => Self::new(VErrorKind::Aborted, value.to_string()),
-            _ => Self::new(VErrorKind::Other, value.to_string())
+            std::io::ErrorKind::NotConnected => {
+                Self::new(VErrorKind::NotConnected, value.to_string())
+            }
+            std::io::ErrorKind::ConnectionAborted => {
+                Self::new(VErrorKind::Aborted, value.to_string())
+            }
+            _ => Self::new(VErrorKind::Other, value.to_string()),
         }
     }
 }
@@ -114,11 +132,21 @@ impl From<std::io::Error> for VError {
 impl From<jsonwebtoken::errors::Error> for VError {
     fn from(value: jsonwebtoken::errors::Error) -> Self {
         match value.kind() {
-            jsonwebtoken::errors::ErrorKind::InvalidToken => Self::new(VErrorKind::BadPacket, value.to_string()),
-            jsonwebtoken::errors::ErrorKind::InvalidSignature => Self::new(VErrorKind::InvalidIdentity, value.to_string()),
-            jsonwebtoken::errors::ErrorKind::InvalidEcdsaKey => Self::new(VErrorKind::InvalidIdentity, value.to_string()),
-            jsonwebtoken::errors::ErrorKind::Base64(_) | jsonwebtoken::errors::ErrorKind::Json(_) | jsonwebtoken::errors::ErrorKind::Utf8(_) => Self::new(VErrorKind::BadPacket, value.to_string()),
-            _ => Self::new(VErrorKind::Other, value.to_string())
+            jsonwebtoken::errors::ErrorKind::InvalidToken => {
+                Self::new(VErrorKind::BadPacket, value.to_string())
+            }
+            jsonwebtoken::errors::ErrorKind::InvalidSignature => {
+                Self::new(VErrorKind::InvalidIdentity, value.to_string())
+            }
+            jsonwebtoken::errors::ErrorKind::InvalidEcdsaKey => {
+                Self::new(VErrorKind::InvalidIdentity, value.to_string())
+            }
+            jsonwebtoken::errors::ErrorKind::Base64(_)
+            | jsonwebtoken::errors::ErrorKind::Json(_)
+            | jsonwebtoken::errors::ErrorKind::Utf8(_) => {
+                Self::new(VErrorKind::BadPacket, value.to_string())
+            }
+            _ => Self::new(VErrorKind::Other, value.to_string()),
         }
     }
 }

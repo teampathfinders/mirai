@@ -7,8 +7,13 @@ use jsonwebtoken::jwk::KeyOperations::Encrypt;
 use crate::bail;
 use crate::config::SERVER_CONFIG;
 use crate::crypto::Encryptor;
-use crate::error::VResult;
-use crate::network::packets::{ClientCacheStatus, ClientToServerHandshake, Disconnect, GamePacket, Login, NETWORK_VERSION, NetworkSettings, Packet, PlayStatus, RequestNetworkSettings, ResourcePackClientResponse, ResourcePacksInfo, ResourcePackStack, ServerToClientHandshake, Status};
+use crate::error::{VErrorKind, VResult};
+use crate::network::packets::{
+    ClientCacheStatus, ClientToServerHandshake, Disconnect, DISCONNECTED_LOGIN_FAILED, DISCONNECTED_NOT_AUTHENTICATED, Login,
+    NETWORK_VERSION, NetworkSettings, PlayStatus, RequestNetworkSettings,
+    ResourcePackClientResponse, ResourcePacksInfo, ResourcePackStack, ServerToClientHandshake,
+    Status,
+};
 use crate::network::raknet::{Frame, FrameBatch};
 use crate::network::raknet::Reliability;
 use crate::network::session::send_queue::SendPriority;
@@ -33,10 +38,9 @@ impl Session {
 
     pub fn handle_client_to_server_handshake(&self, mut packet: BytesMut) -> VResult<()> {
         ClientToServerHandshake::decode(packet)?;
-        tracing::trace!("Successfully initiated encryption");
 
         let response = PlayStatus {
-            status: Status::LoginSuccess
+            status: Status::LoginSuccess,
         };
         self.send_packet(response)?;
 
@@ -60,12 +64,6 @@ impl Session {
         };
         self.send_packet(pack_stack)?;
 
-        let disconnect = Disconnect {
-            kick_message: "disconnectionScreen.notAuthenticated".to_string(),
-            hide_disconnect_screen: false,
-        };
-        self.send_packet(disconnect)?;
-
         Ok(())
     }
 
@@ -75,13 +73,8 @@ impl Session {
         let request = match request {
             Ok(r) => r,
             Err(e) => {
-                let disconnect = Disconnect {
-                    kick_message: "disconnectionScreen.notAuthenticated".to_string(),
-                    hide_disconnect_screen: false,
-                };
-                self.send_packet(disconnect)?;
-
-                bail!(NotAuthenticated)
+                self.kick(DISCONNECTED_LOGIN_FAILED)?;
+                return Err(e);
             }
         };
         tracing::info!("{} has joined the server", request.identity.display_name);
@@ -95,10 +88,7 @@ impl Session {
         self.flush().await?;
 
         self.send_packet(ServerToClientHandshake { jwt: jwt.as_str() })?;
-        self.encryptor
-            .set(encryptor)?;
-
-        tracing::trace!("Initiating encryption...");
+        self.encryptor.set(encryptor)?;
 
         Ok(())
     }
@@ -113,18 +103,26 @@ impl Session {
                 };
                 self.send_packet(response)?;
 
-                bail!(VersionMismatch, "Client is using a newer protocol ({} vs. {})", request.protocol_version, NETWORK_VERSION);
+                bail!(
+                    VersionMismatch,
+                    "Client is using a newer protocol ({} vs. {})",
+                    request.protocol_version,
+                    NETWORK_VERSION
+                );
             } else {
                 let response = PlayStatus {
                     status: Status::FailedClient,
                 };
                 self.send_packet(response)?;
 
-                bail!(VersionMismatch, "Client is using an older protocol ({} vs. {})", request.protocol_version, NETWORK_VERSION);
+                bail!(
+                    VersionMismatch,
+                    "Client is using an older protocol ({} vs. {})",
+                    request.protocol_version,
+                    NETWORK_VERSION
+                );
             }
         }
-
-        // TODO: Disconnect client if incompatible protocol.
 
         let response = {
             let lock = SERVER_CONFIG.read();
@@ -137,8 +135,6 @@ impl Session {
 
         self.send_packet(response)?;
         self.compression_enabled.store(true, Ordering::SeqCst);
-
-        tracing::trace!("Sent network settings");
 
         Ok(())
     }

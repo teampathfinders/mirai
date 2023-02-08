@@ -61,7 +61,12 @@ impl SessionTracker {
                 let session = r.value();
                 session.receive_queue.push(packet.buffer);
             })
-            .ok_or(error!(NotConnected, "Attempted to forward packet to non-existent session"))
+            .ok_or_else(|| {
+                error!(
+                    NotConnected,
+                    "Attempted to forward packet to non-existent session"
+                )
+            })
     }
 
     /// Returns how many clients are currently connected this tracker.

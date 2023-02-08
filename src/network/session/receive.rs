@@ -9,7 +9,10 @@ use crate::{bail, error, vassert};
 use crate::config::SERVER_CONFIG;
 use crate::error::{VError, VResult};
 use crate::network::header::Header;
-use crate::network::packets::{ClientCacheStatus, ClientToServerHandshake, CompressionAlgorithm, GAME_PACKET_ID, GamePacket, Login, RequestNetworkSettings, ResourcePackClientResponse};
+use crate::network::packets::{
+    ClientCacheStatus, ClientToServerHandshake, CompressionAlgorithm, GAME_PACKET_ID, GamePacket,
+    Login, RequestNetworkSettings, ResourcePackClientResponse,
+};
 use crate::network::packets::OnlinePing;
 use crate::network::raknet::{Frame, FrameBatch};
 use crate::network::raknet::packets::{
@@ -167,8 +170,7 @@ impl Session {
                 CompressionAlgorithm::Deflate => {
                     let mut reader = flate2::read::DeflateDecoder::new(packet.as_ref());
                     let mut decompressed = Vec::new();
-                    reader
-                        .read_to_end(&mut decompressed)?;
+                    reader.read_to_end(&mut decompressed)?;
                     // .context("Failed to decompress packet using Deflate")?;
 
                     BytesMut::from(decompressed.as_slice())

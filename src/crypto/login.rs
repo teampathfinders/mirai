@@ -93,7 +93,7 @@ fn verify_first_token(token: &str) -> VResult<String> {
     let header = jsonwebtoken::decode_header(token)?;
     let base64 = header
         .x5u
-        .ok_or(error!(BadPacket, "Missing X.509 certificate URL (x5u)"))?;
+        .ok_or_else(|| error!(BadPacket, "Missing X.509 certificate URL (x5u)"))?;
     // .context("Failed to extract client public key from first token in JWT chain")?;
 
     let bytes = BASE64_ENGINE.decode(base64)?;
@@ -195,10 +195,11 @@ pub fn parse_identity_data(buffer: &mut BytesMut) -> VResult<IdentityTokenPayloa
 
     let identity_data = match tokens.chain.len() {
         1 => {
-            // TODO: Disconnect player if not signed into Xbox Live.
-
             // Client is not signed into Xbox.
-            bail!(NotAuthenticated, "User must be authenticated with Microsoft services.");
+            bail!(
+                NotAuthenticated,
+                "User must be authenticated with Microsoft services."
+            );
         }
         3 => {
             // Verify the first token and decode the public key for the next token.
@@ -212,7 +213,11 @@ pub fn parse_identity_data(buffer: &mut BytesMut) -> VResult<IdentityTokenPayloa
             key = verify_second_token(&tokens.chain[1], &key)?;
             verify_third_token(&tokens.chain[2], &key)?
         }
-        _ => bail!(BadPacket, "Unexpected token count {}, expected 3", tokens.chain.len()),
+        _ => bail!(
+            BadPacket,
+            "Unexpected token count {}, expected 3",
+            tokens.chain.len()
+        ),
     };
 
     Ok(identity_data)
@@ -220,10 +225,7 @@ pub fn parse_identity_data(buffer: &mut BytesMut) -> VResult<IdentityTokenPayloa
 
 /// Parses the user data token from the login packet.
 /// This token contains the user's operating system, language, skin, etc.
-pub fn parse_user_data(
-    buffer: &mut BytesMut,
-    public_key: &str,
-) -> VResult<UserTokenPayload> {
+pub fn parse_user_data(buffer: &mut BytesMut, public_key: &str) -> VResult<UserTokenPayload> {
     let token_length = buffer.get_u32_le();
     let position = buffer.len() - buffer.remaining();
     let token = &buffer.as_ref()[position..(position + token_length as usize)];

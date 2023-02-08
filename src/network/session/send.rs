@@ -57,11 +57,9 @@ impl Session {
                 match SERVER_CONFIG.read().compression_algorithm {
                     CompressionAlgorithm::Snappy => {
                         todo!("Snappy compression")
-                    },
+                    }
                     CompressionAlgorithm::Deflate => {
-                        let mut writer = DeflateEncoder::new(
-                            Vec::new(), Compression::fast(),
-                        );
+                        let mut writer = DeflateEncoder::new(Vec::new(), Compression::fast());
 
                         writer.write_all(packet_buffer.as_ref())?;
                         // .context("Failed to compress packet using Deflate")?;

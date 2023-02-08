@@ -49,7 +49,10 @@ pub trait ReadExtensions: Buf {
                 SocketAddr::new(addr, port)
             }
             _ => {
-                bail!(BadPacket, "Invalid IP type {ip_type}, expected either 4 or 6");
+                bail!(
+                    BadPacket,
+                    "Invalid IP type {ip_type}, expected either 4 or 6"
+                );
             }
         })
     }
@@ -100,7 +103,10 @@ pub trait ReadExtensions: Buf {
             i += 7;
         }
 
-        bail!(BadPacket, "Variable 32-bit integer did not end after 5 bytes")
+        bail!(
+            BadPacket,
+            "Variable 32-bit integer did not end after 5 bytes"
+        )
     }
 
     /// Reads a variable size signed 32-bit integer from the stream.
@@ -124,13 +130,16 @@ pub trait ReadExtensions: Buf {
             v |= ((b & 0x7f) as u64) << i;
 
             if b & 0x80 == 0 {
-                return Ok(v)
+                return Ok(v);
             }
 
             i += 7;
         }
 
-        bail!(BadPacket, "Variable 64-bit integer did not end after 10 bytes")
+        bail!(
+            BadPacket,
+            "Variable 64-bit integer did not end after 10 bytes"
+        )
     }
 
     /// Reads a variable size signed 64-bit integer from the stream.

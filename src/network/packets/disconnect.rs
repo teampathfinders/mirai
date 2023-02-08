@@ -5,6 +5,13 @@ use crate::network::packets::GamePacket;
 use crate::network::traits::Encodable;
 use crate::util::WriteExtensions;
 
+pub const DISCONNECTED_NOT_AUTHENTICATED: &str = "disconnectionScreen.notAuthenticated";
+pub const DISCONNECTED_NO_REASON: &str = "disconnectionScreen.noReason";
+pub const DISCONNECTED_TIMEOUT: &str = "disconnectionScreen.timeout";
+pub const DISCONNECTED_LOGIN_FAILED: &str = "disconnect.loginFailed";
+pub const DISCONNECTED_ENCRYPTION_FAIL: &str = "Encryption checksums do not match.";
+pub const DISCONNECTED_BAD_PACKET: &str = "Client sent bad packet.";
+
 /// Sent by the server to disconnect a client.
 #[derive(Debug)]
 pub struct Disconnect {
