@@ -1,7 +1,6 @@
 use base64::Engine;
 use bytes::{Buf, BytesMut};
 use jsonwebtoken::{Algorithm, DecodingKey, Validation};
-use serde::Deserialize;
 use spki::SubjectPublicKeyInfo;
 
 use crate::{bail, vassert};
