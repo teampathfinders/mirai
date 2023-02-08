@@ -9,10 +9,7 @@ use crate::{bail, error, vassert};
 use crate::config::SERVER_CONFIG;
 use crate::error::{VError, VResult};
 use crate::network::header::Header;
-use crate::network::packets::{
-    ClientCacheStatus, ClientToServerHandshake, CompressionAlgorithm, GAME_PACKET_ID, GamePacket,
-    Login, RequestNetworkSettings, ResourcePackClientResponse,
-};
+use crate::network::packets::{ClientCacheStatus, ClientToServerHandshake, CompressionAlgorithm, GAME_PACKET_ID, GamePacket, Login, RequestNetworkSettings, ResourcePackClientResponse, ViolationWarning};
 use crate::network::packets::OnlinePing;
 use crate::network::raknet::{Frame, FrameBatch};
 use crate::network::raknet::packets::{
@@ -193,7 +190,8 @@ impl Session {
             ClientToServerHandshake::ID => self.handle_client_to_server_handshake(packet),
             ClientCacheStatus::ID => self.handle_client_cache_status(packet),
             ResourcePackClientResponse::ID => self.handle_resource_pack_client_response(packet),
-            id => bail!(BadPacket, "Invalid game packet: {id:#04x}"),
+            ViolationWarning::ID => self.handle_violation_warning(packet),
+            id => bail!(BadPacket, "Invalid game packet: {:#04x}", id),
         }
     }
 }

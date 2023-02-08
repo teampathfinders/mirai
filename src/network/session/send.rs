@@ -46,6 +46,8 @@ impl Session {
         buffer.put_u8(GAME_PACKET_ID);
 
         let mut packet_buffer = packet.encode()?;
+        tracing::info!("Buffer: {:?}", packet_buffer.as_ref());
+
         if self.compression_enabled.load(Ordering::SeqCst) {
             let (algorithm, threshold) = {
                 let config = SERVER_CONFIG.read();

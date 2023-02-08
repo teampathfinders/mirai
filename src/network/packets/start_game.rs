@@ -47,6 +47,8 @@ pub enum WorldGenerator {
 
 impl WorldGenerator {
     pub fn encode(&self, buffer: &mut BytesMut) {
+        tracing::info!("aaa {}", *self as u32);
+
         buffer.put_var_u32(*self as u32);
     }
 }
@@ -218,6 +220,7 @@ pub struct StartGame {
     pub only_spawn_v1_villagers: bool,
     pub persona_disabled: bool,
     pub custom_skins_disabled: bool,
+    pub emote_chat_muted: bool,
     /// Version of the game from which vanilla features will be used.
     pub base_game_version: String,
     pub limited_world_width: u32,
@@ -253,44 +256,18 @@ impl Encodable for StartGame {
         let mut buffer = BytesMut::new();
 
         buffer.put_var_u64(self.entity_id);
-        // buffer.put_var_i64(0);
-
         buffer.put_var_u64(self.runtime_id);
-
         self.gamemode.encode(&mut buffer);
-        // buffer.put_var_i32(0);
-
         self.position.encode(&mut buffer);
-        // buffer.put_f32(0.0);
-        // buffer.put_f32(0.0);
-        // buffer.put_f32(0.0);
-
         self.rotation.encode(&mut buffer);
-        // buffer.put_f32(0.0);
-        // buffer.put_f32(0.0);
-
         buffer.put_u64(self.world_seed);
-        // buffer.put_i64(0);
-
         buffer.put_u16(self.spawn_biome_type);
-        // buffer.put_i16(0);
-
         buffer.put_string(&self.custom_biome_name);
-        // buffer.put_string("plains");
-
         self.dimension.encode(&mut buffer);
-        // buffer.put_var_i32(0);
-
+        self.generator.encode(&mut buffer);
         self.world_gamemode.encode(&mut buffer);
-        // buffer.put_var_i32(0);
-
         self.difficulty.encode(&mut buffer);
-        // buffer.put_var_i32(0);
-
         self.world_spawn.encode(&mut buffer);
-        // buffer.put_var_i32(0);
-        // buffer.put_var_u32(0);
-        // buffer.put_var_i32(0);
 
         buffer.put_bool(self.achievements_disabled);
         buffer.put_bool(self.editor_world);
@@ -332,15 +309,14 @@ impl Encodable for StartGame {
         buffer.put_bool(self.only_spawn_v1_villagers);
         buffer.put_bool(self.persona_disabled);
         buffer.put_bool(self.custom_skins_disabled);
+        buffer.put_bool(self.emote_chat_muted);
         buffer.put_string(&self.base_game_version);
-        // buffer.put_u32(self.limited_world_width);
-        buffer.put_u32(16);
-        // buffer.put_u32(self.limited_world_height);
-        buffer.put_u32(16);
+        buffer.put_u32(self.limited_world_width);
+        buffer.put_u32(self.limited_world_height);
         buffer.put_bool(self.has_new_nether);
         buffer.put_string("");
         buffer.put_string("");
-        buffer.put_bool(self.force_experimental_gameplay); // TODO
+        // buffer.put_bool(self.force_experimental_gameplay); // TODO
         self.chat_restriction_level.encode(&mut buffer);
         buffer.put_bool(self.disable_player_interactions);
         buffer.put_string(&self.level_id);
@@ -361,7 +337,9 @@ impl Encodable for StartGame {
             item.encode(&mut buffer);
         }
 
-        buffer.put_string(&self.multiplayer_correlation_id);
+        // buffer.put_string(&self.multiplayer_correlation_id);
+        buffer.put_string("5b39a9d6-f1a1-411a-b749-b30742f81771");
+
         buffer.put_bool(self.server_authoritative_inventory);
         buffer.put_string(&self.game_version);
 
@@ -373,6 +351,8 @@ impl Encodable for StartGame {
         buffer.put_u64(self.server_block_state_checksum);
         buffer.put_u128(self.world_template_id);
         buffer.put_bool(self.client_side_generation);
+
+        tracing::info!("{:x?}", buffer.as_ref());
 
         Ok(buffer)
     }

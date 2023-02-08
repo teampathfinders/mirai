@@ -232,7 +232,7 @@ impl Session {
             hide_disconnect_screen: false,
         };
         self.send_packet(disconnect_packet)?;
-        self.flag_for_close();
+        // self.flag_for_close();
         // FIXME: Client sends disconnect and acknowledgement packet after closing.
 
         Ok(())

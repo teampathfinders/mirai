@@ -9,7 +9,8 @@ use crate::bail;
 use crate::config::SERVER_CONFIG;
 use crate::crypto::Encryptor;
 use crate::error::{VErrorKind, VResult};
-use crate::network::packets::{ChatRestrictionLevel, ClientCacheStatus, ClientToServerHandshake, Difficulty, Dimension, Disconnect, DISCONNECTED_LOGIN_FAILED, DISCONNECTED_NOT_AUTHENTICATED, GameMode, ItemEntry, Login, NETWORK_VERSION, NetworkSettings, PermissionLevel, PlayerMovementSettings, PlayerMovementType, PlayStatus, RequestNetworkSettings, ResourcePackClientResponse, ResourcePacksInfo, ResourcePackStack, ServerToClientHandshake, StartGame, Status, WorldGenerator};
+use crate::network::packets::{ChatRestrictionLevel, ClientCacheStatus, ClientToServerHandshake, CreativeContent, Difficulty, Dimension, Disconnect, DISCONNECTED_LOGIN_FAILED, DISCONNECTED_NOT_AUTHENTICATED, GameMode, ItemEntry, Login, NETWORK_VERSION, NetworkSettings, PermissionLevel, PlayerMovementSettings, PlayerMovementType, PlayStatus, RequestNetworkSettings, ResourcePackClientResponse, ResourcePacksInfo, ResourcePackStack, ServerToClientHandshake, StartGame, Status, ViolationWarning, WorldGenerator};
+use crate::network::packets::GameMode::Creative;
 use crate::network::raknet::{Frame, FrameBatch};
 use crate::network::raknet::Reliability;
 use crate::network::session::send_queue::SendPriority;
@@ -26,34 +27,39 @@ impl Session {
         Ok(())
     }
 
+    pub fn handle_violation_warning(&self, mut packet: BytesMut) -> VResult<()> {
+        let request = ViolationWarning::decode(packet)?;
+        tracing::error!("Received violation warning: {request:?}");
+
+        self.kick("Violation warning")?;
+        Ok(())
+    }
+
     pub fn handle_resource_pack_client_response(&self, mut packet: BytesMut) -> VResult<()> {
         let request = ResourcePackClientResponse::decode(packet)?;
         tracing::info!("{request:?}");
 
-        self.kick("Hello, World!")?;
-        return Ok(());
-
         // TODO: Implement resource packs.
 
         let start_game = StartGame {
-            entity_id: 0,
-            runtime_id: 0,
+            entity_id: 1,
+            runtime_id: 1,
             gamemode: GameMode::Creative,
             position: Vector3f::from([0.0, 0.0, 0.0]),
             rotation: Vector2f::from([0.0, 0.0]),
             world_seed: 0,
             spawn_biome_type: 0,
-            custom_biome_name: "plains".to_string(),
+            custom_biome_name: "".to_string(),
             dimension: Dimension::Overworld,
-            generator: WorldGenerator::Flat,
-            world_gamemode: GameMode::Creative,
+            generator: WorldGenerator::Infinite,
+            world_gamemode: GameMode::Survival,
             difficulty: Difficulty::Normal,
             world_spawn: BlockPosition::new(0, 0, 0),
             achievements_disabled: true,
             editor_world: false,
             day_cycle_lock_time: 0,
             education_offer: 0,
-            education_features_enabled: false,
+            education_features_enabled: true,
             education_production_id: "".to_string(),
             rain_level: 0.0,
             lightning_level: 0.0,
@@ -68,7 +74,7 @@ impl Session {
             experiments_previously_enabled: false,
             bonus_chest_enabled: false,
             starter_map_enabled: false,
-            permission_level: PermissionLevel::Visitor,
+            permission_level: PermissionLevel::Member,
             server_chunk_tick_range: 0,
             has_locked_behavior_pack: false,
             has_locked_resource_pack: false,
@@ -79,9 +85,10 @@ impl Session {
             only_spawn_v1_villagers: false,
             persona_disabled: false,
             custom_skins_disabled: false,
-            base_game_version: "1.19".to_string(),
-            limited_world_width: 16,
-            limited_world_height: 16,
+            emote_chat_muted: false,
+            base_game_version: "1.19.60".to_string(),
+            limited_world_width: 0,
+            limited_world_height: 0,
             has_new_nether: false,
             force_experimental_gameplay: false,
             chat_restriction_level: ChatRestrictionLevel::None,
@@ -93,18 +100,12 @@ impl Session {
             movement_settings: PlayerMovementSettings {
                 movement_type: PlayerMovementType::ClientAuthoritative,
                 rewind_history_size: 0,
-                server_authoritative_breaking: false,
+                server_authoritative_breaking: true,
             },
             time: 0,
             enchantment_seed: 0,
             block_properties: vec![],
-            item_properties: vec![
-                ItemEntry {
-                    name: "minecraft:stick".to_owned(),
-                    runtime_id: 0,
-                    component_based: false,
-                }
-            ],
+            item_properties: vec![],
             multiplayer_correlation_id: "".to_string(),
             server_authoritative_inventory: false,
             game_version: "1.19.60".to_string(),
@@ -114,6 +115,11 @@ impl Session {
             client_side_generation: false,
         };
         self.send_packet(start_game)?;
+
+        let creative_content = CreativeContent {
+            items: vec![]
+        };
+        self.send_packet(creative_content)?;
 
         Ok(())
     }
