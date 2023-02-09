@@ -21,7 +21,7 @@ macro_rules! vassert {
 #[macro_export]
 macro_rules! bail {
     ($err_type: ident, $fmt: expr) => {
-        return Err($crate::error::VError::new($crate::error::VErrorKind::$err_type, $fmt.to_string()))
+        return Err($crate::VError::new($crate::VErrorKind::$err_type, $fmt.to_string()))
     };
 
     ($err_type: ident, $fmt: expr, $($args:expr),*) => {
@@ -36,7 +36,7 @@ macro_rules! bail {
 #[macro_export]
 macro_rules! error {
     ($err_type: ident, $fmt: expr) => {
-        $crate::error::VError::new($crate::error::VErrorKind::$err_type, $fmt.to_string())
+        $crate::VError::new($crate::VErrorKind::$err_type, $fmt.to_string())
     };
 }
 

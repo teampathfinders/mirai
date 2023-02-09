@@ -1,4 +1,7 @@
+use std::future::Future;
+use std::marker::PhantomData;
 use std::net::{Ipv4Addr, Ipv6Addr, SocketAddrV4};
+use std::pin::Pin;
 use std::sync::Arc;
 use std::time::Duration;
 
@@ -10,9 +13,9 @@ use tokio_util::sync::CancellationToken;
 
 use vex_common::{Decodable, Encodable, error, SERVER_CONFIG, VResult};
 
-use crate::{async_queue::AsyncDeque, RAKNET_VERSION, raw::RawPacket};
+use crate::{async_queue::AsyncDeque, listener, RAKNET_VERSION, raw::RawPacket};
 use crate::packets::{IncompatibleProtocol, OfflinePing, OfflinePong, OpenConnectionReply1, OpenConnectionReply2, OpenConnectionRequest1, OpenConnectionRequest2};
-use crate::session::{CLIENT_VERSION_STRING, NETWORK_VERSION, SessionTracker};
+use crate::session::{CLIENT_VERSION_STRING, NETWORK_VERSION, Session, SessionTracker};
 
 /// Local IPv4 address
 pub const IPV4_LOCAL_ADDR: Ipv4Addr = Ipv4Addr::new(127, 0, 0, 1);
@@ -24,7 +27,7 @@ const RECV_BUF_SIZE: usize = 4096;
 /// This data is displayed in the server menu.
 const METADATA_REFRESH_INTERVAL: Duration = Duration::from_secs(2);
 
-#[derive(Debug)]
+// #[derive(Debug)]
 pub struct Listener {
     token: CancellationToken,
     /// Randomised GUID, required by Minecraft
@@ -41,10 +44,13 @@ pub struct Listener {
     outward_queue: Arc<AsyncDeque<RawPacket>>,
     /// Service that manages all player sessions.
     session_controller: Arc<SessionTracker>,
+    message_callback: Arc<dyn Fn(BytesMut) -> VResult<()> + Send + Sync + 'static>,
 }
 
 impl Listener {
-    pub async fn new() -> VResult<Arc<Self>> {
+    pub async fn new(
+        callback: &'static (dyn Fn(BytesMut) -> VResult<()> + Send + Sync)
+    ) -> VResult<Arc<Self>> {
         let (ipv4_port, _ipv6_port) = {
             let lock = SERVER_CONFIG.read();
             (lock.ipv4_port, lock.ipv6_port)
@@ -66,6 +72,7 @@ impl Listener {
 
             session_controller: Arc::new(SessionTracker::new(token.clone())),
             token,
+            message_callback: Arc::new(callback)
         };
 
         Ok(Arc::new(listener))

@@ -28,7 +28,7 @@ const SESSION_TIMEOUT: Duration = Duration::from_secs(5);
 const ORDER_CHANNEL_COUNT: usize = 5;
 
 #[derive(Debug)]
-pub struct Session {
+pub struct Session<'t> {
     pub token: CancellationToken,
     /// IPv4 socket of the server.
     pub ipv4_socket: Arc<UdpSocket>,
@@ -66,14 +66,16 @@ pub struct Session {
     /// Current tick of this session, this is increased by one every time the session
     /// processes packets.
     pub current_tick: AtomicU64,
+    message_callback: Arc<dyn Fn(&Self, BytesMut) -> VResult<()> + Send + Sync + 't>
 }
 
-impl Session {
+impl<'t> Session<'t> {
     pub fn new(
         ipv4_socket: Arc<UdpSocket>,
         address: SocketAddr,
         mtu: u16,
         guid: u64,
+        callback: Arc<dyn Fn(&Self, BytesMut) -> VResult<()> + Send + Sync + 't>,
     ) -> Arc<Self> {
         let session = Arc::new(Self {
             token: CancellationToken::new(),
@@ -93,6 +95,7 @@ impl Session {
             receive_queue: AsyncDeque::new(5),
             recovery_queue: RecoveryQueue::new(),
             current_tick: AtomicU64::new(0),
+            message_callback: callback
         });
 
         // Start ticker

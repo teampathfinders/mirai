@@ -43,8 +43,8 @@ impl Session {
     /// * Inserting packets into the compound collector
     /// * Discarding old sequenced frames
     /// * Acknowledging reliable packets
-    async fn handle_frame_batch(&self, task: BytesMut) -> VResult<()> {
-        let batch = FrameBatch::decode(task)?;
+    async fn handle_frame_batch(&self, packet: BytesMut) -> VResult<()> {
+        let batch = FrameBatch::decode(packet)?;
         self.client_batch_number
             .fetch_max(batch.get_batch_number(), Ordering::SeqCst);
 
@@ -98,19 +98,23 @@ impl Session {
     }
 
     /// Processes an unencapsulated game packet.
-    async fn handle_unframed_packet(&self, mut task: BytesMut) -> VResult<()> {
-        let bytes = task.as_ref();
+    async fn handle_unframed_packet(&self, mut packet: BytesMut) -> VResult<()> {
+        let bytes = packet.as_ref();
 
-        let packet_id = *task.first().expect("Game packet buffer was empty");
+        let packet_id = *packet.first().expect("Game packet buffer was empty");
         match packet_id {
-            GAME_PACKET_ID => self.handle_game_packet(task).await?,
+            GAME_PACKET_ID => self.handle_game_packet(packet).await?,
             DisconnectNotification::ID => self.flag_for_close(),
-            ConnectionRequest::ID => self.handle_connection_request(task)?,
-            NewIncomingConnection::ID => self.handle_new_incoming_connection(task)?,
-            OnlinePing::ID => self.handle_online_ping(task)?,
+            ConnectionRequest::ID => self.handle_connection_request(packet)?,
+            NewIncomingConnection::ID => self.handle_new_incoming_connection(packet)?,
+            OnlinePing::ID => self.handle_online_ping(packet)?,
             id => bail!(BadPacket, "Invalid Raknet packet ID: {}", id),
         }
 
         Ok(())
+    }
+
+    async fn handle_game_packet(&self, mut packet: BytesMut) -> VResult<()> {
+        todo!();
     }
 }
