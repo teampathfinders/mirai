@@ -2,9 +2,7 @@ use bytes::{BufMut, BytesMut};
 
 use vex_common::{Encodable, VResult, WriteExtensions};
 
-use crate::network::Encodable;
 use crate::network::packets::GamePacket;
-use crate::util::WriteExtensions;
 
 #[derive(Debug)]
 pub struct ExperimentData {

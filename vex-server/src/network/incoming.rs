@@ -1,15 +1,15 @@
 use std::io::Read;
 use std::sync::atomic::Ordering;
 
-use bytes::BytesMut;
+use bytes::{Buf, BytesMut};
 
 use vex_common::{bail, CompressionAlgorithm, ReadExtensions, SERVER_CONFIG, vassert, VResult};
 
 use crate::network::header::Header;
 use crate::network::packets::{ClientCacheStatus, ClientToServerHandshake, GamePacket, Login, RequestNetworkSettings, ResourcePackClientResponse, ViolationWarning};
-use crate::network::Session;
+use crate::network::Player;
 
-impl Session {
+impl Player {
     async fn handle_game_packet(&self, mut packet: BytesMut) -> VResult<()> {
         vassert!(packet.get_u8() == 0xfe);
 

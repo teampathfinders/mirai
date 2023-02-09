@@ -23,8 +23,8 @@ mod test;
 /// The asynchronous entrypoint that is ran by Tokio.
 async fn app_main() -> VResult<()> {
     loop {
-        let controller = ServerInstance::new().await?;
-        match controller.run().await {
+        let future = ServerInstance::start();
+        match future.await {
             Ok(_) => {
                 break;
             }

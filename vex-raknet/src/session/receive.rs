@@ -4,11 +4,12 @@ use std::time::Instant;
 use async_recursion::async_recursion;
 use bytes::BytesMut;
 
-use vex_common::{bail, Decodable, VResult};
+use vex_common::{bail, Decodable, error, VResult};
 
 use crate::frame::{Frame, FrameBatch};
+use crate::GAME_PACKET_ID;
 use crate::packets::{Acknowledgement, ConnectionRequest, DisconnectNotification, NegativeAcknowledgement, NewIncomingConnection, OnlinePing};
-use crate::session::{GAME_PACKET_ID, Session};
+use crate::session::Session;
 
 impl Session {
     /// Processes the raw packet coming directly from the network.
@@ -98,9 +99,7 @@ impl Session {
     }
 
     /// Processes an unencapsulated game packet.
-    async fn handle_unframed_packet(&self, mut packet: BytesMut) -> VResult<()> {
-        let bytes = packet.as_ref();
-
+    async fn handle_unframed_packet(&self, packet: BytesMut) -> VResult<()> {
         let packet_id = *packet.first().expect("Game packet buffer was empty");
         match packet_id {
             GAME_PACKET_ID => self.handle_game_packet(packet).await?,
@@ -114,7 +113,11 @@ impl Session {
         Ok(())
     }
 
-    async fn handle_game_packet(&self, mut packet: BytesMut) -> VResult<()> {
-        todo!();
+    async fn handle_game_packet(&self, packet: BytesMut) -> VResult<()> {
+        let callback = self.callback
+            .get()
+            .ok_or_else(|| error!(NotInitialized, "Message callback was not set"))?;
+
+        (callback.0)(packet).await
     }
 }

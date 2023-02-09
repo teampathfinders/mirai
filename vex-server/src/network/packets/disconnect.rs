@@ -3,7 +3,6 @@ use bytes::{BufMut, BytesMut};
 use vex_common::{Encodable, VResult, WriteExtensions};
 
 use crate::network::packets::GamePacket;
-use crate::util::WriteExtensions;
 
 pub const DISCONNECTED_NOT_AUTHENTICATED: &str = "disconnectionScreen.notAuthenticated";
 pub const DISCONNECTED_NO_REASON: &str = "disconnectionScreen.noReason";

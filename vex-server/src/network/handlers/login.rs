@@ -6,20 +6,14 @@ use bytes::{BufMut, BytesMut};
 use jsonwebtoken::jwk::KeyOperations::Encrypt;
 
 use vex_common::{bail, BlockPosition, Decodable, SERVER_CONFIG, Vector2f, Vector3f, VResult};
+use vex_raknet::NETWORK_VERSION;
 
-use crate::bail;
-use crate::config::SERVER_CONFIG;
 use crate::crypto::Encryptor;
-use crate::network::packets::{ChatRestrictionLevel, ClientCacheStatus, ClientToServerHandshake, CreativeContent, Difficulty, Dimension, Disconnect, DISCONNECTED_LOGIN_FAILED, DISCONNECTED_NOT_AUTHENTICATED, GameMode, ItemEntry, Login, NETWORK_VERSION, NetworkSettings, PermissionLevel, PlayerMovementSettings, PlayerMovementType, PlayStatus, RequestNetworkSettings, ResourcePackClientResponse, ResourcePacksInfo, ResourcePackStack, ServerToClientHandshake, StartGame, Status, ViolationWarning, WorldGenerator};
+use crate::network::packets::{ChatRestrictionLevel, ClientCacheStatus, ClientToServerHandshake, CreativeContent, Difficulty, Dimension, Disconnect, DISCONNECTED_LOGIN_FAILED, DISCONNECTED_NOT_AUTHENTICATED, GameMode, ItemEntry, Login, NetworkSettings, PermissionLevel, PlayerMovementSettings, PlayerMovementType, PlayStatus, RequestNetworkSettings, ResourcePackClientResponse, ResourcePacksInfo, ResourcePackStack, ServerToClientHandshake, StartGame, Status, ViolationWarning, WorldGenerator};
 use crate::network::packets::GameMode::Creative;
-use crate::network::raknet::{Frame, FrameBatch};
-use crate::network::raknet::Reliability;
-use crate::network::Session;
-use crate::network::session::send_queue::SendPriority;
-use crate::network::session::session::Session;
-use crate::util::{BlockPosition, Vector2f, Vector3f};
+use crate::network::Player;
 
-impl Session {
+impl Player {
     /// Handles a [`ClientCacheStatus`] packet.
     pub fn handle_client_cache_status(&self, mut packet: BytesMut) -> VResult<()> {
         let request = ClientCacheStatus::decode(packet)?;
@@ -110,7 +104,7 @@ impl Session {
             multiplayer_correlation_id: "5b39a9d6-f1a1-411a-b749-b30742f81771".to_string(),
             server_authoritative_inventory: false,
             game_version: "1.19.60".to_string(),
-            property_data: nbt::Value::Compound(HashMap::new()),
+            property_data: vex_nbt::Value::Compound(HashMap::new()),
             server_block_state_checksum: 0,
             world_template_id: 0,
             client_side_generation: false,

@@ -2,10 +2,7 @@ use bytes::{Buf, BytesMut};
 
 use vex_common::{bail, Decodable, ReadExtensions, VError, VResult};
 
-use crate::bail;
-use crate::network::Decodable;
 use crate::network::packets::GamePacket;
-use crate::util::ReadExtensions;
 
 #[derive(Debug, Copy, Clone)]
 pub enum ResourcePackStatus {

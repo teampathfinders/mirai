@@ -2,8 +2,6 @@ use bytes::{BufMut, BytesMut};
 
 use vex_common::{ReadExtensions, VResult, WriteExtensions};
 
-use crate::util::{ReadExtensions, WriteExtensions};
-
 /// Game packets are prefixed with a length and a header.
 /// The header contains the packet ID and target/subclient IDs in case of splitscreen multiplayer.
 #[derive(Debug, PartialEq, Eq)]

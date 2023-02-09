@@ -2,13 +2,10 @@ use std::collections::HashMap;
 
 use bytes::{BufMut, BytesMut};
 
-use nbt::Value;
 use vex_common::{Encodable, VResult, WriteExtensions};
 use vex_nbt::Value;
 
-use crate::network::Encodable;
 use crate::network::packets::GamePacket;
-use crate::util::WriteExtensions;
 
 pub const ITEM_ID_SHIELD: u32 = 513;
 
@@ -27,7 +24,7 @@ pub struct ItemStack {
     pub item_type: ItemType,
     pub runtime_id: u32,
     pub count: u16,
-    pub nbt_data: nbt::Value,
+    pub nbt_data: vex_nbt::Value,
     pub can_be_placed_on: Vec<String>,
     pub can_break: Vec<String>,
     pub has_network_id: bool,
@@ -52,7 +49,7 @@ impl ItemStack {
             } else {
                 buffer.put_i16(-1); // Length
                 buffer.put_u8(1); // Version
-                nbt::RefTag {
+                vex_nbt::RefTag {
                     name: "",
                     value: &self.nbt_data,
                 }.encode_with_le(buffer);

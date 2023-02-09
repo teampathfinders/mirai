@@ -4,9 +4,7 @@ use bytes::{BufMut, BytesMut};
 
 use vex_common::{BlockPosition, Encodable, Vector2f, Vector3f, VResult, WriteExtensions};
 
-use crate::network::Encodable;
 use crate::network::packets::{ExperimentData, GamePacket};
-use crate::util::{BlockPosition, Vector2f, Vector3f, WriteExtensions};
 
 #[derive(Debug, Copy, Clone)]
 pub enum GameMode {
@@ -142,14 +140,14 @@ pub struct BlockEntry {
     /// Name of the block.
     pub name: String,
     /// NBT compound containing properties.
-    pub properties: nbt::Value,
+    pub properties: vex_nbt::Value,
 }
 
 impl BlockEntry {
     pub fn encode(&self, buffer: &mut BytesMut) {
         buffer.put_string(&self.name);
 
-        nbt::RefTag {
+        vex_nbt::RefTag {
             name: "",
             value: &self.properties,
         }.encode_with_le(buffer);
@@ -240,7 +238,7 @@ pub struct StartGame {
     pub multiplayer_correlation_id: String,
     pub server_authoritative_inventory: bool,
     pub game_version: String,
-    pub property_data: nbt::Value,
+    pub property_data: vex_nbt::Value,
     pub server_block_state_checksum: u64,
     pub world_template_id: u128,
     pub client_side_generation: bool,

@@ -14,15 +14,11 @@ use tokio::sync::OnceCell;
 use tokio_util::sync::CancellationToken;
 
 use vex_common::{CompressionAlgorithm, Encodable, error, SERVER_CONFIG, VResult};
+use vex_raknet::{DEFAULT_CONFIG, GAME_PACKET_ID, PacketConfig};
 
 use crate::crypto::{Encryptor, IdentityData, UserData};
 use crate::network::Packet;
-use crate::network::packets::{CompressionAlgorithm, DeviceOS, Disconnect, GamePacket, Packet};
-use crate::network::session::compound_collector::CompoundCollector;
-use crate::network::session::order_channel::OrderChannel;
-use crate::network::session::recovery_queue::RecoveryQueue;
-use crate::network::session::send_queue::SendQueue;
-use crate::util::AsyncDeque;
+use crate::network::packets::{DeviceOS, Disconnect, GamePacket};
 
 /// Sessions directly correspond to clients connected to the server.
 ///
@@ -30,7 +26,7 @@ use crate::util::AsyncDeque;
 /// The server does not interact with clients directly, everything is done through these sessions.
 ///
 #[derive(Debug)]
-pub struct Session {
+pub struct Player {
     /// Identity data such as XUID and display name.
     pub identity: OnceCell<IdentityData>,
     /// Extra user data, such as device OS and skin.
@@ -42,10 +38,11 @@ pub struct Session {
     /// Whether packets should be compressed.
     /// Even if this is set to true server-wide, it will only be enabled once compression has been configured for this session.
     pub compression_enabled: AtomicBool,
-    pub raknet_session: vex_raknet::Session,
+    /// The underlying Raknet session.
+    pub raknet_session: Arc<vex_raknet::Session>,
 }
 
-impl Session {
+impl Player {
     /// Creates a new session.
     pub fn new(ipv4_socket: Arc<UdpSocket>, address: SocketAddr, mtu: u16, guid: u64) -> Arc<Self> {
         let session = Arc::new(Self {
@@ -115,7 +112,7 @@ impl Session {
 
         buffer.put(packet_buffer);
 
-        self.send_raw_buffer_with_config(buffer, config);
+        self.raknet_session.send_raw_buffer_with_config(buffer, config);
         Ok(())
     }
 
@@ -167,7 +164,7 @@ impl Session {
     }
 
     /// Returns the randomly generated GUID given by the client itself.
-    pub const fn get_guid(&self) -> u64 {
+    pub fn get_guid(&self) -> u64 {
         self.raknet_session.get_guid()
     }
 

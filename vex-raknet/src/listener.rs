@@ -1,3 +1,4 @@
+use std::fmt;
 use std::future::Future;
 use std::marker::PhantomData;
 use std::net::{Ipv4Addr, Ipv6Addr, SocketAddrV4};
@@ -13,9 +14,9 @@ use tokio_util::sync::CancellationToken;
 
 use vex_common::{Decodable, Encodable, error, SERVER_CONFIG, VResult};
 
-use crate::{async_queue::AsyncDeque, listener, RAKNET_VERSION, raw::RawPacket};
+use crate::{async_queue::AsyncDeque, CLIENT_VERSION_STRING, MessageCallbackFn, NETWORK_VERSION, RAKNET_VERSION, raw::RawPacket};
 use crate::packets::{IncompatibleProtocol, OfflinePing, OfflinePong, OpenConnectionReply1, OpenConnectionReply2, OpenConnectionRequest1, OpenConnectionRequest2};
-use crate::session::{CLIENT_VERSION_STRING, NETWORK_VERSION, Session, SessionTracker};
+use crate::session::{MessageCallback, Session, SessionTracker};
 
 /// Local IPv4 address
 pub const IPV4_LOCAL_ADDR: Ipv4Addr = Ipv4Addr::new(127, 0, 0, 1);
@@ -27,7 +28,22 @@ const RECV_BUF_SIZE: usize = 4096;
 /// This data is displayed in the server menu.
 const METADATA_REFRESH_INTERVAL: Duration = Duration::from_secs(2);
 
-// #[derive(Debug)]
+// Listener calls callback containing session, that creates player.
+// Callback returns player packet handler callback.
+// Player has unique callback, avoids going through player hashmap.
+
+pub type ConnectCallbackFn = dyn Fn(Arc<Session>) -> VResult<Arc<MessageCallbackFn>> + Send + Sync + 'static;
+
+#[derive(Clone)]
+pub struct ConnectCallback(pub Arc<ConnectCallbackFn>);
+
+impl fmt::Debug for ConnectCallback {
+    fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
+        write!(fmt, "connect callback")
+    }
+}
+
+#[derive(Debug)]
 pub struct Listener {
     token: CancellationToken,
     /// Randomised GUID, required by Minecraft
@@ -44,13 +60,13 @@ pub struct Listener {
     outward_queue: Arc<AsyncDeque<RawPacket>>,
     /// Service that manages all player sessions.
     session_controller: Arc<SessionTracker>,
-    message_callback: Arc<dyn Fn(BytesMut) -> VResult<()> + Send + Sync + 'static>,
+    callback: ConnectCallback,
 }
 
 impl Listener {
-    pub async fn new(
-        callback: &'static (dyn Fn(BytesMut) -> VResult<()> + Send + Sync)
-    ) -> VResult<Arc<Self>> {
+    pub async fn new<F>(
+        token: CancellationToken, callback: F,
+    ) -> VResult<Arc<Self>> where F: Fn(Arc<Session>) -> VResult<Arc<MessageCallbackFn>> + Send + Sync + 'static {
         let (ipv4_port, _ipv6_port) = {
             let lock = SERVER_CONFIG.read();
             (lock.ipv4_port, lock.ipv6_port)
@@ -59,7 +75,7 @@ impl Listener {
         let ipv4_socket =
             Arc::new(UdpSocket::bind(SocketAddrV4::new(IPV4_LOCAL_ADDR, ipv4_port)).await?);
 
-        let token = CancellationToken::new();
+        let callback = ConnectCallback(Arc::new(callback));
         let listener = Self {
             guid: rand::thread_rng().gen(),
             metadata: RwLock::new(String::new()),
@@ -70,9 +86,9 @@ impl Listener {
             inward_queue: Arc::new(AsyncDeque::new(10)),
             outward_queue: Arc::new(AsyncDeque::new(10)),
 
-            session_controller: Arc::new(SessionTracker::new(token.clone())),
+            session_controller: Arc::new(SessionTracker::new(token.clone(), callback.clone())),
             token,
-            message_callback: Arc::new(callback)
+            callback,
         };
 
         Ok(Arc::new(listener))
@@ -164,7 +180,6 @@ impl Listener {
     /// Responds to the [`OpenConnectionRequest2`] packet with [`OpenConnectionReply2`].
     /// This is also when a session is created for the client.
     /// From this point, all packets are encoded in a [`Frame`](crate::network::raknet::Frame).
-
     async fn handle_open_connection_request2(self: Arc<Self>, packet: RawPacket) -> VResult<()> {
         let request = OpenConnectionRequest2::decode(packet.buffer.clone())?;
         let reply = OpenConnectionReply2 {

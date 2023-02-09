@@ -3,7 +3,6 @@ use bytes::{BufMut, BytesMut};
 use vex_common::{Encodable, VResult};
 
 use crate::network::packets::GamePacket;
-use crate::util::WriteExtensions;
 
 #[derive(Debug, Copy, Clone)]
 pub enum Status {

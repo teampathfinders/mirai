@@ -3,7 +3,6 @@ use bytes::{Buf, BytesMut};
 use vex_common::{Decodable, ReadExtensions, VResult};
 
 use crate::network::packets::GamePacket;
-use crate::util::ReadExtensions;
 
 /// Sent during login to let the server know whether the client supports caching.
 #[derive(Debug)]

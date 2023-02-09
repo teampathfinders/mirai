@@ -9,10 +9,13 @@ use tokio_util::sync::CancellationToken;
 use vex_common::{error, SERVER_CONFIG};
 use vex_common::VResult;
 
+use crate::{ConnectCallback, MessageCallback};
 use crate::raw::RawPacket;
 use crate::session::Session;
 
 const GARBAGE_COLLECT_INTERVAL: Duration = Duration::from_secs(10);
+
+type SessionMap = Arc<DashMap<SocketAddr, Arc<Session>>>;
 
 /// Keeps track of all sessions on the server.
 #[derive(Debug)]
@@ -21,12 +24,13 @@ pub struct SessionTracker {
     /// Once this token is cancelled, the tracker will cancel all the sessions' individual tokens.
     token: CancellationToken,
     /// Map of all tracked sessions, listed by IP address.
-    session_list: Arc<DashMap<SocketAddr, Arc<Session>>>,
+    session_list: SessionMap,
+    callback: ConnectCallback,
 }
 
 impl SessionTracker {
     /// Creates a new session tracker.
-    pub fn new(global_token: CancellationToken) -> Self {
+    pub fn new(token: CancellationToken, callback: ConnectCallback) -> Self {
         let session_list = Arc::new(DashMap::new());
         {
             let session_list = session_list.clone();
@@ -36,8 +40,9 @@ impl SessionTracker {
         }
 
         Self {
-            token: global_token,
+            token,
             session_list,
+            callback,
         }
     }
 
@@ -48,9 +53,14 @@ impl SessionTracker {
         address: SocketAddr,
         mtu: u16,
         client_guid: u64,
-    ) {
+    ) -> VResult<()> {
         let session = Session::new(ipv4_socket, address, mtu, client_guid);
+        let message_callback = (self.callback.0)(session.clone())?;
+
+        session.callback.set(MessageCallback(message_callback))?;
+
         self.session_list.insert(address, session);
+        Ok(())
     }
 
     /// Forwards a packet from the network service to the correct session.
@@ -79,10 +89,10 @@ impl SessionTracker {
         SERVER_CONFIG.read().max_players
     }
 
-    async fn garbage_collector(session_list: Arc<DashMap<SocketAddr, Arc<Session>>>) -> ! {
+    async fn garbage_collector(session_map: SessionMap) -> ! {
         let mut interval = tokio::time::interval(GARBAGE_COLLECT_INTERVAL);
         loop {
-            session_list.retain(|_, session| -> bool { session.is_active() });
+            session_map.retain(|_, session| -> bool { session.is_active() });
 
             interval.tick().await;
         }

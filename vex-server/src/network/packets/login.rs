@@ -5,10 +5,8 @@ use spki::SubjectPublicKeyInfo;
 
 use vex_common::{bail, Decodable, ReadExtensions, VError, VResult};
 
-use crate::{bail, vassert};
 use crate::crypto::{IdentityData, parse_identity_data, parse_user_data, UserData};
 use crate::network::packets::GamePacket;
-use crate::util::ReadExtensions;
 
 /// Device operating system
 #[derive(Debug, Copy, Clone)]

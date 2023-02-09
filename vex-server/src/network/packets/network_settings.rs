@@ -3,7 +3,6 @@ use bytes::{BufMut, BytesMut};
 use vex_common::{ClientThrottleSettings, CompressionAlgorithm, Encodable, VResult, WriteExtensions};
 
 use crate::network::packets::GamePacket;
-use crate::util::WriteExtensions;
 
 /// Sent by the server to modify network related settings.
 #[derive(Debug)]

@@ -21,10 +21,7 @@ use sha2::{Digest, Sha256};
 use spki::{DecodePublicKey, EncodePublicKey};
 use spki::der::SecretDocument;
 
-use lazy_static::lazy_static;
-use vex_common::VResult;
-
-use crate::bail;
+use vex_common::{bail, VResult};
 
 type Aes256CtrBE = ctr::Ctr64BE<aes::Aes256>;
 

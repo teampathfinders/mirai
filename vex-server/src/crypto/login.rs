@@ -4,7 +4,6 @@ use jsonwebtoken::{Algorithm, DecodingKey, Validation};
 
 use vex_common::{bail, error, VResult};
 
-use crate::{bail, error};
 use crate::network::packets::DeviceOS;
 
 /// Mojang's public key.

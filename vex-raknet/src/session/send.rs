@@ -14,7 +14,7 @@ pub struct PacketConfig {
     pub priority: SendPriority,
 }
 
-const DEFAULT_CONFIG: PacketConfig = PacketConfig {
+pub const DEFAULT_CONFIG: PacketConfig = PacketConfig {
     reliability: Reliability::ReliableOrdered,
     priority: SendPriority::Medium,
 };

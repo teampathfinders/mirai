@@ -1,4 +1,5 @@
 use std::net::{Ipv4Addr, Ipv6Addr, SocketAddrV4};
+use std::pin::Pin;
 use std::sync::Arc;
 use std::time::{Duration, SystemTime};
 
@@ -13,14 +14,9 @@ use vex_common::error;
 use vex_common::VResult;
 use vex_raknet::Listener;
 
-use crate::config::SERVER_CONFIG;
-use crate::network::{Decodable, Encodable};
-use crate::util::AsyncDeque;
-
 /// Global instance that manages all data and services of the server.
 #[derive(Debug)]
 pub struct ServerInstance {
-    listener: Listener,
     /// Token indicating whether the server is still running.
     /// All services listen to this token to determine whether they should shut down.
     token: CancellationToken,
@@ -28,21 +24,25 @@ pub struct ServerInstance {
 
 impl ServerInstance {
     /// Creates a new server
-    pub async fn new() -> VResult<Arc<Self>> {
+    pub async fn start() -> VResult<Arc<Self>> {
         let token = CancellationToken::new();
-        let listener = vex_raknet::Listener::new();
-        let server = Self {
-            listener,
-            token,
-        }
+        Self::register_shutdown_handler(token.clone());
 
+        let listener = vex_raknet::Listener::new(token.clone(), |session| {
+            tracing::info!("Received game packet");
+
+            Ok(Arc::new(|packet| {
+                Box::pin(async move {
+                    println!("Received packet! {:x?}", packet.as_ref()[0]);
+                    Ok(())
+                })
+            }))
+        }).await?;
+
+        listener.start().await?;
+
+        let server = Self { token };
         Ok(Arc::new(server))
-    }
-
-    pub async fn start(&self) -> VResult<()> {
-        Self::register_shutdown_handler(self.token.clone());
-
-        self.listener.start().await
     }
 
     /// Shut down the server by cancelling the global token

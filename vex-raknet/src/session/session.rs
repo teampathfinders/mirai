@@ -1,4 +1,7 @@
+use std::fmt;
+use std::future::Future;
 use std::net::SocketAddr;
+use std::pin::Pin;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicU32, AtomicU64, Ordering};
 use std::time::{Duration, Instant};
@@ -6,6 +9,7 @@ use std::time::{Duration, Instant};
 use bytes::BytesMut;
 use parking_lot::{Mutex, RwLock};
 use tokio::net::UdpSocket;
+use tokio::sync::OnceCell;
 use tokio_util::sync::CancellationToken;
 
 use vex_common::VResult;
@@ -27,8 +31,20 @@ const SESSION_TIMEOUT: Duration = Duration::from_secs(5);
 
 const ORDER_CHANNEL_COUNT: usize = 5;
 
+pub type MessageCallbackFn = dyn Fn(BytesMut) -> Pin<Box<dyn Future<Output = VResult<()>> + Send>> + Send + Sync + 'static;
+
+/// Newtype that implements debug
+#[derive(Clone)]
+pub struct MessageCallback(pub Arc<MessageCallbackFn>);
+
+impl fmt::Debug for MessageCallback {
+    fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
+        write!(fmt, "message callback")
+    }
+}
+
 #[derive(Debug)]
-pub struct Session<'t> {
+pub struct Session {
     pub token: CancellationToken,
     /// IPv4 socket of the server.
     pub ipv4_socket: Arc<UdpSocket>,
@@ -66,16 +82,15 @@ pub struct Session<'t> {
     /// Current tick of this session, this is increased by one every time the session
     /// processes packets.
     pub current_tick: AtomicU64,
-    message_callback: Arc<dyn Fn(&Self, BytesMut) -> VResult<()> + Send + Sync + 't>
+    pub(crate) callback: OnceCell<MessageCallback>
 }
 
-impl<'t> Session<'t> {
+impl Session {
     pub fn new(
         ipv4_socket: Arc<UdpSocket>,
         address: SocketAddr,
         mtu: u16,
         guid: u64,
-        callback: Arc<dyn Fn(&Self, BytesMut) -> VResult<()> + Send + Sync + 't>,
     ) -> Arc<Self> {
         let session = Arc::new(Self {
             token: CancellationToken::new(),
@@ -95,7 +110,7 @@ impl<'t> Session<'t> {
             receive_queue: AsyncDeque::new(5),
             recovery_queue: RecoveryQueue::new(),
             current_tick: AtomicU64::new(0),
-            message_callback: callback
+            callback: OnceCell::new()
         });
 
         // Start ticker
@@ -116,7 +131,7 @@ impl<'t> Session<'t> {
                     Ok(_) => (),
                     Err(e) => {
                         tracing::error!(
-                            "Failed to flush last acknowledgements before session close"
+                            "Failed to flush last acknowledgements before session close: {e}"
                         );
                     }
                 }
@@ -125,7 +140,7 @@ impl<'t> Session<'t> {
                 match session.flush().await {
                     Ok(_) => (),
                     Err(e) => {
-                        tracing::error!("Failed to flush last packets before session close");
+                        tracing::error!("Failed to flush last packets before session close: {e}");
                     }
                 }
             });
@@ -165,7 +180,7 @@ impl<'t> Session<'t> {
 
     /// Performs tasks not related to packet processing
     async fn tick(self: &Arc<Self>) -> VResult<()> {
-        let current_tick = self.current_tick.fetch_add(1, Ordering::SeqCst);
+        self.current_tick.fetch_add(1, Ordering::SeqCst);
 
         // Session has timed out
         if Instant::now().duration_since(*self.last_update.read()) > SESSION_TIMEOUT {

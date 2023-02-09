@@ -4,9 +4,6 @@ use vex_common::{Encodable, VResult, WriteExtensions};
 
 use crate::network::header::Header;
 use crate::network::packets::GamePacket;
-use crate::network::raknet::Header;
-use crate::util::{ReadExtensions, WriteExtensions};
-use crate::vassert;
 
 /// A game packet.
 #[derive(Debug)]

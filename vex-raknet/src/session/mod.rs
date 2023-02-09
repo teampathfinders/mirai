@@ -17,9 +17,3 @@ mod session;
 mod tracker;
 
 pub mod handlers;
-
-/// ID of Minecraft game packets.
-pub const GAME_PACKET_ID: u8 = 0xfe;
-/// Protocol version that this server supports.
-pub const NETWORK_VERSION: u32 = 567;
-pub const CLIENT_VERSION_STRING: &str = "1.19.60";

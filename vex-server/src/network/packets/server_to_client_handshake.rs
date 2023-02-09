@@ -3,7 +3,6 @@ use bytes::{BufMut, BytesMut};
 use vex_common::{Encodable, VResult, WriteExtensions};
 
 use crate::network::packets::GamePacket;
-use crate::util::WriteExtensions;
 
 /// Sent by the server to initiate encryption.
 /// The client responds with a [`ClientToServerHandshake`](super::ClientToServerHandshake) to

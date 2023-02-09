@@ -2,8 +2,6 @@ use bytes::{Buf, BytesMut};
 
 use vex_common::{Decodable, VResult};
 
-use crate::vassert;
-
 /// Sent by the client to request a [`NetworkSettings`](super::NetworkSettings) packet.
 #[derive(Debug)]
 pub struct RequestNetworkSettings {
