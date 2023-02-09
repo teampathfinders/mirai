@@ -14,7 +14,7 @@ use tokio::sync::OnceCell;
 use tokio_util::sync::CancellationToken;
 
 use vex_common::{CompressionAlgorithm, Encodable, error, SERVER_CONFIG, VResult};
-use vex_raknet::{DEFAULT_CONFIG, GAME_PACKET_ID, PacketConfig};
+use vex_raknet::{DEFAULT_CONFIG, GAME_PACKET_ID, PacketConfig, Session};
 
 use crate::crypto::{Encryptor, IdentityData, UserData};
 use crate::network::Packet;
@@ -39,26 +39,26 @@ pub struct Player {
     /// Even if this is set to true server-wide, it will only be enabled once compression has been configured for this session.
     pub compression_enabled: AtomicBool,
     /// The underlying Raknet session.
-    pub raknet_session: Arc<vex_raknet::Session>,
+    pub session: Arc<vex_raknet::Session>,
 }
 
 impl Player {
     /// Creates a new session.
-    pub fn new(ipv4_socket: Arc<UdpSocket>, address: SocketAddr, mtu: u16, guid: u64) -> Arc<Self> {
+    pub fn new(session: Arc<Session>) -> Arc<Self> {
         let session = Arc::new(Self {
             identity: OnceCell::new(),
             user_data: OnceCell::new(),
             encryptor: OnceCell::new(),
             active: CancellationToken::new(),
             compression_enabled: AtomicBool::new(false),
-            raknet_session: vex_raknet::Session::new(ipv4_socket, address, mtu, guid),
+            session,
         });
 
         session
     }
 
     pub async fn flush(&self) -> VResult<()> {
-        self.raknet_session.flush().await
+        self.session.flush().await
     }
 
     /// Sends a game packet with default settings
@@ -112,7 +112,7 @@ impl Player {
 
         buffer.put(packet_buffer);
 
-        self.raknet_session.send_raw_buffer_with_config(buffer, config);
+        self.session.send_raw_buffer_with_config(buffer, config);
         Ok(())
     }
 
@@ -165,7 +165,7 @@ impl Player {
 
     /// Returns the randomly generated GUID given by the client itself.
     pub fn get_guid(&self) -> u64 {
-        self.raknet_session.get_guid()
+        self.session.get_guid()
     }
 
     /// Kicks the session from the server, displaying the given menu.

@@ -14,6 +14,8 @@ use vex_common::error;
 use vex_common::VResult;
 use vex_raknet::Listener;
 
+use crate::network::Player;
+
 /// Global instance that manages all data and services of the server.
 #[derive(Debug)]
 pub struct ServerInstance {
@@ -31,9 +33,14 @@ impl ServerInstance {
         let listener = vex_raknet::Listener::new(token.clone(), |session| {
             tracing::info!("Received game packet");
 
-            Ok(Arc::new(|packet| {
+            Ok(Arc::new(move |packet| {
+                let session = session.clone();
+
                 Box::pin(async move {
                     println!("Received packet! {:x?}", packet.as_ref()[0]);
+
+                    let player = Player::new(session);
+
                     Ok(())
                 })
             }))
