@@ -1415,9 +1415,9 @@ dependencies = [
 
 [[package]]
 name = "tokio-util"
-version = "0.7.4"
+version = "0.7.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0bb2e075f03b3d66d8d8785356224ba688d2906a371015e225beeb65ca92c740"
+checksum = "7e267c18a719545b481171952a79f8c25c80361463ba44bc7fa9eba7c742ef4f"
 dependencies = [
  "bytes",
  "futures-core",
@@ -1636,13 +1636,13 @@ checksum = "49874b5167b65d7193b8aba1567f5c7d93d001cafc34600cee003eda787e483f"
 name = "vex-common"
 version = "0.1.0"
 dependencies = [
-    "base64 0.21.0",
-    "bytes",
-    "jsonwebtoken",
-    "lazy_static",
-    "parking_lot",
-    "serde_json",
-    "tokio",
+ "base64 0.21.0",
+ "bytes",
+ "jsonwebtoken",
+ "lazy_static",
+ "parking_lot",
+ "serde_json",
+ "tokio",
 ]
 
 [[package]]
@@ -1657,41 +1657,41 @@ dependencies = [
 name = "vex-raknet"
 version = "0.1.0"
 dependencies = [
-    "async-recursion",
-    "bytes",
-    "dashmap",
-    "parking_lot",
-    "rand",
-    "tokio",
-    "tokio-util",
-    "tracing",
-    "vex-common",
+ "async-recursion",
+ "bytes",
+ "dashmap",
+ "parking_lot",
+ "rand",
+ "tokio",
+ "tokio-util",
+ "tracing",
+ "vex-common",
 ]
 
 [[package]]
 name = "vex-server"
 version = "0.1.0"
 dependencies = [
-    "aes",
-    "base64 0.21.0",
-    "bytes",
-    "cipher",
-    "console-subscriber",
-    "ctr",
-    "ecdsa",
-    "flate2",
-    "jsonwebtoken",
-    "lazy_static",
-    "p384",
-    "parking_lot",
-    "rand",
-    "serde",
-    "serde_json",
-    "sha2",
-    "snap",
-    "spki",
-    "thiserror",
-    "tokio",
+ "aes",
+ "base64 0.21.0",
+ "bytes",
+ "cipher",
+ "console-subscriber",
+ "ctr",
+ "ecdsa",
+ "flate2",
+ "jsonwebtoken",
+ "lazy_static",
+ "p384",
+ "parking_lot",
+ "rand",
+ "serde",
+ "serde_json",
+ "sha2",
+ "snap",
+ "spki",
+ "thiserror",
+ "tokio",
  "tokio-util",
  "tracing",
  "tracing-subscriber",
