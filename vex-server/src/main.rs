@@ -16,6 +16,8 @@ use crate::instance::ServerInstance;
 mod crypto;
 mod instance;
 mod network;
+mod player;
+mod tracker;
 
 #[cfg(test)]
 mod test;

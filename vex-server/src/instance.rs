@@ -14,7 +14,7 @@ use vex_common::error;
 use vex_common::VResult;
 use vex_raknet::Listener;
 
-use crate::network::Player;
+use crate::player::Player;
 
 /// Global instance that manages all data and services of the server.
 #[derive(Debug)]

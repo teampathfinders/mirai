@@ -7,7 +7,7 @@ use vex_common::{bail, CompressionAlgorithm, ReadExtensions, SERVER_CONFIG, vass
 
 use crate::network::header::Header;
 use crate::network::packets::{ClientCacheStatus, ClientToServerHandshake, GamePacket, Login, RequestNetworkSettings, ResourcePackClientResponse, ViolationWarning};
-use crate::network::Player;
+use crate::player::Player;
 
 impl Player {
     async fn handle_game_packet(&self, mut packet: BytesMut) -> VResult<()> {

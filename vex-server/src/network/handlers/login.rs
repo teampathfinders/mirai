@@ -11,7 +11,7 @@ use vex_raknet::NETWORK_VERSION;
 use crate::crypto::Encryptor;
 use crate::network::packets::{ChatRestrictionLevel, ClientCacheStatus, ClientToServerHandshake, CreativeContent, Difficulty, Dimension, Disconnect, DISCONNECTED_LOGIN_FAILED, DISCONNECTED_NOT_AUTHENTICATED, GameMode, ItemEntry, Login, NetworkSettings, PermissionLevel, PlayerMovementSettings, PlayerMovementType, PlayStatus, RequestNetworkSettings, ResourcePackClientResponse, ResourcePacksInfo, ResourcePackStack, ServerToClientHandshake, StartGame, Status, ViolationWarning, WorldGenerator};
 use crate::network::packets::GameMode::Creative;
-use crate::network::Player;
+use crate::player::Player;
 
 impl Player {
     /// Handles a [`ClientCacheStatus`] packet.
