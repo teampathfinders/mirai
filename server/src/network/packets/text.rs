@@ -1,7 +1,7 @@
-use bytes::{BytesMut, Buf};
-use common::{VResult, VError, bail, ReadExtensions};
+use bytes::{BytesMut, Buf, BufMut};
+use common::{VResult, VError, bail, ReadExtensions, WriteExtensions};
 
-use crate::network::Decodable;
+use crate::network::{Decodable, Encodable};
 
 use super::GamePacket;
 
@@ -45,8 +45,10 @@ impl TryFrom<u8> for MessageType {
 
 #[derive(Debug)]
 pub struct TextMessage {
+    /// Type of the message.
     pub message_type: MessageType,
     pub needs_translation: bool,
+    /// Source of the message
     pub source_name: String,
     pub message: String,
     pub parameters: Vec<String>,
@@ -56,6 +58,38 @@ pub struct TextMessage {
 
 impl GamePacket for TextMessage {
     const ID: u32 = 0x09;
+}
+
+impl Encodable for TextMessage {
+    fn encode(&self) -> VResult<BytesMut> {
+        let mut buffer = BytesMut::new();
+
+        buffer.put_u8(self.message_type as u8);
+        buffer.put_bool(self.needs_translation);
+        
+        match self.message_type {
+            MessageType::Chat | MessageType::Whisper | MessageType::Announcement => {
+                buffer.put_string(&self.source_name);
+                buffer.put_string(&self.message);
+            },
+            MessageType::Raw | MessageType::Tip | MessageType::System | MessageType::Object | MessageType::ObjectWhisper | MessageType::ObjectAnnouncement => {
+                buffer.put_string(&self.message);
+            },
+            MessageType::Translation | MessageType::Popup | MessageType::JukeboxPopup => {
+                buffer.put_string(&self.message);
+
+                buffer.put_var_u32(self.parameters.len() as u32);
+                for param in &self.parameters {
+                    buffer.put_string(&param);
+                }
+            }
+        }
+        
+        buffer.put_string(&self.xuid);
+        buffer.put_string(&self.platform_chat_id);
+
+        Ok(buffer)
+    }
 }
 
 impl Decodable for TextMessage {

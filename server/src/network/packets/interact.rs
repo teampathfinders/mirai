@@ -29,8 +29,11 @@ impl TryFrom<u8> for ActionType {
 
 #[derive(Debug)]
 pub struct Interact {
+    /// Type of action to perform.
     pub action: ActionType,
+    /// Target of the interaction.
     pub target_runtime_id: u64,
+    /// Position of the interaction,
     pub position: Vector3f
 }
 

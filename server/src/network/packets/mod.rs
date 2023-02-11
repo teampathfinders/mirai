@@ -23,7 +23,9 @@ pub use level_chunk::*;
 pub use interact::*;
 pub use text::*;
 pub use set_time::*;
+pub use available_commands::*;
 
+mod available_commands;
 mod set_time;
 mod text;
 mod interact;
