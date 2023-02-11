@@ -1,3 +1,6 @@
+#[cfg(test)]
+mod test;
+
 mod async_queue;
 mod error;
 mod extensions;
