@@ -7,7 +7,7 @@ use super::GamePacket;
 
 #[derive(Debug)]
 pub struct ChunkRadiusReply {
-    pub allowed_radius: i32
+    pub allowed_radius: i32,
 }
 
 impl GamePacket for ChunkRadiusReply {
@@ -21,7 +21,7 @@ impl Encodable for ChunkRadiusReply {
         let mut buffer = BytesMut::with_capacity(1);
 
         buffer.put_var_i32(self.allowed_radius);
-        
+
         tracing::info!("{:x?}", buffer.as_ref());
 
         Ok(buffer)

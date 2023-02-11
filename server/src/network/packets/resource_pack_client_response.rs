@@ -1,10 +1,10 @@
 use bytes::{Buf, BytesMut};
 
-use common::bail;
-use common::{VError, VResult};
-use crate::network::Decodable;
 use crate::network::packets::GamePacket;
+use crate::network::Decodable;
+use common::bail;
 use common::ReadExtensions;
+use common::{VError, VResult};
 
 #[derive(Debug, Copy, Clone)]
 pub enum ResourcePackStatus {

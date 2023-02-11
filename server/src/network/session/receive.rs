@@ -7,18 +7,22 @@ use bytes::{Buf, BytesMut};
 
 use crate::config::SERVER_CONFIG;
 use crate::network::header::Header;
-use crate::network::packets::{ClientCacheStatus, ClientToServerHandshake, CompressionAlgorithm, GAME_PACKET_ID, GamePacket, Login, RequestNetworkSettings, ResourcePackClientResponse, ViolationWarning, ChunkRadiusRequest};
 use crate::network::packets::OnlinePing;
-use crate::network::raknet::{Frame, FrameBatch};
-use crate::network::raknet::packets::{
-    Acknowledgement, AcknowledgementRecord, NegativeAcknowledgement,
+use crate::network::packets::{
+    ChunkRadiusRequest, ClientCacheStatus, ClientToServerHandshake, CompressionAlgorithm,
+    GamePacket, Login, RequestNetworkSettings, ResourcePackClientResponse, ViolationWarning,
+    GAME_PACKET_ID,
 };
 use crate::network::raknet::packets::ConnectionRequest;
 use crate::network::raknet::packets::DisconnectNotification;
 use crate::network::raknet::packets::NewIncomingConnection;
+use crate::network::raknet::packets::{
+    Acknowledgement, AcknowledgementRecord, NegativeAcknowledgement,
+};
+use crate::network::raknet::{Frame, FrameBatch};
 use crate::network::session::session::Session;
 use crate::network::traits::{Decodable, Encodable};
-use common::{ReadExtensions, bail, VResult, vassert};
+use common::{bail, vassert, ReadExtensions, VResult};
 
 impl Session {
     /// Processes the raw packet coming directly from the network.

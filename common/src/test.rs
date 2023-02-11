@@ -1,8 +1,8 @@
-use std::net::{SocketAddr, IpAddr, Ipv6Addr, Ipv4Addr};
+use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr};
 
 use bytes::BytesMut;
 
-use crate::{VResult, WriteExtensions, ReadExtensions};
+use crate::{ReadExtensions, VResult, WriteExtensions};
 
 #[test]
 fn read_write_string() {

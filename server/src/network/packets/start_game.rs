@@ -2,9 +2,9 @@ use std::collections::HashMap;
 
 use bytes::{BufMut, BytesMut};
 
-use common::VResult;
-use crate::network::Encodable;
 use crate::network::packets::{ExperimentData, GamePacket};
+use crate::network::Encodable;
+use common::VResult;
 use common::{BlockPosition, Vector2f, Vector3f, WriteExtensions};
 
 use super::CLIENT_VERSION_STRING;
@@ -153,7 +153,8 @@ impl BlockEntry {
         nbt::RefTag {
             name: "",
             value: &self.properties,
-        }.encode_with_net(buffer);
+        }
+        .encode_with_net(buffer);
     }
 }
 
@@ -175,7 +176,7 @@ impl ItemEntry {
 #[derive(Debug, Copy, Clone)]
 pub enum SpawnBiomeType {
     Default,
-    Custom
+    Custom,
 }
 
 impl SpawnBiomeType {
@@ -190,7 +191,7 @@ pub enum BroadcastIntent {
     InviteOnly,
     FriendsOnly,
     FriendsOfFriends,
-    Public
+    Public,
 }
 
 impl BroadcastIntent {
@@ -373,7 +374,8 @@ impl Encodable for StartGame {
         nbt::RefTag {
             name: "",
             value: &self.property_data,
-        }.encode_with_net(&mut buffer);
+        }
+        .encode_with_net(&mut buffer);
 
         buffer.put_u64(self.server_block_state_checksum);
         buffer.put_u128(self.world_template_id);

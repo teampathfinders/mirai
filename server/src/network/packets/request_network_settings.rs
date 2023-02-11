@@ -1,8 +1,8 @@
 use bytes::{Buf, BytesMut};
 
-use common::VResult;
 use crate::network::traits::Decodable;
 use common::vassert;
+use common::VResult;
 
 /// Sent by the client to request a [`NetworkSettings`](super::NetworkSettings) packet.
 #[derive(Debug)]

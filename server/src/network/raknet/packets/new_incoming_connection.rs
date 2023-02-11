@@ -2,10 +2,10 @@ use std::net::SocketAddr;
 
 use bytes::{Buf, BytesMut};
 
-use common::VResult;
 use crate::network::traits::Decodable;
-use common::{EMPTY_IPV4_ADDRESS, ReadExtensions};
 use common::vassert;
+use common::VResult;
+use common::{ReadExtensions, EMPTY_IPV4_ADDRESS};
 
 /// Confirms that the connection was successfully initiated.
 #[derive(Debug)]

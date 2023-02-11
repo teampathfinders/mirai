@@ -1,8 +1,8 @@
 use bytes::{BufMut, BytesMut};
 
-use common::VResult;
-use crate::network::Encodable;
 use crate::network::packets::GamePacket;
+use crate::network::Encodable;
+use common::VResult;
 use common::WriteExtensions;
 
 #[derive(Debug)]

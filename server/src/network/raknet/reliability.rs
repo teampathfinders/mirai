@@ -1,4 +1,4 @@
-use common::{VError, bail};
+use common::{bail, VError};
 
 /// Describes how reliable transport of this packet should be.
 /// Higher reliability takes more resources, but also has more reliability guarantees.

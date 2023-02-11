@@ -1,8 +1,8 @@
 use bytes::{Buf, BytesMut};
 
-use common::VResult;
 use crate::network::traits::Decodable;
 use common::vassert;
+use common::VResult;
 
 /// Sent to retrieve information about the server
 /// while the user is in Minecraft's server tab.

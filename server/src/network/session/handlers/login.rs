@@ -7,14 +7,22 @@ use jsonwebtoken::jwk::KeyOperations::Encrypt;
 
 use crate::config::SERVER_CONFIG;
 use crate::crypto::Encryptor;
-use crate::network::packets::{ChatRestrictionLevel, ClientCacheStatus, ClientToServerHandshake, CreativeContent, Difficulty, Dimension, Disconnect, DISCONNECTED_LOGIN_FAILED, DISCONNECTED_NOT_AUTHENTICATED, GameMode, ItemEntry, Login, NETWORK_VERSION, NetworkSettings, PermissionLevel, PlayerMovementSettings, PlayerMovementType, PlayStatus, RequestNetworkSettings, ResourcePackClientResponse, ResourcePacksInfo, ResourcePackStack, ServerToClientHandshake, StartGame, Status, ViolationWarning, WorldGenerator, SpawnBiomeType, ChunkRadiusRequest, BroadcastIntent, ChunkRadiusReply};
 use crate::network::packets::GameMode::Creative;
-use crate::network::raknet::{Frame, FrameBatch};
+use crate::network::packets::{
+    BroadcastIntent, ChatRestrictionLevel, ChunkRadiusReply, ChunkRadiusRequest, ClientCacheStatus,
+    ClientToServerHandshake, CreativeContent, Difficulty, Dimension, Disconnect, GameMode,
+    ItemEntry, Login, NetworkSettings, PermissionLevel, PlayStatus, PlayerMovementSettings,
+    PlayerMovementType, RequestNetworkSettings, ResourcePackClientResponse, ResourcePackStack,
+    ResourcePacksInfo, ServerToClientHandshake, SpawnBiomeType, StartGame, Status,
+    ViolationWarning, WorldGenerator, DISCONNECTED_LOGIN_FAILED, DISCONNECTED_NOT_AUTHENTICATED,
+    NETWORK_VERSION,
+};
 use crate::network::raknet::Reliability;
+use crate::network::raknet::{Frame, FrameBatch};
 use crate::network::session::send_queue::SendPriority;
 use crate::network::session::session::Session;
 use crate::network::traits::{Decodable, Encodable};
-use common::{BlockPosition, Vector2f, Vector3f, VResult, bail};
+use common::{bail, BlockPosition, VResult, Vector2f, Vector3f};
 
 impl Session {
     /// Handles a [`ClientCacheStatus`] packet.
@@ -36,7 +44,7 @@ impl Session {
     pub fn handle_chunk_radius_request(&self, mut packet: BytesMut) -> VResult<()> {
         let request = ChunkRadiusRequest::decode(packet)?;
         let reply = ChunkRadiusReply {
-            allowed_radius: SERVER_CONFIG.read().allowed_render_distance
+            allowed_radius: SERVER_CONFIG.read().allowed_render_distance,
         };
         self.send_packet(reply)?;
 
@@ -122,9 +130,7 @@ impl Session {
         };
         self.send_packet(start_game)?;
 
-        let creative_content = CreativeContent {
-            items: vec![]
-        };
+        let creative_content = CreativeContent { items: vec![] };
         self.send_packet(creative_content)?;
 
         Ok(())

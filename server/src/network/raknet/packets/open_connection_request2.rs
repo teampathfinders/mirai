@@ -1,9 +1,9 @@
 use bytes::{Buf, BytesMut};
 
-use common::VResult;
 use crate::network::traits::Decodable;
-use common::ReadExtensions;
 use common::vassert;
+use common::ReadExtensions;
+use common::VResult;
 
 /// Sent by the client, in response to [`OpenConnectionReply2`](super::open_connection_reply2::OpenConnectionReply2).
 #[derive(Debug)]

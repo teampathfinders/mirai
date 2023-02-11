@@ -1,11 +1,11 @@
 use bytes::{Buf, BufMut, BytesMut};
 
-use common::VResult;
 use crate::network::packets::GamePacket;
 use crate::network::raknet::Header;
 use crate::network::traits::Encodable;
-use common::{ReadExtensions, WriteExtensions};
 use common::vassert;
+use common::VResult;
+use common::{ReadExtensions, WriteExtensions};
 
 /// A game packet.
 #[derive(Debug)]

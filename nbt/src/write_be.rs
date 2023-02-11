@@ -1,5 +1,5 @@
+use crate::{OwnedTag, RefTag, Value, TAG_BYTE, TAG_END};
 use bytes::{BufMut, BytesMut};
-use crate::{OwnedTag, RefTag, TAG_BYTE, TAG_END, Value};
 
 impl RefTag<'_> {
     /// Encodes the NBT structure, returning the buffer (big endian).
@@ -20,7 +20,7 @@ impl Value {
     fn encode_tag_be(stream: &mut BytesMut, tag: (&str, &Self)) {
         stream.put_u8(tag.1.as_numeric_id());
         if matches!(tag.1, Self::End) {
-            return
+            return;
         }
 
         Self::encode_tag_name_be(stream, tag.0);
@@ -47,25 +47,25 @@ impl Value {
                 for t in v {
                     Self::encode_tag_value_be(stream, t);
                 }
-            },
+            }
             Self::Compound(v) => {
                 for t in v.iter() {
                     Self::encode_tag_be(stream, (t.0, t.1)); // Tuple is like this to force &String to convert to &str.
                 }
                 stream.put_u8(TAG_END);
-            },
+            }
             Self::ByteArray(v) => {
                 stream.put_i32(v.len() as i32);
                 for t in v {
                     stream.put_i8(*t);
                 }
-            },
+            }
             Self::IntArray(v) => {
                 stream.put_i32(v.len() as i32);
                 for t in v {
                     stream.put_i32(*t);
                 }
-            },
+            }
             Self::LongArray(v) => {
                 stream.put_i32(v.len() as i32);
                 for t in v {

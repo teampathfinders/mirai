@@ -1,4 +1,7 @@
+pub use biome_definition_list::*;
 pub use cache_status::*;
+pub use chunk_radius_reply::*;
+pub use chunk_radius_request::*;
 pub use client_to_server_handshake::*;
 pub use creative_content::*;
 pub use disconnect::*;
@@ -16,13 +19,13 @@ pub use server_to_client_handshake::*;
 pub use start_game::*;
 pub use traits::*;
 pub use violation_warning::*;
-pub use chunk_radius_request::*;
-pub use chunk_radius_reply::*;
 
+mod biome_definition_list;
+mod cache_status;
 mod chunk_radius_reply;
 mod chunk_radius_request;
-mod cache_status;
 mod client_to_server_handshake;
+mod creative_content;
 mod disconnect;
 mod login;
 mod network_settings;
@@ -37,7 +40,6 @@ mod resource_packs_info;
 mod server_to_client_handshake;
 mod start_game;
 mod traits;
-mod creative_content;
 mod violation_warning;
 
 /// ID of Minecraft game packets.

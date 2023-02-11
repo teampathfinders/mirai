@@ -5,23 +5,23 @@ use std::sync::atomic::{AtomicU16, AtomicU32, AtomicU64, Ordering};
 use base64::Engine;
 use bytes::{BufMut, BytesMut};
 use cipher::{StreamCipher, StreamCipherSeek, StreamCipherSeekCore};
-use common::{VResult, bail};
+use common::{bail, VResult};
 use ctr::cipher::KeyIvInit;
 use ecdsa::elliptic_curve::pkcs8::EncodePrivateKey;
 use ecdsa::SigningKey;
 use flate2::read::DeflateDecoder;
 use jsonwebtoken::{Algorithm, DecodingKey, EncodingKey, Validation};
 use lazy_static::lazy_static;
-use p384::{NistP384, SecretKey};
 use p384::ecdh::{diffie_hellman, SharedSecret};
 use p384::PublicKey;
+use p384::{NistP384, SecretKey};
 use parking_lot::Mutex;
 use rand::distributions::Alphanumeric;
-use rand::Rng;
 use rand::rngs::OsRng;
+use rand::Rng;
 use sha2::{Digest, Sha256};
-use spki::{DecodePublicKey, EncodePublicKey};
 use spki::der::SecretDocument;
+use spki::{DecodePublicKey, EncodePublicKey};
 
 type Aes256CtrBE = ctr::Ctr64BE<aes::Aes256>;
 

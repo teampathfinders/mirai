@@ -1,14 +1,14 @@
 use bytes::BytesMut;
 
-use common::bail;
-use common::{VError, VResult};
-use crate::network::Decodable;
 use crate::network::packets::GamePacket;
+use crate::network::Decodable;
+use common::bail;
 use common::ReadExtensions;
+use common::{VError, VResult};
 
 #[derive(Debug, Copy, Clone)]
 pub enum ViolationType {
-    Malformed
+    Malformed,
 }
 
 impl TryFrom<u32> for ViolationType {
@@ -17,7 +17,7 @@ impl TryFrom<u32> for ViolationType {
     fn try_from(value: u32) -> Result<Self, Self::Error> {
         Ok(match value {
             0 => Self::Malformed,
-            _ => bail!(BadPacket, "Invalid violation type {}", value)
+            _ => bail!(BadPacket, "Invalid violation type {}", value),
         })
     }
 }
@@ -37,7 +37,7 @@ impl TryFrom<u32> for ViolationSeverity {
             0 => Self::Warning,
             1 => Self::FinalWarning,
             2 => Self::TerminatingConnection,
-            _ => bail!(BadPacket, "Invalid violation severity {}", value)
+            _ => bail!(BadPacket, "Invalid violation severity {}", value),
         })
     }
 }

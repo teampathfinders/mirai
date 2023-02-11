@@ -2,9 +2,9 @@ use std::net::SocketAddr;
 
 use bytes::{BufMut, BytesMut};
 
-use common::VResult;
 use crate::network::raknet::OFFLINE_MESSAGE_DATA;
 use crate::network::traits::Encodable;
+use common::VResult;
 use common::WriteExtensions;
 
 /// Sent in response ot [`OpenConnectionRequest2`](super::open_connection_request2::OpenConnectionRequest2).

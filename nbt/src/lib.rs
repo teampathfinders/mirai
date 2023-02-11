@@ -48,7 +48,7 @@ pub enum Value {
     Compound(HashMap<String, Value>),
     ByteArray(Vec<i8>),
     IntArray(Vec<i32>),
-    LongArray(Vec<i64>)
+    LongArray(Vec<i64>),
 }
 
 impl Value {
@@ -67,7 +67,7 @@ impl Value {
             Self::Compound(_) => TAG_COMPOUND,
             Self::ByteArray(_) => TAG_BYTE_ARRAY,
             Self::IntArray(_) => TAG_INT_ARRAY,
-            Self::LongArray(_) => TAG_LONG_ARRAY
+            Self::LongArray(_) => TAG_LONG_ARRAY,
         }
     }
 }
@@ -78,11 +78,11 @@ pub struct RefTag<'a> {
     /// Name of this tag.
     pub name: &'a str,
     /// Value of this tag.
-    pub value: &'a Value
+    pub value: &'a Value,
 }
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct OwnedTag {
     pub name: String,
-    pub value: Value
+    pub value: Value,
 }

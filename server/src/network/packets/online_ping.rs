@@ -1,8 +1,8 @@
 use bytes::{Buf, BytesMut};
 
-use common::VResult;
 use crate::network::traits::Decodable;
 use common::vassert;
+use common::VResult;
 
 /// Sent by the client or server to ping the other side.
 /// An [`OnlinePong`](super::OnlinePong) packet should be sent in response.

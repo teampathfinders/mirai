@@ -1,7 +1,7 @@
 use std::net::SocketAddr;
 use std::num::NonZeroU64;
-use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, AtomicU32, AtomicU64, Ordering};
+use std::sync::Arc;
 use std::time::{Duration, Instant};
 
 use bytes::BytesMut;
@@ -11,13 +11,13 @@ use tokio::sync::OnceCell;
 use tokio_util::sync::CancellationToken;
 
 use crate::crypto::{Encryptor, IdentityData, UserData};
-use common::{VResult, error};
 use crate::network::packets::{DeviceOS, Disconnect};
 use crate::network::session::compound_collector::CompoundCollector;
 use crate::network::session::order_channel::OrderChannel;
 use crate::network::session::recovery_queue::RecoveryQueue;
 use crate::network::session::send_queue::SendQueue;
 use common::AsyncDeque;
+use common::{error, VResult};
 
 /// Tick interval of the internal session ticker.
 const INTERNAL_TICK_INTERVAL: Duration = Duration::from_millis(1000 / 20);

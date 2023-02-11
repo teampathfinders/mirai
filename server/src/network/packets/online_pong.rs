@@ -1,7 +1,7 @@
 use bytes::{BufMut, BytesMut};
 
-use common::VResult;
 use crate::network::traits::Encodable;
+use common::VResult;
 
 /// Sent by the server or client in response to an [`OnlinePing`](super::OnlinePing) packet.
 #[derive(Debug)]

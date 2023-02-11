@@ -2,20 +2,20 @@ use std::io::Write;
 use std::sync::atomic::Ordering;
 
 use bytes::{Buf, BufMut, BytesMut};
-use flate2::Compression;
 use flate2::write::DeflateEncoder;
+use flate2::Compression;
 
 use crate::config::SERVER_CONFIG;
-use common::VResult;
 use crate::network::header::Header;
-use crate::network::packets::{CompressionAlgorithm, GAME_PACKET_ID, GamePacket, Packet};
-use crate::network::raknet::{Frame, FrameBatch};
+use crate::network::packets::{CompressionAlgorithm, GamePacket, Packet, GAME_PACKET_ID};
 use crate::network::raknet::packets::{Acknowledgement, AcknowledgementRecord};
 use crate::network::raknet::Reliability;
+use crate::network::raknet::{Frame, FrameBatch};
 use crate::network::session::send_queue::SendPriority;
 use crate::network::session::session::Session;
 use crate::network::traits::{Decodable, Encodable};
 use common::ReadExtensions;
+use common::VResult;
 
 pub struct PacketConfig {
     pub reliability: Reliability,

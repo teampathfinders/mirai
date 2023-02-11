@@ -3,7 +3,7 @@ use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr, SocketAddrV4};
 use bytes::{Buf, BufMut};
 use lazy_static::lazy_static;
 
-use crate::{bail};
+use crate::bail;
 use crate::VResult;
 
 /// Size of an IPv4 address in bytes.
@@ -201,7 +201,7 @@ pub trait WriteExtensions: BufMut + Sized {
     fn put_string(&mut self, value: &str) {
         self.put_var_u32(value.len() as u32);
         if value.is_empty() {
-            return
+            return;
         }
 
         self.put(value.as_bytes());

@@ -2,11 +2,11 @@ use std::io::Read;
 
 use bytes::{Buf, BufMut, BytesMut};
 
-use common::VResult;
 use crate::network::raknet::Reliability;
 use crate::network::traits::{Decodable, Encodable};
-use common::{ReadExtensions, WriteExtensions};
 use common::vassert;
+use common::VResult;
+use common::{ReadExtensions, WriteExtensions};
 
 /// Bit flag indicating that the packet is encapsulated in a frame.
 pub const CONNECTED_PEER_BIT_FLAG: u8 = 0x80;
@@ -38,8 +38,8 @@ impl FrameBatch {
     pub fn estimate_size(&self) -> usize {
         std::mem::size_of::<Self>()
             + self.frames.iter().fold(0, |acc, f| {
-            acc + std::mem::size_of::<Frame>() + f.body.len()
-        })
+                acc + std::mem::size_of::<Frame>() + f.body.len()
+            })
     }
 
     pub const fn batch_number(mut self, batch_number: u32) -> Self {

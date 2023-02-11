@@ -10,8 +10,6 @@ use tokio::signal;
 use tokio_util::sync::CancellationToken;
 
 use crate::config::SERVER_CONFIG;
-use common::{VResult, error};
-use crate::network::{Decodable, Encodable};
 use crate::network::packets::{CLIENT_VERSION_STRING, NETWORK_VERSION};
 use crate::network::raknet::packets::IncompatibleProtocol;
 use crate::network::raknet::packets::OfflinePing;
@@ -20,10 +18,12 @@ use crate::network::raknet::packets::OpenConnectionReply1;
 use crate::network::raknet::packets::OpenConnectionReply2;
 use crate::network::raknet::packets::OpenConnectionRequest1;
 use crate::network::raknet::packets::OpenConnectionRequest2;
-use crate::network::raknet::RAKNET_VERSION;
 use crate::network::raknet::RawPacket;
+use crate::network::raknet::RAKNET_VERSION;
 use crate::network::session::SessionTracker;
+use crate::network::{Decodable, Encodable};
 use common::AsyncDeque;
+use common::{error, VResult};
 
 /// Local IPv4 address
 pub const IPV4_LOCAL_ADDR: Ipv4Addr = Ipv4Addr::new(127, 0, 0, 1);
@@ -141,7 +141,7 @@ impl ServerInstance {
             server_guid: self.guid,
             metadata: self.metadata(),
         }
-            .encode()?;
+        .encode()?;
 
         self.ipv4_socket
             .send_to(pong.as_ref(), packet.address)
@@ -156,7 +156,7 @@ impl ServerInstance {
             let reply = IncompatibleProtocol {
                 server_guid: self.guid,
             }
-                .encode()?;
+            .encode()?;
 
             self.ipv4_socket
                 .send_to(reply.as_ref(), packet.address)
@@ -168,7 +168,7 @@ impl ServerInstance {
             mtu: request.mtu,
             server_guid: self.guid,
         }
-            .encode()?;
+        .encode()?;
 
         self.ipv4_socket
             .send_to(reply.as_ref(), packet.address)
@@ -187,7 +187,7 @@ impl ServerInstance {
             mtu: request.mtu,
             client_address: packet.address,
         }
-            .encode()?;
+        .encode()?;
 
         self.session_controller.add_session(
             self.ipv4_socket.clone(),

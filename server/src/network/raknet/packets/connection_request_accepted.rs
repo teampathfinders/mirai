@@ -3,10 +3,10 @@ use std::time::{SystemTime, UNIX_EPOCH};
 
 use bytes::{BufMut, BytesMut};
 
-use common::VResult;
 use crate::instance::IPV4_LOCAL_ADDR;
 use crate::network::traits::Encodable;
-use common::{EMPTY_IPV4_ADDRESS, IPV4_MEM_SIZE, IPV6_MEM_SIZE, WriteExtensions};
+use common::VResult;
+use common::{WriteExtensions, EMPTY_IPV4_ADDRESS, IPV4_MEM_SIZE, IPV6_MEM_SIZE};
 
 /// Sent in response to [`ConnectionRequest`](super::connection_request::ConnectionRequest).
 #[derive(Debug)]

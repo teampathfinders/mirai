@@ -1,9 +1,9 @@
 use bytes::{Buf, BytesMut};
 
-use common::VResult;
-use crate::network::Decodable;
 use crate::network::packets::GamePacket;
+use crate::network::Decodable;
 use common::vassert;
+use common::VResult;
 
 /// Sent by the client in response to a [`ServerToClientHandshake`](super::ServerToClientHandshake)
 /// to confirm that encryption is working.

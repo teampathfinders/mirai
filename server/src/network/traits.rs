@@ -12,6 +12,6 @@ pub trait Encodable {
 pub trait Decodable {
     /// Decodes the buffer into the specified packet.
     fn decode(buffer: BytesMut) -> VResult<Self>
-        where
-            Self: Sized;
+    where
+        Self: Sized;
 }

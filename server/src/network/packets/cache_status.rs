@@ -1,9 +1,9 @@
 use bytes::{Buf, BytesMut};
 
-use common::VResult;
 use crate::network::packets::GamePacket;
 use crate::network::traits::Decodable;
 use common::ReadExtensions;
+use common::VResult;
 
 /// Sent during login to let the server know whether the client supports caching.
 #[derive(Debug)]

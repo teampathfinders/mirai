@@ -9,8 +9,8 @@ use std::sync::atomic::{AtomicU16, Ordering};
 
 use tokio::runtime;
 
-use common::VResult;
 use crate::instance::ServerInstance;
+use common::VResult;
 
 mod config;
 mod crypto;

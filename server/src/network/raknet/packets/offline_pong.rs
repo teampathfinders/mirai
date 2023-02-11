@@ -1,8 +1,8 @@
 use bytes::{BufMut, BytesMut};
 
-use common::VResult;
 use crate::network::raknet::OFFLINE_MESSAGE_DATA;
 use crate::network::traits::Encodable;
+use common::VResult;
 use common::WriteExtensions;
 
 /// Response to [`OfflinePing`](super::offline_ping::OfflinePing).

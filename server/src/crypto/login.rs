@@ -1,6 +1,6 @@
 use base64::Engine;
 use bytes::{Buf, BytesMut};
-use common::{error, VResult, bail};
+use common::{bail, error, VResult};
 use jsonwebtoken::{Algorithm, DecodingKey, Validation};
 
 use crate::network::packets::DeviceOS;

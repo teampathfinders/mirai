@@ -25,7 +25,7 @@ pub struct ServerConfig {
     pub server_name: &'static str,
     /// Maximum render distance that the server will accept.
     /// Clients requesting a higher value will be told to use this.
-    pub allowed_render_distance: i32
+    pub allowed_render_distance: i32,
 }
 
 lazy_static! {

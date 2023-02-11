@@ -1,9 +1,9 @@
 use bytes::BytesMut;
 
-use common::VResult;
 use crate::network::raknet::packets::{Acknowledgement, NegativeAcknowledgement};
 use crate::network::session::session::Session;
 use crate::network::traits::{Decodable, Encodable};
+use common::VResult;
 
 impl Session {
     /// Processes an acknowledgement received from the client.
