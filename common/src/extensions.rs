@@ -4,6 +4,7 @@ use bytes::{Buf, BufMut};
 use lazy_static::lazy_static;
 
 use crate::Vector3f;
+use crate::Vector3i;
 use crate::bail;
 use crate::VResult;
 
@@ -172,6 +173,14 @@ pub trait ReadExtensions: Buf {
 
         Vector3f::from([a, b, c])
     }
+
+    fn get_vec3i(&mut self) -> Vector3i {
+        let a = self.get_i32();
+        let b = self.get_i32();
+        let c = self.get_i32();
+
+        Vector3i::from([a, b, c])
+    }
 }
 
 /// Provides extra functions for byte buffers.
@@ -275,6 +284,22 @@ pub trait WriteExtensions: BufMut + Sized {
         self.put_u8(a as u8);
         self.put_u8(b as u8);
         self.put_u8(c as u8);
+    }
+
+    fn put_vec3f(&mut self, value: &Vector3f) {
+        let [a, b, c] = value.components();
+
+        self.put_f32(a);
+        self.put_f32(b);
+        self.put_f32(c);
+    }
+
+    fn put_vec3i(&mut self, value: &Vector3i) {
+        let [a, b, c] = value.components();
+
+        self.put_var_i32(a);
+        self.put_var_i32(b);
+        self.put_var_i32(c);
     }
 }
 

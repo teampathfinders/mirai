@@ -24,7 +24,11 @@ pub use interact::*;
 pub use text::*;
 pub use set_time::*;
 pub use available_commands::*;
+pub use play_sound::*;
+pub use show_profile::*;
 
+mod show_profile;
+mod play_sound;
 mod available_commands;
 mod set_time;
 mod text;

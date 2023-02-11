@@ -34,6 +34,10 @@ pub type Vector2f = Vector<f32, 2>;
 /// 32-bit float vector with 3 components
 pub type Vector3f = Vector<f32, 3>;
 
+pub type Vector2i = Vector<i32, 2>;
+
+pub type Vector3i = Vector<i32, 3>;
+
 #[derive(Debug, Clone)]
 pub struct BlockPosition(i32, u32, i32);
 
