@@ -1,6 +1,7 @@
-use std::io::Read;
+use std::io::{Read, Write};
 use std::net::{IpAddr, SocketAddr};
 
+use base64::Engine;
 use bytes::{Buf, BufMut, BytesMut};
 use flate2::read::DeflateDecoder;
 use tokio::net::windows::named_pipe::PipeMode::Byte;

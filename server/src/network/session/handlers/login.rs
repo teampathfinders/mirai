@@ -9,13 +9,13 @@ use crate::config::SERVER_CONFIG;
 use crate::crypto::Encryptor;
 use crate::network::packets::GameMode::Creative;
 use crate::network::packets::{
-    BroadcastIntent, ChatRestrictionLevel, ChunkRadiusReply, ChunkRadiusRequest, ClientCacheStatus,
-    ClientToServerHandshake, CreativeContent, Difficulty, Dimension, Disconnect, GameMode,
-    ItemEntry, Login, NetworkSettings, PermissionLevel, PlayStatus, PlayerMovementSettings,
-    PlayerMovementType, RequestNetworkSettings, ResourcePackClientResponse, ResourcePackStack,
-    ResourcePacksInfo, ServerToClientHandshake, SpawnBiomeType, StartGame, Status,
-    ViolationWarning, WorldGenerator, DISCONNECTED_LOGIN_FAILED, DISCONNECTED_NOT_AUTHENTICATED,
-    NETWORK_VERSION,
+    BiomeDefinitionList, BroadcastIntent, ChatRestrictionLevel, ChunkRadiusReply,
+    ChunkRadiusRequest, ClientCacheStatus, ClientToServerHandshake, CreativeContent, Difficulty,
+    Dimension, Disconnect, GameMode, ItemEntry, Login, NetworkSettings, PermissionLevel,
+    PlayStatus, PlayerMovementSettings, PlayerMovementType, RequestNetworkSettings,
+    ResourcePackClientResponse, ResourcePackStack, ResourcePacksInfo, ServerToClientHandshake,
+    SpawnBiomeType, StartGame, Status, ViolationWarning, WorldGenerator, DISCONNECTED_LOGIN_FAILED,
+    DISCONNECTED_NOT_AUTHENTICATED, NETWORK_VERSION,
 };
 use crate::network::raknet::Reliability;
 use crate::network::raknet::{Frame, FrameBatch};
@@ -132,6 +132,9 @@ impl Session {
 
         let creative_content = CreativeContent { items: vec![] };
         self.send_packet(creative_content)?;
+
+        let biome_definition_list = BiomeDefinitionList;
+        self.send_packet(biome_definition_list)?;
 
         Ok(())
     }

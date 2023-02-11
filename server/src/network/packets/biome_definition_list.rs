@@ -5,6 +5,8 @@ use crate::network::Encodable;
 
 use super::GamePacket;
 
+const DEFINITIONS: &[u8] = include_bytes!("../../../included/biomes.nbt");
+
 #[derive(Debug)]
 pub struct BiomeDefinitionList;
 
@@ -14,6 +16,6 @@ impl GamePacket for BiomeDefinitionList {
 
 impl Encodable for BiomeDefinitionList {
     fn encode(&self) -> VResult<BytesMut> {
-        todo!();
+        Ok(BytesMut::from(DEFINITIONS))
     }
 }
