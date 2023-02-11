@@ -112,7 +112,7 @@ impl Session {
             template_content_identity: "".to_string(),
             is_trial: false,
             movement_settings: PlayerMovementSettings {
-                movement_type: PlayerMovementType::ServerAuthoritative,
+                movement_type: PlayerMovementType::ClientAuthoritative,
                 rewind_history_size: 0,
                 server_authoritative_breaking: true,
             },
