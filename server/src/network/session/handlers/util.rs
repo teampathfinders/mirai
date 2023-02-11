@@ -4,7 +4,7 @@ use common::{VResult, Vector3i};
 use crate::network::{
     packets::{
         GameMode, MessageType, MobEffectKind, MobEffectOperation, MobEffectUpdate, PlaySound,
-        SetHealth, SetPlayerGameMode, SetTime, ShowProfile, TextMessage,
+        SetHealth, SetPlayerGameMode, SetTime, ShowProfile, TextMessage, ShowCredits, CreditStatus,
     },
     session::Session,
     Decodable,
@@ -32,6 +32,12 @@ impl Session {
 
         let reply3 = SetHealth { health: 10 };
         self.send_packet(reply3)?;
+
+        let reply4 = ShowCredits {
+            runtime_id: 1,
+            status: CreditStatus::Start
+        };
+        self.send_packet(reply4)?;
 
         Ok(())
     }
