@@ -1,9 +1,0 @@
-[package]
-name = "vex-nbt"
-version = "0.1.0"
-edition = "2021"
-authors = ["RadiatedMonkey"]
-
-[dependencies]
-bytes = "1.4.0"
-thiserror = "1.0.38"
