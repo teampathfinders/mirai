@@ -27,7 +27,9 @@ pub use available_commands::*;
 pub use play_sound::*;
 pub use show_profile::*;
 pub use set_player_gamemode::*;
+pub use set_health::*;
 
+mod set_health;
 mod set_player_gamemode;
 mod show_profile;
 mod play_sound;
