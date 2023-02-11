@@ -200,6 +200,10 @@ pub trait WriteExtensions: BufMut + Sized {
     /// See [`put_raknet_string`](WriteExtensions::put_raknet_string) for an alternative for Raknet.
     fn put_string(&mut self, value: &str) {
         self.put_var_u32(value.len() as u32);
+        if value.is_empty() {
+            return
+        }
+
         self.put(value.as_bytes());
     }
 

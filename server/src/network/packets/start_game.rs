@@ -19,7 +19,7 @@ pub enum GameMode {
 
 impl GameMode {
     pub fn encode(&self, buffer: &mut BytesMut) {
-        buffer.put_var_u32(*self as u32);
+        buffer.put_var_i32(*self as i32);
     }
 }
 
@@ -47,9 +47,7 @@ pub enum WorldGenerator {
 
 impl WorldGenerator {
     pub fn encode(&self, buffer: &mut BytesMut) {
-        tracing::info!("aaa {}", *self as u32);
-
-        buffer.put_var_u32(*self as u32);
+        buffer.put_var_i32(*self as i32);
     }
 }
 
@@ -63,7 +61,7 @@ pub enum Difficulty {
 
 impl Difficulty {
     pub fn encode(&self, buffer: &mut BytesMut) {
-        buffer.put_var_u32(*self as u32);
+        buffer.put_var_i32(*self as i32);
     }
 }
 
@@ -86,7 +84,7 @@ pub enum PermissionLevel {
 
 impl PermissionLevel {
     pub fn encode(&self, buffer: &mut BytesMut) {
-        buffer.put_var_u32(*self as u32);
+        buffer.put_var_i32(*self as i32);
     }
 }
 
@@ -126,14 +124,14 @@ pub enum PlayerMovementType {
 #[derive(Debug, Copy, Clone)]
 pub struct PlayerMovementSettings {
     pub movement_type: PlayerMovementType,
-    pub rewind_history_size: u32,
+    pub rewind_history_size: i32,
     pub server_authoritative_breaking: bool,
 }
 
 impl PlayerMovementSettings {
     pub fn encode(&self, buffer: &mut BytesMut) {
-        buffer.put_var_u32(self.movement_type as u32);
-        buffer.put_var_u32(self.rewind_history_size);
+        buffer.put_var_i32(self.movement_type as i32);
+        buffer.put_var_i32(self.rewind_history_size);
         buffer.put_bool(self.server_authoritative_breaking);
     }
 }
@@ -153,7 +151,7 @@ impl BlockEntry {
         nbt::RefTag {
             name: "",
             value: &self.properties,
-        }.encode_with_le(buffer);
+        }.encode_with_net(buffer);
     }
 }
 
@@ -172,15 +170,27 @@ impl ItemEntry {
     }
 }
 
+#[derive(Debug, Copy, Clone)]
+pub enum SpawnBiomeType {
+    Default,
+    Custom
+}
+
+impl SpawnBiomeType {
+    pub fn encode(&self, buffer: &mut BytesMut) {
+        buffer.put_i16(*self as i16);
+    }
+}
+
 #[derive(Debug)]
 pub struct StartGame {
-    pub entity_id: u64,
+    pub entity_id: i64,
     pub runtime_id: u64,
     pub gamemode: GameMode,
     pub position: Vector3f,
     pub rotation: Vector2f,
     pub world_seed: u64,
-    pub spawn_biome_type: u16,
+    pub spawn_biome_type: SpawnBiomeType,
     pub custom_biome_name: String,
     pub dimension: Dimension,
     pub generator: WorldGenerator,
@@ -189,16 +199,16 @@ pub struct StartGame {
     pub world_spawn: BlockPosition,
     pub achievements_disabled: bool,
     pub editor_world: bool,
-    pub day_cycle_lock_time: u32,
-    pub education_offer: u32,
+    pub day_cycle_lock_time: i32,
+    pub education_offer: i32,
     pub education_features_enabled: bool,
     pub education_production_id: String,
     pub rain_level: f32,
     pub lightning_level: f32,
     pub confirmed_platform_locked_content: bool,
     pub broadcast_to_lan: bool,
-    pub xbox_live_broadcast_mode: u32,
-    pub platform_broadcast_mode: u32,
+    pub xbox_live_broadcast_mode: i32,
+    pub platform_broadcast_mode: i32,
     /// Whether to enable commands.
     /// If this is disabled, the client will not allow the player to send commands under any
     /// circumstance.
@@ -210,7 +220,7 @@ pub struct StartGame {
     pub bonus_chest_enabled: bool,
     pub starter_map_enabled: bool,
     pub permission_level: PermissionLevel,
-    pub server_chunk_tick_range: u32,
+    pub server_chunk_tick_range: i32,
     pub has_locked_behavior_pack: bool,
     pub has_locked_resource_pack: bool,
     pub is_from_locked_world_template: bool,
@@ -223,8 +233,8 @@ pub struct StartGame {
     pub emote_chat_muted: bool,
     /// Version of the game from which vanilla features will be used.
     pub base_game_version: String,
-    pub limited_world_width: u32,
-    pub limited_world_height: u32,
+    pub limited_world_width: i32,
+    pub limited_world_height: i32,
     pub has_new_nether: bool,
     pub force_experimental_gameplay: bool,
     pub chat_restriction_level: ChatRestrictionLevel,
@@ -234,8 +244,8 @@ pub struct StartGame {
     pub template_content_identity: String,
     pub is_trial: bool,
     pub movement_settings: PlayerMovementSettings,
-    pub time: u64,
-    pub enchantment_seed: u32,
+    pub time: i64,
+    pub enchantment_seed: i32,
     pub block_properties: Vec<BlockEntry>,
     pub item_properties: Vec<ItemEntry>,
     pub multiplayer_correlation_id: String,
@@ -255,13 +265,13 @@ impl Encodable for StartGame {
     fn encode(&self) -> VResult<BytesMut> {
         let mut buffer = BytesMut::new();
 
-        buffer.put_var_u64(self.entity_id);
+        buffer.put_var_i64(self.entity_id);
         buffer.put_var_u64(self.runtime_id);
         self.gamemode.encode(&mut buffer);
         self.position.encode(&mut buffer);
         self.rotation.encode(&mut buffer);
         buffer.put_u64(self.world_seed);
-        buffer.put_u16(self.spawn_biome_type);
+        self.spawn_biome_type.encode(&mut buffer);
         buffer.put_string(&self.custom_biome_name);
         self.dimension.encode(&mut buffer);
         self.generator.encode(&mut buffer);
@@ -271,8 +281,8 @@ impl Encodable for StartGame {
 
         buffer.put_bool(self.achievements_disabled);
         buffer.put_bool(self.editor_world);
-        buffer.put_var_u32(self.day_cycle_lock_time);
-        buffer.put_var_u32(self.education_offer);
+        buffer.put_var_i32(self.day_cycle_lock_time);
+        buffer.put_var_i32(self.education_offer);
         buffer.put_bool(self.education_features_enabled);
         buffer.put_string("");
         buffer.put_f32(self.rain_level);
@@ -280,8 +290,8 @@ impl Encodable for StartGame {
         buffer.put_bool(self.confirmed_platform_locked_content);
         buffer.put_bool(true); // Whether the game is multiplayer. Must always be true.
         buffer.put_bool(self.broadcast_to_lan);
-        buffer.put_var_u32(self.xbox_live_broadcast_mode);
-        buffer.put_var_u32(self.platform_broadcast_mode);
+        buffer.put_var_i32(self.xbox_live_broadcast_mode);
+        buffer.put_var_i32(self.platform_broadcast_mode);
         buffer.put_bool(self.enable_commands);
         buffer.put_bool(self.texture_packs_required);
 
@@ -299,7 +309,7 @@ impl Encodable for StartGame {
         buffer.put_bool(self.bonus_chest_enabled);
         buffer.put_bool(self.starter_map_enabled);
         self.permission_level.encode(&mut buffer);
-        buffer.put_u32(self.server_chunk_tick_range);
+        buffer.put_i32(self.server_chunk_tick_range);
         buffer.put_bool(self.has_locked_behavior_pack);
         buffer.put_bool(self.has_locked_resource_pack);
         buffer.put_bool(self.is_from_locked_world_template);
@@ -311,12 +321,12 @@ impl Encodable for StartGame {
         buffer.put_bool(self.custom_skins_disabled);
         buffer.put_bool(self.emote_chat_muted);
         buffer.put_string(&self.base_game_version);
-        buffer.put_u32(self.limited_world_width);
-        buffer.put_u32(self.limited_world_height);
+        buffer.put_i32(self.limited_world_width);
+        buffer.put_i32(self.limited_world_height);
         buffer.put_bool(self.has_new_nether);
         buffer.put_string("");
         buffer.put_string("");
-        // buffer.put_bool(self.force_experimental_gameplay); // TODO
+        buffer.put_bool(self.force_experimental_gameplay);
         self.chat_restriction_level.encode(&mut buffer);
         buffer.put_bool(self.disable_player_interactions);
         buffer.put_string(&self.level_id);
@@ -324,15 +334,15 @@ impl Encodable for StartGame {
         buffer.put_string(&self.template_content_identity);
         buffer.put_bool(self.is_trial);
         self.movement_settings.encode(&mut buffer);
-        buffer.put_u64(self.time);
-        buffer.put_var_u32(self.enchantment_seed);
+        buffer.put_i64(self.time);
+        buffer.put_var_i32(self.enchantment_seed);
 
-        buffer.put_var_u32(self.block_properties.len() as u32);
+        buffer.put_var_i32(self.block_properties.len() as i32);
         for block in &self.block_properties {
             block.encode(&mut buffer);
         }
 
-        buffer.put_var_u32(self.item_properties.len() as u32);
+        buffer.put_var_i32(self.item_properties.len() as i32);
         for item in &self.item_properties {
             item.encode(&mut buffer);
         }
@@ -346,13 +356,11 @@ impl Encodable for StartGame {
         nbt::RefTag {
             name: "",
             value: &self.property_data,
-        }.encode_with_le(&mut buffer);
+        }.encode_with_net(&mut buffer);
 
         buffer.put_u64(self.server_block_state_checksum);
         buffer.put_u128(self.world_template_id);
         buffer.put_bool(self.client_side_generation);
-
-        tracing::info!("{:x?}", buffer.as_ref());
 
         Ok(buffer)
     }

@@ -7,7 +7,7 @@ use jsonwebtoken::jwk::KeyOperations::Encrypt;
 
 use crate::config::SERVER_CONFIG;
 use crate::crypto::Encryptor;
-use crate::network::packets::{ChatRestrictionLevel, ClientCacheStatus, ClientToServerHandshake, CreativeContent, Difficulty, Dimension, Disconnect, DISCONNECTED_LOGIN_FAILED, DISCONNECTED_NOT_AUTHENTICATED, GameMode, ItemEntry, Login, NETWORK_VERSION, NetworkSettings, PermissionLevel, PlayerMovementSettings, PlayerMovementType, PlayStatus, RequestNetworkSettings, ResourcePackClientResponse, ResourcePacksInfo, ResourcePackStack, ServerToClientHandshake, StartGame, Status, ViolationWarning, WorldGenerator};
+use crate::network::packets::{ChatRestrictionLevel, ClientCacheStatus, ClientToServerHandshake, CreativeContent, Difficulty, Dimension, Disconnect, DISCONNECTED_LOGIN_FAILED, DISCONNECTED_NOT_AUTHENTICATED, GameMode, ItemEntry, Login, NETWORK_VERSION, NetworkSettings, PermissionLevel, PlayerMovementSettings, PlayerMovementType, PlayStatus, RequestNetworkSettings, ResourcePackClientResponse, ResourcePacksInfo, ResourcePackStack, ServerToClientHandshake, StartGame, Status, ViolationWarning, WorldGenerator, SpawnBiomeType};
 use crate::network::packets::GameMode::Creative;
 use crate::network::raknet::{Frame, FrameBatch};
 use crate::network::raknet::Reliability;
@@ -46,8 +46,8 @@ impl Session {
             position: Vector3f::from([0.0, 0.0, 0.0]),
             rotation: Vector2f::from([0.0, 0.0]),
             world_seed: 0,
-            spawn_biome_type: 0,
-            custom_biome_name: "".to_string(),
+            spawn_biome_type: SpawnBiomeType::Default,
+            custom_biome_name: "plains".to_string(),
             dimension: Dimension::Overworld,
             generator: WorldGenerator::Infinite,
             world_gamemode: GameMode::Survival,
@@ -96,7 +96,7 @@ impl Session {
             template_content_identity: "".to_string(),
             is_trial: false,
             movement_settings: PlayerMovementSettings {
-                movement_type: PlayerMovementType::ClientAuthoritative,
+                movement_type: PlayerMovementType::ServerAuthoritative,
                 rewind_history_size: 0,
                 server_authoritative_breaking: true,
             },

@@ -11,6 +11,7 @@ mod read_le;
 
 mod write_be;
 mod write_le;
+mod write_net;
 
 #[derive(Error, Debug)]
 pub enum Error {
