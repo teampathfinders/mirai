@@ -17,7 +17,9 @@ pub use start_game::*;
 pub use traits::*;
 pub use violation_warning::*;
 pub use chunk_radius_request::*;
+pub use chunk_radius_reply::*;
 
+mod chunk_radius_reply;
 mod chunk_radius_request;
 mod cache_status;
 mod client_to_server_handshake;

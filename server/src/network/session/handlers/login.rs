@@ -7,7 +7,7 @@ use jsonwebtoken::jwk::KeyOperations::Encrypt;
 
 use crate::config::SERVER_CONFIG;
 use crate::crypto::Encryptor;
-use crate::network::packets::{ChatRestrictionLevel, ClientCacheStatus, ClientToServerHandshake, CreativeContent, Difficulty, Dimension, Disconnect, DISCONNECTED_LOGIN_FAILED, DISCONNECTED_NOT_AUTHENTICATED, GameMode, ItemEntry, Login, NETWORK_VERSION, NetworkSettings, PermissionLevel, PlayerMovementSettings, PlayerMovementType, PlayStatus, RequestNetworkSettings, ResourcePackClientResponse, ResourcePacksInfo, ResourcePackStack, ServerToClientHandshake, StartGame, Status, ViolationWarning, WorldGenerator, SpawnBiomeType, ChunkRadiusRequest, BroadcastIntent};
+use crate::network::packets::{ChatRestrictionLevel, ClientCacheStatus, ClientToServerHandshake, CreativeContent, Difficulty, Dimension, Disconnect, DISCONNECTED_LOGIN_FAILED, DISCONNECTED_NOT_AUTHENTICATED, GameMode, ItemEntry, Login, NETWORK_VERSION, NetworkSettings, PermissionLevel, PlayerMovementSettings, PlayerMovementType, PlayStatus, RequestNetworkSettings, ResourcePackClientResponse, ResourcePacksInfo, ResourcePackStack, ServerToClientHandshake, StartGame, Status, ViolationWarning, WorldGenerator, SpawnBiomeType, ChunkRadiusRequest, BroadcastIntent, ChunkRadiusReply};
 use crate::network::packets::GameMode::Creative;
 use crate::network::raknet::{Frame, FrameBatch};
 use crate::network::raknet::Reliability;
@@ -35,9 +35,12 @@ impl Session {
 
     pub fn handle_chunk_radius_request(&self, mut packet: BytesMut) -> VResult<()> {
         let request = ChunkRadiusRequest::decode(packet)?;
-        tracing::info!("{request:?}");
+        let reply = ChunkRadiusReply {
+            allowed_radius: SERVER_CONFIG.read().allowed_render_distance
+        };
+        self.send_packet(reply)?;
 
-        todo!()
+        Ok(())
     }
 
     pub fn handle_resource_pack_client_response(&self, mut packet: BytesMut) -> VResult<()> {

@@ -23,6 +23,9 @@ pub struct ServerConfig {
     /// Name of the server.
     /// This is only visible in LAN games.
     pub server_name: &'static str,
+    /// Maximum render distance that the server will accept.
+    /// Clients requesting a higher value will be told to use this.
+    pub allowed_render_distance: i32
 }
 
 lazy_static! {
@@ -39,6 +42,7 @@ lazy_static! {
             scalar: 0.0
         },
         enable_encryption: true,
-        server_name: "Pathfinders"
+        server_name: "Pathfinders",
+        allowed_render_distance: 16
     });
 }
