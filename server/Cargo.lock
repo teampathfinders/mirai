@@ -200,19 +200,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "common"
-version = "0.1.0"
-dependencies = [
- "base64 0.21.0",
- "bytes",
- "jsonwebtoken",
- "lazy_static",
- "parking_lot",
- "serde_json",
- "tokio",
-]
-
-[[package]]
 name = "console-api"
 version = "0.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -808,6 +795,7 @@ dependencies = [
 [[package]]
 name = "nbt"
 version = "0.1.0"
+source = "git+https://github.com/teampathfinders/nbt#9660270bf4c19684108985c547ab517a594d4710"
 dependencies = [
  "bytes",
  "thiserror",
@@ -1195,9 +1183,9 @@ dependencies = [
 
 [[package]]
 name = "serde_json"
-version = "1.0.93"
+version = "1.0.92"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "cad406b69c91885b5107daf2c29572f6c8cdb3c66826821e286c533490c0bc76"
+checksum = "7434af0dc1cbd59268aa98b4c22c131c0584d2232f6fb166efb993e2832e896a"
 dependencies = [
  "itoa",
  "ryu",
@@ -1347,10 +1335,11 @@ dependencies = [
 
 [[package]]
 name = "thread_local"
-version = "1.1.4"
+version = "1.1.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5516c27b78311c50bf42c071425c560ac799b11c30b31f87e3081965fe5e0180"
+checksum = "d805f96b7e61fce8728f142e213a3eb2f6b10538efff2d637c923efa4bfca048"
 dependencies = [
+ "cfg-if",
  "once_cell",
 ]
 
@@ -1435,9 +1424,9 @@ dependencies = [
 
 [[package]]
 name = "tokio-util"
-version = "0.7.6"
+version = "0.7.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "bc6a3b08b64e6dfad376fa2432c7b1f01522e37a623c3050bc95db2d3ff21583"
+checksum = "0bb2e075f03b3d66d8d8785356224ba688d2906a371015e225beeb65ca92c740"
 dependencies = [
  "bytes",
  "futures-core",
@@ -1661,7 +1650,6 @@ dependencies = [
  "base64 0.21.0",
  "bytes",
  "cipher",
- "common",
  "console-subscriber",
  "ctr",
  "dashmap",
