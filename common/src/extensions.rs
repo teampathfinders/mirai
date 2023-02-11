@@ -3,6 +3,7 @@ use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr, SocketAddrV4};
 use bytes::{Buf, BufMut};
 use lazy_static::lazy_static;
 
+use crate::Vector3f;
 use crate::bail;
 use crate::VResult;
 
@@ -161,6 +162,15 @@ pub trait ReadExtensions: Buf {
         let c = self.get_u8() as u32;
 
         a | (b << 8) | (c << 16)
+    }
+
+    /// Reads a 3 float vector from the buffer.
+    fn get_vec3f(&mut self) -> Vector3f {
+        let a = self.get_f32();
+        let b = self.get_f32();
+        let c = self.get_f32();
+
+        Vector3f::from([a, b, c])
     }
 }
 

@@ -22,8 +22,6 @@ impl Encodable for ChunkRadiusReply {
 
         buffer.put_var_i32(self.allowed_radius);
 
-        tracing::info!("{:x?}", buffer.as_ref());
-
         Ok(buffer)
     }
 }

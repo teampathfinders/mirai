@@ -90,7 +90,7 @@ impl Session {
             experiments_previously_enabled: false,
             bonus_chest_enabled: false,
             starter_map_enabled: false,
-            permission_level: PermissionLevel::Member,
+            permission_level: PermissionLevel::Operator,
             server_chunk_tick_range: 0,
             has_locked_behavior_pack: false,
             has_locked_resource_pack: false,
@@ -112,7 +112,7 @@ impl Session {
             template_content_identity: "".to_string(),
             is_trial: false,
             movement_settings: PlayerMovementSettings {
-                movement_type: PlayerMovementType::ServerAuthoritative,
+                movement_type: PlayerMovementType::ClientAuthoritative,
                 rewind_history_size: 0,
                 server_authoritative_breaking: true,
             },
@@ -135,6 +135,11 @@ impl Session {
 
         let biome_definition_list = BiomeDefinitionList;
         self.send_packet(biome_definition_list)?;
+
+        let play_status = PlayStatus {
+            status: Status::PlayerSpawn
+        };
+        self.send_packet(play_status)?;
 
         Ok(())
     }

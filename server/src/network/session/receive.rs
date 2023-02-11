@@ -7,7 +7,7 @@ use bytes::{Buf, BytesMut};
 
 use crate::config::SERVER_CONFIG;
 use crate::network::header::Header;
-use crate::network::packets::OnlinePing;
+use crate::network::packets::{OnlinePing, Interact};
 use crate::network::packets::{
     ChunkRadiusRequest, ClientCacheStatus, ClientToServerHandshake, CompressionAlgorithm,
     GamePacket, Login, RequestNetworkSettings, ResourcePackClientResponse, ViolationWarning,
@@ -194,6 +194,7 @@ impl Session {
             ResourcePackClientResponse::ID => self.handle_resource_pack_client_response(packet),
             ViolationWarning::ID => self.handle_violation_warning(packet),
             ChunkRadiusRequest::ID => self.handle_chunk_radius_request(packet),
+            Interact::ID => self.handle_interaction(packet),
             id => bail!(BadPacket, "Invalid game packet: {:#04x}", id),
         }
     }

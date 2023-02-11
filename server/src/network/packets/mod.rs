@@ -19,7 +19,11 @@ pub use server_to_client_handshake::*;
 pub use start_game::*;
 pub use traits::*;
 pub use violation_warning::*;
+pub use level_chunk::*;
+pub use interact::*;
 
+mod interact;
+mod level_chunk;
 mod biome_definition_list;
 mod cache_status;
 mod chunk_radius_reply;
