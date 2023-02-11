@@ -7,6 +7,8 @@ use crate::network::Encodable;
 use crate::network::packets::{ExperimentData, GamePacket};
 use common::{BlockPosition, Vector2f, Vector3f, WriteExtensions};
 
+use super::CLIENT_VERSION_STRING;
+
 #[derive(Debug, Copy, Clone)]
 pub enum GameMode {
     Survival = 0,
@@ -182,6 +184,21 @@ impl SpawnBiomeType {
     }
 }
 
+#[derive(Debug, Copy, Clone)]
+pub enum BroadcastIntent {
+    NoMultiplayer,
+    InviteOnly,
+    FriendsOnly,
+    FriendsOfFriends,
+    Public
+}
+
+impl BroadcastIntent {
+    pub fn encode(&self, buffer: &mut BytesMut) {
+        buffer.put_var_u32(*self as u32);
+    }
+}
+
 #[derive(Debug)]
 pub struct StartGame {
     pub entity_id: i64,
@@ -207,8 +224,8 @@ pub struct StartGame {
     pub lightning_level: f32,
     pub confirmed_platform_locked_content: bool,
     pub broadcast_to_lan: bool,
-    pub xbox_live_broadcast_mode: i32,
-    pub platform_broadcast_mode: i32,
+    pub xbox_broadcast_intent: BroadcastIntent,
+    pub platform_broadcast_intent: BroadcastIntent,
     /// Whether to enable commands.
     /// If this is disabled, the client will not allow the player to send commands under any
     /// circumstance.
@@ -232,10 +249,10 @@ pub struct StartGame {
     pub custom_skins_disabled: bool,
     pub emote_chat_muted: bool,
     /// Version of the game from which vanilla features will be used.
-    pub base_game_version: String,
+    // pub base_game_version: String,
     pub limited_world_width: i32,
     pub limited_world_height: i32,
-    pub has_new_nether: bool,
+    // pub has_new_nether: bool,
     pub force_experimental_gameplay: bool,
     pub chat_restriction_level: ChatRestrictionLevel,
     pub disable_player_interactions: bool,
@@ -290,8 +307,8 @@ impl Encodable for StartGame {
         buffer.put_bool(self.confirmed_platform_locked_content);
         buffer.put_bool(true); // Whether the game is multiplayer. Must always be true.
         buffer.put_bool(self.broadcast_to_lan);
-        buffer.put_var_i32(self.xbox_live_broadcast_mode);
-        buffer.put_var_i32(self.platform_broadcast_mode);
+        self.xbox_broadcast_intent.encode(&mut buffer);
+        self.platform_broadcast_intent.encode(&mut buffer);
         buffer.put_bool(self.enable_commands);
         buffer.put_bool(self.texture_packs_required);
 
@@ -320,10 +337,10 @@ impl Encodable for StartGame {
         buffer.put_bool(self.persona_disabled);
         buffer.put_bool(self.custom_skins_disabled);
         buffer.put_bool(self.emote_chat_muted);
-        buffer.put_string(&self.base_game_version);
+        buffer.put_string(CLIENT_VERSION_STRING); // Base game version
         buffer.put_i32(self.limited_world_width);
         buffer.put_i32(self.limited_world_height);
-        buffer.put_bool(self.has_new_nether);
+        buffer.put_bool(true); // Use new nether
         buffer.put_string("");
         buffer.put_string("");
         buffer.put_bool(self.force_experimental_gameplay);
@@ -337,21 +354,21 @@ impl Encodable for StartGame {
         buffer.put_i64(self.time);
         buffer.put_var_i32(self.enchantment_seed);
 
-        buffer.put_var_i32(self.block_properties.len() as i32);
+        buffer.put_var_u32(self.block_properties.len() as u32);
         for block in &self.block_properties {
             block.encode(&mut buffer);
         }
 
-        buffer.put_var_i32(self.item_properties.len() as i32);
+        buffer.put_var_u32(self.item_properties.len() as u32);
         for item in &self.item_properties {
             item.encode(&mut buffer);
         }
 
-        // buffer.put_string(&self.multiplayer_correlation_id);
+        // Random multiplayer correlation UUID.
         buffer.put_string("5b39a9d6-f1a1-411a-b749-b30742f81771");
 
         buffer.put_bool(self.server_authoritative_inventory);
-        buffer.put_string(&self.game_version);
+        buffer.put_string(CLIENT_VERSION_STRING); // Game version
 
         nbt::RefTag {
             name: "",

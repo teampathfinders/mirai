@@ -7,7 +7,7 @@ use jsonwebtoken::jwk::KeyOperations::Encrypt;
 
 use crate::config::SERVER_CONFIG;
 use crate::crypto::Encryptor;
-use crate::network::packets::{ChatRestrictionLevel, ClientCacheStatus, ClientToServerHandshake, CreativeContent, Difficulty, Dimension, Disconnect, DISCONNECTED_LOGIN_FAILED, DISCONNECTED_NOT_AUTHENTICATED, GameMode, ItemEntry, Login, NETWORK_VERSION, NetworkSettings, PermissionLevel, PlayerMovementSettings, PlayerMovementType, PlayStatus, RequestNetworkSettings, ResourcePackClientResponse, ResourcePacksInfo, ResourcePackStack, ServerToClientHandshake, StartGame, Status, ViolationWarning, WorldGenerator, SpawnBiomeType};
+use crate::network::packets::{ChatRestrictionLevel, ClientCacheStatus, ClientToServerHandshake, CreativeContent, Difficulty, Dimension, Disconnect, DISCONNECTED_LOGIN_FAILED, DISCONNECTED_NOT_AUTHENTICATED, GameMode, ItemEntry, Login, NETWORK_VERSION, NetworkSettings, PermissionLevel, PlayerMovementSettings, PlayerMovementType, PlayStatus, RequestNetworkSettings, ResourcePackClientResponse, ResourcePacksInfo, ResourcePackStack, ServerToClientHandshake, StartGame, Status, ViolationWarning, WorldGenerator, SpawnBiomeType, ChunkRadiusRequest, BroadcastIntent};
 use crate::network::packets::GameMode::Creative;
 use crate::network::raknet::{Frame, FrameBatch};
 use crate::network::raknet::Reliability;
@@ -31,6 +31,13 @@ impl Session {
 
         self.kick("Violation warning")?;
         Ok(())
+    }
+
+    pub fn handle_chunk_radius_request(&self, mut packet: BytesMut) -> VResult<()> {
+        let request = ChunkRadiusRequest::decode(packet)?;
+        tracing::info!("{request:?}");
+
+        todo!()
     }
 
     pub fn handle_resource_pack_client_response(&self, mut packet: BytesMut) -> VResult<()> {
@@ -63,8 +70,8 @@ impl Session {
             lightning_level: 0.0,
             confirmed_platform_locked_content: false,
             broadcast_to_lan: true,
-            xbox_live_broadcast_mode: 0,
-            platform_broadcast_mode: 0,
+            xbox_broadcast_intent: BroadcastIntent::Public,
+            platform_broadcast_intent: BroadcastIntent::Public,
             enable_commands: true,
             texture_packs_required: false,
             gamerules: vec![],
@@ -84,10 +91,8 @@ impl Session {
             persona_disabled: false,
             custom_skins_disabled: false,
             emote_chat_muted: false,
-            base_game_version: "1.19.60".to_string(),
             limited_world_width: 0,
             limited_world_height: 0,
-            has_new_nether: false,
             force_experimental_gameplay: false,
             chat_restriction_level: ChatRestrictionLevel::None,
             disable_player_interactions: false,
