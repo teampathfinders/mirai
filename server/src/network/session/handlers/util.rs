@@ -1,7 +1,7 @@
 use bytes::BytesMut;
 use common::{VResult, Vector3i};
 
-use crate::network::{session::Session, packets::{TextMessage, SetTime, MessageType, PlaySound, ShowProfile}, Decodable};
+use crate::network::{session::Session, packets::{TextMessage, SetTime, MessageType, PlaySound, ShowProfile, SetPlayerGameMode, GameMode}, Decodable};
 
 impl Session {
     pub fn handle_text_message(&self, packet: BytesMut) -> VResult<()> {
@@ -12,6 +12,11 @@ impl Session {
             xuid: request.xuid.clone()
         };
         self.send_packet(reply)?;
+
+        let reply2 = SetPlayerGameMode {
+            game_mode: GameMode::Survival
+        };
+        self.send_packet(reply2)?;
 
         // let reply = TextMessage {
         //     message_type: MessageType::System,

@@ -26,7 +26,9 @@ pub use set_time::*;
 pub use available_commands::*;
 pub use play_sound::*;
 pub use show_profile::*;
+pub use set_player_gamemode::*;
 
+mod set_player_gamemode;
 mod show_profile;
 mod play_sound;
 mod available_commands;
