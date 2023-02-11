@@ -22,27 +22,16 @@ impl Session {
 
         let reply2 = MobEffectUpdate {
             runtime_id: 1,
-            effect_kind: MobEffectKind::HealthBoost,
+            effect_kind: MobEffectKind::FatalPoison,
             particles: true,
             amplifier: 255,
             operation: MobEffectOperation::Add,
-            duration: u32::MAX,
+            duration: i32::MAX,
         };
         self.send_packet(reply2)?;
 
         let reply3 = SetHealth { health: 10 };
         self.send_packet(reply3)?;
-
-        // let reply = TextMessage {
-        //     message_type: MessageType::System,
-        //     needs_translation: false,
-        //     source_name: "Server".to_owned(),
-        //     message: "Popup".to_owned(),
-        //     parameters: Vec::new(),
-        //     xuid: request.xuid,
-        //     platform_chat_id: request.platform_chat_id,
-        // };
-        // self.send_packet(reply)?;
 
         Ok(())
     }

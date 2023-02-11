@@ -21,7 +21,7 @@ impl MobEffectOperation {
 
 #[derive(Debug, Copy, Clone)]
 pub enum MobEffectKind {
-    Speed,
+    Speed = 1,
     Slowness,
     Haste,
     MiningFatigue,
@@ -55,7 +55,7 @@ pub enum MobEffectKind {
 
 impl MobEffectKind {
     pub fn encode(&self, buffer: &mut BytesMut) {
-        buffer.put_var_u32(*self as u32);
+        buffer.put_var_i32(*self as i32);
     }
 }
 
@@ -64,9 +64,9 @@ pub struct MobEffectUpdate {
     pub runtime_id: u64,
     pub operation: MobEffectOperation,
     pub effect_kind: MobEffectKind,
-    pub amplifier: u32,
+    pub amplifier: i32,
     pub particles: bool,
-    pub duration: u32,
+    pub duration: i32,
 }
 
 impl GamePacket for MobEffectUpdate {
@@ -80,9 +80,9 @@ impl Encodable for MobEffectUpdate {
         buffer.put_var_u64(self.runtime_id);
         self.operation.encode(&mut buffer);
         self.effect_kind.encode(&mut buffer);
-        buffer.put_var_u32(self.amplifier);
+        buffer.put_var_i32(self.amplifier);
         buffer.put_bool(self.particles);
-        buffer.put_var_u32(self.duration);
+        buffer.put_var_i32(self.duration);
 
         Ok(buffer)
     }
