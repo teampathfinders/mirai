@@ -7,7 +7,7 @@ use super::{GameMode, GamePacket};
 
 #[derive(Debug)]
 pub struct SetPlayerGameMode {
-    pub game_mode: GameMode
+    pub game_mode: GameMode,
 }
 
 impl GamePacket for SetPlayerGameMode {

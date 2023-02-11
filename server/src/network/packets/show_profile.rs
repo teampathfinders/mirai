@@ -7,7 +7,7 @@ use super::GamePacket;
 
 #[derive(Debug)]
 pub struct ShowProfile {
-    pub xuid: String
+    pub xuid: String,
 }
 
 impl GamePacket for ShowProfile {

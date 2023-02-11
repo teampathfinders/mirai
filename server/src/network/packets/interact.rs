@@ -1,5 +1,5 @@
-use bytes::{BytesMut, Buf};
-use common::{Vector3f, VResult, VError, bail, ReadExtensions};
+use bytes::{Buf, BytesMut};
+use common::{bail, ReadExtensions, VError, VResult, Vector3f};
 
 use crate::network::Decodable;
 
@@ -10,7 +10,7 @@ pub enum ActionType {
     LeaveVehicle = 3,
     MouseOverEntity = 4,
     NpcOpen = 5,
-    OpenInventory = 6
+    OpenInventory = 6,
 }
 
 impl TryFrom<u8> for ActionType {
@@ -22,7 +22,7 @@ impl TryFrom<u8> for ActionType {
             4 => Self::MouseOverEntity,
             5 => Self::NpcOpen,
             6 => Self::OpenInventory,
-            _ => bail!(BadPacket, "Invalid interact action type")
+            _ => bail!(BadPacket, "Invalid interact action type"),
         })
     }
 }
@@ -34,7 +34,7 @@ pub struct Interact {
     /// Target of the interaction.
     pub target_runtime_id: u64,
     /// Position of the interaction,
-    pub position: Vector3f
+    pub position: Vector3f,
 }
 
 impl GamePacket for Interact {
@@ -48,7 +48,9 @@ impl Decodable for Interact {
         let position = buffer.get_vec3f();
 
         Ok(Self {
-            action, target_runtime_id, position
+            action,
+            target_runtime_id,
+            position,
         })
     }
 }

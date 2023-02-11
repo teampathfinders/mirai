@@ -1,5 +1,5 @@
-use bytes::{BytesMut, BufMut};
-use common::{VResult, Vector3f, WriteExtensions, Vector, Vector3i};
+use bytes::{BufMut, BytesMut};
+use common::{VResult, Vector, Vector3f, Vector3i, WriteExtensions};
 
 use crate::network::Encodable;
 
@@ -10,7 +10,7 @@ pub struct PlaySound {
     pub name: String,
     pub position: Vector3i,
     pub volume: f32,
-    pub pitch: f32
+    pub pitch: f32,
 }
 
 impl GamePacket for PlaySound {

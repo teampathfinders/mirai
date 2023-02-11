@@ -1,4 +1,4 @@
-use bytes::{BytesMut, BufMut};
+use bytes::{BufMut, BytesMut};
 use common::{VResult, WriteExtensions};
 
 use crate::network::Encodable;

@@ -1,5 +1,5 @@
-use bytes::{BytesMut, Buf, BufMut};
-use common::{VResult, VError, bail, ReadExtensions, WriteExtensions};
+use bytes::{Buf, BufMut, BytesMut};
+use common::{bail, ReadExtensions, VError, VResult, WriteExtensions};
 
 use crate::network::{Decodable, Encodable};
 
@@ -18,7 +18,7 @@ pub enum MessageType {
     Announcement,
     ObjectWhisper,
     Object,
-    ObjectAnnouncement
+    ObjectAnnouncement,
 }
 
 impl TryFrom<u8> for MessageType {
@@ -38,7 +38,7 @@ impl TryFrom<u8> for MessageType {
             9 => Self::ObjectWhisper,
             10 => Self::Object,
             11 => Self::ObjectAnnouncement,
-            _ => bail!(BadPacket, "Invalid text message type")
+            _ => bail!(BadPacket, "Invalid text message type"),
         })
     }
 }
@@ -53,7 +53,7 @@ pub struct TextMessage {
     pub message: String,
     pub parameters: Vec<String>,
     pub xuid: String,
-    pub platform_chat_id: String
+    pub platform_chat_id: String,
 }
 
 impl GamePacket for TextMessage {
@@ -66,15 +66,20 @@ impl Encodable for TextMessage {
 
         buffer.put_u8(self.message_type as u8);
         buffer.put_bool(self.needs_translation);
-        
+
         match self.message_type {
             MessageType::Chat | MessageType::Whisper | MessageType::Announcement => {
                 buffer.put_string(&self.source_name);
                 buffer.put_string(&self.message);
-            },
-            MessageType::Raw | MessageType::Tip | MessageType::System | MessageType::Object | MessageType::ObjectWhisper | MessageType::ObjectAnnouncement => {
+            }
+            MessageType::Raw
+            | MessageType::Tip
+            | MessageType::System
+            | MessageType::Object
+            | MessageType::ObjectWhisper
+            | MessageType::ObjectAnnouncement => {
                 buffer.put_string(&self.message);
-            },
+            }
             MessageType::Translation | MessageType::Popup | MessageType::JukeboxPopup => {
                 buffer.put_string(&self.message);
 
@@ -84,7 +89,7 @@ impl Encodable for TextMessage {
                 }
             }
         }
-        
+
         buffer.put_string(&self.xuid);
         buffer.put_string(&self.platform_chat_id);
 
@@ -104,13 +109,18 @@ impl Decodable for TextMessage {
             MessageType::Chat | MessageType::Whisper | MessageType::Announcement => {
                 source_name = buffer.get_string()?;
                 message = buffer.get_string()?;
-            },
-            MessageType::Raw | MessageType::Tip | MessageType::System | MessageType::Object | MessageType::ObjectWhisper | MessageType::ObjectAnnouncement => {
+            }
+            MessageType::Raw
+            | MessageType::Tip
+            | MessageType::System
+            | MessageType::Object
+            | MessageType::ObjectWhisper
+            | MessageType::ObjectAnnouncement => {
                 message = buffer.get_string()?;
-            },
+            }
             MessageType::Translation | MessageType::Popup | MessageType::JukeboxPopup => {
                 message = buffer.get_string()?;
-                
+
                 let count = buffer.get_var_u32()?;
                 parameters.reserve(count as usize);
 
@@ -130,7 +140,7 @@ impl Decodable for TextMessage {
             message,
             parameters,
             xuid,
-            platform_chat_id
+            platform_chat_id,
         })
     }
 }

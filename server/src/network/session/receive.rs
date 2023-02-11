@@ -7,12 +7,12 @@ use bytes::{Buf, BytesMut};
 
 use crate::config::SERVER_CONFIG;
 use crate::network::header::Header;
-use crate::network::packets::{OnlinePing, Interact, TextMessage};
 use crate::network::packets::{
     ChunkRadiusRequest, ClientCacheStatus, ClientToServerHandshake, CompressionAlgorithm,
     GamePacket, Login, RequestNetworkSettings, ResourcePackClientResponse, ViolationWarning,
     GAME_PACKET_ID,
 };
+use crate::network::packets::{Interact, OnlinePing, TextMessage};
 use crate::network::raknet::packets::ConnectionRequest;
 use crate::network::raknet::packets::DisconnectNotification;
 use crate::network::raknet::packets::NewIncomingConnection;

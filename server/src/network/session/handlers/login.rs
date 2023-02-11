@@ -137,7 +137,7 @@ impl Session {
         self.send_packet(biome_definition_list)?;
 
         let play_status = PlayStatus {
-            status: Status::PlayerSpawn
+            status: Status::PlayerSpawn,
         };
         self.send_packet(play_status)?;
 

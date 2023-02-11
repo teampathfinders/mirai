@@ -9,7 +9,7 @@ use super::GamePacket;
 #[derive(Debug)]
 pub struct SetTime {
     /// Current time (in ticks)
-    pub time: i32
+    pub time: i32,
 }
 
 impl GamePacket for SetTime {

@@ -7,7 +7,7 @@ use super::GamePacket;
 
 #[derive(Debug)]
 pub struct SetHealth {
-    pub health: i32
+    pub health: i32,
 }
 
 impl GamePacket for SetHealth {

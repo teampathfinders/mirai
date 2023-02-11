@@ -1,7 +1,7 @@
 use bytes::BytesMut;
 use common::VResult;
 
-use crate::network::{session::Session, packets::Interact, Decodable};
+use crate::network::{packets::Interact, session::Session, Decodable};
 
 impl Session {
     pub fn handle_interaction(&self, packet: BytesMut) -> VResult<()> {
