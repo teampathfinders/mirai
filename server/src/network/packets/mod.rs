@@ -33,7 +33,9 @@ pub use show_credits::*;
 pub use set_difficulty::*;
 pub use set_commands_enabled::*;
 pub use tick_sync::*;
+pub use add_painting::*;
 
+mod add_painting;
 mod tick_sync;
 mod set_commands_enabled;
 mod set_difficulty;
