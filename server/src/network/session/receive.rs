@@ -10,7 +10,7 @@ use crate::network::header::Header;
 use crate::network::packets::{
     ChunkRadiusRequest, ClientCacheStatus, ClientToServerHandshake, CompressionAlgorithm,
     GamePacket, Login, RequestNetworkSettings, ResourcePackClientResponse, ViolationWarning,
-    GAME_PACKET_ID,
+    GAME_PACKET_ID, SetDifficulty,
 };
 use crate::network::packets::{Interact, OnlinePing, TextMessage};
 use crate::network::raknet::packets::ConnectionRequest;

@@ -32,7 +32,9 @@ pub use mob_effect::*;
 pub use show_credits::*;
 pub use set_difficulty::*;
 pub use set_commands_enabled::*;
+pub use tick_sync::*;
 
+mod tick_sync;
 mod set_commands_enabled;
 mod set_difficulty;
 mod show_credits;
