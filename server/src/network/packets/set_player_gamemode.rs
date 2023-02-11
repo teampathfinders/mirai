@@ -1,7 +1,7 @@
 use bytes::BytesMut;
-use common::{VResult, WriteExtensions};
+use common::{VResult, WriteExtensions, ReadExtensions};
 
-use crate::network::Encodable;
+use crate::network::{Encodable, Decodable};
 
 use super::{GameMode, GamePacket};
 
@@ -18,8 +18,15 @@ impl Encodable for SetPlayerGameMode {
     fn encode(&self) -> VResult<BytesMut> {
         let mut buffer = BytesMut::new();
 
-        self.game_mode.encode(&mut buffer);
+        buffer.put_var_i32(self.game_mode as i32);
 
         Ok(buffer)
+    }
+}
+
+impl Decodable for SetPlayerGameMode {
+    fn decode(mut buffer: BytesMut) -> VResult<Self> {
+        let game_mode = GameMode::try_from(buffer.get_var_i32()?)?;
+        Ok(Self { game_mode })
     }
 }

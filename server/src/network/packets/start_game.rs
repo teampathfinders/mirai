@@ -19,9 +19,18 @@ pub enum GameMode {
     WorldDefault = 5,
 }
 
-impl GameMode {
-    pub fn encode(&self, buffer: &mut BytesMut) {
-        buffer.put_var_i32(*self as i32);
+impl TryFrom<i32> for GameMode {
+    type Error = VError;
+
+    fn try_from(value: i32) -> VResult<Self> {
+        Ok(match value {
+            0 => Self::Survival,
+            1 => Self::Creative,
+            2 => Self::Adventure,
+            3 => Self::Spectator,
+            5 => Self::WorldDefault,
+            _ => bail!(BadPacket, "Invalid game mode")
+        })
     }
 }
 
@@ -293,7 +302,7 @@ impl Encodable for StartGame {
 
         buffer.put_var_i64(self.entity_id);
         buffer.put_var_u64(self.runtime_id);
-        self.gamemode.encode(&mut buffer);
+        buffer.put_var_i32(self.gamemode as i32);
         self.position.encode(&mut buffer);
         self.rotation.encode(&mut buffer);
         buffer.put_u64(self.world_seed);
@@ -301,7 +310,7 @@ impl Encodable for StartGame {
         buffer.put_string(&self.custom_biome_name);
         self.dimension.encode(&mut buffer);
         self.generator.encode(&mut buffer);
-        self.world_gamemode.encode(&mut buffer);
+        buffer.put_var_i32(self.world_gamemode as i32);
         buffer.put_var_i32(self.difficulty as i32);
         self.world_spawn.encode(&mut buffer);
 
