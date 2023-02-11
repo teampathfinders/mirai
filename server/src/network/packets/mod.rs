@@ -21,7 +21,9 @@ pub use traits::*;
 pub use violation_warning::*;
 pub use level_chunk::*;
 pub use interact::*;
+pub use text::*;
 
+mod text;
 mod interact;
 mod level_chunk;
 mod biome_definition_list;

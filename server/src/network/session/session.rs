@@ -37,7 +37,6 @@ const ORDER_CHANNEL_COUNT: usize = 5;
 ///
 /// Anything that has to do with specific clients must be communicated with their associated sessions.
 /// The server does not interact with clients directly, everything is done through these sessions.
-///
 #[derive(Debug)]
 pub struct Session {
     /// Identity data such as XUID and display name.
@@ -78,7 +77,9 @@ pub struct Session {
     pub order_channels: [OrderChannel; ORDER_CHANNEL_COUNT],
     /// Keeps track of all packets that are waiting to be sent.
     pub send_queue: SendQueue,
+    /// Packets that are ready to be acknowledged.
     pub confirmed_packets: Mutex<Vec<u32>>,
+    /// Whether compression has been configured for this session.
     pub compression_enabled: AtomicBool,
     /// Keeps track of all unprocessed received packets.
     pub receive_queue: AsyncDeque<BytesMut>,

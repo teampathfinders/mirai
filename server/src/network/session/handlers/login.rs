@@ -89,7 +89,7 @@ impl Session {
             experiments: vec![],
             experiments_previously_enabled: false,
             bonus_chest_enabled: false,
-            starter_map_enabled: false,
+            starter_map_enabled: true,
             permission_level: PermissionLevel::Operator,
             server_chunk_tick_range: 0,
             has_locked_behavior_pack: false,
@@ -112,7 +112,7 @@ impl Session {
             template_content_identity: "".to_string(),
             is_trial: false,
             movement_settings: PlayerMovementSettings {
-                movement_type: PlayerMovementType::ClientAuthoritative,
+                movement_type: PlayerMovementType::ServerAuthoritative,
                 rewind_history_size: 0,
                 server_authoritative_breaking: true,
             },
