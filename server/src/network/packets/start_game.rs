@@ -4,7 +4,7 @@ use bytes::{BufMut, BytesMut};
 
 use crate::network::packets::{ExperimentData, GamePacket};
 use crate::network::Encodable;
-use common::VResult;
+use common::{VResult, VError, bail};
 use common::{BlockPosition, Vector2f, Vector3f, WriteExtensions};
 
 use super::CLIENT_VERSION_STRING;
@@ -61,9 +61,17 @@ pub enum Difficulty {
     Hard,
 }
 
-impl Difficulty {
-    pub fn encode(&self, buffer: &mut BytesMut) {
-        buffer.put_var_i32(*self as i32);
+impl TryFrom<i32> for Difficulty {
+    type Error = VError;
+
+    fn try_from(value: i32) -> VResult<Self> {
+        Ok(match value {
+            0 => Self::Peaceful,
+            1 => Self::Easy,
+            2 => Self::Normal,
+            3 => Self::Hard,
+            _ => bail!(BadPacket, "Invalid difficulty type {value}")
+        })
     }
 }
 
@@ -294,7 +302,7 @@ impl Encodable for StartGame {
         self.dimension.encode(&mut buffer);
         self.generator.encode(&mut buffer);
         self.world_gamemode.encode(&mut buffer);
-        self.difficulty.encode(&mut buffer);
+        buffer.put_var_i32(self.difficulty as i32);
         self.world_spawn.encode(&mut buffer);
 
         buffer.put_bool(self.achievements_disabled);

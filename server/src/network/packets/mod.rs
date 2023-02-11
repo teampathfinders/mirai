@@ -30,7 +30,11 @@ pub use set_player_gamemode::*;
 pub use set_health::*;
 pub use mob_effect::*;
 pub use show_credits::*;
+pub use set_difficulty::*;
+pub use set_commands_enabled::*;
 
+mod set_commands_enabled;
+mod set_difficulty;
 mod show_credits;
 mod mob_effect;
 mod set_health;
