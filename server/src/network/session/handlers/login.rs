@@ -150,7 +150,10 @@ impl Session {
         let available_commands = AvailableCommands {
             commands: vec![
                 Command {
-                    aliases: vec![],
+                    aliases: vec![
+                        "disconnect".to_owned(),
+                        "kick".to_owned()
+                    ],
                     description: "Kicks the specified user from the game".to_owned(),
                     name: "kick".to_owned(),
                     flags: 0,
@@ -159,20 +162,32 @@ impl Session {
                         CommandOverload {
                             parameters: vec![
                                 CommandParameter {
-                                    name: "target".to_owned(),
-                                    optional: true,
-                                    suffix: "".to_owned(),
-                                    argument_type: CommandArgumentType::IntegerRange,
+                                    name: "player".to_owned(),
+                                    optional: false,
+                                    suffix: String::new(),
+                                    argument_type: CommandArgumentType::Target,
                                     command_enum: CommandEnum {
-                                        command_type: "parameter type".to_owned(),
+                                        name: "target".to_owned(),
                                         dynamic: false,
                                         options: vec![
-                                            "option1".to_owned(),
-                                            "option2".to_owned()
+                                            "user1".to_owned(),
+                                            "user2".to_owned()
                                         ]
                                     },
                                     options: 0
-                                }
+                                },
+                                CommandParameter {
+                                    name: "reason".to_owned(),
+                                    optional: true,
+                                    suffix: String::new(),
+                                    argument_type: CommandArgumentType::WildcardTarget,
+                                    command_enum: CommandEnum {
+                                        name: "string".to_owned(),
+                                        dynamic: false,
+                                        options: vec![]
+                                    },
+                                    options: 0
+                                },
                             ]
                         }
                     ]

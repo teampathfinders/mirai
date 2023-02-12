@@ -14,7 +14,7 @@ pub const COMMAND_PARAMETER_SOFT_ENUM: u32 = 0x4000000;
 
 #[derive(Debug, Clone)]
 pub struct CommandEnum {
-    pub command_type: String,
+    pub name: String,
     pub options: Vec<String>,
     pub dynamic: bool,
 }
@@ -125,22 +125,24 @@ impl Encodable for AvailableCommands {
             }
         }
 
-        let mut enums_indices = HashMap::new();
+        let mut enum_indices = HashMap::new();
         let mut enums = Vec::new();
         for command in &self.commands {
             if !command.aliases.is_empty() {
                 let alias_enum = CommandEnum {
-                    command_type: command.name.clone() + "Aliases",
+                    name: command.name.clone() + "Aliases",
                     options: command.aliases.clone(),
                     dynamic: false
                 };
+                enum_indices.insert(command.name.clone() + "Aliases", enums.len() as u32);
+                enums.push(alias_enum);
             }
 
             for overload in &command.overloads {
                 for parameter in &overload.parameters {
                     if !parameter.command_enum.dynamic && !parameter.command_enum.options.is_empty() {
-                        if !enums_indices.contains_key(&parameter.command_enum.command_type) {
-                            enums_indices.insert(&parameter.command_enum.command_type, enums.len() as u32);
+                        if !enum_indices.contains_key(&parameter.command_enum.name) {
+                            enum_indices.insert(parameter.command_enum.name.clone(), enums.len() as u32);
                             enums.push(parameter.command_enum.clone());
                         }
                     }
@@ -154,14 +156,16 @@ impl Encodable for AvailableCommands {
             for overload in &command.overloads {
                 for parameter in &overload.parameters {
                     if parameter.command_enum.dynamic {
-                        if !dynamic_indices.contains_key(&parameter.command_enum.command_type) {
-                            dynamic_indices.insert(&parameter.command_enum.command_type, dynamic_enums.len() as u32);
+                        if !dynamic_indices.contains_key(&parameter.command_enum.name) {
+                            dynamic_indices.insert(&parameter.command_enum.name, dynamic_enums.len() as u32);
                             dynamic_enums.push(&parameter.command_enum);
                         }
                     }
                 }
             }
         }
+
+        tracing::info!("{values:?} {suffixes:?} {enums:?} {dynamic_enums:?}");
 
         buffer.put_var_u32(values.len() as u32);
         for value in values {
@@ -175,15 +179,14 @@ impl Encodable for AvailableCommands {
 
         buffer.put_var_u32(enums.len() as u32);
         for command_enum in &enums {
-            let option_count = command_enum.options.len() as u32;
+            buffer.put_string(&command_enum.name);
+            buffer.put_var_u32(command_enum.options.len() as u32);
 
-            buffer.put_string(&command_enum.command_type);
-            buffer.put_var_u32(option_count);
-
-            for (index, option) in command_enum.options.iter().enumerate() {
-                if option_count <= u8::MAX as u32 {
+            let index_count = value_indices.len() as u32;
+            for option in &command_enum.options {
+                if index_count <= u8::MAX as u32 {
                     buffer.put_u8(value_indices[option] as u8);
-                } else if option_count <= u16::MAX as u32 {
+                } else if index_count <= u16::MAX as u32 {
                     buffer.put_u16(value_indices[option] as u16);
                 } else {
                     buffer.put_u32(value_indices[option] as u32);
@@ -195,34 +198,32 @@ impl Encodable for AvailableCommands {
         for command in &self.commands {
             let mut alias = -1i32;
             if !command.aliases.is_empty() {
-                alias = enums_indices[&(command.name.clone() + "Aliases")] as i32;
+                alias = enum_indices[&(command.name.clone() + "Aliases")] as i32;
             }
 
             buffer.put_string(&command.name);
             buffer.put_string(&command.description);
             buffer.put_u16(command.flags);
             buffer.put_u8(command.permission_level);
-            buffer.put_i32(alias);
+            buffer.put_i32_le(alias);
             
             buffer.put_var_u32(command.overloads.len() as u32);
             for overload in &command.overloads {
                 
                 buffer.put_var_u32(overload.parameters.len() as u32);
                 for parameter in &overload.parameters {
-                    let command_type; 
+                    let mut command_type = parameter.argument_type as u32; 
 
                     if parameter.command_enum.dynamic {
-                        command_type = COMMAND_PARAMETER_SOFT_ENUM | COMMAND_PARAMETER_VALID | dynamic_indices[&parameter.command_enum.command_type];
+                        command_type = COMMAND_PARAMETER_SOFT_ENUM | COMMAND_PARAMETER_VALID | dynamic_indices[&parameter.command_enum.name];
                     } else if !parameter.command_enum.options.is_empty() {
-                        command_type = COMMAND_PARAMETER_ENUM | COMMAND_PARAMETER_VALID | enums_indices[&parameter.command_enum.command_type];
+                        command_type = COMMAND_PARAMETER_ENUM | COMMAND_PARAMETER_VALID | enum_indices[&parameter.command_enum.name];
                     } else if !parameter.suffix.is_empty() {
                         command_type = COMMAND_PARAMETER_SUFFIXED | suffix_indices[&parameter.suffix];
-                    } else {
-                        unreachable!();
                     }
 
                     buffer.put_string(&parameter.name);
-                    buffer.put_u32(command_type);
+                    buffer.put_u32_le(command_type);
                     buffer.put_bool(parameter.optional);
                     buffer.put_u8(parameter.options);
                 }
@@ -231,7 +232,7 @@ impl Encodable for AvailableCommands {
 
         buffer.put_var_u32(dynamic_enums.len() as u32);
         for dynamic_enum in &dynamic_enums {
-            buffer.put_string(&dynamic_enum.command_type);
+            buffer.put_string(&dynamic_enum.name);
             buffer.put_var_u32(dynamic_enum.options.len() as u32);
 
             for option in &dynamic_enum.options {
