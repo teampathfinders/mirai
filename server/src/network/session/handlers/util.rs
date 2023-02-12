@@ -4,7 +4,7 @@ use common::{VResult, Vector3i, Vector3f};
 use crate::network::{
     packets::{
         CreditStatus, Difficulty, GameMode, MessageType, MobEffectKind, MobEffectOperation,
-        MobEffectUpdate, PlaySound, SetDifficulty, SetHealth, SetPlayerGameMode, SetTime,
+        MobEffectUpdate, PlaySound, SetDifficulty, SetPlayerGameMode, SetTime,
         ShowCredits, ShowProfile, TextMessage, SetCommandsEnabled, AddPainting, PaintingDirection, ChangeDimension, Dimension,
     },
     session::Session,
