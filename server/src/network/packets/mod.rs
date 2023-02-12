@@ -35,7 +35,9 @@ pub use traits::*;
 pub use violation_warning::*;
 pub use move_player::*;
 pub use change_dimension::*;
+pub use set_local_player_as_initialized::*;
 
+mod set_local_player_as_initialized;
 mod change_dimension;
 mod move_player;
 mod add_painting;

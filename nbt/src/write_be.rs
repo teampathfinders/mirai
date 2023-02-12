@@ -1,4 +1,4 @@
-use crate::{OwnedTag, RefTag, Value, TAG_BYTE, TAG_END};
+use crate::{RefTag, Value, TAG_BYTE, TAG_END};
 use bytes::{BufMut, BytesMut};
 
 impl RefTag<'_> {

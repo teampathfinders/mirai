@@ -15,7 +15,7 @@ use crate::network::packets::{
     PlayStatus, PlayerMovementSettings, PlayerMovementType, RequestNetworkSettings,
     ResourcePackClientResponse, ResourcePackStack, ResourcePacksInfo, ServerToClientHandshake,
     SpawnBiomeType, StartGame, Status, ViolationWarning, WorldGenerator, DISCONNECTED_LOGIN_FAILED,
-    DISCONNECTED_NOT_AUTHENTICATED, NETWORK_VERSION,
+    DISCONNECTED_NOT_AUTHENTICATED, NETWORK_VERSION, SetLocalPlayerAsInitialized,
 };
 use crate::network::raknet::Reliability;
 use crate::network::raknet::{Frame, FrameBatch};
@@ -38,6 +38,13 @@ impl Session {
         tracing::error!("Received violation warning: {request:?}");
 
         self.kick("Violation warning")?;
+        Ok(())
+    }
+
+    pub fn handle_local_player_initialized(&self, mut packet: BytesMut) -> VResult<()> {
+        let request = SetLocalPlayerAsInitialized::decode(packet)?;
+        // Unused
+        
         Ok(())
     }
 
