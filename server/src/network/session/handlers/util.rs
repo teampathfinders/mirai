@@ -5,7 +5,7 @@ use crate::network::{
     packets::{
         CreditStatus, Difficulty, GameMode, MessageType, MobEffectKind, MobEffectOperation,
         MobEffectUpdate, PlaySound, SetDifficulty, SetHealth, SetPlayerGameMode, SetTime,
-        ShowCredits, ShowProfile, TextMessage, SetCommandsEnabled, AddPainting, PaintingDirection,
+        ShowCredits, ShowProfile, TextMessage, SetCommandsEnabled, AddPainting, PaintingDirection, ChangeDimension, Dimension,
     },
     session::Session,
     Decodable,
@@ -16,11 +16,10 @@ impl Session {
         let request = TextMessage::decode(packet)?;
         tracing::info!("{request:?}");
 
-        let reply = AddPainting {
-            name: "BurningSkull".to_owned(),
-            position: Vector3f::from([1.0, 3.0, 4.0]),
-            runtime_id: 2,
-            direction: PaintingDirection::North
+        let reply = ChangeDimension {
+            dimension: Dimension::Nether,
+            position: Vector3f::from([0.0, 0.0, 0.0]),
+            respawn: false
         };
         self.send_packet(reply)?;
 

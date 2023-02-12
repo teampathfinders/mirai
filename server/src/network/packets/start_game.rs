@@ -7,20 +7,7 @@ use crate::network::Encodable;
 use common::{bail, VError, VResult};
 use common::{BlockPosition, Vector2f, Vector3f, WriteExtensions};
 
-use super::{CLIENT_VERSION_STRING, Difficulty, GameMode};
-
-#[derive(Debug, Copy, Clone)]
-pub enum Dimension {
-    Overworld,
-    Nether,
-    End,
-}
-
-impl Dimension {
-    pub fn encode(&self, buffer: &mut BytesMut) {
-        buffer.put_var_u32(*self as u32);
-    }
-}
+use super::{CLIENT_VERSION_STRING, Difficulty, GameMode, Dimension};
 
 #[derive(Debug, Copy, Clone)]
 pub enum WorldGenerator {
@@ -149,12 +136,6 @@ pub enum SpawnBiomeType {
     Custom,
 }
 
-impl SpawnBiomeType {
-    pub fn encode(&self, buffer: &mut BytesMut) {
-        buffer.put_i16(*self as i16);
-    }
-}
-
 #[derive(Debug, Copy, Clone)]
 pub enum BroadcastIntent {
     NoMultiplayer,
@@ -259,9 +240,9 @@ impl Encodable for StartGame {
         self.position.encode(&mut buffer);
         self.rotation.encode(&mut buffer);
         buffer.put_u64(self.world_seed);
-        self.spawn_biome_type.encode(&mut buffer);
+        buffer.put_i16(self.spawn_biome_type as i16);
         buffer.put_string(&self.custom_biome_name);
-        self.dimension.encode(&mut buffer);
+        buffer.put_var_u32(self.dimension as u32);
         self.generator.encode(&mut buffer);
         buffer.put_var_i32(self.world_game_mode as i32);
         buffer.put_var_i32(self.difficulty as i32);

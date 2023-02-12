@@ -35,7 +35,9 @@ pub use tick_sync::*;
 pub use traits::*;
 pub use violation_warning::*;
 pub use move_player::*;
+pub use change_dimension::*;
 
+mod change_dimension;
 mod move_player;
 mod add_painting;
 mod available_commands;
