@@ -1,5 +1,5 @@
 use bytes::BytesMut;
-use common::{ReadExtensions, VResult, WriteExtensions, VError, bail};
+use common::{bail, ReadExtensions, VError, VResult, WriteExtensions};
 
 use crate::network::{Decodable, Encodable};
 

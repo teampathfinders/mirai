@@ -1,5 +1,5 @@
 use bytes::BytesMut;
-use common::{VResult, Vector3f, WriteExtensions, Vector3i};
+use common::{VResult, Vector3f, Vector3i, WriteExtensions};
 
 use crate::network::Encodable;
 

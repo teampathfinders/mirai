@@ -6,7 +6,7 @@ use crate::network::Encodable;
 use super::GamePacket;
 
 /// Enables or disables the usage of commands.
-/// 
+///
 /// If commands are disabled, the client will prevent itself from even sending any.
 #[derive(Debug)]
 pub struct SetCommandsEnabled {

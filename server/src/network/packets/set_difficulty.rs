@@ -1,5 +1,5 @@
 use bytes::{Bytes, BytesMut};
-use common::{ReadExtensions, VResult, WriteExtensions, VError, bail};
+use common::{bail, ReadExtensions, VError, VResult, WriteExtensions};
 
 use crate::network::{Decodable, Encodable};
 
@@ -29,7 +29,7 @@ impl TryFrom<i32> for Difficulty {
 }
 
 /// Sets the difficulty of the level.
-/// 
+///
 /// This does not do a lot client-side, it is mainly used to sync the difficulty setting in the client's world settings.
 #[derive(Debug)]
 pub struct SetDifficulty {

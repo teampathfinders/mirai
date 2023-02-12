@@ -17,7 +17,7 @@ pub enum TitleOperation {
     SetDurations,
     TitleTextObject,
     SubtitleTextObject,
-    ActionBarTextObject
+    ActionBarTextObject,
 }
 
 /// Sets a title for the client.
@@ -37,7 +37,7 @@ pub struct SetTitle {
     /// XUID of the client.
     pub xuid: String,
     /// Either an uint64 or an empty string.
-    pub platform_online_id: String
+    pub platform_online_id: String,
 }
 
 impl GamePacket for SetTitle {

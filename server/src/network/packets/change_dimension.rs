@@ -1,5 +1,5 @@
 use bytes::BytesMut;
-use common::{Vector3f, VResult, WriteExtensions};
+use common::{VResult, Vector3f, WriteExtensions};
 
 use crate::network::Encodable;
 
@@ -25,7 +25,7 @@ pub struct ChangeDimension {
     pub position: Vector3f,
     /// Whether this change was triggered by a respawn.
     /// For instance, when the player is sent back to the overworld after dying in the nether.
-    pub respawn: bool
+    pub respawn: bool,
 }
 
 impl GamePacket for ChangeDimension {

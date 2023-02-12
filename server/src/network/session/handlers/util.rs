@@ -1,11 +1,12 @@
 use bytes::BytesMut;
-use common::{VResult, Vector3i, Vector3f};
+use common::{VResult, Vector3f, Vector3i};
 
 use crate::network::{
     packets::{
-        CreditStatus, Difficulty, GameMode, MessageType, MobEffectKind, MobEffectOperation,
-        MobEffectUpdate, PlaySound, SetDifficulty, SetPlayerGameMode, SetTime,
-        ShowCredits, ShowProfile, TextMessage, SetCommandsEnabled, AddPainting, PaintingDirection, ChangeDimension, Dimension,
+        AddPainting, ChangeDimension, CreditStatus, Difficulty, Dimension, GameMode, MessageType,
+        MobEffectKind, MobEffectOperation, MobEffectUpdate, PaintingDirection, PlaySound,
+        SetCommandsEnabled, SetDifficulty, SetPlayerGameMode, SetTime, ShowCredits, ShowProfile,
+        TextMessage, SetTitle, TitleOperation,
     },
     session::Session,
     Decodable,
@@ -16,10 +17,14 @@ impl Session {
         let request = TextMessage::decode(packet)?;
         tracing::info!("{request:?}");
 
-        let reply = ChangeDimension {
-            dimension: Dimension::Nether,
-            position: Vector3f::from([0.0, 0.0, 0.0]),
-            respawn: false
+        let reply = SetTitle {
+            remain_duration: 40,
+            xuid: self.get_xuid()?.to_string(),
+            operation: TitleOperation::SetTitle,
+            text: format!("You said {}", request.message),
+            platform_online_id: "".to_owned(),
+            fade_in_duration: 10,
+            fade_out_duration: 10
         };
         self.send_packet(reply)?;
 

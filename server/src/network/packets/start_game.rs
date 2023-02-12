@@ -7,7 +7,7 @@ use crate::network::Encodable;
 use common::{bail, VError, VResult};
 use common::{BlockPosition, Vector2f, Vector3f, WriteExtensions};
 
-use super::{CLIENT_VERSION_STRING, Difficulty, GameMode, Dimension};
+use super::{Difficulty, Dimension, GameMode, CLIENT_VERSION_STRING};
 
 #[derive(Debug, Copy, Clone)]
 pub enum WorldGenerator {

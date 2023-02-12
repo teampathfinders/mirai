@@ -57,7 +57,7 @@ pub struct TextMessage {
     /// Message to display.
     pub message: String,
     /// A list of parameters that are filled into the message. These parameters are only
-	/// written if the type of the packet is [`Translation`](MessageType::Translation), 
+    /// written if the type of the packet is [`Translation`](MessageType::Translation),
     /// [`Tip`](MessageType::Tip), [`Popup`](MessageType::Popup) or [`JukeboxPopup`](MessageType::JukeboxPopup).
     pub parameters: Vec<String>,
     /// XUID of the sender.

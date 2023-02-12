@@ -1,7 +1,7 @@
-use bytes::{BytesMut, BufMut, Buf};
-use common::{Vector3f, VResult, WriteExtensions, VError, bail, ReadExtensions};
+use bytes::{Buf, BufMut, BytesMut};
+use common::{bail, ReadExtensions, VError, VResult, Vector3f, WriteExtensions};
 
-use crate::network::{Encodable, Decodable};
+use crate::network::{Decodable, Encodable};
 
 use super::GamePacket;
 
@@ -10,7 +10,7 @@ pub enum MovementMode {
     Normal,
     Reset,
     Teleport,
-    Rotation
+    Rotation,
 }
 
 impl TryFrom<u8> for MovementMode {
@@ -22,7 +22,7 @@ impl TryFrom<u8> for MovementMode {
             1 => Self::Reset,
             2 => Self::Teleport,
             3 => Self::Rotation,
-            _ => bail!(BadPacket, "Invalid movement mode {value}")
+            _ => bail!(BadPacket, "Invalid movement mode {value}"),
         })
     }
 }
@@ -33,7 +33,7 @@ pub enum TeleportCause {
     Projectile,
     ChorusFruit,
     Command,
-    Behavior
+    Behavior,
 }
 
 impl TryFrom<i32> for TeleportCause {
@@ -46,7 +46,7 @@ impl TryFrom<i32> for TeleportCause {
             2 => Self::ChorusFruit,
             3 => Self::Command,
             4 => Self::Behavior,
-            _ => bail!(BadPacket, "Invalid teleport cause {value}")
+            _ => bail!(BadPacket, "Invalid teleport cause {value}"),
         })
     }
 }
@@ -61,7 +61,7 @@ pub struct MovePlayer {
     pub ridden_runtime_id: u64,
     pub teleport_cause: TeleportCause,
     pub teleport_source_entity_type: i32,
-    pub tick: u64
+    pub tick: u64,
 }
 
 impl GamePacket for MovePlayer {
@@ -117,7 +117,7 @@ impl Decodable for MovePlayer {
             ridden_runtime_id,
             teleport_cause,
             teleport_source_entity_type,
-            tick
+            tick,
         })
     }
 }

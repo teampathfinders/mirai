@@ -1,7 +1,7 @@
-use bytes::{BytesMut, BufMut, Buf};
-use common::{Vector3f, VResult, WriteExtensions, ReadExtensions, VError, bail};
+use bytes::{Buf, BufMut, BytesMut};
+use common::{bail, ReadExtensions, VError, VResult, Vector3f, WriteExtensions};
 
-use crate::network::{Encodable, Decodable};
+use crate::network::{Decodable, Encodable};
 
 use super::GamePacket;
 
@@ -9,7 +9,7 @@ use super::GamePacket;
 pub enum RespawnState {
     Searching,
     ServerReady,
-    ClientReady
+    ClientReady,
 }
 
 impl TryFrom<u8> for RespawnState {
@@ -20,7 +20,7 @@ impl TryFrom<u8> for RespawnState {
             0 => Self::Searching,
             1 => Self::ServerReady,
             2 => Self::ClientReady,
-            _ => bail!(BadPacket, "Invalid respawn state {value}")
+            _ => bail!(BadPacket, "Invalid respawn state {value}"),
         })
     }
 }
@@ -29,7 +29,7 @@ impl TryFrom<u8> for RespawnState {
 pub struct Respawn {
     pub position: Vector3f,
     pub state: RespawnState,
-    pub runtime_id: u64
+    pub runtime_id: u64,
 }
 
 impl GamePacket for Respawn {
@@ -57,7 +57,7 @@ impl Decodable for Respawn {
         Ok(Self {
             position,
             state,
-            runtime_id
+            runtime_id,
         })
     }
 }

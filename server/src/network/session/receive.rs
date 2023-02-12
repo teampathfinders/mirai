@@ -9,8 +9,8 @@ use crate::config::SERVER_CONFIG;
 use crate::network::header::Header;
 use crate::network::packets::{
     ChunkRadiusRequest, ClientCacheStatus, ClientToServerHandshake, CompressionAlgorithm,
-    GamePacket, Login, RequestNetworkSettings, ResourcePackClientResponse, SetDifficulty,
-    ViolationWarning, GAME_PACKET_ID, SetLocalPlayerAsInitialized, MovePlayer,
+    GamePacket, Login, MovePlayer, RequestNetworkSettings, ResourcePackClientResponse,
+    SetDifficulty, SetLocalPlayerAsInitialized, ViolationWarning, GAME_PACKET_ID,
 };
 use crate::network::packets::{Interact, OnlinePing, TextMessage};
 use crate::network::raknet::packets::ConnectionRequest;
