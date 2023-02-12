@@ -39,7 +39,9 @@ pub use tick_sync::*;
 pub use traits::*;
 pub use violation_warning::*;
 pub use network_chunk_publisher_update::*;
+pub use death_info::*;
 
+mod death_info;
 mod network_chunk_publisher_update;
 mod add_painting;
 mod available_commands;
