@@ -37,7 +37,9 @@ pub use move_player::*;
 pub use change_dimension::*;
 pub use set_local_player_as_initialized::*;
 pub use respawn::*;
+pub use set_title::*;
 
+mod set_title;
 mod respawn;
 mod set_local_player_as_initialized;
 mod change_dimension;
