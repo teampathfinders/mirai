@@ -291,9 +291,9 @@ pub trait WriteExtensions: BufMut + Sized {
     fn put_vec3f(&mut self, value: &Vector3f) {
         let [a, b, c] = value.components();
 
-        self.put_f32(a);
-        self.put_f32(b);
-        self.put_f32(c);
+        self.put_f32_le(a);
+        self.put_f32_le(b);
+        self.put_f32_le(c);
     }
 
     fn put_vec3i(&mut self, value: &Vector3i) {

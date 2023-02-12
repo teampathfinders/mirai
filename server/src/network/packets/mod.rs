@@ -42,7 +42,11 @@ pub use tick_sync::*;
 pub use traits::*;
 pub use violation_warning::*;
 pub use toast_request::*;
+pub use spawn_experience_orb::*;
+pub use request_ability::*;
 
+mod request_ability;
+mod spawn_experience_orb;
 mod toast_request;
 mod add_painting;
 mod available_commands;

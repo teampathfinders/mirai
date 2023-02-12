@@ -5,9 +5,12 @@ use crate::network::Encodable;
 
 use super::GamePacket;
 
+/// Displays a notification at the top of the screen.
 #[derive(Debug)]
 pub struct ToastRequest {
+    /// Title of the notification.
     pub title: String,
+    /// Message displayed in the notification.
     pub message: String
 }
 
