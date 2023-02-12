@@ -5,7 +5,7 @@ use crate::network::{Decodable, Encodable};
 
 use super::GamePacket;
 
-#[derive(Debug, Copy, Clone, PartialEq)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum GameMode {
     Survival = 0,
     Creative = 1,

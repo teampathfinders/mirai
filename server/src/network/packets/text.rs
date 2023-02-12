@@ -5,7 +5,7 @@ use crate::network::{Decodable, Encodable};
 
 use super::GamePacket;
 
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum MessageType {
     Raw,
     Chat,
@@ -85,7 +85,7 @@ impl Encodable for TextMessage {
 
                 buffer.put_var_u32(self.parameters.len() as u32);
                 for param in &self.parameters {
-                    buffer.put_string(&param);
+                    buffer.put_string(param);
                 }
             }
         }
