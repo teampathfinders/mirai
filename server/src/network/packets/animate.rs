@@ -1,5 +1,5 @@
-use bytes::{BytesMut, Buf};
-use common::{VResult, WriteExtensions, VError, bail, ReadExtensions};
+use bytes::{Buf, BytesMut};
+use common::{bail, ReadExtensions, VError, VResult, WriteExtensions};
 
 use crate::network::Decodable;
 
@@ -13,7 +13,7 @@ pub enum AnimateAction {
     CriticalHit,
     MagicCriticalHit,
     RowRight = 128,
-    RowLeft
+    RowLeft,
 }
 
 impl TryFrom<i32> for AnimateAction {
@@ -27,7 +27,7 @@ impl TryFrom<i32> for AnimateAction {
             5 => Self::MagicCriticalHit,
             128 => Self::RowRight,
             129 => Self::RowLeft,
-            _ => bail!(BadPacket, "Invalid animation action {value}")
+            _ => bail!(BadPacket, "Invalid animation action {value}"),
         })
     }
 }
@@ -45,7 +45,7 @@ pub struct Animate {
     pub action_type: AnimateAction,
     /// Runtime ID of the entity performing the animation.
     pub runtime_id: u64,
-    pub rowing_time: f32
+    pub rowing_time: f32,
 }
 
 impl GamePacket for Animate {
@@ -66,7 +66,7 @@ impl Decodable for Animate {
         Ok(Self {
             action_type,
             runtime_id,
-            rowing_time
+            rowing_time,
         })
     }
 }

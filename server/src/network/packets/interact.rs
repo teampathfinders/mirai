@@ -48,10 +48,8 @@ impl Decodable for Interact {
         let target_runtime_id = buffer.get_var_u64()?;
 
         let position = match action {
-            InteractAction::MouseOverEntity | InteractAction::LeaveVehicle => {
-                buffer.get_vec3f()
-            },
-            _ => Vector3f::from([0.0, 0.0, 0.0])
+            InteractAction::MouseOverEntity | InteractAction::LeaveVehicle => buffer.get_vec3f(),
+            _ => Vector3f::from([0.0, 0.0, 0.0]),
         };
 
         Ok(Self {

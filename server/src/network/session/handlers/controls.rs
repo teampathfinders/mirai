@@ -2,7 +2,7 @@ use bytes::BytesMut;
 use common::VResult;
 
 use crate::network::{
-    packets::{Interact, MovePlayer, InteractAction},
+    packets::{Interact, InteractAction, MovePlayer},
     session::Session,
     Decodable,
 };
@@ -11,7 +11,7 @@ impl Session {
     pub fn handle_interaction(&self, packet: BytesMut) -> VResult<()> {
         let request = Interact::decode(packet)?;
         tracing::info!("{request:?}");
-        
+
         if request.action == InteractAction::OpenInventory {
             self.kick("You are not allowed to open your inventory")?;
         }

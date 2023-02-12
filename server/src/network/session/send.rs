@@ -129,7 +129,7 @@ impl Session {
         if let Some(frames) = self.send_queue.flush(SendPriority::Medium) {
             self.send_raw_frames(frames).await?;
         }
-    
+
         if let Some(frames) = self.send_queue.flush(SendPriority::Low) {
             self.send_raw_frames(frames).await?;
         }

@@ -1,5 +1,5 @@
 use bytes::BytesMut;
-use common::{Vector3f, VResult, WriteExtensions};
+use common::{VResult, Vector3f, WriteExtensions};
 
 use crate::network::Encodable;
 
@@ -8,7 +8,7 @@ use super::GamePacket;
 #[derive(Debug)]
 pub struct SpawnExperienceOrb {
     pub position: Vector3f,
-    pub amount: u32
+    pub amount: u32,
 }
 
 impl GamePacket for SpawnExperienceOrb {

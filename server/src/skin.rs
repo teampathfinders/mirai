@@ -1,5 +1,5 @@
-use bytes::{BytesMut, Buf};
-use common::{VResult, ReadExtensions};
+use bytes::{Buf, BytesMut};
+use common::{ReadExtensions, VResult};
 
 /// Size of arms of a skin.
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]

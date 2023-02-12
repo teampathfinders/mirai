@@ -1,4 +1,4 @@
-use bytes::{BytesMut, BufMut};
+use bytes::{BufMut, BytesMut};
 use common::{VResult, WriteExtensions};
 
 use crate::network::Encodable;
@@ -11,7 +11,7 @@ pub struct ToastRequest {
     /// Title of the notification.
     pub title: String,
     /// Message displayed in the notification.
-    pub message: String
+    pub message: String,
 }
 
 impl GamePacket for ToastRequest {

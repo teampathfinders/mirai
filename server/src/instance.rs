@@ -114,8 +114,9 @@ impl ServerInstance {
 
     /// Shut down the server by cancelling the global token
     pub async fn shutdown(&self) {
+        tracing::info!("Disconnecting all clients");
         self.session_controller.kick_all("Server closed").await;
-        // tokio::time::sleep(Duration::from_secs(1)).await;
+        tracing::info!("Notifying services");
         self.token.cancel();
     }
 

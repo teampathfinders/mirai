@@ -1,5 +1,5 @@
-use bytes::{BytesMut, Buf};
-use common::{VResult, VError, ReadExtensions, bail};
+use bytes::{Buf, BytesMut};
+use common::{bail, ReadExtensions, VError, VResult};
 
 use crate::network::Decodable;
 
@@ -25,13 +25,13 @@ pub enum Ability {
     Muted(bool),
     WorldBuilder(bool),
     NoClip(bool),
-    Count(f32)
+    Count(f32),
 }
 
 /// Sent by the client to request permission to use a specific ability.
 #[derive(Debug)]
 pub struct RequestAbility {
-    pub ability: Ability
+    pub ability: Ability,
 }
 
 impl GamePacket for RequestAbility {
@@ -42,7 +42,7 @@ impl Decodable for RequestAbility {
     fn decode(mut buffer: BytesMut) -> VResult<Self> {
         let ability_type = buffer.get_var_i32()?;
         let value_type = buffer.get_u8();
-        
+
         let mut bool_value = false;
         let mut float_value = 0.0;
 
@@ -77,8 +77,8 @@ impl Decodable for RequestAbility {
                 16 => Ability::WorldBuilder(bool_value),
                 17 => Ability::NoClip(bool_value),
                 18 => Ability::Count(float_value),
-                _ => bail!(BadPacket, "Invalid ability type {ability_type}")
-            }
+                _ => bail!(BadPacket, "Invalid ability type {ability_type}"),
+            },
         })
     }
 }

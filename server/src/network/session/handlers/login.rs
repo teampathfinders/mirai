@@ -60,7 +60,6 @@ impl Session {
 
     pub fn handle_resource_pack_client_response(&self, mut packet: BytesMut) -> VResult<()> {
         let request = ResourcePackClientResponse::decode(packet)?;
-        tracing::info!("{request:?}");
 
         // TODO: Implement resource packs.
 
@@ -75,7 +74,7 @@ impl Session {
             custom_biome_name: "plains".to_string(),
             dimension: Dimension::Overworld,
             generator: WorldGenerator::Infinite,
-            world_game_mode: GameMode::Survival,
+            world_game_mode: GameMode::Creative,
             difficulty: Difficulty::Normal,
             world_spawn: BlockPosition::new(0, 0, 0),
             achievements_disabled: true,
@@ -108,7 +107,7 @@ impl Session {
             only_spawn_v1_villagers: false,
             persona_disabled: false,
             custom_skins_disabled: false,
-            emote_chat_muted: false,
+            emote_chat_muted: true,
             limited_world_width: 0,
             limited_world_height: 0,
             force_experimental_gameplay: false,

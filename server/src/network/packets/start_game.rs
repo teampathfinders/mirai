@@ -25,9 +25,7 @@ impl WorldGenerator {
 }
 
 #[derive(Debug, Clone)]
-pub enum GameRule {
-    
-}
+pub enum GameRule {}
 
 impl GameRule {
     fn encode(&self, buffer: &mut BytesMut) {

@@ -1,12 +1,15 @@
+use std::net::{Ipv4Addr, SocketAddr, SocketAddrV4};
+
 use bytes::BytesMut;
 use common::{BlockPosition, VResult, Vector3f, Vector3i};
 
 use crate::network::{
     packets::{
-        AddPainting, ChangeDimension, CreditStatus, Difficulty, Dimension, GameMode, MessageType,
-        MobEffectAction, MobEffectKind, MobEffectUpdate, NetworkChunkPublisherUpdate,
-        PaintingDirection, PlaySound, SetCommandsEnabled, SetDifficulty, SetPlayerGameMode,
-        SetTime, SetTitle, ShowCredits, ShowProfile, TextMessage, TitleAction, ToastRequest, SpawnExperienceOrb, RequestAbility, Animate,
+        AddPainting, Animate, CameraShake, CameraShakeAction, CameraShakeType, ChangeDimension,
+        CreditStatus, Difficulty, Dimension, GameMode, MessageType, MobEffectAction, MobEffectKind,
+        MobEffectUpdate, NetworkChunkPublisherUpdate, PaintingDirection, PlaySound, RequestAbility,
+        SetCommandsEnabled, SetDifficulty, SetPlayerGameMode, SetTime, SetTitle, ShowCredits,
+        ShowProfile, SpawnExperienceOrb, TextMessage, TitleAction, ToastRequest, Transfer,
     },
     session::Session,
     Decodable,
@@ -17,36 +20,10 @@ impl Session {
         let request = TextMessage::decode(packet)?;
         tracing::info!("{request:?}");
 
-        let reply = SetTitle {
-            remain_duration: 40,
-            xuid: self.get_xuid()?.to_string(),
-            action: TitleAction::SetActionBar,
-            text: format!("You said {}", request.message),
-            platform_online_id: "".to_owned(),
-            fade_in_duration: 10,
-            fade_out_duration: 10,
+        let transfer = Transfer {
+            address: SocketAddr::V4(SocketAddrV4::new(Ipv4Addr::new(127, 0, 0, 1), 19132)),
         };
-        self.send_packet(reply)?;
-
-        let reply2 = ToastRequest {
-            title: request.message.clone(),
-            message: "Do not move".to_owned()
-        };
-        self.send_packet(reply2)?;
-
-        let reply3 = SpawnExperienceOrb {
-            position: Vector3f::from([0.0, 0.0, -2.0]),
-            amount: 1000
-        };
-        self.send_packet(reply3)?;
-
-        let reply4 = AddPainting {
-            position: Vector3f::from([0.0, 0.0, 10.0]),
-            direction: PaintingDirection::North,
-            name: "BurningSkull".to_owned(),
-            runtime_id: 2
-        };
-        self.send_packet(reply4)?;
+        self.send_packet(transfer)?;
 
         Ok(())
     }
