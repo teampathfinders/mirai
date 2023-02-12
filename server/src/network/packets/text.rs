@@ -5,6 +5,7 @@ use crate::network::{Decodable, Encodable};
 
 use super::GamePacket;
 
+/// Type of message.
 #[derive(Debug, Copy, Clone)]
 pub enum MessageType {
     Raw,
@@ -43,16 +44,26 @@ impl TryFrom<u8> for MessageType {
     }
 }
 
+/// Displays text messages.
 #[derive(Debug)]
 pub struct TextMessage {
     /// Type of the message.
     pub message_type: MessageType,
+    /// Whether the message requires translation.
+    /// This translation can be performed with messages containing %.
     pub needs_translation: bool,
     /// Source of the message
     pub source_name: String,
+    /// Message to display.
     pub message: String,
+    /// A list of parameters that are filled into the message. These parameters are only
+	/// written if the type of the packet is [`Translation`](MessageType::Translation), 
+    /// [`Tip`](MessageType::Tip), [`Popup`](MessageType::Popup) or [`JukeboxPopup`](MessageType::JukeboxPopup).
     pub parameters: Vec<String>,
+    /// XUID of the sender.
+    /// This is only set if the type of the packet is [`Chat`](MessageType::Chat).
     pub xuid: String,
+    /// Identifier set for specific platforms that determines whether clients are able to chat with each other.
     pub platform_chat_id: String,
 }
 

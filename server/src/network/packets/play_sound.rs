@@ -5,11 +5,16 @@ use crate::network::Encodable;
 
 use super::GamePacket;
 
+/// Plays a sound for the client.
 #[derive(Debug)]
 pub struct PlaySound {
+    /// Name of the sound.
     pub name: String,
+    /// Position of the sound.
     pub position: Vector3i,
+    /// Volume of the sound.
     pub volume: f32,
+    /// Pitch of the sound.
     pub pitch: f32,
 }
 

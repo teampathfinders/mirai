@@ -7,6 +7,7 @@ use super::GamePacket;
 
 const DEFINITIONS: &[u8] = include_bytes!("../../../included/biomes.nbt");
 
+/// Sends a list of available biomes to the client.
 #[derive(Debug)]
 pub struct BiomeDefinitionList;
 

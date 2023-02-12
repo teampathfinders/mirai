@@ -5,20 +5,20 @@ use crate::network::Encodable;
 
 use super::GamePacket;
 
+/// Operation to perform with the effect.
 #[derive(Debug, Copy, Clone)]
 pub enum MobEffectOperation {
+    /// Do nothing.
     None,
+    /// Adds an effect to an entity.
     Add,
+    /// Modifies an entity's effect.
     Modify,
+    /// Removes an effect from an entity.
     Remove,
 }
 
-impl MobEffectOperation {
-    pub fn encode(&self, buffer: &mut BytesMut) {
-        buffer.put_u8(*self as u8);
-    }
-}
-
+/// Type of effect to apply.
 #[derive(Debug, Copy, Clone)]
 pub enum MobEffectKind {
     Speed = 1,
@@ -53,19 +53,20 @@ pub enum MobEffectKind {
     Darkness,
 }
 
-impl MobEffectKind {
-    pub fn encode(&self, buffer: &mut BytesMut) {
-        buffer.put_var_i32(*self as i32);
-    }
-}
-
+/// Updates entity effects.
 #[derive(Debug)]
 pub struct MobEffectUpdate {
+    /// Runtime ID of the affected entity.
     pub runtime_id: u64,
+    /// Operation to perform on the entity.
     pub operation: MobEffectOperation,
+    /// Type of effect.
     pub effect_kind: MobEffectKind,
+    /// Strength of the effect, this ranges from 0-255.
     pub amplifier: i32,
+    /// Whether to display particles.
     pub particles: bool,
+    /// Duration of the effect in ticks.
     pub duration: i32,
 }
 
@@ -78,8 +79,8 @@ impl Encodable for MobEffectUpdate {
         let mut buffer = BytesMut::new();
 
         buffer.put_var_u64(self.runtime_id);
-        self.operation.encode(&mut buffer);
-        self.effect_kind.encode(&mut buffer);
+        buffer.put_u8(self.operation as u8);
+        buffer.put_var_i32(self.effect_kind as i32);
         buffer.put_var_i32(self.amplifier);
         buffer.put_bool(self.particles);
         buffer.put_var_i32(self.duration);

@@ -5,21 +5,20 @@ use crate::network::Encodable;
 
 use super::GamePacket;
 
+/// Status of the credits display.
 #[derive(Debug, Copy, Clone)]
 pub enum CreditStatus {
+    /// Start showing credits.
     Start,
+    /// Stop showing credits.
     End,
 }
 
-impl CreditStatus {
-    pub fn encode(&self, buffer: &mut BytesMut) {
-        buffer.put_var_i32(*self as i32);
-    }
-}
-
+/// Displays the Minecraft credits to the client.
 #[derive(Debug)]
 pub struct ShowCredits {
     pub runtime_id: u64,
+    /// Status update to apply.
     pub status: CreditStatus,
 }
 
@@ -32,7 +31,7 @@ impl Encodable for ShowCredits {
         let mut buffer = BytesMut::new();
 
         buffer.put_var_u64(self.runtime_id);
-        self.status.encode(&mut buffer);
+        buffer.put_var_i32(self.status as i32);
 
         Ok(buffer)
     }

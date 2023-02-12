@@ -5,6 +5,7 @@ use crate::network::{Decodable, Encodable};
 
 use super::GamePacket;
 
+/// The Minecraft difficulties.
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub enum Difficulty {
     Peaceful,
@@ -27,8 +28,12 @@ impl TryFrom<i32> for Difficulty {
     }
 }
 
+/// Sets the difficulty of the level.
+/// 
+/// This does not do a lot client-side, it is mainly used to sync the difficulty setting in the client's world settings.
 #[derive(Debug)]
 pub struct SetDifficulty {
+    /// Difficulty to apply.
     pub difficulty: Difficulty,
 }
 
