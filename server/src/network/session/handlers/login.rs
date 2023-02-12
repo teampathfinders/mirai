@@ -15,7 +15,7 @@ use crate::network::packets::{
     PlayStatus, PlayerMovementSettings, PlayerMovementType, RequestNetworkSettings,
     ResourcePackClientResponse, ResourcePackStack, ResourcePacksInfo, ServerToClientHandshake,
     SetLocalPlayerAsInitialized, SpawnBiomeType, StartGame, Status, ViolationWarning,
-    WorldGenerator, DISCONNECTED_LOGIN_FAILED, DISCONNECTED_NOT_AUTHENTICATED, NETWORK_VERSION,
+    WorldGenerator, DISCONNECTED_LOGIN_FAILED, DISCONNECTED_NOT_AUTHENTICATED, NETWORK_VERSION, AvailableCommands, Command, CommandOverload, CommandParameter, CommandEnum, CommandArgumentType,
 };
 use crate::network::raknet::Reliability;
 use crate::network::raknet::{Frame, FrameBatch};
@@ -146,6 +146,41 @@ impl Session {
             status: Status::PlayerSpawn,
         };
         self.send_packet(play_status)?;
+
+        let available_commands = AvailableCommands {
+            commands: vec![
+                Command {
+                    aliases: vec![],
+                    description: "Kicks the specified user from the game".to_owned(),
+                    name: "kick".to_owned(),
+                    flags: 0,
+                    permission_level: 0,
+                    overloads: vec![
+                        CommandOverload {
+                            parameters: vec![
+                                CommandParameter {
+                                    name: "target".to_owned(),
+                                    optional: true,
+                                    suffix: "".to_owned(),
+                                    argument_type: CommandArgumentType::IntegerRange,
+                                    command_enum: CommandEnum {
+                                        command_type: "parameter type".to_owned(),
+                                        dynamic: false,
+                                        options: vec![
+                                            "option1".to_owned(),
+                                            "option2".to_owned()
+                                        ]
+                                    },
+                                    options: 0
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ],
+            constraints: vec![]
+        };
+        self.send_packet(available_commands)?;
 
         Ok(())
     }
