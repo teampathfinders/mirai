@@ -1,5 +1,5 @@
 use bytes::BytesMut;
-use common::{WriteExtensions, VResult};
+use common::{VResult, WriteExtensions};
 
 use crate::network::Encodable;
 
@@ -8,7 +8,7 @@ use super::GamePacket;
 #[derive(Debug, Copy, Clone)]
 pub enum CreditStatus {
     Start,
-    End
+    End,
 }
 
 impl CreditStatus {
@@ -20,7 +20,7 @@ impl CreditStatus {
 #[derive(Debug)]
 pub struct ShowCredits {
     pub runtime_id: u64,
-    pub status: CreditStatus
+    pub status: CreditStatus,
 }
 
 impl GamePacket for ShowCredits {

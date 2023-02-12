@@ -1,13 +1,35 @@
-use bytes::{BytesMut, Bytes};
-use common::{VResult, WriteExtensions, ReadExtensions};
+use bytes::{Bytes, BytesMut};
+use common::{ReadExtensions, VResult, WriteExtensions, VError, bail};
 
-use crate::network::{Encodable, Decodable};
+use crate::network::{Decodable, Encodable};
 
-use super::{Difficulty, GamePacket};
+use super::GamePacket;
+
+#[derive(Debug, Copy, Clone, PartialEq)]
+pub enum Difficulty {
+    Peaceful,
+    Easy,
+    Normal,
+    Hard,
+}
+
+impl TryFrom<i32> for Difficulty {
+    type Error = VError;
+
+    fn try_from(value: i32) -> VResult<Self> {
+        Ok(match value {
+            0 => Self::Peaceful,
+            1 => Self::Easy,
+            2 => Self::Normal,
+            3 => Self::Hard,
+            _ => bail!(BadPacket, "Invalid difficulty type {value}"),
+        })
+    }
+}
 
 #[derive(Debug)]
 pub struct SetDifficulty {
-    pub difficulty: Difficulty
+    pub difficulty: Difficulty,
 }
 
 impl GamePacket for SetDifficulty {
@@ -28,5 +50,5 @@ impl Decodable for SetDifficulty {
     fn decode(mut buffer: BytesMut) -> VResult<Self> {
         let difficulty = Difficulty::try_from(buffer.get_var_i32()?)?;
         Ok(Self { difficulty })
-    } 
+    }
 }

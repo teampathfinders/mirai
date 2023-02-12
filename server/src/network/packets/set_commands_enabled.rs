@@ -7,7 +7,7 @@ use super::GamePacket;
 
 #[derive(Debug)]
 pub struct SetCommandsEnabled {
-    pub enabled: bool
+    pub enabled: bool,
 }
 
 impl GamePacket for SetCommandsEnabled {

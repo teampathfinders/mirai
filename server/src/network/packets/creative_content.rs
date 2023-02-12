@@ -77,12 +77,12 @@ impl ItemStack {
 }
 
 #[derive(Debug)]
-pub struct CreativeItem {
+pub struct ItemInstance {
     pub network_id: u32,
     pub stack: ItemStack,
 }
 
-impl CreativeItem {
+impl ItemInstance {
     pub fn encode(&self, buffer: &mut BytesMut) {
         buffer.put_var_u32(self.network_id);
         self.stack.encode(buffer);
@@ -91,7 +91,7 @@ impl CreativeItem {
 
 #[derive(Debug)]
 pub struct CreativeContent {
-    pub items: Vec<CreativeItem>,
+    pub items: Vec<ItemInstance>,
 }
 
 impl GamePacket for CreativeContent {

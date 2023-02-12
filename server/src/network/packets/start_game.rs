@@ -4,10 +4,10 @@ use bytes::{BufMut, BytesMut};
 
 use crate::network::packets::{ExperimentData, GamePacket};
 use crate::network::Encodable;
-use common::{VResult, VError, bail};
+use common::{bail, VError, VResult};
 use common::{BlockPosition, Vector2f, Vector3f, WriteExtensions};
 
-use super::CLIENT_VERSION_STRING;
+use super::{CLIENT_VERSION_STRING, Difficulty};
 
 #[derive(Debug, Copy, Clone)]
 pub enum GameMode {
@@ -29,7 +29,7 @@ impl TryFrom<i32> for GameMode {
             2 => Self::Adventure,
             3 => Self::Spectator,
             5 => Self::WorldDefault,
-            _ => bail!(BadPacket, "Invalid game mode")
+            _ => bail!(BadPacket, "Invalid game mode"),
         })
     }
 }
@@ -59,28 +59,6 @@ pub enum WorldGenerator {
 impl WorldGenerator {
     pub fn encode(&self, buffer: &mut BytesMut) {
         buffer.put_var_i32(*self as i32);
-    }
-}
-
-#[derive(Debug, Copy, Clone)]
-pub enum Difficulty {
-    Peaceful,
-    Easy,
-    Normal,
-    Hard,
-}
-
-impl TryFrom<i32> for Difficulty {
-    type Error = VError;
-
-    fn try_from(value: i32) -> VResult<Self> {
-        Ok(match value {
-            0 => Self::Peaceful,
-            1 => Self::Easy,
-            2 => Self::Normal,
-            3 => Self::Hard,
-            _ => bail!(BadPacket, "Invalid difficulty type {value}")
-        })
     }
 }
 

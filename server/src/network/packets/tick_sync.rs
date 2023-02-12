@@ -1,4 +1,4 @@
-use bytes::{BytesMut, Buf, BufMut};
+use bytes::{Buf, BufMut, BytesMut};
 use common::VResult;
 
 use crate::network::{Decodable, Encodable};
@@ -8,7 +8,7 @@ use super::GamePacket;
 #[derive(Debug)]
 pub struct TickSync {
     pub request: u64,
-    pub response: u64
+    pub response: u64,
 }
 
 impl GamePacket for TickSync {
@@ -20,9 +20,7 @@ impl Decodable for TickSync {
         let request = buffer.get_u64();
         let response = buffer.get_u64();
 
-        Ok(Self {
-            request, response
-        })
+        Ok(Self { request, response })
     }
 }
 
