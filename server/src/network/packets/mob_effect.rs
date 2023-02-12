@@ -6,7 +6,7 @@ use crate::network::Encodable;
 use super::GamePacket;
 
 /// Operation to perform with the effect.
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum MobEffectOperation {
     /// Do nothing.
     None,
@@ -19,7 +19,7 @@ pub enum MobEffectOperation {
 }
 
 /// Type of effect to apply.
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum MobEffectKind {
     Speed = 1,
     Slowness,

@@ -5,7 +5,8 @@ use crate::network::traits::Encodable;
 use common::VResult;
 use common::WriteExtensions;
 
-#[derive(Debug, Copy, Clone)]
+/// Status of the [`PlayStatus`] packet.
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum Status {
     /// Sent by the server after receiving the [`ClientToServerHandshake`](super::ClientToServerHandshake) packet.
     /// This indicates the client has successfully logged in.

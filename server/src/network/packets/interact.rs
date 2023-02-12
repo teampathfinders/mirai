@@ -5,7 +5,7 @@ use crate::network::Decodable;
 
 use super::GamePacket;
 
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum ActionType {
     LeaveVehicle = 3,
     MouseOverEntity = 4,

@@ -6,7 +6,7 @@ use crate::network::Encodable;
 use super::GamePacket;
 
 /// Directions a painting can face.
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum PaintingDirection {
     South,
     West,

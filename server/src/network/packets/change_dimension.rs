@@ -6,10 +6,13 @@ use crate::network::Encodable;
 use super::GamePacket;
 
 /// The Minecraft dimensions.
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum Dimension {
+    /// The overworld dimension.
     Overworld,
+    /// The nether dimension.
     Nether,
+    /// The end dimension.
     End,
 }
 
