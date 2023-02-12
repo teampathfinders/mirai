@@ -52,13 +52,13 @@ pub struct ServerInstance {
     outward_queue: Arc<AsyncDeque<RawPacket>>,
     /// Token indicating whether the server is still running.
     /// All services listen to this token to determine whether they should shut down.
-    global_token: CancellationToken,
+    token: CancellationToken,
     /// Service that manages all player sessions.
     session_controller: Arc<SessionTracker>,
 }
 
 impl ServerInstance {
-    /// Creates a new server
+    /// Creates a new server.
     pub async fn new() -> VResult<Arc<Self>> {
         let (ipv4_port, _ipv6_port) = {
             let lock = SERVER_CONFIG.read();
@@ -80,15 +80,15 @@ impl ServerInstance {
             outward_queue: Arc::new(AsyncDeque::new(10)),
 
             session_controller: Arc::new(SessionTracker::new(global_token.clone())),
-            global_token,
+            token: global_token,
         };
 
         Ok(Arc::new(server))
     }
 
-    /// Run the server
+    /// Run the server.
     pub async fn run(self: Arc<Self>) -> VResult<()> {
-        Self::register_shutdown_handler(self.global_token.clone());
+        Self::register_shutdown_handler(self.clone());
 
         let receiver_task = {
             let controller = self.clone();
@@ -113,8 +113,10 @@ impl ServerInstance {
     }
 
     /// Shut down the server by cancelling the global token
-    pub fn shutdown(&self) {
-        self.global_token.cancel();
+    pub async fn shutdown(&self) {
+        self.session_controller.kick_all("Server closed").await;
+        // tokio::time::sleep(Duration::from_secs(1)).await;
+        self.token.cancel();
     }
 
     /// Processes any packets that are sent before a session has been created.
@@ -219,7 +221,7 @@ impl ServerInstance {
                         }
                     }
                 },
-                _ = self.global_token.cancelled() => {
+                _ = self.token.cancelled() => {
                     break
                 }
             };
@@ -257,7 +259,7 @@ impl ServerInstance {
     async fn v4_sender_task(self: Arc<Self>) {
         loop {
             let task = tokio::select! {
-                _ = self.global_token.cancelled() => break,
+                _ = self.token.cancelled() => break,
                 t = self.outward_queue.pop() => t
             };
 
@@ -273,7 +275,7 @@ impl ServerInstance {
     /// Refreshes the server description and player counts on a specified interval.
     async fn metadata_refresh_task(self: Arc<Self>) {
         let mut interval = tokio::time::interval(METADATA_REFRESH_INTERVAL);
-        while !self.global_token.is_cancelled() {
+        while !self.token.is_cancelled() {
             let description = format!("{} players", self.session_controller.session_count());
             self.refresh_metadata(&description);
             interval.tick().await;
@@ -306,14 +308,14 @@ impl ServerInstance {
     }
 
     /// Register handler to shut down server on Ctrl-C signal
-    fn register_shutdown_handler(token: CancellationToken) {
+    fn register_shutdown_handler(instance: Arc<Self>) {
         tokio::spawn(async move {
             tokio::select! {
                 _ = signal::ctrl_c() => {
                     tracing::info!("Shutting down...");
-                    token.cancel();
+                    instance.shutdown().await
                 },
-                _ = token.cancelled() => {
+                _ = instance.token.cancelled() => {
                     // Token has been cancelled by something else, this service is no longer needed
                 }
             }

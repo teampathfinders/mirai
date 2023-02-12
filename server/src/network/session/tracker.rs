@@ -68,6 +68,16 @@ impl SessionTracker {
             })
     }
 
+    /// Kicks all sessions from the server, displaying the given message.
+    pub async fn kick_all<S: Into<String>>(&self, message: S) {
+        let message = message.into();
+        for x in self.session_list.iter() {
+            let session = x.value();
+            let _ = session.kick(&message);
+            let _ = session.flush_all().await;
+        }
+    }
+
     /// Returns how many clients are currently connected this tracker.
     pub fn session_count(&self) -> usize {
         self.session_list.len()

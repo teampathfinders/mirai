@@ -121,6 +121,23 @@ impl Session {
         Ok(())
     }
 
+    pub async fn flush_all(&self) -> VResult<()> {
+        if let Some(frames) = self.send_queue.flush(SendPriority::High) {
+            self.send_raw_frames(frames).await?;
+        }
+
+        if let Some(frames) = self.send_queue.flush(SendPriority::Medium) {
+            self.send_raw_frames(frames).await?;
+        }
+    
+        if let Some(frames) = self.send_queue.flush(SendPriority::Low) {
+            self.send_raw_frames(frames).await?;
+        }
+
+        self.flush_acknowledgements().await?;
+        Ok(())
+    }
+
     pub async fn flush_acknowledgements(&self) -> VResult<()> {
         let mut confirmed = {
             let mut lock = self.confirmed_packets.lock();
