@@ -5,8 +5,10 @@ use crate::network::Encodable;
 
 use super::GamePacket;
 
+/// Opens a dialog showing details about a player's Xbox account.
 #[derive(Debug)]
 pub struct ShowProfile {
+    /// XUID of the profile to display.
     pub xuid: String,
 }
 

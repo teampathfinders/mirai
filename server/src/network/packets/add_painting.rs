@@ -5,6 +5,7 @@ use crate::network::Encodable;
 
 use super::GamePacket;
 
+/// Directions a painting can face.
 #[derive(Debug, Copy, Clone)]
 pub enum PaintingDirection {
     South,
@@ -13,11 +14,16 @@ pub enum PaintingDirection {
     East,
 }
 
+/// Adds a painting into the game.
 #[derive(Debug)]
 pub struct AddPainting {
+    /// Entity runtime ID of the painting.
     pub runtime_id: u64,
+    /// Position of the painting.
     pub position: Vector3f,
+    /// Direction the painting is facing in.
     pub direction: PaintingDirection,
+    /// Painting [`name`](https://minecraft.fandom.com/wiki/Painting#Data_values).
     pub name: String,
 }
 

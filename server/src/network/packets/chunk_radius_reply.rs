@@ -5,8 +5,10 @@ use crate::network::Encodable;
 
 use super::GamePacket;
 
+/// Sent in response to [`ChunkRadiusRequest`](super::ChunkRadiusRequest), to notify the client of the allowed render distance.
 #[derive(Debug)]
 pub struct ChunkRadiusReply {
+    /// Maximum render distance that the server allows (in chunks).
     pub allowed_radius: i32,
 }
 

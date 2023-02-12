@@ -4,6 +4,7 @@ use crate::network::Decodable;
 
 use super::GamePacket;
 
+/// Sent by the client to request the maximum render distance.
 #[derive(Debug)]
 pub struct ChunkRadiusRequest {
     /// Requested render distance (in chunks).

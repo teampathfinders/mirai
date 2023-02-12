@@ -5,6 +5,7 @@ use crate::network::{Decodable, Encodable};
 
 use super::GamePacket;
 
+/// The Minecraft game modes.
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum GameMode {
     Survival = 0,
@@ -30,8 +31,10 @@ impl TryFrom<i32> for GameMode {
     }
 }
 
+/// Sets the player's game mode.
 #[derive(Debug)]
 pub struct SetPlayerGameMode {
+    /// Game mode to apply.
     pub game_mode: GameMode,
 }
 
