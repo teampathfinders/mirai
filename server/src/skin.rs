@@ -1,4 +1,5 @@
-use bytes::BytesMut;
+use bytes::{BytesMut, Buf};
+use common::{VResult, ReadExtensions};
 
 /// Size of arms of a skin.
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
@@ -127,4 +128,34 @@ pub struct Skin {
     pub persona_pieces: Vec<PersonaPiece>,
     /// List of colours for the persona pieces.
     pub persona_piece_tints: Vec<PersonaPieceTint>,
+}
+
+fn get_bytes(buffer: &mut BytesMut) -> VResult<BytesMut> {
+    let length = buffer.get_var_u32()?;
+    let cursor = buffer.len() - buffer.remaining();
+
+    let data = BytesMut::from(&buffer.as_ref()[cursor..cursor + length as usize]);
+    buffer.advance(length as usize);
+
+    Ok(data)
+}
+
+impl Skin {
+    pub fn decode(buffer: &mut BytesMut) -> VResult<Self> {
+        let skin_id = buffer.get_string()?;
+        let playfab_id = buffer.get_string()?;
+        let resource_patch = get_bytes(buffer)?;
+
+        let resource_patch = {
+            let length = buffer.get_var_u32()?;
+            let cursor = buffer.len() - buffer.remaining();
+
+            let data = BytesMut::from(&buffer.as_ref()[cursor..cursor + length as usize]);
+            buffer.advance(length as usize);
+
+            data
+        };
+
+        todo!()
+    }
 }

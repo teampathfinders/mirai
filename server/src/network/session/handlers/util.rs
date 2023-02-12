@@ -6,7 +6,7 @@ use crate::network::{
         AddPainting, ChangeDimension, CreditStatus, Difficulty, Dimension, GameMode, MessageType,
         MobEffectAction, MobEffectKind, MobEffectUpdate, NetworkChunkPublisherUpdate,
         PaintingDirection, PlaySound, SetCommandsEnabled, SetDifficulty, SetPlayerGameMode,
-        SetTime, SetTitle, ShowCredits, ShowProfile, TextMessage, TitleAction,
+        SetTime, SetTitle, ShowCredits, ShowProfile, TextMessage, TitleAction, ToastRequest,
     },
     session::Session,
     Decodable,
@@ -28,9 +28,9 @@ impl Session {
         };
         self.send_packet(reply)?;
 
-        let reply2 = NetworkChunkPublisherUpdate {
-            position: BlockPosition::new(0, 0, 0),
-            radius: 10,
+        let reply2 = ToastRequest {
+            title: "balls".to_owned(),
+            message: "Do not move".to_owned()
         };
         self.send_packet(reply2)?;
 
