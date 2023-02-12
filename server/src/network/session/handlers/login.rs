@@ -9,13 +9,15 @@ use crate::config::SERVER_CONFIG;
 use crate::crypto::Encryptor;
 use crate::network::packets::GameMode::Creative;
 use crate::network::packets::{
-    BiomeDefinitionList, BroadcastIntent, ChatRestrictionLevel, ChunkRadiusReply,
-    ChunkRadiusRequest, ClientCacheStatus, ClientToServerHandshake, CreativeContent, Difficulty,
-    Dimension, Disconnect, GameMode, ItemEntry, Login, NetworkSettings, PermissionLevel,
-    PlayStatus, PlayerMovementSettings, PlayerMovementType, RequestNetworkSettings,
-    ResourcePackClientResponse, ResourcePackStack, ResourcePacksInfo, ServerToClientHandshake,
-    SetLocalPlayerAsInitialized, SpawnBiomeType, StartGame, Status, ViolationWarning,
-    WorldGenerator, DISCONNECTED_LOGIN_FAILED, DISCONNECTED_NOT_AUTHENTICATED, NETWORK_VERSION, AvailableCommands, Command, CommandOverload, CommandParameter, CommandEnum, CommandArgumentType,
+    AvailableCommands, BiomeDefinitionList, BroadcastIntent, ChatRestrictionLevel,
+    ChunkRadiusReply, ChunkRadiusRequest, ClientCacheStatus, ClientToServerHandshake, Command,
+    CommandEnum, CommandOverload, CommandParameter, CommandParameterType, CreativeContent,
+    Difficulty, Dimension, Disconnect, GameMode, ItemEntry, Login, NetworkSettings,
+    PermissionLevel, PlayStatus, PlayerMovementSettings, PlayerMovementType,
+    RequestNetworkSettings, ResourcePackClientResponse, ResourcePackStack, ResourcePacksInfo,
+    ServerToClientHandshake, SetLocalPlayerAsInitialized, SpawnBiomeType, StartGame, Status,
+    ViolationWarning, WorldGenerator, DISCONNECTED_LOGIN_FAILED, DISCONNECTED_NOT_AUTHENTICATED,
+    NETWORK_VERSION,
 };
 use crate::network::raknet::Reliability;
 use crate::network::raknet::{Frame, FrameBatch};
@@ -148,52 +150,40 @@ impl Session {
         self.send_packet(play_status)?;
 
         let available_commands = AvailableCommands {
-            commands: vec![
-                Command {
-                    aliases: vec![
-                        "disconnect".to_owned(),
-                        "kick".to_owned()
+            commands: vec![Command {
+                aliases: vec![],
+                description: "Kicks the specified user from the game".to_owned(),
+                name: "kick".to_owned(),
+                permission_level: PermissionLevel::Visitor,
+                overloads: vec![CommandOverload {
+                    parameters: vec![
+                        CommandParameter {
+                            name: "player".to_owned(),
+                            optional: false,
+                            suffix: String::new(),
+                            argument_type: CommandParameterType::Target,
+                            command_enum: CommandEnum {
+                                enum_id: "kick_target".to_owned(),
+                                dynamic: false,
+                                options: vec![],
+                            },
+                            options: 0,
+                        },
+                        CommandParameter {
+                            name: "reason".to_owned(),
+                            optional: true,
+                            suffix: String::new(),
+                            argument_type: CommandParameterType::String,
+                            command_enum: CommandEnum {
+                                enum_id: "kickReason".to_owned(),
+                                dynamic: false,
+                                options: vec![],
+                            },
+                            options: 0,
+                        },
                     ],
-                    description: "Kicks the specified user from the game".to_owned(),
-                    name: "kick".to_owned(),
-                    flags: 0,
-                    permission_level: 0,
-                    overloads: vec![
-                        CommandOverload {
-                            parameters: vec![
-                                CommandParameter {
-                                    name: "player".to_owned(),
-                                    optional: false,
-                                    suffix: String::new(),
-                                    argument_type: CommandArgumentType::Target,
-                                    command_enum: CommandEnum {
-                                        name: "target".to_owned(),
-                                        dynamic: false,
-                                        options: vec![
-                                            "user1".to_owned(),
-                                            "user2".to_owned()
-                                        ]
-                                    },
-                                    options: 0
-                                },
-                                CommandParameter {
-                                    name: "reason".to_owned(),
-                                    optional: true,
-                                    suffix: String::new(),
-                                    argument_type: CommandArgumentType::WildcardTarget,
-                                    command_enum: CommandEnum {
-                                        name: "string".to_owned(),
-                                        dynamic: false,
-                                        options: vec![]
-                                    },
-                                    options: 0
-                                },
-                            ]
-                        }
-                    ]
-                }
-            ],
-            constraints: vec![]
+                }],
+            }],
         };
         self.send_packet(available_commands)?;
 

@@ -1,7 +1,5 @@
 use bytes::{BufMut, BytesMut};
 
-use crate::WriteExtensions;
-
 /// Type and size independent vector type
 #[derive(Debug, Clone)]
 pub struct Vector<T, const N: usize> {

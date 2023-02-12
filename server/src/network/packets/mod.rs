@@ -46,6 +46,7 @@ pub use tick_sync::*;
 pub use toast_request::*;
 pub use traits::*;
 pub use transfer::*;
+pub use update_soft_enum::*;
 pub use violation_warning::*;
 
 mod add_painting;
@@ -96,6 +97,7 @@ mod tick_sync;
 mod toast_request;
 mod traits;
 mod transfer;
+mod update_soft_enum;
 mod violation_warning;
 
 /// ID of Minecraft game packets.

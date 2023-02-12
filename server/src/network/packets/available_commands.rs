@@ -1,30 +1,39 @@
-use std::collections::{HashSet, HashMap};
+use std::collections::{HashMap, HashSet};
 
-use bytes::{BytesMut, BufMut};
-use common::{VResult, WriteExtensions, bail};
+use bytes::{BufMut, BytesMut};
+use common::{bail, VResult, WriteExtensions};
 
 use crate::network::Encodable;
 
-use super::GamePacket;
+use super::{GamePacket, PermissionLevel};
 
 pub const COMMAND_PARAMETER_VALID: u32 = 0x100000;
 pub const COMMAND_PARAMETER_ENUM: u32 = 0x200000;
 pub const COMMAND_PARAMETER_SUFFIXED: u32 = 0x1000000;
 pub const COMMAND_PARAMETER_SOFT_ENUM: u32 = 0x4000000;
 
+/// Used for autocompletion.
+///
+/// This object contains the list of available options.
 #[derive(Debug, Clone)]
 pub struct CommandEnum {
-    pub name: String,
+    /// ID of the autocompleted type.
+    /// If the enum is dynamic, this ID can be used in the [`UpdateSoftEnum`](super::UpdateSoftEnum)
+    /// packet to update the autocompletion options.
+    pub enum_id: String,
+    /// Available options.
     pub options: Vec<String>,
+    /// Whether the server can update this enum on the fly.
     pub dynamic: bool,
 }
 
+/// Type of a parameter.
 #[derive(Debug, Copy, Clone)]
-pub enum CommandArgumentType {
+pub enum CommandParameterType {
     Int = 1,
     Float = 3,
     Value = 4,
-    WildcarInt = 5,
+    WildcardInt = 5,
     Operator = 6,
     CompareOperator = 7,
     Target = 8,
@@ -39,45 +48,52 @@ pub enum CommandArgumentType {
     RawText = 53,
     Json = 57,
     BlockStates = 67,
-    Command = 70
+    Command = 70,
 }
 
+/// Describes a single command parameter.
 #[derive(Debug)]
 pub struct CommandParameter {
+    /// Name of the parameter.
     pub name: String,
-    pub argument_type: CommandArgumentType,
+    /// Type of the argument.
+    pub argument_type: CommandParameterType,
+    /// Whether the argument is optional.
     pub optional: bool,
+    /// Additional options for the parameter.
     pub options: u8,
+    /// Used for autocompletion.
     pub command_enum: CommandEnum,
+    /// Suffix.
     pub suffix: String,
 }
 
+/// Describes a command argument combination.
 #[derive(Debug)]
 pub struct CommandOverload {
+    /// Command parameters.
     pub parameters: Vec<CommandParameter>,
 }
 
+/// Describes a Minecraft command.
 #[derive(Debug)]
 pub struct Command {
+    /// Name of the command.
     pub name: String,
+    /// Description of the command.
     pub description: String,
-    pub flags: u16,
-    pub permission_level: u8,
+    /// Who is allowed to use this command.
+    pub permission_level: PermissionLevel,
+    /// Aliases.
     pub aliases: Vec<String>,
+    /// All different argument combinations of the command.
     pub overloads: Vec<CommandOverload>,
 }
 
 #[derive(Debug)]
-pub struct CommandConstraint {
-    pub enum_option: String,
-    pub enum_name: String,
-    pub constraints: Vec<u8>,
-}
-
-#[derive(Debug)]
 pub struct AvailableCommands {
+    /// List of available commands
     pub commands: Vec<Command>,
-    pub constraints: Vec<CommandConstraint>,
 }
 
 impl GamePacket for AvailableCommands {
@@ -87,7 +103,7 @@ impl GamePacket for AvailableCommands {
 impl Encodable for AvailableCommands {
     fn encode(&self) -> VResult<BytesMut> {
         let mut buffer = BytesMut::new();
-        
+
         let mut value_indices = HashMap::new();
         let mut values = Vec::new();
         for command in &self.commands {
@@ -130,9 +146,9 @@ impl Encodable for AvailableCommands {
         for command in &self.commands {
             if !command.aliases.is_empty() {
                 let alias_enum = CommandEnum {
-                    name: command.name.clone() + "Aliases",
+                    enum_id: command.name.clone() + "Aliases",
                     options: command.aliases.clone(),
-                    dynamic: false
+                    dynamic: false,
                 };
                 enum_indices.insert(command.name.clone() + "Aliases", enums.len() as u32);
                 enums.push(alias_enum);
@@ -140,9 +156,11 @@ impl Encodable for AvailableCommands {
 
             for overload in &command.overloads {
                 for parameter in &overload.parameters {
-                    if !parameter.command_enum.dynamic && !parameter.command_enum.options.is_empty() {
-                        if !enum_indices.contains_key(&parameter.command_enum.name) {
-                            enum_indices.insert(parameter.command_enum.name.clone(), enums.len() as u32);
+                    if !parameter.command_enum.dynamic && !parameter.command_enum.options.is_empty()
+                    {
+                        if !enum_indices.contains_key(&parameter.command_enum.enum_id) {
+                            enum_indices
+                                .insert(parameter.command_enum.enum_id.clone(), enums.len() as u32);
                             enums.push(parameter.command_enum.clone());
                         }
                     }
@@ -156,8 +174,11 @@ impl Encodable for AvailableCommands {
             for overload in &command.overloads {
                 for parameter in &overload.parameters {
                     if parameter.command_enum.dynamic {
-                        if !dynamic_indices.contains_key(&parameter.command_enum.name) {
-                            dynamic_indices.insert(&parameter.command_enum.name, dynamic_enums.len() as u32);
+                        if !dynamic_indices.contains_key(&parameter.command_enum.enum_id) {
+                            dynamic_indices.insert(
+                                &parameter.command_enum.enum_id,
+                                dynamic_enums.len() as u32,
+                            );
                             dynamic_enums.push(&parameter.command_enum);
                         }
                     }
@@ -179,7 +200,7 @@ impl Encodable for AvailableCommands {
 
         buffer.put_var_u32(enums.len() as u32);
         for command_enum in &enums {
-            buffer.put_string(&command_enum.name);
+            buffer.put_string(&command_enum.enum_id);
             buffer.put_var_u32(command_enum.options.len() as u32);
 
             let index_count = value_indices.len() as u32;
@@ -203,23 +224,27 @@ impl Encodable for AvailableCommands {
 
             buffer.put_string(&command.name);
             buffer.put_string(&command.description);
-            buffer.put_u16(command.flags);
-            buffer.put_u8(command.permission_level);
+            buffer.put_u16(0);
+            buffer.put_u8(command.permission_level as u8);
             buffer.put_i32_le(alias);
-            
+
             buffer.put_var_u32(command.overloads.len() as u32);
             for overload in &command.overloads {
-                
                 buffer.put_var_u32(overload.parameters.len() as u32);
                 for parameter in &overload.parameters {
-                    let mut command_type = parameter.argument_type as u32; 
+                    let mut command_type = parameter.argument_type as u32;
 
                     if parameter.command_enum.dynamic {
-                        command_type = COMMAND_PARAMETER_SOFT_ENUM | COMMAND_PARAMETER_VALID | dynamic_indices[&parameter.command_enum.name];
+                        command_type = COMMAND_PARAMETER_SOFT_ENUM
+                            | COMMAND_PARAMETER_VALID
+                            | dynamic_indices[&parameter.command_enum.enum_id];
                     } else if !parameter.command_enum.options.is_empty() {
-                        command_type = COMMAND_PARAMETER_ENUM | COMMAND_PARAMETER_VALID | enum_indices[&parameter.command_enum.name];
+                        command_type = COMMAND_PARAMETER_ENUM
+                            | COMMAND_PARAMETER_VALID
+                            | enum_indices[&parameter.command_enum.enum_id];
                     } else if !parameter.suffix.is_empty() {
-                        command_type = COMMAND_PARAMETER_SUFFIXED | suffix_indices[&parameter.suffix];
+                        command_type =
+                            COMMAND_PARAMETER_SUFFIXED | suffix_indices[&parameter.suffix];
                     }
 
                     buffer.put_string(&parameter.name);
@@ -232,7 +257,7 @@ impl Encodable for AvailableCommands {
 
         buffer.put_var_u32(dynamic_enums.len() as u32);
         for dynamic_enum in &dynamic_enums {
-            buffer.put_string(&dynamic_enum.name);
+            buffer.put_string(&dynamic_enum.enum_id);
             buffer.put_var_u32(dynamic_enum.options.len() as u32);
 
             for option in &dynamic_enum.options {

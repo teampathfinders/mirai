@@ -1,6 +1,5 @@
 use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr, SocketAddrV4};
 
-use bytes::BytesMut;
 use bytes::{Buf, BufMut};
 use lazy_static::lazy_static;
 
