@@ -38,7 +38,9 @@ pub use text::*;
 pub use tick_sync::*;
 pub use traits::*;
 pub use violation_warning::*;
+pub use network_chunk_publisher_update::*;
 
+mod network_chunk_publisher_update;
 mod add_painting;
 mod available_commands;
 mod biome_definition_list;

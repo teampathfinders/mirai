@@ -39,16 +39,14 @@ pub type Vector2i = Vector<i32, 2>;
 pub type Vector3i = Vector<i32, 3>;
 
 #[derive(Debug, Clone)]
-pub struct BlockPosition(i32, u32, i32);
+pub struct BlockPosition {
+    pub x: i32,
+    pub y: u32,
+    pub z: i32
+}
 
 impl BlockPosition {
     pub const fn new(x: i32, y: u32, z: i32) -> Self {
-        Self(x, y, z)
-    }
-
-    pub fn encode(&self, buffer: &mut BytesMut) {
-        buffer.put_var_i32(self.0);
-        buffer.put_var_u32(self.1);
-        buffer.put_var_i32(self.2);
+        Self { x, y, z }
     }
 }

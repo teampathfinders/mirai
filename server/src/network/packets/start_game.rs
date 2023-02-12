@@ -246,7 +246,7 @@ impl Encodable for StartGame {
         self.generator.encode(&mut buffer);
         buffer.put_var_i32(self.world_game_mode as i32);
         buffer.put_var_i32(self.difficulty as i32);
-        self.world_spawn.encode(&mut buffer);
+        buffer.put_block_pos(&self.world_spawn);
 
         buffer.put_bool(self.achievements_disabled);
         buffer.put_bool(self.editor_world);
