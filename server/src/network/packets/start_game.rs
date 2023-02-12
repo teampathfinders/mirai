@@ -7,32 +7,7 @@ use crate::network::Encodable;
 use common::{bail, VError, VResult};
 use common::{BlockPosition, Vector2f, Vector3f, WriteExtensions};
 
-use super::{CLIENT_VERSION_STRING, Difficulty};
-
-#[derive(Debug, Copy, Clone)]
-pub enum GameMode {
-    Survival = 0,
-    Creative = 1,
-    Adventure = 2,
-    Spectator = 3,
-    /// Sets the player's game mode to the world default.
-    WorldDefault = 5,
-}
-
-impl TryFrom<i32> for GameMode {
-    type Error = VError;
-
-    fn try_from(value: i32) -> VResult<Self> {
-        Ok(match value {
-            0 => Self::Survival,
-            1 => Self::Creative,
-            2 => Self::Adventure,
-            3 => Self::Spectator,
-            5 => Self::WorldDefault,
-            _ => bail!(BadPacket, "Invalid game mode"),
-        })
-    }
-}
+use super::{CLIENT_VERSION_STRING, Difficulty, GameMode};
 
 #[derive(Debug, Copy, Clone)]
 pub enum Dimension {
@@ -199,7 +174,7 @@ impl BroadcastIntent {
 pub struct StartGame {
     pub entity_id: i64,
     pub runtime_id: u64,
-    pub gamemode: GameMode,
+    pub game_mode: GameMode,
     pub position: Vector3f,
     pub rotation: Vector2f,
     pub world_seed: u64,
@@ -207,7 +182,7 @@ pub struct StartGame {
     pub custom_biome_name: String,
     pub dimension: Dimension,
     pub generator: WorldGenerator,
-    pub world_gamemode: GameMode,
+    pub world_game_mode: GameMode,
     pub difficulty: Difficulty,
     pub world_spawn: BlockPosition,
     pub achievements_disabled: bool,
@@ -280,7 +255,7 @@ impl Encodable for StartGame {
 
         buffer.put_var_i64(self.entity_id);
         buffer.put_var_u64(self.runtime_id);
-        buffer.put_var_i32(self.gamemode as i32);
+        buffer.put_var_i32(self.game_mode as i32);
         self.position.encode(&mut buffer);
         self.rotation.encode(&mut buffer);
         buffer.put_u64(self.world_seed);
@@ -288,7 +263,7 @@ impl Encodable for StartGame {
         buffer.put_string(&self.custom_biome_name);
         self.dimension.encode(&mut buffer);
         self.generator.encode(&mut buffer);
-        buffer.put_var_i32(self.world_gamemode as i32);
+        buffer.put_var_i32(self.world_game_mode as i32);
         buffer.put_var_i32(self.difficulty as i32);
         self.world_spawn.encode(&mut buffer);
 

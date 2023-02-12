@@ -1,9 +1,34 @@
 use bytes::BytesMut;
-use common::{ReadExtensions, VResult, WriteExtensions};
+use common::{ReadExtensions, VResult, WriteExtensions, VError, bail};
 
 use crate::network::{Decodable, Encodable};
 
-use super::{GameMode, GamePacket};
+use super::GamePacket;
+
+#[derive(Debug, Copy, Clone, PartialEq)]
+pub enum GameMode {
+    Survival = 0,
+    Creative = 1,
+    Adventure = 2,
+    Spectator = 3,
+    /// Sets the player's game mode to the world default.
+    WorldDefault = 5,
+}
+
+impl TryFrom<i32> for GameMode {
+    type Error = VError;
+
+    fn try_from(value: i32) -> VResult<Self> {
+        Ok(match value {
+            0 => Self::Survival,
+            1 => Self::Creative,
+            2 => Self::Adventure,
+            3 => Self::Spectator,
+            5 => Self::WorldDefault,
+            _ => bail!(BadPacket, "Invalid game mode"),
+        })
+    }
+}
 
 #[derive(Debug)]
 pub struct SetPlayerGameMode {

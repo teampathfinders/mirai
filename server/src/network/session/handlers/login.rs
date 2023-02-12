@@ -60,7 +60,7 @@ impl Session {
         let start_game = StartGame {
             entity_id: 1,
             runtime_id: 1,
-            gamemode: GameMode::Creative,
+            game_mode: GameMode::Creative,
             position: Vector3f::from([0.0, 0.0, 0.0]),
             rotation: Vector2f::from([0.0, 0.0]),
             world_seed: 0,
@@ -68,7 +68,7 @@ impl Session {
             custom_biome_name: "plains".to_string(),
             dimension: Dimension::Overworld,
             generator: WorldGenerator::Infinite,
-            world_gamemode: GameMode::Survival,
+            world_game_mode: GameMode::Survival,
             difficulty: Difficulty::Normal,
             world_spawn: BlockPosition::new(0, 0, 0),
             achievements_disabled: true,
