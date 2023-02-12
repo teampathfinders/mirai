@@ -116,7 +116,7 @@ impl Session {
             chat_restriction_level: ChatRestrictionLevel::None,
             disable_player_interactions: false,
             level_id: "".to_string(),
-            level_name: "Vex Server".to_string(),
+            level_name: "nova Server".to_string(),
             template_content_identity: "".to_string(),
             is_trial: false,
             movement_settings: PlayerMovementSettings {
