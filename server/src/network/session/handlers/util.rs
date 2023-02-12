@@ -6,9 +6,9 @@ use common::{BlockPosition, VResult, Vector3f, Vector3i};
 use crate::network::{
     packets::{
         AddPainting, Animate, CameraShake, CameraShakeAction, CameraShakeType, ChangeDimension,
-        CreditStatus, Difficulty, Dimension, GameMode, MessageType, MobEffectAction, MobEffectKind,
+        CreditsStatus, Difficulty, Dimension, GameMode, MessageType, MobEffectAction, MobEffectKind,
         MobEffectUpdate, NetworkChunkPublisherUpdate, PaintingDirection, PlaySound, RequestAbility,
-        SetCommandsEnabled, SetDifficulty, SetPlayerGameMode, SetTime, SetTitle, ShowCredits,
+        SetCommandsEnabled, SetDifficulty, SetPlayerGameMode, SetTime, SetTitle, CreditsUpdate,
         ShowProfile, SpawnExperienceOrb, TextMessage, TitleAction, ToastRequest, Transfer, CommandRequest,
     },
     session::Session,
@@ -48,6 +48,14 @@ impl Session {
     pub fn handle_command_request(&self, packet: BytesMut) -> VResult<()> {
         let request = CommandRequest::decode(packet)?;
         tracing::info!("{request:?}");
+
+        if request.command == "/credits" {
+            let credits = CreditsUpdate {
+                runtime_id: 1,
+                status: CreditsStatus::Start
+            };
+            self.send_packet(credits)?;
+        }
 
         Ok(())
     }

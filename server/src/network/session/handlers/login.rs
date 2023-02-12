@@ -150,47 +150,77 @@ impl Session {
         self.send_packet(play_status)?;
 
         let available_commands = AvailableCommands {
-            commands: vec![Command {
+            commands: vec![
+            //     Command {
+            //     aliases: vec![
+            //         "disconnect".to_owned(),
+            //         "kick".to_owned()
+            //     ],
+            //     description: "Kicks the specified user from the game".to_owned(),
+            //     name: "kick".to_owned(),
+            //     permission_level: PermissionLevel::Visitor,
+            //     overloads: vec![CommandOverload {
+            //         parameters: vec![
+            //             CommandParameter {
+            //                 name: "player".to_owned(),
+            //                 optional: false,
+            //                 suffix: String::new(),
+            //                 argument_type: CommandParameterType::Target,
+            //                 command_enum: CommandEnum {
+            //                     enum_id: "target".to_owned(),
+            //                     dynamic: false,
+            //                     options: vec![
+            //                         "user".to_owned(),
+            //                         "user2".to_owned()
+            //                     ],
+            //                 },
+            //                 options: 0,
+            //             },
+            //             CommandParameter {
+            //                 name: "reason".to_owned(),
+            //                 optional: true,
+            //                 suffix: String::new(),
+            //                 argument_type: CommandParameterType::String,
+            //                 command_enum: CommandEnum {
+            //                     enum_id: "reason".to_owned(),
+            //                     dynamic: false,
+            //                     options: vec![
+            //                         "reason".to_owned()
+            //                     ],
+            //                 },
+            //                 options: 0,
+            //             },
+            //         ],
+            //     }],
+            // }, 
+            Command { 
+                name: "credits".to_owned(), 
+                description: "Shows the credits screen".to_owned(), 
+                permission_level: PermissionLevel::Visitor, 
                 aliases: vec![
-                    "disconnect".to_owned(),
-                    "kick".to_owned()
-                ],
-                description: "Kicks the specified user from the game".to_owned(),
-                name: "kick".to_owned(),
-                permission_level: PermissionLevel::Visitor,
-                overloads: vec![CommandOverload {
-                    parameters: vec![
-                        CommandParameter {
-                            name: "player".to_owned(),
-                            optional: false,
-                            suffix: String::new(),
-                            argument_type: CommandParameterType::Target,
-                            command_enum: CommandEnum {
-                                enum_id: "target".to_owned(),
-                                dynamic: false,
-                                options: vec![
-                                    "user".to_owned(),
-                                    "user2".to_owned()
-                                ],
-                            },
-                            options: 0,
-                        },
-                        CommandParameter {
-                            name: "reason".to_owned(),
-                            optional: true,
-                            suffix: String::new(),
-                            argument_type: CommandParameterType::String,
-                            command_enum: CommandEnum {
-                                enum_id: "reason".to_owned(),
-                                dynamic: false,
-                                options: vec![
-                                    "reason".to_owned()
-                                ],
-                            },
-                            options: 0,
-                        },
-                    ],
-                }],
+                    "credits".to_owned()
+                ], 
+                overloads: vec![]
+                // overloads: vec![
+                //     CommandOverload {
+                //         parameters: vec![
+                //             CommandParameter {
+                //                 name: "test".to_owned(),
+                //                 optional: false,
+                //                 suffix: String::new(),
+                //                 argument_type: CommandParameterType::String,
+                //                 command_enum: CommandEnum {
+                //                     enum_id: "test".to_owned(),
+                //                     dynamic: false,
+                //                     options: vec![
+                //                         "reason".to_owned()
+                //                     ]
+                //                 },
+                //                 options: 0
+                //             }
+                //         ]
+                //     }
+                // ] 
             }],
         };
         self.send_packet(available_commands)?;
