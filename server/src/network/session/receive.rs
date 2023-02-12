@@ -11,7 +11,7 @@ use crate::network::packets::{
     Animate, ChunkRadiusRequest, ClientCacheStatus, ClientToServerHandshake, CompressionAlgorithm,
     GamePacket, Login, MovePlayer, RequestAbility, RequestNetworkSettings,
     ResourcePackClientResponse, SetDifficulty, SetLocalPlayerAsInitialized, ViolationWarning,
-    GAME_PACKET_ID,
+    GAME_PACKET_ID, CommandRequest,
 };
 use crate::network::packets::{Interact, OnlinePing, TextMessage};
 use crate::network::raknet::packets::ConnectionRequest;
@@ -201,6 +201,7 @@ impl Session {
             MovePlayer::ID => self.handle_move_player(packet),
             RequestAbility::ID => self.handle_ability_request(packet),
             Animate::ID => self.handle_animation(packet),
+            CommandRequest::ID => self.handle_command_request(packet),
             id => bail!(BadPacket, "Invalid game packet: {:#04x}", id),
         }
     }

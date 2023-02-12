@@ -48,7 +48,9 @@ pub use traits::*;
 pub use transfer::*;
 pub use update_dynamic_enum::*;
 pub use violation_warning::*;
+pub use command_request::*;
 
+mod command_request;
 mod add_painting;
 mod animate;
 mod available_commands;

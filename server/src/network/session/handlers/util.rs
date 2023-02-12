@@ -9,7 +9,7 @@ use crate::network::{
         CreditStatus, Difficulty, Dimension, GameMode, MessageType, MobEffectAction, MobEffectKind,
         MobEffectUpdate, NetworkChunkPublisherUpdate, PaintingDirection, PlaySound, RequestAbility,
         SetCommandsEnabled, SetDifficulty, SetPlayerGameMode, SetTime, SetTitle, ShowCredits,
-        ShowProfile, SpawnExperienceOrb, TextMessage, TitleAction, ToastRequest, Transfer,
+        ShowProfile, SpawnExperienceOrb, TextMessage, TitleAction, ToastRequest, Transfer, CommandRequest,
     },
     session::Session,
     Decodable,
@@ -40,6 +40,13 @@ impl Session {
 
     pub fn handle_animation(&self, packet: BytesMut) -> VResult<()> {
         let request = Animate::decode(packet)?;
+        tracing::info!("{request:?}");
+
+        Ok(())
+    }
+
+    pub fn handle_command_request(&self, packet: BytesMut) -> VResult<()> {
+        let request = CommandRequest::decode(packet)?;
         tracing::info!("{request:?}");
 
         Ok(())
