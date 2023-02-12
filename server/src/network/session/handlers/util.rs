@@ -20,10 +20,13 @@ impl Session {
         let request = TextMessage::decode(packet)?;
         tracing::info!("{request:?}");
 
-        let transfer = Transfer {
-            address: SocketAddr::V4(SocketAddrV4::new(Ipv4Addr::new(127, 0, 0, 1), 19132)),
+        let shake = CameraShake {
+            action: CameraShakeAction::Add,
+            duration: 5.0,
+            intensity: 0.5,
+            shake_type: CameraShakeType::Rotational
         };
-        self.send_packet(transfer)?;
+        self.send_packet(shake)?;
 
         Ok(())
     }

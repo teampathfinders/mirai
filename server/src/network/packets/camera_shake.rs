@@ -39,8 +39,8 @@ impl Encodable for CameraShake {
     fn encode(&self) -> VResult<BytesMut> {
         let mut buffer = BytesMut::with_capacity(4 + 4 + 1 + 1);
 
-        buffer.put_f32(self.intensity);
-        buffer.put_f32(self.duration);
+        buffer.put_f32_le(self.intensity);
+        buffer.put_f32_le(self.duration);
         buffer.put_u8(self.shake_type as u8);
         buffer.put_u8(self.action as u8);
 
