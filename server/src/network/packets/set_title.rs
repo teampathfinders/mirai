@@ -8,7 +8,7 @@ use crate::network::Encodable;
 use super::GamePacket;
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
-pub enum TitleOperation {
+pub enum TitleAction {
     Clear,
     Reset,
     SetTitle,
@@ -25,7 +25,7 @@ pub enum TitleOperation {
 #[derive(Debug)]
 pub struct SetTitle {
     /// Title operation to perform.
-    pub operation: TitleOperation,
+    pub action: TitleAction,
     /// Text to display.
     pub text: String,
     /// Fade in duration (in ticks).
@@ -48,7 +48,7 @@ impl Encodable for SetTitle {
     fn encode(&self) -> VResult<BytesMut> {
         let mut buffer = BytesMut::new();
 
-        buffer.put_var_i32(self.operation as i32);
+        buffer.put_var_i32(self.action as i32);
         buffer.put_string(&self.text);
         buffer.put_var_i32(self.fade_in_duration);
         buffer.put_var_i32(self.remain_duration);

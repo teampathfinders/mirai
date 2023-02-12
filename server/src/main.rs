@@ -12,10 +12,11 @@ use tokio::runtime;
 use crate::instance::ServerInstance;
 use common::VResult;
 
-mod config;
-mod crypto;
-mod instance;
-mod network;
+pub mod config;
+pub mod crypto;
+pub mod instance;
+pub mod network;
+pub mod skin;
 
 #[cfg(test)]
 mod test;

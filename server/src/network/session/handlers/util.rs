@@ -1,12 +1,12 @@
 use bytes::BytesMut;
-use common::{VResult, Vector3f, Vector3i, BlockPosition};
+use common::{BlockPosition, VResult, Vector3f, Vector3i};
 
 use crate::network::{
     packets::{
         AddPainting, ChangeDimension, CreditStatus, Difficulty, Dimension, GameMode, MessageType,
-        MobEffectKind, MobEffectOperation, MobEffectUpdate, PaintingDirection, PlaySound,
-        SetCommandsEnabled, SetDifficulty, SetPlayerGameMode, SetTime, SetTitle, ShowCredits,
-        ShowProfile, TextMessage, TitleOperation, NetworkChunkPublisherUpdate,
+        MobEffectAction, MobEffectKind, MobEffectUpdate, NetworkChunkPublisherUpdate,
+        PaintingDirection, PlaySound, SetCommandsEnabled, SetDifficulty, SetPlayerGameMode,
+        SetTime, SetTitle, ShowCredits, ShowProfile, TextMessage, TitleAction,
     },
     session::Session,
     Decodable,
@@ -20,7 +20,7 @@ impl Session {
         let reply = SetTitle {
             remain_duration: 40,
             xuid: self.get_xuid()?.to_string(),
-            operation: TitleOperation::SetTitle,
+            action: TitleAction::SetTitle,
             text: format!("You said {}", request.message),
             platform_online_id: "".to_owned(),
             fade_in_duration: 10,
@@ -30,7 +30,7 @@ impl Session {
 
         let reply2 = NetworkChunkPublisherUpdate {
             position: BlockPosition::new(0, 0, 0),
-            radius: 10
+            radius: 10,
         };
         self.send_packet(reply2)?;
 

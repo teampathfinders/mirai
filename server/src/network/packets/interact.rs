@@ -6,14 +6,14 @@ use crate::network::Decodable;
 use super::GamePacket;
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
-pub enum ActionType {
+pub enum InteractAction {
     LeaveVehicle = 3,
     MouseOverEntity = 4,
     NpcOpen = 5,
     OpenInventory = 6,
 }
 
-impl TryFrom<u8> for ActionType {
+impl TryFrom<u8> for InteractAction {
     type Error = VError;
 
     fn try_from(value: u8) -> VResult<Self> {
@@ -30,7 +30,7 @@ impl TryFrom<u8> for ActionType {
 #[derive(Debug)]
 pub struct Interact {
     /// Type of action to perform.
-    pub action: ActionType,
+    pub action: InteractAction,
     /// Target of the interaction.
     pub target_runtime_id: u64,
     /// Position of the interaction,
@@ -43,7 +43,7 @@ impl GamePacket for Interact {
 
 impl Decodable for Interact {
     fn decode(mut buffer: BytesMut) -> VResult<Self> {
-        let action = ActionType::try_from(buffer.get_u8())?;
+        let action = InteractAction::try_from(buffer.get_u8())?;
         let target_runtime_id = buffer.get_var_u64()?;
         let position = buffer.get_vec3f();
 

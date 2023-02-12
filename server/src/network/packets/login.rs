@@ -12,7 +12,7 @@ use common::{VError, VResult};
 
 /// Device operating system
 #[derive(Debug, Copy, Clone)]
-pub enum DeviceOS {
+pub enum BuildPlatform {
     Android,
     Ios,
     Osx,
@@ -33,11 +33,11 @@ pub enum DeviceOS {
     Linux,
 }
 
-impl TryFrom<u8> for DeviceOS {
+impl TryFrom<u8> for BuildPlatform {
     type Error = VError;
 
     fn try_from(value: u8) -> VResult<Self> {
-        use DeviceOS::*;
+        use BuildPlatform::*;
 
         Ok(match value {
             1 => Android,
@@ -91,7 +91,7 @@ impl Decodable for Login {
                 public_key: identity_data.public_key,
             },
             user_data: UserData {
-                device_os: DeviceOS::try_from(user_data.device_os)?,
+                device_os: BuildPlatform::try_from(user_data.device_os)?,
                 language_code: user_data.language_code,
             },
         })

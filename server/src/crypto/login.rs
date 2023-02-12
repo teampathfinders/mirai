@@ -1,9 +1,11 @@
+use std::io::Write;
+
 use base64::Engine;
 use bytes::{Buf, BytesMut};
 use common::{bail, error, VResult};
 use jsonwebtoken::{Algorithm, DecodingKey, Validation};
 
-use crate::network::packets::DeviceOS;
+use crate::network::packets::BuildPlatform;
 
 /// Mojang's public key.
 /// Used to verify the second token in the identity chain.
@@ -32,7 +34,7 @@ pub struct IdentityData {
 #[derive(Debug)]
 pub struct UserData {
     /// Operating system of the client.
-    pub device_os: DeviceOS,
+    pub device_os: BuildPlatform,
     /// Language in ISO format (i.e. en_GB)
     pub language_code: String,
 }

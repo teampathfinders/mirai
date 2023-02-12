@@ -8,7 +8,7 @@ use super::GamePacket;
 #[derive(Debug)]
 pub struct DeathInfo {
     pub cause: String,
-    pub messages: Vec<String>
+    pub messages: Vec<String>,
 }
 
 impl GamePacket for DeathInfo {

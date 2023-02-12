@@ -42,7 +42,7 @@ pub type Vector3i = Vector<i32, 3>;
 pub struct BlockPosition {
     pub x: i32,
     pub y: u32,
-    pub z: i32
+    pub z: i32,
 }
 
 impl BlockPosition {

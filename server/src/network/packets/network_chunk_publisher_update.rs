@@ -1,4 +1,4 @@
-use bytes::{BytesMut, BufMut};
+use bytes::{BufMut, BytesMut};
 use common::{BlockPosition, VResult, WriteExtensions};
 
 use crate::network::Encodable;
@@ -8,7 +8,7 @@ use super::GamePacket;
 #[derive(Debug)]
 pub struct NetworkChunkPublisherUpdate {
     pub position: BlockPosition,
-    pub radius: u32
+    pub radius: u32,
 }
 
 impl GamePacket for NetworkChunkPublisherUpdate {

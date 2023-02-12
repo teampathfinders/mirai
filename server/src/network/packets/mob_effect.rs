@@ -7,7 +7,7 @@ use super::GamePacket;
 
 /// Operation to perform with the effect.
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
-pub enum MobEffectOperation {
+pub enum MobEffectAction {
     /// Do nothing.
     None,
     /// Adds an effect to an entity.
@@ -59,7 +59,7 @@ pub struct MobEffectUpdate {
     /// Runtime ID of the affected entity.
     pub runtime_id: u64,
     /// Operation to perform on the entity.
-    pub operation: MobEffectOperation,
+    pub action: MobEffectAction,
     /// Type of effect.
     pub effect_kind: MobEffectKind,
     /// Strength of the effect, this ranges from 0-255.
@@ -79,7 +79,7 @@ impl Encodable for MobEffectUpdate {
         let mut buffer = BytesMut::new();
 
         buffer.put_var_u64(self.runtime_id);
-        buffer.put_u8(self.operation as u8);
+        buffer.put_u8(self.action as u8);
         buffer.put_var_i32(self.effect_kind as i32);
         buffer.put_var_i32(self.amplifier);
         buffer.put_bool(self.particles);

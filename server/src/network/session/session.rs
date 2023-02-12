@@ -11,7 +11,7 @@ use tokio::sync::OnceCell;
 use tokio_util::sync::CancellationToken;
 
 use crate::crypto::{Encryptor, IdentityData, UserData};
-use crate::network::packets::{DeviceOS, Disconnect};
+use crate::network::packets::{BuildPlatform, Disconnect};
 use crate::network::session::compound_collector::CompoundCollector;
 use crate::network::session::order_channel::OrderChannel;
 use crate::network::session::recovery_queue::RecoveryQueue;
@@ -204,7 +204,7 @@ impl Session {
             .ok_or_else(|| error!(NotInitialized, "Encryption has not been initialised yet"))
     }
 
-    pub fn get_device_os(&self) -> VResult<DeviceOS> {
+    pub fn get_device_os(&self) -> VResult<BuildPlatform> {
         let data = self
             .user_data
             .get()
