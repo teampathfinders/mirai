@@ -1,7 +1,7 @@
-use bytes::{BytesMut, BufMut};
-use common::{Vector3f, VResult, WriteExtensions, VError, bail};
+use bytes::{BytesMut, BufMut, Buf};
+use common::{Vector3f, VResult, WriteExtensions, VError, bail, ReadExtensions};
 
-use crate::network::Encodable;
+use crate::network::{Encodable, Decodable};
 
 use super::GamePacket;
 
@@ -22,7 +22,7 @@ impl TryFrom<u8> for MovementMode {
             1 => Self::Reset,
             2 => Self::Teleport,
             3 => Self::Rotation,
-            _ => bail!(BadPacket, "Invalid movement mode")
+            _ => bail!(BadPacket, "Invalid movement mode {value}")
         })
     }
 }
@@ -34,6 +34,21 @@ pub enum TeleportCause {
     ChorusFruit,
     Command,
     Behavior
+}
+
+impl TryFrom<i32> for TeleportCause {
+    type Error = VError;
+
+    fn try_from(value: i32) -> VResult<Self> {
+        Ok(match value {
+            0 => Self::Unknown,
+            1 => Self::Projectile,
+            2 => Self::ChorusFruit,
+            3 => Self::Command,
+            4 => Self::Behavior,
+            _ => bail!(BadPacket, "Invalid teleport cause {value}")
+        })
+    }
 }
 
 #[derive(Debug)]
@@ -72,5 +87,37 @@ impl Encodable for MovePlayer {
         buffer.put_var_u64(self.tick);
 
         Ok(buffer)
+    }
+}
+
+impl Decodable for MovePlayer {
+    fn decode(mut buffer: BytesMut) -> VResult<Self> {
+        let runtime_id = buffer.get_var_u64()?;
+        let position = buffer.get_vec3f();
+        let rotation = buffer.get_vec3f();
+        let mode = MovementMode::try_from(buffer.get_u8())?;
+        let on_ground = buffer.get_bool();
+        let ridden_runtime_id = buffer.get_var_u64()?;
+
+        let mut teleport_cause = TeleportCause::Unknown;
+        let mut teleport_source_entity_type = 0;
+        if mode == MovementMode::Teleport {
+            teleport_cause = TeleportCause::try_from(buffer.get_i32())?;
+            teleport_source_entity_type = buffer.get_i32();
+        }
+
+        let tick = buffer.get_var_u64()?;
+
+        Ok(Self {
+            runtime_id,
+            position,
+            rotation,
+            mode,
+            on_ground,
+            ridden_runtime_id,
+            teleport_cause,
+            teleport_source_entity_type,
+            tick
+        })
     }
 }
