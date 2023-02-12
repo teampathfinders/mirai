@@ -5,9 +5,12 @@ use crate::network::Encodable;
 
 use super::GamePacket;
 
+/// Information about a player's death.
 #[derive(Debug)]
 pub struct DeathInfo {
+    /// Cause of death.
     pub cause: String,
+    /// Additional info display in the death screen.
     pub messages: Vec<String>,
 }
 

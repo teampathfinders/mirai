@@ -44,7 +44,9 @@ pub use violation_warning::*;
 pub use toast_request::*;
 pub use spawn_experience_orb::*;
 pub use request_ability::*;
+pub use animate::*;
 
+mod animate;
 mod request_ability;
 mod spawn_experience_orb;
 mod toast_request;

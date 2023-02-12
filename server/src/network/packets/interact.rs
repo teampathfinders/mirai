@@ -5,6 +5,7 @@ use crate::network::Decodable;
 
 use super::GamePacket;
 
+/// All types of interaction.
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum InteractAction {
     LeaveVehicle = 3,

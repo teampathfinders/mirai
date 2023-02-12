@@ -6,7 +6,7 @@ use crate::network::{
         AddPainting, ChangeDimension, CreditStatus, Difficulty, Dimension, GameMode, MessageType,
         MobEffectAction, MobEffectKind, MobEffectUpdate, NetworkChunkPublisherUpdate,
         PaintingDirection, PlaySound, SetCommandsEnabled, SetDifficulty, SetPlayerGameMode,
-        SetTime, SetTitle, ShowCredits, ShowProfile, TextMessage, TitleAction, ToastRequest, SpawnExperienceOrb, RequestAbility,
+        SetTime, SetTitle, ShowCredits, ShowProfile, TextMessage, TitleAction, ToastRequest, SpawnExperienceOrb, RequestAbility, Animate,
     },
     session::Session,
     Decodable,
@@ -53,6 +53,13 @@ impl Session {
 
     pub fn handle_ability_request(&self, packet: BytesMut) -> VResult<()> {
         let request = RequestAbility::decode(packet)?;
+        tracing::info!("{request:?}");
+
+        Ok(())
+    }
+
+    pub fn handle_animation(&self, packet: BytesMut) -> VResult<()> {
+        let request = Animate::decode(packet)?;
         tracing::info!("{request:?}");
 
         Ok(())
