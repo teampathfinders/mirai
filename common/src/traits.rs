@@ -1,6 +1,6 @@
 use bytes::BytesMut;
 
-use common::VResult;
+use crate::VResult;
 
 /// Trait that all server to client packets should implement.
 pub trait Encodable {

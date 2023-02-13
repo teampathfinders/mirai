@@ -3,9 +3,9 @@ use std::io::Read;
 use bytes::{Buf, BufMut, BytesMut};
 
 use crate::network::raknet::Reliability;
-use crate::network::traits::{Decodable, Encodable};
 use common::vassert;
 use common::VResult;
+use common::{Decodable, Encodable};
 use common::{ReadExtensions, WriteExtensions};
 
 /// Bit flag indicating that the packet is encapsulated in a frame.

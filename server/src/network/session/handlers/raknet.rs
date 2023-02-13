@@ -10,8 +10,8 @@ use crate::network::raknet::Reliability;
 use crate::network::session::send::PacketConfig;
 use crate::network::session::send_queue::SendPriority;
 use crate::network::session::session::Session;
-use crate::network::traits::{Decodable, Encodable};
 use common::VResult;
+use common::{Decodable, Encodable};
 
 impl Session {
     /// Handles a [`ConnectionRequest`] packet.

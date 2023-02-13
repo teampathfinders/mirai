@@ -21,9 +21,9 @@ use crate::network::raknet::packets::OpenConnectionRequest2;
 use crate::network::raknet::RawPacket;
 use crate::network::raknet::RAKNET_VERSION;
 use crate::network::session::SessionTracker;
-use crate::network::{Decodable, Encodable};
 use common::AsyncDeque;
 use common::{error, VResult};
+use common::{Decodable, Encodable};
 
 /// Local IPv4 address
 pub const IPV4_LOCAL_ADDR: Ipv4Addr = Ipv4Addr::new(127, 0, 0, 1);

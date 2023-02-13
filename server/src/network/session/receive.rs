@@ -22,8 +22,8 @@ use crate::network::raknet::packets::{
 };
 use crate::network::raknet::{Frame, FrameBatch};
 use crate::network::session::session::Session;
-use crate::network::traits::{Decodable, Encodable};
 use common::{bail, vassert, ReadExtensions, VResult};
+use common::{Decodable, Encodable};
 
 impl Session {
     /// Processes the raw packet coming directly from the network.

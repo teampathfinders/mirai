@@ -1,19 +1,18 @@
 use std::net::{Ipv4Addr, SocketAddr, SocketAddrV4};
 
 use bytes::BytesMut;
-use common::{BlockPosition, VResult, Vector3f, Vector3i};
+use common::{BlockPosition, Decodable, VResult, Vector3f, Vector3i};
 
 use crate::network::{
     packets::{
         AddPainting, Animate, CameraShake, CameraShakeAction, CameraShakeType, ChangeDimension,
-        CommandRequest, CreditsStatus, CreditsUpdate, Difficulty, Dimension, GameMode, MessageType,
+        CommandRequest, CreditsStatus, CreditsUpdate, Difficulty, GameMode, MessageType,
         MobEffectAction, MobEffectKind, MobEffectUpdate, NetworkChunkPublisherUpdate,
         PaintingDirection, PlaySound, RequestAbility, SetCommandsEnabled, SetDifficulty,
         SetPlayerGameMode, SetTime, SetTitle, ShowProfile, SpawnExperienceOrb, TextMessage,
         TitleAction, ToastRequest, Transfer,
     },
     session::Session,
-    Decodable,
 };
 
 impl Session {

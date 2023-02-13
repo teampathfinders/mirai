@@ -5,7 +5,7 @@ use spki::SubjectPublicKeyInfo;
 
 use crate::crypto::{parse_identity_data, parse_user_data, IdentityData, UserData};
 use crate::network::packets::GamePacket;
-use crate::network::traits::Decodable;
+use common::Decodable;
 use common::ReadExtensions;
 use common::{bail, vassert};
 use common::{VError, VResult};

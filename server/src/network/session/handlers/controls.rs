@@ -1,10 +1,9 @@
 use bytes::BytesMut;
-use common::VResult;
+use common::{Decodable, VResult};
 
 use crate::network::{
     packets::{Interact, InteractAction, MovePlayer},
     session::Session,
-    Decodable,
 };
 
 impl Session {

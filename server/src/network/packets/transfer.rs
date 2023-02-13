@@ -3,7 +3,7 @@ use std::net::SocketAddr;
 use bytes::{BufMut, BytesMut};
 use common::{VResult, WriteExtensions};
 
-use crate::network::Encodable;
+use common::Encodable;
 
 use super::GamePacket;
 

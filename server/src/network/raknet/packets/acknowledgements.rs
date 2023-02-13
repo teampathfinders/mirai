@@ -2,9 +2,9 @@ use std::ops::Range;
 
 use bytes::{Buf, BufMut, BytesMut};
 
-use crate::network::traits::{Decodable, Encodable};
 use common::vassert;
 use common::VResult;
+use common::{Decodable, Encodable};
 use common::{ReadExtensions, WriteExtensions};
 
 /// Record containing IDs of confirmed packets.

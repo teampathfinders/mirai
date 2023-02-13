@@ -1,8 +1,8 @@
 use bytes::{Buf, BytesMut};
 
 use crate::network::packets::GamePacket;
-use crate::network::Decodable;
 use common::bail;
+use common::Decodable;
 use common::ReadExtensions;
 use common::{VError, VResult};
 

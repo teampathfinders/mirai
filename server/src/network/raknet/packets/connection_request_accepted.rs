@@ -4,7 +4,7 @@ use std::time::{SystemTime, UNIX_EPOCH};
 use bytes::{BufMut, BytesMut};
 
 use crate::instance::IPV4_LOCAL_ADDR;
-use crate::network::traits::Encodable;
+use common::Encodable;
 use common::VResult;
 use common::{WriteExtensions, EMPTY_IPV4_ADDRESS, IPV4_MEM_SIZE, IPV6_MEM_SIZE};
 

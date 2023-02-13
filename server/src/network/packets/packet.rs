@@ -2,8 +2,8 @@ use bytes::{Buf, BufMut, BytesMut};
 
 use crate::network::packets::GamePacket;
 use crate::network::raknet::Header;
-use crate::network::traits::Encodable;
 use common::vassert;
+use common::Encodable;
 use common::VResult;
 use common::{ReadExtensions, WriteExtensions};
 
