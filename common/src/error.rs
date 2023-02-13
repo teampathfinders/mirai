@@ -64,6 +64,8 @@ pub enum VErrorKind {
     AlreadyInUse,
     /// Client sent invalid identity keys during login.
     InvalidIdentity,
+    /// An operation on the database has failed.
+    DatabaseFailure,
     /// An unknown error
     Other,
 }
@@ -166,5 +168,11 @@ impl From<serde_json::Error> for VError {
 impl From<std::num::ParseIntError> for VError {
     fn from(value: std::num::ParseIntError) -> Self {
         Self::new(VErrorKind::BadPacket, value.to_string())
+    }
+}
+
+impl From<std::ffi::NulError> for VError {
+    fn from(value: std::ffi::NulError) -> Self {
+        Self::new(VErrorKind::DatabaseFailure, value.to_string())
     }
 }

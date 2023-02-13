@@ -34,7 +34,7 @@ struct Database {
     }
 };
 
-LevelResult leveldb_open_database(const char* path) {
+LevelResult level_open_database(const char* path) {
     LevelResult result{};
 
     try {
@@ -85,19 +85,19 @@ LevelResult leveldb_open_database(const char* path) {
     return result;
 }
 
-void leveldb_close_database(void* database_ptr) {
+void level_close_database(void* database_ptr) {
     auto database = reinterpret_cast<Database*>(database_ptr);
     delete database;
 }
 
-LevelResult leveldb_load_key(void* database_ptr, const char* key) {
+LevelResult level_load_key(void* database_ptr, const char* key, int key_size) {
     LevelResult result{};
 
     try {
         auto database = reinterpret_cast<Database*>(database_ptr);
         std::string value;
 
-        auto status = database->database->Get(database->read_options, key, &value);
+        auto status = database->database->Get(database->read_options, leveldb::Slice(key, key_size), &value);
         if(!status.ok()) {
             std::string cpp_src = status.ToString();
             const char* src = cpp_src.c_str();
@@ -133,6 +133,6 @@ LevelResult leveldb_load_key(void* database_ptr, const char* key) {
     return result;
 }
 
-void leveldb_deallocate_array(char* array) {
+void level_deallocate_array(char* array) {
     delete[] array;
 }
