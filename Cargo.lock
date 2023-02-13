@@ -831,7 +831,6 @@ version = "0.1.0"
 dependencies = [
  "bytes",
  "common",
- "thiserror",
  "tracing",
 ]
 

@@ -10,15 +10,17 @@ use crate::config::SERVER_CONFIG;
 use crate::crypto::Encryptor;
 use crate::network::packets::GameMode::Creative;
 use crate::network::packets::{
-    AvailableCommands, BiomeDefinitionList, BroadcastIntent, ChatRestrictionLevel,
-    ChunkRadiusReply, ChunkRadiusRequest, ClientCacheStatus, ClientToServerHandshake, Command,
-    CommandEnum, CommandOverload, CommandParameter, CommandParameterType, CommandPermissionLevel,
-    CreativeContent, Difficulty, Disconnect, GameMode, ItemEntry, Login, NetworkSettings,
-    PermissionLevel, PlayStatus, PlayerMovementSettings, PlayerMovementType,
-    RequestNetworkSettings, ResourcePackClientResponse, ResourcePackStack, ResourcePacksInfo,
-    ServerToClientHandshake, SetLocalPlayerAsInitialized, SpawnBiomeType, StartGame, Status,
-    ViolationWarning, WorldGenerator, DISCONNECTED_LOGIN_FAILED, DISCONNECTED_NOT_AUTHENTICATED,
-    NETWORK_VERSION,
+    AvailableCommands, BiomeDefinitionList, BroadcastIntent,
+    ChatRestrictionLevel, ChunkRadiusReply, ChunkRadiusRequest,
+    ClientCacheStatus, ClientToServerHandshake, Command, CommandEnum,
+    CommandOverload, CommandParameter, CommandParameterType,
+    CommandPermissionLevel, CreativeContent, Difficulty, Disconnect, GameMode,
+    ItemEntry, Login, NetworkSettings, PermissionLevel, PlayStatus,
+    PlayerMovementSettings, PlayerMovementType, RequestNetworkSettings,
+    ResourcePackClientResponse, ResourcePackStack, ResourcePacksInfo,
+    ServerToClientHandshake, SetLocalPlayerAsInitialized, SpawnBiomeType,
+    StartGame, Status, ViolationWarning, WorldGenerator,
+    DISCONNECTED_LOGIN_FAILED, DISCONNECTED_NOT_AUTHENTICATED, NETWORK_VERSION,
 };
 use crate::network::raknet::Reliability;
 use crate::network::raknet::{Frame, FrameBatch};
@@ -28,14 +30,18 @@ use common::{bail, BlockPosition, Decodable, VResult, Vector2f, Vector3f};
 
 impl Session {
     /// Handles a [`ClientCacheStatus`] packet.
-    pub fn handle_client_cache_status(&self, mut packet: BytesMut) -> VResult<()> {
+    pub fn handle_client_cache_status(
+        &self, mut packet: BytesMut,
+    ) -> VResult<()> {
         let request = ClientCacheStatus::decode(packet)?;
         // Unused
 
         Ok(())
     }
 
-    pub fn handle_violation_warning(&self, mut packet: BytesMut) -> VResult<()> {
+    pub fn handle_violation_warning(
+        &self, mut packet: BytesMut,
+    ) -> VResult<()> {
         let request = ViolationWarning::decode(packet)?;
         tracing::error!("Received violation warning: {request:?}");
 
@@ -43,14 +49,18 @@ impl Session {
         Ok(())
     }
 
-    pub fn handle_local_player_initialized(&self, mut packet: BytesMut) -> VResult<()> {
+    pub fn handle_local_player_initialized(
+        &self, mut packet: BytesMut,
+    ) -> VResult<()> {
         let request = SetLocalPlayerAsInitialized::decode(packet)?;
         // Unused
 
         Ok(())
     }
 
-    pub fn handle_chunk_radius_request(&self, mut packet: BytesMut) -> VResult<()> {
+    pub fn handle_chunk_radius_request(
+        &self, mut packet: BytesMut,
+    ) -> VResult<()> {
         let request = ChunkRadiusRequest::decode(packet)?;
         let reply = ChunkRadiusReply {
             allowed_radius: SERVER_CONFIG.read().allowed_render_distance,
@@ -60,7 +70,9 @@ impl Session {
         Ok(())
     }
 
-    pub fn handle_resource_pack_client_response(&self, mut packet: BytesMut) -> VResult<()> {
+    pub fn handle_resource_pack_client_response(
+        &self, mut packet: BytesMut,
+    ) -> VResult<()> {
         let request = ResourcePackClientResponse::decode(packet)?;
 
         // TODO: Implement resource packs.
@@ -138,7 +150,9 @@ impl Session {
         };
         self.send_packet(start_game)?;
 
-        let creative_content = CreativeContent { items: vec![] };
+        let creative_content = CreativeContent {
+            items: vec![],
+        };
         self.send_packet(creative_content)?;
 
         let biome_definition_list = BiomeDefinitionList;
@@ -163,7 +177,9 @@ impl Session {
         Ok(())
     }
 
-    pub fn handle_client_to_server_handshake(&self, mut packet: BytesMut) -> VResult<()> {
+    pub fn handle_client_to_server_handshake(
+        &self, mut packet: BytesMut,
+    ) -> VResult<()> {
         ClientToServerHandshake::decode(packet)?;
 
         let response = PlayStatus {
@@ -204,7 +220,10 @@ impl Session {
                 return Err(e);
             }
         };
-        tracing::info!("{} has joined the server", request.identity.display_name);
+        tracing::info!(
+            "{} has joined the server",
+            request.identity.display_name
+        );
 
         let (encryptor, jwt) = Encryptor::new(&request.identity.public_key)?;
 
@@ -214,14 +233,18 @@ impl Session {
         // Flush packets before enabling encryption
         self.flush().await?;
 
-        self.send_packet(ServerToClientHandshake { jwt: jwt.as_str() })?;
+        self.send_packet(ServerToClientHandshake {
+            jwt: jwt.as_str(),
+        })?;
         self.encryptor.set(encryptor)?;
 
         Ok(())
     }
 
     /// Handles a [`RequestNetworkSettings`] packet.
-    pub fn handle_request_network_settings(&self, mut packet: BytesMut) -> VResult<()> {
+    pub fn handle_request_network_settings(
+        &self, mut packet: BytesMut,
+    ) -> VResult<()> {
         let request = RequestNetworkSettings::decode(packet)?;
         if request.protocol_version != NETWORK_VERSION {
             if request.protocol_version > NETWORK_VERSION {

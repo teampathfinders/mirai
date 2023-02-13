@@ -30,7 +30,9 @@ impl Session {
     }
 
     /// Handles a [`NewIncomingConnection`] packet.
-    pub fn handle_new_incoming_connection(&self, task: BytesMut) -> VResult<()> {
+    pub fn handle_new_incoming_connection(
+        &self, task: BytesMut,
+    ) -> VResult<()> {
         let request = NewIncomingConnection::decode(task)?;
         Ok(())
     }

@@ -92,15 +92,16 @@ pub struct UserTokenPayload {
 fn verify_first_token(token: &str) -> VResult<String> {
     // Decode JWT header to get X5U.
     let header = jsonwebtoken::decode_header(token)?;
-    let base64 = header
-        .x5u
-        .ok_or_else(|| error!(BadPacket, "Missing X.509 certificate URL (x5u)"))?;
+    let base64 = header.x5u.ok_or_else(|| {
+        error!(BadPacket, "Missing X.509 certificate URL (x5u)")
+    })?;
     // .context("Failed to extract client public key from first token in JWT chain")?;
 
     let bytes = BASE64_ENGINE.decode(base64)?;
 
     // Public key that can be used to verify the token.
-    let public_key = match spki::SubjectPublicKeyInfo::try_from(bytes.as_ref()) {
+    let public_key = match spki::SubjectPublicKeyInfo::try_from(bytes.as_ref())
+    {
         Ok(p) => p,
         Err(e) => bail!(InvalidIdentity, "Invalid client public key: {e}"),
     };
@@ -110,7 +111,11 @@ fn verify_first_token(token: &str) -> VResult<String> {
     validation.validate_exp = true;
     validation.validate_nbf = true;
 
-    let payload = jsonwebtoken::decode::<KeyTokenPayload>(token, &decoding_key, &validation)?;
+    let payload = jsonwebtoken::decode::<KeyTokenPayload>(
+        token,
+        &decoding_key,
+        &validation,
+    )?;
     Ok(payload.claims.public_key)
 }
 
@@ -119,7 +124,8 @@ fn verify_first_token(token: &str) -> VResult<String> {
 /// This token contains another identityPublicKey which is the public key for the third token.
 fn verify_second_token(token: &str, key: &str) -> VResult<String> {
     let bytes = BASE64_ENGINE.decode(key)?;
-    let public_key = match spki::SubjectPublicKeyInfo::try_from(bytes.as_ref()) {
+    let public_key = match spki::SubjectPublicKeyInfo::try_from(bytes.as_ref())
+    {
         Ok(p) => p,
         Err(e) => bail!(InvalidIdentity, "Invalid client public key: {e}"),
     };
@@ -130,7 +136,11 @@ fn verify_second_token(token: &str, key: &str) -> VResult<String> {
     validation.validate_nbf = true;
     validation.validate_exp = true;
 
-    let payload = jsonwebtoken::decode::<KeyTokenPayload>(token, &decoding_key, &validation)?;
+    let payload = jsonwebtoken::decode::<KeyTokenPayload>(
+        token,
+        &decoding_key,
+        &validation,
+    )?;
     // .context(
     //     "Failed to verify second token. Either it has been tampered with, or it is invalid",
     // )?;
@@ -144,7 +154,8 @@ fn verify_second_token(token: &str, key: &str) -> VResult<String> {
 /// Just like the second one, this token can be verified using the identityPublicKey from the last token.
 fn verify_third_token(token: &str, key: &str) -> VResult<IdentityTokenPayload> {
     let bytes = BASE64_ENGINE.decode(key)?;
-    let public_key = match spki::SubjectPublicKeyInfo::try_from(bytes.as_ref()) {
+    let public_key = match spki::SubjectPublicKeyInfo::try_from(bytes.as_ref())
+    {
         Ok(p) => p,
         Err(e) => bail!(InvalidIdentity, "Invalid client public key: {e}"),
     };
@@ -155,7 +166,11 @@ fn verify_third_token(token: &str, key: &str) -> VResult<IdentityTokenPayload> {
     validation.validate_nbf = true;
     validation.validate_exp = true;
 
-    let payload = jsonwebtoken::decode::<IdentityTokenPayload>(token, &decoding_key, &validation)?;
+    let payload = jsonwebtoken::decode::<IdentityTokenPayload>(
+        token,
+        &decoding_key,
+        &validation,
+    )?;
     // .context(
     //     "Failed to verify third token. Either it has been tampered with, or it is invalid",
     // )?;
@@ -165,7 +180,8 @@ fn verify_third_token(token: &str, key: &str) -> VResult<IdentityTokenPayload> {
 /// Verifies and decodes the user data token.
 fn verify_fourth_token(token: &str, key: &str) -> VResult<UserTokenPayload> {
     let bytes = BASE64_ENGINE.decode(key)?;
-    let public_key = match spki::SubjectPublicKeyInfo::try_from(bytes.as_ref()) {
+    let public_key = match spki::SubjectPublicKeyInfo::try_from(bytes.as_ref())
+    {
         Ok(p) => p,
         Err(e) => bail!(InvalidIdentity, "Invalid client public key: {e}"),
     };
@@ -176,7 +192,11 @@ fn verify_fourth_token(token: &str, key: &str) -> VResult<UserTokenPayload> {
     // No special header data included in this token, don't verify anything.
     validation.required_spec_claims.clear();
 
-    let payload = jsonwebtoken::decode::<UserTokenPayload>(token, &decoding_key, &validation)?;
+    let payload = jsonwebtoken::decode::<UserTokenPayload>(
+        token,
+        &decoding_key,
+        &validation,
+    )?;
     // .context(
     //     "Failed to verify user data token. Either it has been tampered with, or it is invalid",
     // )?;
@@ -186,7 +206,9 @@ fn verify_fourth_token(token: &str, key: &str) -> VResult<UserTokenPayload> {
 /// Parses the identification data contained in the first token chain.
 ///
 /// This contains such as the XUID, display name and public key.
-pub fn parse_identity_data(buffer: &mut BytesMut) -> VResult<IdentityTokenPayload> {
+pub fn parse_identity_data(
+    buffer: &mut BytesMut,
+) -> VResult<IdentityTokenPayload> {
     let token_length = buffer.get_u32_le();
     let position = buffer.len() - buffer.remaining();
     let token = &buffer.as_ref()[position..(position + token_length as usize)];
@@ -208,7 +230,10 @@ pub fn parse_identity_data(buffer: &mut BytesMut) -> VResult<IdentityTokenPayloa
             // token was signed by Mojang.
             let mut key = verify_first_token(&tokens.chain[0])?;
             if !key.eq(MOJANG_PUBLIC_KEY) {
-                bail!(InvalidIdentity, "Identity token was not signed by Mojang");
+                bail!(
+                    InvalidIdentity,
+                    "Identity token was not signed by Mojang"
+                );
             }
 
             key = verify_second_token(&tokens.chain[1], &key)?;
@@ -226,7 +251,9 @@ pub fn parse_identity_data(buffer: &mut BytesMut) -> VResult<IdentityTokenPayloa
 
 /// Parses the user data token from the login packet.
 /// This token contains the user's operating system, language, skin, etc.
-pub fn parse_user_data(buffer: &mut BytesMut, public_key: &str) -> VResult<UserTokenPayload> {
+pub fn parse_user_data(
+    buffer: &mut BytesMut, public_key: &str,
+) -> VResult<UserTokenPayload> {
     let token_length = buffer.get_u32_le();
     let position = buffer.len() - buffer.remaining();
     let token = &buffer.as_ref()[position..(position + token_length as usize)];

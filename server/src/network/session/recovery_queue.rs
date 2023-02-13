@@ -34,7 +34,9 @@ impl RecoveryQueue {
         }
     }
 
-    pub fn recover(&self, records: &Vec<AcknowledgementRecord>) -> Vec<FrameBatch> {
+    pub fn recover(
+        &self, records: &Vec<AcknowledgementRecord>,
+    ) -> Vec<FrameBatch> {
         let mut recovered = Vec::new();
         for record in records {
             match record {

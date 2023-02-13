@@ -45,7 +45,9 @@ impl Value {
             Self::Double(v) => stream.put_f64_le(*v),
             Self::String(v) => Self::encode_tag_name_net(stream, v),
             Self::List(v) => {
-                stream.put_u8(v.get(0).map(|t| t.as_numeric_id()).unwrap_or(TAG_BYTE));
+                stream.put_u8(
+                    v.get(0).map(|t| t.as_numeric_id()).unwrap_or(TAG_BYTE),
+                );
                 for t in v {
                     Self::encode_tag_value_net(stream, t);
                 }

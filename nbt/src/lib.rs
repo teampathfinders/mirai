@@ -1,7 +1,6 @@
 #![warn(clippy::nursery)]
 
 use std::collections::HashMap;
-use thiserror::Error;
 
 #[cfg(test)]
 mod test;
@@ -19,12 +18,6 @@ pub use read_le::*;
 pub use write_be::*;
 pub use write_le::*;
 pub use write_net::*;
-
-#[derive(Error, Debug)]
-pub enum Error {
-    #[error("Invalid TAG type: {0}")]
-    InvalidTag(u8),
-}
 
 pub const TAG_END: u8 = 0x00;
 pub const TAG_BYTE: u8 = 0x01;

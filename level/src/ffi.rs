@@ -18,8 +18,9 @@ extern "C" {
     /// This also frees the pointers, it must no longer be used.
     pub fn level_close_database(database: *mut c_void);
     /// Loads a key from the database.
-    pub fn level_get_key(database: *mut c_void, key: *const c_char, key_size: c_int)
-        -> LevelResult;
+    pub fn level_get_key(
+        database: *mut c_void, key: *const c_char, key_size: c_int,
+    ) -> LevelResult;
     /// Deallocates a string previously allocated by another function.
     pub fn level_deallocate_array(array: *mut c_char);
 }

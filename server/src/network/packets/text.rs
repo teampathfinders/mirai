@@ -79,7 +79,9 @@ impl Encodable for TextMessage {
         buffer.put_bool(self.needs_translation);
 
         match self.message_type {
-            MessageType::Chat | MessageType::Whisper | MessageType::Announcement => {
+            MessageType::Chat
+            | MessageType::Whisper
+            | MessageType::Announcement => {
                 buffer.put_string(&self.source_name);
                 buffer.put_string(&self.message);
             }
@@ -91,7 +93,9 @@ impl Encodable for TextMessage {
             | MessageType::ObjectAnnouncement => {
                 buffer.put_string(&self.message);
             }
-            MessageType::Translation | MessageType::Popup | MessageType::JukeboxPopup => {
+            MessageType::Translation
+            | MessageType::Popup
+            | MessageType::JukeboxPopup => {
                 buffer.put_string(&self.message);
 
                 buffer.put_var_u32(self.parameters.len() as u32);
@@ -117,7 +121,9 @@ impl Decodable for TextMessage {
         let mut parameters = Vec::new();
 
         match message_type {
-            MessageType::Chat | MessageType::Whisper | MessageType::Announcement => {
+            MessageType::Chat
+            | MessageType::Whisper
+            | MessageType::Announcement => {
                 source_name = buffer.get_string()?;
                 message = buffer.get_string()?;
             }
@@ -129,7 +135,9 @@ impl Decodable for TextMessage {
             | MessageType::ObjectAnnouncement => {
                 message = buffer.get_string()?;
             }
-            MessageType::Translation | MessageType::Popup | MessageType::JukeboxPopup => {
+            MessageType::Translation
+            | MessageType::Popup
+            | MessageType::JukeboxPopup => {
                 message = buffer.get_string()?;
 
                 let count = buffer.get_var_u32()?;

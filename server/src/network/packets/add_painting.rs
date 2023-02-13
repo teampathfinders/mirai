@@ -33,7 +33,8 @@ impl GamePacket for AddPainting {
 
 impl Encodable for AddPainting {
     fn encode(&self) -> VResult<BytesMut> {
-        let mut buffer = BytesMut::with_capacity(8 + 3 * 4 + 1 + 2 + self.name.len());
+        let mut buffer =
+            BytesMut::with_capacity(8 + 3 * 4 + 1 + 2 + self.name.len());
 
         buffer.put_var_i64(self.runtime_id as i64); // Unique entity ID.
         buffer.put_var_u64(self.runtime_id);

@@ -32,6 +32,9 @@ impl Decodable for OfflinePing {
         buffer.advance(16); // Skip offline message data
         let client_guid = buffer.get_i64();
 
-        Ok(Self { time, client_guid })
+        Ok(Self {
+            time,
+            client_guid,
+        })
     }
 }

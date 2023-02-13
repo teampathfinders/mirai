@@ -16,7 +16,9 @@ pub enum AcknowledgementRecord {
     Range(Range<u32>),
 }
 
-fn encode_records(mut buffer: BytesMut, records: &[AcknowledgementRecord]) -> BytesMut {
+fn encode_records(
+    mut buffer: BytesMut, records: &[AcknowledgementRecord],
+) -> BytesMut {
     buffer.put_i16(records.len() as i16);
     for record in records {
         match record {
@@ -77,7 +79,9 @@ impl Decodable for Acknowledgement {
     fn decode(mut buffer: BytesMut) -> VResult<Self> {
         vassert!(buffer.get_u8() == Self::ID);
         let records = decode_records(buffer);
-        Ok(Self { records })
+        Ok(Self {
+            records,
+        })
     }
 }
 
@@ -105,6 +109,8 @@ impl Decodable for NegativeAcknowledgement {
     fn decode(mut buffer: BytesMut) -> VResult<Self> {
         vassert!(buffer.get_u8() == Self::ID);
         let records = decode_records(buffer);
-        Ok(Self { records })
+        Ok(Self {
+            records,
+        })
     }
 }

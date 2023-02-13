@@ -5,7 +5,8 @@ use std::collections::HashMap;
 
 const BIGTEST_NBT: &[u8] = include_bytes!("../test/bigtest.nbt");
 const HELLO_WORLD_NBT: &[u8] = include_bytes!("../test/hello_world.nbt");
-const PLAYER_NAN_VALUE_NBT: &[u8] = include_bytes!("../test/player_nan_value.nbt");
+const PLAYER_NAN_VALUE_NBT: &[u8] =
+    include_bytes!("../test/player_nan_value.nbt");
 
 #[test]
 fn hello_world_write_nbt() {

@@ -1,6 +1,8 @@
 use common::{Decodable, Encodable};
 
-use crate::{database::Database, DatabaseKey, DatabaseTag, Dimension, SubChunk};
+use crate::{
+    database::Database, DatabaseKey, DatabaseTag, Dimension, SubChunk,
+};
 
 #[test]
 fn database_open() {

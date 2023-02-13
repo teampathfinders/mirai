@@ -26,7 +26,8 @@ impl OfflinePong {
 
 impl Encodable for OfflinePong {
     fn encode(&self) -> VResult<BytesMut> {
-        let mut buffer = BytesMut::with_capacity(1 + 8 + 8 + 16 + 2 + self.metadata.len());
+        let mut buffer =
+            BytesMut::with_capacity(1 + 8 + 8 + 16 + 2 + self.metadata.len());
 
         buffer.put_u8(Self::ID);
         buffer.put_i64(self.time);

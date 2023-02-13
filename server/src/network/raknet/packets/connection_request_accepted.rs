@@ -6,7 +6,9 @@ use bytes::{BufMut, BytesMut};
 use crate::instance::IPV4_LOCAL_ADDR;
 use common::Encodable;
 use common::VResult;
-use common::{WriteExtensions, EMPTY_IPV4_ADDRESS, IPV4_MEM_SIZE, IPV6_MEM_SIZE};
+use common::{
+    WriteExtensions, EMPTY_IPV4_ADDRESS, IPV4_MEM_SIZE, IPV6_MEM_SIZE,
+};
 
 /// Sent in response to [`ConnectionRequest`](super::connection_request::ConnectionRequest).
 #[derive(Debug)]
@@ -24,8 +26,9 @@ impl ConnectionRequestAccepted {
 
 impl Encodable for ConnectionRequestAccepted {
     fn encode(&self) -> VResult<BytesMut> {
-        let mut buffer =
-            BytesMut::with_capacity(1 + IPV6_MEM_SIZE + 2 + 10 * IPV4_MEM_SIZE + 8 + 8);
+        let mut buffer = BytesMut::with_capacity(
+            1 + IPV6_MEM_SIZE + 2 + 10 * IPV4_MEM_SIZE + 8 + 8,
+        );
 
         buffer.put_u8(Self::ID);
         buffer.put_addr(self.client_address);

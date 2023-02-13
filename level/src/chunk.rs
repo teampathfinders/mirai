@@ -49,7 +49,9 @@ impl StorageRecord {
             println!("{properties:?}");
         }
 
-        Ok(Self { indices })
+        Ok(Self {
+            indices,
+        })
     }
 }
 
@@ -76,7 +78,8 @@ impl Decodable for SubChunk {
                     buffer.advance(1); // Skip chunk index
                 }
 
-                let mut storage_records = Vec::with_capacity(storage_count as usize);
+                let mut storage_records =
+                    Vec::with_capacity(storage_count as usize);
                 for _ in 0..storage_count {
                     storage_records.push(StorageRecord::decode(&mut buffer)?);
                 }

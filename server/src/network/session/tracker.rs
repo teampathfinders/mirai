@@ -42,10 +42,7 @@ impl SessionTracker {
 
     /// Creates a new session and adds it to the tracker.
     pub fn add_session(
-        &self,
-        ipv4_socket: Arc<UdpSocket>,
-        address: SocketAddr,
-        mtu: u16,
+        &self, ipv4_socket: Arc<UdpSocket>, address: SocketAddr, mtu: u16,
         client_guid: u64,
     ) {
         let session = Session::new(ipv4_socket, address, mtu, client_guid);
@@ -88,7 +85,9 @@ impl SessionTracker {
         SERVER_CONFIG.read().max_players
     }
 
-    async fn garbage_collector(session_list: Arc<DashMap<SocketAddr, Arc<Session>>>) -> ! {
+    async fn garbage_collector(
+        session_list: Arc<DashMap<SocketAddr, Arc<Session>>>,
+    ) -> ! {
         let mut interval = tokio::time::interval(GARBAGE_COLLECT_INTERVAL);
         loop {
             session_list.retain(|_, session| -> bool { session.is_active() });

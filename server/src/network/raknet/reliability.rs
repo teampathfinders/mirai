@@ -38,7 +38,10 @@ impl TryFrom<u8> for Reliability {
             3 => Self::ReliableOrdered,
             4 => Self::ReliableSequenced,
             _ => {
-                bail!(BadPacket, "Invalid reliability ID {value}, expected 0-4");
+                bail!(
+                    BadPacket,
+                    "Invalid reliability ID {value}, expected 0-4"
+                );
             }
         })
     }
@@ -54,7 +57,9 @@ impl Reliability {
     pub const fn is_ordered(self) -> bool {
         matches!(
             self,
-            Self::ReliableOrdered | Self::ReliableSequenced | Self::UnreliableSequenced
+            Self::ReliableOrdered
+                | Self::ReliableSequenced
+                | Self::UnreliableSequenced
         )
     }
 

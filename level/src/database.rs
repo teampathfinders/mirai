@@ -42,8 +42,12 @@ impl Database {
         };
 
         if result.is_success == 1 {
-            let data =
-                unsafe { std::slice::from_raw_parts(result.data as *mut u8, result.size as usize) };
+            let data = unsafe {
+                std::slice::from_raw_parts(
+                    result.data as *mut u8,
+                    result.size as usize,
+                )
+            };
 
             let buffer = BytesMut::from(data);
 

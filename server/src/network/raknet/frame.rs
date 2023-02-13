@@ -174,7 +174,9 @@ impl Frame {
         body.resize(length as usize, 0u8);
 
         let position = buffer.len() - buffer.remaining();
-        body.copy_from_slice(&buffer.as_ref()[position..(position + length as usize)]);
+        body.copy_from_slice(
+            &buffer.as_ref()[position..(position + length as usize)],
+        );
         buffer.advance(length as usize);
 
         let frame = Self {

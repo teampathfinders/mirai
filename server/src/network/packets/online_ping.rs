@@ -23,6 +23,8 @@ impl Decodable for OnlinePing {
 
         let time = buffer.get_i64();
 
-        Ok(Self { time })
+        Ok(Self {
+            time,
+        })
     }
 }

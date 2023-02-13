@@ -54,6 +54,8 @@ impl Encodable for SetDifficulty {
 impl Decodable for SetDifficulty {
     fn decode(mut buffer: BytesMut) -> VResult<Self> {
         let difficulty = Difficulty::try_from(buffer.get_var_i32()?)?;
-        Ok(Self { difficulty })
+        Ok(Self {
+            difficulty,
+        })
     }
 }

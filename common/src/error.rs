@@ -119,11 +119,15 @@ impl<T> From<tokio::sync::SetError<T>> for VError {
 impl From<std::io::Error> for VError {
     fn from(value: std::io::Error) -> Self {
         match value.kind() {
-            std::io::ErrorKind::InvalidData => Self::new(VErrorKind::BadPacket, value.to_string()),
+            std::io::ErrorKind::InvalidData => {
+                Self::new(VErrorKind::BadPacket, value.to_string())
+            }
             std::io::ErrorKind::AlreadyExists => {
                 Self::new(VErrorKind::AlreadyInitialized, value.to_string())
             }
-            std::io::ErrorKind::AddrInUse => Self::new(VErrorKind::AlreadyInUse, value.to_string()),
+            std::io::ErrorKind::AddrInUse => {
+                Self::new(VErrorKind::AlreadyInUse, value.to_string())
+            }
             std::io::ErrorKind::NotConnected => {
                 Self::new(VErrorKind::NotConnected, value.to_string())
             }

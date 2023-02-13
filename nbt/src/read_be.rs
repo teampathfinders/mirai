@@ -1,6 +1,7 @@
 use crate::{
-    Error, Tag, Value, TAG_BYTE, TAG_BYTE_ARRAY, TAG_COMPOUND, TAG_DOUBLE, TAG_END, TAG_FLOAT,
-    TAG_INT, TAG_INT_ARRAY, TAG_LIST, TAG_LONG, TAG_LONG_ARRAY, TAG_SHORT, TAG_STRING,
+    Tag, Value, TAG_BYTE, TAG_BYTE_ARRAY, TAG_COMPOUND, TAG_DOUBLE, TAG_END,
+    TAG_FLOAT, TAG_INT, TAG_INT_ARRAY, TAG_LIST, TAG_LONG, TAG_LONG_ARRAY,
+    TAG_SHORT, TAG_STRING,
 };
 use bytes::{Buf, BytesMut};
 use common::{bail, VResult};
@@ -9,7 +10,10 @@ use std::collections::HashMap;
 pub fn read_be(stream: &mut BytesMut) -> VResult<Tag> {
     let (name, value) = Value::decode_tag_be(stream)?;
 
-    Ok(Tag { name, value })
+    Ok(Tag {
+        name,
+        value,
+    })
 }
 
 impl Value {
@@ -29,15 +33,19 @@ impl Value {
         let length = stream.get_u16();
         let cursor = stream.len() - stream.remaining();
 
-        let name =
-            String::from_utf8_lossy(&stream.as_ref()[cursor..cursor + length as usize]).to_string();
+        let name = String::from_utf8_lossy(
+            &stream.as_ref()[cursor..cursor + length as usize],
+        )
+        .to_string();
 
         stream.advance(length as usize);
 
         name
     }
 
-    fn decode_tag_value_be(stream: &mut BytesMut, tag_type: u8) -> VResult<Self> {
+    fn decode_tag_value_be(
+        stream: &mut BytesMut, tag_type: u8,
+    ) -> VResult<Self> {
         Ok(match tag_type {
             TAG_END => Self::End,
             TAG_BYTE => {
@@ -68,9 +76,10 @@ impl Value {
                 let length = stream.get_u16();
                 let cursor = stream.len() - stream.remaining();
 
-                let string =
-                    String::from_utf8_lossy(&stream.as_ref()[cursor..cursor + length as usize])
-                        .to_string();
+                let string = String::from_utf8_lossy(
+                    &stream.as_ref()[cursor..cursor + length as usize],
+                )
+                .to_string();
 
                 stream.advance(length as usize);
 

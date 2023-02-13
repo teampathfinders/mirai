@@ -27,7 +27,8 @@ impl OpenConnectionReply2 {
 
 impl Encodable for OpenConnectionReply2 {
     fn encode(&self) -> VResult<BytesMut> {
-        let mut buffer = BytesMut::with_capacity(1 + 16 + 8 + 1 + 16 + 2 + 2 + 1);
+        let mut buffer =
+            BytesMut::with_capacity(1 + 16 + 8 + 1 + 16 + 2 + 2 + 1);
 
         buffer.put_u8(Self::ID);
         buffer.put(OFFLINE_MESSAGE_DATA);

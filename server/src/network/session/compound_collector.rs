@@ -26,11 +26,13 @@ impl CompoundCollector {
     /// and the completed packet will be returned.
     pub fn insert(&self, mut frame: Frame) -> Option<Frame> {
         let is_completed = {
-            let mut entry = self.compounds.entry(frame.compound_id).or_insert_with(|| {
-                let mut vec = Vec::with_capacity(frame.compound_size as usize);
-                vec.resize(frame.compound_size as usize, BytesMut::new());
-                vec
-            });
+            let mut entry =
+                self.compounds.entry(frame.compound_id).or_insert_with(|| {
+                    let mut vec =
+                        Vec::with_capacity(frame.compound_size as usize);
+                    vec.resize(frame.compound_size as usize, BytesMut::new());
+                    vec
+                });
 
             let mut fragments = entry.value_mut();
 

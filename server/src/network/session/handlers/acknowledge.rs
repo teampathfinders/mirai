@@ -1,6 +1,8 @@
 use bytes::BytesMut;
 
-use crate::network::raknet::packets::{Acknowledgement, NegativeAcknowledgement};
+use crate::network::raknet::packets::{
+    Acknowledgement, NegativeAcknowledgement,
+};
 use crate::network::session::session::Session;
 use common::VResult;
 use common::{Decodable, Encodable};
