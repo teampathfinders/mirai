@@ -3,6 +3,7 @@ use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr, SocketAddrV4};
 use bytes::{Buf, BufMut};
 use lazy_static::lazy_static;
 
+use crate::Vector4f;
 use crate::bail;
 use crate::BlockPosition;
 use crate::VResult;
@@ -294,6 +295,15 @@ pub trait WriteExtensions: BufMut + Sized {
         self.put_f32_le(a);
         self.put_f32_le(b);
         self.put_f32_le(c);
+    }
+
+    fn put_vec4f(&mut self, value: &Vector4f) {
+        let [a, b, c, d] = value.components();
+
+        self.put_f32_le(a);
+        self.put_f32_le(b);
+        self.put_f32_le(c);
+        self.put_f32_le(d);
     }
 
     fn put_vec2i(&mut self, value: &Vector2i) {

@@ -48,8 +48,6 @@ pub struct Session {
     /// Whether the client supports the chunk cache.
     pub cache_support: OnceCell<bool>,
 
-
-
     /// Current tick of this session, this is increased by one every time the session
     /// processes packets.
     pub current_tick: AtomicU64,
@@ -89,7 +87,7 @@ pub struct Session {
     /// Keeps track of all unprocessed received packets.
     pub receive_queue: AsyncDeque<BytesMut>,
     /// Queue that stores packets in case they need to be recovered due to packet loss.
-    pub recovery_queue: RecoveryQueue
+    pub recovery_queue: RecoveryQueue,
 }
 
 impl Session {

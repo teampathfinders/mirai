@@ -3,9 +3,11 @@ use common::{Encodable, VResult, WriteExtensions};
 
 use super::GamePacket;
 
+/// Connects the client to a Websocket server.
 #[derive(Debug)]
 pub struct ConnectAutomationClient {
-    pub server_uri: String
+    /// URI of the server.
+    pub server_uri: String,
 }
 
 impl GamePacket for ConnectAutomationClient {

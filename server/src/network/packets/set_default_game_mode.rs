@@ -1,11 +1,13 @@
 use bytes::BytesMut;
-use common::{Decodable, VResult, ReadExtensions, Encodable, WriteExtensions};
+use common::{Decodable, Encodable, ReadExtensions, VResult, WriteExtensions};
 
 use super::{GameMode, GamePacket};
 
+/// Sets the default game mode of the world.
 #[derive(Debug)]
 pub struct SetDefaultGameMode {
-    pub game_mode: GameMode
+    /// Game mode.
+    pub game_mode: GameMode,
 }
 
 impl GamePacket for SetDefaultGameMode {

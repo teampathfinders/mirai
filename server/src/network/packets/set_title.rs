@@ -7,6 +7,7 @@ use common::Encodable;
 
 use super::GamePacket;
 
+/// Title action type.
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum TitleAction {
     Clear,

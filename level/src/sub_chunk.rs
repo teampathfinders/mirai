@@ -1,12 +1,12 @@
-use bytes::{Buf, BytesMut, BufMut};
-use common::{bail, Decodable, VResult, Encodable};
+use bytes::{Buf, BufMut, BytesMut};
+use common::{bail, Decodable, Encodable, VResult};
 
 const CHUNK_SIZE: usize = 4096;
 
 #[derive(Debug)]
 pub struct StorageRecord {
     indices: [u16; CHUNK_SIZE],
-    palette: Vec<nbt::Value>
+    palette: Vec<nbt::Value>,
 }
 
 impl StorageRecord {
@@ -67,7 +67,7 @@ pub struct SubChunk {
     /// Layers of this chunk.
     /// The first layer contains blocks,
     /// the second layer contains waterlog data if it exists.
-    storage_records: Vec<StorageRecord>
+    storage_records: Vec<StorageRecord>,
 }
 
 impl Decodable for SubChunk {
@@ -77,11 +77,7 @@ impl Decodable for SubChunk {
             1 => todo!(),
             8 | 9 => {
                 let storage_count = buffer.get_u8();
-                let index = if version == 9 {
-                    buffer.get_u8()
-                } else {
-                    0
-                };
+                let index = if version == 9 { buffer.get_u8() } else { 0 };
 
                 let mut storage_records =
                     Vec::with_capacity(storage_count as usize);
@@ -114,8 +110,8 @@ impl Encodable for SubChunk {
                 for storage_record in &self.storage_records {
                     storage_record.encode(&mut buffer);
                 }
-            },
-            _ => bail!(InvalidChunk, "Invalid chunk version {}", self.version)
+            }
+            _ => bail!(InvalidChunk, "Invalid chunk version {}", self.version),
         }
 
         Ok(buffer)

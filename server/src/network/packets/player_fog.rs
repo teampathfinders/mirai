@@ -3,10 +3,11 @@ use common::{Encodable, VResult, WriteExtensions};
 
 use super::GamePacket;
 
+/// Adds a fog to the client's fog stack.
 #[derive(Debug)]
 pub struct PlayerFog {
     /// Lists of fog identifiers
-    pub stack: Vec<String>
+    pub stack: Vec<String>,
 }
 
 impl GamePacket for PlayerFog {

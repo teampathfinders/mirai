@@ -1,7 +1,7 @@
 use std::net::{Ipv4Addr, SocketAddr, SocketAddrV4};
 
 use bytes::BytesMut;
-use common::{BlockPosition, Decodable, VResult, Vector3f, Vector3i};
+use common::{BlockPosition, Decodable, VResult, Vector3f, Vector3i, Vector4f};
 
 use crate::network::{
     packets::{
@@ -9,9 +9,9 @@ use crate::network::{
         ChangeDimension, CommandRequest, CreditsStatus, CreditsUpdate,
         Difficulty, GameMode, MessageType, MobEffectAction, MobEffectKind,
         MobEffectUpdate, NetworkChunkPublisherUpdate, PaintingDirection,
-        PlaySound, RequestAbility, SetCommandsEnabled, SetDifficulty,
-        SetPlayerGameMode, SetTime, SetTitle, ShowProfile, SpawnExperienceOrb,
-        TextMessage, TitleAction, ToastRequest, Transfer, PlayerFog,
+        PlaySound, PlayerFog, RequestAbility, SetCommandsEnabled,
+        SetDifficulty, SetPlayerGameMode, SetTime, SetTitle, ShowProfile,
+        SpawnExperienceOrb, TextMessage, TitleAction, ToastRequest, Transfer, ClientBoundDebugRenderer, DebugRendererAction,
     },
     session::Session,
 };
@@ -21,10 +21,14 @@ impl Session {
         let request = TextMessage::decode(packet)?;
         tracing::info!("{request:?}");
 
-        let fog_stack = PlayerFog {
-            stack: vec!["minecraft:fog_ocean".to_owned()]
+        let renderer = ClientBoundDebugRenderer {
+            action: DebugRendererAction::AddCube,
+            color: Vector4f::from([1.0, 1.0, 1.0, 1.0]),
+            position: Vector3f::from([1.0, 1.0, 1.0]),
+            text: "Hello, World!".to_owned(),
+            duration: 10_000
         };
-        self.send_packet(fog_stack)?;
+        self.send_packet(renderer)?;
 
         Ok(())
     }

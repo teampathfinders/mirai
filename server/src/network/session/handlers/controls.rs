@@ -2,7 +2,10 @@ use bytes::BytesMut;
 use common::{Decodable, VResult, Vector3i};
 
 use crate::network::{
-    packets::{Interact, InteractAction, MovePlayer, CameraShake, CameraShakeAction, CameraShakeType, PlaySound},
+    packets::{
+        CameraShake, CameraShakeAction, CameraShakeType, Interact,
+        InteractAction, MovePlayer, PlaySound,
+    },
     session::Session,
 };
 
@@ -16,7 +19,7 @@ impl Session {
                 action: CameraShakeAction::Add,
                 duration: 0.5,
                 intensity: 0.25,
-                shake_type: CameraShakeType::Rotational
+                shake_type: CameraShakeType::Rotational,
             };
             self.send_packet(reply)?;
 
@@ -24,7 +27,7 @@ impl Session {
                 name: "mob.pig.say".to_owned(),
                 pitch: 1.0,
                 volume: 1.0,
-                position: Vector3i::from([0, 0, 0])
+                position: Vector3i::from([0, 0, 0]),
             };
             self.send_packet(reply2)?;
         }
