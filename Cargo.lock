@@ -200,6 +200,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "cmake"
+version = "0.1.49"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "db34956e100b30725f2eb215f90d4871051239535632f84fea3bc92722c66b7c"
+dependencies = [
+ "cc",
+]
+
+[[package]]
 name = "common"
 version = "0.1.0"
 dependencies = [
@@ -729,6 +738,9 @@ checksum = "e2abad23fbc42b3700f2f279844dc832adb2b2eb069b2df918f455c4e18cc646"
 [[package]]
 name = "level"
 version = "0.1.0"
+dependencies = [
+ "cmake",
+]
 
 [[package]]
 name = "libc"
@@ -846,6 +858,7 @@ dependencies = [
  "flate2",
  "jsonwebtoken",
  "lazy_static",
+ "level",
  "nbt",
  "p384",
  "parking_lot",
@@ -855,7 +868,6 @@ dependencies = [
  "sha2",
  "snap",
  "spki",
- "thiserror",
  "tokio",
  "tokio-util",
  "tracing",
