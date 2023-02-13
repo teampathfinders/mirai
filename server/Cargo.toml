@@ -12,7 +12,7 @@ tokio-console = ["console-subscriber"]
 bytes = "1.4.0"
 console-subscriber = { version = "0.1.8", optional = true }
 tokio = { version = "1.25.0", features = ["net", "rt-multi-thread", "macros", "time", "sync", "signal"] }
-tokio-util = "0.7.4"
+tokio-util = "0.7.7"
 tracing = "0.1.37"
 tracing-subscriber = { version = "0.3.16", features = ["json"] }
 rand = "0.8.5"
