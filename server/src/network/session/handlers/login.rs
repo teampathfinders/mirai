@@ -168,8 +168,8 @@ impl Session {
             commands: vec![Command {
                 name: "credits".to_owned(),
                 description: "Shows the credits screen".to_owned(),
-                permission_level: CommandPermissionLevel::Admin,
-                aliases: vec!["credits".to_owned()],
+                permission_level: CommandPermissionLevel::Normal,
+                aliases: vec![],
                 overloads: vec![],
             }],
         };

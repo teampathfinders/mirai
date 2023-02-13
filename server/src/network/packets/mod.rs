@@ -49,7 +49,9 @@ pub use traits::*;
 pub use transfer::*;
 pub use update_dynamic_enum::*;
 pub use violation_warning::*;
+pub use set_default_game_mode::*;
 
+mod set_default_game_mode;
 mod add_painting;
 mod animate;
 mod available_commands;
