@@ -18,8 +18,6 @@ pub struct ServerConfig {
     pub compression_threshold: u16,
     /// Client throttling settings.
     pub client_throttle: ClientThrottleSettings,
-    /// Enable encryption.
-    pub enable_encryption: bool,
     /// Name of the server.
     /// This is only visible in LAN games.
     pub server_name: &'static str,
@@ -41,7 +39,6 @@ lazy_static! {
             threshold: 0,
             scalar: 0.0
         },
-        enable_encryption: true,
         server_name: "Pathfinders",
         allowed_render_distance: 16
     });

@@ -6,12 +6,13 @@ use common::{BlockPosition, Decodable, VResult, Vector3f, Vector3i, Vector4f};
 use crate::network::{
     packets::{
         AddPainting, Animate, CameraShake, CameraShakeAction, CameraShakeType,
-        ChangeDimension, CommandRequest, CreditsStatus, CreditsUpdate,
-        Difficulty, GameMode, MessageType, MobEffectAction, MobEffectKind,
-        MobEffectUpdate, NetworkChunkPublisherUpdate, PaintingDirection,
-        PlaySound, PlayerFog, RequestAbility, SetCommandsEnabled,
-        SetDifficulty, SetPlayerGameMode, SetTime, SetTitle, ShowProfile,
-        SpawnExperienceOrb, TextMessage, TitleAction, ToastRequest, Transfer, ClientBoundDebugRenderer, DebugRendererAction,
+        ChangeDimension, ClientBoundDebugRenderer, CommandRequest,
+        CreditsStatus, CreditsUpdate, DebugRendererAction, Difficulty,
+        GameMode, MessageType, MobEffectAction, MobEffectKind, MobEffectUpdate,
+        NetworkChunkPublisherUpdate, PaintingDirection, PlaySound, PlayerFog,
+        RequestAbility, SetCommandsEnabled, SetDifficulty, SetPlayerGameMode,
+        SetTime, SetTitle, ShowProfile, SpawnExperienceOrb, TextMessage,
+        TitleAction, ToastRequest, Transfer,
     },
     session::Session,
 };
@@ -26,7 +27,7 @@ impl Session {
             color: Vector4f::from([1.0, 1.0, 1.0, 1.0]),
             position: Vector3f::from([1.0, 1.0, 1.0]),
             text: "Hello, World!".to_owned(),
-            duration: 10_000
+            duration: 10_000,
         };
         self.send_packet(renderer)?;
 

@@ -1,12 +1,12 @@
-use bytes::{BytesMut, BufMut};
-use common::{Vector3f, Vector4f, Encodable, VResult, WriteExtensions};
+use bytes::{BufMut, BytesMut};
+use common::{Encodable, VResult, Vector3f, Vector4f, WriteExtensions};
 
 use super::GamePacket;
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum DebugRendererAction {
     Clear = 1,
-    AddCube
+    AddCube,
 }
 
 #[derive(Debug)]
@@ -21,7 +21,7 @@ pub struct ClientBoundDebugRenderer {
     /// Every component should range from 0-1.
     pub color: Vector4f,
     /// How long the renderer will last in milliseconds.
-    pub duration: i64
+    pub duration: i64,
 }
 
 impl GamePacket for ClientBoundDebugRenderer {

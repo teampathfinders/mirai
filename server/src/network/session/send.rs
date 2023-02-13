@@ -129,7 +129,7 @@ impl Session {
         }
 
         // Send acknowledgements
-        if tick % 20 == 0 {
+        if tick % 4 == 0 {
             self.flush_acknowledgements().await?;
         }
 

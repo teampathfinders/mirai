@@ -8,7 +8,7 @@ use common::Encodable;
 use common::{bail, VError, VResult};
 use common::{BlockPosition, Vector2f, Vector3f, WriteExtensions};
 
-use super::{Difficulty, GameMode, CLIENT_VERSION_STRING};
+use super::{Difficulty, GameMode, GameRuleData, CLIENT_VERSION_STRING};
 
 #[derive(Debug, Copy, Clone)]
 pub enum WorldGenerator {
@@ -22,15 +22,6 @@ pub enum WorldGenerator {
 impl WorldGenerator {
     pub fn encode(&self, buffer: &mut BytesMut) {
         buffer.put_var_i32(*self as i32);
-    }
-}
-
-#[derive(Debug, Clone)]
-pub enum GameRule {}
-
-impl GameRule {
-    fn encode(&self, buffer: &mut BytesMut) {
-        todo!();
     }
 }
 
@@ -180,7 +171,7 @@ pub struct StartGame {
     /// circumstance.
     pub enable_commands: bool,
     pub texture_packs_required: bool,
-    pub gamerules: Vec<GameRule>,
+    pub gamerules: Vec<GameRuleData>,
     pub experiments: Vec<ExperimentData>,
     pub experiments_previously_enabled: bool,
     pub bonus_chest_enabled: bool,
