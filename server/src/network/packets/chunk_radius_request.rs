@@ -1,6 +1,6 @@
 use common::{ReadExtensions, VResult};
 
-use crate::network::Decodable;
+use common::Decodable;
 
 use super::GamePacket;
 

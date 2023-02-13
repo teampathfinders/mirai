@@ -24,11 +24,7 @@ impl Header {
         let sender_subclient = ((value >> 10) & 0x3) as u8;
         let target_subclient = ((value >> 12) & 0x3) as u8;
 
-        Ok(Self {
-            id,
-            sender_subclient,
-            target_subclient,
-        })
+        Ok(Self { id, sender_subclient, target_subclient })
     }
 
     /// Encodes the header.

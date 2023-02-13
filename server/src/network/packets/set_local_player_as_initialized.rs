@@ -1,7 +1,7 @@
 use bytes::BytesMut;
 use common::{ReadExtensions, VResult};
 
-use crate::network::Decodable;
+use common::Decodable;
 
 use super::GamePacket;
 
@@ -16,8 +16,6 @@ impl GamePacket for SetLocalPlayerAsInitialized {
 
 impl Decodable for SetLocalPlayerAsInitialized {
     fn decode(mut buffer: BytesMut) -> VResult<Self> {
-        Ok(Self {
-            runtime_id: buffer.get_var_u64()?,
-        })
+        Ok(Self { runtime_id: buffer.get_var_u64()? })
     }
 }

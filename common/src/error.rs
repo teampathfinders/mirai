@@ -20,12 +20,12 @@ macro_rules! vassert {
 
 #[macro_export]
 macro_rules! bail {
-    ($err_type: ident, $fmt: expr) => {
-        return Err($crate::VError::new($crate::VErrorKind::$err_type, $fmt.to_string()))
+    ($err_type: ident, $fmt: expr, $($args:expr),+) => {
+        return Err($crate::VError::new($crate::VErrorKind::$err_type, format!($fmt, $($args),+)))
     };
 
-    ($err_type: ident, $fmt: expr, $($args:expr),*) => {
-        $crate::bail!($err_type, format!($fmt, $($args),*))
+    ($err_type: ident, $fmt: expr) => {
+        return Err($crate::VError::new($crate::VErrorKind::$err_type, format!($fmt)))
     };
 
     ($err_type: ident) => {
@@ -66,6 +66,10 @@ pub enum VErrorKind {
     InvalidIdentity,
     /// An operation on the database has failed.
     DatabaseFailure,
+    /// An invalid chunk was found.
+    InvalidChunk,
+    /// An invalid NBT structure was encountered.
+    InvalidNbt,
     /// An unknown error
     Other,
 }
@@ -115,11 +119,15 @@ impl<T> From<tokio::sync::SetError<T>> for VError {
 impl From<std::io::Error> for VError {
     fn from(value: std::io::Error) -> Self {
         match value.kind() {
-            std::io::ErrorKind::InvalidData => Self::new(VErrorKind::BadPacket, value.to_string()),
+            std::io::ErrorKind::InvalidData => {
+                Self::new(VErrorKind::BadPacket, value.to_string())
+            }
             std::io::ErrorKind::AlreadyExists => {
                 Self::new(VErrorKind::AlreadyInitialized, value.to_string())
             }
-            std::io::ErrorKind::AddrInUse => Self::new(VErrorKind::AlreadyInUse, value.to_string()),
+            std::io::ErrorKind::AddrInUse => {
+                Self::new(VErrorKind::AlreadyInUse, value.to_string())
+            }
             std::io::ErrorKind::NotConnected => {
                 Self::new(VErrorKind::NotConnected, value.to_string())
             }

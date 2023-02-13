@@ -10,8 +10,8 @@ use crate::network::raknet::Reliability;
 use crate::network::session::send::PacketConfig;
 use crate::network::session::send_queue::SendPriority;
 use crate::network::session::session::Session;
-use crate::network::traits::{Decodable, Encodable};
 use common::VResult;
+use common::{Decodable, Encodable};
 
 impl Session {
     /// Handles a [`ConnectionRequest`] packet.
@@ -30,7 +30,10 @@ impl Session {
     }
 
     /// Handles a [`NewIncomingConnection`] packet.
-    pub fn handle_new_incoming_connection(&self, task: BytesMut) -> VResult<()> {
+    pub fn handle_new_incoming_connection(
+        &self,
+        task: BytesMut,
+    ) -> VResult<()> {
         let request = NewIncomingConnection::decode(task)?;
         Ok(())
     }

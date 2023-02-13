@@ -1,20 +1,10 @@
 use bytes::BytesMut;
 use common::{VResult, Vector3f, WriteExtensions};
 
-use crate::network::Encodable;
+use common::Encodable;
+use level::Dimension;
 
 use super::GamePacket;
-
-/// The Minecraft dimensions.
-#[derive(Debug, Copy, Clone, PartialEq, Eq)]
-pub enum Dimension {
-    /// The overworld dimension.
-    Overworld,
-    /// The nether dimension.
-    Nether,
-    /// The end dimension.
-    End,
-}
 
 /// Used to transfer the client to another dimension.
 #[derive(Debug)]

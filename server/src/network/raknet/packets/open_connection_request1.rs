@@ -1,7 +1,7 @@
 use bytes::{Buf, BytesMut};
 
-use crate::network::traits::Decodable;
 use common::vassert;
+use common::Decodable;
 use common::VResult;
 
 /// Sent by the client when the users joins the server.
@@ -32,9 +32,6 @@ impl Decodable for OpenConnectionRequest1 {
         buffer.advance(16); // Skip magic
         let protocol_version = buffer.get_u8();
 
-        Ok(Self {
-            protocol_version,
-            mtu,
-        })
+        Ok(Self { protocol_version, mtu })
     }
 }

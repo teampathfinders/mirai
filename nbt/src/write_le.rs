@@ -1,17 +1,13 @@
 use crate::{RefTag, Value, TAG_BYTE, TAG_END};
 use bytes::{BufMut, BytesMut};
 
+pub fn encode_le(name: &str, value: &Value, stream: &mut BytesMut) {
+    Value::encode_tag_le(stream, (name, value))
+}
+
 impl RefTag<'_> {
-    /// Encodes an NBT structure, returning the created buffer (little endian).
-    pub fn encode_le(&self) -> Vec<u8> {
-        let mut stream = BytesMut::new();
-        self.encode_with_le(&mut stream);
-
-        stream.to_vec()
-    }
-
     /// Writes the NBT data into the given stream (little endian).
-    pub fn encode_with_le(&self, stream: &mut BytesMut) {
+    pub fn encode_le(&self, stream: &mut BytesMut) {
         Value::encode_tag_le(stream, (self.name, &self.value))
     }
 }
@@ -46,7 +42,9 @@ impl Value {
             Self::Double(v) => stream.put_f64_le(*v),
             Self::String(v) => Self::encode_tag_name_le(stream, v),
             Self::List(v) => {
-                stream.put_u8(v.get(0).map(|t| t.as_numeric_id()).unwrap_or(TAG_BYTE));
+                stream.put_u8(
+                    v.get(0).map(|t| t.as_numeric_id()).unwrap_or(TAG_BYTE),
+                );
                 for t in v {
                     Self::encode_tag_value_le(stream, t);
                 }

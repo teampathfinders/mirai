@@ -1,5 +1,6 @@
-use std::ffi::{c_char, c_void, CStr, CString};
+use std::ffi::{c_char, c_int, c_void, CStr, CString};
 
+use bytes::BytesMut;
 use common::{error, VError, VResult};
 
 use crate::ffi;
@@ -18,9 +19,43 @@ impl Database {
         };
 
         if result.is_success == 1 {
-            Ok(Self {
-                pointer: result.data,
-            })
+            Ok(Self { pointer: result.data })
+        } else {
+            Err(translate_ffi_error(result))
+        }
+    }
+
+    pub fn get_raw_key<K: AsRef<[u8]>>(&self, key: K) -> VResult<BytesMut> {
+        let key = key.as_ref();
+        let result = unsafe {
+            // SAFETY: This function is guaranteed to not modify any arguments.
+            // It also does not throw exceptions and returns a valid struct.
+            //
+            // LevelDB is thread-safe, this function can be used on multiple threads.
+            ffi::level_get_key(
+                self.pointer,
+                key.as_ptr() as *mut c_char,
+                key.len() as c_int,
+            )
+        };
+
+        if result.is_success == 1 {
+            let data = unsafe {
+                std::slice::from_raw_parts(
+                    result.data as *mut u8,
+                    result.size as usize,
+                )
+            };
+
+            let buffer = BytesMut::from(data);
+
+            unsafe {
+                // SAFETY: Data is safe to deallocate because BytesMut copies the data.
+                // and it is not used anywhere else.
+                ffi::level_deallocate_array(result.data as *mut c_char)
+            };
+
+            Ok(buffer)
         } else {
             Err(translate_ffi_error(result))
         }
@@ -34,6 +69,9 @@ impl Drop for Database {
         }
     }
 }
+
+unsafe impl Send for Database {}
+unsafe impl Sync for Database {}
 
 fn translate_ffi_error(result: ffi::LevelResult) -> VError {
     let ffi_err = unsafe {

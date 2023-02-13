@@ -1,8 +1,8 @@
 use bytes::{Buf, BytesMut};
 
 use crate::network::packets::GamePacket;
-use crate::network::Decodable;
 use common::vassert;
+use common::Decodable;
 use common::VResult;
 
 /// Sent by the client in response to a [`ServerToClientHandshake`](super::ServerToClientHandshake)

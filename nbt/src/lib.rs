@@ -1,7 +1,6 @@
 #![warn(clippy::nursery)]
 
 use std::collections::HashMap;
-use thiserror::Error;
 
 #[cfg(test)]
 mod test;
@@ -13,11 +12,12 @@ mod write_be;
 mod write_le;
 mod write_net;
 
-#[derive(Error, Debug)]
-pub enum Error {
-    #[error("Invalid TAG type: {0}")]
-    InvalidTag(u8),
-}
+pub use read_be::*;
+pub use read_le::*;
+
+pub use write_be::*;
+pub use write_le::*;
+pub use write_net::*;
 
 pub const TAG_END: u8 = 0x00;
 pub const TAG_BYTE: u8 = 0x01;
@@ -82,7 +82,7 @@ pub struct RefTag<'a> {
 }
 
 #[derive(Debug, Clone, PartialEq)]
-pub struct OwnedTag {
+pub struct Tag {
     pub name: String,
     pub value: Value,
 }

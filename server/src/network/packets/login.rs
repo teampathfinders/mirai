@@ -3,9 +3,11 @@ use bytes::{Buf, BytesMut};
 use jsonwebtoken::{Algorithm, DecodingKey, Validation};
 use spki::SubjectPublicKeyInfo;
 
-use crate::crypto::{parse_identity_data, parse_user_data, IdentityData, UserData};
+use crate::crypto::{
+    parse_identity_data, parse_user_data, IdentityData, UserData,
+};
 use crate::network::packets::GamePacket;
-use crate::network::traits::Decodable;
+use common::Decodable;
 use common::ReadExtensions;
 use common::{bail, vassert};
 use common::{VError, VResult};
@@ -80,7 +82,8 @@ impl Decodable for Login {
         buffer.get_var_u32()?;
 
         let identity_data = parse_identity_data(&mut buffer)?;
-        let user_data = parse_user_data(&mut buffer, &identity_data.public_key)?;
+        let user_data =
+            parse_user_data(&mut buffer, &identity_data.public_key)?;
 
         Ok(Self {
             identity: IdentityData {

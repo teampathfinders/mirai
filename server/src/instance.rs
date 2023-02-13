@@ -21,9 +21,9 @@ use crate::network::raknet::packets::OpenConnectionRequest2;
 use crate::network::raknet::RawPacket;
 use crate::network::raknet::RAKNET_VERSION;
 use crate::network::session::SessionTracker;
-use crate::network::{Decodable, Encodable};
 use common::AsyncDeque;
 use common::{error, VResult};
+use common::{Decodable, Encodable};
 
 /// Local IPv4 address
 pub const IPV4_LOCAL_ADDR: Ipv4Addr = Ipv4Addr::new(127, 0, 0, 1);
@@ -66,8 +66,10 @@ impl ServerInstance {
         };
 
         let global_token = CancellationToken::new();
-        let ipv4_socket =
-            Arc::new(UdpSocket::bind(SocketAddrV4::new(IPV4_LOCAL_ADDR, ipv4_port)).await?);
+        let ipv4_socket = Arc::new(
+            UdpSocket::bind(SocketAddrV4::new(IPV4_LOCAL_ADDR, ipv4_port))
+                .await?,
+        );
 
         let server = Self {
             guid: rand::thread_rng().gen(),
@@ -79,7 +81,9 @@ impl ServerInstance {
             inward_queue: Arc::new(AsyncDeque::new(10)),
             outward_queue: Arc::new(AsyncDeque::new(10)),
 
-            session_controller: Arc::new(SessionTracker::new(global_token.clone())),
+            session_controller: Arc::new(SessionTracker::new(
+                global_token.clone(),
+            )),
             token: global_token,
         };
 
@@ -102,7 +106,9 @@ impl ServerInstance {
 
         {
             let controller = self.clone();
-            tokio::spawn(async move { controller.metadata_refresh_task().await });
+            tokio::spawn(
+                async move { controller.metadata_refresh_task().await },
+            );
         }
 
         tracing::info!("Server started");
@@ -121,15 +127,22 @@ impl ServerInstance {
     }
 
     /// Processes any packets that are sent before a session has been created.
-    async fn handle_offline_packet(self: Arc<Self>, packet: RawPacket) -> VResult<()> {
+    async fn handle_offline_packet(
+        self: Arc<Self>,
+        packet: RawPacket,
+    ) -> VResult<()> {
         let id = packet
             .packet_id()
             .ok_or_else(|| error!(BadPacket, "Packet is missing payload"))?;
 
         match id {
             OfflinePing::ID => self.handle_unconnected_ping(packet).await?,
-            OpenConnectionRequest1::ID => self.handle_open_connection_request1(packet).await?,
-            OpenConnectionRequest2::ID => self.handle_open_connection_request2(packet).await?,
+            OpenConnectionRequest1::ID => {
+                self.handle_open_connection_request1(packet).await?
+            }
+            OpenConnectionRequest2::ID => {
+                self.handle_open_connection_request2(packet).await?
+            }
             _ => unimplemented!("Packet type not implemented"),
         }
 
@@ -137,7 +150,10 @@ impl ServerInstance {
     }
 
     /// Responds to the [`OfflinePing`] packet with [`OfflinePong`].
-    async fn handle_unconnected_ping(self: Arc<Self>, packet: RawPacket) -> VResult<()> {
+    async fn handle_unconnected_ping(
+        self: Arc<Self>,
+        packet: RawPacket,
+    ) -> VResult<()> {
         let ping = OfflinePing::decode(packet.buffer.clone())?;
         let pong = OfflinePong {
             time: ping.time,
@@ -153,13 +169,14 @@ impl ServerInstance {
     }
 
     /// Responds to the [`OpenConnectionRequest1`] packet with [`OpenConnectionReply1`].
-    async fn handle_open_connection_request1(self: Arc<Self>, packet: RawPacket) -> VResult<()> {
+    async fn handle_open_connection_request1(
+        self: Arc<Self>,
+        packet: RawPacket,
+    ) -> VResult<()> {
         let request = OpenConnectionRequest1::decode(packet.buffer.clone())?;
         if request.protocol_version != RAKNET_VERSION {
-            let reply = IncompatibleProtocol {
-                server_guid: self.guid,
-            }
-            .encode()?;
+            let reply =
+                IncompatibleProtocol { server_guid: self.guid }.encode()?;
 
             self.ipv4_socket
                 .send_to(reply.as_ref(), packet.address)
@@ -167,11 +184,9 @@ impl ServerInstance {
             return Ok(());
         }
 
-        let reply = OpenConnectionReply1 {
-            mtu: request.mtu,
-            server_guid: self.guid,
-        }
-        .encode()?;
+        let reply =
+            OpenConnectionReply1 { mtu: request.mtu, server_guid: self.guid }
+                .encode()?;
 
         self.ipv4_socket
             .send_to(reply.as_ref(), packet.address)
@@ -183,7 +198,10 @@ impl ServerInstance {
     /// This is also when a session is created for the client.
     /// From this point, all packets are encoded in a [`Frame`](crate::network::raknet::Frame).
 
-    async fn handle_open_connection_request2(self: Arc<Self>, packet: RawPacket) -> VResult<()> {
+    async fn handle_open_connection_request2(
+        self: Arc<Self>,
+        packet: RawPacket,
+    ) -> VResult<()> {
         let request = OpenConnectionRequest2::decode(packet.buffer.clone())?;
         let reply = OpenConnectionReply2 {
             server_guid: self.guid,
@@ -277,7 +295,8 @@ impl ServerInstance {
     async fn metadata_refresh_task(self: Arc<Self>) {
         let mut interval = tokio::time::interval(METADATA_REFRESH_INTERVAL);
         while !self.token.is_cancelled() {
-            let description = format!("{} players", self.session_controller.session_count());
+            let description =
+                format!("{} players", self.session_controller.session_count());
             self.refresh_metadata(&description);
             interval.tick().await;
         }

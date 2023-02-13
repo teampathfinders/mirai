@@ -74,7 +74,8 @@ impl Encryptor {
             .collect::<String>();
 
         // Generate a random private key for the session.
-        let private_key: SigningKey<NistP384> = ecdsa::SigningKey::random(&mut OsRng);
+        let private_key: SigningKey<NistP384> =
+            ecdsa::SigningKey::random(&mut OsRng);
         // Convert the key to the PKCS#8 DER format used by Minecraft.
         let private_key_der = match private_key.to_pkcs8_der() {
             Ok(k) => k,
@@ -89,7 +90,10 @@ impl Encryptor {
         let public_key_der = {
             let binary_der = match public_key.to_public_key_der() {
                 Ok(d) => d,
-                Err(e) => bail!(BadPacket, "Failed to convert public key to DER format: {e}"),
+                Err(e) => bail!(
+                    BadPacket,
+                    "Failed to convert public key to DER format: {e}"
+                ),
             };
             BASE64_ENGINE.encode(binary_der)
         };
@@ -100,10 +104,10 @@ impl Encryptor {
         header.x5u = Some(public_key_der);
 
         // Create a JWT encoding key using the session's private key.
-        let signing_key = jsonwebtoken::EncodingKey::from_ec_der(&private_key_der.to_bytes());
-        let claims = EncryptionTokenClaims {
-            salt: &BASE64_ENGINE.encode(&salt),
-        };
+        let signing_key =
+            jsonwebtoken::EncodingKey::from_ec_der(&private_key_der.to_bytes());
+        let claims =
+            EncryptionTokenClaims { salt: &BASE64_ENGINE.encode(&salt) };
 
         let jwt = jsonwebtoken::encode(&header, &claims, &signing_key)?;
         let client_public_key = {
@@ -161,8 +165,8 @@ impl Encryptor {
         let counter = self.receive_counter.fetch_add(1, Ordering::SeqCst);
 
         let checksum = &buffer.as_ref()[buffer.len() - 8..];
-        let computed_checksum =
-            self.compute_checksum(&buffer.as_ref()[..buffer.len() - 8], counter);
+        let computed_checksum = self
+            .compute_checksum(&buffer.as_ref()[..buffer.len() - 8], counter);
 
         if !checksum.eq(&computed_checksum) {
             bail!(BadPacket, "Encryption checksums do not match");

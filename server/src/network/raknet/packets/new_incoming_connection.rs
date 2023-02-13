@@ -2,8 +2,8 @@ use std::net::SocketAddr;
 
 use bytes::{Buf, BytesMut};
 
-use crate::network::traits::Decodable;
 use common::vassert;
+use common::Decodable;
 use common::VResult;
 use common::{ReadExtensions, EMPTY_IPV4_ADDRESS};
 

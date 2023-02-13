@@ -1,13 +1,14 @@
 use std::collections::HashMap;
 
 use bytes::{BufMut, BytesMut};
+use level::Dimension;
 
 use crate::network::packets::{ExperimentData, GamePacket};
-use crate::network::Encodable;
+use common::Encodable;
 use common::{bail, VError, VResult};
 use common::{BlockPosition, Vector2f, Vector3f, WriteExtensions};
 
-use super::{Difficulty, Dimension, GameMode, CLIENT_VERSION_STRING};
+use super::{Difficulty, GameMode, CLIENT_VERSION_STRING};
 
 #[derive(Debug, Copy, Clone)]
 pub enum WorldGenerator {
@@ -107,11 +108,7 @@ impl BlockEntry {
     pub fn encode(&self, buffer: &mut BytesMut) {
         buffer.put_string(&self.name);
 
-        nbt::RefTag {
-            name: "",
-            value: &self.properties,
-        }
-        .encode_with_net(buffer);
+        nbt::RefTag { name: "", value: &self.properties }.encode_net(buffer);
     }
 }
 
@@ -239,7 +236,7 @@ impl Encodable for StartGame {
         buffer.put_var_i32(self.game_mode as i32);
         self.position.encode(&mut buffer);
         self.rotation.encode(&mut buffer);
-        buffer.put_u64(self.world_seed);
+        buffer.put_u64_le(self.world_seed);
         buffer.put_i16(self.spawn_biome_type as i16);
         buffer.put_string(&self.custom_biome_name);
         buffer.put_var_u32(self.dimension as u32);
@@ -322,11 +319,7 @@ impl Encodable for StartGame {
         buffer.put_bool(self.server_authoritative_inventory);
         buffer.put_string(CLIENT_VERSION_STRING); // Game version
 
-        nbt::RefTag {
-            name: "",
-            value: &self.property_data,
-        }
-        .encode_with_net(&mut buffer);
+        nbt::encode_net("", &self.property_data, &mut buffer);
 
         buffer.put_u64(self.server_block_state_checksum);
         buffer.put_u128(self.world_template_id);

@@ -49,7 +49,15 @@ pub use traits::*;
 pub use transfer::*;
 pub use update_dynamic_enum::*;
 pub use violation_warning::*;
+pub use set_default_game_mode::*;
+pub use set_scoreboard_identity::*;
+pub use connect_automation_client::*;
+pub use player_fog::*;
 
+mod player_fog;
+mod connect_automation_client;
+mod set_scoreboard_identity;
+mod set_default_game_mode;
 mod add_painting;
 mod animate;
 mod available_commands;

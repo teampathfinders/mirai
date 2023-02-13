@@ -2,9 +2,9 @@ use std::ops::Range;
 
 use bytes::{Buf, BufMut, BytesMut};
 
-use crate::network::traits::{Decodable, Encodable};
 use common::vassert;
 use common::VResult;
+use common::{Decodable, Encodable};
 use common::{ReadExtensions, WriteExtensions};
 
 /// Record containing IDs of confirmed packets.
@@ -16,7 +16,10 @@ pub enum AcknowledgementRecord {
     Range(Range<u32>),
 }
 
-fn encode_records(mut buffer: BytesMut, records: &[AcknowledgementRecord]) -> BytesMut {
+fn encode_records(
+    mut buffer: BytesMut,
+    records: &[AcknowledgementRecord],
+) -> BytesMut {
     buffer.put_i16(records.len() as i16);
     for record in records {
         match record {

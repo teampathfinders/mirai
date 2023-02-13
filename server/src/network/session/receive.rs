@@ -8,9 +8,10 @@ use bytes::{Buf, BytesMut};
 use crate::config::SERVER_CONFIG;
 use crate::network::header::Header;
 use crate::network::packets::{
-    Animate, ChunkRadiusRequest, ClientCacheStatus, ClientToServerHandshake, CommandRequest,
-    CompressionAlgorithm, GamePacket, Login, MovePlayer, RequestAbility, RequestNetworkSettings,
-    ResourcePackClientResponse, SetDifficulty, SetLocalPlayerAsInitialized, ViolationWarning,
+    Animate, ChunkRadiusRequest, ClientCacheStatus, ClientToServerHandshake,
+    CommandRequest, CompressionAlgorithm, GamePacket, Login, MovePlayer,
+    RequestAbility, RequestNetworkSettings, ResourcePackClientResponse,
+    SetDifficulty, SetLocalPlayerAsInitialized, ViolationWarning,
     GAME_PACKET_ID,
 };
 use crate::network::packets::{Interact, OnlinePing, TextMessage};
@@ -22,8 +23,8 @@ use crate::network::raknet::packets::{
 };
 use crate::network::raknet::{Frame, FrameBatch};
 use crate::network::session::session::Session;
-use crate::network::traits::{Decodable, Encodable};
 use common::{bail, vassert, ReadExtensions, VResult};
+use common::{Decodable, Encodable};
 
 impl Session {
     /// Processes the raw packet coming directly from the network.
@@ -71,9 +72,14 @@ impl Session {
     }
 
     #[async_recursion]
-    async fn handle_frame(&self, frame: &Frame, batch_number: u32) -> VResult<()> {
+    async fn handle_frame(
+        &self,
+        frame: &Frame,
+        batch_number: u32,
+    ) -> VResult<()> {
         if frame.reliability.is_sequenced()
-            && frame.sequence_index < self.client_batch_number.load(Ordering::SeqCst)
+            && frame.sequence_index
+                < self.client_batch_number.load(Ordering::SeqCst)
         {
             // Discard packet
             return Ok(());
@@ -98,8 +104,9 @@ impl Session {
         // Sequenced implies ordered
         if frame.reliability.is_ordered() || frame.reliability.is_sequenced() {
             // Add packet to order queue
-            if let Some(ready) =
-                self.order_channels[frame.order_channel as usize].insert(frame.clone())
+            if let Some(ready) = self.order_channels
+                [frame.order_channel as usize]
+                .insert(frame.clone())
             {
                 for packet in ready {
                     self.handle_unframed_packet(packet.body).await?;
@@ -121,7 +128,9 @@ impl Session {
             GAME_PACKET_ID => self.handle_game_packet(task).await?,
             DisconnectNotification::ID => self.flag_for_close(),
             ConnectionRequest::ID => self.handle_connection_request(task)?,
-            NewIncomingConnection::ID => self.handle_new_incoming_connection(task)?,
+            NewIncomingConnection::ID => {
+                self.handle_new_incoming_connection(task)?
+            }
             OnlinePing::ID => self.handle_online_ping(task)?,
             id => bail!(BadPacket, "Invalid Raknet packet ID: {}", id),
         }
@@ -155,7 +164,8 @@ impl Session {
             }
         }
 
-        let compression_enabled = self.compression_enabled.load(Ordering::SeqCst);
+        let compression_enabled =
+            self.compression_enabled.load(Ordering::SeqCst);
         let compression_threshold = SERVER_CONFIG.read().compression_threshold;
 
         if compression_enabled
@@ -163,12 +173,14 @@ impl Session {
             && packet.len() > compression_threshold as usize
         {
             // Packet is compressed
-            let decompressed = match SERVER_CONFIG.read().compression_algorithm {
+            let decompressed = match SERVER_CONFIG.read().compression_algorithm
+            {
                 CompressionAlgorithm::Snappy => {
                     todo!("Snappy decompression");
                 }
                 CompressionAlgorithm::Deflate => {
-                    let mut reader = flate2::read::DeflateDecoder::new(packet.as_ref());
+                    let mut reader =
+                        flate2::read::DeflateDecoder::new(packet.as_ref());
                     let mut decompressed = Vec::new();
                     reader.read_to_end(&mut decompressed)?;
                     // .context("Failed to decompress packet using Deflate")?;
@@ -183,21 +195,32 @@ impl Session {
         }
     }
 
-    async fn handle_decompressed_game_packet(&self, mut packet: BytesMut) -> VResult<()> {
+    async fn handle_decompressed_game_packet(
+        &self,
+        mut packet: BytesMut,
+    ) -> VResult<()> {
         let length = packet.get_var_u32()?;
         let header = Header::decode(&mut packet)?;
 
         match header.id {
-            RequestNetworkSettings::ID => self.handle_request_network_settings(packet),
+            RequestNetworkSettings::ID => {
+                self.handle_request_network_settings(packet)
+            }
             Login::ID => self.handle_login(packet).await,
-            ClientToServerHandshake::ID => self.handle_client_to_server_handshake(packet),
+            ClientToServerHandshake::ID => {
+                self.handle_client_to_server_handshake(packet)
+            }
             ClientCacheStatus::ID => self.handle_client_cache_status(packet),
-            ResourcePackClientResponse::ID => self.handle_resource_pack_client_response(packet),
+            ResourcePackClientResponse::ID => {
+                self.handle_resource_pack_client_response(packet)
+            }
             ViolationWarning::ID => self.handle_violation_warning(packet),
             ChunkRadiusRequest::ID => self.handle_chunk_radius_request(packet),
             Interact::ID => self.handle_interaction(packet),
             TextMessage::ID => self.handle_text_message(packet),
-            SetLocalPlayerAsInitialized::ID => self.handle_local_player_initialized(packet),
+            SetLocalPlayerAsInitialized::ID => {
+                self.handle_local_player_initialized(packet)
+            }
             MovePlayer::ID => self.handle_move_player(packet),
             RequestAbility::ID => self.handle_ability_request(packet),
             Animate::ID => self.handle_animation(packet),

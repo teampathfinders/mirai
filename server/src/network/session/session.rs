@@ -45,6 +45,11 @@ pub struct Session {
     pub user_data: OnceCell<UserData>,
     /// Used to encrypt and decrypt packets.
     pub encryptor: OnceCell<Encryptor>,
+    /// Whether the client supports the chunk cache.
+    pub cache_support: OnceCell<bool>,
+
+
+
     /// Current tick of this session, this is increased by one every time the session
     /// processes packets.
     pub current_tick: AtomicU64,
@@ -84,16 +89,23 @@ pub struct Session {
     /// Keeps track of all unprocessed received packets.
     pub receive_queue: AsyncDeque<BytesMut>,
     /// Queue that stores packets in case they need to be recovered due to packet loss.
-    pub recovery_queue: RecoveryQueue,
+    pub recovery_queue: RecoveryQueue
 }
 
 impl Session {
     /// Creates a new session.
-    pub fn new(ipv4_socket: Arc<UdpSocket>, address: SocketAddr, mtu: u16, guid: u64) -> Arc<Self> {
+    pub fn new(
+        ipv4_socket: Arc<UdpSocket>,
+        address: SocketAddr,
+        mtu: u16,
+        guid: u64,
+    ) -> Arc<Self> {
         let session = Arc::new(Self {
             identity: OnceCell::new(),
             user_data: OnceCell::new(),
             encryptor: OnceCell::new(),
+            cache_support: OnceCell::new(),
+
             current_tick: AtomicU64::new(0),
             ipv4_socket,
             mtu,
@@ -118,7 +130,8 @@ impl Session {
         {
             let session = session.clone();
             tokio::spawn(async move {
-                let mut interval = tokio::time::interval(INTERNAL_TICK_INTERVAL);
+                let mut interval =
+                    tokio::time::interval(INTERNAL_TICK_INTERVAL);
                 while !session.active.is_cancelled() {
                     match session.tick().await {
                         Ok(_) => (),
@@ -141,7 +154,9 @@ impl Session {
                 match session.flush().await {
                     Ok(_) => (),
                     Err(e) => {
-                        tracing::error!("Failed to flush last packets before session close");
+                        tracing::error!(
+                            "Failed to flush last packets before session close"
+                        );
                     }
                 }
             });
@@ -169,10 +184,9 @@ impl Session {
     ///
     /// Warning: An internal RwLock is kept in a read state until the return value of this function is dropped.
     pub fn get_identity(&self) -> VResult<&str> {
-        let identity = self
-            .identity
-            .get()
-            .ok_or_else(|| error!(NotInitialized, "Identity ID has not been initialised yet"))?;
+        let identity = self.identity.get().ok_or_else(|| {
+            error!(NotInitialized, "Identity ID has not been initialised yet")
+        })?;
         Ok(identity.identity.as_str())
     }
 
@@ -180,10 +194,9 @@ impl Session {
     ///
     /// Warning: An internal RwLock is kept in a read state until the return value of this function is dropped.
     pub fn get_xuid(&self) -> VResult<u64> {
-        let identity = self
-            .identity
-            .get()
-            .ok_or_else(|| error!(NotInitialized, "XUID has not been initialised yet"))?;
+        let identity = self.identity.get().ok_or_else(|| {
+            error!(NotInitialized, "XUID has not been initialised yet")
+        })?;
         Ok(identity.xuid)
     }
 
@@ -191,24 +204,22 @@ impl Session {
     ///
     /// Warning: An internal RwLock is kept in a read state until the return value of this function is dropped.
     pub fn get_display_name(&self) -> VResult<&str> {
-        let identity = self
-            .identity
-            .get()
-            .ok_or_else(|| error!(NotInitialized, "Display name has not been initialised yet"))?;
+        let identity = self.identity.get().ok_or_else(|| {
+            error!(NotInitialized, "Display name has not been initialised yet")
+        })?;
         Ok(identity.display_name.as_str())
     }
 
     pub fn get_encryptor(&self) -> VResult<&Encryptor> {
-        self.encryptor
-            .get()
-            .ok_or_else(|| error!(NotInitialized, "Encryption has not been initialised yet"))
+        self.encryptor.get().ok_or_else(|| {
+            error!(NotInitialized, "Encryption has not been initialised yet")
+        })
     }
 
     pub fn get_device_os(&self) -> VResult<BuildPlatform> {
-        let data = self
-            .user_data
-            .get()
-            .ok_or_else(|| error!(NotInitialized, "User data has not been initialised yet"))?;
+        let data = self.user_data.get().ok_or_else(|| {
+            error!(NotInitialized, "User data has not been initialised yet")
+        })?;
         Ok(data.device_os)
     }
 
@@ -251,7 +262,9 @@ impl Session {
         let current_tick = self.current_tick.fetch_add(1, Ordering::SeqCst);
 
         // Session has timed out
-        if Instant::now().duration_since(*self.last_update.read()) > SESSION_TIMEOUT {
+        if Instant::now().duration_since(*self.last_update.read())
+            > SESSION_TIMEOUT
+        {
             self.flag_for_close();
         }
 

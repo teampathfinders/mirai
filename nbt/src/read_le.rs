@@ -1,27 +1,20 @@
 use crate::{
-    Error, OwnedTag, Value, TAG_BYTE, TAG_BYTE_ARRAY, TAG_COMPOUND, TAG_DOUBLE, TAG_END, TAG_FLOAT,
-    TAG_INT, TAG_INT_ARRAY, TAG_LIST, TAG_LONG, TAG_LONG_ARRAY, TAG_SHORT, TAG_STRING,
+    Tag, Value, TAG_BYTE, TAG_BYTE_ARRAY, TAG_COMPOUND, TAG_DOUBLE, TAG_END,
+    TAG_FLOAT, TAG_INT, TAG_INT_ARRAY, TAG_LIST, TAG_LONG, TAG_LONG_ARRAY,
+    TAG_SHORT, TAG_STRING,
 };
-use bytes::{Buf, Bytes};
+use bytes::{Buf, BytesMut};
+use common::{bail, VResult};
 use std::collections::HashMap;
 
-impl OwnedTag {
-    /// Decodes an NBT structure from a vector of bytes (little endian).
-    pub fn decode_le<V: Into<Vec<u8>>>(stream: V) -> Result<Self, Error> {
-        let stream = Bytes::from(stream.into());
-        Self::decode_with_le(stream)
-    }
+pub fn read_le(stream: &mut BytesMut) -> VResult<Tag> {
+    let (name, value) = Value::decode_tag_le(stream)?;
 
-    /// Decodes an NBT structure from a given byte stream (little endian).
-    pub fn decode_with_le(mut stream: Bytes) -> Result<Self, Error> {
-        let (name, value) = Value::decode_tag_le(&mut stream)?;
-
-        Ok(Self { name, value })
-    }
+    Ok(Tag { name, value })
 }
 
 impl Value {
-    fn decode_tag_le(stream: &mut Bytes) -> Result<(String, Self), Error> {
+    fn decode_tag_le(stream: &mut BytesMut) -> VResult<(String, Self)> {
         let tag_type = stream.get_u8();
         if tag_type == TAG_END {
             return Ok((String::new(), Self::End));
@@ -33,19 +26,24 @@ impl Value {
         Ok((name, value))
     }
 
-    fn decode_tag_name_le(stream: &mut Bytes) -> String {
+    fn decode_tag_name_le(stream: &mut BytesMut) -> String {
         let length = stream.get_u16_le();
         let cursor = stream.len() - stream.remaining();
 
-        let name =
-            String::from_utf8_lossy(&stream.as_ref()[cursor..cursor + length as usize]).to_string();
+        let name = String::from_utf8_lossy(
+            &stream.as_ref()[cursor..cursor + length as usize],
+        )
+        .to_string();
 
         stream.advance(length as usize);
 
         name
     }
 
-    fn decode_tag_value_le(stream: &mut Bytes, tag_type: u8) -> Result<Self, Error> {
+    fn decode_tag_value_le(
+        stream: &mut BytesMut,
+        tag_type: u8,
+    ) -> VResult<Self> {
         Ok(match tag_type {
             TAG_END => Self::End,
             TAG_BYTE => {
@@ -76,9 +74,10 @@ impl Value {
                 let length = stream.get_u16_le();
                 let cursor = stream.len() - stream.remaining();
 
-                let string =
-                    String::from_utf8_lossy(&stream.as_ref()[cursor..cursor + length as usize])
-                        .to_string();
+                let string = String::from_utf8_lossy(
+                    &stream.as_ref()[cursor..cursor + length as usize],
+                )
+                .to_string();
 
                 stream.advance(length as usize);
 
@@ -140,7 +139,7 @@ impl Value {
 
                 Self::LongArray(list)
             }
-            _ => return Err(Error::InvalidTag(tag_type)),
+            _ => bail!(InvalidNbt, "Invalid NBT tag {tag_type}"),
         })
     }
 }

@@ -4,38 +4,46 @@ use std::sync::atomic::Ordering;
 
 use bytes::{BufMut, BytesMut};
 use jsonwebtoken::jwk::KeyOperations::Encrypt;
+use level::Dimension;
 
 use crate::config::SERVER_CONFIG;
 use crate::crypto::Encryptor;
 use crate::network::packets::GameMode::Creative;
 use crate::network::packets::{
-    AvailableCommands, BiomeDefinitionList, BroadcastIntent, ChatRestrictionLevel,
-    ChunkRadiusReply, ChunkRadiusRequest, ClientCacheStatus, ClientToServerHandshake, Command,
-    CommandEnum, CommandOverload, CommandParameter, CommandParameterType, CommandPermissionLevel,
-    CreativeContent, Difficulty, Dimension, Disconnect, GameMode, ItemEntry, Login,
-    NetworkSettings, PermissionLevel, PlayStatus, PlayerMovementSettings, PlayerMovementType,
-    RequestNetworkSettings, ResourcePackClientResponse, ResourcePackStack, ResourcePacksInfo,
-    ServerToClientHandshake, SetLocalPlayerAsInitialized, SpawnBiomeType, StartGame, Status,
-    ViolationWarning, WorldGenerator, DISCONNECTED_LOGIN_FAILED, DISCONNECTED_NOT_AUTHENTICATED,
-    NETWORK_VERSION,
+    AvailableCommands, BiomeDefinitionList, BroadcastIntent,
+    ChatRestrictionLevel, ChunkRadiusReply, ChunkRadiusRequest,
+    ClientCacheStatus, ClientToServerHandshake, Command, CommandEnum,
+    CommandOverload, CommandParameter, CommandParameterType,
+    CommandPermissionLevel, CreativeContent, Difficulty, Disconnect, GameMode,
+    ItemEntry, Login, NetworkSettings, PermissionLevel, PlayStatus,
+    PlayerMovementSettings, PlayerMovementType, RequestNetworkSettings,
+    ResourcePackClientResponse, ResourcePackStack, ResourcePacksInfo,
+    ServerToClientHandshake, SetLocalPlayerAsInitialized, SpawnBiomeType,
+    StartGame, Status, ViolationWarning, WorldGenerator,
+    DISCONNECTED_LOGIN_FAILED, DISCONNECTED_NOT_AUTHENTICATED, NETWORK_VERSION, ExperimentData,
 };
 use crate::network::raknet::Reliability;
 use crate::network::raknet::{Frame, FrameBatch};
 use crate::network::session::send_queue::SendPriority;
 use crate::network::session::session::Session;
-use crate::network::traits::{Decodable, Encodable};
-use common::{bail, BlockPosition, VResult, Vector2f, Vector3f};
+use common::{bail, BlockPosition, Decodable, VResult, Vector2f, Vector3f};
 
 impl Session {
     /// Handles a [`ClientCacheStatus`] packet.
-    pub fn handle_client_cache_status(&self, mut packet: BytesMut) -> VResult<()> {
+    pub fn handle_client_cache_status(
+        &self,
+        mut packet: BytesMut,
+    ) -> VResult<()> {
         let request = ClientCacheStatus::decode(packet)?;
-        // Unused
+        self.cache_support.set(request.supports_cache)?;
 
         Ok(())
     }
 
-    pub fn handle_violation_warning(&self, mut packet: BytesMut) -> VResult<()> {
+    pub fn handle_violation_warning(
+        &self,
+        mut packet: BytesMut,
+    ) -> VResult<()> {
         let request = ViolationWarning::decode(packet)?;
         tracing::error!("Received violation warning: {request:?}");
 
@@ -43,14 +51,20 @@ impl Session {
         Ok(())
     }
 
-    pub fn handle_local_player_initialized(&self, mut packet: BytesMut) -> VResult<()> {
+    pub fn handle_local_player_initialized(
+        &self,
+        mut packet: BytesMut,
+    ) -> VResult<()> {
         let request = SetLocalPlayerAsInitialized::decode(packet)?;
         // Unused
 
         Ok(())
     }
 
-    pub fn handle_chunk_radius_request(&self, mut packet: BytesMut) -> VResult<()> {
+    pub fn handle_chunk_radius_request(
+        &self,
+        mut packet: BytesMut,
+    ) -> VResult<()> {
         let request = ChunkRadiusRequest::decode(packet)?;
         let reply = ChunkRadiusReply {
             allowed_radius: SERVER_CONFIG.read().allowed_render_distance,
@@ -60,7 +74,10 @@ impl Session {
         Ok(())
     }
 
-    pub fn handle_resource_pack_client_response(&self, mut packet: BytesMut) -> VResult<()> {
+    pub fn handle_resource_pack_client_response(
+        &self,
+        mut packet: BytesMut,
+    ) -> VResult<()> {
         let request = ResourcePackClientResponse::decode(packet)?;
 
         // TODO: Implement resource packs.
@@ -70,8 +87,8 @@ impl Session {
             runtime_id: 1,
             game_mode: GameMode::Creative,
             position: Vector3f::from([0.0, 0.0, 0.0]),
-            rotation: Vector2f::from([0.0, 0.0]),
-            world_seed: 0,
+            rotation: Vector2f::from([90.0, 90.0]),
+            world_seed: 69420,
             spawn_biome_type: SpawnBiomeType::Default,
             custom_biome_name: "plains".to_string(),
             dimension: Dimension::Overworld,
@@ -92,12 +109,12 @@ impl Session {
             xbox_broadcast_intent: BroadcastIntent::Public,
             platform_broadcast_intent: BroadcastIntent::Public,
             enable_commands: true,
-            texture_packs_required: false,
+            texture_packs_required: true,
             gamerules: vec![],
             experiments: vec![],
             experiments_previously_enabled: false,
             bonus_chest_enabled: false,
-            starter_map_enabled: true,
+            starter_map_enabled: false,
             permission_level: PermissionLevel::Operator,
             server_chunk_tick_range: 0,
             has_locked_behavior_pack: false,
@@ -116,7 +133,7 @@ impl Session {
             chat_restriction_level: ChatRestrictionLevel::None,
             disable_player_interactions: false,
             level_id: "".to_string(),
-            level_name: "nova Server".to_string(),
+            level_name: "Nova Server".to_string(),
             template_content_identity: "".to_string(),
             is_trial: false,
             movement_settings: PlayerMovementSettings {
@@ -144,17 +161,15 @@ impl Session {
         let biome_definition_list = BiomeDefinitionList;
         self.send_packet(biome_definition_list)?;
 
-        let play_status = PlayStatus {
-            status: Status::PlayerSpawn,
-        };
+        let play_status = PlayStatus { status: Status::PlayerSpawn };
         self.send_packet(play_status)?;
 
         let available_commands = AvailableCommands {
             commands: vec![Command {
                 name: "credits".to_owned(),
                 description: "Shows the credits screen".to_owned(),
-                permission_level: CommandPermissionLevel::Admin,
-                aliases: vec!["credits".to_owned()],
+                permission_level: CommandPermissionLevel::Normal,
+                aliases: vec![],
                 overloads: vec![],
             }],
         };
@@ -163,12 +178,13 @@ impl Session {
         Ok(())
     }
 
-    pub fn handle_client_to_server_handshake(&self, mut packet: BytesMut) -> VResult<()> {
+    pub fn handle_client_to_server_handshake(
+        &self,
+        mut packet: BytesMut,
+    ) -> VResult<()> {
         ClientToServerHandshake::decode(packet)?;
 
-        let response = PlayStatus {
-            status: Status::LoginSuccess,
-        };
+        let response = PlayStatus { status: Status::LoginSuccess };
         self.send_packet(response)?;
 
         // TODO: Implement resource packs
@@ -204,7 +220,10 @@ impl Session {
                 return Err(e);
             }
         };
-        tracing::info!("{} has joined the server", request.identity.display_name);
+        tracing::info!(
+            "{} has joined the server",
+            request.identity.display_name
+        );
 
         let (encryptor, jwt) = Encryptor::new(&request.identity.public_key)?;
 
@@ -221,13 +240,14 @@ impl Session {
     }
 
     /// Handles a [`RequestNetworkSettings`] packet.
-    pub fn handle_request_network_settings(&self, mut packet: BytesMut) -> VResult<()> {
+    pub fn handle_request_network_settings(
+        &self,
+        mut packet: BytesMut,
+    ) -> VResult<()> {
         let request = RequestNetworkSettings::decode(packet)?;
         if request.protocol_version != NETWORK_VERSION {
             if request.protocol_version > NETWORK_VERSION {
-                let response = PlayStatus {
-                    status: Status::FailedServer,
-                };
+                let response = PlayStatus { status: Status::FailedServer };
                 self.send_packet(response)?;
 
                 bail!(
@@ -237,9 +257,7 @@ impl Session {
                     NETWORK_VERSION
                 );
             } else {
-                let response = PlayStatus {
-                    status: Status::FailedClient,
-                };
+                let response = PlayStatus { status: Status::FailedClient };
                 self.send_packet(response)?;
 
                 bail!(

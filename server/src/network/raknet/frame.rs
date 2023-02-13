@@ -3,9 +3,9 @@ use std::io::Read;
 use bytes::{Buf, BufMut, BytesMut};
 
 use crate::network::raknet::Reliability;
-use crate::network::traits::{Decodable, Encodable};
 use common::vassert;
 use common::VResult;
+use common::{Decodable, Encodable};
 use common::{ReadExtensions, WriteExtensions};
 
 /// Bit flag indicating that the packet is encapsulated in a frame.
@@ -77,10 +77,7 @@ impl Decodable for FrameBatch {
         }
         assert_eq!(buffer.remaining(), 0);
 
-        Ok(Self {
-            batch_number,
-            frames,
-        })
+        Ok(Self { batch_number, frames })
     }
 }
 
@@ -128,11 +125,7 @@ pub struct Frame {
 impl Frame {
     /// Creates a new frame.
     pub fn new(reliability: Reliability, body: BytesMut) -> Self {
-        Self {
-            reliability,
-            body,
-            ..Default::default()
-        }
+        Self { reliability, body, ..Default::default() }
     }
 
     /// Decodes the frame.
@@ -174,7 +167,9 @@ impl Frame {
         body.resize(length as usize, 0u8);
 
         let position = buffer.len() - buffer.remaining();
-        body.copy_from_slice(&buffer.as_ref()[position..(position + length as usize)]);
+        body.copy_from_slice(
+            &buffer.as_ref()[position..(position + length as usize)],
+        );
         buffer.advance(length as usize);
 
         let frame = Self {

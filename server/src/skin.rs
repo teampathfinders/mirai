@@ -134,7 +134,8 @@ fn get_bytes(buffer: &mut BytesMut) -> VResult<BytesMut> {
     let length = buffer.get_var_u32()?;
     let cursor = buffer.len() - buffer.remaining();
 
-    let data = BytesMut::from(&buffer.as_ref()[cursor..cursor + length as usize]);
+    let data =
+        BytesMut::from(&buffer.as_ref()[cursor..cursor + length as usize]);
     buffer.advance(length as usize);
 
     Ok(data)
@@ -150,7 +151,9 @@ impl Skin {
             let length = buffer.get_var_u32()?;
             let cursor = buffer.len() - buffer.remaining();
 
-            let data = BytesMut::from(&buffer.as_ref()[cursor..cursor + length as usize]);
+            let data = BytesMut::from(
+                &buffer.as_ref()[cursor..cursor + length as usize],
+            );
             buffer.advance(length as usize);
 
             data

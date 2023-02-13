@@ -1,7 +1,7 @@
 use bytes::{Buf, BytesMut};
 use common::{bail, ReadExtensions, VError, VResult, WriteExtensions};
 
-use crate::network::Decodable;
+use common::Decodable;
 
 use super::GamePacket;
 
@@ -63,10 +63,6 @@ impl Decodable for Animate {
             0.0
         };
 
-        Ok(Self {
-            action_type,
-            runtime_id,
-            rowing_time,
-        })
+        Ok(Self { action_type, runtime_id, rowing_time })
     }
 }

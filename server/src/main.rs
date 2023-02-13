@@ -30,7 +30,9 @@ async fn app_main() -> VResult<()> {
                 break;
             }
             Err(e) => {
-                tracing::error!("The server probably crashed, restarting it...");
+                tracing::error!(
+                    "The server probably crashed, restarting it..."
+                );
                 tracing::error!("Cause: {e:?}");
             }
         }

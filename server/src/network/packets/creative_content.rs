@@ -4,7 +4,7 @@ use bytes::{BufMut, BytesMut};
 use nbt::Value;
 
 use crate::network::packets::GamePacket;
-use crate::network::Encodable;
+use common::Encodable;
 use common::VResult;
 use common::WriteExtensions;
 
@@ -50,11 +50,8 @@ impl ItemStack {
             } else {
                 buffer.put_i16(-1); // Length
                 buffer.put_u8(1); // Version
-                nbt::RefTag {
-                    name: "",
-                    value: &self.nbt_data,
-                }
-                .encode_with_le(buffer);
+                nbt::RefTag { name: "", value: &self.nbt_data }
+                    .encode_le(buffer);
             }
         } else {
             todo!()

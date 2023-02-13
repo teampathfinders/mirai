@@ -3,7 +3,7 @@ use std::collections::{HashMap, HashSet};
 use bytes::{BufMut, BytesMut};
 use common::{bail, VResult, WriteExtensions};
 
-use crate::network::Encodable;
+use common::Encodable;
 
 use super::{GamePacket, PermissionLevel};
 
@@ -143,7 +143,10 @@ impl Encodable for AvailableCommands {
                 for parameter in &overload.parameters {
                     if !parameter.suffix.is_empty() {
                         if !suffix_indices.contains_key(&parameter.suffix) {
-                            suffix_indices.insert(&parameter.suffix, suffixes.len() as u32);
+                            suffix_indices.insert(
+                                &parameter.suffix,
+                                suffixes.len() as u32,
+                            );
                             suffixes.push(&parameter.suffix);
                         }
                     }
@@ -160,17 +163,25 @@ impl Encodable for AvailableCommands {
                     options: command.aliases.clone(),
                     dynamic: false,
                 };
-                enum_indices.insert(command.name.clone() + "Aliases", enums.len() as u32);
+                enum_indices.insert(
+                    command.name.clone() + "Aliases",
+                    enums.len() as u32,
+                );
                 enums.push(alias_enum);
             }
 
             for overload in &command.overloads {
                 for parameter in &overload.parameters {
-                    if !parameter.command_enum.dynamic && !parameter.command_enum.options.is_empty()
+                    if !parameter.command_enum.dynamic
+                        && !parameter.command_enum.options.is_empty()
                     {
-                        if !enum_indices.contains_key(&parameter.command_enum.enum_id) {
-                            enum_indices
-                                .insert(parameter.command_enum.enum_id.clone(), enums.len() as u32);
+                        if !enum_indices
+                            .contains_key(&parameter.command_enum.enum_id)
+                        {
+                            enum_indices.insert(
+                                parameter.command_enum.enum_id.clone(),
+                                enums.len() as u32,
+                            );
                             enums.push(parameter.command_enum.clone());
                         }
                     }
@@ -184,7 +195,9 @@ impl Encodable for AvailableCommands {
             for overload in &command.overloads {
                 for parameter in &overload.parameters {
                     if parameter.command_enum.dynamic {
-                        if !dynamic_indices.contains_key(&parameter.command_enum.enum_id) {
+                        if !dynamic_indices
+                            .contains_key(&parameter.command_enum.enum_id)
+                        {
                             dynamic_indices.insert(
                                 &parameter.command_enum.enum_id,
                                 dynamic_enums.len() as u32,
@@ -229,7 +242,8 @@ impl Encodable for AvailableCommands {
         for command in &self.commands {
             let mut alias = -1i32;
             if !command.aliases.is_empty() {
-                alias = enum_indices[&(command.name.clone() + "Aliases")] as i32;
+                alias =
+                    enum_indices[&(command.name.clone() + "Aliases")] as i32;
             }
 
             buffer.put_string(&command.name);
@@ -253,8 +267,8 @@ impl Encodable for AvailableCommands {
                             | COMMAND_PARAMETER_VALID
                             | enum_indices[&parameter.command_enum.enum_id];
                     } else if !parameter.suffix.is_empty() {
-                        command_type =
-                            COMMAND_PARAMETER_SUFFIXED | suffix_indices[&parameter.suffix];
+                        command_type = COMMAND_PARAMETER_SUFFIXED
+                            | suffix_indices[&parameter.suffix];
                     }
 
                     buffer.put_string(&parameter.name);

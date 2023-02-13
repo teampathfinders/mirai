@@ -3,7 +3,7 @@ use std::time::Duration;
 use bytes::BytesMut;
 use common::{VResult, WriteExtensions};
 
-use crate::network::Encodable;
+use common::Encodable;
 
 use super::GamePacket;
 

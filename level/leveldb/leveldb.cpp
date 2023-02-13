@@ -90,7 +90,7 @@ void level_close_database(void* database_ptr) {
     delete database;
 }
 
-LevelResult level_load_key(void* database_ptr, const char* key, int key_size) {
+LevelResult level_get_key(void* database_ptr, const char* key, int key_size) {
     LevelResult result{};
 
     try {

@@ -1,7 +1,7 @@
 use bytes::{Buf, BytesMut};
 
-use crate::network::traits::Decodable;
 use common::vassert;
+use common::Decodable;
 use common::VResult;
 
 /// Sent by the client or server to ping the other side.

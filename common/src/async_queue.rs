@@ -27,11 +27,9 @@ impl<T: Send> AsyncDeque<T> {
 
     /// Waits for an item to be available and pops it from the queue.
     pub async fn pop(&self) -> T {
-        let permit = self
-            .permits
-            .acquire()
-            .await
-            .expect("AsyncDeque semaphore was closed while the queue was still in use");
+        let permit = self.permits.acquire().await.expect(
+            "AsyncDeque semaphore was closed while the queue was still in use",
+        );
 
         permit.forget();
 

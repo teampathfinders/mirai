@@ -1,7 +1,7 @@
 use bytes::BytesMut;
 use common::{VResult, Vector3f, WriteExtensions};
 
-use crate::network::Encodable;
+use common::Encodable;
 
 use super::GamePacket;
 
