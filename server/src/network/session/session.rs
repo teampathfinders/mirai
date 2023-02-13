@@ -45,6 +45,11 @@ pub struct Session {
     pub user_data: OnceCell<UserData>,
     /// Used to encrypt and decrypt packets.
     pub encryptor: OnceCell<Encryptor>,
+    /// Whether the client supports the chunk cache.
+    pub cache_support: OnceCell<bool>,
+
+
+
     /// Current tick of this session, this is increased by one every time the session
     /// processes packets.
     pub current_tick: AtomicU64,
@@ -84,7 +89,7 @@ pub struct Session {
     /// Keeps track of all unprocessed received packets.
     pub receive_queue: AsyncDeque<BytesMut>,
     /// Queue that stores packets in case they need to be recovered due to packet loss.
-    pub recovery_queue: RecoveryQueue,
+    pub recovery_queue: RecoveryQueue
 }
 
 impl Session {
@@ -99,6 +104,8 @@ impl Session {
             identity: OnceCell::new(),
             user_data: OnceCell::new(),
             encryptor: OnceCell::new(),
+            cache_support: OnceCell::new(),
+
             current_tick: AtomicU64::new(0),
             ipv4_socket,
             mtu,

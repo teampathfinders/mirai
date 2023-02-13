@@ -35,7 +35,7 @@ impl Session {
         mut packet: BytesMut,
     ) -> VResult<()> {
         let request = ClientCacheStatus::decode(packet)?;
-        // Unused
+        self.cache_support.set(request.supports_cache)?;
 
         Ok(())
     }
