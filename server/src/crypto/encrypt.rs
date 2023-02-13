@@ -106,9 +106,8 @@ impl Encryptor {
         // Create a JWT encoding key using the session's private key.
         let signing_key =
             jsonwebtoken::EncodingKey::from_ec_der(&private_key_der.to_bytes());
-        let claims = EncryptionTokenClaims {
-            salt: &BASE64_ENGINE.encode(&salt),
-        };
+        let claims =
+            EncryptionTokenClaims { salt: &BASE64_ENGINE.encode(&salt) };
 
         let jwt = jsonwebtoken::encode(&header, &claims, &signing_key)?;
         let client_public_key = {

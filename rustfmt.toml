@@ -1,5 +1,5 @@
 edition = "2021"
-fn_args_layout = "Compressed"
+fn_args_layout = "Tall"
 force_explicit_abi = true
 hard_tabs = false
 match_arm_leading_pipes = "Never"
@@ -10,8 +10,8 @@ newline_style = "Native"
 remove_nested_parens = true
 reorder_imports = true
 reorder_modules = true
-struct_lit_width = 0
-struct_variant_width = 0
+struct_lit_width = 40
+struct_variant_width = 40
 tab_spaces = 4
 use_field_init_shorthand = true
 use_try_shorthand = true

@@ -77,10 +77,7 @@ impl Decodable for FrameBatch {
         }
         assert_eq!(buffer.remaining(), 0);
 
-        Ok(Self {
-            batch_number,
-            frames,
-        })
+        Ok(Self { batch_number, frames })
     }
 }
 
@@ -128,11 +125,7 @@ pub struct Frame {
 impl Frame {
     /// Creates a new frame.
     pub fn new(reliability: Reliability, body: BytesMut) -> Self {
-        Self {
-            reliability,
-            body,
-            ..Default::default()
-        }
+        Self { reliability, body, ..Default::default() }
     }
 
     /// Decodes the frame.

@@ -1,10 +1,10 @@
 #[cfg(test)]
 mod test;
 
-mod chunk;
+mod sub_chunk;
 mod database;
 mod ffi;
 mod world;
 
-pub use chunk::*;
+pub use sub_chunk::*;
 pub use world::*;

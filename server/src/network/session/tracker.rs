@@ -34,15 +34,15 @@ impl SessionTracker {
             });
         }
 
-        Self {
-            global_token,
-            session_list,
-        }
+        Self { global_token, session_list }
     }
 
     /// Creates a new session and adds it to the tracker.
     pub fn add_session(
-        &self, ipv4_socket: Arc<UdpSocket>, address: SocketAddr, mtu: u16,
+        &self,
+        ipv4_socket: Arc<UdpSocket>,
+        address: SocketAddr,
+        mtu: u16,
         client_guid: u64,
     ) {
         let session = Session::new(ipv4_socket, address, mtu, client_guid);

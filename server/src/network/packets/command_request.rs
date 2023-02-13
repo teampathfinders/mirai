@@ -69,10 +69,6 @@ impl Decodable for CommandRequest {
         let uuid = buffer.advance(16);
         let request_id = buffer.get_string()?;
 
-        Ok(Self {
-            command,
-            origin,
-            request_id,
-        })
+        Ok(Self { command, origin, request_id })
     }
 }

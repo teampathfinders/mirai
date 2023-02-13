@@ -73,7 +73,9 @@ impl Session {
 
     #[async_recursion]
     async fn handle_frame(
-        &self, frame: &Frame, batch_number: u32,
+        &self,
+        frame: &Frame,
+        batch_number: u32,
     ) -> VResult<()> {
         if frame.reliability.is_sequenced()
             && frame.sequence_index
@@ -194,7 +196,8 @@ impl Session {
     }
 
     async fn handle_decompressed_game_packet(
-        &self, mut packet: BytesMut,
+        &self,
+        mut packet: BytesMut,
     ) -> VResult<()> {
         let length = packet.get_var_u32()?;
         let header = Header::decode(&mut packet)?;

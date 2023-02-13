@@ -56,10 +56,6 @@ impl Decodable for Respawn {
         let state = RespawnState::try_from(buffer.get_u8())?;
         let runtime_id = buffer.get_var_u64()?;
 
-        Ok(Self {
-            position,
-            state,
-            runtime_id,
-        })
+        Ok(Self { position, state, runtime_id })
     }
 }

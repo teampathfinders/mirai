@@ -28,9 +28,6 @@ impl Decodable for OpenConnectionRequest2 {
         let mtu = buffer.get_u16();
         let client_guid = buffer.get_u64();
 
-        Ok(Self {
-            mtu,
-            client_guid,
-        })
+        Ok(Self { mtu, client_guid })
     }
 }

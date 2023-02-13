@@ -19,8 +19,6 @@ impl Decodable for ChunkRadiusRequest {
     fn decode(mut buffer: bytes::BytesMut) -> VResult<Self> {
         let radius = buffer.get_var_i32()?;
 
-        Ok(Self {
-            radius,
-        })
+        Ok(Self { radius })
     }
 }

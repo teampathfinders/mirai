@@ -20,12 +20,12 @@ macro_rules! vassert {
 
 #[macro_export]
 macro_rules! bail {
-    ($err_type: ident, $fmt: expr) => {
-        return Err($crate::VError::new($crate::VErrorKind::$err_type, $fmt.to_string()))
+    ($err_type: ident, $fmt: expr, $($args:expr),+) => {
+        return Err($crate::VError::new($crate::VErrorKind::$err_type, format!($fmt, $($args),+)))
     };
 
-    ($err_type: ident, $fmt: expr, $($args:expr),*) => {
-        $crate::bail!($err_type, format!($fmt, $($args),*))
+    ($err_type: ident, $fmt: expr) => {
+        return Err($crate::VError::new($crate::VErrorKind::$err_type, format!($fmt)))
     };
 
     ($err_type: ident) => {

@@ -90,7 +90,10 @@ pub struct Session {
 impl Session {
     /// Creates a new session.
     pub fn new(
-        ipv4_socket: Arc<UdpSocket>, address: SocketAddr, mtu: u16, guid: u64,
+        ipv4_socket: Arc<UdpSocket>,
+        address: SocketAddr,
+        mtu: u16,
+        guid: u64,
     ) -> Arc<Self> {
         let session = Arc::new(Self {
             identity: OnceCell::new(),

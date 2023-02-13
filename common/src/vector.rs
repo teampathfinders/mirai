@@ -14,9 +14,7 @@ impl<T: Clone, const N: usize> Vector<T, N> {
 
 impl<T, const N: usize> From<[T; N]> for Vector<T, N> {
     fn from(components: [T; N]) -> Self {
-        Self {
-            components,
-        }
+        Self { components }
     }
 }
 
@@ -46,10 +44,6 @@ pub struct BlockPosition {
 
 impl BlockPosition {
     pub const fn new(x: i32, y: u32, z: i32) -> Self {
-        Self {
-            x,
-            y,
-            z,
-        }
+        Self { x, y, z }
     }
 }

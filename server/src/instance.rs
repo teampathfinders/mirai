@@ -128,7 +128,8 @@ impl ServerInstance {
 
     /// Processes any packets that are sent before a session has been created.
     async fn handle_offline_packet(
-        self: Arc<Self>, packet: RawPacket,
+        self: Arc<Self>,
+        packet: RawPacket,
     ) -> VResult<()> {
         let id = packet
             .packet_id()
@@ -150,7 +151,8 @@ impl ServerInstance {
 
     /// Responds to the [`OfflinePing`] packet with [`OfflinePong`].
     async fn handle_unconnected_ping(
-        self: Arc<Self>, packet: RawPacket,
+        self: Arc<Self>,
+        packet: RawPacket,
     ) -> VResult<()> {
         let ping = OfflinePing::decode(packet.buffer.clone())?;
         let pong = OfflinePong {
@@ -168,14 +170,13 @@ impl ServerInstance {
 
     /// Responds to the [`OpenConnectionRequest1`] packet with [`OpenConnectionReply1`].
     async fn handle_open_connection_request1(
-        self: Arc<Self>, packet: RawPacket,
+        self: Arc<Self>,
+        packet: RawPacket,
     ) -> VResult<()> {
         let request = OpenConnectionRequest1::decode(packet.buffer.clone())?;
         if request.protocol_version != RAKNET_VERSION {
-            let reply = IncompatibleProtocol {
-                server_guid: self.guid,
-            }
-            .encode()?;
+            let reply =
+                IncompatibleProtocol { server_guid: self.guid }.encode()?;
 
             self.ipv4_socket
                 .send_to(reply.as_ref(), packet.address)
@@ -183,11 +184,9 @@ impl ServerInstance {
             return Ok(());
         }
 
-        let reply = OpenConnectionReply1 {
-            mtu: request.mtu,
-            server_guid: self.guid,
-        }
-        .encode()?;
+        let reply =
+            OpenConnectionReply1 { mtu: request.mtu, server_guid: self.guid }
+                .encode()?;
 
         self.ipv4_socket
             .send_to(reply.as_ref(), packet.address)
@@ -200,7 +199,8 @@ impl ServerInstance {
     /// From this point, all packets are encoded in a [`Frame`](crate::network::raknet::Frame).
 
     async fn handle_open_connection_request2(
-        self: Arc<Self>, packet: RawPacket,
+        self: Arc<Self>,
+        packet: RawPacket,
     ) -> VResult<()> {
         let request = OpenConnectionRequest2::decode(packet.buffer.clone())?;
         let reply = OpenConnectionReply2 {

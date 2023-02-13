@@ -55,8 +55,6 @@ impl Encodable for SetPlayerGameMode {
 impl Decodable for SetPlayerGameMode {
     fn decode(mut buffer: BytesMut) -> VResult<Self> {
         let game_mode = GameMode::try_from(buffer.get_var_i32()?)?;
-        Ok(Self {
-            game_mode,
-        })
+        Ok(Self { game_mode })
     }
 }

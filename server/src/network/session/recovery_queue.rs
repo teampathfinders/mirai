@@ -10,9 +10,7 @@ pub struct RecoveryQueue {
 
 impl RecoveryQueue {
     pub fn new() -> Self {
-        Self {
-            frames: DashMap::new(),
-        }
+        Self { frames: DashMap::new() }
     }
 
     pub fn insert(&self, batch: FrameBatch) {
@@ -35,7 +33,8 @@ impl RecoveryQueue {
     }
 
     pub fn recover(
-        &self, records: &Vec<AcknowledgementRecord>,
+        &self,
+        records: &Vec<AcknowledgementRecord>,
     ) -> Vec<FrameBatch> {
         let mut recovered = Vec::new();
         for record in records {

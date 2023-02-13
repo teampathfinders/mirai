@@ -252,7 +252,8 @@ pub fn parse_identity_data(
 /// Parses the user data token from the login packet.
 /// This token contains the user's operating system, language, skin, etc.
 pub fn parse_user_data(
-    buffer: &mut BytesMut, public_key: &str,
+    buffer: &mut BytesMut,
+    public_key: &str,
 ) -> VResult<UserTokenPayload> {
     let token_length = buffer.get_u32_le();
     let position = buffer.len() - buffer.remaining();

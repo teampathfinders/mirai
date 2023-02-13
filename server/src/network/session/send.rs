@@ -33,14 +33,17 @@ impl Session {
     /// Sends a game packet with default settings
     /// (reliable ordered and medium priority)
     pub fn send_packet<T: GamePacket + Encodable>(
-        &self, packet: T,
+        &self,
+        packet: T,
     ) -> VResult<()> {
         self.send_packet_with_config(packet, DEFAULT_CONFIG)
     }
 
     /// Sends a game packet with custom reliability and priority
     pub fn send_packet_with_config<T: GamePacket + Encodable>(
-        &self, packet: T, config: PacketConfig,
+        &self,
+        packet: T,
+        config: PacketConfig,
     ) -> VResult<()> {
         let packet = Packet::new(packet).subclients(0, 0);
 
@@ -95,7 +98,9 @@ impl Session {
 
     /// Sends a raw buffer with custom reliability and priority.
     pub fn send_raw_buffer_with_config(
-        &self, buffer: BytesMut, config: PacketConfig,
+        &self,
+        buffer: BytesMut,
+        config: PacketConfig,
     ) {
         self.send_queue.insert_raw(
             config.priority,
@@ -178,10 +183,7 @@ impl Session {
             }
         }
 
-        let ack = Acknowledgement {
-            records,
-        }
-        .encode()?;
+        let ack = Acknowledgement { records }.encode()?;
         self.ipv4_socket.send_to(&ack, self.address).await?;
 
         Ok(())

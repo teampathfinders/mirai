@@ -20,8 +20,6 @@ impl Decodable for RequestNetworkSettings {
     fn decode(mut buffer: BytesMut) -> VResult<Self> {
         let protocol_version = buffer.get_u32();
 
-        Ok(Self {
-            protocol_version,
-        })
+        Ok(Self { protocol_version })
     }
 }

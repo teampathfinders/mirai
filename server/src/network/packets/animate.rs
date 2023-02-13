@@ -63,10 +63,6 @@ impl Decodable for Animate {
             0.0
         };
 
-        Ok(Self {
-            action_type,
-            runtime_id,
-            rowing_time,
-        })
+        Ok(Self { action_type, runtime_id, rowing_time })
     }
 }

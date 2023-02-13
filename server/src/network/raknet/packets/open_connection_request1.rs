@@ -32,9 +32,6 @@ impl Decodable for OpenConnectionRequest1 {
         buffer.advance(16); // Skip magic
         let protocol_version = buffer.get_u8();
 
-        Ok(Self {
-            protocol_version,
-            mtu,
-        })
+        Ok(Self { protocol_version, mtu })
     }
 }

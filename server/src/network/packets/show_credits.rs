@@ -54,9 +54,6 @@ impl Decodable for CreditsUpdate {
         let runtime_id = buffer.get_var_u64()?;
         let status = CreditsStatus::try_from(buffer.get_var_i32()?)?;
 
-        Ok(Self {
-            runtime_id,
-            status,
-        })
+        Ok(Self { runtime_id, status })
     }
 }

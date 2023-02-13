@@ -19,9 +19,7 @@ impl Database {
         };
 
         if result.is_success == 1 {
-            Ok(Self {
-                pointer: result.data,
-            })
+            Ok(Self { pointer: result.data })
         } else {
             Err(translate_ffi_error(result))
         }

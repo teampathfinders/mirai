@@ -25,10 +25,7 @@ impl Decodable for TickSync {
         let request = buffer.get_u64();
         let response = buffer.get_u64();
 
-        Ok(Self {
-            request,
-            response,
-        })
+        Ok(Self { request, response })
     }
 }
 

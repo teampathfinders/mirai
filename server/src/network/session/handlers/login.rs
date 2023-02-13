@@ -31,7 +31,8 @@ use common::{bail, BlockPosition, Decodable, VResult, Vector2f, Vector3f};
 impl Session {
     /// Handles a [`ClientCacheStatus`] packet.
     pub fn handle_client_cache_status(
-        &self, mut packet: BytesMut,
+        &self,
+        mut packet: BytesMut,
     ) -> VResult<()> {
         let request = ClientCacheStatus::decode(packet)?;
         // Unused
@@ -40,7 +41,8 @@ impl Session {
     }
 
     pub fn handle_violation_warning(
-        &self, mut packet: BytesMut,
+        &self,
+        mut packet: BytesMut,
     ) -> VResult<()> {
         let request = ViolationWarning::decode(packet)?;
         tracing::error!("Received violation warning: {request:?}");
@@ -50,7 +52,8 @@ impl Session {
     }
 
     pub fn handle_local_player_initialized(
-        &self, mut packet: BytesMut,
+        &self,
+        mut packet: BytesMut,
     ) -> VResult<()> {
         let request = SetLocalPlayerAsInitialized::decode(packet)?;
         // Unused
@@ -59,7 +62,8 @@ impl Session {
     }
 
     pub fn handle_chunk_radius_request(
-        &self, mut packet: BytesMut,
+        &self,
+        mut packet: BytesMut,
     ) -> VResult<()> {
         let request = ChunkRadiusRequest::decode(packet)?;
         let reply = ChunkRadiusReply {
@@ -71,7 +75,8 @@ impl Session {
     }
 
     pub fn handle_resource_pack_client_response(
-        &self, mut packet: BytesMut,
+        &self,
+        mut packet: BytesMut,
     ) -> VResult<()> {
         let request = ResourcePackClientResponse::decode(packet)?;
 
@@ -150,17 +155,13 @@ impl Session {
         };
         self.send_packet(start_game)?;
 
-        let creative_content = CreativeContent {
-            items: vec![],
-        };
+        let creative_content = CreativeContent { items: vec![] };
         self.send_packet(creative_content)?;
 
         let biome_definition_list = BiomeDefinitionList;
         self.send_packet(biome_definition_list)?;
 
-        let play_status = PlayStatus {
-            status: Status::PlayerSpawn,
-        };
+        let play_status = PlayStatus { status: Status::PlayerSpawn };
         self.send_packet(play_status)?;
 
         let available_commands = AvailableCommands {
@@ -178,13 +179,12 @@ impl Session {
     }
 
     pub fn handle_client_to_server_handshake(
-        &self, mut packet: BytesMut,
+        &self,
+        mut packet: BytesMut,
     ) -> VResult<()> {
         ClientToServerHandshake::decode(packet)?;
 
-        let response = PlayStatus {
-            status: Status::LoginSuccess,
-        };
+        let response = PlayStatus { status: Status::LoginSuccess };
         self.send_packet(response)?;
 
         // TODO: Implement resource packs
@@ -233,9 +233,7 @@ impl Session {
         // Flush packets before enabling encryption
         self.flush().await?;
 
-        self.send_packet(ServerToClientHandshake {
-            jwt: jwt.as_str(),
-        })?;
+        self.send_packet(ServerToClientHandshake { jwt: jwt.as_str() })?;
         self.encryptor.set(encryptor)?;
 
         Ok(())
@@ -243,14 +241,13 @@ impl Session {
 
     /// Handles a [`RequestNetworkSettings`] packet.
     pub fn handle_request_network_settings(
-        &self, mut packet: BytesMut,
+        &self,
+        mut packet: BytesMut,
     ) -> VResult<()> {
         let request = RequestNetworkSettings::decode(packet)?;
         if request.protocol_version != NETWORK_VERSION {
             if request.protocol_version > NETWORK_VERSION {
-                let response = PlayStatus {
-                    status: Status::FailedServer,
-                };
+                let response = PlayStatus { status: Status::FailedServer };
                 self.send_packet(response)?;
 
                 bail!(
@@ -260,9 +257,7 @@ impl Session {
                     NETWORK_VERSION
                 );
             } else {
-                let response = PlayStatus {
-                    status: Status::FailedClient,
-                };
+                let response = PlayStatus { status: Status::FailedClient };
                 self.send_packet(response)?;
 
                 bail!(

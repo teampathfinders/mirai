@@ -15,9 +15,7 @@ pub struct CompoundCollector {
 impl CompoundCollector {
     /// Creates a new collector.
     pub fn new() -> Self {
-        Self {
-            compounds: DashMap::new(),
-        }
+        Self { compounds: DashMap::new() }
     }
 
     /// Inserts a fragment into the collector.

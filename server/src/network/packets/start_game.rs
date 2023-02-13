@@ -108,11 +108,7 @@ impl BlockEntry {
     pub fn encode(&self, buffer: &mut BytesMut) {
         buffer.put_string(&self.name);
 
-        nbt::RefTag {
-            name: "",
-            value: &self.properties,
-        }
-        .encode_net(buffer);
+        nbt::RefTag { name: "", value: &self.properties }.encode_net(buffer);
     }
 }
 

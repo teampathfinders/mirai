@@ -54,10 +54,6 @@ impl Decodable for Interact {
             _ => Vector3f::from([0.0, 0.0, 0.0]),
         };
 
-        Ok(Self {
-            action,
-            target_runtime_id,
-            position,
-        })
+        Ok(Self { action, target_runtime_id, position })
     }
 }

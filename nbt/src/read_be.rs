@@ -10,10 +10,7 @@ use std::collections::HashMap;
 pub fn read_be(stream: &mut BytesMut) -> VResult<Tag> {
     let (name, value) = Value::decode_tag_be(stream)?;
 
-    Ok(Tag {
-        name,
-        value,
-    })
+    Ok(Tag { name, value })
 }
 
 impl Value {
@@ -44,7 +41,8 @@ impl Value {
     }
 
     fn decode_tag_value_be(
-        stream: &mut BytesMut, tag_type: u8,
+        stream: &mut BytesMut,
+        tag_type: u8,
     ) -> VResult<Self> {
         Ok(match tag_type {
             TAG_END => Self::End,

@@ -51,9 +51,6 @@ impl Decodable for ResourcePackClientResponse {
             pack_ids.push(buffer.get_string()?);
         }
 
-        Ok(Self {
-            status,
-            pack_ids,
-        })
+        Ok(Self { status, pack_ids })
     }
 }
