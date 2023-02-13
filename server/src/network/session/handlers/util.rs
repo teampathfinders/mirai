@@ -11,7 +11,7 @@ use crate::network::{
         MobEffectUpdate, NetworkChunkPublisherUpdate, PaintingDirection,
         PlaySound, RequestAbility, SetCommandsEnabled, SetDifficulty,
         SetPlayerGameMode, SetTime, SetTitle, ShowProfile, SpawnExperienceOrb,
-        TextMessage, TitleAction, ToastRequest, Transfer,
+        TextMessage, TitleAction, ToastRequest, Transfer, PlayerFog,
     },
     session::Session,
 };
@@ -21,13 +21,10 @@ impl Session {
         let request = TextMessage::decode(packet)?;
         tracing::info!("{request:?}");
 
-        let shake = CameraShake {
-            action: CameraShakeAction::Add,
-            duration: 5.0,
-            intensity: 0.5,
-            shake_type: CameraShakeType::Rotational,
+        let fog_stack = PlayerFog {
+            stack: vec!["minecraft:fog_ocean".to_owned()]
         };
-        self.send_packet(shake)?;
+        self.send_packet(fog_stack)?;
 
         Ok(())
     }
