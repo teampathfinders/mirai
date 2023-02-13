@@ -236,7 +236,7 @@ impl Encodable for StartGame {
         buffer.put_var_i32(self.game_mode as i32);
         self.position.encode(&mut buffer);
         self.rotation.encode(&mut buffer);
-        buffer.put_u64(self.world_seed);
+        buffer.put_u64_le(self.world_seed);
         buffer.put_i16(self.spawn_biome_type as i16);
         buffer.put_string(&self.custom_biome_name);
         buffer.put_var_u32(self.dimension as u32);

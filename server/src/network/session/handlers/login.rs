@@ -20,7 +20,7 @@ use crate::network::packets::{
     ResourcePackClientResponse, ResourcePackStack, ResourcePacksInfo,
     ServerToClientHandshake, SetLocalPlayerAsInitialized, SpawnBiomeType,
     StartGame, Status, ViolationWarning, WorldGenerator,
-    DISCONNECTED_LOGIN_FAILED, DISCONNECTED_NOT_AUTHENTICATED, NETWORK_VERSION,
+    DISCONNECTED_LOGIN_FAILED, DISCONNECTED_NOT_AUTHENTICATED, NETWORK_VERSION, ExperimentData,
 };
 use crate::network::raknet::Reliability;
 use crate::network::raknet::{Frame, FrameBatch};
@@ -87,8 +87,8 @@ impl Session {
             runtime_id: 1,
             game_mode: GameMode::Creative,
             position: Vector3f::from([0.0, 0.0, 0.0]),
-            rotation: Vector2f::from([0.0, 0.0]),
-            world_seed: 0,
+            rotation: Vector2f::from([90.0, 90.0]),
+            world_seed: 69420,
             spawn_biome_type: SpawnBiomeType::Default,
             custom_biome_name: "plains".to_string(),
             dimension: Dimension::Overworld,
@@ -109,12 +109,12 @@ impl Session {
             xbox_broadcast_intent: BroadcastIntent::Public,
             platform_broadcast_intent: BroadcastIntent::Public,
             enable_commands: true,
-            texture_packs_required: false,
+            texture_packs_required: true,
             gamerules: vec![],
             experiments: vec![],
             experiments_previously_enabled: false,
             bonus_chest_enabled: false,
-            starter_map_enabled: true,
+            starter_map_enabled: false,
             permission_level: PermissionLevel::Operator,
             server_chunk_tick_range: 0,
             has_locked_behavior_pack: false,
@@ -133,7 +133,7 @@ impl Session {
             chat_restriction_level: ChatRestrictionLevel::None,
             disable_player_interactions: false,
             level_id: "".to_string(),
-            level_name: "nova Server".to_string(),
+            level_name: "Nova Server".to_string(),
             template_content_identity: "".to_string(),
             is_trial: false,
             movement_settings: PlayerMovementSettings {
