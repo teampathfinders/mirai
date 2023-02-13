@@ -6,6 +6,7 @@ use lazy_static::lazy_static;
 use crate::bail;
 use crate::BlockPosition;
 use crate::VResult;
+use crate::Vector2i;
 use crate::Vector3f;
 use crate::Vector3i;
 
@@ -293,6 +294,13 @@ pub trait WriteExtensions: BufMut + Sized {
         self.put_f32_le(a);
         self.put_f32_le(b);
         self.put_f32_le(c);
+    }
+
+    fn put_vec2i(&mut self, value: &Vector2i) {
+        let [a, b] = value.components();
+
+        self.put_var_i32(a);
+        self.put_var_i32(b);
     }
 
     fn put_vec3i(&mut self, value: &Vector3i) {

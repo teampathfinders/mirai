@@ -28,12 +28,11 @@ impl<const N: usize> Vector<f32, N> {
 
 /// 32-bit float vector with 2 components
 pub type Vector2f = Vector<f32, 2>;
-
 /// 32-bit float vector with 3 components
 pub type Vector3f = Vector<f32, 3>;
-
+/// 32-bit signed integer vector with 2 components.
 pub type Vector2i = Vector<i32, 2>;
-
+/// 32-bit signed integer vector with 3 components.
 pub type Vector3i = Vector<i32, 3>;
 
 #[derive(Debug, Clone)]

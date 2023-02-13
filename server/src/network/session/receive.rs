@@ -8,10 +8,10 @@ use bytes::{Buf, BytesMut};
 use crate::config::SERVER_CONFIG;
 use crate::network::header::Header;
 use crate::network::packets::{
-    Animate, ChunkRadiusRequest, ClientCacheStatus, ClientToServerHandshake, CompressionAlgorithm,
-    GamePacket, Login, MovePlayer, RequestAbility, RequestNetworkSettings,
+    Animate, ChunkRadiusRequest, ClientCacheStatus, ClientToServerHandshake, CommandRequest,
+    CompressionAlgorithm, GamePacket, Login, MovePlayer, RequestAbility, RequestNetworkSettings,
     ResourcePackClientResponse, SetDifficulty, SetLocalPlayerAsInitialized, ViolationWarning,
-    GAME_PACKET_ID, CommandRequest,
+    GAME_PACKET_ID,
 };
 use crate::network::packets::{Interact, OnlinePing, TextMessage};
 use crate::network::raknet::packets::ConnectionRequest;

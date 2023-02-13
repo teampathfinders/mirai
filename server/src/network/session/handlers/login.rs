@@ -11,9 +11,9 @@ use crate::network::packets::GameMode::Creative;
 use crate::network::packets::{
     AvailableCommands, BiomeDefinitionList, BroadcastIntent, ChatRestrictionLevel,
     ChunkRadiusReply, ChunkRadiusRequest, ClientCacheStatus, ClientToServerHandshake, Command,
-    CommandEnum, CommandOverload, CommandParameter, CommandParameterType, CreativeContent,
-    Difficulty, Dimension, Disconnect, GameMode, ItemEntry, Login, NetworkSettings,
-    PermissionLevel, PlayStatus, PlayerMovementSettings, PlayerMovementType,
+    CommandEnum, CommandOverload, CommandParameter, CommandParameterType, CommandPermissionLevel,
+    CreativeContent, Difficulty, Dimension, Disconnect, GameMode, ItemEntry, Login,
+    NetworkSettings, PermissionLevel, PlayStatus, PlayerMovementSettings, PlayerMovementType,
     RequestNetworkSettings, ResourcePackClientResponse, ResourcePackStack, ResourcePacksInfo,
     ServerToClientHandshake, SetLocalPlayerAsInitialized, SpawnBiomeType, StartGame, Status,
     ViolationWarning, WorldGenerator, DISCONNECTED_LOGIN_FAILED, DISCONNECTED_NOT_AUTHENTICATED,
@@ -150,77 +150,12 @@ impl Session {
         self.send_packet(play_status)?;
 
         let available_commands = AvailableCommands {
-            commands: vec![
-            //     Command {
-            //     aliases: vec![
-            //         "disconnect".to_owned(),
-            //         "kick".to_owned()
-            //     ],
-            //     description: "Kicks the specified user from the game".to_owned(),
-            //     name: "kick".to_owned(),
-            //     permission_level: PermissionLevel::Visitor,
-            //     overloads: vec![CommandOverload {
-            //         parameters: vec![
-            //             CommandParameter {
-            //                 name: "player".to_owned(),
-            //                 optional: false,
-            //                 suffix: String::new(),
-            //                 argument_type: CommandParameterType::Target,
-            //                 command_enum: CommandEnum {
-            //                     enum_id: "target".to_owned(),
-            //                     dynamic: false,
-            //                     options: vec![
-            //                         "user".to_owned(),
-            //                         "user2".to_owned()
-            //                     ],
-            //                 },
-            //                 options: 0,
-            //             },
-            //             CommandParameter {
-            //                 name: "reason".to_owned(),
-            //                 optional: true,
-            //                 suffix: String::new(),
-            //                 argument_type: CommandParameterType::String,
-            //                 command_enum: CommandEnum {
-            //                     enum_id: "reason".to_owned(),
-            //                     dynamic: false,
-            //                     options: vec![
-            //                         "reason".to_owned()
-            //                     ],
-            //                 },
-            //                 options: 0,
-            //             },
-            //         ],
-            //     }],
-            // }, 
-            Command { 
-                name: "credits".to_owned(), 
-                description: "Shows the credits screen".to_owned(), 
-                permission_level: PermissionLevel::Visitor, 
-                aliases: vec![
-                    "credits".to_owned()
-                ], 
-                overloads: vec![]
-                // overloads: vec![
-                //     CommandOverload {
-                //         parameters: vec![
-                //             CommandParameter {
-                //                 name: "test".to_owned(),
-                //                 optional: false,
-                //                 suffix: String::new(),
-                //                 argument_type: CommandParameterType::String,
-                //                 command_enum: CommandEnum {
-                //                     enum_id: "test".to_owned(),
-                //                     dynamic: false,
-                //                     options: vec![
-                //                         "reason".to_owned()
-                //                     ]
-                //                 },
-                //                 options: 0
-                //             }
-                //         ]
-                //     }
-                // ] 
+            commands: vec![Command {
+                name: "credits".to_owned(),
+                description: "Shows the credits screen".to_owned(),
+                permission_level: CommandPermissionLevel::Admin,
+                aliases: vec!["credits".to_owned()],
+                overloads: vec![],
             }],
         };
         self.send_packet(available_commands)?;

@@ -6,10 +6,11 @@ use common::{BlockPosition, VResult, Vector3f, Vector3i};
 use crate::network::{
     packets::{
         AddPainting, Animate, CameraShake, CameraShakeAction, CameraShakeType, ChangeDimension,
-        CreditsStatus, Difficulty, Dimension, GameMode, MessageType, MobEffectAction, MobEffectKind,
-        MobEffectUpdate, NetworkChunkPublisherUpdate, PaintingDirection, PlaySound, RequestAbility,
-        SetCommandsEnabled, SetDifficulty, SetPlayerGameMode, SetTime, SetTitle, CreditsUpdate,
-        ShowProfile, SpawnExperienceOrb, TextMessage, TitleAction, ToastRequest, Transfer, CommandRequest,
+        CommandRequest, CreditsStatus, CreditsUpdate, Difficulty, Dimension, GameMode, MessageType,
+        MobEffectAction, MobEffectKind, MobEffectUpdate, NetworkChunkPublisherUpdate,
+        PaintingDirection, PlaySound, RequestAbility, SetCommandsEnabled, SetDifficulty,
+        SetPlayerGameMode, SetTime, SetTitle, ShowProfile, SpawnExperienceOrb, TextMessage,
+        TitleAction, ToastRequest, Transfer,
     },
     session::Session,
     Decodable,
@@ -24,7 +25,7 @@ impl Session {
             action: CameraShakeAction::Add,
             duration: 5.0,
             intensity: 0.5,
-            shake_type: CameraShakeType::Rotational
+            shake_type: CameraShakeType::Rotational,
         };
         self.send_packet(shake)?;
 
@@ -52,7 +53,7 @@ impl Session {
         if request.command == "/credits" {
             let credits = CreditsUpdate {
                 runtime_id: 1,
-                status: CreditsStatus::Start
+                status: CreditsStatus::Start,
             };
             self.send_packet(credits)?;
         }

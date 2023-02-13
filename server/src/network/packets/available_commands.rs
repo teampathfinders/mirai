@@ -12,6 +12,16 @@ pub const COMMAND_PARAMETER_ENUM: u32 = 0x200000;
 pub const COMMAND_PARAMETER_SUFFIXED: u32 = 0x1000000;
 pub const COMMAND_PARAMETER_SOFT_ENUM: u32 = 0x4000000;
 
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+pub enum CommandPermissionLevel {
+    Normal,
+    GameDirectors,
+    Admin,
+    Host,
+    Owner,
+    Internal,
+}
+
 /// Used for autocompletion.
 ///
 /// This object contains the list of available options.
@@ -83,7 +93,7 @@ pub struct Command {
     /// Description of the command.
     pub description: String,
     /// Who is allowed to use this command.
-    pub permission_level: PermissionLevel,
+    pub permission_level: CommandPermissionLevel,
     /// Aliases.
     pub aliases: Vec<String>,
     /// All different argument combinations of the command.

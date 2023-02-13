@@ -1,5 +1,5 @@
-use bytes::{BytesMut, Buf};
-use common::{VResult, ReadExtensions, VError, bail};
+use bytes::{Buf, BytesMut};
+use common::{bail, ReadExtensions, VError, VResult};
 
 use crate::network::Decodable;
 
@@ -22,7 +22,7 @@ pub enum CommandOrigin {
     Precompiled,
     GameDirectorEntityServer,
     Script,
-    Executor
+    Executor,
 }
 
 impl TryFrom<u32> for CommandOrigin {
@@ -46,7 +46,7 @@ impl TryFrom<u32> for CommandOrigin {
             13 => Self::GameDirectorEntityServer,
             14 => Self::Script,
             15 => Self::Executor,
-            _ => bail!(BadPacket, "Invalid command origin {value}")
+            _ => bail!(BadPacket, "Invalid command origin {value}"),
         })
     }
 }
@@ -55,7 +55,7 @@ impl TryFrom<u32> for CommandOrigin {
 pub struct CommandRequest {
     pub command: String,
     pub origin: CommandOrigin,
-    pub request_id: String
+    pub request_id: String,
 }
 
 impl GamePacket for CommandRequest {
@@ -72,7 +72,7 @@ impl Decodable for CommandRequest {
         Ok(Self {
             command,
             origin,
-            request_id
+            request_id,
         })
     }
 }

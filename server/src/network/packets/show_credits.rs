@@ -1,7 +1,7 @@
 use bytes::BytesMut;
-use common::{VResult, WriteExtensions, VError, bail, ReadExtensions};
+use common::{bail, ReadExtensions, VError, VResult, WriteExtensions};
 
-use crate::network::{Encodable, Decodable};
+use crate::network::{Decodable, Encodable};
 
 use super::GamePacket;
 
@@ -21,7 +21,7 @@ impl TryFrom<i32> for CreditsStatus {
         Ok(match value {
             0 => Self::Start,
             1 => Self::End,
-            _ => bail!(BadPacket, "Invalid credits status {value}")
+            _ => bail!(BadPacket, "Invalid credits status {value}"),
         })
     }
 }
@@ -54,9 +54,6 @@ impl Decodable for CreditsUpdate {
         let runtime_id = buffer.get_var_u64()?;
         let status = CreditsStatus::try_from(buffer.get_var_i32()?)?;
 
-        Ok(Self {
-            runtime_id,
-            status
-        })
+        Ok(Self { runtime_id, status })
     }
 }

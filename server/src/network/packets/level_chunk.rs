@@ -1,32 +1,70 @@
 use bytes::{BufMut, BytesMut};
-use common::{VResult, WriteExtensions};
+use common::{VResult, Vector2i, WriteExtensions};
 
 use crate::network::Encodable;
 
 use super::GamePacket;
 
-// #[derive(Debug)]
-// pub struct LevelChunk {
-//     pub position: ChunkPosition,
-//     pub subchunk_count: u32,
-//     pub cache_enabled: bool,
-//     pub chunk_data: BytesMut
-// }
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+pub enum SubChunkRequestMode {
+    /// The legacy mode that specifies the amount of sub chunks in the packet.
+    Legacy,
+    /// Limitless mode that allows an unlimited world height.
+    Limitless,
+    /// Mode that only specifies the highest chunk.
+    Limited,
+}
 
-// impl GamePacket for LevelChunk {
-//     const ID: u32 = 0x3a;
-// }
+#[derive(Debug)]
+pub struct LevelChunk {
+    /// Position of the chunk.
+    pub position: Vector2i,
+    /// How these chunks should be handled by the client.
+    pub request_mode: SubChunkRequestMode,
+    /// Top sub chunk in the packet.
+    /// This is used if the request mode is set to limited.
+    pub highest_sub_chunk: u16,
+    /// Amount of sub chunks in this packet.
+    pub sub_chunk_count: u32,
+    /// List of hashes used to cache the chunks.
+    /// This should be set to None if the client does not support the blob cache.
+    pub blob_hashes: Option<Vec<u64>>,
+    /// Raw chunk data.
+    pub raw_payload: BytesMut,
+}
 
-// impl Encodable for LevelChunk {
-//     fn encode(&self) -> VResult<BytesMut> {
-//         let mut buffer = BytesMut::new();
+impl GamePacket for LevelChunk {
+    const ID: u32 = 0x3a;
+}
 
-//         buffer.put_var_i32(self.chunk_x);
-//         buffer.put_var_i32(self.chunk_z);
-//         buffer.put_var_u32(self.subchunk_count);
-//         buffer.put_bool(self.cache_enabled);
-//         buffer.put(self.chunk_data.as_ref());
+impl Encodable for LevelChunk {
+    fn encode(&self) -> VResult<BytesMut> {
+        let mut buffer = BytesMut::new();
 
-//         Ok(buffer)
-//     }
-// }
+        buffer.put_vec2i(&self.position);
+        match self.request_mode {
+            SubChunkRequestMode::Legacy => {
+                buffer.put_var_u32(self.sub_chunk_count);
+            }
+            SubChunkRequestMode::Limitless => {
+                buffer.put_var_u32(u32::MAX);
+            }
+            SubChunkRequestMode::Limited => {
+                buffer.put_var_u32(u32::MAX - 1);
+                buffer.put_u16(self.highest_sub_chunk);
+            }
+        }
+
+        buffer.put_bool(self.blob_hashes.is_some());
+        if let Some(hashes) = &self.blob_hashes {
+            buffer.put_var_u32(hashes.len() as u32);
+            for hash in hashes {
+                buffer.put_u64(*hash);
+            }
+        }
+
+        buffer.put(self.raw_payload.as_ref());
+
+        Ok(buffer)
+    }
+}
