@@ -1,4 +1,4 @@
-use bytes::{BytesMut, BufMut};
+use bytes::{BufMut, BytesMut};
 use common::{Encodable, VResult};
 
 /// Database key prefixes.
@@ -48,15 +48,18 @@ pub struct DatabaseKey {
 impl Encodable for DatabaseKey {
     fn encode(&self) -> VResult<BytesMut> {
         let mut buffer = BytesMut::with_capacity(
-            4 + 4 + if self.dimension != Dimension::Overworld {
-                4
-            } else {
-                0
-            } + 1 + if self.tag == DatabaseTag::SubChunk {
-                1
-            } else {
-                0
-            }
+            4 + 4
+                + if self.dimension != Dimension::Overworld {
+                    4
+                } else {
+                    0
+                }
+                + 1
+                + if self.tag == DatabaseTag::SubChunk {
+                    1
+                } else {
+                    0
+                },
         );
 
         buffer.put_i32_le(self.x);

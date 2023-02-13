@@ -27,7 +27,7 @@ impl Database {
         }
     }
 
-    pub fn get_key<K: AsRef<[u8]>>(&self, key: K) -> VResult<BytesMut> {
+    pub fn get_raw_key<K: AsRef<[u8]>>(&self, key: K) -> VResult<BytesMut> {
         let key = key.as_ref();
         let result = unsafe {
             // SAFETY: This function is guaranteed to not modify any arguments.

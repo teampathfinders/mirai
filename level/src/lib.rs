@@ -1,8 +1,10 @@
 #[cfg(test)]
 mod test;
 
+mod chunk;
 mod database;
 mod ffi;
-mod level;
+mod world;
 
-pub use level::*;
+pub use chunk::*;
+pub use world::*;
