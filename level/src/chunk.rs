@@ -10,12 +10,15 @@ pub struct StorageRecord {
 
 impl StorageRecord {
     pub fn decode(buffer: &mut BytesMut) -> VResult<Self> {
+        // Size of each index in bits.
         let index_size = buffer.get_u8() >> 1;
         if index_size == 0x7f {
             bail!(InvalidChunk, "Invalid block bit size {bits_per_block}");
         }
 
+        // Amount of indices that fit in a single 32-bit integer.
         let indices_per_word = 32 / index_size as usize;
+        // Amount of words needed to encode 4096 block indices.
         let word_count = {
             let padding = match index_size {
                 3 | 5 | 6 => 1,
@@ -35,6 +38,15 @@ impl StorageRecord {
 
                 word >>= index_size;
             }
+        }
+
+        // Size of the block palette.
+        let palette_size = buffer.get_u32_le();
+
+        // let mut palette = Vec::with_capacity(palette_size as usize);
+        for _ in 0..palette_size {
+            let properties = nbt::read_le(buffer)?;
+            println!("{properties:?}");
         }
 
         Ok(Self { indices })

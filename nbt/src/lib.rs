@@ -13,6 +13,9 @@ mod write_be;
 mod write_le;
 mod write_net;
 
+pub use read_be::*;
+pub use read_le::*;
+
 #[derive(Error, Debug)]
 pub enum Error {
     #[error("Invalid TAG type: {0}")]
@@ -82,7 +85,7 @@ pub struct RefTag<'a> {
 }
 
 #[derive(Debug, Clone, PartialEq)]
-pub struct OwnedTag {
+pub struct Tag {
     pub name: String,
     pub value: Value,
 }

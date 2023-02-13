@@ -742,6 +742,8 @@ dependencies = [
  "bytes",
  "cmake",
  "common",
+ "nbt",
+ "tracing",
 ]
 
 [[package]]

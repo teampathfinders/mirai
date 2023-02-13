@@ -66,6 +66,10 @@ pub enum VErrorKind {
     InvalidIdentity,
     /// An operation on the database has failed.
     DatabaseFailure,
+    /// An invalid chunk was found.
+    InvalidChunk,
+    /// An invalid NBT structure was encountered.
+    InvalidNbt,
     /// An unknown error
     Other,
 }

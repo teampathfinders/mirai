@@ -1,4 +1,6 @@
-use crate::{OwnedTag, RefTag, Value};
+use bytes::BytesMut;
+
+use crate::{Tag, RefTag, Value};
 use std::collections::HashMap;
 
 const BIGTEST_NBT: &[u8] = include_bytes!("../test/bigtest.nbt");
@@ -21,17 +23,17 @@ fn hello_world_write_nbt() {
 
 #[test]
 fn bigtest_nbt() {
-    OwnedTag::decode_be(BIGTEST_NBT).unwrap();
+    crate::read_be(&mut BytesMut::from(BIGTEST_NBT)).unwrap();
 }
 
 #[test]
 fn hello_world_nbt() {
-    let decoded = OwnedTag::decode_be(HELLO_WORLD_NBT).unwrap();
+    let decoded = crate::read_be(&mut BytesMut::from(HELLO_WORLD_NBT)).unwrap();
     println!("{decoded:?}");
 
     assert_eq!(
         decoded,
-        OwnedTag {
+        Tag {
             name: "hello world".to_owned(),
             value: Value::Compound(HashMap::from([(
                 "name".to_owned(),
@@ -43,5 +45,5 @@ fn hello_world_nbt() {
 
 #[test]
 fn player_nan_value_nbt() {
-    OwnedTag::decode_be(PLAYER_NAN_VALUE_NBT).unwrap();
+    crate::read_be(&mut BytesMut::from(PLAYER_NAN_VALUE_NBT)).unwrap();
 }
