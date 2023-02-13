@@ -3,20 +3,7 @@ use common::{Encodable, VResult, WriteExtensions};
 
 use super::GamePacket;
 
-#[derive(Debug)]
-pub struct GameRuleData {
-    pub player_can_modify: bool,
-    pub game_rule: GameRule,
-}
-
-impl GameRuleData {
-    pub fn encode(&self, buffer: &mut BytesMut) {
-        buffer.put_string(self.game_rule.name());
-        buffer.put_bool(self.player_can_modify);
-        self.game_rule.encode(buffer);
-    }
-}
-
+/// Minecraft game rules.
 #[derive(Debug)]
 pub enum GameRule {
     CommandBlocksEnabled(bool),
@@ -52,7 +39,11 @@ pub enum GameRule {
 }
 
 impl GameRule {
-    fn encode(&self, buffer: &mut BytesMut) {
+    pub fn encode(&self, buffer: &mut BytesMut) {
+        buffer.put_string(self.name());
+        buffer.put_bool(true); // Player can modify. Doesn't seem to do anything.
+
+
         match self {
             Self::CommandBlocksEnabled(b)
             | Self::CommandBlockOutput(b)
@@ -93,8 +84,9 @@ impl GameRule {
         }
     }
 
+    /// Returns the in-game name of the game rule.
     #[inline]
-    fn name(&self) -> &'static str {
+    pub fn name(&self) -> &'static str {
         match self {
             Self::CommandBlocksEnabled(_) => "commandblocksenabled",
             Self::CommandBlockOutput(_) => "commandblockoutput",
@@ -130,8 +122,10 @@ impl GameRule {
     }
 }
 
+/// Updates one or more game rules.
 #[derive(Debug)]
 pub struct GameRulesChanged {
+    /// Game rules to update.
     pub game_rules: Vec<GameRule>,
 }
 

@@ -15,7 +15,7 @@ use crate::network::packets::{
     ClientCacheStatus, ClientToServerHandshake, Command, CommandEnum,
     CommandOverload, CommandParameter, CommandParameterType,
     CommandPermissionLevel, CreativeContent, Difficulty, Disconnect,
-    ExperimentData, GameMode, GameRule, GameRuleData, ItemEntry, Login,
+    ExperimentData, GameMode, GameRule, ItemEntry, Login,
     NetworkSettings, PermissionLevel, PlayStatus, PlayerMovementSettings,
     PlayerMovementType, RequestNetworkSettings, ResourcePackClientResponse,
     ResourcePackStack, ResourcePacksInfo, ServerToClientHandshake,
@@ -112,20 +112,14 @@ impl Session {
             enable_commands: true,
             texture_packs_required: true,
             gamerules: vec![
-                GameRuleData {
-                    player_can_modify: false,
-                    game_rule: GameRule::ShowCoordinates(true),
-                },
-                GameRuleData {
-                    player_can_modify: false,
-                    game_rule: GameRule::DaylightCycle(false)
-                }
+                GameRule::ShowCoordinates(true),
+                GameRule::DaylightCycle(false)
             ],
             experiments: vec![],
             experiments_previously_enabled: false,
             bonus_chest_enabled: false,
             starter_map_enabled: false,
-            permission_level: PermissionLevel::Operator,
+            permission_level: PermissionLevel::Member,
             server_chunk_tick_range: 0,
             has_locked_behavior_pack: false,
             has_locked_resource_pack: false,

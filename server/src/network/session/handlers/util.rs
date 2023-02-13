@@ -12,7 +12,7 @@ use crate::network::{
         NetworkChunkPublisherUpdate, PaintingDirection, PlaySound, PlayerFog,
         RequestAbility, SetCommandsEnabled, SetDifficulty, SetPlayerGameMode,
         SetTime, SetTitle, ShowProfile, SpawnExperienceOrb, TextMessage,
-        TitleAction, ToastRequest, Transfer,
+        TitleAction, ToastRequest, Transfer, GameRulesChanged, GameRule,
     },
     session::Session,
 };
@@ -22,14 +22,18 @@ impl Session {
         let request = TextMessage::decode(packet)?;
         tracing::info!("{request:?}");
 
-        let renderer = ClientBoundDebugRenderer {
-            action: DebugRendererAction::AddCube,
-            color: Vector4f::from([1.0, 1.0, 1.0, 1.0]),
-            position: Vector3f::from([1.0, 1.0, 1.0]),
-            text: "Hello, World!".to_owned(),
-            duration: 10_000,
+        let game_rules = GameRulesChanged {
+            game_rules: vec![
+                GameRule::ShowCoordinates(false)
+            ]
         };
-        self.send_packet(renderer)?;
+        self.send_packet(game_rules)?;
+
+        let toast = ToastRequest {
+            title: "Game Rule Updated".to_owned(),
+            message: "Disabled the showcoordinates gamerule".to_owned()
+        };
+        self.send_packet(toast)?;
 
         Ok(())
     }
