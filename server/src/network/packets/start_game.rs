@@ -112,7 +112,7 @@ impl BlockEntry {
             name: "",
             value: &self.properties,
         }
-        .encode_with_net(buffer);
+        .encode_net(buffer);
     }
 }
 
@@ -323,11 +323,7 @@ impl Encodable for StartGame {
         buffer.put_bool(self.server_authoritative_inventory);
         buffer.put_string(CLIENT_VERSION_STRING); // Game version
 
-        nbt::RefTag {
-            name: "",
-            value: &self.property_data,
-        }
-        .encode_with_net(&mut buffer);
+        nbt::encode_net("", &self.property_data, &mut buffer);
 
         buffer.put_u64(self.server_block_state_checksum);
         buffer.put_u128(self.world_template_id);

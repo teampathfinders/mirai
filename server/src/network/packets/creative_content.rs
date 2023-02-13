@@ -54,7 +54,7 @@ impl ItemStack {
                     name: "",
                     value: &self.nbt_data,
                 }
-                .encode_with_le(buffer);
+                .encode_le(buffer);
             }
         } else {
             todo!()

@@ -1,6 +1,6 @@
 use bytes::BytesMut;
 
-use crate::{Tag, RefTag, Value};
+use crate::{RefTag, Tag, Value};
 use std::collections::HashMap;
 
 const BIGTEST_NBT: &[u8] = include_bytes!("../test/bigtest.nbt");
@@ -17,7 +17,8 @@ fn hello_world_write_nbt() {
         )])),
     };
 
-    let encoded = tag.encode_be();
+    let mut encoded = BytesMut::new();
+    tag.encode_be(&mut encoded);
     assert_eq!(encoded, HELLO_WORLD_NBT);
 }
 

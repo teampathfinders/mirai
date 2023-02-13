@@ -16,6 +16,10 @@ mod write_net;
 pub use read_be::*;
 pub use read_le::*;
 
+pub use write_be::*;
+pub use write_le::*;
+pub use write_net::*;
+
 #[derive(Error, Debug)]
 pub enum Error {
     #[error("Invalid TAG type: {0}")]

@@ -3,13 +3,13 @@ use crate::{
     TAG_INT, TAG_INT_ARRAY, TAG_LIST, TAG_LONG, TAG_LONG_ARRAY, TAG_SHORT, TAG_STRING,
 };
 use bytes::{Buf, BytesMut};
-use common::{VResult, bail};
+use common::{bail, VResult};
 use std::collections::HashMap;
 
 pub fn read_be(stream: &mut BytesMut) -> VResult<Tag> {
     let (name, value) = Value::decode_tag_be(stream)?;
 
-        Ok(Tag { name, value })
+    Ok(Tag { name, value })
 }
 
 impl Value {
