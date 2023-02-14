@@ -15,13 +15,12 @@ use crate::network::packets::{
     ClientCacheStatus, ClientToServerHandshake, Command, CommandEnum,
     CommandOverload, CommandParameter, CommandParameterType,
     CommandPermissionLevel, CreativeContent, Difficulty, Disconnect,
-    ExperimentData, GameMode, GameRule, ItemEntry, Login,
-    NetworkSettings, PermissionLevel, PlayStatus, PlayerMovementSettings,
-    PlayerMovementType, RequestNetworkSettings, ResourcePackClientResponse,
-    ResourcePackStack, ResourcePacksInfo, ServerToClientHandshake,
-    SetLocalPlayerAsInitialized, SpawnBiomeType, StartGame, Status,
-    ViolationWarning, WorldGenerator, DISCONNECTED_LOGIN_FAILED,
-    DISCONNECTED_NOT_AUTHENTICATED, NETWORK_VERSION,
+    ExperimentData, GameMode, GameRule, ItemEntry, Login, NetworkSettings,
+    PermissionLevel, PlayStatus, PlayerMovementSettings, PlayerMovementType,
+    RequestNetworkSettings, ResourcePackClientResponse, ResourcePackStack,
+    ResourcePacksInfo, ServerToClientHandshake, SetLocalPlayerAsInitialized,
+    SpawnBiomeType, StartGame, Status, ViolationWarning, WorldGenerator,
+    DISCONNECTED_LOGIN_FAILED, DISCONNECTED_NOT_AUTHENTICATED, NETWORK_VERSION,
 };
 use crate::network::raknet::Reliability;
 use crate::network::raknet::{Frame, FrameBatch};
@@ -113,7 +112,7 @@ impl Session {
             texture_packs_required: true,
             gamerules: vec![
                 GameRule::ShowCoordinates(true),
-                GameRule::DaylightCycle(false)
+                GameRule::DaylightCycle(false),
             ],
             experiments: vec![],
             experiments_previously_enabled: false,

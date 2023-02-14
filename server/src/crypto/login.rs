@@ -5,7 +5,7 @@ use bytes::{Buf, BytesMut};
 use common::{bail, error, VResult};
 use jsonwebtoken::{Algorithm, DecodingKey, Validation};
 
-use crate::network::packets::BuildPlatform;
+use crate::{network::packets::BuildPlatform, skin::Skin};
 
 /// Mojang's public key.
 /// Used to verify the second token in the identity chain.
@@ -84,6 +84,8 @@ pub struct UserTokenPayload {
     pub language_code: String,
     #[serde(rename = "ServerAddress")]
     server_address: String,
+    #[serde(flatten)]
+    skin: Skin,
 }
 
 /// First token in the chain holds the client's self-signed public key in the X5U.
@@ -261,6 +263,8 @@ pub fn parse_user_data(
     let token_string = String::from_utf8_lossy(token);
 
     let user_data = verify_fourth_token(token_string.as_ref(), public_key)?;
+
+    tracing::debug!("{user_data:?}");
 
     Ok(user_data)
 }

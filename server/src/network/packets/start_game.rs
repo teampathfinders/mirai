@@ -8,7 +8,7 @@ use common::Encodable;
 use common::{bail, VError, VResult};
 use common::{BlockPosition, Vector2f, Vector3f, WriteExtensions};
 
-use super::{Difficulty, GameMode, CLIENT_VERSION_STRING, GameRule};
+use super::{Difficulty, GameMode, GameRule, CLIENT_VERSION_STRING};
 
 #[derive(Debug, Copy, Clone)]
 pub enum WorldGenerator {

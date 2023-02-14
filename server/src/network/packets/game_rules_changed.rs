@@ -43,7 +43,6 @@ impl GameRule {
         buffer.put_string(self.name());
         buffer.put_bool(true); // Player can modify. Doesn't seem to do anything.
 
-
         match self {
             Self::CommandBlocksEnabled(b)
             | Self::CommandBlockOutput(b)
@@ -117,7 +116,7 @@ impl GameRule {
             Self::ShowDeathMessages(_) => "showdeathmessages",
             Self::ShowTags(_) => "showtags",
             Self::SpawnRadius(_) => "spawnradius",
-            Self::TntExplodes(_) => "tntexplodes"
+            Self::TntExplodes(_) => "tntexplodes",
         }
     }
 }

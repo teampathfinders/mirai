@@ -8,11 +8,12 @@ use crate::network::{
         AddPainting, Animate, CameraShake, CameraShakeAction, CameraShakeType,
         ChangeDimension, ClientBoundDebugRenderer, CommandRequest,
         CreditsStatus, CreditsUpdate, DebugRendererAction, Difficulty,
-        GameMode, MessageType, MobEffectAction, MobEffectKind, MobEffectUpdate,
-        NetworkChunkPublisherUpdate, PaintingDirection, PlaySound, PlayerFog,
-        RequestAbility, SetCommandsEnabled, SetDifficulty, SetPlayerGameMode,
-        SetTime, SetTitle, ShowProfile, SpawnExperienceOrb, TextMessage,
-        TitleAction, ToastRequest, Transfer, GameRulesChanged, GameRule,
+        GameMode, GameRule, GameRulesChanged, MessageType, MobEffectAction,
+        MobEffectKind, MobEffectUpdate, NetworkChunkPublisherUpdate,
+        PaintingDirection, PlaySound, PlayerFog, RequestAbility,
+        SetCommandsEnabled, SetDifficulty, SetPlayerGameMode, SetTime,
+        SetTitle, ShowProfile, SpawnExperienceOrb, TextMessage, TitleAction,
+        ToastRequest, Transfer,
     },
     session::Session,
 };
@@ -23,15 +24,13 @@ impl Session {
         tracing::info!("{request:?}");
 
         let game_rules = GameRulesChanged {
-            game_rules: vec![
-                GameRule::ShowCoordinates(false)
-            ]
+            game_rules: vec![GameRule::ShowCoordinates(false)],
         };
         self.send_packet(game_rules)?;
 
         let toast = ToastRequest {
             title: "Game Rule Updated".to_owned(),
-            message: "Disabled the showcoordinates gamerule".to_owned()
+            message: "Disabled the showcoordinates gamerule".to_owned(),
         };
         self.send_packet(toast)?;
 

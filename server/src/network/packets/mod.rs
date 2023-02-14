@@ -54,10 +54,9 @@ pub use toast_request::*;
 pub use traits::*;
 pub use transfer::*;
 pub use update_dynamic_enum::*;
-pub use violation_warning::*;
 pub use update_skin::*;
+pub use violation_warning::*;
 
-mod update_skin;
 mod add_painting;
 mod animate;
 mod available_commands;
@@ -114,6 +113,7 @@ mod toast_request;
 mod traits;
 mod transfer;
 mod update_dynamic_enum;
+mod update_skin;
 mod violation_warning;
 
 /// ID of Minecraft game packets.

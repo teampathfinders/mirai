@@ -70,6 +70,8 @@ pub enum VErrorKind {
     InvalidChunk,
     /// An invalid NBT structure was encountered.
     InvalidNbt,
+    /// An invalid skin was given.
+    InvalidSkin,
     /// An unknown error
     Other,
 }

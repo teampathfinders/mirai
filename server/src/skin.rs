@@ -1,12 +1,17 @@
-use bytes::{Buf, BytesMut, BufMut};
-use common::{ReadExtensions, VResult, Encodable, WriteExtensions};
+use bytes::{Buf, BufMut, BytesMut};
+use common::{
+    bail, Encodable, ReadExtensions, VError, VResult, WriteExtensions,
+};
+use serde::Deserialize;
 
 /// Size of arms of a skin.
-#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Deserialize)]
 pub enum ArmSize {
     /// Used for female characters.
+    #[serde(rename = "slim")]
     Slim,
     /// Used for male characters.
+    #[serde(rename = "wide")]
     Wide,
 }
 
@@ -15,24 +20,36 @@ impl ArmSize {
     pub fn name(&self) -> &'static str {
         match self {
             Self::Slim => "slim",
-            Self::Wide => "wide"
+            Self::Wide => "wide",
         }
-    } 
+    }
 }
 
 /// Type of a persona piece.
-#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Deserialize)]
 pub enum PersonaPieceType {
+    #[serde(rename = "persona_skeleton")]
     Skeleton,
+    #[serde(rename = "persona_body")]
     Body,
+    #[serde(rename = "persona_skin")]
     Skin,
+    #[serde(rename = "persona_bottom")]
     Bottom,
+    #[serde(rename = "persona_feet")]
     Feet,
+    #[serde(rename = "persona_top")]
     Top,
+    #[serde(rename = "persona_mouth")]
     Mouth,
+    #[serde(rename = "persona_hair")]
     Hair,
+    #[serde(rename = "persona_eyes")]
     Eyes,
+    #[serde(rename = "persona_facial_hair")]
     FacialHair,
+    #[serde(rename = "persona_dress")]
+    Dress,
 }
 
 impl PersonaPieceType {
@@ -48,24 +65,30 @@ impl PersonaPieceType {
             Self::Mouth => "persona_mouth",
             Self::Hair => "persona_hair",
             Self::Eyes => "persona_eyes",
-            Self::FacialHair => "persona_facial_hair"
+            Self::FacialHair => "persona_facial_hair",
+            Self::Dress => "persona_dress",
         }
     }
 }
 
 /// Piece of a persona skin.
-#[derive(Debug)]
+#[derive(Debug, Deserialize)]
 pub struct PersonaPiece {
     /// UUID that identifies the piece itself.
+    #[serde(rename = "PieceId")]
     pub piece_id: String,
     /// Type of the persona piece.
+    #[serde(rename = "PieceType")]
     pub piece_type: PersonaPieceType,
     /// UUID that identifies the packet that this piece belongs to.
+    #[serde(rename = "PackId")]
     pub pack_id: String,
     /// Whether this piece is from one of the default skins (Steve, Alex)
+    #[serde(rename = "IsDefault")]
     pub default: bool,
     /// UUID that identifies a purchases persona piece.
     /// Empty for default pieces.
+    #[serde(rename = "ProductId")]
     pub product_id: String,
 }
 
@@ -80,12 +103,14 @@ impl PersonaPiece {
 }
 
 /// Colours for a persona piece.
-#[derive(Debug)]
+#[derive(Debug, Deserialize)]
 pub struct PersonaPieceTint {
     /// Persona piece type to tint.
+    #[serde(rename = "PieceType")]
     pub piece_type: PersonaPieceType,
     /// Colours that refer to different parts of the piece.
-    pub colors: Vec<String>,
+    #[serde(rename = "Colors")]
+    pub colors: [String; 4],
 }
 
 impl PersonaPieceTint {
@@ -94,41 +119,51 @@ impl PersonaPieceTint {
 
         buffer.put_u32_le(self.colors.len() as u32);
         for color in &self.colors {
-            buffer.put_string(color);    
+            buffer.put_string(color);
         }
     }
 }
 
 /// Animation type.
-#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+#[derive(Default, Debug, Copy, Clone, PartialEq, Eq, Deserialize)]
 pub enum SkinAnimationType {
+    #[default]
     Head,
     Body32x32,
     Body128x128,
 }
 
 /// Expression type.
-#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+#[derive(Default, Debug, Copy, Clone, PartialEq, Eq, Deserialize)]
 pub enum SkinExpressionType {
+    #[default]
     Linear,
     Blinking,
 }
 
 /// A skin animation.
-#[derive(Debug)]
+#[derive(Debug, Deserialize)]
 pub struct SkinAnimation {
     /// Width of the animation image in pixels.
+    #[serde(rename = "ImageWidth")]
     pub image_width: u32,
     /// Height of the animation image in pixels.
+    #[serde(rename = "ImageHeight")]
     pub image_height: u32,
     /// Image data.
-    pub image_data: BytesMut,
+    #[serde(rename = "Image")]
+    pub image_data: String,
     /// Animation type.
+    // #[serde(rename = "Type")]
+    #[serde(skip)]
     pub animation_type: SkinAnimationType,
     /// Amount of frames in animation.
     /// I have no idea why this is a float.
+    #[serde(rename = "Frames")]
     pub frame_count: f32,
     /// Expression type.
+    // #[serde(rename = "AnimationExpression")]
+    #[serde(skip)]
     pub expression_type: SkinExpressionType,
 }
 
@@ -136,7 +171,7 @@ impl SkinAnimation {
     pub fn encode(&self, buffer: &mut BytesMut) {
         buffer.put_u32_le(self.image_width);
         buffer.put_u32_le(self.image_height);
-        
+
         buffer.put_var_u32(self.image_data.len() as u32);
         buffer.put(self.image_data.as_ref());
 
@@ -147,56 +182,80 @@ impl SkinAnimation {
 }
 
 /// A classic or persona skin.
-#[derive(Debug)]
+#[derive(Debug, Deserialize)]
 pub struct Skin {
     /// UUID created for the skin.
+    #[serde(rename = "SkinId")]
     pub skin_id: String,
     /// PlayFab ID created for the skin.
     /// PlayFab hosts the marketplace.
+    #[serde(rename = "PlayFabId")]
     pub playfab_id: String,
     /// Unknown what this does.
-    pub resource_patch: BytesMut,
+    #[serde(rename = "SkinResourcePatch")]
+    pub resource_patch: String,
     /// Width of the skin image in pixels.
+    #[serde(rename = "SkinImageWidth")]
     pub image_width: u32,
     /// Height of the skin image in pixels.
+    #[serde(rename = "SkinImageHeight")]
     pub image_height: u32,
     /// Skin image data.
-    pub image_data: BytesMut,
+    #[serde(rename = "SkinData")]
+    pub image_data: String,
     /// Animations that the skin possesses.
+    #[serde(rename = "AnimatedImageData")]
     pub animations: Vec<SkinAnimation>,
     /// Width of the cape image in pixels.
+    #[serde(rename = "CapeImageWidth")]
     pub cape_image_width: u32,
     /// Height of the cape image in pixels.
+    #[serde(rename = "CapeImageHeight")]
     pub cape_image_height: u32,
     /// Cape image data
-    pub cape_image_data: BytesMut,
+    #[serde(rename = "CapeData")]
+    pub cape_image_data: String,
     /// JSON containing information like bones.
-    pub skin_geometry: BytesMut,
-    pub animation_data: BytesMut,
+    #[serde(rename = "SkinGeometryData")]
+    pub skin_geometry: String,
+    #[serde(rename = "SkinAnimationData")]
+    pub animation_data: String,
     /// Engine version for geometry data.
-    pub geometry_data_engine_version: BytesMut,
+    #[serde(rename = "SkinGeometryDataEngineVersion")]
+    pub geometry_data_engine_version: String,
     /// Whether this skin was purchased from the marketplace.
+    #[serde(rename = "PremiumSkin")]
     pub premium_skin: bool,
     /// Whether this skin is a persona skin.
+    #[serde(skip)]
     pub persona_skin: bool,
     /// Whether the skin is classic but has a persona cape equipped.
+    #[serde(rename = "CapeOnClassicSkin")]
     pub persona_cape_on_classic: bool,
     /// Unknown what this does.
+    #[serde(skip)]
     pub primary_user: bool,
     /// UUID that identifiers the skin's cape.
+    #[serde(rename = "CapeId")]
     pub cape_id: String,
     /// UUID of the entire skin.
+    #[serde(skip)]
     pub full_id: String,
     /// Skin colour.
+    #[serde(rename = "SkinColor")]
     pub color: String,
     /// Size of the arms.
+    #[serde(rename = "ArmSize")]
     pub arm_size: ArmSize,
     /// All persona pieces that consitute the skin.
+    #[serde(rename = "PersonaPieces")]
     pub persona_pieces: Vec<PersonaPiece>,
     /// List of colours for the persona pieces.
+    #[serde(rename = "PieceTintColors")]
     pub persona_piece_tints: Vec<PersonaPieceTint>,
     /// Whether the skin is "trusted" by Minecraft.
     /// The server shouldn't actually trust this because the client can change it.
+    #[serde(rename = "TrustedSkin")]
     pub trusted: bool,
 }
 
@@ -212,10 +271,44 @@ fn get_bytes(buffer: &mut BytesMut) -> VResult<BytesMut> {
 }
 
 impl Skin {
+    /// Validates skin dimensions.
+    pub fn validate(&self) -> VResult<()> {
+        if self.image_width * self.image_height * 4
+            != self.image_data.len() as u32
+        {
+            bail!(
+                InvalidSkin,
+                "Invalid skin dimensions, image data does not match"
+            )
+        }
+
+        if self.cape_image_width * self.cape_image_height * 4
+            != self.cape_image_data.len() as u32
+        {
+            bail!(
+                InvalidSkin,
+                "Invalid cape dimensions, image data does not match"
+            )
+        }
+
+        for animation in &self.animations {
+            if animation.image_width * animation.image_height * 4
+                != animation.image_data.len() as u32
+            {
+                bail!(
+                    InvalidSkin,
+                    "Invalid animation dimensions, image data does not match"
+                )
+            }
+        }
+
+        Ok(())
+    }
+
     pub fn encode(&self, buffer: &mut BytesMut) {
         buffer.put_string(&self.skin_id);
         buffer.put_string(&self.playfab_id);
-        
+
         buffer.put_var_u32(self.resource_patch.len() as u32);
         buffer.put(self.resource_patch.as_ref());
 

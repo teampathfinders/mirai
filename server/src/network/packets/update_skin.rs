@@ -1,4 +1,4 @@
-use bytes::{BytesMut, BufMut};
+use bytes::{BufMut, BytesMut};
 use common::{Encodable, VResult, WriteExtensions};
 
 use crate::skin::Skin;
@@ -8,7 +8,7 @@ use super::GamePacket;
 #[derive(Debug)]
 pub struct UpdateSkin {
     pub uuid: u128,
-    pub skin: Skin
+    pub skin: Skin,
 }
 
 impl GamePacket for UpdateSkin {
