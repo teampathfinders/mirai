@@ -20,7 +20,8 @@ use crate::network::packets::{
     RequestNetworkSettings, ResourcePackClientResponse, ResourcePackStack,
     ResourcePacksInfo, ServerToClientHandshake, SetLocalPlayerAsInitialized,
     SpawnBiomeType, StartGame, Status, ViolationWarning, WorldGenerator,
-    DISCONNECTED_LOGIN_FAILED, DISCONNECTED_NOT_AUTHENTICATED, NETWORK_VERSION, CLIENT_VERSION_STRING,
+    CLIENT_VERSION_STRING, DISCONNECTED_LOGIN_FAILED,
+    DISCONNECTED_NOT_AUTHENTICATED, NETWORK_VERSION,
 };
 use crate::network::raknet::Reliability;
 use crate::network::raknet::{Frame, FrameBatch};

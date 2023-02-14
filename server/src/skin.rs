@@ -3,6 +3,7 @@ use common::{
     bail, Encodable, ReadExtensions, VError, VResult, WriteExtensions,
 };
 use serde::Deserialize;
+use serde_repr::Deserialize_repr;
 
 /// Size of arms of a skin.
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Deserialize)]
@@ -125,20 +126,20 @@ impl PersonaPieceTint {
 }
 
 /// Animation type.
-#[derive(Default, Debug, Copy, Clone, PartialEq, Eq, Deserialize)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Deserialize_repr)]
+#[repr(u8)]
 pub enum SkinAnimationType {
-    #[default]
-    Head,
-    Body32x32,
-    Body128x128,
+    Head = 0,
+    Body32x32 = 1,
+    Body128x128 = 2,
 }
 
 /// Expression type.
-#[derive(Default, Debug, Copy, Clone, PartialEq, Eq, Deserialize)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Deserialize_repr)]
+#[repr(u8)]
 pub enum SkinExpressionType {
-    #[default]
-    Linear,
-    Blinking,
+    Linear = 0,
+    Blinking = 1,
 }
 
 /// A skin animation.
@@ -154,16 +155,14 @@ pub struct SkinAnimation {
     #[serde(rename = "Image")]
     pub image_data: String,
     /// Animation type.
-    // #[serde(rename = "Type")]
-    #[serde(skip)]
+    #[serde(rename = "Type")]
     pub animation_type: SkinAnimationType,
     /// Amount of frames in animation.
     /// I have no idea why this is a float.
     #[serde(rename = "Frames")]
     pub frame_count: f32,
     /// Expression type.
-    // #[serde(rename = "AnimationExpression")]
-    #[serde(skip)]
+    #[serde(rename = "AnimationExpression")]
     pub expression_type: SkinExpressionType,
 }
 
@@ -227,20 +226,14 @@ pub struct Skin {
     #[serde(rename = "PremiumSkin")]
     pub premium_skin: bool,
     /// Whether this skin is a persona skin.
-    #[serde(skip)]
+    #[serde(rename = "PersonaSkin")]
     pub persona_skin: bool,
     /// Whether the skin is classic but has a persona cape equipped.
     #[serde(rename = "CapeOnClassicSkin")]
     pub persona_cape_on_classic: bool,
-    /// Unknown what this does.
-    #[serde(skip)]
-    pub primary_user: bool,
     /// UUID that identifiers the skin's cape.
     #[serde(rename = "CapeId")]
     pub cape_id: String,
-    /// UUID of the entire skin.
-    #[serde(skip)]
-    pub full_id: String,
     /// Skin colour.
     #[serde(rename = "SkinColor")]
     pub color: String,
@@ -337,7 +330,7 @@ impl Skin {
         buffer.put(self.animation_data.as_ref());
 
         buffer.put_string(&self.cape_id);
-        buffer.put_string(&self.full_id);
+        buffer.put_string(""); // Full ID
         buffer.put_string(self.arm_size.name());
         buffer.put_string(&self.color);
 
@@ -354,6 +347,6 @@ impl Skin {
         buffer.put_bool(self.premium_skin);
         buffer.put_bool(self.persona_skin);
         buffer.put_bool(self.persona_cape_on_classic);
-        buffer.put_bool(self.primary_user);
+        buffer.put_bool(false); // Primary user.
     }
 }

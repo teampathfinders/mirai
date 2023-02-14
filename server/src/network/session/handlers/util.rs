@@ -10,10 +10,10 @@ use crate::network::{
         CreditsStatus, CreditsUpdate, DebugRendererAction, Difficulty,
         GameMode, GameRule, GameRulesChanged, MessageType, MobEffectAction,
         MobEffectKind, MobEffectUpdate, NetworkChunkPublisherUpdate,
-        PaintingDirection, PlaySound, UpdateFogStack, RequestAbility,
-        SetCommandsEnabled, SetDifficulty, SetPlayerGameMode, SetTime,
-        SetTitle, ShowProfile, SpawnExperienceOrb, TextMessage, TitleAction,
-        ToastRequest, Transfer,
+        PaintingDirection, PlaySound, RequestAbility, SetCommandsEnabled,
+        SetDifficulty, SetPlayerGameMode, SetTime, SetTitle, ShowProfile,
+        SpawnExperienceOrb, TextMessage, TitleAction, ToastRequest, Transfer,
+        UpdateFogStack,
     },
     session::Session,
 };
@@ -35,7 +35,7 @@ impl Session {
         self.send_packet(toast)?;
 
         let fog = UpdateFogStack {
-            stack: &["minecraft:fog_hell".to_owned()]
+            stack: &["minecraft:fog_hell".to_owned()],
         };
         self.send_packet(fog)?;
 

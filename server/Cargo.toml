@@ -36,3 +36,4 @@ aes = "0.8.2"
 nbt = { path = "../nbt" }
 common = { path = "../common" }
 level = { path = "../level" }
+serde_repr = "0.1.10"

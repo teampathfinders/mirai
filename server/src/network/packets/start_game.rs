@@ -175,7 +175,7 @@ pub struct StartGame {
     pub world_spawn: BlockPosition,
     /// Whether achievements are disabled.
     /// This should generally be set to true for servers.
-    /// 
+    ///
     /// According to wiki.vg, the client crashes if both achievements and commands are enabled.
     /// I couldn't reproduce this on Windows 10.
     pub achievements_disabled: bool,
@@ -202,7 +202,7 @@ pub struct StartGame {
     pub enable_commands: bool,
     /// Whether texture packs are required.
     /// This doesn't really seem to have a function other than displaying the force pack setting in the settings menu.
-    /// 
+    ///
     /// Whether packs are actually required has already been specified in the resource pack packets.
     pub texture_packs_required: bool,
     /// List of game rules.
