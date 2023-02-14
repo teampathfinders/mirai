@@ -34,6 +34,11 @@ impl Session {
         };
         self.send_packet(toast)?;
 
+        let fog = PlayerFog {
+            stack: &["minecraft:fog_hell".to_owned()]
+        };
+        self.send_packet(fog)?;
+
         Ok(())
     }
 

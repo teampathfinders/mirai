@@ -9,11 +9,14 @@ use super::GamePacket;
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum MessageType {
     Raw,
+    /// A chat message.
     Chat,
     Translation,
     Popup,
     JukeboxPopup,
     Tip,
+    /// Used for messages such as a skin change or a player that joined.
+    /// This type indicates a message from the server itself.
     System,
     Whisper,
     Announcement,

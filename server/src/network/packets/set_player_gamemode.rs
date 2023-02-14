@@ -8,10 +8,10 @@ use super::GamePacket;
 /// The Minecraft game modes.
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum GameMode {
-    Survival = 0,
-    Creative = 1,
-    Adventure = 2,
-    Spectator = 3,
+    Survival,
+    Creative,
+    Adventure,
+    Spectator,
     /// Sets the player's game mode to the world default.
     WorldDefault = 5,
 }

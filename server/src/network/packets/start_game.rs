@@ -105,8 +105,12 @@ impl BlockEntry {
 
 #[derive(Debug, Clone)]
 pub struct ItemEntry {
+    /// Name of the item.
     pub name: String,
+    /// Runtime ID of the item.
+    /// This ID is what Minecraft uses to refer to the item.
     pub runtime_id: u16,
+    /// Whether this is a custom item.
     pub component_based: bool,
 }
 
@@ -139,30 +143,56 @@ impl BroadcastIntent {
     }
 }
 
+/// The start game packet contains most of the world settings displayed in the settings menu.
 #[derive(Debug)]
 pub struct StartGame {
     pub entity_id: i64,
+    /// Runtime ID of the client.
     pub runtime_id: u64,
+    /// Current game mode of the client.
+    /// This is not the same as the world game mode.
     pub game_mode: GameMode,
+    /// Spawn position.
     pub position: Vector3f,
+    /// Spawn rotation.
     pub rotation: Vector2f,
+    /// World seed.
+    /// This is displayed in the settings menu.
     pub world_seed: u64,
     pub spawn_biome_type: SpawnBiomeType,
     pub custom_biome_name: String,
+    /// Dimension the client spawns in.
     pub dimension: Dimension,
+    /// Generator used to create the world.
+    /// This is also displayed in the settings menu.
     pub generator: WorldGenerator,
+    /// World game mode.
+    /// The default game mode for new players.
     pub world_game_mode: GameMode,
+    /// Difficulty of the game.
     pub difficulty: Difficulty,
+    /// Default spawn position.
     pub world_spawn: BlockPosition,
+    /// Whether achievements are disabled.
+    /// This should generally be set to true for servers.
+    /// 
+    /// According to wiki.vg, the client crashes if both achievements and commands are enabled.
+    /// I couldn't reproduce this on Windows 10.
     pub achievements_disabled: bool,
+    /// Whether the world is in editor mode.
     pub editor_world: bool,
+    /// The time to which the daylight cycle is locked if the gamerule is set.
     pub day_cycle_lock_time: i32,
-    pub education_offer: i32,
+    /// Whether education edition features are enabled.
     pub education_features_enabled: bool,
-    pub education_production_id: String,
+    /// The intensity of the current rain.
+    /// Set to 0 for no rain.
     pub rain_level: f32,
+    /// The intensity of the current thunderstorm.
+    /// Set to 0 to for no thunderstorm.
     pub lightning_level: f32,
     pub confirmed_platform_locked_content: bool,
+    /// Whether to broadcast to LAN.
     pub broadcast_to_lan: bool,
     pub xbox_broadcast_intent: BroadcastIntent,
     pub platform_broadcast_intent: BroadcastIntent,
@@ -170,14 +200,32 @@ pub struct StartGame {
     /// If this is disabled, the client will not allow the player to send commands under any
     /// circumstance.
     pub enable_commands: bool,
+    /// Whether texture packs are required.
+    /// This doesn't really seem to have a function other than displaying the force pack setting in the settings menu.
+    /// 
+    /// Whether packs are actually required has already been specified in the resource pack packets.
     pub texture_packs_required: bool,
+    /// List of game rules.
+    /// Only modified game rules have to be sent.
+    /// Game rules that are not sent in the start game packet, will be set to their default values.
     pub gamerules: Vec<GameRule>,
+    /// Experiments used by the server.
+    /// This is a visual option, since the experiments have already been specified in a resource pack packet.
     pub experiments: Vec<ExperimentData>,
+    /// Whether experiments have previously been enabled.
     pub experiments_previously_enabled: bool,
+    /// Whether the bonus chest is enabled.
+    /// This is only a visual thing shown in the settings menu.
     pub bonus_chest_enabled: bool,
+    /// Whether the starter map is enabled.
+    /// This generally should be left disabled as the client will otherwise force itself to have a map in its inventory.
     pub starter_map_enabled: bool,
+    /// Permission level of the client: visitor, member, operator or custom.
     pub permission_level: PermissionLevel,
+    /// Simulation distance of the server.
+    /// This is only a visual thing shown in the settings menu.
     pub server_chunk_tick_range: i32,
+
     pub has_locked_behavior_pack: bool,
     pub has_locked_resource_pack: bool,
     pub is_from_locked_world_template: bool,
@@ -197,20 +245,24 @@ pub struct StartGame {
     pub chat_restriction_level: ChatRestrictionLevel,
     pub disable_player_interactions: bool,
     pub level_id: String,
+    /// Name of the world.
+    /// This is shown in the pause menu above the player list, and the settings menu.
     pub level_name: String,
     pub template_content_identity: String,
-    pub is_trial: bool,
     pub movement_settings: PlayerMovementSettings,
+    /// Current time.
     pub time: i64,
     pub enchantment_seed: i32,
     pub block_properties: Vec<BlockEntry>,
     pub item_properties: Vec<ItemEntry>,
-    pub multiplayer_correlation_id: String,
+    /// Whether inventory transactions are server authoritative.
     pub server_authoritative_inventory: bool,
+    /// Version of the game that the server is running.
     pub game_version: String,
     pub property_data: nbt::Value,
     pub server_block_state_checksum: u64,
     pub world_template_id: u128,
+    /// Client side generation allows the client to generate its own chunks without the server having to send them over.
     pub client_side_generation: bool,
 }
 
@@ -239,11 +291,11 @@ impl Encodable for StartGame {
         buffer.put_bool(self.achievements_disabled);
         buffer.put_bool(self.editor_world);
         buffer.put_var_i32(self.day_cycle_lock_time);
-        buffer.put_var_i32(self.education_offer);
+        buffer.put_var_i32(0); // Education offer.
         buffer.put_bool(self.education_features_enabled);
-        buffer.put_string("");
-        buffer.put_f32(self.rain_level);
-        buffer.put_f32(self.lightning_level);
+        buffer.put_string(""); // Education product ID.
+        buffer.put_f32_le(self.rain_level);
+        buffer.put_f32_le(self.lightning_level);
         buffer.put_bool(self.confirmed_platform_locked_content);
         buffer.put_bool(true); // Whether the game is multiplayer. Must always be true.
         buffer.put_bool(self.broadcast_to_lan);
@@ -289,7 +341,7 @@ impl Encodable for StartGame {
         buffer.put_string(&self.level_id);
         buffer.put_string(&self.level_name);
         buffer.put_string(&self.template_content_identity);
-        buffer.put_bool(self.is_trial);
+        buffer.put_bool(false); // Game is not a trial.
         self.movement_settings.encode(&mut buffer);
         buffer.put_i64(self.time);
         buffer.put_var_i32(self.enchantment_seed);

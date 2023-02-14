@@ -15,7 +15,6 @@ pub enum ScoreboardIdentityAction {
 pub struct ScoreboardIdentityEntry {
     /// Unique identifer of the entry.
     pub entry_id: i64,
-    ///
     pub entity_unique_id: i64,
 }
 
