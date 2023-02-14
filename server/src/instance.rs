@@ -26,9 +26,9 @@ use common::{error, VResult};
 use common::{Decodable, Encodable};
 
 /// Local IPv4 address
-pub const IPV4_LOCAL_ADDR: Ipv4Addr = Ipv4Addr::new(127, 0, 0, 1);
+pub const IPV4_LOCAL_ADDR: Ipv4Addr = Ipv4Addr::UNSPECIFIED;
 /// Local IPv6 address
-pub const IPV6_LOCAL_ADDR: Ipv6Addr = Ipv6Addr::new(0, 0, 0, 0, 0, 0, 0, 1);
+pub const IPV6_LOCAL_ADDR: Ipv6Addr = Ipv6Addr::UNSPECIFIED;
 /// Size of the UDP receive buffer.
 const RECV_BUF_SIZE: usize = 4096;
 /// Refresh rate of the server's metadata.

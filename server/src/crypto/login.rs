@@ -4,6 +4,7 @@ use base64::Engine;
 use bytes::{Buf, BytesMut};
 use common::{bail, error, VResult};
 use jsonwebtoken::{Algorithm, DecodingKey, Validation};
+use uuid::Uuid;
 
 use crate::{network::packets::BuildPlatform, skin::Skin};
 
@@ -21,7 +22,7 @@ pub struct IdentityData {
     /// Xbox account ID.
     pub xuid: u64,
     /// UUID unique for this player.
-    pub identity: String,
+    pub identity: Uuid,
     /// Xbox username.
     pub display_name: String,
     /// Public key used for token verification and encryption.
@@ -61,7 +62,7 @@ pub struct RawIdentityData {
     #[serde(rename = "displayName")]
     pub display_name: String,
     #[serde(rename = "identity")]
-    pub uuid: String
+    pub uuid: Uuid
 }
 
 /// Used to extract the identity data and public key from the last identity token.

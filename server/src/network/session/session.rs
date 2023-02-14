@@ -1,7 +1,7 @@
 use std::net::SocketAddr;
 use std::num::NonZeroU64;
 use std::sync::atomic::{AtomicBool, AtomicU32, AtomicU64, Ordering};
-use std::sync::Arc;
+use std::sync::{Arc, Weak};
 use std::time::{Duration, Instant};
 
 use bytes::BytesMut;
@@ -9,15 +9,19 @@ use parking_lot::{Mutex, RwLock};
 use tokio::net::UdpSocket;
 use tokio::sync::OnceCell;
 use tokio_util::sync::CancellationToken;
+use uuid::Uuid;
 
 use crate::crypto::{Encryptor, IdentityData, UserData};
-use crate::network::packets::{BuildPlatform, Disconnect};
+use crate::network::packets::{BuildPlatform, Disconnect, GamePacket};
 use crate::network::session::compound_collector::CompoundCollector;
 use crate::network::session::order_channel::OrderChannel;
 use crate::network::session::recovery_queue::RecoveryQueue;
 use crate::network::session::send_queue::SendQueue;
-use common::AsyncDeque;
+use crate::skin::Skin;
+use common::{AsyncDeque, Encodable};
 use common::{error, VResult};
+
+use super::SessionTracker;
 
 /// Tick interval of the internal session ticker.
 const INTERNAL_TICK_INTERVAL: Duration = Duration::from_millis(1000 / 20);
@@ -91,11 +95,16 @@ pub struct Session {
     pub receive_queue: AsyncDeque<BytesMut>,
     /// Queue that stores packets in case they need to be recovered due to packet loss.
     pub recovery_queue: RecoveryQueue,
+    /// Session list, used to access broadcasting.
+    /// This is a weak pointer because of the cyclic reference.
+    /// In principle, the tracker should always exist if there are sessions remaining.
+    pub tracker: Weak<SessionTracker>
 }
 
 impl Session {
     /// Creates a new session.
     pub fn new(
+        tracker: Weak<SessionTracker>,
         ipv4_socket: Arc<UdpSocket>,
         address: SocketAddr,
         mtu: u16,
@@ -126,6 +135,7 @@ impl Session {
             receive_queue: AsyncDeque::new(5),
             address,
             recovery_queue: RecoveryQueue::new(),
+            tracker
         });
 
         // Start ticker
@@ -187,34 +197,47 @@ impl Session {
         self.initialized.load(Ordering::SeqCst)
     }
 
+    pub fn get_identity_data(&self) -> VResult<&IdentityData> {
+        self.identity.get().ok_or_else(|| {
+            error!(NotInitialized, "Identity data has not been initialised yet")
+        })
+    }
+
+    pub  fn get_user_data(&self) -> VResult<&UserData> {
+        self.user_data.get().ok_or_else(|| {
+            error!(NotInitialized, "User data has not been initialised yet")
+        })
+    }
+
     /// Retrieves the identity of the client.
-    ///
-    /// Warning: An internal RwLock is kept in a read state until the return value of this function is dropped.
-    pub fn get_identity(&self) -> VResult<&str> {
+    pub fn get_identity(&self) -> VResult<&Uuid> {
         let identity = self.identity.get().ok_or_else(|| {
-            error!(NotInitialized, "Identity ID has not been initialised yet")
+            error!(NotInitialized, "Identity ID data has not been initialised yet")
         })?;
-        Ok(identity.identity.as_str())
+        Ok(&identity.identity)
     }
 
     /// Retrieves the XUID of the client.
-    ///
-    /// Warning: An internal RwLock is kept in a read state until the return value of this function is dropped.
     pub fn get_xuid(&self) -> VResult<u64> {
         let identity = self.identity.get().ok_or_else(|| {
-            error!(NotInitialized, "XUID has not been initialised yet")
+            error!(NotInitialized, "XUID data has not been initialised yet")
         })?;
         Ok(identity.xuid)
     }
 
     /// Retrieves the display name of the client.
-    ///
-    /// Warning: An internal RwLock is kept in a read state until the return value of this function is dropped.
     pub fn get_display_name(&self) -> VResult<&str> {
         let identity = self.identity.get().ok_or_else(|| {
-            error!(NotInitialized, "Display name has not been initialised yet")
+            error!(NotInitialized, "Display name data has not been initialised yet")
         })?;
-        Ok(identity.display_name.as_str())
+        Ok(&identity.display_name)
+    }
+
+    pub fn get_skin(&self) -> VResult<&Skin> {
+        let data = self.user_data.get().ok_or_else(|| {
+            error!(NotInitialized, "Skin data has not been initialised yet")
+        })?;
+        Ok(&data.skin)
     }
 
     pub fn get_encryptor(&self) -> VResult<&Encryptor> {
@@ -225,7 +248,7 @@ impl Session {
 
     pub fn get_device_os(&self) -> VResult<BuildPlatform> {
         let data = self.user_data.get().ok_or_else(|| {
-            error!(NotInitialized, "User data has not been initialised yet")
+            error!(NotInitialized, "Device OS data has not been initialised yet")
         })?;
         Ok(data.device_os)
     }
@@ -241,6 +264,17 @@ impl Session {
             tracing::info!("{} has disconnected", display_name);
         }
         self.active.cancel();
+    }
+    
+    /// Sends a packet to all initialised sessions other than this one.
+    pub fn broadcast_others<P: GamePacket + Encodable>(&self, packet: P) -> VResult<()> {
+        // Upgrade weak pointer to use it.
+        let tracker = self.tracker
+            .upgrade()
+            .ok_or_else(|| error!(NotInitialized, "Session attempted to use tracker that does not exist anymore. This is definitely a bug"))?;
+
+        tracker.broadcast_except(packet, self.get_xuid()?);
+        Ok(())
     }
 
     /// Kicks the session from the server, displaying the given menu.

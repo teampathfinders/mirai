@@ -21,13 +21,13 @@ use crate::network::packets::{
     ResourcePacksInfo, ServerToClientHandshake, SetLocalPlayerAsInitialized,
     SpawnBiomeType, StartGame, Status, ViolationWarning, WorldGenerator,
     CLIENT_VERSION_STRING, DISCONNECTED_LOGIN_FAILED,
-    DISCONNECTED_NOT_AUTHENTICATED, NETWORK_VERSION,
+    DISCONNECTED_NOT_AUTHENTICATED, NETWORK_VERSION, PlayerListAdd, PlayerListAddEntry, PlaySound,
 };
 use crate::network::raknet::Reliability;
 use crate::network::raknet::{Frame, FrameBatch};
 use crate::network::session::send_queue::SendPriority;
 use crate::network::session::session::Session;
-use common::{bail, BlockPosition, Decodable, VResult, Vector2f, Vector3f};
+use common::{bail, BlockPosition, Decodable, VResult, Vector2f, Vector3f, Vector3i};
 
 impl Session {
     /// Handles a [`ClientCacheStatus`] packet.
@@ -61,6 +61,35 @@ impl Session {
         // Add player to other's player lists.
         tracing::info!("{} has connected", self.get_display_name()?);
 
+        // Tell rest of server that this client has joined...
+        {
+            let identity_data = self.get_identity_data()?;
+            let user_data = self.get_user_data()?;
+
+            // self.broadcast_others(PlayerListAdd {
+            //     entries: &[PlayerListAddEntry {
+            //         uuid: identity_data.identity,
+            //         entity_id: 2,
+            //         username: &identity_data.display_name,
+            //         xuid: identity_data.xuid,
+            //         build_platform: user_data.device_os,
+            //         skin: &user_data.skin,
+            //         teacher: false,
+            //         host: false,
+            //     }]
+            // })?;
+
+            self.send_packet(PlaySound {
+                name: "mob.pig.death",
+                position: Vector3i::from([0, 0, 0]),
+                volume: 1.0,
+                pitch: 1.0,
+            })?;
+        }
+        self.initialized.store(true, Ordering::SeqCst);
+
+        // ...then tell the client about all the other players.
+
         Ok(())
     }
 
@@ -89,7 +118,7 @@ impl Session {
             entity_id: 1,
             runtime_id: 1,
             game_mode: GameMode::Creative,
-            position: Vector3f::from([0.0, 0.0, 0.0]),
+            position: Vector3f::from([0.0, 50.0, 0.0]),
             rotation: Vector2f::from([0.0, 0.0]),
             world_seed: 69420,
             spawn_biome_type: SpawnBiomeType::Default,
@@ -98,12 +127,12 @@ impl Session {
             generator: WorldGenerator::Infinite,
             world_game_mode: GameMode::Creative,
             difficulty: Difficulty::Normal,
-            world_spawn: BlockPosition::new(0, 0, 0),
+            world_spawn: BlockPosition::new(0, 50, 0),
             achievements_disabled: true,
             editor_world: false,
             day_cycle_lock_time: 0,
             education_features_enabled: true,
-            rain_level: 0.0,
+            rain_level: 1000.0,
             lightning_level: 0.0,
             confirmed_platform_locked_content: false,
             broadcast_to_lan: true,

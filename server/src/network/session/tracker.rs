@@ -39,13 +39,17 @@ impl SessionTracker {
 
     /// Creates a new session and adds it to the tracker.
     pub fn add_session(
-        &self,
+        self: &Arc<Self>,
         ipv4_socket: Arc<UdpSocket>,
         address: SocketAddr,
         mtu: u16,
         client_guid: u64,
     ) {
-        let session = Session::new(ipv4_socket, address, mtu, client_guid);
+        let session = Session::new(
+            Arc::downgrade(self),
+            ipv4_socket, address, 
+            mtu, client_guid
+        );
         self.session_list.insert(address, session);
     }
 
@@ -71,6 +75,28 @@ impl SessionTracker {
             let session = kv.value();
             // Don't broadcast to uninitialised sessions.
             if session.is_initialized() {
+                match session.send_packet(packet.clone()) {
+                    Ok(_) => (),
+                    Err(e) => {
+                        let display_name = session.get_display_name().unwrap_or("unknown session");
+                        tracing::error!("Failed to broadcast to {}: {e}", display_name);
+                    }
+                }
+            }
+        }
+    }
+
+    /// Sends a packet to every *initialized* session on the server except the session with the given XUID.
+    pub fn broadcast_except<P: GamePacket + Encodable>(&self, packet: P, xuid: u64) {
+        for kv in self.session_list.iter() {
+            let session = kv.value();
+            let sess_xuid = match session.get_xuid() {
+                Ok(x) => x,
+                Err(_) => continue 
+            };
+
+            // Don't broadcast to uninitialised sessions.
+            if session.is_initialized() && xuid != sess_xuid {
                 match session.send_packet(packet.clone()) {
                     Ok(_) => (),
                     Err(e) => {

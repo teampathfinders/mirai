@@ -31,7 +31,7 @@ lazy_static! {
     pub static ref SERVER_CONFIG: RwLock<ServerConfig> = RwLock::new(ServerConfig {
         ipv4_port: 19132,
         ipv6_port: 19133,
-        max_players: 10,
+        max_players: 1000,
         compression_algorithm: CompressionAlgorithm::Deflate,
         compression_threshold: 1, // Compress all packets
         client_throttle: ClientThrottleSettings { // Disable client throttling

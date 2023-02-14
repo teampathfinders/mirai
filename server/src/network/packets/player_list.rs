@@ -1,5 +1,6 @@
 use bytes::{BytesMut, BufMut};
 use common::{Encodable, VResult, WriteExtensions};
+use uuid::Uuid;
 
 use crate::skin::Skin;
 
@@ -8,16 +9,13 @@ use super::{BuildPlatform, GamePacket};
 #[derive(Debug, Clone)]
 pub struct PlayerListAddEntry<'a> {
     /// UUID.
-    pub uuid: u128,
+    pub uuid: Uuid,
     /// Unique entity ID.
     pub entity_id: i64,
     /// Username of the client.
     pub username: &'a str,
     /// XUID of the client.
-    pub xuid: &'a str,
-    /// Identifier deciding which players can chat with each other.
-    /// Usually only set for the Nintendo Switch.
-    pub platform_chat_id: &'a str,
+    pub xuid: u64,
     /// Operating system of the client.
     pub build_platform: BuildPlatform,
     /// The client's skin.
@@ -44,11 +42,11 @@ impl Encodable for PlayerListAdd<'_> {
         buffer.put_u8(0); // Add player.
         buffer.put_var_u32(self.entries.len() as u32);
         for entry in self.entries {
-            buffer.put_u128_le(entry.uuid);
+            buffer.put_u128_le(entry.uuid.as_u128());
             buffer.put_var_i64(entry.entity_id);
             buffer.put_string(entry.username);
-            buffer.put_string(entry.xuid);
-            buffer.put_string(entry.platform_chat_id);
+            buffer.put_string(&entry.xuid.to_string());
+            buffer.put_string(""); // Platform chat ID.
             buffer.put_i32_le(entry.build_platform as i32);
             entry.skin.encode(&mut buffer);
             buffer.put_bool(entry.teacher);
@@ -61,7 +59,7 @@ impl Encodable for PlayerListAdd<'_> {
 
 #[derive(Debug, Clone)]
 pub struct PlayerListRemove<'a> {
-    pub entries: &'a [u128]
+    pub entries: &'a [Uuid]
 }
 
 impl GamePacket for PlayerListRemove<'_> {
@@ -75,7 +73,7 @@ impl Encodable for PlayerListRemove<'_> {
         buffer.put_u8(1); // Remove player.
         buffer.put_var_u32(self.entries.len() as u32);
         for entry in self.entries {
-            buffer.put_u128_le(*entry);
+            buffer.put_u128_le(entry.as_u128());
         }
 
         Ok(buffer)
