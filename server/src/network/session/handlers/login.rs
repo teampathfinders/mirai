@@ -57,7 +57,9 @@ impl Session {
         mut packet: BytesMut,
     ) -> VResult<()> {
         let request = SetLocalPlayerAsInitialized::decode(packet)?;
-        // Unused
+        
+        // Add player to other's player lists.
+        tracing::info!("{} has connected", self.get_display_name()?);
 
         Ok(())
     }
@@ -220,10 +222,6 @@ impl Session {
                 return Err(e);
             }
         };
-        tracing::info!(
-            "{} has joined the server",
-            request.identity.display_name
-        );
 
         let (encryptor, jwt) = Encryptor::new(&request.identity.public_key)?;
 

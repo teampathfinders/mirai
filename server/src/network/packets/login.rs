@@ -89,13 +89,13 @@ impl Decodable for Login {
             identity: IdentityData {
                 identity: identity_data.client_data.uuid,
                 xuid: identity_data.client_data.xuid.parse()?,
-                title_id: identity_data.client_data.title_id.parse()?,
                 display_name: identity_data.client_data.display_name,
                 public_key: identity_data.public_key,
             },
             user_data: UserData {
                 device_os: BuildPlatform::try_from(user_data.device_os)?,
                 language_code: user_data.language_code,
+                skin: user_data.skin
             },
         })
     }

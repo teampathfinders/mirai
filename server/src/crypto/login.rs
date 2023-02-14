@@ -24,8 +24,6 @@ pub struct IdentityData {
     pub identity: String,
     /// Xbox username.
     pub display_name: String,
-    /// ID related to the user's platform.
-    pub title_id: u32,
     /// Public key used for token verification and encryption.
     pub public_key: String,
 }
@@ -37,6 +35,8 @@ pub struct UserData {
     pub device_os: BuildPlatform,
     /// Language in ISO format (i.e. en_GB)
     pub language_code: String,
+    /// The player's skin
+    pub skin: Skin
 }
 
 /// A chain of JSON web tokens.
@@ -61,9 +61,7 @@ pub struct RawIdentityData {
     #[serde(rename = "displayName")]
     pub display_name: String,
     #[serde(rename = "identity")]
-    pub uuid: String,
-    #[serde(rename = "titleId")]
-    pub title_id: String,
+    pub uuid: String
 }
 
 /// Used to extract the identity data and public key from the last identity token.
@@ -82,10 +80,8 @@ pub struct UserTokenPayload {
     pub device_os: u8,
     #[serde(rename = "LanguageCode")]
     pub language_code: String,
-    #[serde(rename = "ServerAddress")]
-    server_address: String,
     #[serde(flatten)]
-    skin: Skin,
+    pub skin: Skin,
 }
 
 /// First token in the chain holds the client's self-signed public key in the X5U.
@@ -263,8 +259,6 @@ pub fn parse_user_data(
     let token_string = String::from_utf8_lossy(token);
 
     let user_data = verify_fourth_token(token_string.as_ref(), public_key)?;
-
-    tracing::debug!("{user_data:?}");
 
     Ok(user_data)
 }
