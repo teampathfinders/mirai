@@ -10,7 +10,7 @@ use crate::network::{
         CreditsStatus, CreditsUpdate, DebugRendererAction, Difficulty,
         GameMode, GameRule, GameRulesChanged, MessageType, MobEffectAction,
         MobEffectKind, MobEffectUpdate, NetworkChunkPublisherUpdate,
-        PaintingDirection, PlaySound, PlayerFog, RequestAbility,
+        PaintingDirection, PlaySound, UpdateFogStack, RequestAbility,
         SetCommandsEnabled, SetDifficulty, SetPlayerGameMode, SetTime,
         SetTitle, ShowProfile, SpawnExperienceOrb, TextMessage, TitleAction,
         ToastRequest, Transfer,
@@ -24,17 +24,17 @@ impl Session {
         tracing::info!("{request:?}");
 
         let game_rules = GameRulesChanged {
-            game_rules: vec![GameRule::ShowCoordinates(false)],
+            game_rules: &[GameRule::ShowCoordinates(false)],
         };
         self.send_packet(game_rules)?;
 
         let toast = ToastRequest {
-            title: "Game Rule Updated".to_owned(),
-            message: "Disabled the showcoordinates gamerule".to_owned(),
+            title: "Game Rule Updated",
+            message: "Disabled the showcoordinates gamerule",
         };
         self.send_packet(toast)?;
 
-        let fog = PlayerFog {
+        let fog = UpdateFogStack {
             stack: &["minecraft:fog_hell".to_owned()]
         };
         self.send_packet(fog)?;

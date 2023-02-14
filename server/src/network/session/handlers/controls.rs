@@ -24,7 +24,7 @@ impl Session {
             self.send_packet(reply)?;
 
             let reply2 = PlaySound {
-                name: "mob.pig.say".to_owned(),
+                name: "mob.pig.say",
                 pitch: 1.0,
                 volume: 1.0,
                 position: Vector3i::from([0, 0, 0]),

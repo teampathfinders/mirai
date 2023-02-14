@@ -5,16 +5,16 @@ use super::GamePacket;
 
 /// Adds a fog to the client's fog stack.
 #[derive(Debug)]
-pub struct PlayerFog<'s> {
+pub struct UpdateFogStack<'s> {
     /// Lists of fog identifiers
     pub stack: &'s [String],
 }
 
-impl GamePacket for PlayerFog<'_> {
+impl GamePacket for UpdateFogStack<'_> {
     const ID: u32 = 0xa0;
 }
 
-impl Encodable for PlayerFog<'_> {
+impl Encodable for UpdateFogStack<'_> {
     fn encode(&self) -> VResult<BytesMut> {
         let mut buffer = BytesMut::new();
 

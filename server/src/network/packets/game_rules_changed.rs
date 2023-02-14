@@ -123,21 +123,21 @@ impl GameRule {
 
 /// Updates one or more game rules.
 #[derive(Debug)]
-pub struct GameRulesChanged {
+pub struct GameRulesChanged<'a> {
     /// Game rules to update.
-    pub game_rules: Vec<GameRule>,
+    pub game_rules: &'a [GameRule],
 }
 
-impl GamePacket for GameRulesChanged {
+impl GamePacket for GameRulesChanged<'_> {
     const ID: u32 = 0x48;
 }
 
-impl Encodable for GameRulesChanged {
+impl Encodable for GameRulesChanged<'_> {
     fn encode(&self) -> VResult<BytesMut> {
         let mut buffer = BytesMut::new();
 
         buffer.put_var_u32(self.game_rules.len() as u32);
-        for game_rule in &self.game_rules {
+        for game_rule in self.game_rules {
             game_rule.encode(&mut buffer);
         }
 

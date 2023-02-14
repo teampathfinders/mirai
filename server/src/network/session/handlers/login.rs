@@ -20,7 +20,7 @@ use crate::network::packets::{
     RequestNetworkSettings, ResourcePackClientResponse, ResourcePackStack,
     ResourcePacksInfo, ServerToClientHandshake, SetLocalPlayerAsInitialized,
     SpawnBiomeType, StartGame, Status, ViolationWarning, WorldGenerator,
-    DISCONNECTED_LOGIN_FAILED, DISCONNECTED_NOT_AUTHENTICATED, NETWORK_VERSION,
+    DISCONNECTED_LOGIN_FAILED, DISCONNECTED_NOT_AUTHENTICATED, NETWORK_VERSION, CLIENT_VERSION_STRING,
 };
 use crate::network::raknet::Reliability;
 use crate::network::raknet::{Frame, FrameBatch};
@@ -191,17 +191,17 @@ impl Session {
             required: false,
             scripting_enabled: false,
             forcing_server_packs: false,
-            behavior_info: vec![],
-            resource_info: vec![],
+            behavior_info: &[],
+            resource_info: &[],
         };
         self.send_packet(pack_info)?;
 
         let pack_stack = ResourcePackStack {
             forced_to_accept: false,
-            resource_packs: vec![],
-            behavior_packs: vec![],
-            game_version: "1.19".to_string(),
-            experiments: vec![],
+            resource_packs: &[],
+            behavior_packs: &[],
+            game_version: CLIENT_VERSION_STRING,
+            experiments: &[],
             experiments_previously_toggled: false,
         };
         self.send_packet(pack_stack)?;

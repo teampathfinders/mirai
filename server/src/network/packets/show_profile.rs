@@ -7,20 +7,20 @@ use super::GamePacket;
 
 /// Opens a dialog showing details about a player's Xbox account.
 #[derive(Debug)]
-pub struct ShowProfile {
+pub struct ShowProfile<'s> {
     /// XUID of the profile to display.
-    pub xuid: String,
+    pub xuid: &'s str,
 }
 
-impl GamePacket for ShowProfile {
+impl GamePacket for ShowProfile<'_> {
     const ID: u32 = 0x68;
 }
 
-impl Encodable for ShowProfile {
+impl Encodable for ShowProfile<'_> {
     fn encode(&self) -> VResult<BytesMut> {
         let mut buffer = BytesMut::with_capacity(1 + self.xuid.len());
 
-        buffer.put_string(&self.xuid);
+        buffer.put_string(self.xuid);
 
         Ok(buffer)
     }

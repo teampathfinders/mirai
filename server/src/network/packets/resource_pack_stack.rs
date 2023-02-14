@@ -19,16 +19,6 @@ impl ExperimentData {
 }
 
 #[derive(Debug)]
-pub struct ResourcePackStack {
-    pub forced_to_accept: bool,
-    pub resource_packs: Vec<ResourcePackStackEntry>,
-    pub behavior_packs: Vec<ResourcePackStackEntry>,
-    pub game_version: String,
-    pub experiments: Vec<ExperimentData>,
-    pub experiments_previously_toggled: bool,
-}
-
-#[derive(Debug)]
 pub struct ResourcePackStackEntry {
     pub pack_id: String,
     pub pack_version: String,
@@ -50,30 +40,40 @@ pub struct BehaviorPackEntry {
     pub subpack_name: String,
 }
 
-impl GamePacket for ResourcePackStack {
+#[derive(Debug)]
+pub struct ResourcePackStack<'a> {
+    pub forced_to_accept: bool,
+    pub resource_packs: &'a [ResourcePackStackEntry],
+    pub behavior_packs: &'a [ResourcePackStackEntry],
+    pub game_version: &'a str,
+    pub experiments: &'a [ExperimentData],
+    pub experiments_previously_toggled: bool,
+}
+
+impl GamePacket for ResourcePackStack<'_> {
     const ID: u32 = 0x07;
 }
 
-impl Encodable for ResourcePackStack {
+impl Encodable for ResourcePackStack<'_> {
     fn encode(&self) -> VResult<BytesMut> {
         let mut buffer = BytesMut::new();
 
         buffer.put_bool(self.forced_to_accept);
 
         buffer.put_var_u32(self.resource_packs.len() as u32);
-        for pack in &self.resource_packs {
+        for pack in self.resource_packs {
             pack.encode(&mut buffer);
         }
 
         buffer.put_var_u32(self.behavior_packs.len() as u32);
-        for pack in &self.behavior_packs {
+        for pack in self.behavior_packs {
             pack.encode(&mut buffer);
         }
 
-        buffer.put_string(&self.game_version);
+        buffer.put_string(self.game_version);
 
         buffer.put_u32(self.experiments.len() as u32);
-        for experiment in &self.experiments {
+        for experiment in self.experiments {
             experiment.encode(&mut buffer);
         }
 

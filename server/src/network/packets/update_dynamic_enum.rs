@@ -15,26 +15,26 @@ pub enum SoftEnumAction {
 
 /// Updates command autocompletion entries.
 #[derive(Debug)]
-pub struct UpdateDynamicEnum {
+pub struct UpdateDynamicEnum<'a> {
     /// ID of the enum, previously specified in [`CommandEnum::enum_id`](super::CommandEnum::enum_id).
-    pub enum_id: String,
+    pub enum_id: &'a str,
     /// List of enum options.
-    pub options: Vec<String>,
+    pub options: &'a [String],
     /// Action to perform on the dynamic enum.
     pub action: SoftEnumAction,
 }
 
-impl GamePacket for UpdateDynamicEnum {
+impl GamePacket for UpdateDynamicEnum<'_> {
     const ID: u32 = 0x72;
 }
 
-impl Encodable for UpdateDynamicEnum {
+impl Encodable for UpdateDynamicEnum<'_> {
     fn encode(&self) -> VResult<BytesMut> {
         let mut buffer = BytesMut::new();
 
-        buffer.put_string(&self.enum_id);
+        buffer.put_string(self.enum_id);
         buffer.put_var_u32(self.options.len() as u32);
-        for option in &self.options {
+        for option in self.options {
             buffer.put_string(option);
         }
         buffer.put_u8(self.action as u8);

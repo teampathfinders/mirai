@@ -7,9 +7,9 @@ use super::GamePacket;
 
 /// Plays a sound for the client.
 #[derive(Debug)]
-pub struct PlaySound {
+pub struct PlaySound<'s> {
     /// Name of the sound.
-    pub name: String,
+    pub name: &'s str,
     /// Position of the sound.
     pub position: Vector3i,
     /// Volume of the sound.
@@ -18,11 +18,11 @@ pub struct PlaySound {
     pub pitch: f32,
 }
 
-impl GamePacket for PlaySound {
+impl GamePacket for PlaySound<'_> {
     const ID: u32 = 0x56;
 }
 
-impl Encodable for PlaySound {
+impl Encodable for PlaySound<'_> {
     fn encode(&self) -> VResult<BytesMut> {
         let mut buffer = BytesMut::new();
 

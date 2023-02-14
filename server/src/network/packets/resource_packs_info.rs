@@ -57,7 +57,7 @@ pub struct ResourcePack {
 /// This should be sent after sending the [`PlayStatus`](super::PlayStatus) packet with a
 /// [`LoginSuccess`](super::Status::LoginSuccess) status.
 #[derive(Debug)]
-pub struct ResourcePacksInfo {
+pub struct ResourcePacksInfo<'a> {
     /// Forces the client to accept the packs to be able to join the server.
     pub required: bool,
     /// Indicates whether there are packs that make use of scripting.
@@ -65,16 +65,16 @@ pub struct ResourcePacksInfo {
     /// Unknown what this does.
     pub forcing_server_packs: bool,
     /// List of behavior packs
-    pub behavior_info: Vec<BehaviorPack>,
+    pub behavior_info: &'a [BehaviorPack],
     /// List of resource packs.
-    pub resource_info: Vec<ResourcePack>,
+    pub resource_info: &'a [ResourcePack],
 }
 
-impl GamePacket for ResourcePacksInfo {
+impl GamePacket for ResourcePacksInfo<'_> {
     const ID: u32 = 0x06;
 }
 
-impl Encodable for ResourcePacksInfo {
+impl Encodable for ResourcePacksInfo<'_> {
     fn encode(&self) -> VResult<BytesMut> {
         let mut buffer = BytesMut::new();
 
@@ -83,7 +83,7 @@ impl Encodable for ResourcePacksInfo {
         buffer.put_bool(self.forcing_server_packs);
 
         buffer.put_u16(self.behavior_info.len() as u16);
-        for pack in &self.behavior_info {
+        for pack in self.behavior_info {
             buffer.put_string(&pack.uuid);
             buffer.put_string(&pack.version);
             buffer.put_u64(pack.size);
@@ -94,7 +94,7 @@ impl Encodable for ResourcePacksInfo {
         }
 
         buffer.put_u16(self.resource_info.len() as u16);
-        for pack in &self.resource_info {
+        for pack in self.resource_info {
             buffer.put_string(&pack.uuid);
             buffer.put_string(&pack.version);
             buffer.put_u64(pack.size);

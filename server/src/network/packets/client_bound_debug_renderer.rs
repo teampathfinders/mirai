@@ -10,11 +10,11 @@ pub enum DebugRendererAction {
 }
 
 #[derive(Debug)]
-pub struct ClientBoundDebugRenderer {
+pub struct ClientBoundDebugRenderer<'a> {
     /// Action to perform.
     pub action: DebugRendererAction,
     /// Text to display above the debug renderer.
-    pub text: String,
+    pub text: &'a str,
     /// Position of the renderer.
     pub position: Vector3f,
     /// Colour of the debug renderer.
@@ -24,11 +24,11 @@ pub struct ClientBoundDebugRenderer {
     pub duration: i64,
 }
 
-impl GamePacket for ClientBoundDebugRenderer {
+impl GamePacket for ClientBoundDebugRenderer<'_> {
     const ID: u32 = 0xa4;
 }
 
-impl Encodable for ClientBoundDebugRenderer {
+impl Encodable for ClientBoundDebugRenderer<'_> {
     fn encode(&self) -> VResult<BytesMut> {
         let mut buffer = BytesMut::new();
 

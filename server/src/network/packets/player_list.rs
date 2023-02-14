@@ -22,7 +22,7 @@ pub struct PlayerListEntry {
 }
 
 #[derive(Debug)]
-pub struct PlayerList {
+pub struct PlayerList<'a> {
     pub action: PlayerListAction,
-    pub entries: Vec<PlayerListEntry>,
+    pub entries: &'a [PlayerListEntry],
 }

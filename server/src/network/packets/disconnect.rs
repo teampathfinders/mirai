@@ -16,18 +16,18 @@ pub const DISCONNECTED_BAD_PACKET: &str = "Client sent bad packet.";
 
 /// Sent by the server to disconnect a client.
 #[derive(Debug)]
-pub struct Disconnect {
+pub struct Disconnect<'a> {
     /// Whether to immediately send the client to the main menu.
     pub hide_disconnect_screen: bool,
     /// Message to display to the client
-    pub kick_message: String,
+    pub kick_message: &'a str,
 }
 
-impl GamePacket for Disconnect {
+impl GamePacket for Disconnect<'_> {
     const ID: u32 = 0x05;
 }
 
-impl Encodable for Disconnect {
+impl Encodable for Disconnect<'_> {
     fn encode(&self) -> VResult<BytesMut> {
         let mut buffer =
             BytesMut::with_capacity(1 + 4 + self.kick_message.len());
