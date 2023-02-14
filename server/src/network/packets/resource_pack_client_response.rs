@@ -30,7 +30,7 @@ impl TryFrom<u8> for ResourcePackStatus {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct ResourcePackClientResponse {
     pub status: ResourcePackStatus,
     pub pack_ids: Vec<String>,

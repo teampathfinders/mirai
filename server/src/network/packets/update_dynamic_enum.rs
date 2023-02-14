@@ -14,7 +14,7 @@ pub enum SoftEnumAction {
 }
 
 /// Updates command autocompletion entries.
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct UpdateDynamicEnum<'a> {
     /// ID of the enum, previously specified in [`CommandEnum::enum_id`](super::CommandEnum::enum_id).
     pub enum_id: &'a str,

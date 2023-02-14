@@ -5,7 +5,7 @@ use common::Decodable;
 use common::VResult;
 
 /// Sent by the client when the users joins the server.
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct OpenConnectionRequest1 {
     /// Version of the Raknet protocol.
     /// Minecraft currently uses version 10.

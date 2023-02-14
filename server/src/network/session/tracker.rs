@@ -6,10 +6,10 @@ use dashmap::DashMap;
 use tokio::net::UdpSocket;
 use tokio_util::sync::CancellationToken;
 
-use crate::config::SERVER_CONFIG;
+use crate::{config::SERVER_CONFIG, network::packets::GamePacket};
 use crate::network::raknet::RawPacket;
 use crate::network::session::session::Session;
-use common::{error, VResult};
+use common::{error, VResult, Encodable};
 
 const GARBAGE_COLLECT_INTERVAL: Duration = Duration::from_secs(10);
 
@@ -63,10 +63,31 @@ impl SessionTracker {
                     "Attempted to forward packet to non-existent session"
                 )
             })
+    }   
+
+    /// Sends a packet to every *initialized* session on the server.
+    pub fn broadcast<P: GamePacket + Encodable>(&self, packet: P) {
+        for kv in self.session_list.iter() {
+            let session = kv.value();
+            // Don't broadcast to uninitialised sessions.
+            if session.is_initialized() {
+                match session.send_packet(packet.clone()) {
+                    Ok(_) => (),
+                    Err(e) => {
+                        let display_name = session.get_display_name().unwrap_or("unknown session");
+                        tracing::error!("Failed to broadcast to {}: {e}", display_name);
+                    }
+                }
+            }
+        }
     }
 
     /// Kicks all sessions from the server, displaying the given message.
     pub async fn kick_all<S: Into<String>>(&self, message: S) {
+        // This is separate from broadcast because uninitialised sessions also
+        // need to receive this packet.
+        // Unlike broadcast, it also flushes all sessions to get rid of them as quickly as possible.
+
         let message = message.into();
         for x in self.session_list.iter() {
             let session = x.value();

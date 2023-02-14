@@ -29,7 +29,7 @@ pub enum Ability {
 }
 
 /// Sent by the client to request permission to use a specific ability.
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct RequestAbility {
     pub ability: Ability,
 }

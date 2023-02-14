@@ -5,7 +5,7 @@ use common::Decodable;
 use common::VResult;
 
 /// Sent by the client to request a [`NetworkSettings`](super::NetworkSettings) packet.
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct RequestNetworkSettings {
     /// Minecraft network version
     pub protocol_version: u32,

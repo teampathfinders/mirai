@@ -51,7 +51,7 @@ impl TryFrom<u32> for CommandOrigin {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct CommandRequest {
     pub command: String,
     pub origin: CommandOrigin,

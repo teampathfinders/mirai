@@ -6,7 +6,7 @@ use common::Encodable;
 use super::GamePacket;
 
 /// Sets the current time for the client.
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct SetTime {
     /// Current time (in ticks)
     pub time: i32,

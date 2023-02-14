@@ -15,7 +15,7 @@ pub enum SubChunkRequestMode {
     Limited,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct LevelChunk {
     /// Position of the chunk.
     pub position: Vector2i,

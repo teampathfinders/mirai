@@ -8,7 +8,7 @@ use common::VResult;
 use common::{ReadExtensions, EMPTY_IPV4_ADDRESS};
 
 /// Confirms that the connection was successfully initiated.
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct NewIncomingConnection;
 
 impl NewIncomingConnection {

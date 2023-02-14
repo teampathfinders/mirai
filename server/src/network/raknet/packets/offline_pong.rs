@@ -6,7 +6,7 @@ use common::VResult;
 use common::WriteExtensions;
 
 /// Response to [`OfflinePing`](super::offline_ping::OfflinePing).
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct OfflinePong {
     /// Timestamp of when the ping was sent.
     /// This should be given the same value as [`OfflinePing::time`](super::offline_ping::OfflinePing::time).

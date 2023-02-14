@@ -6,7 +6,7 @@ use common::Encodable;
 use super::GamePacket;
 
 /// Information about a player's death.
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct DeathInfo<'a> {
     /// Cause of death.
     pub cause: &'a str,

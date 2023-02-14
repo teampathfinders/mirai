@@ -4,7 +4,7 @@ use common::{Decodable, Encodable, ReadExtensions, VResult, WriteExtensions};
 use super::{GameMode, GamePacket};
 
 /// Sets the default game mode of the world.
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct SetDefaultGameMode {
     /// Game mode.
     pub game_mode: GameMode,

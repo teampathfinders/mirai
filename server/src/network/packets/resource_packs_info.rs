@@ -6,7 +6,7 @@ use common::VResult;
 use common::WriteExtensions;
 
 /// Behavior pack information.
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct BehaviorPack {
     /// UUID of the behavior pack.
     /// Each behavior pack must have a unique UUID.
@@ -29,7 +29,7 @@ pub struct BehaviorPack {
 }
 
 /// Resource pack information
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct ResourcePack {
     /// UUID of the resource pack.
     /// Each resource pack must have a unique UUID.
@@ -56,7 +56,7 @@ pub struct ResourcePack {
 /// Contains information about the addons used by the server.
 /// This should be sent after sending the [`PlayStatus`](super::PlayStatus) packet with a
 /// [`LoginSuccess`](super::Status::LoginSuccess) status.
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct ResourcePacksInfo<'a> {
     /// Forces the client to accept the packs to be able to join the server.
     pub required: bool,

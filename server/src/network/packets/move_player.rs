@@ -53,7 +53,7 @@ impl TryFrom<i32> for TeleportCause {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct MovePlayer {
     pub runtime_id: u64,
     pub position: Vector3f,

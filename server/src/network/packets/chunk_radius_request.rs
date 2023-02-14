@@ -5,7 +5,7 @@ use common::Decodable;
 use super::GamePacket;
 
 /// Sent by the client to request the maximum render distance.
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct ChunkRadiusRequest {
     /// Requested render distance (in chunks).
     pub radius: i32,

@@ -4,7 +4,7 @@ use common::{Encodable, VResult, WriteExtensions};
 use super::GamePacket;
 
 /// Minecraft game rules.
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum GameRule {
     CommandBlocksEnabled(bool),
     CommandBlockOutput(bool),
@@ -122,7 +122,7 @@ impl GameRule {
 }
 
 /// Updates one or more game rules.
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct GameRulesChanged<'a> {
     /// Game rules to update.
     pub game_rules: &'a [GameRule],

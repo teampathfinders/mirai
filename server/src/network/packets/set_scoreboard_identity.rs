@@ -11,14 +11,14 @@ pub enum ScoreboardIdentityAction {
 }
 
 /// Describes an identity entry that can be added or removed from a scoreboard.
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct ScoreboardIdentityEntry {
     /// Unique identifer of the entry.
     pub entry_id: i64,
     pub entity_unique_id: i64,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct SetScoreboardIdentity {
     /// Action to perform on the identity entries.
     pub action: ScoreboardIdentityAction,

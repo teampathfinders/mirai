@@ -48,7 +48,7 @@ impl TryFrom<u8> for MessageType {
 }
 
 /// Displays text messages.
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct TextMessage {
     /// Type of the message.
     pub message_type: MessageType,

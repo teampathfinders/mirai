@@ -6,7 +6,7 @@ use common::VResult;
 
 /// Sent by the client to initiate a full connection.
 /// [`ConnectionRequestAccepted`](super::connection_request_accepted::ConnectionRequestAccepted) should be sent in response.
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct ConnectionRequest {
     /// Client-provided GUID.
     pub guid: i64,

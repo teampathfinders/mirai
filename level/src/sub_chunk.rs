@@ -3,7 +3,7 @@ use common::{bail, Decodable, Encodable, VResult};
 
 const CHUNK_SIZE: usize = 4096;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct StorageRecord {
     indices: [u16; CHUNK_SIZE],
     palette: Vec<nbt::Value>,
@@ -58,7 +58,7 @@ impl StorageRecord {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct SubChunk {
     /// Version of the chunk.
     /// This version affects the format of the chunk.

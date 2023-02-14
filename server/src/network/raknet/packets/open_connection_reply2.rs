@@ -8,7 +8,7 @@ use common::VResult;
 use common::WriteExtensions;
 
 /// Sent in response ot [`OpenConnectionRequest2`](super::open_connection_request2::OpenConnectionRequest2).
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct OpenConnectionReply2 {
     /// GUID of the server.
     /// Corresponds to [`ServerInstance::guid`](crate::ServerInstance::guid).

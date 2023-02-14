@@ -64,7 +64,7 @@ impl TryFrom<u8> for BuildPlatform {
 
 /// Packet received by the client before initiating encryption.
 /// A [`ServerToClientHandshake`](super::ServerToClientHandshake) should be sent in response.
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Login {
     /// Identity data (Xbox account ID, username, etc.)
     pub identity: IdentityData,

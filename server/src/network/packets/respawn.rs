@@ -27,7 +27,7 @@ impl TryFrom<u8> for RespawnState {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Respawn {
     pub position: Vector3f,
     pub state: RespawnState,

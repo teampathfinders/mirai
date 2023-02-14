@@ -8,7 +8,7 @@ use common::WriteExtensions;
 /// Sent by the server to initiate encryption.
 /// The client responds with a [`ClientToServerHandshake`](super::ClientToServerHandshake) to
 /// indicate encryption has successfully been initiated.
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct ServerToClientHandshake<'a> {
     /// Token containing the salt and public key.
     pub jwt: &'a str,

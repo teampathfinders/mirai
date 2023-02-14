@@ -5,7 +5,7 @@ use common::Encodable;
 
 use super::GamePacket;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct NetworkChunkPublisherUpdate {
     pub position: BlockPosition,
     pub radius: u32,

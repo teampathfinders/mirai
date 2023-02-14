@@ -15,7 +15,7 @@ pub const DISCONNECTED_ENCRYPTION_FAIL: &str =
 pub const DISCONNECTED_BAD_PACKET: &str = "Client sent bad packet.";
 
 /// Sent by the server to disconnect a client.
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Disconnect<'a> {
     /// Whether to immediately send the client to the main menu.
     pub hide_disconnect_screen: bool,

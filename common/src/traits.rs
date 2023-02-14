@@ -3,7 +3,8 @@ use bytes::BytesMut;
 use crate::VResult;
 
 /// Trait that all server to client packets should implement.
-pub trait Encodable {
+/// The Clone trait is required for broadcasting
+pub trait Encodable: Clone {
     /// Encodes the packet into proper binary format.
     fn encode(&self) -> VResult<BytesMut>;
 }

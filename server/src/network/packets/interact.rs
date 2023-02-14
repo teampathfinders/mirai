@@ -28,7 +28,7 @@ impl TryFrom<u8> for InteractAction {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Interact {
     /// Type of action to perform.
     pub action: InteractAction,

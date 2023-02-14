@@ -6,7 +6,7 @@ use common::Decodable;
 use super::GamePacket;
 
 /// Sent by the client to indicate that the player has been fully initialised.
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct SetLocalPlayerAsInitialized {
     /// Runtime ID of the player.
     pub runtime_id: u64,

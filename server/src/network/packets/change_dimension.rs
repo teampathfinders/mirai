@@ -7,7 +7,7 @@ use level::Dimension;
 use super::GamePacket;
 
 /// Used to transfer the client to another dimension.
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct ChangeDimension {
     /// Dimension to transfer to.
     pub dimension: Dimension,

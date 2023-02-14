@@ -11,7 +11,7 @@ use common::{
 };
 
 /// Sent in response to [`ConnectionRequest`](super::connection_request::ConnectionRequest).
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct ConnectionRequestAccepted {
     /// IP address of the client.
     pub client_address: SocketAddr,

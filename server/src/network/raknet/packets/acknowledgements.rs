@@ -8,7 +8,7 @@ use common::{Decodable, Encodable};
 use common::{ReadExtensions, WriteExtensions};
 
 /// Record containing IDs of confirmed packets.
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum AcknowledgementRecord {
     /// A single ID
     Single(u32),
@@ -57,7 +57,7 @@ fn decode_records(mut buffer: BytesMut) -> Vec<AcknowledgementRecord> {
 }
 
 /// Confirms that packets have been received.
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Acknowledgement {
     /// Records containing IDs of received packets.
     pub records: Vec<AcknowledgementRecord>,
@@ -85,7 +85,7 @@ impl Decodable for Acknowledgement {
 }
 
 /// Notifiers the recipient of possibly lost packets.
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct NegativeAcknowledgement {
     /// Records containing the missing IDs
     pub records: Vec<AcknowledgementRecord>,

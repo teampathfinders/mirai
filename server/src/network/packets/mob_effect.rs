@@ -54,7 +54,7 @@ pub enum MobEffectKind {
 }
 
 /// Updates entity effects.
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct MobEffectUpdate {
     /// Runtime ID of the affected entity.
     pub runtime_id: u64,

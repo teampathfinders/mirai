@@ -73,7 +73,7 @@ impl PersonaPieceType {
 }
 
 /// Piece of a persona skin.
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Clone)]
 pub struct PersonaPiece {
     /// UUID that identifies the piece itself.
     #[serde(rename = "PieceId")]
@@ -104,7 +104,7 @@ impl PersonaPiece {
 }
 
 /// Colours for a persona piece.
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Clone)]
 pub struct PersonaPieceTint {
     /// Persona piece type to tint.
     #[serde(rename = "PieceType")]
@@ -143,7 +143,7 @@ pub enum SkinExpressionType {
 }
 
 /// A skin animation.
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Clone)]
 pub struct SkinAnimation {
     /// Width of the animation image in pixels.
     #[serde(rename = "ImageWidth")]
@@ -181,7 +181,7 @@ impl SkinAnimation {
 }
 
 /// A classic or persona skin.
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Clone)]
 pub struct Skin {
     /// UUID created for the skin.
     #[serde(rename = "SkinId")]

@@ -6,7 +6,7 @@ use common::ReadExtensions;
 use common::VResult;
 
 /// Sent during login to let the server know whether the client supports caching.
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct ClientCacheStatus {
     /// Whether the client supports the client-side blob cache.
     pub supports_cache: bool,

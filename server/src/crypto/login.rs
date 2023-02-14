@@ -16,7 +16,7 @@ const BASE64_ENGINE: base64::engine::GeneralPurpose =
     base64::engine::general_purpose::STANDARD_NO_PAD;
 
 /// Data contained in the identity token chain.
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct IdentityData {
     /// Xbox account ID.
     pub xuid: u64,
@@ -29,7 +29,7 @@ pub struct IdentityData {
 }
 
 /// Data contained in the user data token.
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct UserData {
     /// Operating system of the client.
     pub device_os: BuildPlatform,

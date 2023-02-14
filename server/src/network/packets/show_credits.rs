@@ -27,7 +27,7 @@ impl TryFrom<i32> for CreditsStatus {
 }
 
 /// Displays the Minecraft credits to the client.
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct CreditsUpdate {
     pub runtime_id: u64,
     /// Status update to apply.

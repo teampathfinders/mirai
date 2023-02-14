@@ -1,5 +1,5 @@
 /// Sent by the client to disconnect from the server.
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct DisconnectNotification;
 
 impl DisconnectNotification {

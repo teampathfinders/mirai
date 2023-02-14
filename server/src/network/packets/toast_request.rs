@@ -6,7 +6,7 @@ use common::Encodable;
 use super::GamePacket;
 
 /// Displays a notification at the top of the screen.
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct ToastRequest<'a> {
     /// Title of the notification.
     pub title: &'a str,

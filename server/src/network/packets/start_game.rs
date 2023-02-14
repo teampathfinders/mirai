@@ -144,7 +144,7 @@ impl BroadcastIntent {
 }
 
 /// The start game packet contains most of the world settings displayed in the settings menu.
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct StartGame {
     pub entity_id: i64,
     /// Runtime ID of the client.

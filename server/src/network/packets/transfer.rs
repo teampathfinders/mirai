@@ -9,7 +9,7 @@ use super::GamePacket;
 
 /// Transfers the client to another server.
 /// The client does this by first returning to the main menu and then connecting to the selected server.
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Transfer {
     /// Address of the server to transfer to.
     pub address: SocketAddr,

@@ -30,7 +30,7 @@ pub enum DatabaseTag {
     RandomTicks = 0x3a,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct DatabaseKey {
     /// X coordinate of the chunk.
     pub x: i32,

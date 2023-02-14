@@ -9,7 +9,7 @@ pub enum DebugRendererAction {
     AddCube,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct ClientBoundDebugRenderer<'a> {
     /// Action to perform.
     pub action: DebugRendererAction,

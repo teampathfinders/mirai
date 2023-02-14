@@ -4,7 +4,7 @@ use common::{Encodable, VResult, WriteExtensions};
 use super::GamePacket;
 
 /// Adds a fog to the client's fog stack.
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct UpdateFogStack<'s> {
     /// Lists of fog identifiers
     pub stack: &'s [String],

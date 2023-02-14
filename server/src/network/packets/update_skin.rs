@@ -5,7 +5,7 @@ use crate::skin::Skin;
 
 use super::GamePacket;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct UpdateSkin {
     pub uuid: u128,
     pub skin: Skin,

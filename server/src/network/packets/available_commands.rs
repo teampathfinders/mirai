@@ -62,7 +62,7 @@ pub enum CommandParameterType {
 }
 
 /// Describes a single command parameter.
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct CommandParameter {
     /// Name of the parameter.
     pub name: String,
@@ -79,14 +79,14 @@ pub struct CommandParameter {
 }
 
 /// Describes a command argument combination.
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct CommandOverload {
     /// Command parameters.
     pub parameters: Vec<CommandParameter>,
 }
 
 /// Describes a Minecraft command.
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Command {
     /// Name of the command.
     pub name: String,
@@ -100,7 +100,7 @@ pub struct Command {
     pub overloads: Vec<CommandOverload>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct AvailableCommands {
     /// List of available commands
     pub commands: Vec<Command>,

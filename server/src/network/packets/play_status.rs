@@ -30,7 +30,7 @@ pub enum Status {
 }
 
 /// Sends a status update to the client.
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct PlayStatus {
     /// Status to send to the client.
     pub status: Status,

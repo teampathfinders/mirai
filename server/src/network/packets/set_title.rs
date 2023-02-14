@@ -23,7 +23,7 @@ pub enum TitleAction {
 
 /// Sets a title for the client.
 /// This is basically the same as the /title command in vanilla Minecraft.
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct SetTitle<'a> {
     /// Title operation to perform.
     pub action: TitleAction,

@@ -5,7 +5,7 @@ use common::Encodable;
 
 use super::GamePacket;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct SpawnExperienceOrb {
     pub position: Vector3f,
     pub amount: u32,

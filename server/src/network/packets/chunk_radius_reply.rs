@@ -6,7 +6,7 @@ use common::Encodable;
 use super::GamePacket;
 
 /// Sent in response to [`ChunkRadiusRequest`](super::ChunkRadiusRequest), to notify the client of the allowed render distance.
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct ChunkRadiusReply {
     /// Maximum render distance that the server allows (in chunks).
     pub allowed_radius: i32,

@@ -11,7 +11,7 @@ use common::WriteExtensions;
 pub const ITEM_ID_SHIELD: u32 = 513;
 
 /// Represents a combination of a network ID and metadata value.
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct ItemType {
     /// Numerical ID of the item.
     pub network_id: u32,
@@ -20,7 +20,7 @@ pub struct ItemType {
 }
 
 /// Represents an item instance/stack.
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct ItemStack {
     pub item_type: ItemType,
     pub runtime_id: u32,
@@ -73,7 +73,7 @@ impl ItemStack {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct ItemInstance {
     pub network_id: u32,
     pub stack: ItemStack,
@@ -86,7 +86,7 @@ impl ItemInstance {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct CreativeContent {
     pub items: Vec<ItemInstance>,
 }

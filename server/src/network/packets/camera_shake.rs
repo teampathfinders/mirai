@@ -19,7 +19,7 @@ pub enum CameraShakeAction {
 
 /// Makes the camera shake client-side.
 /// This can be used for map-making.
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct CameraShake {
     /// Intensity.
     pub intensity: f32,

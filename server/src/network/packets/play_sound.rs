@@ -6,7 +6,7 @@ use common::Encodable;
 use super::GamePacket;
 
 /// Plays a sound for the client.
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct PlaySound<'s> {
     /// Name of the sound.
     pub name: &'s str,

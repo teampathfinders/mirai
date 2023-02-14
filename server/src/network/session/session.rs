@@ -47,6 +47,9 @@ pub struct Session {
     pub encryptor: OnceCell<Encryptor>,
     /// Whether the client supports the chunk cache.
     pub cache_support: OnceCell<bool>,
+    /// Whether the client has fully been initialised.
+    /// This is set to true after receiving the [`SetLocalPlayerAsInitialized`](packets::SetLocalPlayerAsInitialized) packet
+    pub initialized: AtomicBool,
 
     /// Current tick of this session, this is increased by one every time the session
     /// processes packets.
@@ -103,6 +106,7 @@ impl Session {
             user_data: OnceCell::new(),
             encryptor: OnceCell::new(),
             cache_support: OnceCell::new(),
+            initialized: AtomicBool::new(false),
 
             current_tick: AtomicU64::new(0),
             ipv4_socket,
@@ -176,6 +180,11 @@ impl Session {
         }
 
         session
+    }
+
+    #[inline]
+    pub fn is_initialized(&self) -> bool {
+        self.initialized.load(Ordering::SeqCst)
     }
 
     /// Retrieves the identity of the client.

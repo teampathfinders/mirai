@@ -15,7 +15,7 @@ pub enum PaintingDirection {
 }
 
 /// Adds a painting into the game.
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct AddPainting<'a> {
     /// Entity runtime ID of the painting.
     pub runtime_id: u64,

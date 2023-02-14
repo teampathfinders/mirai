@@ -9,6 +9,7 @@ use common::VResult;
 ///
 /// This packet should be sent in response to [`OpenConnectionRequest1`](super::open_connection_request1::OpenConnectionRequest1)
 /// if the [`protocol_version`](super::open_connection_request1::OpenConnectionRequest1::protocol_version) field does not match the server's version.
+#[derive(Debug, Clone)]
 pub struct IncompatibleProtocol {
     /// Randomly generated GUID of the server.
     /// Corresponds to [`ServerInstance::guid`](crate::ServerInstance::guid).

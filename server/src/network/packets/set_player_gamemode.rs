@@ -32,7 +32,7 @@ impl TryFrom<i32> for GameMode {
 }
 
 /// Sets the player's game mode.
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct SetPlayerGameMode {
     /// Game mode to apply.
     pub game_mode: GameMode,

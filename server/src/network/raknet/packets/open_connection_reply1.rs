@@ -5,7 +5,7 @@ use common::Encodable;
 use common::VResult;
 
 /// Sent in response to [`OpenConnectionRequest1`](super::open_connection_request1::OpenConnectionRequest1).
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct OpenConnectionReply1 {
     /// GUID of the server.
     /// Corresponds to [`ServerInstance::guid`](crate::ServerInstance::guid).

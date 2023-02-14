@@ -8,7 +8,7 @@ use common::VResult;
 use common::{ReadExtensions, WriteExtensions};
 
 /// A game packet.
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Packet<T: GamePacket> {
     /// Contains the packet ID and subclient IDs.
     header: Header,

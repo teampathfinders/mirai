@@ -39,7 +39,7 @@ impl AnimateAction {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Animate {
     /// Type of animation to perform.
     pub action_type: AnimateAction,

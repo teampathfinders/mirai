@@ -5,7 +5,7 @@ use common::Encodable;
 use common::VResult;
 use common::WriteExtensions;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct ExperimentData {
     pub name: String,
     pub enabled: bool,
@@ -18,7 +18,7 @@ impl ExperimentData {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct ResourcePackStackEntry {
     pub pack_id: String,
     pub pack_version: String,
@@ -33,14 +33,14 @@ impl ResourcePackStackEntry {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct BehaviorPackEntry {
     pub pack_id: String,
     pub pack_version: String,
     pub subpack_name: String,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct ResourcePackStack<'a> {
     pub forced_to_accept: bool,
     pub resource_packs: &'a [ResourcePackStackEntry],

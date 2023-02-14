@@ -6,7 +6,7 @@ use common::Encodable;
 use super::GamePacket;
 
 /// Opens a dialog showing details about a player's Xbox account.
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct ShowProfile<'s> {
     /// XUID of the profile to display.
     pub xuid: &'s str,

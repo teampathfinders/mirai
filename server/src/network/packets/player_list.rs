@@ -5,7 +5,7 @@ use crate::skin::Skin;
 
 use super::{BuildPlatform, GamePacket};
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct PlayerListAddEntry<'a> {
     /// UUID.
     pub uuid: u128,
@@ -28,7 +28,7 @@ pub struct PlayerListAddEntry<'a> {
     pub host: bool,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct PlayerListAdd<'a> {
     pub entries: &'a [PlayerListAddEntry<'a>],
 }
@@ -59,7 +59,7 @@ impl Encodable for PlayerListAdd<'_> {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct PlayerListRemove<'a> {
     pub entries: &'a [u128]
 }
