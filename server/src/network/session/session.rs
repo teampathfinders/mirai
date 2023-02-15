@@ -274,8 +274,19 @@ impl Session {
         }
         self.active.cancel();
     }
-    
-    /// Sends a packet to all initialised sessions other than this one.
+
+    /// Sends a packet to all initialised sessions including self.
+    pub fn broadcast<P: GamePacket + Encodable>(&self, packet: P) -> VResult<()> {
+        // Upgrade weak pointer to use it.
+        let tracker = self.tracker
+            .upgrade()
+            .ok_or_else(|| error!(NotInitialized, "Session attempted to use tracker that does not exist anymore. This is definitely a bug"))?;
+
+        tracker.broadcast(packet);
+        Ok(())
+    }
+
+    /// Sends a packet to all initialised sessions other than self.
     pub fn broadcast_others<P: GamePacket + Encodable>(&self, packet: P) -> VResult<()> {
         // Upgrade weak pointer to use it.
         let tracker = self.tracker

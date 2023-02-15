@@ -1,7 +1,7 @@
 use std::net::{Ipv4Addr, SocketAddr, SocketAddrV4};
 
 use bytes::BytesMut;
-use common::{BlockPosition, Decodable, VResult, Vector3f, Vector3i, Vector4f};
+use common::{BlockPosition, Decodable, VResult, Vector3f, Vector3i, Vector4f, bail};
 
 use crate::network::{
     packets::{
@@ -21,25 +21,13 @@ use crate::network::{
 impl Session {
     pub fn handle_text_message(&self, packet: BytesMut) -> VResult<()> {
         let request = TextMessage::decode(packet)?;
-        tracing::info!("{request:?}");
+        if request.message_type != MessageType::Chat {
+            bail!(BadPacket, "Client is only allowed to send chat messages, received {:?} instead", request.message_type)
+        }
 
-        let game_rules = GameRulesChanged {
-            game_rules: &[GameRule::ShowCoordinates(false)],
-        };
-        self.send_packet(game_rules)?;
-
-        let toast = ToastRequest {
-            title: "Game Rule Updated",
-            message: "Disabled the showcoordinates gamerule",
-        };
-        self.send_packet(toast)?;
-
-        let fog = UpdateFogStack {
-            stack: &["minecraft:fog_hell".to_owned()],
-        };
-        self.send_packet(fog)?;
-
-        Ok(())
+        // We must also return the packet to the client that sent it.
+        // Otherwise their message won't be displayed in their own chat.
+        self.broadcast(request)
     }
 
     pub fn handle_ability_request(&self, packet: BytesMut) -> VResult<()> {
