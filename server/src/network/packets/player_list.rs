@@ -42,12 +42,17 @@ impl GamePacket for PlayerListAdd<'_> {
 
 impl Encodable for PlayerListAdd<'_> {
     fn encode(&self) -> VResult<BytesMut> {
+        tracing::debug!("{self:?}");
+
         let mut buffer = BytesMut::new();
 
         buffer.put_u8(0); // Add player.
         buffer.put_var_u32(self.entries.len() as u32);
         for entry in self.entries {
-            buffer.put_u128_le(entry.uuid.as_u128());
+            let pair = entry.uuid.as_u64_pair();
+            buffer.put_u64_le(pair.0);
+            buffer.put_u64_le(pair.1);
+
             buffer.put_var_i64(entry.entity_id);
             buffer.put_string(entry.username);
             buffer.put_string(&entry.xuid.to_string());
@@ -56,6 +61,10 @@ impl Encodable for PlayerListAdd<'_> {
             entry.skin.encode(&mut buffer);
             buffer.put_bool(entry.teacher);
             buffer.put_bool(entry.host);
+        }
+
+        for entry in self.entries {
+            buffer.put_bool(entry.skin.trusted);
         }
 
         Ok(buffer)

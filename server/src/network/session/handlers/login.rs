@@ -206,16 +206,16 @@ impl Session {
         let play_status = PlayStatus { status: Status::PlayerSpawn };
         self.send(play_status)?;
 
-        let available_commands = AvailableCommands {
-            commands: vec![Command {
-                name: "credits".to_owned(),
-                description: "Shows the credits screen".to_owned(),
-                permission_level: CommandPermissionLevel::Normal,
-                aliases: vec![],
-                overloads: vec![],
-            }],
-        };
-        self.send(available_commands)?;
+        // let available_commands = AvailableCommands {
+        //     commands: vec![Command {
+        //         name: "credits".to_owned(),
+        //         description: "Shows the credits screen".to_owned(),
+        //         permission_level: CommandPermissionLevel::Normal,
+        //         aliases: vec![],
+        //         overloads: vec![],
+        //     }],
+        // };
+        // self.send(available_commands)?;
 
         Ok(())
     }
