@@ -1,6 +1,8 @@
 use base64::Engine;
 use bytes::{Buf, BytesMut};
 use jsonwebtoken::{Algorithm, DecodingKey, Validation};
+use serde::Deserialize;
+use serde_repr::Deserialize_repr;
 use spki::SubjectPublicKeyInfo;
 
 use crate::crypto::{
@@ -13,7 +15,8 @@ use common::{bail, vassert};
 use common::{VError, VResult};
 
 /// Device operating system
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Deserialize_repr)]
+#[repr(u8)]
 pub enum BuildPlatform {
     Android,
     Ios,
@@ -35,31 +38,11 @@ pub enum BuildPlatform {
     Linux,
 }
 
-impl TryFrom<u8> for BuildPlatform {
-    type Error = VError;
-
-    fn try_from(value: u8) -> VResult<Self> {
-        use BuildPlatform::*;
-
-        Ok(match value {
-            1 => Android,
-            2 => Ios,
-            3 => Osx,
-            4 => FireOS,
-            5 => GearVR,
-            6 => HoloLens,
-            7 => Win10,
-            8 => Win32,
-            9 => Dedicated,
-            10 => TvOS,
-            11 => PlayStation,
-            12 => Nx,
-            13 => Xbox,
-            14 => WindowsPhone,
-            15 => Linux,
-            _ => bail!(BadPacket, "Invalid device OS {}, expected 1-15", value),
-        })
-    }
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Deserialize_repr)]
+#[repr(i32)]
+pub enum UiProfile {
+    Classic,
+    Pocket
 }
 
 /// Packet received by the client before initiating encryption.
@@ -92,11 +75,7 @@ impl Decodable for Login {
                 display_name: identity_data.client_data.display_name,
                 public_key: identity_data.public_key,
             },
-            user_data: UserData {
-                device_os: BuildPlatform::try_from(user_data.device_os)?,
-                language_code: user_data.language_code,
-                skin: user_data.skin
-            },
+            user_data
         })
     }
 }

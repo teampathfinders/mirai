@@ -27,8 +27,6 @@ impl Value {
 
     /// Encodes an NBT tag name (little endian).
     fn encode_tag_name_net(stream: &mut BytesMut, string: &str) {
-        tracing::info!("{string}");
-
         stream.put_var_u32(string.len() as u32);
         stream.put(string.as_bytes());
     }

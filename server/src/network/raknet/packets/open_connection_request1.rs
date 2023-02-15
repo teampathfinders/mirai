@@ -32,8 +32,6 @@ impl Decodable for OpenConnectionRequest1 {
         buffer.advance(16); // Skip magic
         let protocol_version = buffer.get_u8();
 
-        tracing::debug!("{mtu} mtu");
-
         Ok(Self { protocol_version, mtu })
     }
 }

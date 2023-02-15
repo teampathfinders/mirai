@@ -129,17 +129,18 @@ impl PersonaPieceTint {
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Deserialize_repr)]
 #[repr(u8)]
 pub enum SkinAnimationType {
-    Head = 0,
-    Body32x32 = 1,
-    Body128x128 = 2,
+    None,
+    Head,
+    Body32x32,
+    Body128x128,
 }
 
 /// Expression type.
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Deserialize_repr)]
 #[repr(u8)]
 pub enum SkinExpressionType {
-    Linear = 0,
-    Blinking = 1,
+    Linear,
+    Blinking,
 }
 
 /// A skin animation.
@@ -152,8 +153,8 @@ pub struct SkinAnimation {
     #[serde(rename = "ImageHeight")]
     pub image_height: u32,
     /// Image data.
-    #[serde(rename = "Image")]
-    pub image_data: String,
+    #[serde(rename = "Image", with = "base64")]
+    pub image_data: BytesMut,
     /// Animation type.
     #[serde(rename = "Type")]
     pub animation_type: SkinAnimationType,
@@ -170,7 +171,7 @@ impl SkinAnimation {
     pub fn encode(&self, buffer: &mut BytesMut) {
         buffer.put_u32_le(self.image_width);
         buffer.put_u32_le(self.image_height);
-
+        
         buffer.put_var_u32(self.image_data.len() as u32);
         buffer.put(self.image_data.as_ref());
 
@@ -191,7 +192,7 @@ pub struct Skin {
     #[serde(rename = "PlayFabId")]
     pub playfab_id: String,
     /// Unknown what this does.
-    #[serde(rename = "SkinResourcePatch")]
+    #[serde(rename = "SkinResourcePatch", with = "base64_string")]
     pub resource_patch: String,
     /// Width of the skin image in pixels.
     #[serde(rename = "SkinImageWidth")]
@@ -200,8 +201,8 @@ pub struct Skin {
     #[serde(rename = "SkinImageHeight")]
     pub image_height: u32,
     /// Skin image data.
-    #[serde(rename = "SkinData")]
-    pub image_data: String,
+    #[serde(rename = "SkinData", with = "base64")]
+    pub image_data: BytesMut,
     /// Animations that the skin possesses.
     #[serde(rename = "AnimatedImageData")]
     pub animations: Vec<SkinAnimation>,
@@ -212,15 +213,15 @@ pub struct Skin {
     #[serde(rename = "CapeImageHeight")]
     pub cape_image_height: u32,
     /// Cape image data
-    #[serde(rename = "CapeData")]
-    pub cape_image_data: String,
+    #[serde(rename = "CapeData", with = "base64")]
+    pub cape_image_data: BytesMut,
     /// JSON containing information like bones.
-    #[serde(rename = "SkinGeometryData")]
+    #[serde(rename = "SkinGeometryData", with = "base64_string")]
     pub skin_geometry: String,
-    #[serde(rename = "SkinAnimationData")]
+    #[serde(rename = "SkinAnimationData", with = "base64_string")]
     pub animation_data: String,
     /// Engine version for geometry data.
-    #[serde(rename = "SkinGeometryDataEngineVersion")]
+    #[serde(rename = "SkinGeometryDataEngineVersion", with = "base64_string")]
     pub geometry_data_engine_version: String,
     /// Whether this skin was purchased from the marketplace.
     #[serde(rename = "PremiumSkin")]
@@ -250,6 +251,39 @@ pub struct Skin {
     /// The server shouldn't actually trust this because the client can change it.
     #[serde(rename = "TrustedSkin")]
     pub trusted: bool,
+}
+
+/// Serde deserializer for raw base64.
+mod base64 {
+    use base64::Engine;
+    use bytes::BytesMut;
+    use serde::{Deserializer, Deserialize};
+
+    const ENGINE: base64::engine::GeneralPurpose = base64::engine::general_purpose::STANDARD;
+
+    // TODO: This can probably be done more efficiently by directly writing into the BytesMut buffer.
+    pub fn deserialize<'de, D: Deserializer<'de>>(d: D) -> Result<BytesMut, D::Error> {
+        let base64 = String::deserialize(d)?;
+
+        let bytes = ENGINE.decode(base64).map_err(|e| serde::de::Error::custom(e))?;
+        Ok(BytesMut::from(bytes.as_slice()))
+    }
+}
+
+/// Serde deserializer that decodes the base64 and converts it into a string.
+mod base64_string {
+    use base64::Engine;
+    use bytes::BytesMut;
+    use serde::{Deserializer, Deserialize};
+
+    const ENGINE: base64::engine::GeneralPurpose = base64::engine::general_purpose::STANDARD;
+
+    pub fn deserialize<'de, D: Deserializer<'de>>(d: D) -> Result<String, D::Error> {
+        let base64 = String::deserialize(d)?;
+        let bytes = ENGINE.decode(base64).map_err(|e| serde::de::Error::custom(e))?;
+
+        String::from_utf8(bytes).map_err(|e| serde::de::Error::custom(e))
+    }
 }
 
 fn get_bytes(buffer: &mut BytesMut) -> VResult<BytesMut> {
@@ -301,9 +335,7 @@ impl Skin {
     pub fn encode(&self, buffer: &mut BytesMut) {
         buffer.put_string(&self.skin_id);
         buffer.put_string(&self.playfab_id);
-
-        buffer.put_var_u32(self.resource_patch.len() as u32);
-        buffer.put(self.resource_patch.as_ref());
+        buffer.put_string(&self.resource_patch);
 
         buffer.put_u32_le(self.image_width);
         buffer.put_u32_le(self.image_height);
@@ -320,17 +352,12 @@ impl Skin {
         buffer.put_var_u32(self.cape_image_data.len() as u32);
         buffer.put(self.cape_image_data.as_ref());
 
-        buffer.put_var_u32(self.skin_geometry.len() as u32);
-        buffer.put(self.skin_geometry.as_ref());
-
-        buffer.put_var_u32(self.geometry_data_engine_version.len() as u32);
-        buffer.put(self.geometry_data_engine_version.as_ref());
-
-        buffer.put_var_u32(self.animation_data.len() as u32);
-        buffer.put(self.animation_data.as_ref());
+        buffer.put_string(&self.skin_geometry);
+        buffer.put_string(&self.geometry_data_engine_version);
+        buffer.put_string(&self.animation_data);
 
         buffer.put_string(&self.cape_id);
-        buffer.put_string(""); // Full ID
+        buffer.put_string(&self.skin_id); // Full ID
         buffer.put_string(self.arm_size.name());
         buffer.put_string(&self.color);
 
@@ -347,6 +374,6 @@ impl Skin {
         buffer.put_bool(self.premium_skin);
         buffer.put_bool(self.persona_skin);
         buffer.put_bool(self.persona_cape_on_classic);
-        buffer.put_bool(false); // Primary user.
+        buffer.put_bool(true); // Primary user.
     }
 }

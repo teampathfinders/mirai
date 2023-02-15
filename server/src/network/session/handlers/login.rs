@@ -75,7 +75,7 @@ impl Session {
             self.broadcast_others(PlayerListAdd {
                 entries: &[PlayerListAddEntry {
                     uuid: identity_data.identity,
-                    entity_id: 2,
+                    entity_id: 5,
                     username: &identity_data.display_name,
                     xuid: identity_data.xuid,
                     build_platform: user_data.device_os,

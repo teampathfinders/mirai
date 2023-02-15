@@ -6,7 +6,7 @@ use common::{bail, error, VResult};
 use jsonwebtoken::{Algorithm, DecodingKey, Validation};
 use uuid::Uuid;
 
-use crate::{network::packets::BuildPlatform, skin::Skin};
+use crate::{network::packets::{BuildPlatform, UiProfile}, skin::Skin};
 
 /// Mojang's public key.
 /// Used to verify the second token in the identity chain.
@@ -27,17 +27,6 @@ pub struct IdentityData {
     pub display_name: String,
     /// Public key used for token verification and encryption.
     pub public_key: String,
-}
-
-/// Data contained in the user data token.
-#[derive(Debug, Clone)]
-pub struct UserData {
-    /// Operating system of the client.
-    pub device_os: BuildPlatform,
-    /// Language in ISO format (i.e. en_GB)
-    pub language_code: String,
-    /// The player's skin
-    pub skin: Skin
 }
 
 /// A chain of JSON web tokens.
@@ -75,12 +64,21 @@ pub struct IdentityTokenPayload {
 }
 
 /// Used to extract data from the user data token.
-#[derive(serde::Deserialize, Debug)]
-pub struct UserTokenPayload {
+#[derive(serde::Deserialize, Debug, Clone)]
+pub struct UserData {
+    /// Operating system of the client.
     #[serde(rename = "DeviceOS")]
-    pub device_os: u8,
+    pub device_os: BuildPlatform,
+    #[serde(rename = "DeviceModel")]
+    pub device_model: String,
+    /// Language in ISO format (i.e. en_GB)
     #[serde(rename = "LanguageCode")]
     pub language_code: String,
+    #[serde(rename = "UIProfile")]
+    pub ui_profile: UiProfile,
+    #[serde(rename = "GuiScale")]
+    pub gui_scale: i32,
+    /// The player's skin
     #[serde(flatten)]
     pub skin: Skin,
 }
@@ -177,7 +175,7 @@ fn verify_third_token(token: &str, key: &str) -> VResult<IdentityTokenPayload> {
 }
 
 /// Verifies and decodes the user data token.
-fn verify_fourth_token(token: &str, key: &str) -> VResult<UserTokenPayload> {
+fn verify_fourth_token(token: &str, key: &str) -> VResult<UserData> {
     let bytes = BASE64_ENGINE.decode(key)?;
     let public_key = match spki::SubjectPublicKeyInfo::try_from(bytes.as_ref())
     {
@@ -191,7 +189,7 @@ fn verify_fourth_token(token: &str, key: &str) -> VResult<UserTokenPayload> {
     // No special header data included in this token, don't verify anything.
     validation.required_spec_claims.clear();
 
-    let payload = jsonwebtoken::decode::<UserTokenPayload>(
+    let payload = jsonwebtoken::decode::<UserData>(
         token,
         &decoding_key,
         &validation,
@@ -253,13 +251,13 @@ pub fn parse_identity_data(
 pub fn parse_user_data(
     buffer: &mut BytesMut,
     public_key: &str,
-) -> VResult<UserTokenPayload> {
+) -> VResult<UserData> {
     let token_length = buffer.get_u32_le();
     let position = buffer.len() - buffer.remaining();
     let token = &buffer.as_ref()[position..(position + token_length as usize)];
     let token_string = String::from_utf8_lossy(token);
 
     let user_data = verify_fourth_token(token_string.as_ref(), public_key)?;
-
+    
     Ok(user_data)
 }
