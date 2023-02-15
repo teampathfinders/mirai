@@ -1,4 +1,4 @@
-use bytes::{Buf, BufMut, BytesMut};
+use bytes::{Buf, BufMut, BytesMut, Bytes};
 use common::{
     bail, Encodable, ReadExtensions, VError, VResult, WriteExtensions,
 };
@@ -23,6 +23,18 @@ impl ArmSize {
             Self::Slim => "slim",
             Self::Wide => "wide",
         }
+    }
+}
+
+impl TryFrom<&str> for ArmSize {
+    type Error = VError;
+
+    fn try_from(value: &str) -> VResult<Self> {
+        Ok(match value {
+            "slim" => Self::Slim,
+            "wide" => Self::Wide,
+            _ => bail!(BadPacket, "Invalid arm size {value}")
+        })
     }
 }
 
@@ -72,6 +84,27 @@ impl PersonaPieceType {
     }
 }
 
+impl TryFrom<&str> for PersonaPieceType {
+    type Error = VError;
+
+    fn try_from(value: &str) -> VResult<Self> {
+        Ok(match value {
+            "persona_skeleton" => Self::Skeleton,
+            "persona_body" => Self::Body,
+            "persona_skin" => Self::Skin,
+            "persona_bottom" => Self::Bottom,
+            "persona_feet" => Self::Feet,
+            "persona_top" => Self::Top,
+            "persona_mouth" => Self::Mouth,
+            "persona_hair" => Self::Hair,
+            "persona_eyes" => Self::Eyes,
+            "persona_facial_hair" => Self::FacialHair,
+            "persona_dress" => Self::Dress,
+            _ => bail!(BadPacket, "Invalid persona piece type {value}")
+        })
+    }
+}
+
 /// Piece of a persona skin.
 #[derive(Debug, Deserialize, Clone)]
 pub struct PersonaPiece {
@@ -101,6 +134,22 @@ impl PersonaPiece {
         buffer.put_bool(self.default);
         buffer.put_string(&self.product_id);
     }
+
+    fn decode(buffer: &mut BytesMut) -> VResult<Self> {
+        let piece_id = buffer.get_string()?;
+        let piece_type = PersonaPieceType::try_from(buffer.get_string()?.as_str())?;
+        let pack_id = buffer.get_string()?;
+        let default = buffer.get_bool();
+        let product_id = buffer.get_string()?;
+
+        Ok(Self {
+            piece_id,
+            piece_type,
+            pack_id,
+            default,
+            product_id
+        })
+    }
 }
 
 /// Colours for a persona piece.
@@ -123,6 +172,26 @@ impl PersonaPieceTint {
             buffer.put_string(color);
         }
     }
+
+    fn decode(buffer: &mut BytesMut) -> VResult<Self> {
+        let piece_type = PersonaPieceType::try_from(buffer.get_string()?.as_str())?;
+
+        let color_count = buffer.get_u32_le();
+        if color_count > 4 {
+            bail!(BadPacket, "Persona piece tint cannot have more than 4 colours, received {color_count}");
+        }
+
+        // Not sure why Rust can't infer this type...
+        let mut colors: [String; 4] = Default::default();
+        for i in 0..color_count {
+            colors[i as usize] = buffer.get_string()?;
+        }
+
+        Ok(Self {
+            piece_type,
+            colors
+        })  
+    }
 }
 
 /// Animation type.
@@ -135,12 +204,38 @@ pub enum SkinAnimationType {
     Body128x128,
 }
 
+impl TryFrom<u32> for SkinAnimationType {
+    type Error = VError;
+
+    fn try_from(value: u32) -> VResult<Self> {
+        Ok(match value {
+            0 => Self::None,
+            1 => Self::Head,
+            2 => Self::Body32x32,
+            3 => Self::Body128x128,
+            _ => bail!(BadPacket, "Invalid skin animation type {value}")
+        })
+    }
+}
+
 /// Expression type.
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Deserialize_repr)]
 #[repr(u8)]
 pub enum SkinExpressionType {
     Linear,
     Blinking,
+}
+
+impl TryFrom<u32> for SkinExpressionType {
+    type Error = VError;
+
+    fn try_from(value: u32) -> VResult<Self> {
+        Ok(match value {
+            0 => Self::Linear,
+            1 => Self::Blinking,
+            _ => bail!(BadPacket, "Invalid skin expression type {value}")
+        })
+    }
 }
 
 /// A skin animation.
@@ -154,7 +249,7 @@ pub struct SkinAnimation {
     pub image_height: u32,
     /// Image data.
     #[serde(rename = "Image", with = "base64")]
-    pub image_data: BytesMut,
+    pub image_data: Bytes,
     /// Animation type.
     #[serde(rename = "Type")]
     pub animation_type: SkinAnimationType,
@@ -173,11 +268,26 @@ impl SkinAnimation {
         buffer.put_u32_le(self.image_height);
         
         buffer.put_var_u32(self.image_data.len() as u32);
-        buffer.put(self.image_data.as_ref());
+        buffer.extend(&self.image_data);
 
         buffer.put_u32_le(self.animation_type as u32);
         buffer.put_f32_le(self.frame_count);
         buffer.put_u32_le(self.expression_type as u32);
+    }
+
+    pub fn decode(buffer: &mut BytesMut) -> VResult<Self> {
+        let image_width = buffer.get_u32_le();
+        let image_height = buffer.get_u32_le();
+        let image_size = buffer.get_var_u32()?;
+        let image_data = buffer.copy_to_bytes(image_size as usize);
+
+        let animation_type = SkinAnimationType::try_from(buffer.get_u32_le())?;
+        let frame_count = buffer.get_f32_le();
+        let expression_type = SkinExpressionType::try_from(buffer.get_u32_le())?;
+
+        Ok(Self {
+            image_width, image_height, image_data, animation_type, frame_count, expression_type
+        })
     }
 }
 
@@ -202,7 +312,7 @@ pub struct Skin {
     pub image_height: u32,
     /// Skin image data.
     #[serde(rename = "SkinData", with = "base64")]
-    pub image_data: BytesMut,
+    pub image_data: Bytes,
     /// Animations that the skin possesses.
     #[serde(rename = "AnimatedImageData")]
     pub animations: Vec<SkinAnimation>,
@@ -214,24 +324,24 @@ pub struct Skin {
     pub cape_image_height: u32,
     /// Cape image data
     #[serde(rename = "CapeData", with = "base64")]
-    pub cape_image_data: BytesMut,
+    pub cape_image_data: Bytes,
     /// JSON containing information like bones.
     #[serde(rename = "SkinGeometryData", with = "base64_string")]
-    pub skin_geometry: String,
+    pub geometry: String,
     #[serde(rename = "SkinAnimationData", with = "base64_string")]
     pub animation_data: String,
     /// Engine version for geometry data.
     #[serde(rename = "SkinGeometryDataEngineVersion", with = "base64_string")]
-    pub geometry_data_engine_version: String,
+    pub geometry_engine_version: String,
     /// Whether this skin was purchased from the marketplace.
     #[serde(rename = "PremiumSkin")]
-    pub premium_skin: bool,
+    pub is_premium: bool,
     /// Whether this skin is a persona skin.
     #[serde(rename = "PersonaSkin")]
-    pub persona_skin: bool,
+    pub is_persona: bool,
     /// Whether the skin is classic but has a persona cape equipped.
     #[serde(rename = "CapeOnClassicSkin")]
-    pub persona_cape_on_classic: bool,
+    pub cape_on_classic_skin: bool,
     /// UUID that identifiers the skin's cape.
     #[serde(rename = "CapeId")]
     pub cape_id: String,
@@ -250,30 +360,32 @@ pub struct Skin {
     /// Whether the skin is "trusted" by Minecraft.
     /// The server shouldn't actually trust this because the client can change it.
     #[serde(rename = "TrustedSkin")]
-    pub trusted: bool,
+    pub is_trusted: bool,
+    #[serde(skip)]
+    pub full_id: String,
+    #[serde(skip)]
+    pub is_primary_user: bool
 }
 
 /// Serde deserializer for raw base64.
 mod base64 {
     use base64::Engine;
-    use bytes::BytesMut;
+    use bytes::Bytes;
     use serde::{Deserializer, Deserialize};
 
     const ENGINE: base64::engine::GeneralPurpose = base64::engine::general_purpose::STANDARD;
 
-    // TODO: This can probably be done more efficiently by directly writing into the BytesMut buffer.
-    pub fn deserialize<'de, D: Deserializer<'de>>(d: D) -> Result<BytesMut, D::Error> {
+    pub fn deserialize<'de, D: Deserializer<'de>>(d: D) -> Result<Bytes, D::Error> {
         let base64 = String::deserialize(d)?;
 
         let bytes = ENGINE.decode(base64).map_err(|e| serde::de::Error::custom(e))?;
-        Ok(BytesMut::from(bytes.as_slice()))
+        Ok(Bytes::from(bytes))
     }
 }
 
 /// Serde deserializer that decodes the base64 and converts it into a string.
 mod base64_string {
     use base64::Engine;
-    use bytes::BytesMut;
     use serde::{Deserializer, Deserialize};
 
     const ENGINE: base64::engine::GeneralPurpose = base64::engine::general_purpose::STANDARD;
@@ -284,17 +396,6 @@ mod base64_string {
 
         String::from_utf8(bytes).map_err(|e| serde::de::Error::custom(e))
     }
-}
-
-fn get_bytes(buffer: &mut BytesMut) -> VResult<BytesMut> {
-    let length = buffer.get_var_u32()?;
-    let cursor = buffer.len() - buffer.remaining();
-
-    let data =
-        BytesMut::from(&buffer.as_ref()[cursor..cursor + length as usize]);
-    buffer.advance(length as usize);
-
-    Ok(data)
 }
 
 impl Skin {
@@ -352,12 +453,12 @@ impl Skin {
         buffer.put_var_u32(self.cape_image_data.len() as u32);
         buffer.put(self.cape_image_data.as_ref());
 
-        buffer.put_string(&self.skin_geometry);
-        buffer.put_string(&self.geometry_data_engine_version);
+        buffer.put_string(&self.geometry);
+        buffer.put_string(&self.geometry_engine_version);
         buffer.put_string(&self.animation_data);
 
         buffer.put_string(&self.cape_id);
-        buffer.put_string(&self.skin_id); // Full ID
+        buffer.put_string(&self.full_id);
         buffer.put_string(self.arm_size.name());
         buffer.put_string(&self.color);
 
@@ -371,9 +472,83 @@ impl Skin {
             tint.encode(buffer);
         }
 
-        buffer.put_bool(self.premium_skin);
-        buffer.put_bool(self.persona_skin);
-        buffer.put_bool(self.persona_cape_on_classic);
-        buffer.put_bool(true); // Primary user.
+        buffer.put_bool(self.is_premium);
+        buffer.put_bool(self.is_persona);
+        buffer.put_bool(self.cape_on_classic_skin);
+        buffer.put_bool(self.is_primary_user);
+    }
+
+    pub fn decode(buffer: &mut BytesMut) -> VResult<Self> {
+        let skin_id = buffer.get_string()?;
+        let playfab_id = buffer.get_string()?;
+        let resource_patch = buffer.get_string()?;
+        
+        let image_width = buffer.get_u32_le();
+        let image_height = buffer.get_u32_le();
+        let image_size = buffer.get_var_u32()?;
+        let image_data = buffer.copy_to_bytes(image_size as usize);
+
+        let animation_count = buffer.get_u32_le();
+        let mut animations = Vec::with_capacity(animation_count as usize);
+        for _ in 0..animation_count {
+            animations.push(SkinAnimation::decode(buffer)?);
+        }
+
+        let cape_image_width = buffer.get_u32_le();
+        let cape_image_height = buffer.get_u32_le();
+        let cape_image_size = buffer.get_var_u32()?;
+        let cape_image_data = buffer.copy_to_bytes(cape_image_size as usize);
+
+        let geometry = buffer.get_string()?;
+        let geometry_engine_version = buffer.get_string()?;
+        let animation_data = buffer.get_string()?;
+        let cape_id = buffer.get_string()?;
+        let full_id = buffer.get_string()?;
+        let arm_size = ArmSize::try_from(buffer.get_string()?.as_str())?;
+        let color = buffer.get_string()?;
+
+        let persona_piece_count = buffer.get_u32_le();
+        let mut persona_pieces = Vec::with_capacity(persona_piece_count as usize);
+        for _ in 0..persona_piece_count {
+            persona_pieces.push(PersonaPiece::decode(buffer)?);            
+        }
+
+        let persona_tint_count = buffer.get_u32_le();
+        let mut persona_piece_tints = Vec::with_capacity(persona_tint_count as usize);
+        for _ in 0..persona_piece_count {
+            persona_piece_tints.push(PersonaPieceTint::decode(buffer)?);
+        }
+
+        let is_premium = buffer.get_bool();
+        let is_persona = buffer.get_bool();
+        let cape_on_classic_skin = buffer.get_bool();
+        let is_primary_user = buffer.get_bool();
+
+        Ok(Self {
+            skin_id, 
+            playfab_id, 
+            resource_patch, 
+            image_width, 
+            image_height, 
+            image_data,
+            animations,
+            cape_image_width,
+            cape_image_height,
+            cape_image_data,
+            geometry,
+            geometry_engine_version,
+            animation_data,
+            cape_id,
+            full_id,
+            arm_size,
+            color,
+            persona_pieces,
+            persona_piece_tints,
+            is_premium,
+            is_persona,
+            cape_on_classic_skin,
+            is_primary_user,
+            is_trusted: false
+        })
     }
 }

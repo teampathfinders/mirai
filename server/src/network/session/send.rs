@@ -194,6 +194,7 @@ impl Session {
     async fn send_raw_frames(&self, frames: Vec<Frame>) -> VResult<()> {
         let max_batch_size =
             self.mtu as usize - std::mem::size_of::<FrameBatch>();
+            
         let mut batch = FrameBatch::default()
             .batch_number(self.batch_number.fetch_add(1, Ordering::SeqCst));
 

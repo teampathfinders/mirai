@@ -13,7 +13,7 @@ use crate::network::{
         PaintingDirection, PlaySound, RequestAbility, SetCommandsEnabled,
         SetDifficulty, SetPlayerGameMode, SetTime, SetTitle, ShowProfile,
         SpawnExperienceOrb, TextMessage, TitleAction, ToastRequest, Transfer,
-        UpdateFogStack,
+        UpdateFogStack, UpdateSkin,
     },
     session::Session,
 };
@@ -28,6 +28,13 @@ impl Session {
         // We must also return the packet to the client that sent it.
         // Otherwise their message won't be displayed in their own chat.
         self.broadcast(request)
+    }
+
+    pub fn handle_skin_update(&self, packet: BytesMut) -> VResult<()> {
+        let request = UpdateSkin::decode(packet)?;
+        tracing::debug!("{request:?}");
+
+        Ok(())
     }
 
     pub fn handle_ability_request(&self, packet: BytesMut) -> VResult<()> {

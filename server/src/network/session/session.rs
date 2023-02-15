@@ -5,7 +5,7 @@ use std::sync::{Arc, Weak};
 use std::time::{Duration, Instant};
 
 use bytes::BytesMut;
-use parking_lot::{Mutex, RwLock};
+use parking_lot::{Mutex, RwLock, RwLockReadGuard};
 use tokio::net::UdpSocket;
 use tokio::sync::OnceCell;
 use tokio_util::sync::CancellationToken;
@@ -18,7 +18,7 @@ use crate::network::session::order_channel::OrderChannel;
 use crate::network::session::recovery_queue::RecoveryQueue;
 use crate::network::session::send_queue::SendQueue;
 use crate::skin::Skin;
-use common::{AsyncDeque, Encodable};
+use common::{AsyncDeque, Encodable, bail};
 use common::{error, VResult};
 
 use super::SessionTracker;
@@ -45,8 +45,10 @@ const ORDER_CHANNEL_COUNT: usize = 5;
 pub struct Session {
     /// Identity data such as XUID and display name.
     pub identity: OnceCell<IdentityData>,
-    /// Extra user data, such as device OS and skin.
+    /// Extra user data, such as device OS and language.
     pub user_data: OnceCell<UserData>,
+    /// The client's skin.
+    pub skin: RwLock<Option<Skin>>,
     /// Used to encrypt and decrypt packets.
     pub encryptor: OnceCell<Encryptor>,
     /// Whether the client supports the chunk cache.
@@ -115,6 +117,7 @@ impl Session {
         let session = Arc::new(Self {
             identity: OnceCell::new(),
             user_data: OnceCell::new(),
+            skin: RwLock::new(None),
             encryptor: OnceCell::new(),
             cache_support: OnceCell::new(),
             initialized: AtomicBool::new(false),
@@ -234,13 +237,6 @@ impl Session {
             error!(NotInitialized, "Display name data has not been initialised yet")
         })?;
         Ok(&identity.display_name)
-    }
-
-    pub fn get_skin(&self) -> VResult<&Skin> {
-        let data = self.user_data.get().ok_or_else(|| {
-            error!(NotInitialized, "Skin data has not been initialised yet")
-        })?;
-        Ok(&data.skin)
     }
 
     pub fn get_encryptor(&self) -> VResult<&Encryptor> {

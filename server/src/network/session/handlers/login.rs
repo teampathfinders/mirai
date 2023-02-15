@@ -27,7 +27,7 @@ use crate::network::raknet::Reliability;
 use crate::network::raknet::{Frame, FrameBatch};
 use crate::network::session::send_queue::SendPriority;
 use crate::network::session::session::Session;
-use common::{bail, BlockPosition, Decodable, VResult, Vector2f, Vector3f, Vector3i};
+use common::{bail, BlockPosition, Decodable, VResult, Vector2f, Vector3f, Vector3i, error};
 
 impl Session {
     /// Handles a [`ClientCacheStatus`] packet.
@@ -79,7 +79,7 @@ impl Session {
                     username: &identity_data.display_name,
                     xuid: identity_data.xuid,
                     build_platform: user_data.device_os,
-                    skin: &user_data.skin,
+                    skin: self.skin.read().as_ref().ok_or_else(|| error!(NotInitialized, "Skin data has not been initialised"))?,
                     teacher: false,
                     host: false,
                 }]
@@ -267,6 +267,7 @@ impl Session {
 
         self.identity.set(request.identity)?;
         self.user_data.set(request.user_data)?;
+        *self.skin.write() = Some(request.skin);
 
         // Flush packets before enabling encryption
         self.flush().await?;

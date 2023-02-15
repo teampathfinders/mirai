@@ -9,6 +9,7 @@ use crate::crypto::{
     parse_identity_data, parse_user_data, IdentityData, UserData,
 };
 use crate::network::packets::GamePacket;
+use crate::skin::Skin;
 use common::Decodable;
 use common::ReadExtensions;
 use common::{bail, vassert};
@@ -51,8 +52,10 @@ pub enum UiProfile {
 pub struct Login {
     /// Identity data (Xbox account ID, username, etc.)
     pub identity: IdentityData,
-    /// User data (device OS, skin, etc.)
+    /// User data (device OS, language, etc.)
     pub user_data: UserData,
+    /// Skin.
+    pub skin: Skin
 }
 
 impl GamePacket for Login {
@@ -65,7 +68,7 @@ impl Decodable for Login {
         buffer.get_var_u32()?;
 
         let identity_data = parse_identity_data(&mut buffer)?;
-        let user_data =
+        let data =
             parse_user_data(&mut buffer, &identity_data.public_key)?;
 
         Ok(Self {
@@ -75,7 +78,8 @@ impl Decodable for Login {
                 display_name: identity_data.client_data.display_name,
                 public_key: identity_data.public_key,
             },
-            user_data
+            user_data: data.data,
+            skin: data.skin
         })
     }
 }

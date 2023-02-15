@@ -52,7 +52,7 @@ impl Encodable for PlayerListAdd<'_> {
             let pair = entry.uuid.as_u64_pair();
             buffer.put_u64_le(pair.0);
             buffer.put_u64_le(pair.1);
-
+            
             buffer.put_var_i64(entry.entity_id);
             buffer.put_string(entry.username);
             buffer.put_string(&entry.xuid.to_string());
@@ -64,7 +64,7 @@ impl Encodable for PlayerListAdd<'_> {
         }
 
         for entry in self.entries {
-            buffer.put_bool(entry.skin.trusted);
+            buffer.put_bool(entry.skin.is_trusted);
         }
 
         Ok(buffer)

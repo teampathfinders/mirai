@@ -78,15 +78,20 @@ pub struct UserData {
     pub ui_profile: UiProfile,
     #[serde(rename = "GuiScale")]
     pub gui_scale: i32,
-    /// The player's skin
+}
+
+#[derive(serde::Deserialize, Debug)]
+pub struct UserDataTokenPayload {
     #[serde(flatten)]
-    pub skin: Skin,
+    pub data: UserData,
+    #[serde(flatten)]
+    pub skin: Skin
 }
 
 /// First token in the chain holds the client's self-signed public key in the X5U.
 /// It is extracted from the header of the token and used to verify its signature.
 /// The payload of the token contains a new key which is used to verify the next token.
-fn verify_first_token(token: &str) -> VResult<String> {
+fn parse_initial_token(token: &str) -> VResult<String> {
     // Decode JWT header to get X5U.
     let header = jsonwebtoken::decode_header(token)?;
     let base64 = header.x5u.ok_or_else(|| {
@@ -119,7 +124,7 @@ fn verify_first_token(token: &str) -> VResult<String> {
 /// The second token in the chain can be verified using Mojang's public key
 /// (or the identityPublicKey from the previous token).
 /// This token contains another identityPublicKey which is the public key for the third token.
-fn verify_second_token(token: &str, key: &str) -> VResult<String> {
+fn parse_mojang_token(token: &str, key: &str) -> VResult<String> {
     let bytes = BASE64_ENGINE.decode(key)?;
     let public_key = match spki::SubjectPublicKeyInfo::try_from(bytes.as_ref())
     {
@@ -149,7 +154,7 @@ fn verify_second_token(token: &str, key: &str) -> VResult<String> {
 /// The extraData field contains the XUID, client identity (UUID) and the display name.
 ///
 /// Just like the second one, this token can be verified using the identityPublicKey from the last token.
-fn verify_third_token(token: &str, key: &str) -> VResult<IdentityTokenPayload> {
+fn parse_identity_token(token: &str, key: &str) -> VResult<IdentityTokenPayload> {
     let bytes = BASE64_ENGINE.decode(key)?;
     let public_key = match spki::SubjectPublicKeyInfo::try_from(bytes.as_ref())
     {
@@ -175,7 +180,7 @@ fn verify_third_token(token: &str, key: &str) -> VResult<IdentityTokenPayload> {
 }
 
 /// Verifies and decodes the user data token.
-fn verify_fourth_token(token: &str, key: &str) -> VResult<UserData> {
+fn parse_user_data_token(token: &str, key: &str) -> VResult<UserDataTokenPayload> {
     let bytes = BASE64_ENGINE.decode(key)?;
     let public_key = match spki::SubjectPublicKeyInfo::try_from(bytes.as_ref())
     {
@@ -189,7 +194,7 @@ fn verify_fourth_token(token: &str, key: &str) -> VResult<UserData> {
     // No special header data included in this token, don't verify anything.
     validation.required_spec_claims.clear();
 
-    let payload = jsonwebtoken::decode::<UserData>(
+    let payload = jsonwebtoken::decode::<UserDataTokenPayload>(
         token,
         &decoding_key,
         &validation,
@@ -225,7 +230,7 @@ pub fn parse_identity_data(
             // Verify the first token and decode the public key for the next token.
             // This public key must be equal to Mojang's public key to verify that the second
             // token was signed by Mojang.
-            let mut key = verify_first_token(&tokens.chain[0])?;
+            let mut key = parse_initial_token(&tokens.chain[0])?;
             if !key.eq(MOJANG_PUBLIC_KEY) {
                 bail!(
                     InvalidIdentity,
@@ -233,8 +238,8 @@ pub fn parse_identity_data(
                 );
             }
 
-            key = verify_second_token(&tokens.chain[1], &key)?;
-            verify_third_token(&tokens.chain[2], &key)?
+            key = parse_mojang_token(&tokens.chain[1], &key)?;
+            parse_identity_token(&tokens.chain[2], &key)?
         }
         _ => bail!(
             BadPacket,
@@ -251,13 +256,13 @@ pub fn parse_identity_data(
 pub fn parse_user_data(
     buffer: &mut BytesMut,
     public_key: &str,
-) -> VResult<UserData> {
+) -> VResult<UserDataTokenPayload> {
     let token_length = buffer.get_u32_le();
     let position = buffer.len() - buffer.remaining();
     let token = &buffer.as_ref()[position..(position + token_length as usize)];
     let token_string = String::from_utf8_lossy(token);
 
-    let user_data = verify_fourth_token(token_string.as_ref(), public_key)?;
+    let user_data = parse_user_data_token(token_string.as_ref(), public_key)?;
     
     Ok(user_data)
 }
