@@ -9,7 +9,7 @@ pub fn encode_net(name: &str, value: &Value, stream: &mut BytesMut) {
 impl RefTag<'_> {
     /// Writes the NBT data into the given stream (little endian).
     pub fn encode_net(&self, stream: &mut BytesMut) {
-        Value::encode_tag_net(stream, (self.name, &self.value))
+        Value::encode_tag_net(stream, (self.name, self.value))
     }
 }
 

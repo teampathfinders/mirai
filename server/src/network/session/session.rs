@@ -132,12 +132,12 @@ impl Session {
             client_batch_number: Default::default(),
             compound_collector: Default::default(),
             order_channels: Default::default(),
-            send_queue: SendQueue::new(),
+            send_queue: Default::default(),
             confirmed_packets: Mutex::new(Vec::new()),
             compression_enabled: AtomicBool::new(false),
             receive_queue: AsyncDeque::new(5),
             address,
-            recovery_queue: RecoveryQueue::new(),
+            recovery_queue: Default::default(),
             tracker
         });
 

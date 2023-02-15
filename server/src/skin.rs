@@ -18,7 +18,7 @@ pub enum ArmSize {
 
 impl ArmSize {
     #[inline]
-    pub fn name(&self) -> &'static str {
+    const fn name(&self) -> &'static str {
         match self {
             Self::Slim => "slim",
             Self::Wide => "wide",
@@ -55,7 +55,7 @@ pub enum PersonaPieceType {
 
 impl PersonaPieceType {
     #[inline]
-    fn name(&self) -> &'static str {
+    const fn name(&self) -> &'static str {
         match self {
             Self::Skeleton => "persona_skeleton",
             Self::Body => "persona_body",
@@ -116,7 +116,7 @@ pub struct PersonaPieceTint {
 
 impl PersonaPieceTint {
     fn encode(&self, buffer: &mut BytesMut) {
-        buffer.put_string(&self.piece_type.name());
+        buffer.put_string(self.piece_type.name());
 
         buffer.put_u32_le(self.colors.len() as u32);
         for color in &self.colors {

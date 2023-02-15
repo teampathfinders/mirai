@@ -76,7 +76,7 @@ impl Decodable for CommandRequest {
     fn decode(mut buffer: BytesMut) -> VResult<Self> {
         let command = buffer.get_string()?;
         let origin = CommandOrigin::try_from(buffer.get_var_u32()?)?;
-        let uuid = buffer.advance(16);
+        buffer.advance(16);
         let request_id = buffer.get_string()?;
 
         Ok(Self { command, origin, request_id })

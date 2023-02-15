@@ -111,7 +111,7 @@ impl SessionTracker {
     }
 
     /// Kicks all sessions from the server, displaying the given message.
-    pub async fn kick_all<S: Into<String>>(&self, message: S) {
+    pub async fn kick_all<S: Into<String> + Send>(&self, message: S) {
         // This is separate from broadcast because uninitialised sessions also
         // need to receive this packet.
         // Unlike broadcast, it also flushes all sessions to get rid of them as quickly as possible.

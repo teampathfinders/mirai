@@ -85,7 +85,7 @@ impl GameRule {
 
     /// Returns the in-game name of the game rule.
     #[inline]
-    pub fn name(&self) -> &'static str {
+    pub const fn name(&self) -> &'static str {
         match self {
             Self::CommandBlocksEnabled(_) => "commandblocksenabled",
             Self::CommandBlockOutput(_) => "commandblockoutput",

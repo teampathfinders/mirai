@@ -8,7 +8,7 @@ pub fn encode_le(name: &str, value: &Value, stream: &mut BytesMut) {
 impl RefTag<'_> {
     /// Writes the NBT data into the given stream (little endian).
     pub fn encode_le(&self, stream: &mut BytesMut) {
-        Value::encode_tag_le(stream, (self.name, &self.value))
+        Value::encode_tag_le(stream, (self.name, self.value))
     }
 }
 

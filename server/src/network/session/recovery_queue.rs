@@ -58,3 +58,9 @@ impl RecoveryQueue {
         recovered
     }
 }
+
+impl Default for RecoveryQueue {
+    fn default() -> Self {
+        Self::new()
+    }
+}

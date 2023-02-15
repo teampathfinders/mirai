@@ -8,7 +8,7 @@ pub fn encode_be(name: &str, value: &Value, stream: &mut BytesMut) {
 impl RefTag<'_> {
     /// Writes the NBT structure into the provided stream (big endian).
     pub fn encode_be(&self, stream: &mut BytesMut) {
-        Value::encode_tag_be(stream, (self.name, &self.value))
+        Value::encode_tag_be(stream, (self.name, self.value))
     }
 }
 

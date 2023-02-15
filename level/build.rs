@@ -1,5 +1,3 @@
-use std::process::Command;
-
 fn main() {
     let dst = cmake::build("leveldb");
 

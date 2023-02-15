@@ -6,7 +6,7 @@ use common::{Decodable, Encodable};
 use super::GamePacket;
 
 /// The Minecraft difficulties.
-#[derive(Debug, Copy, Clone, PartialEq)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum Difficulty {
     Peaceful,
     Easy,

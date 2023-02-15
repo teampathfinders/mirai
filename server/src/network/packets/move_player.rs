@@ -7,7 +7,7 @@ use common::{Decodable, Encodable};
 
 use super::GamePacket;
 
-#[derive(Debug, Copy, Clone, PartialEq)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum MovementMode {
     Normal,
     Reset,
@@ -29,7 +29,7 @@ impl TryFrom<u8> for MovementMode {
     }
 }
 
-#[derive(Debug, Copy, Clone, PartialEq)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum TeleportCause {
     Unknown,
     Projectile,
@@ -62,7 +62,7 @@ pub struct MovePlayer {
     pub on_ground: bool,
     pub ridden_runtime_id: u64,
     pub teleport_cause: TeleportCause,
-    pub teleport_source_entity_type: i32,
+    pub teleport_source_type: i32,
     pub tick: u64,
 }
 
@@ -83,7 +83,7 @@ impl Encodable for MovePlayer {
 
         if self.mode == MovementMode::Teleport {
             buffer.put_i32(self.teleport_cause as i32);
-            buffer.put_i32(self.teleport_source_entity_type);
+            buffer.put_i32(self.teleport_source_type);
         }
 
         buffer.put_var_u64(self.tick);
@@ -101,12 +101,14 @@ impl Decodable for MovePlayer {
         let on_ground = buffer.get_bool();
         let ridden_runtime_id = buffer.get_var_u64()?;
 
-        let mut teleport_cause = TeleportCause::Unknown;
-        let mut teleport_source_entity_type = 0;
-        if mode == MovementMode::Teleport {
-            teleport_cause = TeleportCause::try_from(buffer.get_i32())?;
-            teleport_source_entity_type = buffer.get_i32();
-        }
+        let (teleport_cause, teleport_source_type) = if mode == MovementMode::Teleport {
+            let cause = TeleportCause::try_from(buffer.get_i32())?;
+            let source_type = buffer.get_i32();
+
+            (cause, source_type)
+        } else {
+            (TeleportCause::Unknown, 0)
+        };
 
         let tick = buffer.get_var_u64()?;
 
@@ -118,7 +120,7 @@ impl Decodable for MovePlayer {
             on_ground,
             ridden_runtime_id,
             teleport_cause,
-            teleport_source_entity_type,
+            teleport_source_type,
             tick,
         })
     }

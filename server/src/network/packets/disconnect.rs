@@ -33,7 +33,7 @@ impl Encodable for Disconnect<'_> {
             BytesMut::with_capacity(1 + 4 + self.kick_message.len());
 
         buffer.put_bool(self.hide_disconnect_screen);
-        buffer.put_string(&self.kick_message);
+        buffer.put_string(self.kick_message);
 
         Ok(buffer)
     }

@@ -34,7 +34,7 @@ impl TryFrom<i32> for AnimateAction {
 
 impl AnimateAction {
     #[inline]
-    pub fn is_rowing(&self) -> bool {
+    pub const fn is_rowing(&self) -> bool {
         (*self as i32) & 0x80 != 0
     }
 }

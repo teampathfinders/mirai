@@ -26,7 +26,7 @@ impl Encodable for PlaySound<'_> {
     fn encode(&self) -> VResult<BytesMut> {
         let mut buffer = BytesMut::new();
 
-        buffer.put_string(&self.name);
+        buffer.put_string(self.name);
         buffer.put_vec3i(&self.position);
         buffer.put_f32_le(self.volume);
         buffer.put_f32_le(self.pitch);

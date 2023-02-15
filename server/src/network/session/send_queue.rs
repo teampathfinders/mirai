@@ -97,3 +97,9 @@ impl SendQueue {
         }
     }
 }
+
+impl Default for SendQueue {
+    fn default() -> Self {
+        Self::new()
+    }
+}

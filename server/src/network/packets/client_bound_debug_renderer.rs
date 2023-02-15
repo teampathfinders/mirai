@@ -34,7 +34,7 @@ impl Encodable for ClientBoundDebugRenderer<'_> {
 
         buffer.put_i32_le(self.action as i32);
         if self.action == DebugRendererAction::AddCube {
-            buffer.put_string(&self.text);
+            buffer.put_string(self.text);
             buffer.put_vec3f(&self.position);
             buffer.put_vec4f(&self.color);
             buffer.put_i64_le(self.duration);
