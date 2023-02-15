@@ -192,19 +192,24 @@ impl Session {
 
     #[async_recursion]
     async fn send_raw_frames(&self, frames: Vec<Frame>) -> VResult<()> {
+        // Process fragments first to prevent sequence number duplication.
+        for frame in &frames {
+            let frame_size = frame.body.len() + std::mem::size_of::<Frame>();
+
+            if frame_size > self.mtu as usize {
+                self.batch_number.fetch_sub(1, Ordering::SeqCst);
+
+                let compound = self.split_frame(frame);
+                self.send_raw_frames(compound).await?;
+            }
+        }
+
         let mut batch = FrameBatch::default()
             .batch_number(self.batch_number.fetch_add(1, Ordering::SeqCst));
 
         let mut has_reliable_packet = false;
         for mut frame in frames {
             let frame_size = frame.body.len() + std::mem::size_of::<Frame>();
-
-            if frame_size > self.mtu as usize {
-                let compound = self.split_frame(frame);
-                self.send_raw_frames(compound).await?;
-
-                continue
-            }
 
             if frame.reliability.is_ordered() {
                 let order_index = self.order_channels
@@ -225,15 +230,13 @@ impl Session {
                 has_reliable_packet = true;
             }
 
-            tracing::debug!("{} {}", batch.estimate_size() + frame_size, self.mtu as usize);
             if batch.estimate_size() + frame_size <= self.mtu as usize {
                 batch.frames.push(frame);
-            } else {
+            } else if !batch.is_empty() {
                 if has_reliable_packet {
                     self.recovery_queue.insert(batch.clone());
                 }
 
-                tracing::debug!("{batch:?}");
                 let encoded = batch.encode()?;
 
                 // TODO: Add IPv6 support
@@ -261,10 +264,8 @@ impl Session {
         Ok(())
     }
 
-    fn split_frame(&self, mut frame: Frame) -> Vec<Frame> {
+    fn split_frame(&self, mut frame: &Frame) -> Vec<Frame> {
         let chunk_max_size = self.mtu as usize - std::mem::size_of::<Frame>() - std::mem::size_of::<FrameBatch>();
-        tracing::debug!("cms {chunk_max_size}");
-
         let compound_size = {
             let frame_size = frame.body.len() + std::mem::size_of::<Frame>();
 
@@ -280,8 +281,6 @@ impl Session {
 
         let compound_id = self.compound_id.fetch_add(1, Ordering::SeqCst);
         for (i, chunk) in chunks.enumerate() {
-            // debug_assert_eq!(chunk_max_size, chunk.len());
-
             let mut fragment = Frame {
                 reliability: frame.reliability,
                 is_compound: true,
