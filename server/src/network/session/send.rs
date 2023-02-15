@@ -1,6 +1,7 @@
 use std::io::Write;
 use std::sync::atomic::Ordering;
 
+use async_recursion::async_recursion;
 use bytes::{Buf, BufMut, BytesMut};
 use flate2::write::DeflateEncoder;
 use flate2::Compression;
@@ -32,7 +33,7 @@ const DEFAULT_CONFIG: PacketConfig = PacketConfig {
 impl Session {
     /// Sends a game packet with default settings
     /// (reliable ordered and medium priority)
-    pub fn send_packet<T: GamePacket + Encodable>(
+    pub fn send<T: GamePacket + Encodable>(
         &self,
         packet: T,
     ) -> VResult<()> {
@@ -189,6 +190,7 @@ impl Session {
         Ok(())
     }
 
+    #[async_recursion]
     async fn send_raw_frames(&self, frames: Vec<Frame>) -> VResult<()> {
         let max_batch_size =
             self.mtu as usize - std::mem::size_of::<FrameBatch>();
@@ -201,9 +203,31 @@ impl Session {
             let frame_size = frame.body.len() + std::mem::size_of::<Frame>();
 
             if frame_size > self.mtu as usize {
-                
+                // Ceiling divide while avoiding floating point conversion.
+                let compound_size = (self.mtu as usize + frame_size - 1) / frame_size;
 
-                todo!("Create compound");
+                let chunks = frame.body.chunks(self.mtu as usize);
+                let mut fragments = Vec::with_capacity(chunks.len());                
+
+                // Set fragmenting options
+                frame.is_compound = true;
+                frame.compound_size = chunks.len() as u32;
+                frame.compound_id = self.compound_id.fetch_add(1, Ordering::SeqCst);
+
+                for (i, chunk) in chunks.enumerate() {
+                    let mut fragment = frame.clone();
+                    
+                    fragment.compound_index = i as u32;
+                    fragment.body = BytesMut::from(chunk);
+                    
+                    debug_assert!(fragment.body.len() <= self.mtu as usize);
+
+                    fragments.push(fragment);
+                }
+
+                // Process all fragments individually.
+                self.send_raw_frames(fragments).await?;
+                continue // Don't process the unfragmented packet.
             }
             if frame.reliability.is_ordered() {
                 let order_index = self.order_channels

@@ -53,7 +53,7 @@ impl Session {
                 runtime_id: 1,
                 status: CreditsStatus::Start,
             };
-            self.send_packet(credits)?;
+            self.send(credits)?;
         }
 
         Ok(())

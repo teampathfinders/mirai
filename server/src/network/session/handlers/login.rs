@@ -72,20 +72,18 @@ impl Session {
             let identity_data = self.get_identity_data()?;
             let user_data = self.get_user_data()?;
 
-            // tracing::info!("{identity_data:?} {user_data:?}");
-
-            // self.broadcast_others(PlayerListAdd {
-            //     entries: &[PlayerListAddEntry {
-            //         uuid: identity_data.identity,
-            //         entity_id: 2,
-            //         username: &identity_data.display_name,
-            //         xuid: identity_data.xuid,
-            //         build_platform: user_data.device_os,
-            //         skin: &user_data.skin,
-            //         teacher: false,
-            //         host: false,
-            //     }]
-            // })?;
+            self.broadcast_others(PlayerListAdd {
+                entries: &[PlayerListAddEntry {
+                    uuid: identity_data.identity,
+                    entity_id: 2,
+                    username: &identity_data.display_name,
+                    xuid: identity_data.xuid,
+                    build_platform: user_data.device_os,
+                    skin: &user_data.skin,
+                    teacher: false,
+                    host: false,
+                }]
+            })?;
 
             self.broadcast_others(TextMessage {
                 message: format!("§e{} has joined the server.", identity_data.display_name),
@@ -114,7 +112,7 @@ impl Session {
         let reply = ChunkRadiusReply {
             allowed_radius: SERVER_CONFIG.read().allowed_render_distance,
         };
-        self.send_packet(reply)?;
+        self.send(reply)?;
 
         Ok(())
     }
@@ -197,16 +195,16 @@ impl Session {
             world_template_id: 0,
             client_side_generation: false,
         };
-        self.send_packet(start_game)?;
+        self.send(start_game)?;
 
         let creative_content = CreativeContent { items: vec![] };
-        self.send_packet(creative_content)?;
+        self.send(creative_content)?;
 
         let biome_definition_list = BiomeDefinitionList;
-        self.send_packet(biome_definition_list)?;
+        self.send(biome_definition_list)?;
 
         let play_status = PlayStatus { status: Status::PlayerSpawn };
-        self.send_packet(play_status)?;
+        self.send(play_status)?;
 
         let available_commands = AvailableCommands {
             commands: vec![Command {
@@ -217,7 +215,7 @@ impl Session {
                 overloads: vec![],
             }],
         };
-        self.send_packet(available_commands)?;
+        self.send(available_commands)?;
 
         Ok(())
     }
@@ -229,7 +227,7 @@ impl Session {
         ClientToServerHandshake::decode(packet)?;
 
         let response = PlayStatus { status: Status::LoginSuccess };
-        self.send_packet(response)?;
+        self.send(response)?;
 
         // TODO: Implement resource packs
         let pack_info = ResourcePacksInfo {
@@ -239,7 +237,7 @@ impl Session {
             behavior_info: &[],
             resource_info: &[],
         };
-        self.send_packet(pack_info)?;
+        self.send(pack_info)?;
 
         let pack_stack = ResourcePackStack {
             forced_to_accept: false,
@@ -249,7 +247,7 @@ impl Session {
             experiments: &[],
             experiments_previously_toggled: false,
         };
-        self.send_packet(pack_stack)?;
+        self.send(pack_stack)?;
 
         Ok(())
     }
@@ -273,7 +271,7 @@ impl Session {
         // Flush packets before enabling encryption
         self.flush().await?;
 
-        self.send_packet(ServerToClientHandshake { jwt: jwt.as_str() })?;
+        self.send(ServerToClientHandshake { jwt: jwt.as_str() })?;
         self.encryptor.set(encryptor)?;
 
         Ok(())
@@ -288,7 +286,7 @@ impl Session {
         if request.protocol_version != NETWORK_VERSION {
             if request.protocol_version > NETWORK_VERSION {
                 let response = PlayStatus { status: Status::FailedServer };
-                self.send_packet(response)?;
+                self.send(response)?;
 
                 bail!(
                     VersionMismatch,
@@ -298,7 +296,7 @@ impl Session {
                 );
             } else {
                 let response = PlayStatus { status: Status::FailedClient };
-                self.send_packet(response)?;
+                self.send(response)?;
 
                 bail!(
                     VersionMismatch,
@@ -318,7 +316,7 @@ impl Session {
             }
         };
 
-        self.send_packet(response)?;
+        self.send(response)?;
         self.compression_enabled.store(true, Ordering::SeqCst);
 
         Ok(())

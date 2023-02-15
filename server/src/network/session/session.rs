@@ -1,6 +1,6 @@
 use std::net::SocketAddr;
 use std::num::NonZeroU64;
-use std::sync::atomic::{AtomicBool, AtomicU32, AtomicU64, Ordering};
+use std::sync::atomic::{AtomicBool, AtomicU32, AtomicU64, Ordering, AtomicU16};
 use std::sync::{Arc, Weak};
 use std::time::{Duration, Instant};
 
@@ -12,7 +12,7 @@ use tokio_util::sync::CancellationToken;
 use uuid::Uuid;
 
 use crate::crypto::{Encryptor, IdentityData, UserData};
-use crate::network::packets::{BuildPlatform, Disconnect, GamePacket, TextMessage, MessageType};
+use crate::network::packets::{BuildPlatform, Disconnect, GamePacket, TextMessage, MessageType, PlayerListRemove};
 use crate::network::session::compound_collector::CompoundCollector;
 use crate::network::session::order_channel::OrderChannel;
 use crate::network::session::recovery_queue::RecoveryQueue;
@@ -78,6 +78,8 @@ pub struct Session {
     pub sequence_index: AtomicU32,
     /// Acknowledgment index last used by the server.
     pub acknowledgment_index: AtomicU32,
+    /// Compound ID last used by the server.
+    pub compound_id: AtomicU16,
     /// Latest sequence index that was received.
     /// Sequenced packets with sequence numbers less than this one will be discarded.
     pub client_batch_number: AtomicU32,
@@ -126,6 +128,7 @@ impl Session {
             batch_number: Default::default(),
             sequence_index: Default::default(),
             acknowledgment_index: Default::default(),
+            compound_id: Default::default(),
             client_batch_number: Default::default(),
             compound_collector: Default::default(),
             order_channels: Default::default(),
@@ -210,7 +213,7 @@ impl Session {
     }
 
     /// Retrieves the identity of the client.
-    pub fn get_identity(&self) -> VResult<&Uuid> {
+    pub fn get_uuid(&self) -> VResult<&Uuid> {
         let identity = self.identity.get().ok_or_else(|| {
             error!(NotInitialized, "Identity ID data has not been initialised yet")
         })?;
@@ -260,17 +263,25 @@ impl Session {
 
     /// Signals to the session that it needs to close.
     pub fn flag_for_close(&self) {
+        self.initialized.store(false, Ordering::SeqCst);
+
         if let Ok(display_name) = self.get_display_name() {
-            tracing::info!("{display_name} has disconnected");
-            let _ = self.broadcast_others(TextMessage {
-                message: format!("§e{display_name} has left the server."),
-                message_type: MessageType::System,
-                needs_translation: false,
-                parameters: vec![],
-                platform_chat_id: "".to_owned(),
-                source_name: "".to_owned(),
-                xuid: "".to_owned()
-            });
+            if let Ok(uuid) = self.get_uuid() {
+                tracing::info!("{display_name} has disconnected");
+                let _ = self.broadcast_others(TextMessage {
+                    message: format!("§e{display_name} has left the server."),
+                    message_type: MessageType::System,
+                    needs_translation: false,
+                    parameters: vec![],
+                    platform_chat_id: "".to_owned(),
+                    source_name: "".to_owned(),
+                    xuid: "".to_owned()
+                });
+    
+                let _ = self.broadcast_others(PlayerListRemove {
+                    entries: &[*uuid]
+                });
+            }
         }
         self.active.cancel();
     }
@@ -303,7 +314,7 @@ impl Session {
             kick_message: message.as_ref(),
             hide_disconnect_screen: false,
         };
-        self.send_packet(disconnect_packet)?;
+        self.send(disconnect_packet)?;
         // self.flag_for_close();
         // FIXME: Client sends disconnect and acknowledgement packet after closing.
 

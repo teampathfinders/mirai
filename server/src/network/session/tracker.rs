@@ -75,7 +75,7 @@ impl SessionTracker {
             let session = kv.value();
             // Don't broadcast to uninitialised sessions.
             if session.is_initialized() {
-                match session.send_packet(packet.clone()) {
+                match session.send(packet.clone()) {
                     Ok(_) => (),
                     Err(e) => {
                         let display_name = session.get_display_name().unwrap_or("unknown session");
@@ -99,7 +99,7 @@ impl SessionTracker {
             if session.is_initialized() && xuid != sess_xuid {
                 tracing::info!("Sending packet to {}", sess_xuid);
 
-                match session.send_packet(packet.clone()) {
+                match session.send(packet.clone()) {
                     Ok(_) => (),
                     Err(e) => {
                         let display_name = session.get_display_name().unwrap_or("unknown session");

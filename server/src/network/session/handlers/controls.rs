@@ -21,7 +21,7 @@ impl Session {
                 intensity: 0.25,
                 shake_type: CameraShakeType::Rotational,
             };
-            self.send_packet(reply)?;
+            self.send(reply)?;
 
             let reply2 = PlaySound {
                 name: "mob.pig.say",
@@ -29,7 +29,7 @@ impl Session {
                 volume: 1.0,
                 position: Vector3i::from([0, 0, 0]),
             };
-            self.send_packet(reply2)?;
+            self.send(reply2)?;
         }
 
         Ok(())
