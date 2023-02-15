@@ -37,11 +37,15 @@ struct EncryptionTokenClaims<'a> {
 
 /// Used to encrypt and decrypt packets with AES.
 pub struct Encryptor {
+    /// Cipher used to decrypt packets.
     cipher_decrypt: Mutex<Aes256CtrBE>,
+    /// Cipher used to encrypt packets.
     cipher_encrypt: Mutex<Aes256CtrBE>,
-    /// Doesn't seem like there is a way to access the internal counter of the cipher.
+    /// Increased by one for every packet sent by the server.
     send_counter: AtomicU64,
+    /// Increased by one for every packet received from the client.
     receive_counter: AtomicU64,
+    /// Shared secret.
     secret: [u8; 32],
 }
 
@@ -109,6 +113,7 @@ impl Encryptor {
         let claims =
             EncryptionTokenClaims { salt: &BASE64_ENGINE.encode(&salt) };
 
+        // Generate a JWT containing the server public key and a salt.
         let jwt = jsonwebtoken::encode(&header, &claims, &signing_key)?;
         let client_public_key = {
             let bytes = BASE64_ENGINE.decode(client_public_key_der)?;
@@ -127,6 +132,7 @@ impl Encryptor {
             client_public_key.as_affine(),
         );
 
+        // Shared key must be hashed with the salt to produce the shared secret.
         let mut hasher = Sha256::new();
         hasher.update(salt);
         hasher.update(shared_secret.raw_secret_bytes().as_slice());
@@ -152,6 +158,10 @@ impl Encryptor {
         ))
     }
 
+    /// Decrypts a packet and verifies its checksum.
+    /// 
+    /// If the checksum does not match, a [`BadPacket`](common::VErrorKind::BadPacket) error is returned.
+    /// The client must be disconnected if this fails, because the data has probably been tampered with.
     pub fn decrypt(&self, mut buffer: BytesMut) -> VResult<BytesMut> {
         if buffer.len() < 9 {
             bail!(
@@ -178,6 +188,7 @@ impl Encryptor {
         Ok(buffer)
     }
 
+    /// Encrypts a packet and appends the computed checksum.
     pub fn encrypt(&self, mut buffer: BytesMut) -> BytesMut {
         let counter = self.send_counter.fetch_add(1, Ordering::SeqCst);
         let checksum = self.compute_checksum(&buffer, counter);
@@ -188,12 +199,14 @@ impl Encryptor {
         buffer
     }
 
+    /// Returns the packet send counter.
     fn get_send_counter(&self) -> u64 {
         let counter = self.cipher_encrypt.lock().get_core().get_block_pos();
 
         counter
     }
 
+    /// Returns the packet receive counter.
     fn get_receive_counter(&self) -> u64 {
         let counter = self.cipher_decrypt.lock().get_core().get_block_pos();
 
@@ -201,12 +214,16 @@ impl Encryptor {
     }
 
     /// Computes the SHA-256 checksum of the packet.
+    /// 
+    /// This checksum can be used to verify that the packet has not been modified.
+    /// It consists of 8 bytes and is appended to the encrypted payload.
     fn compute_checksum(&self, data: &[u8], counter: u64) -> [u8; 8] {
         let mut hasher = Sha256::new();
         hasher.update(counter.to_le_bytes());
         hasher.update(data);
         hasher.update(self.secret);
 
+        // Minecraft uses only the first 8 bytes of the hash.
         let mut checksum = [0u8; 8];
         checksum.copy_from_slice(&hasher.finalize()[..8]);
 

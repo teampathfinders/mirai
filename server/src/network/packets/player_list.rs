@@ -26,6 +26,11 @@ pub struct PlayerListAddEntry<'a> {
     pub host: bool,
 }
 
+/// Adds player(s) to the client's player list.
+/// 
+/// This and [`PlayerListRemove`] are the same packet, but are separated here for optimisation reasons.
+/// This separation allows the server to remove players from the player list without having to copy over all the player data
+/// contained in [`PlayerListAddEntry`].
 #[derive(Debug, Clone)]
 pub struct PlayerListAdd<'a> {
     pub entries: &'a [PlayerListAddEntry<'a>],
@@ -57,6 +62,7 @@ impl Encodable for PlayerListAdd<'_> {
     }
 }
 
+/// Removes player(s) from the client's player list.
 #[derive(Debug, Clone)]
 pub struct PlayerListRemove<'a> {
     pub entries: &'a [Uuid]

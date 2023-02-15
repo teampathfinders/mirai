@@ -97,6 +97,8 @@ impl SessionTracker {
 
             // Don't broadcast to uninitialised sessions.
             if session.is_initialized() && xuid != sess_xuid {
+                tracing::info!("Sending packet to {}", sess_xuid);
+
                 match session.send_packet(packet.clone()) {
                     Ok(_) => (),
                     Err(e) => {

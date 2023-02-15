@@ -13,10 +13,10 @@ use common::WriteExtensions;
 #[repr(u8)]
 pub enum CompressionAlgorithm {
     /// The Deflate/Zlib compression algorithm.
-    Deflate = 0,
+    Deflate,
     /// The Snappy compression algorithm.
     /// Available since Minecraft 1.19.30.
-    Snappy = 1,
+    Snappy,
 }
 
 /// Settings for client throttling.

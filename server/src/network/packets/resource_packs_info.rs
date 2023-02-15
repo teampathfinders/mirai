@@ -56,6 +56,9 @@ pub struct ResourcePack {
 /// Contains information about the addons used by the server.
 /// This should be sent after sending the [`PlayStatus`](super::PlayStatus) packet with a
 /// [`LoginSuccess`](super::Status::LoginSuccess) status.
+/// 
+/// If the server has no resource packs, a [`ResourcePackStack`](super::ResourcePackStack) packet can be sent immediately after this one
+/// to prevent a client response.
 #[derive(Debug, Clone)]
 pub struct ResourcePacksInfo<'a> {
     /// Forces the client to accept the packs to be able to join the server.

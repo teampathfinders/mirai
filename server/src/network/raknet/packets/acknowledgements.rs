@@ -16,6 +16,7 @@ pub enum AcknowledgementRecord {
     Range(Range<u32>),
 }
 
+/// Encodes a list of acknowledgement records.
 fn encode_records(
     mut buffer: BytesMut,
     records: &[AcknowledgementRecord],
@@ -38,6 +39,7 @@ fn encode_records(
     buffer
 }
 
+/// Decodes a list of acknowledgement records.
 fn decode_records(mut buffer: BytesMut) -> Vec<AcknowledgementRecord> {
     let record_count = buffer.get_u16();
     let mut records = Vec::with_capacity(record_count as usize);

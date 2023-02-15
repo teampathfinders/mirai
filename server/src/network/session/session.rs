@@ -12,7 +12,7 @@ use tokio_util::sync::CancellationToken;
 use uuid::Uuid;
 
 use crate::crypto::{Encryptor, IdentityData, UserData};
-use crate::network::packets::{BuildPlatform, Disconnect, GamePacket};
+use crate::network::packets::{BuildPlatform, Disconnect, GamePacket, TextMessage, MessageType};
 use crate::network::session::compound_collector::CompoundCollector;
 use crate::network::session::order_channel::OrderChannel;
 use crate::network::session::recovery_queue::RecoveryQueue;
@@ -52,7 +52,7 @@ pub struct Session {
     /// Whether the client supports the chunk cache.
     pub cache_support: OnceCell<bool>,
     /// Whether the client has fully been initialised.
-    /// This is set to true after receiving the [`SetLocalPlayerAsInitialized`](packets::SetLocalPlayerAsInitialized) packet
+    /// This is set to true after receiving the [`SetLocalPlayerAsInitialized`](crate::network::packets::SetLocalPlayerAsInitialized) packet
     pub initialized: AtomicBool,
 
     /// Current tick of this session, this is increased by one every time the session
@@ -261,7 +261,16 @@ impl Session {
     /// Signals to the session that it needs to close.
     pub fn flag_for_close(&self) {
         if let Ok(display_name) = self.get_display_name() {
-            tracing::info!("{} has disconnected", display_name);
+            tracing::info!("{display_name} has disconnected");
+            let _ = self.broadcast_others(TextMessage {
+                message: format!("§e{display_name} has left the server."),
+                message_type: MessageType::System,
+                needs_translation: false,
+                parameters: vec![],
+                platform_chat_id: "".to_owned(),
+                source_name: "".to_owned(),
+                xuid: "".to_owned()
+            });
         }
         self.active.cancel();
     }

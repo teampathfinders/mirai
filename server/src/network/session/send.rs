@@ -201,6 +201,8 @@ impl Session {
             let frame_size = frame.body.len() + std::mem::size_of::<Frame>();
 
             if frame_size > self.mtu as usize {
+                
+
                 todo!("Create compound");
             }
             if frame.reliability.is_ordered() {

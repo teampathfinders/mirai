@@ -21,7 +21,7 @@ use crate::network::packets::{
     ResourcePacksInfo, ServerToClientHandshake, SetLocalPlayerAsInitialized,
     SpawnBiomeType, StartGame, Status, ViolationWarning, WorldGenerator,
     CLIENT_VERSION_STRING, DISCONNECTED_LOGIN_FAILED,
-    DISCONNECTED_NOT_AUTHENTICATED, NETWORK_VERSION, PlayerListAdd, PlayerListAddEntry, PlaySound,
+    DISCONNECTED_NOT_AUTHENTICATED, NETWORK_VERSION, PlayerListAdd, PlayerListAddEntry, PlaySound, TextMessage, MessageType,
 };
 use crate::network::raknet::Reliability;
 use crate::network::raknet::{Frame, FrameBatch};
@@ -31,6 +31,7 @@ use common::{bail, BlockPosition, Decodable, VResult, Vector2f, Vector3f, Vector
 
 impl Session {
     /// Handles a [`ClientCacheStatus`] packet.
+    /// This stores the result in the [`Session::cache_support`] field.
     pub fn handle_client_cache_status(
         &self,
         mut packet: BytesMut,
@@ -52,6 +53,11 @@ impl Session {
         Ok(())
     }
 
+    /// Handles a [`SetLocalPlayerAsInitialized`] packet.
+    /// This packet indicates the player has fully loaded in.
+    /// 
+    /// All connected sessions are notified of the new player
+    /// and the new player gets a list of all current players.
     pub fn handle_local_player_initialized(
         &self,
         mut packet: BytesMut,
@@ -66,6 +72,8 @@ impl Session {
             let identity_data = self.get_identity_data()?;
             let user_data = self.get_user_data()?;
 
+            // tracing::info!("{identity_data:?} {user_data:?}");
+
             // self.broadcast_others(PlayerListAdd {
             //     entries: &[PlayerListAddEntry {
             //         uuid: identity_data.identity,
@@ -79,20 +87,25 @@ impl Session {
             //     }]
             // })?;
 
-            self.send_packet(PlaySound {
-                name: "mob.pig.death",
-                position: Vector3i::from([0, 0, 0]),
-                volume: 1.0,
-                pitch: 1.0,
+            self.broadcast_others(TextMessage {
+                message: format!("§e{} has joined the server.", identity_data.display_name),
+                needs_translation: false,
+                parameters: vec![],
+                source_name: "".to_string(),
+                platform_chat_id: "".to_string(),
+                message_type: MessageType::System,
+                xuid: "".to_string()
             })?;
         }
         self.initialized.store(true, Ordering::SeqCst);
 
         // ...then tell the client about all the other players.
+        // TODO
 
         Ok(())
     }
 
+    /// Handles a [`ChunkRadiusRequest`] packet by returning the maximum allowed render distance.
     pub fn handle_chunk_radius_request(
         &self,
         mut packet: BytesMut,

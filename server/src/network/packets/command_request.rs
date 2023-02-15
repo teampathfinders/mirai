@@ -5,6 +5,7 @@ use common::Decodable;
 
 use super::GamePacket;
 
+/// Command origin.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum CommandOrigin {
     Player,
@@ -51,10 +52,19 @@ impl TryFrom<u32> for CommandOrigin {
     }
 }
 
+/// Requests execution of a command.
+/// Even if the command isn't listed by the [`AvailableCommands`](super::AvailableCommands) packet,
+/// the client will still send a request.
 #[derive(Debug, Clone)]
 pub struct CommandRequest {
+    /// The actual command.
+    /// This is a raw string (i.e. "/kill @e[type=cow]")
     pub command: String,
+    /// Command origin.
     pub origin: CommandOrigin,
+    /// Request ID.
+    /// If a command is requested by a websocket server, 
+    /// then this ID is used to forward the result to the server instead of the client.
     pub request_id: String,
 }
 

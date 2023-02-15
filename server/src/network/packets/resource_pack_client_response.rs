@@ -6,12 +6,19 @@ use common::Decodable;
 use common::ReadExtensions;
 use common::{VError, VResult};
 
+/// Status contained in [`ResourcePackClientResponse`].
 #[derive(Debug, Copy, Clone)]
 pub enum ResourcePackStatus {
+    /// No status.
     None,
+    /// Refused to download the packs.
     Refused,
+    /// Client is requesting packs to be sent.
     SendPacks,
+    /// Already has all packs downloaded.
+    /// This is also sent when the server has no resource packs.
     HaveAllPacks,
+    /// The resource pack exchange has been completed.
     Completed,
 }
 
@@ -30,9 +37,13 @@ impl TryFrom<u8> for ResourcePackStatus {
     }
 }
 
+/// Sent in response to [`ResourcePacksInfo`](super::ResourcePacksInfo) and
+/// [`ResourcePackStack`](super::ResourcePackStack).
 #[derive(Debug, Clone)]
 pub struct ResourcePackClientResponse {
+    /// The response status.
     pub status: ResourcePackStatus,
+    /// IDs of affected packs.
     pub pack_ids: Vec<String>,
 }
 
