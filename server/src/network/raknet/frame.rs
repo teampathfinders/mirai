@@ -27,9 +27,9 @@ pub const NEEDS_B_AND_AS_BIT_FLAG: u8 = 0x04;
 #[derive(Debug, Default, Clone)]
 pub struct FrameBatch {
     /// Unique ID of this frame batch.
-    batch_number: u32,
+    pub batch_number: u32,
     /// Individual frames
-    frames: Vec<Frame>,
+    pub frames: Vec<Frame>,
 }
 
 impl FrameBatch {
@@ -190,8 +190,7 @@ impl Frame {
 
     /// Encodes the frame.
     fn encode(&self, buffer: &mut BytesMut) {
-        let reliability = (self.reliability as u8) << 5;
-        let mut flags = reliability;
+        let mut flags = (self.reliability as u8) << 5;
         if self.is_compound {
             flags |= COMPOUND_BIT_FLAG;
         }

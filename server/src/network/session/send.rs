@@ -203,16 +203,21 @@ impl Session {
             let frame_size = frame.body.len() + std::mem::size_of::<Frame>();
 
             if frame_size > self.mtu as usize {
-                // Ceiling divide while avoiding floating point conversion.
-                let compound_size = (self.mtu as usize + frame_size - 1) / frame_size;
-
-                let chunks = frame.body.chunks(self.mtu as usize);
-                let mut fragments = Vec::with_capacity(chunks.len());                
+                let chunks = frame.body.chunks(self.mtu as usize - std::mem::size_of::<Frame>());
 
                 // Set fragmenting options
                 frame.is_compound = true;
                 frame.compound_size = chunks.len() as u32;
                 frame.compound_id = self.compound_id.fetch_add(1, Ordering::SeqCst);
+
+                // Send old batch if it has been filled.
+                if !batch.frames.is_empty() {
+                    self.ipv4_socket.send_to(batch.encode()?.as_ref(), &self.address).await?;
+                    batch = FrameBatch {
+                        batch_number: self.batch_number.fetch_add(1, Ordering::SeqCst),
+                        frames: vec![]
+                    };
+                }
 
                 for (i, chunk) in chunks.enumerate() {
                     let mut fragment = frame.clone();
@@ -222,11 +227,15 @@ impl Session {
                     
                     debug_assert!(fragment.body.len() <= self.mtu as usize);
 
-                    fragments.push(fragment);
+                    batch.frames.push(fragment);
+                    self.ipv4_socket.send_to(batch.encode()?.as_ref(), &self.address).await?;
+
+                    batch = FrameBatch {
+                        batch_number: self.batch_number.fetch_add(1, Ordering::SeqCst),
+                        frames: vec![]
+                    };
                 }
 
-                // Process all fragments individually.
-                self.send_raw_frames(fragments).await?;
                 continue // Don't process the unfragmented packet.
             }
             if frame.reliability.is_ordered() {
