@@ -67,7 +67,7 @@ impl Session {
                     CompressionAlgorithm::Deflate => {
                         let mut writer = DeflateEncoder::new(
                             Vec::new(),
-                            Compression::fast(),
+                            Compression::best(),
                         );
 
                         writer.write_all(packet_buffer.as_ref())?;
@@ -192,85 +192,58 @@ impl Session {
 
     #[async_recursion]
     async fn send_raw_frames(&self, frames: Vec<Frame>) -> VResult<()> {
-        let max_batch_size =
-            self.mtu as usize - std::mem::size_of::<FrameBatch>();
-            
         let mut batch = FrameBatch::default()
             .batch_number(self.batch_number.fetch_add(1, Ordering::SeqCst));
 
         let mut has_reliable_packet = false;
-
         for mut frame in frames {
             let frame_size = frame.body.len() + std::mem::size_of::<Frame>();
 
             if frame_size > self.mtu as usize {
-                let chunks = frame.body.chunks(self.mtu as usize - std::mem::size_of::<Frame>());
+                let compound = self.split_frame(frame);
+                self.send_raw_frames(compound).await?;
 
-                // Set fragmenting options
-                frame.is_compound = true;
-                frame.compound_size = chunks.len() as u32;
-                frame.compound_id = self.compound_id.fetch_add(1, Ordering::SeqCst);
-
-                // Send old batch if it has been filled.
-                if !batch.frames.is_empty() {
-                    self.ipv4_socket.send_to(batch.encode()?.as_ref(), &self.address).await?;
-                    batch = FrameBatch {
-                        batch_number: self.batch_number.fetch_add(1, Ordering::SeqCst),
-                        frames: vec![]
-                    };
-                }
-
-                for (i, chunk) in chunks.enumerate() {
-                    let mut fragment = frame.clone();
-                    
-                    fragment.compound_index = i as u32;
-                    fragment.body = BytesMut::from(chunk);
-                    
-                    debug_assert!(fragment.body.len() <= self.mtu as usize);
-
-                    batch.frames.push(fragment);
-                    self.ipv4_socket.send_to(batch.encode()?.as_ref(), &self.address).await?;
-
-                    batch = FrameBatch {
-                        batch_number: self.batch_number.fetch_add(1, Ordering::SeqCst),
-                        frames: vec![]
-                    };
-                }
-
-                continue // Don't process the unfragmented packet.
+                continue
             }
+
             if frame.reliability.is_ordered() {
                 let order_index = self.order_channels
                     [frame.order_channel as usize]
                     .get_server_index();
                 frame.order_index = order_index;
             }
+
             if frame.reliability.is_sequenced() {
                 let sequence_index =
                     self.sequence_index.fetch_add(1, Ordering::SeqCst);
                 frame.sequence_index = sequence_index;
             }
+
             if frame.reliability.is_reliable() {
                 frame.reliable_index =
                     self.acknowledgment_index.fetch_add(1, Ordering::SeqCst);
                 has_reliable_packet = true;
             }
 
-            if batch.estimate_size() + frame_size < max_batch_size {
-                batch = batch.push(frame);
+            tracing::debug!("{} {}", batch.estimate_size() + frame_size, self.mtu as usize);
+            if batch.estimate_size() + frame_size <= self.mtu as usize {
+                batch.frames.push(frame);
             } else {
                 if has_reliable_packet {
                     self.recovery_queue.insert(batch.clone());
                 }
+
+                tracing::debug!("{batch:?}");
                 let encoded = batch.encode()?;
 
                 // TODO: Add IPv6 support
                 self.ipv4_socket.send_to(&encoded, self.address).await?;
 
                 has_reliable_packet = false;
-                batch = FrameBatch::default().batch_number(
-                    self.batch_number.fetch_add(1, Ordering::SeqCst),
-                );
+                batch = FrameBatch {
+                    batch_number: self.batch_number.fetch_add(1, Ordering::SeqCst),
+                    frames: vec![frame]
+                };
             }
         }
 
@@ -286,5 +259,42 @@ impl Session {
         }
 
         Ok(())
+    }
+
+    fn split_frame(&self, mut frame: Frame) -> Vec<Frame> {
+        let chunk_max_size = self.mtu as usize - std::mem::size_of::<Frame>() - std::mem::size_of::<FrameBatch>();
+        tracing::debug!("cms {chunk_max_size}");
+
+        let compound_size = {
+            let frame_size = frame.body.len() + std::mem::size_of::<Frame>();
+
+            // Ceiling divide without floating point conversion.
+            // usize::div_ceil is still unstable.
+            (frame_size + chunk_max_size - 1) / chunk_max_size
+        };
+
+        let mut compound = Vec::with_capacity(compound_size);
+        let chunks = frame.body.chunks(chunk_max_size);
+
+        debug_assert_eq!(chunks.len(), compound_size);
+
+        let compound_id = self.compound_id.fetch_add(1, Ordering::SeqCst);
+        for (i, chunk) in chunks.enumerate() {
+            // debug_assert_eq!(chunk_max_size, chunk.len());
+
+            let mut fragment = Frame {
+                reliability: frame.reliability,
+                is_compound: true,
+                compound_index: i as u32,
+                compound_size: compound_size as u32,
+                compound_id,
+                body: BytesMut::from(chunk),
+                ..Default::default()
+            };
+
+            compound.push(fragment);
+        }
+
+        compound
     }
 }

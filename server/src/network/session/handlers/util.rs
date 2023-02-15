@@ -32,9 +32,7 @@ impl Session {
 
     pub fn handle_skin_update(&self, packet: BytesMut) -> VResult<()> {
         let request = UpdateSkin::decode(packet)?;
-        tracing::debug!("{request:?}");
-
-        Ok(())
+        self.broadcast(request)
     }
 
     pub fn handle_ability_request(&self, packet: BytesMut) -> VResult<()> {
