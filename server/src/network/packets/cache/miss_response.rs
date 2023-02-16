@@ -1,10 +1,11 @@
 use bytes::BytesMut;
 use common::{Encodable, VResult, WriteExtensions};
+use crate::network::cache_blob::CacheBlob;
 use crate::network::packets::GamePacket;
 
 #[derive(Debug, Clone)]
 pub struct CacheMissResponse<'a> {
-    pub blobs: &'a [u8]
+    pub blobs: &'a [CacheBlob]
 }
 
 impl GamePacket for CacheMissResponse<'_> {
@@ -13,18 +14,15 @@ impl GamePacket for CacheMissResponse<'_> {
 
 impl Encodable for CacheMissResponse<'_> {
     fn encode(&self) -> VResult<BytesMut> {
-        todo!()
+        let mut buffer = BytesMut::with_capacity(
+            1 + self.blobs.fold(0, |acc, blob| acc + blob.len())
+        );
 
-        // let mut buffer = BytesMut::with_capacity(
-        //     1 + self.blobs.fold(0, |acc, blob| acc + blob.len())
-        // );
+        buffer.put_var_u32(self.blobs.len() as u32);
+        for blob in self.blobs {
+            blob.encode(&mut buffer);
+        }
 
-        // buffer.put_var_u32(self.blobs.len() as u32);
-        // for blob in self.blobs {
-        //     todo!();
-        //     // blob.encode(&mut buffer);
-        // }
-
-        // Ok(buffer)
+        Ok(buffer)
     }
 }
