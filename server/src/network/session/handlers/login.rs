@@ -9,21 +9,23 @@ use level::Dimension;
 use crate::config::SERVER_CONFIG;
 use crate::crypto::Encryptor;
 use crate::network::packets::GameMode::Creative;
-use crate::network::packets::{AvailableCommands, BiomeDefinitionList, BroadcastIntent, ChatRestrictionLevel, ChunkRadiusReply, ChunkRadiusRequest, ClientCacheStatus, ClientToServerHandshake, Command, CommandEnum, CommandOverload, CommandParameter, CommandParameterType, CommandPermissionLevel, CreativeContent, Difficulty, Disconnect, ExperimentData, GameMode, GameRule, ItemEntry, Login, NetworkSettings, PermissionLevel, PlayStatus, PlayerMovementSettings, PlayerMovementType, RequestNetworkSettings, ResourcePackClientResponse, ResourcePackStack, ResourcePacksInfo, ServerToClientHandshake, SetLocalPlayerAsInitialized, SpawnBiomeType, StartGame, Status, ViolationWarning, WorldGenerator, CLIENT_VERSION_STRING, DISCONNECTED_LOGIN_FAILED, DISCONNECTED_NOT_AUTHENTICATED, NETWORK_VERSION, PlayerListAdd, PlayerListAddEntry, PlaySound, TextMessage, MessageType, AddPlayer, ItemStack, ItemType, AbilityData, BuildPlatform, BookEdit, BookEditAction};
 use crate::network::raknet::Reliability;
 use crate::network::raknet::{Frame, FrameBatch};
 use crate::network::session::send_queue::SendPriority;
 use crate::network::session::session::Session;
 use common::{bail, BlockPosition, Decodable, VResult, Vector2f, Vector3f, Vector3i, error};
+use crate::network::packets::{AbilityData, AddPlayer, BiomeDefinitionList, CLIENT_VERSION_STRING, CommandPermissionLevel, Difficulty, GameMode, GameRule, MessageType, NETWORK_VERSION, PlayerListAdd, PlayerListAddEntry, PlayStatus, SetLocalPlayerAsInitialized, Status, TextMessage, ViolationWarning};
+use crate::network::packets::cache::CacheStatus;
+use crate::network::packets::login::{BroadcastIntent, ChatRestrictionLevel, ChunkRadiusReply, ChunkRadiusRequest, ClientToServerHandshake, CreativeContent, DISCONNECTED_LOGIN_FAILED, ItemStack, ItemType, Login, NetworkSettings, PermissionLevel, PlayerMovementSettings, PlayerMovementType, RequestNetworkSettings, ResourcePackClientResponse, ResourcePacksInfo, ResourcePackStack, ServerToClientHandshake, SpawnBiomeType, StartGame, WorldGenerator};
 
 impl Session {
     /// Handles a [`ClientCacheStatus`] packet.
     /// This stores the result in the [`Session::cache_support`] field.
-    pub fn handle_client_cache_status(
+    pub fn handle_cache_status(
         &self,
         mut packet: BytesMut,
     ) -> VResult<()> {
-        let request = ClientCacheStatus::decode(packet)?;
+        let request = CacheStatus::decode(packet)?;
         self.cache_support.set(request.supports_cache)?;
 
         Ok(())
@@ -65,9 +67,8 @@ impl Session {
                     entity_id: 2,
                     username: &identity_data.display_name,
                     xuid: identity_data.xuid,
-                    build_platform: user_data.build_platform,
+                    device_os: user_data.build_platform,
                     skin: self.skin.read().as_ref().ok_or_else(|| error!(NotInitialized, "Skin data has not been initialised"))?,
-                    teacher: false,
                     host: false,
                 }]
             })?;
@@ -101,7 +102,7 @@ impl Session {
                 },
                 links: &[],
                 device_id: &user_data.device_id,
-                build_platform: user_data.build_platform,
+                device_os: user_data.build_platform,
             })?;
 
             self.broadcast_others(TextMessage {

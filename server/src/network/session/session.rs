@@ -12,7 +12,6 @@ use tokio_util::sync::CancellationToken;
 use uuid::Uuid;
 
 use crate::crypto::{Encryptor, IdentityData, UserData};
-use crate::network::packets::{BuildPlatform, Disconnect, GamePacket, TextMessage, MessageType, PlayerListRemove};
 use crate::network::session::compound_collector::CompoundCollector;
 use crate::network::session::order_channel::OrderChannel;
 use crate::network::session::recovery_queue::RecoveryQueue;
@@ -20,6 +19,8 @@ use crate::network::session::send_queue::SendQueue;
 use crate::skin::Skin;
 use common::{AsyncDeque, Encodable, bail};
 use common::{error, VResult};
+use crate::network::packets::login::{DeviceOS, Disconnect};
+use crate::network::packets::{GamePacket, MessageType, PlayerListRemove, TextMessage};
 
 use super::SessionTracker;
 
@@ -245,7 +246,7 @@ impl Session {
         })
     }
 
-    pub fn get_device_os(&self) -> VResult<BuildPlatform> {
+    pub fn get_device_os(&self) -> VResult<DeviceOS> {
         let data = self.user_data.get().ok_or_else(|| {
             error!(NotInitialized, "Device OS data has not been initialised yet")
         })?;

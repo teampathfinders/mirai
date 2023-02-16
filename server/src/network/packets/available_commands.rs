@@ -5,7 +5,7 @@ use common::{bail, VResult, WriteExtensions};
 
 use common::Encodable;
 
-use super::{GamePacket, PermissionLevel};
+use super::{GamePacket};
 
 pub const COMMAND_PARAMETER_VALID: u32 = 0x100000;
 pub const COMMAND_PARAMETER_ENUM: u32 = 0x200000;

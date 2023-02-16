@@ -6,7 +6,7 @@ use common::{bail, error, VResult};
 use jsonwebtoken::{Algorithm, DecodingKey, Validation};
 use uuid::Uuid;
 
-use crate::{network::packets::{BuildPlatform, UiProfile}, skin::Skin};
+use crate::{network::packets::login::{DeviceOS, UiProfile}, skin::Skin};
 
 /// Mojang's public key.
 /// Used to verify the second token in the identity chain.
@@ -68,7 +68,7 @@ pub struct IdentityTokenPayload {
 pub struct UserData {
     /// Operating system of the client.
     #[serde(rename = "DeviceOS")]
-    pub build_platform: BuildPlatform,
+    pub build_platform: DeviceOS,
     #[serde(rename = "DeviceModel")]
     pub device_model: String,
     #[serde(rename = "DeviceId")]

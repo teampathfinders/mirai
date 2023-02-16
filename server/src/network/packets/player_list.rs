@@ -1,10 +1,11 @@
 use bytes::{BytesMut, BufMut};
 use common::{Encodable, VResult, WriteExtensions};
 use uuid::Uuid;
+use crate::network::packets::login::DeviceOS;
 
 use crate::skin::Skin;
 
-use super::{BuildPlatform, GamePacket};
+use super::{GamePacket};
 
 #[derive(Debug, Clone)]
 pub struct PlayerListAddEntry<'a> {
@@ -17,7 +18,7 @@ pub struct PlayerListAddEntry<'a> {
     /// XUID of the client.
     pub xuid: u64,
     /// Operating system of the client.
-    pub build_platform: BuildPlatform,
+    pub device_os: DeviceOS,
     /// The client's skin.
     pub skin: &'a Skin,
     /// Whether the client is the host of the game.
@@ -53,7 +54,7 @@ impl Encodable for PlayerListAdd<'_> {
             buffer.put_string(entry.username);
             buffer.put_string(&entry.xuid.to_string());
             buffer.put_string(""); // Platform chat ID.
-            buffer.put_i32_le(entry.build_platform as i32);
+            buffer.put_i32_le(entry.device_os as i32);
             entry.skin.encode(&mut buffer);
             buffer.put_bool(false); // Player is not a teacher.
             buffer.put_bool(entry.host);

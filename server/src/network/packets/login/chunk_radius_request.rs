@@ -1,8 +1,7 @@
 use common::{ReadExtensions, VResult};
 
 use common::Decodable;
-
-use super::GamePacket;
+use crate::network::packets::GamePacket;
 
 /// Sent by the client to request the maximum render distance.
 #[derive(Debug, Clone)]

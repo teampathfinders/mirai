@@ -18,7 +18,7 @@ use common::{VError, VResult};
 /// Device operating system
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Deserialize_repr)]
 #[repr(u8)]
-pub enum BuildPlatform {
+pub enum DeviceOS {
     Android,
     Ios,
     Osx,

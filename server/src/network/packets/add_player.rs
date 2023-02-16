@@ -2,9 +2,10 @@ use std::collections::HashMap;
 use bytes::{BytesMut, BufMut};
 use common::{Vector3f, Encodable, VResult, WriteExtensions};
 use uuid::Uuid;
-use crate::network::packets::{CommandPermissionLevel, ItemStack, PermissionLevel};
+use crate::network::packets::{CommandPermissionLevel};
+use crate::network::packets::login::{DeviceOS, ItemStack, PermissionLevel};
 
-use super::{GameMode, BuildPlatform, GamePacket};
+use super::{GameMode, GamePacket};
 
 /// Type of an entity link.
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
@@ -154,7 +155,7 @@ pub struct AddPlayer<'a> {
     /// ID of the user's device.
     pub device_id: &'a str,
     /// Device operating system.
-    pub build_platform: BuildPlatform
+    pub device_os: DeviceOS
 }
 
 impl GamePacket for AddPlayer<'_> {
@@ -186,7 +187,7 @@ impl Encodable for AddPlayer<'_> {
         }
 
         buffer.put_string(self.device_id);
-        buffer.put_i32_le(self.build_platform as i32);
+        buffer.put_i32_le(self.device_os as i32);
 
         Ok(buffer)
     }

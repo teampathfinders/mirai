@@ -6,25 +6,15 @@ use async_recursion::async_recursion;
 use bytes::{Buf, BytesMut};
 
 use crate::config::SERVER_CONFIG;
-use crate::network::header::Header;
-use crate::network::packets::{
-    Animate, ChunkRadiusRequest, ClientCacheStatus, ClientToServerHandshake,
-    CommandRequest, CompressionAlgorithm, GamePacket, Login, MovePlayer,
-    RequestAbility, RequestNetworkSettings, ResourcePackClientResponse,
-    SetDifficulty, SetLocalPlayerAsInitialized, ViolationWarning,
-    GAME_PACKET_ID, UpdateSkin,
-};
-use crate::network::packets::{Interact, OnlinePing, TextMessage};
-use crate::network::raknet::packets::ConnectionRequest;
-use crate::network::raknet::packets::DisconnectNotification;
-use crate::network::raknet::packets::NewIncomingConnection;
-use crate::network::raknet::packets::{
-    Acknowledgement, AcknowledgementRecord, NegativeAcknowledgement,
-};
 use crate::network::raknet::{Frame, FrameBatch};
 use crate::network::session::session::Session;
 use common::{bail, vassert, ReadExtensions, VResult};
 use common::{Decodable, Encodable};
+use crate::network::header::Header;
+use crate::network::packets::cache::CacheStatus;
+use crate::network::packets::{Animate, CommandRequest, GAME_PACKET_ID, GamePacket, Interact, MovePlayer, RequestAbility, SetLocalPlayerAsInitialized, TextMessage, UpdateSkin, ViolationWarning};
+use crate::network::packets::login::{ChunkRadiusRequest, ClientToServerHandshake, CompressionAlgorithm, Login, OnlinePing, RequestNetworkSettings, ResourcePackClientResponse};
+use crate::network::raknet::packets::{Acknowledgement, ConnectionRequest, DisconnectNotification, NegativeAcknowledgement, NewIncomingConnection};
 
 impl Session {
     /// Processes the raw packet coming directly from the network.
@@ -210,7 +200,7 @@ impl Session {
             ClientToServerHandshake::ID => {
                 self.handle_client_to_server_handshake(packet)
             }
-            ClientCacheStatus::ID => self.handle_client_cache_status(packet),
+            CacheStatus::ID => self.handle_cache_status(packet),
             ResourcePackClientResponse::ID => {
                 self.handle_resource_pack_client_response(packet)
             }
@@ -226,7 +216,7 @@ impl Session {
             Animate::ID => self.handle_animation(packet),
             CommandRequest::ID => self.handle_command_request(packet),
             UpdateSkin::ID => self.handle_skin_update(packet),
-            id => bail!(BadPacket, "Invalid game packet: {:#04x}", id),
+            id => bail!(BadPacket, "Invalid game packet: {id:#04x}"),
         }
     }
 }

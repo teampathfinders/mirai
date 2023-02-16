@@ -1,7 +1,7 @@
 use lazy_static::lazy_static;
 use parking_lot::RwLock;
 
-use crate::network::packets::{ClientThrottleSettings, CompressionAlgorithm};
+use crate::network::packets::login::{ClientThrottleSettings, CompressionAlgorithm};
 
 /// Global service that contains all configuration settings
 pub struct ServerConfig {

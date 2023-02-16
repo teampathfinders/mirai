@@ -3,12 +3,11 @@ use std::collections::HashMap;
 use bytes::{BufMut, BytesMut};
 use level::Dimension;
 
-use crate::network::packets::{ExperimentData, GamePacket};
 use common::Encodable;
 use common::{bail, VError, VResult};
 use common::{BlockPosition, Vector2f, Vector3f, WriteExtensions};
-
-use super::{Difficulty, GameMode, GameRule, CLIENT_VERSION_STRING};
+use crate::network::packets::{CLIENT_VERSION_STRING, Difficulty, GameMode, GamePacket, GameRule};
+use crate::network::packets::login::ExperimentData;
 
 #[derive(Debug, Copy, Clone)]
 pub enum WorldGenerator {

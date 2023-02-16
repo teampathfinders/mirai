@@ -2,8 +2,7 @@ use bytes::BytesMut;
 use common::{VResult, WriteExtensions};
 
 use common::Encodable;
-
-use super::GamePacket;
+use crate::network::packets::GamePacket;
 
 /// Sent in response to [`ChunkRadiusRequest`](super::ChunkRadiusRequest), to notify the client of the allowed render distance.
 #[derive(Debug, Clone)]

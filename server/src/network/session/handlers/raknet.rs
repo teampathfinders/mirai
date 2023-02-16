@@ -1,7 +1,5 @@
 use bytes::BytesMut;
 
-use crate::network::packets::OnlinePing;
-use crate::network::packets::OnlinePong;
 use crate::network::raknet::packets::ConnectionRequest;
 use crate::network::raknet::packets::ConnectionRequestAccepted;
 use crate::network::raknet::packets::NewIncomingConnection;
@@ -12,6 +10,7 @@ use crate::network::session::send_queue::SendPriority;
 use crate::network::session::session::Session;
 use common::VResult;
 use common::{Decodable, Encodable};
+use crate::network::packets::login::{OnlinePing, OnlinePong};
 
 impl Session {
     /// Handles a [`ConnectionRequest`] packet.
