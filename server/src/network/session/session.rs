@@ -12,6 +12,7 @@ use tokio_util::sync::CancellationToken;
 use uuid::Uuid;
 
 use crate::crypto::{Encryptor, IdentityData, UserData};
+use crate::instance::{ServerInstance, LevelManager};
 use crate::network::session::compound_collector::CompoundCollector;
 use crate::network::session::order_channel::OrderChannel;
 use crate::network::session::recovery_queue::RecoveryQueue;
@@ -22,7 +23,7 @@ use crate::network::packets::login::{DeviceOS, Disconnect};
 use crate::network::packets::{GamePacket, MessageType, PlayerListRemove, TextMessage};
 use crate::network::Skin;
 
-use super::SessionTracker;
+use super::SessionManager;
 
 /// Tick interval of the internal session ticker.
 const INTERNAL_TICK_INTERVAL: Duration = Duration::from_millis(1000 / 20);
@@ -37,6 +38,8 @@ const TICK_INTERVAL: Duration = Duration::from_millis(1000 / 20);
 const SESSION_TIMEOUT: Duration = Duration::from_secs(5);
 
 const ORDER_CHANNEL_COUNT: usize = 5;
+
+static RUNTIME_ID_COUNTER: AtomicU64 = AtomicU64::new(0);
 
 /// Sessions directly correspond to clients connected to the server.
 ///
@@ -57,6 +60,13 @@ pub struct Session {
     /// Whether the client has fully been initialised.
     /// This is set to true after receiving the [`SetLocalPlayerAsInitialized`](crate::network::packets::SetLocalPlayerAsInitialized) packet
     pub initialized: AtomicBool,
+    /// Runtime ID.
+    pub runtime_id: u64,
+    /// Session list, used to access broadcasting.
+    /// This is a weak pointer because of the cyclic reference.
+    /// In principle, the tracker should always exist if there are sessions remaining.
+    pub session_manager: Arc<SessionManager>,
+    pub level_manager: Arc<LevelManager>,
 
     /// Current tick of this session, this is increased by one every time the session
     /// processes packets.
@@ -100,16 +110,13 @@ pub struct Session {
     pub receive_queue: AsyncDeque<BytesMut>,
     /// Queue that stores packets in case they need to be recovered due to packet loss.
     pub recovery_queue: RecoveryQueue,
-    /// Session list, used to access broadcasting.
-    /// This is a weak pointer because of the cyclic reference.
-    /// In principle, the tracker should always exist if there are sessions remaining.
-    pub tracker: Weak<SessionTracker>
 }
 
 impl Session {
     /// Creates a new session.
     pub fn new(
-        tracker: Weak<SessionTracker>,
+        session_manager: Arc<SessionManager>,
+        level_manager: Arc<LevelManager>,
         ipv4_socket: Arc<UdpSocket>,
         address: SocketAddr,
         mtu: u16,
@@ -122,6 +129,9 @@ impl Session {
             encryptor: OnceCell::new(),
             cache_support: OnceCell::new(),
             initialized: AtomicBool::new(false),
+            runtime_id: RUNTIME_ID_COUNTER.fetch_add(1, Ordering::SeqCst),
+            session_manager,
+            level_manager,
 
             current_tick: AtomicU64::new(0),
             ipv4_socket,
@@ -141,8 +151,7 @@ impl Session {
             compression_enabled: AtomicBool::new(false),
             receive_queue: AsyncDeque::new(5),
             address,
-            recovery_queue: Default::default(),
-            tracker
+            recovery_queue: Default::default()
         });
 
         // Start ticker
@@ -286,22 +295,17 @@ impl Session {
     /// Sends a packet to all initialised sessions including self.
     pub fn broadcast<P: GamePacket + Encodable>(&self, packet: P) -> VResult<()> {
         // Upgrade weak pointer to use it.
-        let tracker = self.tracker
-            .upgrade()
-            .ok_or_else(|| error!(NotInitialized, "Session attempted to use tracker that does not exist anymore. This is definitely a bug"))?;
+        // let tracker = self.tracker
+        //     .upgrade()
+        //     .ok_or_else(|| error!(NotInitialized, "Session attempted to use tracker that does not exist anymore. This is definitely a bug"))?;
 
-        tracker.broadcast(packet);
+        self.session_manager.broadcast(packet);
         Ok(())
     }
 
     /// Sends a packet to all initialised sessions other than self.
     pub fn broadcast_others<P: GamePacket + Encodable>(&self, packet: P) -> VResult<()> {
-        // Upgrade weak pointer to use it.
-        let tracker = self.tracker
-            .upgrade()
-            .ok_or_else(|| error!(NotInitialized, "Session attempted to use tracker that does not exist anymore. This is definitely a bug"))?;
-
-        tracker.broadcast_except(packet, self.get_xuid()?);
+        self.session_manager.broadcast_except(packet, self.get_xuid()?);
         Ok(())
     }
 

@@ -14,7 +14,7 @@ use crate::network::raknet::{Frame, FrameBatch};
 use crate::network::session::send_queue::SendPriority;
 use crate::network::session::session::Session;
 use common::{bail, BlockPosition, Decodable, VResult, Vector2f, Vector3f, Vector3i, error};
-use crate::network::packets::{AbilityData, AddPlayer, BiomeDefinitionList, CLIENT_VERSION_STRING, CommandPermissionLevel, Difficulty, GameMode, GameRule, MessageType, NETWORK_VERSION, PlayerListAdd, PlayerListAddEntry, PlayStatus, SetLocalPlayerAsInitialized, Status, TextMessage, ViolationWarning};
+use crate::network::packets::{AbilityData, AddPlayer, BiomeDefinitionList, CLIENT_VERSION_STRING, CommandPermissionLevel, Difficulty, GameMode, GameRule, MessageType, NETWORK_VERSION, PlayerListAdd, PlayerListAddEntry, PlayStatus, SetLocalPlayerAsInitialized, Status, TextMessage, UpdateSkin, ViolationWarning};
 use crate::network::packets::cache::CacheStatus;
 use crate::network::packets::login::{BroadcastIntent, ChatRestrictionLevel, ChunkRadiusReply, ChunkRadiusRequest, ClientToServerHandshake, CreativeContent, DISCONNECTED_LOGIN_FAILED, ItemStack, ItemType, Login, NetworkSettings, PermissionLevel, PlayerMovementSettings, PlayerMovementType, RequestNetworkSettings, ResourcePackClientResponse, ResourcePacksInfo, ResourcePackStack, ServerToClientHandshake, SpawnBiomeType, StartGame, WorldGenerator};
 
@@ -64,45 +64,13 @@ impl Session {
             self.broadcast_others(PlayerListAdd {
                 entries: &[PlayerListAddEntry {
                     uuid: identity_data.uuid,
-                    entity_id: 2,
+                    entity_id: self.runtime_id as i64,
                     username: &identity_data.display_name,
                     xuid: identity_data.xuid,
                     device_os: user_data.build_platform,
                     skin: self.skin.read().as_ref().ok_or_else(|| error!(NotInitialized, "Skin data has not been initialised"))?,
                     host: false,
                 }]
-            })?;
-
-            self.broadcast_others(AddPlayer {
-                uuid: identity_data.uuid,
-                username: &identity_data.display_name,
-                runtime_id: 2,
-                position: Vector3f::from([0.0, 0.0, 0.0]),
-                velocity: Vector3f::from([0.0, 0.0, 0.0]),
-                rotation: Vector3f::from([0.0, 0.0, 0.0]),
-                game_mode: GameMode::Creative,
-                held_item: ItemStack {
-                    item_type: ItemType {
-                        network_id: 0,
-                        metadata: 0
-                    },
-                    runtime_id: 0,
-                    count: 0,
-                    nbt_data: nbt::Value::End,
-                    can_be_placed_on: vec![],
-                    can_break: vec![],
-                    has_network_id: false,
-                },
-                metadata: HashMap::new(),
-                ability_data: AbilityData {
-                    entity_id: 2,
-                    permission_level: PermissionLevel::Operator,
-                    command_permission_level: CommandPermissionLevel::Admin,
-                    layers: &[],
-                },
-                links: &[],
-                device_id: &user_data.device_id,
-                device_os: user_data.build_platform,
             })?;
 
             self.broadcast_others(TextMessage {
@@ -179,7 +147,7 @@ impl Session {
             experiments_previously_enabled: false,
             bonus_chest_enabled: false,
             starter_map_enabled: false,
-            permission_level: PermissionLevel::Member,
+            permission_level: PermissionLevel::Operator,
             server_chunk_tick_range: 0,
             has_locked_behavior_pack: false,
             has_locked_resource_pack: false,

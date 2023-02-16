@@ -12,25 +12,7 @@ use crate::network::{
 impl Session {
     pub fn handle_interaction(&self, packet: BytesMut) -> VResult<()> {
         let request = Interact::decode(packet)?;
-        tracing::info!("{request:?}");
-
-        if request.action == InteractAction::OpenInventory {
-            let reply = CameraShake {
-                action: CameraShakeAction::Add,
-                duration: 0.5,
-                intensity: 0.25,
-                shake_type: CameraShakeType::Rotational,
-            };
-            self.send(reply)?;
-
-            let reply2 = PlaySound {
-                name: "mob.pig.say",
-                pitch: 1.0,
-                volume: 1.0,
-                position: Vector3i::from([0, 0, 0]),
-            };
-            self.send(reply2)?;
-        }
+    
 
         Ok(())
     }
@@ -38,9 +20,6 @@ impl Session {
     pub fn handle_move_player(&self, packet: BytesMut) -> VResult<()> {
         let request = MovePlayer::decode(packet)?;
 
-        // tracing::info!("{request:?}");
-
-        // self.kick("Yes")
         Ok(())
     }
 }

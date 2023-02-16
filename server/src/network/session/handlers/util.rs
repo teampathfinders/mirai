@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use std::net::{Ipv4Addr, SocketAddr, SocketAddrV4};
 
 use bytes::BytesMut;
@@ -17,6 +18,8 @@ use crate::network::{
     },
     session::Session,
 };
+use crate::network::packets::{AbilityData, AddPlayer, CommandPermissionLevel};
+use crate::network::packets::login::{ItemStack, ItemType, PermissionLevel};
 
 impl Session {
     pub fn handle_text_message(&self, packet: BytesMut) -> VResult<()> {
@@ -24,6 +27,38 @@ impl Session {
         if request.message_type != MessageType::Chat {
             bail!(BadPacket, "Client is only allowed to send chat messages, received {:?} instead", request.message_type)
         }
+
+        self.broadcast_others(AddPlayer {
+            uuid: *self.get_uuid()?,
+            username: self.get_display_name()?,
+            runtime_id: self.runtime_id,
+            position: Vector3f::from([0.0, 0.0, 0.0]),
+            velocity: Vector3f::from([0.0, 0.0, 0.0]),
+            rotation: Vector3f::from([0.0, 0.0, 0.0]),
+            game_mode: GameMode::Creative,
+            held_item: ItemStack {
+                item_type: ItemType {
+                    network_id: 0,
+                    metadata: 0
+                },
+                runtime_id: 0,
+                count: 0,
+                nbt_data: nbt::Value::End,
+                can_be_placed_on: vec![],
+                can_break: vec![],
+                has_network_id: false,
+            },
+            metadata: HashMap::new(),
+            ability_data: AbilityData {
+                entity_id: 2,
+                permission_level: PermissionLevel::Operator,
+                command_permission_level: CommandPermissionLevel::Admin,
+                layers: &[],
+            },
+            links: &[],
+            device_id: &self.get_user_data()?.device_id,
+            device_os: self.get_device_os()?,
+        })?;
 
         // We must also return the packet to the client that sent it.
         // Otherwise their message won't be displayed in their own chat.
@@ -51,15 +86,7 @@ impl Session {
 
     pub fn handle_command_request(&self, packet: BytesMut) -> VResult<()> {
         let request = CommandRequest::decode(packet)?;
-        tracing::info!("{request:?}");
-
-        if request.command == "/credits" {
-            let credits = CreditsUpdate {
-                runtime_id: 1,
-                status: CreditsStatus::Start,
-            };
-            self.send(credits)?;
-        }
+        todo!();
 
         Ok(())
     }

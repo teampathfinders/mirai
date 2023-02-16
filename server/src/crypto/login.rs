@@ -100,7 +100,6 @@ fn parse_initial_token(token: &str) -> VResult<String> {
     let base64 = header.x5u.ok_or_else(|| {
         error!(BadPacket, "Missing X.509 certificate URL (x5u)")
     })?;
-    // .context("Failed to extract client public key from first token in JWT chain")?;
 
     let bytes = BASE64_ENGINE.decode(base64)?;
 
@@ -146,9 +145,6 @@ fn parse_mojang_token(token: &str, key: &str) -> VResult<String> {
         &decoding_key,
         &validation,
     )?;
-    // .context(
-    //     "Failed to verify second token. Either it has been tampered with, or it is invalid",
-    // )?;
 
     Ok(payload.claims.public_key)
 }
@@ -176,16 +172,12 @@ fn parse_identity_token(token: &str, key: &str) -> VResult<IdentityTokenPayload>
         &decoding_key,
         &validation,
     )?;
-    // .context(
-    //     "Failed to verify third token. Either it has been tampered with, or it is invalid",
-    // )?;
+
     Ok(payload.claims)
 }
 
 /// Verifies and decodes the user data token.
 fn parse_user_data_token(token: &str, key: &str) -> VResult<UserDataTokenPayload> {
-    tracing::debug!("{token}");
-
     let bytes = BASE64_ENGINE.decode(key)?;
     let public_key = match spki::SubjectPublicKeyInfo::try_from(bytes.as_ref())
     {
@@ -204,9 +196,7 @@ fn parse_user_data_token(token: &str, key: &str) -> VResult<UserDataTokenPayload
         &decoding_key,
         &validation,
     )?;
-    // .context(
-    //     "Failed to verify user data token. Either it has been tampered with, or it is invalid",
-    // )?;
+
     Ok(payload.claims)
 }
 

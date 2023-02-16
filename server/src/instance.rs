@@ -7,6 +7,7 @@ use parking_lot::RwLock;
 use rand::Rng;
 use tokio::net::UdpSocket;
 use tokio::signal;
+use tokio::sync::OnceCell;
 use tokio_util::sync::CancellationToken;
 
 use crate::config::SERVER_CONFIG;
@@ -20,7 +21,7 @@ use crate::network::raknet::packets::OpenConnectionRequest1;
 use crate::network::raknet::packets::OpenConnectionRequest2;
 use crate::network::raknet::RawPacket;
 use crate::network::raknet::RAKNET_VERSION;
-use crate::network::session::SessionTracker;
+use crate::network::session::SessionManager;
 use common::AsyncDeque;
 use common::{error, VResult};
 use common::{Decodable, Encodable};
@@ -34,6 +35,9 @@ const RECV_BUF_SIZE: usize = 4096;
 /// Refresh rate of the server's metadata.
 /// This data is displayed in the server menu.
 const METADATA_REFRESH_INTERVAL: Duration = Duration::from_secs(2);
+
+#[derive(Debug)]
+pub struct LevelManager;
 
 /// Global instance that manages all data and services of the server.
 #[derive(Debug)]
@@ -54,7 +58,8 @@ pub struct ServerInstance {
     /// All services listen to this token to determine whether they should shut down.
     token: CancellationToken,
     /// Service that manages all player sessions.
-    session_controller: Arc<SessionTracker>,
+    session_manager: Arc<SessionManager>,
+    level_manager: Arc<LevelManager>
 }
 
 impl ServerInstance {
@@ -71,7 +76,13 @@ impl ServerInstance {
                 .await?,
         );
 
-        let server = Self {
+        let level_manager = Arc::new(LevelManager);
+        let tracker = Arc::new(SessionManager::new(
+            global_token.clone(),
+            level_manager.clone()
+        ));
+
+        let server = Arc::new(Self {
             guid: rand::thread_rng().gen(),
             metadata: RwLock::new(String::new()),
 
@@ -81,13 +92,12 @@ impl ServerInstance {
             inward_queue: Arc::new(AsyncDeque::new(10)),
             outward_queue: Arc::new(AsyncDeque::new(10)),
 
-            session_controller: Arc::new(SessionTracker::new(
-                global_token.clone(),
-            )),
-            token: global_token,
-        };
+            session_manager: tracker,
+            level_manager,
+            token: global_token
+        });
 
-        Ok(Arc::new(server))
+        Ok(server)
     }
 
     /// Run the server.
@@ -121,7 +131,7 @@ impl ServerInstance {
     /// Shut down the server by cancelling the global token
     pub async fn shutdown(&self) {
         tracing::info!("Disconnecting all clients");
-        self.session_controller.kick_all("Server closed").await;
+        self.session_manager.kick_all("Server closed").await;
         tracing::info!("Notifying services");
         self.token.cancel();
     }
@@ -210,7 +220,7 @@ impl ServerInstance {
         }
         .encode()?;
 
-        self.session_controller.add_session(
+        self.session_manager.add_session(
             self.ipv4_socket.clone(),
             packet.address,
             request.mtu,
@@ -263,7 +273,7 @@ impl ServerInstance {
                     }
                 });
             } else {
-                match self.session_controller.forward_packet(raw_packet) {
+                match self.session_manager.forward_packet(raw_packet) {
                     Ok(_) => (),
                     Err(e) => {
                         tracing::error!("{}", e.to_string());
@@ -296,7 +306,7 @@ impl ServerInstance {
         let mut interval = tokio::time::interval(METADATA_REFRESH_INTERVAL);
         while !self.token.is_cancelled() {
             let description =
-                format!("{} players", self.session_controller.session_count());
+                format!("{} players", self.session_manager.session_count());
             self.refresh_metadata(&description);
             interval.tick().await;
         }
@@ -309,8 +319,8 @@ impl ServerInstance {
             description,
             NETWORK_VERSION,
             CLIENT_VERSION_STRING,
-            self.session_controller.session_count(),
-            self.session_controller.max_session_count(),
+            self.session_manager.session_count(),
+            self.session_manager.max_session_count(),
             self.guid,
             SERVER_CONFIG.read().server_name,
             self.ipv4_port,

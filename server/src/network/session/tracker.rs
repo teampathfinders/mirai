@@ -1,11 +1,12 @@
 use std::net::SocketAddr;
-use std::sync::Arc;
+use std::sync::{Arc, Weak};
 use std::time::Duration;
 
 use dashmap::DashMap;
 use tokio::net::UdpSocket;
 use tokio_util::sync::CancellationToken;
 
+use crate::instance::{ServerInstance, LevelManager};
 use crate::{config::SERVER_CONFIG, network::packets::GamePacket};
 use crate::network::raknet::RawPacket;
 use crate::network::session::session::Session;
@@ -15,17 +16,19 @@ const GARBAGE_COLLECT_INTERVAL: Duration = Duration::from_secs(10);
 
 /// Keeps track of all sessions on the server.
 #[derive(Debug)]
-pub struct SessionTracker {
+pub struct SessionManager {
     /// Whether the server is running.
     /// Once this token is cancelled, the tracker will cancel all the sessions' individual tokens.
     global_token: CancellationToken,
     /// Map of all tracked sessions, listed by IP address.
     session_list: Arc<DashMap<SocketAddr, Arc<Session>>>,
+    /// The level manager.
+    level_manager: Arc<LevelManager>
 }
 
-impl SessionTracker {
+impl SessionManager {
     /// Creates a new session tracker.
-    pub fn new(global_token: CancellationToken) -> Self {
+    pub fn new(global_token: CancellationToken, level_manager: Arc<LevelManager>) -> Self {
         let session_list = Arc::new(DashMap::new());
         {
             let session_list = session_list.clone();
@@ -34,7 +37,7 @@ impl SessionTracker {
             });
         }
 
-        Self { global_token, session_list }
+        Self { global_token, session_list, level_manager }
     }
 
     /// Creates a new session and adds it to the tracker.
@@ -46,7 +49,8 @@ impl SessionTracker {
         client_guid: u64,
     ) {
         let session = Session::new(
-            Arc::downgrade(self),
+            self.clone(),
+            self.level_manager.clone(),
             ipv4_socket, address, 
             mtu, client_guid
         );
