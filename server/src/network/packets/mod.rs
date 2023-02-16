@@ -18,6 +18,7 @@ glob_export!(connect_automation_client);
 glob_export!(death_info);
 glob_export!(event);
 glob_export!(game_rules_changed);
+glob_export!(generic_level_event);
 glob_export!(interact);
 glob_export!(level_chunk);
 glob_export!(mob_effect);

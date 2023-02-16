@@ -1,13 +1,13 @@
 use crate::{RefTag, Value, TAG_BYTE, TAG_END};
 use bytes::{BufMut, BytesMut};
 
-pub fn encode_le(name: &str, value: &Value, stream: &mut BytesMut) {
+pub fn write_le(name: &str, value: &Value, stream: &mut BytesMut) {
     Value::encode_tag_le(stream, (name, value))
 }
 
 impl RefTag<'_> {
     /// Writes the NBT data into the given stream (little endian).
-    pub fn encode_le(&self, stream: &mut BytesMut) {
+    pub fn write_le(&self, stream: &mut BytesMut) {
         Value::encode_tag_le(stream, (self.name, self.value))
     }
 }

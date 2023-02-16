@@ -19,7 +19,7 @@ fn hello_world_write_nbt() {
     };
 
     let mut encoded = BytesMut::new();
-    tag.encode_be(&mut encoded);
+    tag.write_be(&mut encoded);
     assert_eq!(encoded, HELLO_WORLD_NBT);
 }
 

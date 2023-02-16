@@ -2,13 +2,13 @@ use crate::{RefTag, Value, TAG_BYTE, TAG_END};
 use bytes::{BufMut, BytesMut};
 use common::WriteExtensions;
 
-pub fn encode_net(name: &str, value: &Value, stream: &mut BytesMut) {
+pub fn write_net(name: &str, value: &Value, stream: &mut BytesMut) {
     Value::encode_tag_net(stream, (name, value))
 }
 
 impl RefTag<'_> {
     /// Writes the NBT data into the given stream (little endian).
-    pub fn encode_net(&self, stream: &mut BytesMut) {
+    pub fn write_net(&self, stream: &mut BytesMut) {
         Value::encode_tag_net(stream, (self.name, self.value))
     }
 }

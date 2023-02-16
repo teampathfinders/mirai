@@ -98,7 +98,7 @@ impl BlockEntry {
     pub fn encode(&self, buffer: &mut BytesMut) {
         buffer.put_string(&self.name);
 
-        nbt::RefTag { name: "", value: &self.properties }.encode_net(buffer);
+        nbt::RefTag { name: "", value: &self.properties }.write_net(buffer);
     }
 }
 
@@ -361,7 +361,7 @@ impl Encodable for StartGame {
         buffer.put_bool(self.server_authoritative_inventory);
         buffer.put_string(CLIENT_VERSION_STRING); // Game version
 
-        nbt::encode_net("", &self.property_data, &mut buffer);
+        nbt::write_net("", &self.property_data, &mut buffer);
 
         buffer.put_u64(self.server_block_state_checksum);
         buffer.put_u128(self.world_template_id);

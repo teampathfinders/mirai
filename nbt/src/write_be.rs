@@ -1,13 +1,13 @@
 use crate::{RefTag, Value, TAG_BYTE, TAG_END};
 use bytes::{BufMut, BytesMut};
 
-pub fn encode_be(name: &str, value: &Value, stream: &mut BytesMut) {
+pub fn write_be(name: &str, value: &Value, stream: &mut BytesMut) {
     Value::encode_tag_be(stream, (name, value))
 }
 
 impl RefTag<'_> {
     /// Writes the NBT structure into the provided stream (big endian).
-    pub fn encode_be(&self, stream: &mut BytesMut) {
+    pub fn write_be(&self, stream: &mut BytesMut) {
         Value::encode_tag_be(stream, (self.name, self.value))
     }
 }
