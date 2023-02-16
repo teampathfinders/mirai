@@ -20,6 +20,7 @@ glob_export!(command_output);
 glob_export!(command_request);
 glob_export!(connect_automation_client);
 glob_export!(container_close);
+glob_export!(container_open);
 glob_export!(death_info);
 glob_export!(event);
 glob_export!(game_rules_changed);
