@@ -7,6 +7,7 @@ mod test;
 
 mod read_be;
 mod read_le;
+mod read_net;
 
 mod write_be;
 mod write_le;
@@ -14,6 +15,7 @@ mod write_net;
 
 pub use read_be::*;
 pub use read_le::*;
+pub use read_net::*;
 
 pub use write_be::*;
 pub use write_le::*;
