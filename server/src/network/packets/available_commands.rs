@@ -101,22 +101,22 @@ pub struct Command {
 }
 
 #[derive(Debug, Clone)]
-pub struct AvailableCommands {
+pub struct AvailableCommands<'a> {
     /// List of available commands
-    pub commands: Vec<Command>,
+    pub commands: &'a [Command],
 }
 
-impl GamePacket for AvailableCommands {
+impl GamePacket for AvailableCommands<'_> {
     const ID: u32 = 0x4c;
 }
 
-impl Encodable for AvailableCommands {
+impl Encodable for AvailableCommands<'_> {
     fn encode(&self) -> VResult<BytesMut> {
         let mut buffer = BytesMut::new();
 
         let mut value_indices = HashMap::new();
         let mut values = Vec::new();
-        for command in &self.commands {
+        for command in self.commands {
             for alias in &command.aliases {
                 if !value_indices.contains_key(alias) {
                     value_indices.insert(alias, values.len() as u32);
@@ -138,7 +138,7 @@ impl Encodable for AvailableCommands {
 
         let mut suffix_indices = HashMap::new();
         let mut suffixes = Vec::new();
-        for command in &self.commands {
+        for command in self.commands {
             for overload in &command.overloads {
                 for parameter in &overload.parameters {
                     if !parameter.suffix.is_empty() {
@@ -156,7 +156,7 @@ impl Encodable for AvailableCommands {
 
         let mut enum_indices = HashMap::new();
         let mut enums = Vec::new();
-        for command in &self.commands {
+        for command in self.commands {
             if !command.aliases.is_empty() {
                 let alias_enum = CommandEnum {
                     enum_id: command.name.clone() + "Aliases",
@@ -191,7 +191,7 @@ impl Encodable for AvailableCommands {
 
         let mut dynamic_indices = HashMap::new();
         let mut dynamic_enums = Vec::new();
-        for command in &self.commands {
+        for command in self.commands {
             for overload in &command.overloads {
                 for parameter in &overload.parameters {
                     if parameter.command_enum.dynamic {
@@ -239,7 +239,7 @@ impl Encodable for AvailableCommands {
         }
 
         buffer.put_var_u32(self.commands.len() as u32);
-        for command in &self.commands {
+        for command in self.commands {
             let mut alias = -1i32;
             if !command.aliases.is_empty() {
                 alias =

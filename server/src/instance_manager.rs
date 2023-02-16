@@ -12,7 +12,7 @@ use tokio_util::sync::CancellationToken;
 
 use crate::config::SERVER_CONFIG;
 use crate::level_manager::LevelManager;
-use crate::network::packets::{CLIENT_VERSION_STRING, NETWORK_VERSION, GameRule};
+use crate::network::packets::{CLIENT_VERSION_STRING, NETWORK_VERSION, GameRule, CommandPermissionLevel, Command, CommandOverload, CommandParameter, CommandParameterType, CommandEnum, BOOLEAN_GAME_RULES, INTEGER_GAME_RULES};
 use crate::network::raknet::packets::IncompatibleProtocol;
 use crate::network::raknet::packets::OfflinePing;
 use crate::network::raknet::packets::OfflinePong;
@@ -57,6 +57,7 @@ pub struct InstanceManager {
     token: CancellationToken,
     /// Service that manages all player sessions.
     session_manager: Arc<SessionManager>,
+    /// Manages the level.
     level_manager: Arc<LevelManager>
 }
 
@@ -79,9 +80,76 @@ impl InstanceManager {
         ));
 
         let level_manager = Arc::new(LevelManager::new(session_manager.clone()));
-        session_manager.set_level_manager(Arc::downgrade(&level_manager))?;
+        level_manager.add_command(Command {
+            name: "gamerule".to_owned(),
+            description: "Sets or queries a game rule value".to_owned(),
+            permission_level: CommandPermissionLevel::Normal,
+            aliases: vec![],
+            overloads: vec![
+                // Boolean game rules.
+                CommandOverload {
+                    parameters: vec![
+                        CommandParameter {
+                            argument_type: CommandParameterType::String,
+                            name: "rule".to_owned(),
+                            suffix: "".to_owned(),
+                            command_enum: CommandEnum {
+                                dynamic: false,
+                                enum_id: "boolean gamerule".to_owned(),
+                                options: BOOLEAN_GAME_RULES.iter().map(|g| g.to_string()).collect::<Vec<_>>()
+                            },
+                            optional: false,
+                            options: 0
+                        },
+                        CommandParameter {
+                            argument_type: CommandParameterType::String,
+                            name: "value".to_owned(),
+                            suffix: "".to_owned(),
+                            command_enum: CommandEnum {
+                                dynamic: false,
+                                enum_id: "boolean".to_owned(),
+                                options: vec![
+                                    "true".to_owned(),
+                                    "false".to_owned()
+                                ]
+                            },
+                            optional: true,
+                            options: 0
+                        }
+                    ]
+                },
+                CommandOverload {
+                    parameters: vec![
+                        CommandParameter {
+                            argument_type: CommandParameterType::String,
+                            name: "rule".to_owned(),
+                            suffix: "".to_owned(),
+                            command_enum: CommandEnum {
+                                dynamic: false,
+                                enum_id: "integer gamerule".to_owned(),
+                                options: INTEGER_GAME_RULES.iter().map(|g| g.to_string()).collect::<Vec<_>>()
+                            },
+                            optional: false,
+                            options: 0
+                        },
+                        CommandParameter {
+                            argument_type: CommandParameterType::Int,
+                            name: "value".to_owned(),
+                            suffix: "".to_owned(),
+                            command_enum: CommandEnum {
+                                dynamic: false,
+                                enum_id: "".to_owned(),
+                                options: vec![]
+                            },
+                            optional: true,
+                            options: 0
+                        }
+                    ]
+                }
+            ],
+        });
 
-        level_manager.set_game_rule(GameRule::ShowCoordinates(true));
+        session_manager.set_level_manager(Arc::downgrade(&level_manager))?;
 
         let server = Arc::new(Self {
             guid: rand::thread_rng().gen(),

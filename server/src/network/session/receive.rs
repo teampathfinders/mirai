@@ -12,7 +12,7 @@ use common::{bail, vassert, ReadExtensions, VResult};
 use common::{Decodable, Encodable};
 use crate::network::header::Header;
 use crate::network::packets::cache::CacheStatus;
-use crate::network::packets::{Animate, CommandRequest, GAME_PACKET_ID, GamePacket, Interact, MovePlayer, RequestAbility, SetLocalPlayerAsInitialized, TextMessage, UpdateSkin, ViolationWarning};
+use crate::network::packets::{Animate, CommandRequest, GAME_PACKET_ID, GamePacket, Interact, MovePlayer, RequestAbility, SetLocalPlayerAsInitialized, TextMessage, UpdateSkin, ViolationWarning, SettingsCommand};
 use crate::network::packets::login::{ChunkRadiusRequest, ClientToServerHandshake, CompressionAlgorithm, Login, OnlinePing, RequestNetworkSettings, ResourcePackClientResponse};
 use crate::network::raknet::packets::{Acknowledgement, ConnectionRequest, DisconnectNotification, NegativeAcknowledgement, NewIncomingConnection};
 
@@ -216,6 +216,7 @@ impl Session {
             Animate::ID => self.handle_animation(packet),
             CommandRequest::ID => self.handle_command_request(packet),
             UpdateSkin::ID => self.handle_skin_update(packet),
+            SettingsCommand::ID => self.handle_settings_command(packet),
             id => bail!(BadPacket, "Invalid game packet: {id:#04x}"),
         }
     }

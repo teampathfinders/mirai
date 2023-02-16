@@ -14,7 +14,7 @@ use crate::network::raknet::{Frame, FrameBatch};
 use crate::network::session::send_queue::SendPriority;
 use crate::network::session::session::Session;
 use common::{bail, BlockPosition, Decodable, VResult, Vector2f, Vector3f, Vector3i, error};
-use crate::network::packets::{AbilityData, AddPlayer, BiomeDefinitionList, CLIENT_VERSION_STRING, CommandPermissionLevel, Difficulty, GameMode, GameRule, MessageType, NETWORK_VERSION, PlayerListAdd, PlayerListAddEntry, PlayStatus, SetLocalPlayerAsInitialized, Status, TextMessage, UpdateSkin, ViolationWarning};
+use crate::network::packets::{AbilityData, AddPlayer, BiomeDefinitionList, CLIENT_VERSION_STRING, CommandPermissionLevel, Difficulty, GameMode, GameRule, MessageType, NETWORK_VERSION, PlayerListAdd, PlayerListAddEntry, PlayStatus, SetLocalPlayerAsInitialized, Status, TextMessage, UpdateSkin, ViolationWarning, CommandOverload, AvailableCommands};
 use crate::network::packets::cache::CacheStatus;
 use crate::network::packets::login::{BroadcastIntent, ChatRestrictionLevel, ChunkRadiusReply, ChunkRadiusRequest, ClientToServerHandshake, CreativeContent, DISCONNECTED_LOGIN_FAILED, ItemStack, ItemType, Login, NetworkSettings, PermissionLevel, PlayerMovementSettings, PlayerMovementType, RequestNetworkSettings, ResourcePackClientResponse, ResourcePacksInfo, ResourcePackStack, ServerToClientHandshake, SpawnBiomeType, StartGame, WorldGenerator};
 
@@ -191,16 +191,11 @@ impl Session {
         let play_status = PlayStatus { status: Status::PlayerSpawn };
         self.send(play_status)?;
 
-        // let available_commands = AvailableCommands {
-        //     commands: vec![Command {
-        //         name: "credits".to_owned(),
-        //         description: "Shows the credits screen".to_owned(),
-        //         permission_level: CommandPermissionLevel::Normal,
-        //         aliases: vec![],
-        //         overloads: vec![],
-        //     }],
-        // };
-        // self.send(available_commands)?;
+        let commands = self.level_manager.get_commands();
+        let available_commands = AvailableCommands {
+            commands: commands.as_slice()
+        };
+        self.send(available_commands)?;
 
         Ok(())
     }

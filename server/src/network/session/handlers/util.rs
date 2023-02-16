@@ -19,10 +19,17 @@ use crate::network::{
     },
     session::Session,
 };
-use crate::network::packets::{AbilityData, AddPlayer, CommandPermissionLevel};
+use crate::network::packets::{AbilityData, AddPlayer, CommandPermissionLevel, SettingsCommand};
 use crate::network::packets::login::{ItemStack, ItemType, PermissionLevel};
 
 impl Session {
+    pub fn handle_settings_command(&self, packet: BytesMut) -> VResult<()> {
+        let request = SettingsCommand::decode(packet)?;
+        tracing::info!("{request:?}");
+
+        Ok(())
+    }
+
     pub fn handle_text_message(&self, packet: BytesMut) -> VResult<()> {
         let request = TextMessage::decode(packet)?;
         if request.message_type != MessageType::Chat {

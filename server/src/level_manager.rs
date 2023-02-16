@@ -3,12 +3,13 @@ use std::sync::Arc;
 use dashmap::DashMap;
 use parking_lot::{RwLock, RwLockReadGuard};
 
-use crate::network::{packets::{GameRule, GameRulesChanged}, session::SessionManager};
+use crate::network::{packets::{GameRule, GameRulesChanged, Command}, session::SessionManager};
 
 #[derive(Debug)]
 pub struct LevelManager {
+    commands: RwLock<Vec<Command>>,
+    /// Currently set game rules.
     game_rules: DashMap<String, GameRule>,
-
     /// Used to broadcast level events to the sessions.
     session_manager: Arc<SessionManager>
 }
@@ -16,9 +17,22 @@ pub struct LevelManager {
 impl LevelManager {
     pub fn new(session_manager: Arc<SessionManager>) -> Self {
         Self {
+            commands: RwLock::new(Vec::new()),
             game_rules: DashMap::new(),
             session_manager
         }
+    }    
+
+    /// Returns a list of available commands.
+    #[inline]
+    pub fn get_commands(&self) -> RwLockReadGuard<Vec<Command>> {
+        self.commands.read()
+    }
+
+    /// Adds a command to the list of available commands.
+    #[inline]
+    pub fn add_command(&self, command: Command) {
+        self.commands.write().push(command);
     }
 
     /// Returns a list of currently applied game rules.

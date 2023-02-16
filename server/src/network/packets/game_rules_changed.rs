@@ -3,6 +3,42 @@ use common::{Encodable, VResult, WriteExtensions};
 
 use super::GamePacket;
 
+pub const BOOLEAN_GAME_RULES: &[&str] = &[
+    "commandblocksenabled",
+    "commandblockoutput",
+    "dodaylightcycle",
+    "doentitydrops",
+    "dofiretick",
+    "doimmediaterespawn",
+    "doinsomnia",
+    "domobloot",
+    "domobspawning",
+    "dotiledrops",
+    "doweathercycle",
+    "drowningdamage",
+    "falldamage",
+    "firedamage",
+    "freezedamage",
+    "keepinventory",
+    "mobgriefing",
+    "naturalregeneration",
+    "pvp",
+    "respawnblocksexplode",
+    "sendcommandfeedback",
+    "showbordereffect",
+    "showcoordinates",
+    "showdeathmessages",
+    "showtags",
+    "tntexplodes"
+];
+
+pub const INTEGER_GAME_RULES: &[&str] = &[
+    "functioncommandlimit",
+    "maxcommandchainlength",
+    "randomtickspeed",
+    "spawnradius"
+];
+
 /// Minecraft game rules.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum GameRule {
