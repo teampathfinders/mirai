@@ -58,7 +58,9 @@ pub use update_skin::*;
 pub use violation_warning::*;
 pub use add_player::*;
 pub use book_edit::*;
+pub use cache_blob_status::*;
 
+mod cache_blob_status;
 mod book_edit;
 mod add_player;
 mod add_painting;

@@ -20,8 +20,6 @@ pub struct PlayerListAddEntry<'a> {
     pub build_platform: BuildPlatform,
     /// The client's skin.
     pub skin: &'a Skin,
-    /// Whether the client is a teacher.
-    pub teacher: bool,
     /// Whether the client is the host of the game.
     pub host: bool,
 }
@@ -57,7 +55,7 @@ impl Encodable for PlayerListAdd<'_> {
             buffer.put_string(""); // Platform chat ID.
             buffer.put_i32_le(entry.build_platform as i32);
             entry.skin.encode(&mut buffer);
-            buffer.put_bool(entry.teacher);
+            buffer.put_bool(false); // Player is not a teacher.
             buffer.put_bool(entry.host);
         }
 
