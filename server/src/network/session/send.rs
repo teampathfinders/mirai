@@ -259,6 +259,8 @@ impl Session {
 
             // TODO: Add IPv6 support
             self.ipv4_socket.send_to(&encoded, self.address).await?;
+        } else {
+            self.batch_number.fetch_sub(1, Ordering::SeqCst);
         }
 
         Ok(())

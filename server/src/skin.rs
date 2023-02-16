@@ -100,7 +100,7 @@ impl TryFrom<&str> for PersonaPieceType {
             "persona_eyes" => Self::Eyes,
             "persona_facial_hair" => Self::FacialHair,
             "persona_dress" => Self::Dress,
-            _ => bail!(BadPacket, "Invalid persona piece type {value}")
+            _ => bail!(BadPacket, "Invalid persona piece type '{value}'")
         })
     }
 }

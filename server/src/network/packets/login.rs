@@ -73,7 +73,7 @@ impl Decodable for Login {
 
         Ok(Self {
             identity: IdentityData {
-                identity: identity_data.client_data.uuid,
+                uuid: identity_data.client_data.uuid,
                 xuid: identity_data.client_data.xuid.parse()?,
                 display_name: identity_data.client_data.display_name,
                 public_key: identity_data.public_key,

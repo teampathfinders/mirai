@@ -220,7 +220,7 @@ impl Session {
         let identity = self.identity.get().ok_or_else(|| {
             error!(NotInitialized, "Identity ID data has not been initialised yet")
         })?;
-        Ok(&identity.identity)
+        Ok(&identity.uuid)
     }
 
     /// Retrieves the XUID of the client.
@@ -249,7 +249,7 @@ impl Session {
         let data = self.user_data.get().ok_or_else(|| {
             error!(NotInitialized, "Device OS data has not been initialised yet")
         })?;
-        Ok(data.device_os)
+        Ok(data.build_platform)
     }
 
     /// Returns the randomly generated GUID given by the client itself.

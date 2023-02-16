@@ -49,9 +49,7 @@ impl Encodable for PlayerListAdd<'_> {
         buffer.put_u8(0); // Add player.
         buffer.put_var_u32(self.entries.len() as u32);
         for entry in self.entries {
-            let pair = entry.uuid.as_u64_pair();
-            buffer.put_u64_le(pair.0);
-            buffer.put_u64_le(pair.1);
+            buffer.put_uuid(&entry.uuid);
             
             buffer.put_var_i64(entry.entity_id);
             buffer.put_string(entry.username);
@@ -88,7 +86,7 @@ impl Encodable for PlayerListRemove<'_> {
         buffer.put_u8(1); // Remove player.
         buffer.put_var_u32(self.entries.len() as u32);
         for entry in self.entries {
-            buffer.put_u128_le(entry.as_u128());
+            buffer.put_uuid(entry);
         }
 
         Ok(buffer)

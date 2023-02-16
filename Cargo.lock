@@ -219,6 +219,7 @@ dependencies = [
  "parking_lot",
  "serde_json",
  "tokio",
+ "uuid",
 ]
 
 [[package]]

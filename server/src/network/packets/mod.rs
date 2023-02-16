@@ -56,7 +56,9 @@ pub use update_dynamic_enum::*;
 pub use update_fog_stack::*;
 pub use update_skin::*;
 pub use violation_warning::*;
+pub use add_player::*;
 
+mod add_player;
 mod add_painting;
 mod animate;
 mod available_commands;

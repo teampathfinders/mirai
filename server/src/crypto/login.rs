@@ -22,7 +22,7 @@ pub struct IdentityData {
     /// Xbox account ID.
     pub xuid: u64,
     /// UUID unique for this player.
-    pub identity: Uuid,
+    pub uuid: Uuid,
     /// Xbox username.
     pub display_name: String,
     /// Public key used for token verification and encryption.
@@ -68,9 +68,11 @@ pub struct IdentityTokenPayload {
 pub struct UserData {
     /// Operating system of the client.
     #[serde(rename = "DeviceOS")]
-    pub device_os: BuildPlatform,
+    pub build_platform: BuildPlatform,
     #[serde(rename = "DeviceModel")]
     pub device_model: String,
+    #[serde(rename = "DeviceId")]
+    pub device_id: String,
     /// Language in ISO format (i.e. en_GB)
     #[serde(rename = "LanguageCode")]
     pub language_code: String,
@@ -181,6 +183,8 @@ fn parse_identity_token(token: &str, key: &str) -> VResult<IdentityTokenPayload>
 
 /// Verifies and decodes the user data token.
 fn parse_user_data_token(token: &str, key: &str) -> VResult<UserDataTokenPayload> {
+    tracing::debug!("{token}");
+
     let bytes = BASE64_ENGINE.decode(key)?;
     let public_key = match spki::SubjectPublicKeyInfo::try_from(bytes.as_ref())
     {

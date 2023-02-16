@@ -10,6 +10,7 @@ use crate::Vector2i;
 use crate::Vector3f;
 use crate::Vector3i;
 use crate::Vector4f;
+use uuid::Uuid;
 
 /// Size of an IPv4 address in bytes.
 pub const IPV4_MEM_SIZE: usize = 1 + 4 + 2;
@@ -325,6 +326,12 @@ pub trait WriteExtensions: BufMut + Sized {
         self.put_var_i32(value.x);
         self.put_var_u32(value.y);
         self.put_var_i32(value.z);
+    }
+
+    fn put_uuid(&mut self, uuid: &Uuid) {
+        let u64_pair = uuid.as_u64_pair();
+        self.put_u64_le(u64_pair.0);
+        self.put_u64_le(u64_pair.1);
     }
 }
 
