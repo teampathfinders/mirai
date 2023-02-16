@@ -57,7 +57,9 @@ pub use update_fog_stack::*;
 pub use update_skin::*;
 pub use violation_warning::*;
 pub use add_player::*;
+pub use book_edit::*;
 
+mod book_edit;
 mod add_player;
 mod add_painting;
 mod animate;
