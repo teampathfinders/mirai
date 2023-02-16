@@ -145,5 +145,5 @@ pub struct Event {
 }
 
 impl GamePacket for Event {
-    const ID: u32 = 0x40;
+    const ID: u32 = 0x41;
 }
