@@ -45,6 +45,7 @@ glob_export!(set_player_gamemode);
 glob_export!(set_scoreboard_identity);
 glob_export!(set_time);
 glob_export!(set_title);
+glob_export!(settings_command);
 glob_export!(show_credits);
 glob_export!(show_profile);
 glob_export!(simple_event);
