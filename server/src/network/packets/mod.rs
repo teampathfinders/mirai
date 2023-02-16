@@ -21,6 +21,7 @@ glob_export!(game_rules_changed);
 glob_export!(generic_level_event);
 glob_export!(interact);
 glob_export!(level_chunk);
+glob_export!(level_event);
 glob_export!(mob_effect);
 glob_export!(move_player);
 glob_export!(network_chunk_publisher_update);
