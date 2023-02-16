@@ -74,20 +74,20 @@ impl ItemStack {
 }
 
 #[derive(Debug, Clone)]
-pub struct CreativeContent {
-    pub items: Vec<ItemStack>,
+pub struct CreativeContent<'a> {
+    pub items: &'a [ItemStack],
 }
 
-impl GamePacket for CreativeContent {
+impl GamePacket for CreativeContent<'_> {
     const ID: u32 = 0x91;
 }
 
-impl Encodable for CreativeContent {
+impl Encodable for CreativeContent<'_> {
     fn encode(&self) -> VResult<BytesMut> {
         let mut buffer = BytesMut::new();
 
         buffer.put_var_u32(self.items.len() as u32);
-        for item in &self.items {
+        for item in self.items {
             item.encode(&mut buffer);
         }
 

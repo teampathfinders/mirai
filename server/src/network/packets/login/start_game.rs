@@ -144,7 +144,7 @@ impl BroadcastIntent {
 
 /// The start game packet contains most of the world settings displayed in the settings menu.
 #[derive(Debug, Clone)]
-pub struct StartGame {
+pub struct StartGame<'a> {
     pub entity_id: i64,
     /// Runtime ID of the client.
     pub runtime_id: u64,
@@ -159,7 +159,7 @@ pub struct StartGame {
     /// This is displayed in the settings menu.
     pub world_seed: u64,
     pub spawn_biome_type: SpawnBiomeType,
-    pub custom_biome_name: String,
+    pub custom_biome_name: &'a str,
     /// Dimension the client spawns in.
     pub dimension: Dimension,
     /// Generator used to create the world.
@@ -207,10 +207,10 @@ pub struct StartGame {
     /// List of game rules.
     /// Only modified game rules have to be sent.
     /// Game rules that are not sent in the start game packet, will be set to their default values.
-    pub gamerules: Vec<GameRule>,
+    pub gamerules: &'a [GameRule],
     /// Experiments used by the server.
     /// This is a visual option, since the experiments have already been specified in a resource pack packet.
-    pub experiments: Vec<ExperimentData>,
+    pub experiments: &'a [ExperimentData],
     /// Whether experiments have previously been enabled.
     pub experiments_previously_enabled: bool,
     /// Whether the bonus chest is enabled.
@@ -243,21 +243,21 @@ pub struct StartGame {
     pub force_experimental_gameplay: bool,
     pub chat_restriction_level: ChatRestrictionLevel,
     pub disable_player_interactions: bool,
-    pub level_id: String,
+    pub level_id: &'a str,
     /// Name of the world.
     /// This is shown in the pause menu above the player list, and the settings menu.
-    pub level_name: String,
-    pub template_content_identity: String,
+    pub level_name: &'a str,
+    pub template_content_identity: &'a str,
     pub movement_settings: PlayerMovementSettings,
     /// Current time.
     pub time: i64,
     pub enchantment_seed: i32,
-    pub block_properties: Vec<BlockEntry>,
-    pub item_properties: Vec<ItemEntry>,
+    pub block_properties: &'a [BlockEntry],
+    pub item_properties: &'a [ItemEntry],
     /// Whether inventory transactions are server authoritative.
     pub server_authoritative_inventory: bool,
     /// Version of the game that the server is running.
-    pub game_version: String,
+    pub game_version: &'a str,
     pub property_data: nbt::Value,
     pub server_block_state_checksum: u64,
     pub world_template_id: u128,
@@ -265,11 +265,11 @@ pub struct StartGame {
     pub client_side_generation: bool,
 }
 
-impl GamePacket for StartGame {
+impl GamePacket for StartGame<'_> {
     const ID: u32 = 0x0B;
 }
 
-impl Encodable for StartGame {
+impl Encodable for StartGame<'_> {
     fn encode(&self) -> VResult<BytesMut> {
         let mut buffer = BytesMut::new();
 
@@ -280,7 +280,7 @@ impl Encodable for StartGame {
         self.rotation.encode(&mut buffer);
         buffer.put_u64_le(self.world_seed);
         buffer.put_i16(self.spawn_biome_type as i16);
-        buffer.put_string(&self.custom_biome_name);
+        buffer.put_string(self.custom_biome_name);
         buffer.put_var_u32(self.dimension as u32);
         self.generator.encode(&mut buffer);
         buffer.put_var_i32(self.world_game_mode as i32);
@@ -304,12 +304,12 @@ impl Encodable for StartGame {
         buffer.put_bool(self.texture_packs_required);
 
         buffer.put_var_u32(self.gamerules.len() as u32);
-        for rule in &self.gamerules {
+        for rule in self.gamerules {
             rule.encode(&mut buffer);
         }
 
         buffer.put_u32(self.experiments.len() as u32);
-        for experiment in &self.experiments {
+        for experiment in self.experiments {
             experiment.encode(&mut buffer);
         }
 
@@ -337,21 +337,21 @@ impl Encodable for StartGame {
         buffer.put_bool(self.force_experimental_gameplay);
         self.chat_restriction_level.encode(&mut buffer);
         buffer.put_bool(self.disable_player_interactions);
-        buffer.put_string(&self.level_id);
-        buffer.put_string(&self.level_name);
-        buffer.put_string(&self.template_content_identity);
+        buffer.put_string(self.level_id);
+        buffer.put_string(self.level_name);
+        buffer.put_string(self.template_content_identity);
         buffer.put_bool(false); // Game is not a trial.
         self.movement_settings.encode(&mut buffer);
         buffer.put_i64(self.time);
         buffer.put_var_i32(self.enchantment_seed);
 
         buffer.put_var_u32(self.block_properties.len() as u32);
-        for block in &self.block_properties {
+        for block in self.block_properties {
             block.encode(&mut buffer);
         }
 
         buffer.put_var_u32(self.item_properties.len() as u32);
-        for item in &self.item_properties {
+        for item in self.item_properties {
             item.encode(&mut buffer);
         }
 

@@ -12,7 +12,7 @@ use tokio_util::sync::CancellationToken;
 
 use crate::config::SERVER_CONFIG;
 use crate::level_manager::LevelManager;
-use crate::network::packets::{CLIENT_VERSION_STRING, NETWORK_VERSION};
+use crate::network::packets::{CLIENT_VERSION_STRING, NETWORK_VERSION, GameRule};
 use crate::network::raknet::packets::IncompatibleProtocol;
 use crate::network::raknet::packets::OfflinePing;
 use crate::network::raknet::packets::OfflinePong;
@@ -80,6 +80,8 @@ impl InstanceManager {
 
         let level_manager = Arc::new(LevelManager::new(session_manager.clone()));
         session_manager.set_level_manager(Arc::downgrade(&level_manager))?;
+
+        level_manager.set_game_rule(GameRule::ShowCoordinates(true));
 
         let server = Arc::new(Self {
             guid: rand::thread_rng().gen(),
@@ -349,11 +351,5 @@ impl InstanceManager {
                 }
             }
         });
-    }
-}
-
-impl Drop for InstanceManager {
-    fn drop(&mut self) {
-        println!("Drops");
     }
 }

@@ -121,7 +121,7 @@ impl Session {
             rotation: Vector2f::from([0.0, 0.0]),
             world_seed: 69420,
             spawn_biome_type: SpawnBiomeType::Default,
-            custom_biome_name: "plains".to_string(),
+            custom_biome_name: "plains",
             dimension: Dimension::Overworld,
             generator: WorldGenerator::Infinite,
             world_game_mode: GameMode::Creative,
@@ -139,11 +139,8 @@ impl Session {
             platform_broadcast_intent: BroadcastIntent::Public,
             enable_commands: true,
             texture_packs_required: true,
-            gamerules: vec![
-                GameRule::ShowCoordinates(true),
-                GameRule::DaylightCycle(false),
-            ],
-            experiments: vec![],
+            gamerules: &self.level_manager.get_game_rules(),
+            experiments: &[],
             experiments_previously_enabled: false,
             bonus_chest_enabled: false,
             starter_map_enabled: false,
@@ -164,9 +161,9 @@ impl Session {
             force_experimental_gameplay: false,
             chat_restriction_level: ChatRestrictionLevel::None,
             disable_player_interactions: false,
-            level_id: "".to_string(),
-            level_name: "Nova Server".to_string(),
-            template_content_identity: "".to_string(),
+            level_id: "",
+            level_name: "World name",
+            template_content_identity: "",
             movement_settings: PlayerMovementSettings {
                 movement_type: PlayerMovementType::ClientAuthoritative,
                 rewind_history_size: 0,
@@ -174,10 +171,10 @@ impl Session {
             },
             time: 0,
             enchantment_seed: 0,
-            block_properties: vec![],
-            item_properties: vec![],
+            block_properties: &[],
+            item_properties: &[],
             server_authoritative_inventory: false,
-            game_version: "1.19.60".to_string(),
+            game_version: "1.19.60",
             property_data: nbt::Value::Compound(HashMap::new()),
             server_block_state_checksum: 0,
             world_template_id: 0,
@@ -185,7 +182,7 @@ impl Session {
         };
         self.send(start_game)?;
 
-        let creative_content = CreativeContent { items: vec![] };
+        let creative_content = CreativeContent { items: &[] };
         self.send(creative_content)?;
 
         let biome_definition_list = BiomeDefinitionList;

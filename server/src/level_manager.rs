@@ -3,7 +3,7 @@ use std::sync::Arc;
 use dashmap::DashMap;
 use parking_lot::{RwLock, RwLockReadGuard};
 
-use crate::network::{packets::GameRule, session::SessionManager};
+use crate::network::{packets::{GameRule, GameRulesChanged}, session::SessionManager};
 
 #[derive(Debug)]
 pub struct LevelManager {
@@ -21,24 +21,37 @@ impl LevelManager {
         }
     }
 
+    /// Returns a list of currently applied game rules.
+    #[inline]
+    pub fn get_game_rules(&self) -> Vec<GameRule> {
+        self.game_rules
+            .iter()
+            .map(|kv| *kv.value())
+            .collect::<Vec<_>>()
+    }
+
     /// Sets the value of a game rule, returning the old value if there was one.
     #[inline]
     pub fn set_game_rule(&self, game_rule: GameRule) -> Option<GameRule> {
         let name = game_rule.name();
+
+        self.session_manager.broadcast(GameRulesChanged {
+            game_rules: &[game_rule]
+        });
         self.game_rules.insert(name.to_owned(), game_rule)
     }
 
     /// Modifies multiple game rules at the same time.
+    /// This function also notifies all the clients of the change.
     #[inline]
     pub fn set_game_rules(&self, game_rules: &[GameRule]) {
         for game_rule in game_rules {
-            self.set_game_rule(*game_rule);
+            let name = game_rule.name();
+            self.game_rules.insert(name.to_owned(), *game_rule);
         }
-    }
-}
 
-impl Drop for LevelManager {
-    fn drop(&mut self) {
-        println!("Drop");
+        self.session_manager.broadcast(GameRulesChanged {
+            game_rules
+        });
     }
 }
