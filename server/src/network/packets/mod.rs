@@ -6,6 +6,7 @@ pub mod login;
 glob_export!(add_player);
 glob_export!(add_painting);
 glob_export!(animate);
+glob_export!(available_actor_identifiers);
 glob_export!(available_commands);
 glob_export!(biome_definition_list);
 glob_export!(book_edit);

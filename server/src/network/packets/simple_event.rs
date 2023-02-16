@@ -30,7 +30,7 @@ impl Encodable for SimpleEvent {
     fn encode(&self) -> VResult<BytesMut> {
         let mut buffer = BytesMut::with_capacity(2);
 
-        buffer.put_i16_le(self as i16);
+        buffer.put_i16_le(*self as i16);
 
         Ok(buffer)
     }
