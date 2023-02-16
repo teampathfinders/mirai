@@ -11,10 +11,10 @@ pub enum ViolationType {
     Malformed,
 }
 
-impl TryFrom<u32> for ViolationType {
+impl TryFrom<i32> for ViolationType {
     type Error = VError;
 
-    fn try_from(value: u32) -> Result<Self, Self::Error> {
+    fn try_from(value: i32) -> Result<Self, Self::Error> {
         Ok(match value {
             0 => Self::Malformed,
             _ => bail!(BadPacket, "Invalid violation type {}", value),
@@ -29,10 +29,10 @@ pub enum ViolationSeverity {
     TerminatingConnection,
 }
 
-impl TryFrom<u32> for ViolationSeverity {
+impl TryFrom<i32> for ViolationSeverity {
     type Error = VError;
 
-    fn try_from(value: u32) -> Result<Self, Self::Error> {
+    fn try_from(value: i32) -> Result<Self, Self::Error> {
         Ok(match value {
             0 => Self::Warning,
             1 => Self::FinalWarning,
@@ -49,7 +49,7 @@ pub struct ViolationWarning {
     /// Severity of the violation.
     pub severity: ViolationSeverity,
     /// ID of the invalid packet.
-    pub packet_id: u32,
+    pub packet_id: i32,
     /// Description of the violation.
     pub context: String,
 }
@@ -62,9 +62,9 @@ impl Decodable for ViolationWarning {
     fn decode(mut buffer: BytesMut) -> VResult<Self> {
         tracing::debug!("{:x?}", buffer.as_ref());
 
-        let warning_type = ViolationType::try_from(buffer.get_var_u32()?)?;
-        let severity = ViolationSeverity::try_from(buffer.get_var_u32()?)?;
-        let packet_id = buffer.get_var_u32()?;
+        let warning_type = ViolationType::try_from(buffer.get_var_i32()?)?;
+        let severity = ViolationSeverity::try_from(buffer.get_var_i32()?)?;
+        let packet_id = buffer.get_var_i32()?;
         let context = buffer.get_string()?;
 
         Ok(Self {

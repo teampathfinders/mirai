@@ -9,7 +9,7 @@ use level::Dimension;
 use crate::config::SERVER_CONFIG;
 use crate::crypto::Encryptor;
 use crate::network::packets::GameMode::Creative;
-use crate::network::packets::{AvailableCommands, BiomeDefinitionList, BroadcastIntent, ChatRestrictionLevel, ChunkRadiusReply, ChunkRadiusRequest, ClientCacheStatus, ClientToServerHandshake, Command, CommandEnum, CommandOverload, CommandParameter, CommandParameterType, CommandPermissionLevel, CreativeContent, Difficulty, Disconnect, ExperimentData, GameMode, GameRule, ItemEntry, Login, NetworkSettings, PermissionLevel, PlayStatus, PlayerMovementSettings, PlayerMovementType, RequestNetworkSettings, ResourcePackClientResponse, ResourcePackStack, ResourcePacksInfo, ServerToClientHandshake, SetLocalPlayerAsInitialized, SpawnBiomeType, StartGame, Status, ViolationWarning, WorldGenerator, CLIENT_VERSION_STRING, DISCONNECTED_LOGIN_FAILED, DISCONNECTED_NOT_AUTHENTICATED, NETWORK_VERSION, PlayerListAdd, PlayerListAddEntry, PlaySound, TextMessage, MessageType, AddPlayer, ItemInstance, ItemStack, ItemType, AbilityData, BuildPlatform};
+use crate::network::packets::{AvailableCommands, BiomeDefinitionList, BroadcastIntent, ChatRestrictionLevel, ChunkRadiusReply, ChunkRadiusRequest, ClientCacheStatus, ClientToServerHandshake, Command, CommandEnum, CommandOverload, CommandParameter, CommandParameterType, CommandPermissionLevel, CreativeContent, Difficulty, Disconnect, ExperimentData, GameMode, GameRule, ItemEntry, Login, NetworkSettings, PermissionLevel, PlayStatus, PlayerMovementSettings, PlayerMovementType, RequestNetworkSettings, ResourcePackClientResponse, ResourcePackStack, ResourcePacksInfo, ServerToClientHandshake, SetLocalPlayerAsInitialized, SpawnBiomeType, StartGame, Status, ViolationWarning, WorldGenerator, CLIENT_VERSION_STRING, DISCONNECTED_LOGIN_FAILED, DISCONNECTED_NOT_AUTHENTICATED, NETWORK_VERSION, PlayerListAdd, PlayerListAddEntry, PlaySound, TextMessage, MessageType, AddPlayer, ItemStack, ItemType, AbilityData, BuildPlatform};
 use crate::network::raknet::Reliability;
 use crate::network::raknet::{Frame, FrameBatch};
 use crate::network::session::send_queue::SendPriority;
@@ -72,40 +72,37 @@ impl Session {
                 }]
             })?;
 
-            // self.broadcast_others(AddPlayer {
-            //     uuid: identity_data.uuid,
-            //     username: &identity_data.display_name,
-            //     runtime_id: 2,
-            //     position: Vector3f::from([0.0, 0.0, 0.0]),
-            //     velocity: Vector3f::from([0.0, 0.0, 0.0]),
-            //     rotation: Vector3f::from([0.0, 0.0, 0.0]),
-            //     game_mode: GameMode::Creative,
-            //     held_item: ItemInstance {
-            //         network_id: 0,
-            //         stack: ItemStack {
-            //             item_type: ItemType {
-            //                 network_id: 0,
-            //                 metadata: 0
-            //             },
-            //             runtime_id: 0,
-            //             count: 0,
-            //             nbt_data: nbt::Value::End,
-            //             can_be_placed_on: vec![],
-            //             can_break: vec![],
-            //             has_network_id: false,
-            //         },
-            //     },
-            //     metadata: HashMap::new(),
-            //     ability_data: AbilityData {
-            //         entity_id: 2,
-            //         permission_level: PermissionLevel::Operator,
-            //         command_permission_level: CommandPermissionLevel::Admin,
-            //         layers: &[],
-            //     },
-            //     links: &[],
-            //     device_id: &user_data.device_id,
-            //     build_platform: user_data.build_platform,
-            // })?;
+            self.broadcast_others(AddPlayer {
+                uuid: identity_data.uuid,
+                username: &identity_data.display_name,
+                runtime_id: 2,
+                position: Vector3f::from([0.0, 0.0, 0.0]),
+                velocity: Vector3f::from([0.0, 0.0, 0.0]),
+                rotation: Vector3f::from([0.0, 0.0, 0.0]),
+                game_mode: GameMode::Creative,
+                held_item: ItemStack {
+                    item_type: ItemType {
+                        network_id: 0,
+                        metadata: 0
+                    },
+                    runtime_id: 0,
+                    count: 0,
+                    nbt_data: nbt::Value::End,
+                    can_be_placed_on: vec![],
+                    can_break: vec![],
+                    has_network_id: false,
+                },
+                metadata: HashMap::new(),
+                ability_data: AbilityData {
+                    entity_id: 2,
+                    permission_level: PermissionLevel::Operator,
+                    command_permission_level: CommandPermissionLevel::Admin,
+                    layers: &[],
+                },
+                links: &[],
+                device_id: &user_data.device_id,
+                build_platform: user_data.build_platform,
+            })?;
 
             self.broadcast_others(TextMessage {
                 message: format!("§e{} has joined the server.", identity_data.display_name),

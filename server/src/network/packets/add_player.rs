@@ -2,7 +2,7 @@ use std::collections::HashMap;
 use bytes::{BytesMut, BufMut};
 use common::{Vector3f, Encodable, VResult, WriteExtensions};
 use uuid::Uuid;
-use crate::network::packets::{CommandPermissionLevel, ItemInstance, PermissionLevel};
+use crate::network::packets::{CommandPermissionLevel, ItemStack, PermissionLevel};
 
 use super::{GameMode, BuildPlatform, GamePacket};
 
@@ -144,7 +144,7 @@ pub struct AddPlayer<'a> {
     /// Game mode of the player.
     pub game_mode: GameMode,
     /// Item held by the player.
-    pub held_item: ItemInstance,
+    pub held_item: ItemStack,
     pub metadata: HashMap<u32, nbt::Value>,
     // pub properties: EntityProperties,
     /// Abilities of the player. See [`AbilityData`].
@@ -170,6 +170,7 @@ impl Encodable for AddPlayer<'_> {
         buffer.put_var_u64(self.runtime_id);
         buffer.put_string(""); // Platform chat ID
         buffer.put_vec3f(&self.position);
+        buffer.put_vec3f(&self.velocity);
         buffer.put_vec3f(&self.rotation);
         self.held_item.encode(&mut buffer);
         buffer.put_var_i32(self.game_mode as i32);
