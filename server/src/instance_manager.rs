@@ -11,6 +11,7 @@ use tokio::sync::OnceCell;
 use tokio_util::sync::CancellationToken;
 
 use crate::config::SERVER_CONFIG;
+use crate::level_manager::LevelManager;
 use crate::network::packets::{CLIENT_VERSION_STRING, NETWORK_VERSION};
 use crate::network::raknet::packets::IncompatibleProtocol;
 use crate::network::raknet::packets::OfflinePing;
@@ -36,12 +37,9 @@ const RECV_BUF_SIZE: usize = 4096;
 /// This data is displayed in the server menu.
 const METADATA_REFRESH_INTERVAL: Duration = Duration::from_secs(2);
 
-#[derive(Debug)]
-pub struct LevelManager;
-
 /// Global instance that manages all data and services of the server.
 #[derive(Debug)]
-pub struct ServerInstance {
+pub struct InstanceManager {
     /// Randomised GUID, required by Minecraft
     guid: i64,
     /// String containing info displayed in the server tab.
@@ -62,7 +60,7 @@ pub struct ServerInstance {
     level_manager: Arc<LevelManager>
 }
 
-impl ServerInstance {
+impl InstanceManager {
     /// Creates a new server.
     pub async fn new() -> VResult<Arc<Self>> {
         let (ipv4_port, _ipv6_port) = {
@@ -76,11 +74,12 @@ impl ServerInstance {
                 .await?,
         );
 
-        let level_manager = Arc::new(LevelManager);
-        let tracker = Arc::new(SessionManager::new(
-            global_token.clone(),
-            level_manager.clone()
+        let session_manager = Arc::new(SessionManager::new(
+            global_token.clone()
         ));
+
+        let level_manager = Arc::new(LevelManager::new(session_manager.clone()));
+        session_manager.set_level_manager(Arc::downgrade(&level_manager))?;
 
         let server = Arc::new(Self {
             guid: rand::thread_rng().gen(),
@@ -92,7 +91,7 @@ impl ServerInstance {
             inward_queue: Arc::new(AsyncDeque::new(10)),
             outward_queue: Arc::new(AsyncDeque::new(10)),
 
-            session_manager: tracker,
+            session_manager,
             level_manager,
             token: global_token
         });
@@ -350,5 +349,11 @@ impl ServerInstance {
                 }
             }
         });
+    }
+}
+
+impl Drop for InstanceManager {
+    fn drop(&mut self) {
+        println!("Drops");
     }
 }

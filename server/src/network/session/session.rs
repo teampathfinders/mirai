@@ -12,7 +12,8 @@ use tokio_util::sync::CancellationToken;
 use uuid::Uuid;
 
 use crate::crypto::{Encryptor, IdentityData, UserData};
-use crate::instance::{ServerInstance, LevelManager};
+use crate::instance_manager::{InstanceManager};
+use crate::level_manager::LevelManager;
 use crate::network::session::compound_collector::CompoundCollector;
 use crate::network::session::order_channel::OrderChannel;
 use crate::network::session::recovery_queue::RecoveryQueue;

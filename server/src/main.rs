@@ -9,13 +9,14 @@ use std::sync::atomic::{AtomicU16, Ordering};
 
 use tokio::runtime;
 
-use crate::instance::ServerInstance;
+use crate::instance_manager::InstanceManager;
 use common::VResult;
 
 mod config;
 mod crypto;
-mod instance;
+mod instance_manager;
 mod network;
+mod level_manager;
 
 #[cfg(test)]
 mod test;
@@ -23,7 +24,7 @@ mod test;
 /// The asynchronous entrypoint that is ran by Tokio.
 async fn app_main() -> VResult<()> {
     loop {
-        let controller = ServerInstance::new().await?;
+        let controller = InstanceManager::new().await?;
         match controller.run().await {
             Ok(_) => {
                 break;

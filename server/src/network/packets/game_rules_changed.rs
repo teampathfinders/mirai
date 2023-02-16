@@ -4,7 +4,7 @@ use common::{Encodable, VResult, WriteExtensions};
 use super::GamePacket;
 
 /// Minecraft game rules.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum GameRule {
     CommandBlocksEnabled(bool),
     CommandBlockOutput(bool),

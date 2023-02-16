@@ -5,7 +5,7 @@ pub use recovery_queue::*;
 pub use send::*;
 pub use send_queue::*;
 pub use session::*;
-pub use tracker::*;
+pub use session_manager::*;
 
 mod compound_collector;
 mod order_channel;
@@ -14,6 +14,6 @@ mod recovery_queue;
 mod send;
 mod send_queue;
 mod session;
-mod tracker;
+mod session_manager;
 
 pub mod handlers;

@@ -4,9 +4,11 @@ use std::time::Duration;
 
 use dashmap::DashMap;
 use tokio::net::UdpSocket;
+use tokio::sync::OnceCell;
 use tokio_util::sync::CancellationToken;
 
-use crate::instance::{ServerInstance, LevelManager};
+use crate::instance_manager::{InstanceManager};
+use crate::level_manager::LevelManager;
 use crate::{config::SERVER_CONFIG, network::packets::GamePacket};
 use crate::network::raknet::RawPacket;
 use crate::network::session::session::Session;
@@ -23,12 +25,12 @@ pub struct SessionManager {
     /// Map of all tracked sessions, listed by IP address.
     session_list: Arc<DashMap<SocketAddr, Arc<Session>>>,
     /// The level manager.
-    level_manager: Arc<LevelManager>
+    level_manager: OnceCell<Weak<LevelManager>>
 }
 
 impl SessionManager {
     /// Creates a new session tracker.
-    pub fn new(global_token: CancellationToken, level_manager: Arc<LevelManager>) -> Self {
+    pub fn new(global_token: CancellationToken) -> Self {
         let session_list = Arc::new(DashMap::new());
         {
             let session_list = session_list.clone();
@@ -37,7 +39,7 @@ impl SessionManager {
             });
         }
 
-        Self { global_token, session_list, level_manager }
+        Self { global_token, session_list, level_manager: OnceCell::new() }
     }
 
     /// Creates a new session and adds it to the tracker.
@@ -48,13 +50,21 @@ impl SessionManager {
         mtu: u16,
         client_guid: u64,
     ) {
+        let level_manager = self.level_manager.get().unwrap().upgrade().unwrap();
         let session = Session::new(
             self.clone(),
-            self.level_manager.clone(),
+            level_manager,
             ipv4_socket, address, 
             mtu, client_guid
         );
         self.session_list.insert(address, session);
+    }
+    
+    pub fn set_level_manager(
+        &self, level_manager: Weak<LevelManager>
+    ) -> VResult<()> {
+        self.level_manager.set(level_manager)?;
+        Ok(())
     }
 
     /// Forwards a packet from the network service to the correct session.
@@ -126,6 +136,9 @@ impl SessionManager {
             let _ = session.kick(&message);
             let _ = session.flush_all().await;
         }
+
+        // Clear to get rid of references
+        self.session_list.clear();
     }
 
     /// Returns how many clients are currently connected this tracker.

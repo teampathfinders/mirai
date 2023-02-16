@@ -3,7 +3,7 @@ use std::time::{SystemTime, UNIX_EPOCH};
 
 use bytes::{BufMut, BytesMut};
 
-use crate::instance::IPV4_LOCAL_ADDR;
+use crate::instance_manager::IPV4_LOCAL_ADDR;
 use common::Encodable;
 use common::VResult;
 use common::{
