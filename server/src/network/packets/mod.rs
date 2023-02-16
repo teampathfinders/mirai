@@ -9,6 +9,8 @@ glob_export!(animate);
 glob_export!(available_actor_identifiers);
 glob_export!(available_commands);
 glob_export!(biome_definition_list);
+glob_export!(block_event);
+glob_export!(block_pick_request);
 glob_export!(book_edit);
 glob_export!(camera_shake);
 glob_export!(change_dimension);
