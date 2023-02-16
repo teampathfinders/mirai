@@ -15,7 +15,7 @@ impl GamePacket for CacheMissResponse<'_> {
 impl Encodable for CacheMissResponse<'_> {
     fn encode(&self) -> VResult<BytesMut> {
         let mut buffer = BytesMut::with_capacity(
-            1 + self.blobs.fold(0, |acc, blob| acc + blob.len())
+            1 + self.blobs.iter().fold(0, |acc, blob| acc + blob.len())
         );
 
         buffer.put_var_u32(self.blobs.len() as u32);

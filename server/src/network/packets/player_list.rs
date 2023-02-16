@@ -2,8 +2,7 @@ use bytes::{BytesMut, BufMut};
 use common::{Encodable, VResult, WriteExtensions};
 use uuid::Uuid;
 use crate::network::packets::login::DeviceOS;
-
-use crate::skin::Skin;
+use crate::network::Skin;
 
 use super::{GamePacket};
 

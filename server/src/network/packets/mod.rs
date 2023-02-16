@@ -37,7 +37,7 @@ glob_export!(set_time);
 glob_export!(set_title);
 glob_export!(show_credits);
 glob_export!(show_profile);
-glob_export!(simple_event);
+glob_export!(event);
 glob_export!(spawn_experience_orb);
 glob_export!(text);
 glob_export!(tick_sync);

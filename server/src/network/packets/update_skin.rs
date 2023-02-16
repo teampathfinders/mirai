@@ -1,8 +1,7 @@
 use bytes::{BufMut, BytesMut, Buf};
 use common::{Encodable, VResult, WriteExtensions, Decodable};
 use uuid::Uuid;
-
-use crate::skin::Skin;
+use crate::network::Skin;
 
 use super::GamePacket;
 

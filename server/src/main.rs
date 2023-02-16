@@ -16,7 +16,6 @@ mod config;
 mod crypto;
 mod instance;
 mod network;
-mod skin;
 
 #[cfg(test)]
 mod test;

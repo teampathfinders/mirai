@@ -16,11 +16,11 @@ use crate::network::session::compound_collector::CompoundCollector;
 use crate::network::session::order_channel::OrderChannel;
 use crate::network::session::recovery_queue::RecoveryQueue;
 use crate::network::session::send_queue::SendQueue;
-use crate::skin::Skin;
 use common::{AsyncDeque, Encodable, bail};
 use common::{error, VResult};
 use crate::network::packets::login::{DeviceOS, Disconnect};
 use crate::network::packets::{GamePacket, MessageType, PlayerListRemove, TextMessage};
+use crate::network::Skin;
 
 use super::SessionTracker;
 

@@ -6,7 +6,8 @@ use common::{bail, error, VResult};
 use jsonwebtoken::{Algorithm, DecodingKey, Validation};
 use uuid::Uuid;
 
-use crate::{network::packets::login::{DeviceOS, UiProfile}, skin::Skin};
+use crate::{network::packets::login::{DeviceOS, UiProfile}};
+use crate::network::Skin;
 
 /// Mojang's public key.
 /// Used to verify the second token in the identity chain.

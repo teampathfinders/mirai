@@ -9,11 +9,11 @@ use crate::crypto::{
     parse_identity_data, parse_user_data, IdentityData, UserData,
 };
 use crate::network::packets::GamePacket;
-use crate::skin::Skin;
 use common::Decodable;
 use common::ReadExtensions;
 use common::{bail, vassert};
 use common::{VError, VResult};
+use crate::network::Skin;
 
 /// Device operating system
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Deserialize_repr)]

@@ -14,4 +14,9 @@ impl CacheBlob {
         buffer.put_u64_le(self.hash);
         buffer.extend(&self.payload);
     }
+
+    #[inline]
+    pub fn len(&self) -> usize {
+        std::mem::size_of::<u64>() + self.payload.len()
+    }
 }

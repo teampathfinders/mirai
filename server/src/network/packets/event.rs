@@ -1,4 +1,5 @@
-use common::Decodable;
+use bytes::{Buf, BytesMut};
+use common::{bail, Decodable, ReadExtensions, VResult};
 use level::Dimension;
 use crate::network::packets::GamePacket;
 
@@ -16,7 +17,7 @@ pub enum CopperWaxType {
 }
 
 #[derive(Debug, Clone)]
-pub enum SimpleEventType {
+pub enum EventType {
     AchievementAwarded {
         achievement_id: i32
     },
@@ -138,11 +139,11 @@ pub enum SimpleEventType {
 }
 
 #[derive(Debug, Clone)]
-pub struct SimpleEvent {
+pub struct Event {
     pub runtime_id: u64,
-    pub event: SimpleEventType
+    pub event: EventType
 }
 
-impl GamePacket for SimpleEvent {
+impl GamePacket for Event {
     const ID: u32 = 0x40;
 }
