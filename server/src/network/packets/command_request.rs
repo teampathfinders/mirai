@@ -1,5 +1,6 @@
 use bytes::{Buf, BytesMut};
-use common::{bail, ReadExtensions, VError, VResult};
+use uuid::Uuid;
+use common::{bail, ReadExtensions, VError, VResult, WriteExtensions};
 
 use common::Decodable;
 
@@ -7,7 +8,7 @@ use super::GamePacket;
 
 /// Command origin.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum CommandOrigin {
+pub enum CommandOriginType {
     Player,
     Block,
     MinecartBlock,
@@ -26,7 +27,7 @@ pub enum CommandOrigin {
     Executor,
 }
 
-impl TryFrom<u32> for CommandOrigin {
+impl TryFrom<u32> for CommandOriginType {
     type Error = VError;
 
     fn try_from(value: u32) -> VResult<Self> {
@@ -61,7 +62,7 @@ pub struct CommandRequest {
     /// This is a raw string (i.e. "/kill @e[type=cow]")
     pub command: String,
     /// Command origin.
-    pub origin: CommandOrigin,
+    pub origin: CommandOriginType,
     /// Request ID.
     /// If a command is requested by a websocket server, 
     /// then this ID is used to forward the result to the server instead of the client.
@@ -75,7 +76,7 @@ impl GamePacket for CommandRequest {
 impl Decodable for CommandRequest {
     fn decode(mut buffer: BytesMut) -> VResult<Self> {
         let command = buffer.get_string()?;
-        let origin = CommandOrigin::try_from(buffer.get_var_u32()?)?;
+        let origin = CommandOriginType::try_from(buffer.get_var_u32()?)?;
         buffer.advance(16);
         let request_id = buffer.get_string()?;
 

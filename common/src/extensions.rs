@@ -186,12 +186,12 @@ pub trait ReadExtensions: Buf {
         Vector3i::from([a, b, c])
     }
 
-    fn get_block_pos(&mut self) -> BlockPosition {
+    fn get_block_pos(&mut self) -> VResult<BlockPosition> {
         let x = self.get_var_i32()?;
         let y = self.get_var_u32()?;
         let z = self.get_var_i32()?;
 
-        BlockPosition::new(x, y, z)
+        Ok(BlockPosition::new(x, y, z))
     }
 }
 

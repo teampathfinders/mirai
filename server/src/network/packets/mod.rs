@@ -16,6 +16,7 @@ glob_export!(boss_event);
 glob_export!(camera_shake);
 glob_export!(change_dimension);
 glob_export!(client_bound_debug_renderer);
+glob_export!(command_output);
 glob_export!(command_request);
 glob_export!(connect_automation_client);
 glob_export!(death_info);

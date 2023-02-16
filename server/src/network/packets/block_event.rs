@@ -43,7 +43,7 @@ impl Encodable for BlockEvent {
 
 impl Decodable for BlockEvent {
     fn decode(mut buffer: BytesMut) -> VResult<Self> {
-        let position = buffer.get_block_pos();
+        let position = buffer.get_block_pos()?;
         let event_type = BlockEventType::try_from(buffer.get_var_i32()?)?;
         let event_data = buffer.get_var_i32()?;
 
