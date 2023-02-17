@@ -123,7 +123,7 @@ impl InstanceManager {
                                     "false".to_owned(),
                                 ],
                             }),
-                            optional: false,
+                            optional: true,
                             options: 0,
                         },
                     ],

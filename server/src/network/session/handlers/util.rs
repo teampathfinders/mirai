@@ -8,7 +8,7 @@ use common::{
 };
 
 use crate::command::ParsedCommand;
-use crate::network::packets::command::{CommandRequest, SettingsCommand};
+use crate::network::packets::command::{CommandRequest, SettingsCommand, CommandOutput, CommandOutputType, CommandOutputMessage};
 use crate::network::packets::login::{ItemStack, ItemType, PermissionLevel};
 use crate::network::packets::{AbilityData, AddPlayer};
 use crate::network::{
@@ -101,9 +101,26 @@ impl Session {
         tracing::info!("{request:?}");
 
         let command_list = self.level_manager.get_commands();
-        let parsed = ParsedCommand::parse(command_list, &request.command).unwrap();
+        let result = ParsedCommand::parse(command_list, &request.command);
 
-        tracing::info!("{parsed:?}");
+        if let Ok(parsed) = result {
+            tracing::info!("{parsed:?}");
+        } else {
+            let command_output = CommandOutput {
+                origin: request.origin,
+                request_id: &request.request_id,
+                output_type: CommandOutputType::AllOutput,
+                success_count: 0,
+                output: &[
+                    CommandOutputMessage {
+                        is_success: false,
+                        message: &result.unwrap_err(),
+                        parameters: &[]
+                    }
+                ]
+            };
+            self.send(command_output)?;
+        }
 
         Ok(())
     }

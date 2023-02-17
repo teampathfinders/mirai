@@ -67,7 +67,7 @@ impl ParsedCommand {
                 errors
                     .iter()
                     .enumerate()
-                    .map(|(i, e)| format!("\tOverload {i} - {e}"))
+                    .map(|(i, e)| format!("Overload {} - {e}", i + 1))
                     .collect::<Vec<_>>()
                     .join("\n")
             ))
@@ -105,8 +105,17 @@ fn parse_overload(overload: &CommandOverload, mut parts: Split<char>)
             }
         }
 
+        // Parse the value into the correct type.
         let value = match parameter.data_type {
             CommandDataType::String => ParsedArgument::String(part.to_owned()),
+            CommandDataType::Int => {
+                let result = part.parse();
+                if let Ok(value) = result {
+                    ParsedArgument::Int(value)
+                } else {
+                    return Err(format!("Failed to parse argument '{}'. It is not a valid integer", part))
+                }
+            }
             _ => todo!()
         };
 
