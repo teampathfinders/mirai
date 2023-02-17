@@ -1,7 +1,7 @@
 use bytes::BytesMut;
 use common::{Encodable, VResult, WriteExtensions};
 
-use super::GamePacket;
+use crate::network::packets::GamePacket;
 
 /// Connects the client to a Websocket server.
 #[derive(Debug, Clone)]

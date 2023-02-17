@@ -82,7 +82,7 @@ impl InstanceManager {
 
         let level_manager = Arc::new(LevelManager::new(session_manager.clone()));
         level_manager.add_command(Command {
-            name: "Gamerule".to_owned(),
+            name: "gamerule".to_owned(),
             description: "Sets or queries a game rule value.".to_owned(),
             permission_level: CommandPermissionLevel::Normal,
             aliases: vec![],
@@ -94,11 +94,11 @@ impl InstanceManager {
                             argument_type: CommandParameterType::String,
                             name: "rule".to_owned(),
                             suffix: "".to_owned(),
-                            command_enum: CommandEnum {
+                            command_enum: Some(CommandEnum {
                                 dynamic: false,
                                 enum_id: "boolean gamerule".to_owned(),
                                 options: BOOLEAN_GAME_RULES.iter().map(|g| g.to_string()).collect::<Vec<_>>()
-                            },
+                            }),
                             optional: false,
                             options: 0
                         },
@@ -106,14 +106,14 @@ impl InstanceManager {
                             argument_type: CommandParameterType::String,
                             name: "value".to_owned(),
                             suffix: "".to_owned(),
-                            command_enum: CommandEnum {
+                            command_enum: Some(CommandEnum {
                                 dynamic: false,
                                 enum_id: "boolean".to_owned(),
                                 options: vec![
                                     "true".to_owned(),
                                     "false".to_owned()
                                 ]
-                            },
+                            }),
                             optional: true,
                             options: 0
                         }
@@ -125,26 +125,24 @@ impl InstanceManager {
                             argument_type: CommandParameterType::String,
                             name: "rule".to_owned(),
                             suffix: "".to_owned(),
-                            command_enum: CommandEnum {
+                            command_enum: Some(CommandEnum {
                                 dynamic: false,
-                                enum_id: "integer gamerule".to_owned(),
+                                enum_id: "integral gamerule".to_owned(),
                                 options: INTEGER_GAME_RULES.iter().map(|g| g.to_string()).collect::<Vec<_>>()
-                            },
+                            }),
                             optional: false,
                             options: 0
                         },
                         CommandParameter {
-                            argument_type: CommandParameterType::IntegerRange,
+                            argument_type: CommandParameterType::Int,
                             name: "value".to_owned(),
-                            suffix: "".to_owned(),
-                            command_enum: CommandEnum {
-                                dynamic: false,
-                                enum_id: "integer values".to_owned(),
-                                options: vec![
-                                    "fff".to_owned(),
-                                    "fffffff".to_owned()
-                                ]
-                            },
+                            suffix: "i".to_owned(),
+                            command_enum: None,
+                            // command_enum: Some(CommandEnum {
+                            //     dynamic: false,
+                            //     enum_id: "integer".to_owned(),
+                            //     options: vec![]
+                            // }),
                             optional: true,
                             options: 0
                         }
@@ -152,31 +150,31 @@ impl InstanceManager {
                 }
             ],
         });
-        // level_manager.add_command(Command {
-        //     name: "daylock".to_owned(),
-        //     description: "Locks and unlocks the day-night cycle.".to_owned(),
-        //     aliases: vec![],
-        //     permission_level: CommandPermissionLevel::Admin,
-        //     overloads: vec![CommandOverload {
-        //         parameters: vec![
-        //             CommandParameter {
-        //                 argument_type: CommandParameterType::String,
-        //                 name: "lock".to_owned(),
-        //                 suffix: "".to_owned(),
-        //                 command_enum: CommandEnum {
-        //                     dynamic: false,
-        //                     enum_id: "boolean".to_owned(),
-        //                     options: vec![
-        //                         "true".to_owned(),
-        //                         "false".to_owned()
-        //                     ]
-        //                 },
-        //                 optional: true,
-        //                 options: 0
-        //             }
-        //         ]
-        //     }]
-        //});
+        level_manager.add_command(Command {
+            name: "daylock".to_owned(),
+            description: "Locks and unlocks the day-night cycle.".to_owned(),
+            aliases: vec![],
+            permission_level: CommandPermissionLevel::Normal,
+            overloads: vec![CommandOverload {
+                parameters: vec![
+                    CommandParameter {
+                        argument_type: CommandParameterType::String,
+                        name: "lock".to_owned(),
+                        suffix: "".to_owned(),
+                        command_enum: Some(CommandEnum {
+                            dynamic: false,
+                            enum_id: "boolean".to_owned(),
+                            options: vec![
+                                "true".to_owned(),
+                                "false".to_owned()
+                            ]
+                        }),
+                        optional: true,
+                        options: 0
+                    }
+                ]
+            }]
+        });
 
         session_manager.set_level_manager(Arc::downgrade(&level_manager))?;
 

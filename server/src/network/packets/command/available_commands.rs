@@ -5,100 +5,15 @@ use common::{bail, VResult, WriteExtensions};
 
 use common::Encodable;
 
-use super::{GamePacket};
+use crate::network::packets::GamePacket;
+use crate::network::packets::command::CommandEnum;
+
+use super::{Command};
 
 pub const COMMAND_PARAMETER_VALID: u32 = 0x100000;
 pub const COMMAND_PARAMETER_ENUM: u32 = 0x200000;
 pub const COMMAND_PARAMETER_SUFFIXED: u32 = 0x1000000;
 pub const COMMAND_PARAMETER_SOFT_ENUM: u32 = 0x4000000;
-
-#[derive(Debug, Copy, Clone, PartialEq, Eq)]
-pub enum CommandPermissionLevel {
-    Normal,
-    GameDirectors,
-    Admin,
-    Host,
-    Owner,
-    Internal,
-}
-
-/// Used for autocompletion.
-///
-/// This object contains the list of available options.
-#[derive(Debug, Clone)]
-pub struct CommandEnum {
-    /// ID of the autocompleted type.
-    /// If the enum is dynamic, this ID can be used in the [`UpdateDynamicEnum`](super::UpdateDynamicEnum)
-    /// packet to update the autocompletion options.
-    pub enum_id: String,
-    /// Available options.
-    pub options: Vec<String>,
-    /// Whether the server can update this enum on the fly.
-    pub dynamic: bool,
-}
-
-/// Type of a parameter.
-#[derive(Debug, Copy, Clone)]
-pub enum CommandParameterType {
-    Int = 1,
-    Float = 3,
-    Value = 4,
-    WildcardInt = 5,
-    Operator = 6,
-    CompareOperator = 7,
-    Target = 8,
-    WildcardTarget = 10,
-    Filepath = 17,
-    IntegerRange = 23,
-    EquipmentSlots = 38,
-    String = 39,
-    BlockPosition = 47,
-    Position = 48,
-    Message = 51,
-    RawText = 53,
-    Json = 57,
-    BlockStates = 67,
-    Command = 70,
-}
-
-/// Describes a single command parameter.
-#[derive(Debug, Clone)]
-pub struct CommandParameter {
-    /// Name of the parameter.
-    pub name: String,
-    /// Type of the argument.
-    pub argument_type: CommandParameterType,
-    /// Whether the argument is optional.
-    pub optional: bool,
-    /// Additional options for the parameter.
-    pub options: u8,
-    /// Used for autocompletion.
-    pub command_enum: CommandEnum,
-    /// Suffix.
-    pub suffix: String,
-}
-
-/// Describes a command argument combination.
-#[derive(Debug, Clone)]
-pub struct CommandOverload {
-    /// Command parameters.
-    pub parameters: Vec<CommandParameter>,
-}
-
-/// Describes a Minecraft command.
-#[derive(Debug, Clone)]
-pub struct Command {
-    /// Name of the command.
-    pub name: String,
-    /// Description of the command.
-    pub description: String,
-    /// Who is allowed to use this command.
-    pub permission_level: CommandPermissionLevel,
-    /// Aliases.
-    pub aliases: Vec<String>,
-    /// All different argument combinations of the command.
-    pub overloads: Vec<CommandOverload>,
-}
 
 #[derive(Debug, Clone)]
 pub struct AvailableCommands<'a> {
@@ -114,9 +29,86 @@ impl Encodable for AvailableCommands<'_> {
     fn encode(&self) -> VResult<BytesMut> {
         // let mut buffer = BytesMut::new();
 
-        // for command in self.commands {
-        //     if !command.aliases.is_empty() {
+        // let mut enum_set = HashSet::new();
+        // let mut enum_values = HashSet::new();
 
+        // let mut suffix_set = HashSet::new();
+
+        // for command in self.commands {
+        //     if let Some(ref aliases) = command.aliases {
+        //         enum_set.insert(aliases);
+                
+        //         for option in &aliases.options {
+        //             enum_values.insert(option);
+        //         }
+        //     }
+
+        //     for overload in &command.overloads {
+        //         for parameter in &overload.parameters {
+        //             if let Some(ref param_enum) = parameter.enum_data {
+        //                 enum_set.insert(param_enum);
+
+        //                 for option in &param_enum.options {
+        //                     enum_values.insert(option);
+        //                 }
+        //             }
+
+        //             if let Some(ref suffix) = parameter.suffix {
+        //                 suffix_set.insert(suffix);
+        //             }
+        //         }
+        //     }       
+
+        //     // Encode enums.
+        //     buffer.put_var_u32(enum_values.len() as u32);
+        //     for value in enum_values {
+        //         buffer.put_string(value);
+        //     }   
+
+        //     // Encode suffixes.
+        //     buffer.put_var_u32(suffix_set.len() as u32);
+        //     for suffix in suffix_set {
+        //         buffer.put_string(suffix);
+        //     }
+
+        //     buffer.put_var_u32(enum_set.len() as u32);
+        //     for command_enum in enum_set {
+        //         buffer.put_string(&command_enum.name);
+                
+        //         buffer.put_var_u32(command_enum.options.len() as u32);
+        //         for option in &command_enum.options {
+        //             let index = enum_values
+        //                 .iter()
+        //                 .enumerate()
+        //                 .find(|(k, v)| option == **v);
+
+                    
+        //             if index.is_none() {
+        //                 todo!();
+        //             }
+        //             let index = index.unwrap().0;
+
+        //             let enum_value_count = enum_values.len();
+        //             if enum_value_count <= u8::MAX as usize {
+        //                 buffer.put_u8(index as u8);
+        //             } else if enum_value_count <= u16::MAX as usize {
+        //                 buffer.put_i16_le(index as i16);
+        //             } else {
+        //                 buffer.put_i32_le(index as i32);
+        //             }
+        //         }
+        //     }
+
+        //     buffer.put_var_u32(self.commands.len() as u32);
+        //     for command in self.commands {
+        //         buffer.put_string(&command.name);
+        //         buffer.put_string(&command.description);
+        //         buffer.put_i16_le(0);
+        //         buffer.put_u8(command.permission_level as u8);
+
+        //         buffer.put_i16_le(if let Some(ref aliases) = command.aliases {
+
+        //         })
         //     }
         // }
 
@@ -136,10 +128,12 @@ impl Encodable for AvailableCommands<'_> {
 
             for overload in &command.overloads {
                 for parameter in &overload.parameters {
-                    for option in &parameter.command_enum.options {
-                        if !value_indices.contains_key(option) {
-                            value_indices.insert(option, values.len() as u32);
-                            values.push(option);
+                    if let Some(ref command_enum) = parameter.command_enum {
+                        for option in &command_enum.options {
+                            if !value_indices.contains_key(option) {
+                                value_indices.insert(option, values.len() as u32);
+                                values.push(option);
+                            }
                         }
                     }
                 }
@@ -182,18 +176,20 @@ impl Encodable for AvailableCommands<'_> {
 
             for overload in &command.overloads {
                 for parameter in &overload.parameters {
-                    if !parameter.command_enum.dynamic
-                        && !parameter.command_enum.options.is_empty()
+                    if let Some(ref command_enum) = parameter.command_enum {
+                        if !command_enum.dynamic
+                        && !command_enum.options.is_empty()
                     {
                         if !enum_indices
-                            .contains_key(&parameter.command_enum.enum_id)
+                            .contains_key(&command_enum.enum_id)
                         {
                             enum_indices.insert(
-                                parameter.command_enum.enum_id.clone(),
+                                command_enum.enum_id.clone(),
                                 enums.len() as u32,
                             );
-                            enums.push(parameter.command_enum.clone());
+                            enums.push(command_enum.clone());
                         }
+                    }
                     }
                 }
             }
@@ -204,22 +200,22 @@ impl Encodable for AvailableCommands<'_> {
         for command in self.commands {
             for overload in &command.overloads {
                 for parameter in &overload.parameters {
-                    if parameter.command_enum.dynamic {
-                        if !dynamic_indices
-                            .contains_key(&parameter.command_enum.enum_id)
-                        {
-                            dynamic_indices.insert(
-                                &parameter.command_enum.enum_id,
-                                dynamic_enums.len() as u32,
-                            );
-                            dynamic_enums.push(&parameter.command_enum);
+                    if let Some(ref command_enum) = parameter.command_enum {
+                        if command_enum.dynamic {
+                            if !dynamic_indices
+                                .contains_key(&command_enum.enum_id)
+                            {
+                                dynamic_indices.insert(
+                                    &command_enum.enum_id,
+                                    dynamic_enums.len() as u32,
+                                );
+                                dynamic_enums.push(&parameter.command_enum);
+                            }
                         }
                     }
                 }
             }
         }
-
-        tracing::info!("{values:?} {suffixes:?} {enums:?} {dynamic_enums:?}");
 
         buffer.put_var_u32(values.len() as u32);
         for value in values {
@@ -267,18 +263,22 @@ impl Encodable for AvailableCommands<'_> {
                 buffer.put_var_u32(overload.parameters.len() as u32);
                 for parameter in &overload.parameters {
                     let mut command_type = parameter.argument_type as u32;
-
-                    if parameter.command_enum.dynamic {
-                        command_type = COMMAND_PARAMETER_SOFT_ENUM
-                            | COMMAND_PARAMETER_VALID
-                            | dynamic_indices[&parameter.command_enum.enum_id];
-                    } else if !parameter.command_enum.options.is_empty() {
-                        command_type = COMMAND_PARAMETER_ENUM
-                            | COMMAND_PARAMETER_VALID
-                            | enum_indices[&parameter.command_enum.enum_id];
-                    } else if !parameter.suffix.is_empty() {
-                        command_type = COMMAND_PARAMETER_SUFFIXED
-                            | suffix_indices[&parameter.suffix];
+                    
+                    if let Some(ref command_enum) = parameter.command_enum {                            
+                        if command_enum.dynamic {
+                            command_type = COMMAND_PARAMETER_SOFT_ENUM
+                                | COMMAND_PARAMETER_VALID
+                                | dynamic_indices[&command_enum.enum_id];
+                        } else if !command_enum.options.is_empty() {
+                            command_type = COMMAND_PARAMETER_ENUM
+                                | COMMAND_PARAMETER_VALID
+                                | enum_indices[&command_enum.enum_id];
+                        } else if !parameter.suffix.is_empty() {
+                            command_type = COMMAND_PARAMETER_SUFFIXED
+                                | suffix_indices[&parameter.suffix];
+                        }
+                    } else {
+                        command_type |= COMMAND_PARAMETER_VALID;
                     }
 
                     buffer.put_string(&parameter.name);
@@ -291,11 +291,13 @@ impl Encodable for AvailableCommands<'_> {
 
         buffer.put_var_u32(dynamic_enums.len() as u32);
         for dynamic_enum in &dynamic_enums {
-            buffer.put_string(&dynamic_enum.enum_id);
-            buffer.put_var_u32(dynamic_enum.options.len() as u32);
+            if let Some(ref dynamic_enum) = dynamic_enum {
+                buffer.put_string(&dynamic_enum.enum_id);
+                buffer.put_var_u32(dynamic_enum.options.len() as u32);
 
-            for option in &dynamic_enum.options {
-                buffer.put_string(option);
+                for option in &dynamic_enum.options {
+                    buffer.put_string(option);
+                }
             }
         }
 

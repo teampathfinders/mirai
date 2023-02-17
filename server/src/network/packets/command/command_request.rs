@@ -4,7 +4,7 @@ use common::{bail, ReadExtensions, VError, VResult, WriteExtensions};
 
 use common::Decodable;
 
-use super::GamePacket;
+use crate::network::packets::GamePacket;
 
 /// Command origin.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

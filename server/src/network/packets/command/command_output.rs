@@ -1,7 +1,9 @@
 use bytes::{BufMut, BytesMut};
 use uuid::Uuid;
 use common::{Decodable, Encodable, ReadExtensions, VResult, WriteExtensions};
-use crate::network::packets::{CommandOriginType, GamePacket};
+use crate::network::packets::{GamePacket};
+
+use super::CommandOriginType;
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum CommandOutputType {
