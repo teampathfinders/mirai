@@ -112,6 +112,16 @@ impl GamePacket for AvailableCommands<'_> {
 
 impl Encodable for AvailableCommands<'_> {
     fn encode(&self) -> VResult<BytesMut> {
+        // let mut buffer = BytesMut::new();
+
+        // for command in self.commands {
+        //     if !command.aliases.is_empty() {
+
+        //     }
+        // }
+
+        // Ok(buffer)
+
         let mut buffer = BytesMut::new();
 
         let mut value_indices = HashMap::new();
@@ -231,9 +241,9 @@ impl Encodable for AvailableCommands<'_> {
                 if index_count <= u8::MAX as u32 {
                     buffer.put_u8(value_indices[option] as u8);
                 } else if index_count <= u16::MAX as u32 {
-                    buffer.put_u16(value_indices[option] as u16);
+                    buffer.put_u16_le(value_indices[option] as u16);
                 } else {
-                    buffer.put_u32(value_indices[option] as u32);
+                    buffer.put_u32_le(value_indices[option] as u32);
                 }
             }
         }
@@ -248,7 +258,7 @@ impl Encodable for AvailableCommands<'_> {
 
             buffer.put_string(&command.name);
             buffer.put_string(&command.description);
-            buffer.put_u16(0);
+            buffer.put_u16_le(0); // Command flags. Unknown.
             buffer.put_u8(command.permission_level as u8);
             buffer.put_i32_le(alias);
 
@@ -272,7 +282,7 @@ impl Encodable for AvailableCommands<'_> {
                     }
 
                     buffer.put_string(&parameter.name);
-                    buffer.put_u32_le(command_type);
+                    buffer.put_i32_le(command_type as i32);
                     buffer.put_bool(parameter.optional);
                     buffer.put_u8(parameter.options);
                 }
@@ -289,7 +299,7 @@ impl Encodable for AvailableCommands<'_> {
             }
         }
 
-        buffer.put_var_u32(0);
+        buffer.put_var_u32(0); // No constraints.
 
         Ok(buffer)
     }

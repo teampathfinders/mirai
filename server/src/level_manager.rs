@@ -3,7 +3,7 @@ use std::sync::Arc;
 use dashmap::DashMap;
 use parking_lot::{RwLock, RwLockReadGuard};
 
-use crate::network::{packets::{GameRule, GameRulesChanged, Command}, session::SessionManager};
+use crate::network::{packets::{GameRule, GameRulesChanged, command::Command}, session::SessionManager};
 
 #[derive(Debug)]
 pub struct LevelManager {

@@ -5,10 +5,11 @@ use std::time::Duration;
 use bytes::BytesMut;
 use common::{BlockPosition, Decodable, VResult, Vector3f, Vector3i, Vector4f, bail};
 
+use crate::network::packets::command::{SettingsCommand, CommandRequest};
 use crate::network::{
     packets::{
         AddPainting, Animate, CameraShake, CameraShakeAction, CameraShakeType,
-        ChangeDimension, ClientBoundDebugRenderer, CommandRequest,
+        ChangeDimension, ClientBoundDebugRenderer,
         CreditsStatus, CreditsUpdate, DebugRendererAction, Difficulty,
         GameMode, GameRule, GameRulesChanged, MessageType, MobEffectAction,
         MobEffectKind, MobEffectUpdate, NetworkChunkPublisherUpdate,
@@ -19,7 +20,7 @@ use crate::network::{
     },
     session::Session,
 };
-use crate::network::packets::{AbilityData, AddPlayer, CommandPermissionLevel, SettingsCommand};
+use crate::network::packets::{AbilityData, AddPlayer};
 use crate::network::packets::login::{ItemStack, ItemType, PermissionLevel};
 
 impl Session {

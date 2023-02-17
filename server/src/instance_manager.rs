@@ -12,7 +12,8 @@ use tokio_util::sync::CancellationToken;
 
 use crate::config::SERVER_CONFIG;
 use crate::level_manager::LevelManager;
-use crate::network::packets::{CLIENT_VERSION_STRING, NETWORK_VERSION, GameRule, CommandPermissionLevel, Command, CommandOverload, CommandParameter, CommandParameterType, CommandEnum, BOOLEAN_GAME_RULES, INTEGER_GAME_RULES};
+use crate::network::packets::command::{CommandPermissionLevel, Command, CommandOverload, CommandParameter, CommandParameterType, CommandEnum};
+use crate::network::packets::{CLIENT_VERSION_STRING, NETWORK_VERSION, GameRule, BOOLEAN_GAME_RULES, INTEGER_GAME_RULES};
 use crate::network::raknet::packets::IncompatibleProtocol;
 use crate::network::raknet::packets::OfflinePing;
 use crate::network::raknet::packets::OfflinePong;
@@ -81,8 +82,8 @@ impl InstanceManager {
 
         let level_manager = Arc::new(LevelManager::new(session_manager.clone()));
         level_manager.add_command(Command {
-            name: "gamerule".to_owned(),
-            description: "Sets or queries a game rule value".to_owned(),
+            name: "Gamerule".to_owned(),
+            description: "Sets or queries a game rule value.".to_owned(),
             permission_level: CommandPermissionLevel::Normal,
             aliases: vec![],
             overloads: vec![
@@ -133,13 +134,16 @@ impl InstanceManager {
                             options: 0
                         },
                         CommandParameter {
-                            argument_type: CommandParameterType::Int,
+                            argument_type: CommandParameterType::IntegerRange,
                             name: "value".to_owned(),
                             suffix: "".to_owned(),
                             command_enum: CommandEnum {
                                 dynamic: false,
-                                enum_id: "".to_owned(),
-                                options: vec![]
+                                enum_id: "integer values".to_owned(),
+                                options: vec![
+                                    "fff".to_owned(),
+                                    "fffffff".to_owned()
+                                ]
                             },
                             optional: true,
                             options: 0
@@ -148,6 +152,31 @@ impl InstanceManager {
                 }
             ],
         });
+        // level_manager.add_command(Command {
+        //     name: "daylock".to_owned(),
+        //     description: "Locks and unlocks the day-night cycle.".to_owned(),
+        //     aliases: vec![],
+        //     permission_level: CommandPermissionLevel::Admin,
+        //     overloads: vec![CommandOverload {
+        //         parameters: vec![
+        //             CommandParameter {
+        //                 argument_type: CommandParameterType::String,
+        //                 name: "lock".to_owned(),
+        //                 suffix: "".to_owned(),
+        //                 command_enum: CommandEnum {
+        //                     dynamic: false,
+        //                     enum_id: "boolean".to_owned(),
+        //                     options: vec![
+        //                         "true".to_owned(),
+        //                         "false".to_owned()
+        //                     ]
+        //                 },
+        //                 optional: true,
+        //                 options: 0
+        //             }
+        //         ]
+        //     }]
+        //});
 
         session_manager.set_level_manager(Arc::downgrade(&level_manager))?;
 

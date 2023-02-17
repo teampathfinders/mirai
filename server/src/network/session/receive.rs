@@ -6,13 +6,14 @@ use async_recursion::async_recursion;
 use bytes::{Buf, BytesMut};
 
 use crate::config::SERVER_CONFIG;
+use crate::network::packets::command::{CommandRequest, SettingsCommand};
 use crate::network::raknet::{Frame, FrameBatch};
 use crate::network::session::session::Session;
 use common::{bail, vassert, ReadExtensions, VResult};
 use common::{Decodable, Encodable};
 use crate::network::header::Header;
 use crate::network::packets::cache::CacheStatus;
-use crate::network::packets::{Animate, CommandRequest, GAME_PACKET_ID, GamePacket, Interact, MovePlayer, RequestAbility, SetLocalPlayerAsInitialized, TextMessage, UpdateSkin, ViolationWarning, SettingsCommand};
+use crate::network::packets::{Animate, GAME_PACKET_ID, GamePacket, Interact, MovePlayer, RequestAbility, SetLocalPlayerAsInitialized, TextMessage, UpdateSkin, ViolationWarning};
 use crate::network::packets::login::{ChunkRadiusRequest, ClientToServerHandshake, CompressionAlgorithm, Login, OnlinePing, RequestNetworkSettings, ResourcePackClientResponse};
 use crate::network::raknet::packets::{Acknowledgement, ConnectionRequest, DisconnectNotification, NegativeAcknowledgement, NewIncomingConnection};
 
