@@ -128,6 +128,7 @@ impl InstanceManager {
                         },
                     ],
                 },
+                // Integral game rules.
                 CommandOverload {
                     parameters: vec![
                         CommandParameter {

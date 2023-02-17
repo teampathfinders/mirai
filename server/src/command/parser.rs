@@ -50,7 +50,9 @@ impl ParsedCommand {
 
         // Verify the command exists and find the command's parameters.
         if let Some(command) = command_list.get(&name) {
-            let mut errors = Vec::new();
+            let mut latest_error = String::new();
+            let mut furthest_param = -1i32;
+
             for overload in &command.overloads {
                 let parse_result = parse_overload(overload, parts.clone());
                 if let Ok(parsed) = parse_result {
@@ -58,18 +60,21 @@ impl ParsedCommand {
                         name, parameters: parsed
                     })
                 } else {
-                    errors.push(parse_result.unwrap_err());
+                    let err = parse_result.unwrap_err();
+
+                    // Only log the overload that was most "successful". (i.e. most arguments parsed correctly)
+                    if furthest_param < err.1 as i32 {
+                        latest_error = err.0;
+                        furthest_param = err.1 as i32;
+                    } else if furthest_param == err.1 as i32 {
+                        // If two overloads are equally succesfull, use the newest one only.
+                        latest_error = err.0;
+                    }
                 }
             }
 
             return Err(format!(
-                "Given arguments did not match any command overload\n{}", 
-                errors
-                    .iter()
-                    .enumerate()
-                    .map(|(i, e)| format!("Overload {} - {e}", i + 1))
-                    .collect::<Vec<_>>()
-                    .join("\n")
+                "Syntax error: {latest_error}"
             ))
         } else {
             return Err(format!("Unknown command: {name}. Please check that the command exists and you have permission to use it."))
@@ -78,7 +83,7 @@ impl ParsedCommand {
 }
 
 fn parse_overload(overload: &CommandOverload, mut parts: Split<char>) 
-    -> Result<HashMap<String, ParsedArgument>, String> 
+    -> Result<HashMap<String, ParsedArgument>, (String, usize)> 
 {
     let mut parsed = HashMap::new();
     for (i, parameter) in overload.parameters.iter().enumerate() {
@@ -88,7 +93,7 @@ fn parse_overload(overload: &CommandOverload, mut parts: Split<char>)
             if parameter.optional {
                 return Ok(parsed)
             } else {
-                return Err(format!("Expected {} arguments, got {}", overload.parameters.len(), i))
+                return Err((format!("Expected {} arguments, got {}", overload.parameters.len(), i), i))
             }
         };
 
@@ -101,7 +106,12 @@ fn parse_overload(overload: &CommandOverload, mut parts: Split<char>)
 
             if !valid {
                 // Invalid option.
-                return Err(format!("Argument '{part}' is invalid. You must choose one of the available options"))
+                let mut options_tip = cmd_enum.options.iter().take(3).cloned().collect::<Vec<_>>().join(", ");
+                if cmd_enum.options.len() > 3 {
+                    options_tip += "..";
+                }
+
+                return Err((format!("Option '{part}' is invalid. Help: use one of the predefined options: {options_tip}."), i))
             }
         }
 
@@ -113,7 +123,7 @@ fn parse_overload(overload: &CommandOverload, mut parts: Split<char>)
                 if let Ok(value) = result {
                     ParsedArgument::Int(value)
                 } else {
-                    return Err(format!("Failed to parse argument '{}'. It is not a valid integer", part))
+                    return Err((format!("Failed to parse argument '{}'. Expected a valid integer.", part), i))
                 }
             }
             _ => todo!()

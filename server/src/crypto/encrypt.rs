@@ -126,6 +126,8 @@ impl Encryptor {
             }
         };
 
+        tracing::debug!("{jwt}");
+
         // Perform the key exchange
         let shared_secret = diffie_hellman(
             private_key.as_nonzero_scalar(),
