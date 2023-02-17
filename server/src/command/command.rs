@@ -26,7 +26,7 @@ pub struct CommandEnum {
 
 /// Type of a parameter.
 #[derive(Debug, Copy, Clone)]
-pub enum CommandParameterType {
+pub enum CommandDataType {
     Int = 1,
     Float = 3,
     Value = 4,
@@ -54,7 +54,7 @@ pub struct CommandParameter {
     /// Name of the parameter.
     pub name: String,
     /// Type of the argument.
-    pub argument_type: CommandParameterType,
+    pub data_type: CommandDataType,
     /// Whether the argument is optional.
     pub optional: bool,
     /// Additional options for the parameter.

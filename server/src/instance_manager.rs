@@ -12,7 +12,7 @@ use tokio_util::sync::CancellationToken;
 
 use crate::command::{
     Command, CommandEnum, CommandOverload, CommandParameter,
-    CommandParameterType, CommandPermissionLevel,
+    CommandDataType, CommandPermissionLevel,
 };
 use crate::config::SERVER_CONFIG;
 use crate::level_manager::LevelManager;
@@ -97,7 +97,7 @@ impl InstanceManager {
                 CommandOverload {
                     parameters: vec![
                         CommandParameter {
-                            argument_type: CommandParameterType::String,
+                            data_type: CommandDataType::String,
                             name: "rule".to_owned(),
                             suffix: "".to_owned(),
                             command_enum: Some(CommandEnum {
@@ -112,7 +112,7 @@ impl InstanceManager {
                             options: 0,
                         },
                         CommandParameter {
-                            argument_type: CommandParameterType::String,
+                            data_type: CommandDataType::String,
                             name: "value".to_owned(),
                             suffix: "".to_owned(),
                             command_enum: Some(CommandEnum {
@@ -123,7 +123,7 @@ impl InstanceManager {
                                     "false".to_owned(),
                                 ],
                             }),
-                            optional: true,
+                            optional: false,
                             options: 0,
                         },
                     ],
@@ -131,7 +131,7 @@ impl InstanceManager {
                 CommandOverload {
                     parameters: vec![
                         CommandParameter {
-                            argument_type: CommandParameterType::String,
+                            data_type: CommandDataType::String,
                             name: "rule".to_owned(),
                             suffix: "".to_owned(),
                             command_enum: Some(CommandEnum {
@@ -146,7 +146,7 @@ impl InstanceManager {
                             options: 0,
                         },
                         CommandParameter {
-                            argument_type: CommandParameterType::Int,
+                            data_type: CommandDataType::Int,
                             name: "value".to_owned(),
                             suffix: "this is a suffix".to_owned(),
                             command_enum: None,
@@ -164,7 +164,7 @@ impl InstanceManager {
             permission_level: CommandPermissionLevel::Normal,
             overloads: vec![CommandOverload {
                 parameters: vec![CommandParameter {
-                    argument_type: CommandParameterType::String,
+                    data_type: CommandDataType::String,
                     name: "lock".to_owned(),
                     suffix: "".to_owned(),
                     command_enum: Some(CommandEnum {

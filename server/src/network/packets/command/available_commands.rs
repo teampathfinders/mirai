@@ -262,7 +262,7 @@ impl Encodable for AvailableCommands<'_> {
             for overload in &command.overloads {
                 buffer.put_var_u32(overload.parameters.len() as u32);
                 for parameter in &overload.parameters {
-                    let mut command_type = parameter.argument_type as u32;
+                    let mut command_type = parameter.data_type as u32;
                     
                     if let Some(ref command_enum) = parameter.command_enum {                            
                         if command_enum.dynamic {

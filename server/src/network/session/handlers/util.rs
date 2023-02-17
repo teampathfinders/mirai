@@ -101,7 +101,7 @@ impl Session {
         tracing::info!("{request:?}");
 
         let command_list = self.level_manager.get_commands();
-        let parsed = ParsedCommand::parse(command_list, &request.command)?;
+        let parsed = ParsedCommand::parse(command_list, &request.command).unwrap();
 
         tracing::info!("{parsed:?}");
 

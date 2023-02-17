@@ -35,6 +35,10 @@ macro_rules! bail {
 
 #[macro_export]
 macro_rules! error {
+    ($err_type: ident, $fmt: expr, $($args:expr),+) => {
+        $crate::VError::new($crate::VErrorKind::$err_type, format!($fmt, $($args),+))
+    };
+
     ($err_type: ident, $fmt: expr) => {
         $crate::VError::new($crate::VErrorKind::$err_type, $fmt.to_string())
     };
