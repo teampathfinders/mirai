@@ -33,7 +33,7 @@ impl Value {
         let name = String::from_utf8_lossy(
             &stream.as_ref()[cursor..cursor + length as usize],
         )
-            .to_string();
+        .to_string();
 
         stream.advance(length as usize);
 
@@ -77,7 +77,7 @@ impl Value {
                 let string = String::from_utf8_lossy(
                     &stream.as_ref()[cursor..cursor + length as usize],
                 )
-                    .to_string();
+                .to_string();
 
                 stream.advance(length as usize);
 

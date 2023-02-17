@@ -12,7 +12,6 @@ use crate::network::{
 impl Session {
     pub fn handle_interaction(&self, packet: BytesMut) -> VResult<()> {
         let request = Interact::decode(packet)?;
-    
 
         Ok(())
     }

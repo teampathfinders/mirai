@@ -1,8 +1,8 @@
 use common::glob_export;
 
 pub mod cache;
-pub mod login;
 pub mod command;
+pub mod login;
 
 glob_export!(add_player);
 glob_export!(add_painting);

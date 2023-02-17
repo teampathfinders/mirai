@@ -3,25 +3,27 @@ use std::net::{Ipv4Addr, SocketAddr, SocketAddrV4};
 use std::time::Duration;
 
 use bytes::BytesMut;
-use common::{BlockPosition, Decodable, VResult, Vector3f, Vector3i, Vector4f, bail};
+use common::{
+    bail, BlockPosition, Decodable, VResult, Vector3f, Vector3i, Vector4f,
+};
 
-use crate::network::packets::command::{SettingsCommand, CommandRequest};
+use crate::network::packets::command::{CommandRequest, SettingsCommand};
+use crate::network::packets::login::{ItemStack, ItemType, PermissionLevel};
+use crate::network::packets::{AbilityData, AddPlayer};
 use crate::network::{
     packets::{
         AddPainting, Animate, CameraShake, CameraShakeAction, CameraShakeType,
-        ChangeDimension, ClientBoundDebugRenderer,
-        CreditsStatus, CreditsUpdate, DebugRendererAction, Difficulty,
-        GameMode, GameRule, GameRulesChanged, MessageType, MobEffectAction,
-        MobEffectKind, MobEffectUpdate, NetworkChunkPublisherUpdate,
-        PaintingDirection, PlaySound, RequestAbility, SetCommandsEnabled,
-        SetDifficulty, SetPlayerGameMode, SetTime, SetTitle, ShowProfile,
-        SpawnExperienceOrb, TextMessage, TitleAction, ToastRequest, Transfer,
-        UpdateFogStack, UpdateSkin,
+        ChangeDimension, ClientBoundDebugRenderer, CreditsStatus,
+        CreditsUpdate, DebugRendererAction, Difficulty, GameMode, GameRule,
+        GameRulesChanged, MessageType, MobEffectAction, MobEffectKind,
+        MobEffectUpdate, NetworkChunkPublisherUpdate, PaintingDirection,
+        PlaySound, RequestAbility, SetCommandsEnabled, SetDifficulty,
+        SetPlayerGameMode, SetTime, SetTitle, ShowProfile, SpawnExperienceOrb,
+        TextMessage, TitleAction, ToastRequest, Transfer, UpdateFogStack,
+        UpdateSkin,
     },
     session::Session,
 };
-use crate::network::packets::{AbilityData, AddPlayer};
-use crate::network::packets::login::{ItemStack, ItemType, PermissionLevel};
 
 impl Session {
     pub fn handle_settings_command(&self, packet: BytesMut) -> VResult<()> {
@@ -95,7 +97,7 @@ impl Session {
 
     pub fn handle_command_request(&self, packet: BytesMut) -> VResult<()> {
         let request = CommandRequest::decode(packet)?;
-        todo!();
+        tracing::info!("{request:?}");
 
         Ok(())
     }

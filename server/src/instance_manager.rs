@@ -10,10 +10,16 @@ use tokio::signal;
 use tokio::sync::OnceCell;
 use tokio_util::sync::CancellationToken;
 
+use crate::command::{
+    Command, CommandEnum, CommandOverload, CommandParameter,
+    CommandParameterType, CommandPermissionLevel,
+};
 use crate::config::SERVER_CONFIG;
 use crate::level_manager::LevelManager;
-use crate::network::packets::command::{CommandPermissionLevel, Command, CommandOverload, CommandParameter, CommandParameterType, CommandEnum};
-use crate::network::packets::{CLIENT_VERSION_STRING, NETWORK_VERSION, GameRule, BOOLEAN_GAME_RULES, INTEGER_GAME_RULES};
+use crate::network::packets::{
+    GameRule, BOOLEAN_GAME_RULES, CLIENT_VERSION_STRING, INTEGER_GAME_RULES,
+    NETWORK_VERSION,
+};
 use crate::network::raknet::packets::IncompatibleProtocol;
 use crate::network::raknet::packets::OfflinePing;
 use crate::network::raknet::packets::OfflinePong;
@@ -59,7 +65,7 @@ pub struct InstanceManager {
     /// Service that manages all player sessions.
     session_manager: Arc<SessionManager>,
     /// Manages the level.
-    level_manager: Arc<LevelManager>
+    level_manager: Arc<LevelManager>,
 }
 
 impl InstanceManager {
@@ -76,11 +82,11 @@ impl InstanceManager {
                 .await?,
         );
 
-        let session_manager = Arc::new(SessionManager::new(
-            global_token.clone()
-        ));
+        let session_manager =
+            Arc::new(SessionManager::new(global_token.clone()));
 
-        let level_manager = Arc::new(LevelManager::new(session_manager.clone()));
+        let level_manager =
+            Arc::new(LevelManager::new(session_manager.clone()));
         level_manager.add_command(Command {
             name: "gamerule".to_owned(),
             description: "Sets or queries a game rule value.".to_owned(),
@@ -97,10 +103,13 @@ impl InstanceManager {
                             command_enum: Some(CommandEnum {
                                 dynamic: false,
                                 enum_id: "boolean gamerule".to_owned(),
-                                options: BOOLEAN_GAME_RULES.iter().map(|g| g.to_string()).collect::<Vec<_>>()
+                                options: BOOLEAN_GAME_RULES
+                                    .iter()
+                                    .map(|g| g.to_string())
+                                    .collect::<Vec<_>>(),
                             }),
                             optional: false,
-                            options: 0
+                            options: 0,
                         },
                         CommandParameter {
                             argument_type: CommandParameterType::String,
@@ -111,13 +120,13 @@ impl InstanceManager {
                                 enum_id: "boolean".to_owned(),
                                 options: vec![
                                     "true".to_owned(),
-                                    "false".to_owned()
-                                ]
+                                    "false".to_owned(),
+                                ],
                             }),
                             optional: true,
-                            options: 0
-                        }
-                    ]
+                            options: 0,
+                        },
+                    ],
                 },
                 CommandOverload {
                     parameters: vec![
@@ -128,26 +137,24 @@ impl InstanceManager {
                             command_enum: Some(CommandEnum {
                                 dynamic: false,
                                 enum_id: "integral gamerule".to_owned(),
-                                options: INTEGER_GAME_RULES.iter().map(|g| g.to_string()).collect::<Vec<_>>()
+                                options: INTEGER_GAME_RULES
+                                    .iter()
+                                    .map(|g| g.to_string())
+                                    .collect::<Vec<_>>(),
                             }),
                             optional: false,
-                            options: 0
+                            options: 0,
                         },
                         CommandParameter {
                             argument_type: CommandParameterType::Int,
                             name: "value".to_owned(),
-                            suffix: "i".to_owned(),
+                            suffix: "this is a suffix".to_owned(),
                             command_enum: None,
-                            // command_enum: Some(CommandEnum {
-                            //     dynamic: false,
-                            //     enum_id: "integer".to_owned(),
-                            //     options: vec![]
-                            // }),
                             optional: true,
-                            options: 0
-                        }
-                    ]
-                }
+                            options: 0,
+                        },
+                    ],
+                },
             ],
         });
         level_manager.add_command(Command {
@@ -156,24 +163,19 @@ impl InstanceManager {
             aliases: vec![],
             permission_level: CommandPermissionLevel::Normal,
             overloads: vec![CommandOverload {
-                parameters: vec![
-                    CommandParameter {
-                        argument_type: CommandParameterType::String,
-                        name: "lock".to_owned(),
-                        suffix: "".to_owned(),
-                        command_enum: Some(CommandEnum {
-                            dynamic: false,
-                            enum_id: "boolean".to_owned(),
-                            options: vec![
-                                "true".to_owned(),
-                                "false".to_owned()
-                            ]
-                        }),
-                        optional: true,
-                        options: 0
-                    }
-                ]
-            }]
+                parameters: vec![CommandParameter {
+                    argument_type: CommandParameterType::String,
+                    name: "lock".to_owned(),
+                    suffix: "".to_owned(),
+                    command_enum: Some(CommandEnum {
+                        dynamic: false,
+                        enum_id: "boolean".to_owned(),
+                        options: vec!["true".to_owned(), "false".to_owned()],
+                    }),
+                    optional: true,
+                    options: 0,
+                }],
+            }],
         });
 
         session_manager.set_level_manager(Arc::downgrade(&level_manager))?;
@@ -190,7 +192,7 @@ impl InstanceManager {
 
             session_manager,
             level_manager,
-            token: global_token
+            token: global_token,
         });
 
         Ok(server)

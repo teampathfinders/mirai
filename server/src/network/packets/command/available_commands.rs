@@ -6,9 +6,9 @@ use common::{bail, VResult, WriteExtensions};
 use common::Encodable;
 
 use crate::network::packets::GamePacket;
-use crate::network::packets::command::CommandEnum;
+use crate::command::CommandEnum;
 
-use super::{Command};
+use crate::command::Command;
 
 pub const COMMAND_PARAMETER_VALID: u32 = 0x100000;
 pub const COMMAND_PARAMETER_ENUM: u32 = 0x200000;

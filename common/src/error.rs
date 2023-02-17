@@ -186,3 +186,9 @@ impl From<std::ffi::NulError> for VError {
         Self::new(VErrorKind::DatabaseFailure, value.to_string())
     }
 }
+
+impl<T> From<snap::write::IntoInnerError<T>> for VError {
+    fn from(value: snap::write::IntoInnerError<T>) -> Self {
+        Self::new(VErrorKind::Other, value.to_string())
+    }
+}

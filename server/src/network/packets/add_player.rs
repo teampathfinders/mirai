@@ -2,7 +2,7 @@ use std::collections::HashMap;
 use bytes::{BytesMut, BufMut};
 use common::{Vector3f, Encodable, VResult, WriteExtensions};
 use uuid::Uuid;
-use crate::network::packets::command::CommandPermissionLevel;
+use crate::command::CommandPermissionLevel;
 use crate::network::packets::login::{DeviceOS, ItemStack, PermissionLevel};
 
 use super::{GameMode, GamePacket};

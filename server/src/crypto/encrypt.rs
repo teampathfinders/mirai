@@ -159,7 +159,7 @@ impl Encryptor {
     }
 
     /// Decrypts a packet and verifies its checksum.
-    /// 
+    ///
     /// If the checksum does not match, a [`BadPacket`](common::VErrorKind::BadPacket) error is returned.
     /// The client must be disconnected if this fails, because the data has probably been tampered with.
     pub fn decrypt(&self, mut buffer: BytesMut) -> VResult<BytesMut> {
@@ -214,7 +214,7 @@ impl Encryptor {
     }
 
     /// Computes the SHA-256 checksum of the packet.
-    /// 
+    ///
     /// This checksum can be used to verify that the packet has not been modified.
     /// It consists of 8 bytes and is appended to the encrypted payload.
     fn compute_checksum(&self, data: &[u8], counter: u64) -> [u8; 8] {

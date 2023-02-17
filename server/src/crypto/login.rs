@@ -6,7 +6,7 @@ use common::{bail, error, VResult};
 use jsonwebtoken::{Algorithm, DecodingKey, Validation};
 use uuid::Uuid;
 
-use crate::{network::packets::login::{DeviceOS, UiProfile}};
+use crate::network::packets::login::{DeviceOS, UiProfile};
 use crate::network::Skin;
 
 /// Mojang's public key.
@@ -52,7 +52,7 @@ pub struct RawIdentityData {
     #[serde(rename = "displayName")]
     pub display_name: String,
     #[serde(rename = "identity")]
-    pub uuid: Uuid
+    pub uuid: Uuid,
 }
 
 /// Used to extract the identity data and public key from the last identity token.
@@ -88,7 +88,7 @@ pub struct UserDataTokenPayload {
     #[serde(flatten)]
     pub data: UserData,
     #[serde(flatten)]
-    pub skin: Skin
+    pub skin: Skin,
 }
 
 /// First token in the chain holds the client's self-signed public key in the X5U.
@@ -153,7 +153,10 @@ fn parse_mojang_token(token: &str, key: &str) -> VResult<String> {
 /// The extraData field contains the XUID, client identity (UUID) and the display name.
 ///
 /// Just like the second one, this token can be verified using the identityPublicKey from the last token.
-fn parse_identity_token(token: &str, key: &str) -> VResult<IdentityTokenPayload> {
+fn parse_identity_token(
+    token: &str,
+    key: &str,
+) -> VResult<IdentityTokenPayload> {
     let bytes = BASE64_ENGINE.decode(key)?;
     let public_key = match spki::SubjectPublicKeyInfo::try_from(bytes.as_ref())
     {
@@ -177,7 +180,10 @@ fn parse_identity_token(token: &str, key: &str) -> VResult<IdentityTokenPayload>
 }
 
 /// Verifies and decodes the user data token.
-fn parse_user_data_token(token: &str, key: &str) -> VResult<UserDataTokenPayload> {
+fn parse_user_data_token(
+    token: &str,
+    key: &str,
+) -> VResult<UserDataTokenPayload> {
     let bytes = BASE64_ENGINE.decode(key)?;
     let public_key = match spki::SubjectPublicKeyInfo::try_from(bytes.as_ref())
     {
@@ -258,6 +264,6 @@ pub fn parse_user_data(
     let token_string = String::from_utf8_lossy(token);
 
     let user_data = parse_user_data_token(token_string.as_ref(), public_key)?;
-    
+
     Ok(user_data)
 }

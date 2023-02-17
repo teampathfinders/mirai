@@ -6,7 +6,7 @@ pub struct CacheBlob {
     /// Hash of the payload, computed with xxHash.
     pub hash: u64,
     /// Payload of the blob.
-    pub payload: Bytes
+    pub payload: Bytes,
 }
 
 impl CacheBlob {

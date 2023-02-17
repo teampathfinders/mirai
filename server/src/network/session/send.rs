@@ -8,6 +8,8 @@ use flate2::Compression;
 
 use crate::config::SERVER_CONFIG;
 use crate::network::header::Header;
+use crate::network::packets::login::CompressionAlgorithm;
+use crate::network::packets::{GamePacket, Packet, GAME_PACKET_ID};
 use crate::network::raknet::packets::{Acknowledgement, AcknowledgementRecord};
 use crate::network::raknet::Reliability;
 use crate::network::raknet::{Frame, FrameBatch};
@@ -16,8 +18,6 @@ use crate::network::session::session::Session;
 use common::ReadExtensions;
 use common::VResult;
 use common::{Decodable, Encodable};
-use crate::network::packets::{GAME_PACKET_ID, GamePacket, Packet};
-use crate::network::packets::login::CompressionAlgorithm;
 
 pub struct PacketConfig {
     pub reliability: Reliability,
@@ -32,10 +32,7 @@ const DEFAULT_CONFIG: PacketConfig = PacketConfig {
 impl Session {
     /// Sends a game packet with default settings
     /// (reliable ordered and medium priority)
-    pub fn send<T: GamePacket + Encodable>(
-        &self,
-        packet: T,
-    ) -> VResult<()> {
+    pub fn send<T: GamePacket + Encodable>(&self, packet: T) -> VResult<()> {
         self.send_packet_with_config(packet, DEFAULT_CONFIG)
     }
 
@@ -61,7 +58,7 @@ impl Session {
                 // Compress packet
                 match SERVER_CONFIG.read().compression_algorithm {
                     CompressionAlgorithm::Snappy => {
-                        todo!("Snappy compression")
+                        unimplemented!("Snappy compression");
                     }
                     CompressionAlgorithm::Deflate => {
                         let mut writer = DeflateEncoder::new(
@@ -70,11 +67,8 @@ impl Session {
                         );
 
                         writer.write_all(packet_buffer.as_ref())?;
-                        // .context("Failed to compress packet using Deflate")?;
-
                         packet_buffer =
                             BytesMut::from(writer.finish()?.as_slice());
-                        // .context("Failed to flush Deflate encoder")?.as_slice());
                     }
                 }
             }
@@ -243,8 +237,10 @@ impl Session {
 
                 has_reliable_packet = false;
                 batch = FrameBatch {
-                    batch_number: self.batch_number.fetch_add(1, Ordering::SeqCst),
-                    frames: vec![frame]
+                    batch_number: self
+                        .batch_number
+                        .fetch_add(1, Ordering::SeqCst),
+                    frames: vec![frame],
                 };
             }
         }
@@ -266,7 +262,9 @@ impl Session {
     }
 
     fn split_frame(&self, mut frame: &Frame) -> Vec<Frame> {
-        let chunk_max_size = self.mtu as usize - std::mem::size_of::<Frame>() - std::mem::size_of::<FrameBatch>();
+        let chunk_max_size = self.mtu as usize
+            - std::mem::size_of::<Frame>()
+            - std::mem::size_of::<FrameBatch>();
         let compound_size = {
             let frame_size = frame.body.len() + std::mem::size_of::<Frame>();
 

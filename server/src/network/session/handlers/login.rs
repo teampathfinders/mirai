@@ -8,24 +8,36 @@ use level::Dimension;
 
 use crate::config::SERVER_CONFIG;
 use crate::crypto::Encryptor;
-use crate::network::packets::GameMode::Creative;
+use crate::network::packets::cache::CacheStatus;
 use crate::network::packets::command::AvailableCommands;
+use crate::network::packets::login::{
+    BroadcastIntent, ChatRestrictionLevel, ChunkRadiusReply,
+    ChunkRadiusRequest, ClientToServerHandshake, CreativeContent, ItemStack,
+    ItemType, Login, NetworkSettings, PermissionLevel, PlayerMovementSettings,
+    PlayerMovementType, RequestNetworkSettings, ResourcePackClientResponse,
+    ResourcePackStack, ResourcePacksInfo, ServerToClientHandshake,
+    SpawnBiomeType, StartGame, WorldGenerator, DISCONNECTED_LOGIN_FAILED,
+};
+use crate::network::packets::GameMode::Creative;
+use crate::network::packets::{
+    AbilityData, AddPlayer, BiomeDefinitionList, Difficulty, GameMode,
+    GameRule, MessageType, PlayStatus, PlayerListAdd, PlayerListAddEntry,
+    SetLocalPlayerAsInitialized, Status, TextMessage, UpdateSkin,
+    ViolationWarning, CLIENT_VERSION_STRING, NETWORK_VERSION,
+};
 use crate::network::raknet::Reliability;
 use crate::network::raknet::{Frame, FrameBatch};
 use crate::network::session::send_queue::SendPriority;
 use crate::network::session::session::Session;
-use common::{bail, BlockPosition, Decodable, VResult, Vector2f, Vector3f, Vector3i, error};
-use crate::network::packets::{AbilityData, AddPlayer, BiomeDefinitionList, CLIENT_VERSION_STRING, Difficulty, GameMode, GameRule, MessageType, NETWORK_VERSION, PlayerListAdd, PlayerListAddEntry, PlayStatus, SetLocalPlayerAsInitialized, Status, TextMessage, UpdateSkin, ViolationWarning};
-use crate::network::packets::cache::CacheStatus;
-use crate::network::packets::login::{BroadcastIntent, ChatRestrictionLevel, ChunkRadiusReply, ChunkRadiusRequest, ClientToServerHandshake, CreativeContent, DISCONNECTED_LOGIN_FAILED, ItemStack, ItemType, Login, NetworkSettings, PermissionLevel, PlayerMovementSettings, PlayerMovementType, RequestNetworkSettings, ResourcePackClientResponse, ResourcePacksInfo, ResourcePackStack, ServerToClientHandshake, SpawnBiomeType, StartGame, WorldGenerator};
+use common::{
+    bail, error, BlockPosition, Decodable, VResult, Vector2f, Vector3f,
+    Vector3i,
+};
 
 impl Session {
     /// Handles a [`ClientCacheStatus`] packet.
     /// This stores the result in the [`Session::cache_support`] field.
-    pub fn handle_cache_status(
-        &self,
-        mut packet: BytesMut,
-    ) -> VResult<()> {
+    pub fn handle_cache_status(&self, mut packet: BytesMut) -> VResult<()> {
         let request = CacheStatus::decode(packet)?;
         self.cache_support.set(request.supports_cache)?;
 
@@ -45,7 +57,7 @@ impl Session {
 
     /// Handles a [`SetLocalPlayerAsInitialized`] packet.
     /// This packet indicates the player has fully loaded in.
-    /// 
+    ///
     /// All connected sessions are notified of the new player
     /// and the new player gets a list of all current players.
     pub fn handle_local_player_initialized(
@@ -53,7 +65,7 @@ impl Session {
         mut packet: BytesMut,
     ) -> VResult<()> {
         let request = SetLocalPlayerAsInitialized::decode(packet)?;
-        
+
         // Add player to other's player lists.
         tracing::info!("{} has connected", self.get_display_name()?);
 
@@ -69,19 +81,27 @@ impl Session {
                     username: &identity_data.display_name,
                     xuid: identity_data.xuid,
                     device_os: user_data.build_platform,
-                    skin: self.skin.read().as_ref().ok_or_else(|| error!(NotInitialized, "Skin data has not been initialised"))?,
+                    skin: self.skin.read().as_ref().ok_or_else(|| {
+                        error!(
+                            NotInitialized,
+                            "Skin data has not been initialised"
+                        )
+                    })?,
                     host: false,
-                }]
+                }],
             })?;
 
             self.broadcast_others(TextMessage {
-                message: format!("§e{} has joined the server.", identity_data.display_name),
+                message: format!(
+                    "§e{} has joined the server.",
+                    identity_data.display_name
+                ),
                 needs_translation: false,
                 parameters: vec![],
                 source_name: "".to_string(),
                 platform_chat_id: "".to_string(),
                 message_type: MessageType::System,
-                xuid: "".to_string()
+                xuid: "".to_string(),
             })?;
         }
         self.initialized.store(true, Ordering::SeqCst);
@@ -193,9 +213,8 @@ impl Session {
         self.send(play_status)?;
 
         let commands = self.level_manager.get_commands();
-        let available_commands = AvailableCommands {
-            commands: commands.as_slice()
-        };
+        let available_commands =
+            AvailableCommands { commands: commands.as_slice() };
         self.send(available_commands)?;
 
         Ok(())

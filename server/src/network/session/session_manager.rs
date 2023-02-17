@@ -7,12 +7,12 @@ use tokio::net::UdpSocket;
 use tokio::sync::OnceCell;
 use tokio_util::sync::CancellationToken;
 
-use crate::instance_manager::{InstanceManager};
+use crate::instance_manager::InstanceManager;
 use crate::level_manager::LevelManager;
-use crate::{config::SERVER_CONFIG, network::packets::GamePacket};
 use crate::network::raknet::RawPacket;
 use crate::network::session::session::Session;
-use common::{error, VResult, Encodable};
+use crate::{config::SERVER_CONFIG, network::packets::GamePacket};
+use common::{error, Encodable, VResult};
 
 const GARBAGE_COLLECT_INTERVAL: Duration = Duration::from_secs(10);
 
@@ -25,7 +25,7 @@ pub struct SessionManager {
     /// Map of all tracked sessions, listed by IP address.
     session_list: Arc<DashMap<SocketAddr, Arc<Session>>>,
     /// The level manager.
-    level_manager: OnceCell<Weak<LevelManager>>
+    level_manager: OnceCell<Weak<LevelManager>>,
 }
 
 impl SessionManager {
@@ -39,7 +39,11 @@ impl SessionManager {
             });
         }
 
-        Self { global_token, session_list, level_manager: OnceCell::new() }
+        Self {
+            global_token,
+            session_list,
+            level_manager: OnceCell::new(),
+        }
     }
 
     /// Creates a new session and adds it to the tracker.
@@ -50,18 +54,22 @@ impl SessionManager {
         mtu: u16,
         client_guid: u64,
     ) {
-        let level_manager = self.level_manager.get().unwrap().upgrade().unwrap();
+        let level_manager =
+            self.level_manager.get().unwrap().upgrade().unwrap();
         let session = Session::new(
             self.clone(),
             level_manager,
-            ipv4_socket, address, 
-            mtu, client_guid
+            ipv4_socket,
+            address,
+            mtu,
+            client_guid,
         );
         self.session_list.insert(address, session);
     }
-    
+
     pub fn set_level_manager(
-        &self, level_manager: Weak<LevelManager>
+        &self,
+        level_manager: Weak<LevelManager>,
     ) -> VResult<()> {
         self.level_manager.set(level_manager)?;
         Ok(())
@@ -81,7 +89,7 @@ impl SessionManager {
                     "Attempted to forward packet to non-existent session"
                 )
             })
-    }   
+    }
 
     /// Sends a packet to every *initialized* session on the server.
     pub fn broadcast<P: GamePacket + Encodable>(&self, packet: P) {
@@ -92,8 +100,13 @@ impl SessionManager {
                 match session.send(packet.clone()) {
                     Ok(_) => (),
                     Err(e) => {
-                        let display_name = session.get_display_name().unwrap_or("unknown session");
-                        tracing::error!("Failed to broadcast to {}: {e}", display_name);
+                        let display_name = session
+                            .get_display_name()
+                            .unwrap_or("unknown session");
+                        tracing::error!(
+                            "Failed to broadcast to {}: {e}",
+                            display_name
+                        );
                     }
                 }
             }
@@ -101,12 +114,16 @@ impl SessionManager {
     }
 
     /// Sends a packet to every *initialized* session on the server except the session with the given XUID.
-    pub fn broadcast_except<P: GamePacket + Encodable>(&self, packet: P, xuid: u64) {
+    pub fn broadcast_except<P: GamePacket + Encodable>(
+        &self,
+        packet: P,
+        xuid: u64,
+    ) {
         for kv in self.session_list.iter() {
             let session = kv.value();
             let sess_xuid = match session.get_xuid() {
                 Ok(x) => x,
-                Err(_) => continue 
+                Err(_) => continue,
             };
 
             // Don't broadcast to uninitialised sessions.
@@ -116,8 +133,13 @@ impl SessionManager {
                 match session.send(packet.clone()) {
                     Ok(_) => (),
                     Err(e) => {
-                        let display_name = session.get_display_name().unwrap_or("unknown session");
-                        tracing::error!("Failed to broadcast to {}: {e}", display_name);
+                        let display_name = session
+                            .get_display_name()
+                            .unwrap_or("unknown session");
+                        tracing::error!(
+                            "Failed to broadcast to {}: {e}",
+                            display_name
+                        );
                     }
                 }
             }

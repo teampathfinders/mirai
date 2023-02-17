@@ -1,6 +1,8 @@
 use std::net::SocketAddr;
 use std::num::NonZeroU64;
-use std::sync::atomic::{AtomicBool, AtomicU32, AtomicU64, Ordering, AtomicU16};
+use std::sync::atomic::{
+    AtomicBool, AtomicU16, AtomicU32, AtomicU64, Ordering,
+};
 use std::sync::{Arc, Weak};
 use std::time::{Duration, Instant};
 
@@ -12,17 +14,19 @@ use tokio_util::sync::CancellationToken;
 use uuid::Uuid;
 
 use crate::crypto::{Encryptor, IdentityData, UserData};
-use crate::instance_manager::{InstanceManager};
+use crate::instance_manager::InstanceManager;
 use crate::level_manager::LevelManager;
+use crate::network::packets::login::{DeviceOS, Disconnect};
+use crate::network::packets::{
+    GamePacket, MessageType, PlayerListRemove, TextMessage,
+};
 use crate::network::session::compound_collector::CompoundCollector;
 use crate::network::session::order_channel::OrderChannel;
 use crate::network::session::recovery_queue::RecoveryQueue;
 use crate::network::session::send_queue::SendQueue;
-use common::{AsyncDeque, Encodable, bail};
-use common::{error, VResult};
-use crate::network::packets::login::{DeviceOS, Disconnect};
-use crate::network::packets::{GamePacket, MessageType, PlayerListRemove, TextMessage};
 use crate::network::Skin;
+use common::{bail, AsyncDeque, Encodable};
+use common::{error, VResult};
 
 use super::SessionManager;
 
@@ -152,7 +156,7 @@ impl Session {
             compression_enabled: AtomicBool::new(false),
             receive_queue: AsyncDeque::new(5),
             address,
-            recovery_queue: Default::default()
+            recovery_queue: Default::default(),
         });
 
         // Start ticker
@@ -220,7 +224,7 @@ impl Session {
         })
     }
 
-    pub  fn get_user_data(&self) -> VResult<&UserData> {
+    pub fn get_user_data(&self) -> VResult<&UserData> {
         self.user_data.get().ok_or_else(|| {
             error!(NotInitialized, "User data has not been initialised yet")
         })
@@ -229,7 +233,10 @@ impl Session {
     /// Retrieves the identity of the client.
     pub fn get_uuid(&self) -> VResult<&Uuid> {
         let identity = self.identity.get().ok_or_else(|| {
-            error!(NotInitialized, "Identity ID data has not been initialised yet")
+            error!(
+                NotInitialized,
+                "Identity ID data has not been initialised yet"
+            )
         })?;
         Ok(&identity.uuid)
     }
@@ -245,7 +252,10 @@ impl Session {
     /// Retrieves the display name of the client.
     pub fn get_display_name(&self) -> VResult<&str> {
         let identity = self.identity.get().ok_or_else(|| {
-            error!(NotInitialized, "Display name data has not been initialised yet")
+            error!(
+                NotInitialized,
+                "Display name data has not been initialised yet"
+            )
         })?;
         Ok(&identity.display_name)
     }
@@ -258,7 +268,10 @@ impl Session {
 
     pub fn get_device_os(&self) -> VResult<DeviceOS> {
         let data = self.user_data.get().ok_or_else(|| {
-            error!(NotInitialized, "Device OS data has not been initialised yet")
+            error!(
+                NotInitialized,
+                "Device OS data has not been initialised yet"
+            )
         })?;
         Ok(data.build_platform)
     }
@@ -282,19 +295,21 @@ impl Session {
                     parameters: vec![],
                     platform_chat_id: "".to_owned(),
                     source_name: "".to_owned(),
-                    xuid: "".to_owned()
+                    xuid: "".to_owned(),
                 });
-    
-                let _ = self.broadcast_others(PlayerListRemove {
-                    entries: &[*uuid]
-                });
+
+                let _ = self
+                    .broadcast_others(PlayerListRemove { entries: &[*uuid] });
             }
         }
         self.active.cancel();
     }
 
     /// Sends a packet to all initialised sessions including self.
-    pub fn broadcast<P: GamePacket + Encodable>(&self, packet: P) -> VResult<()> {
+    pub fn broadcast<P: GamePacket + Encodable>(
+        &self,
+        packet: P,
+    ) -> VResult<()> {
         // Upgrade weak pointer to use it.
         // let tracker = self.tracker
         //     .upgrade()
@@ -305,8 +320,12 @@ impl Session {
     }
 
     /// Sends a packet to all initialised sessions other than self.
-    pub fn broadcast_others<P: GamePacket + Encodable>(&self, packet: P) -> VResult<()> {
-        self.session_manager.broadcast_except(packet, self.get_xuid()?);
+    pub fn broadcast_others<P: GamePacket + Encodable>(
+        &self,
+        packet: P,
+    ) -> VResult<()> {
+        self.session_manager
+            .broadcast_except(packet, self.get_xuid()?);
         Ok(())
     }
 

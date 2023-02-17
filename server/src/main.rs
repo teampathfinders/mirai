@@ -12,11 +12,12 @@ use tokio::runtime;
 use crate::instance_manager::InstanceManager;
 use common::VResult;
 
+mod command;
 mod config;
 mod crypto;
 mod instance_manager;
-mod network;
 mod level_manager;
+mod network;
 
 #[cfg(test)]
 mod test;

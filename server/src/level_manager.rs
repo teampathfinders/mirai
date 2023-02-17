@@ -3,7 +3,11 @@ use std::sync::Arc;
 use dashmap::DashMap;
 use parking_lot::{RwLock, RwLockReadGuard};
 
-use crate::network::{packets::{GameRule, GameRulesChanged, command::Command}, session::SessionManager};
+use crate::command::Command;
+use crate::network::{
+    packets::{GameRule, GameRulesChanged},
+    session::SessionManager,
+};
 
 #[derive(Debug)]
 pub struct LevelManager {
@@ -11,7 +15,7 @@ pub struct LevelManager {
     /// Currently set game rules.
     game_rules: DashMap<String, GameRule>,
     /// Used to broadcast level events to the sessions.
-    session_manager: Arc<SessionManager>
+    session_manager: Arc<SessionManager>,
 }
 
 impl LevelManager {
@@ -19,9 +23,9 @@ impl LevelManager {
         Self {
             commands: RwLock::new(Vec::new()),
             game_rules: DashMap::new(),
-            session_manager
+            session_manager,
         }
-    }    
+    }
 
     /// Returns a list of available commands.
     #[inline]
@@ -49,9 +53,8 @@ impl LevelManager {
     pub fn set_game_rule(&self, game_rule: GameRule) -> Option<GameRule> {
         let name = game_rule.name();
 
-        self.session_manager.broadcast(GameRulesChanged {
-            game_rules: &[game_rule]
-        });
+        self.session_manager
+            .broadcast(GameRulesChanged { game_rules: &[game_rule] });
         self.game_rules.insert(name.to_owned(), game_rule)
     }
 
@@ -64,8 +67,7 @@ impl LevelManager {
             self.game_rules.insert(name.to_owned(), *game_rule);
         }
 
-        self.session_manager.broadcast(GameRulesChanged {
-            game_rules
-        });
+        self.session_manager
+            .broadcast(GameRulesChanged { game_rules });
     }
 }
