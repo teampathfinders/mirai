@@ -72,6 +72,8 @@ pub enum VErrorKind {
     InvalidNbt,
     /// An invalid skin was given.
     InvalidSkin,
+    /// The client sent an invalid command.
+    InvalidCommand,
     /// An unknown error
     Other,
 }
@@ -190,5 +192,11 @@ impl From<std::ffi::NulError> for VError {
 impl<T> From<snap::write::IntoInnerError<T>> for VError {
     fn from(value: snap::write::IntoInnerError<T>) -> Self {
         Self::new(VErrorKind::Other, value.to_string())
+    }
+}
+
+impl From<dashmap::TryReserveError> for VError {
+    fn from(_: dashmap::TryReserveError) -> Self {
+        Self::new(VErrorKind::Other, "Failed to reserve Dashmap space".to_owned())
     }
 }

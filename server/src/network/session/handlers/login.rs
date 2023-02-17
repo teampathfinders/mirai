@@ -212,7 +212,12 @@ impl Session {
         let play_status = PlayStatus { status: Status::PlayerSpawn };
         self.send(play_status)?;
 
-        let commands = self.level_manager.get_commands();
+        let commands = self.level_manager
+            .get_commands()
+            .iter()
+            .map(|kv| kv.value().clone())
+            .collect::<Vec<_>>();
+
         let available_commands =
             AvailableCommands { commands: commands.as_slice() };
         self.send(available_commands)?;

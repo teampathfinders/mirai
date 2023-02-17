@@ -7,6 +7,7 @@ use common::{
     bail, BlockPosition, Decodable, VResult, Vector3f, Vector3i, Vector4f,
 };
 
+use crate::command::ParsedCommand;
 use crate::network::packets::command::{CommandRequest, SettingsCommand};
 use crate::network::packets::login::{ItemStack, ItemType, PermissionLevel};
 use crate::network::packets::{AbilityData, AddPlayer};
@@ -98,6 +99,11 @@ impl Session {
     pub fn handle_command_request(&self, packet: BytesMut) -> VResult<()> {
         let request = CommandRequest::decode(packet)?;
         tracing::info!("{request:?}");
+
+        let command_list = self.level_manager.get_commands();
+        let parsed = ParsedCommand::parse(command_list, &request.command)?;
+
+        tracing::info!("{parsed:?}");
 
         Ok(())
     }
