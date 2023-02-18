@@ -2,7 +2,6 @@ use base64::Engine;
 use bytes::{Buf, BytesMut};
 use jsonwebtoken::{Algorithm, DecodingKey, Validation};
 use serde_repr::Deserialize_repr;
-use spki::SubjectPublicKeyInfo;
 
 use crate::crypto::{
     parse_identity_data, parse_user_data, IdentityData, UserData,

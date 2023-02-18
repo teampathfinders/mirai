@@ -4,6 +4,7 @@ use base64::Engine;
 use bytes::{Buf, BytesMut};
 use common::{bail, error, VResult};
 use jsonwebtoken::{Algorithm, DecodingKey, Validation};
+use p384::pkcs8::spki;
 use uuid::Uuid;
 
 use crate::network::packets::login::{DeviceOS, UiProfile};
