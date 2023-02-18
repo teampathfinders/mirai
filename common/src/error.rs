@@ -18,6 +18,7 @@ macro_rules! nvassert {
     };
 }
 
+/// Bails from a function early, returning the specified error.
 #[macro_export]
 macro_rules! bail {
     ($err_type: ident, $fmt: expr, $($args:expr),+) => {
@@ -33,6 +34,8 @@ macro_rules! bail {
     };
 }
 
+/// Creates a new [`VError`].
+///
 #[macro_export]
 macro_rules! error {
     ($err_type: ident, $fmt: expr, $($args:expr),+) => {
@@ -44,6 +47,7 @@ macro_rules! error {
     };
 }
 
+/// Shorthand for `Result<T, VError>`.
 pub type VResult<T> = Result<T, VError>;
 
 #[derive(Debug, Copy, Clone)]

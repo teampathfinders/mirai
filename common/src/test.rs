@@ -2,7 +2,48 @@ use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr};
 
 use bytes::BytesMut;
 
-use crate::{ReadExtensions, VResult, WriteExtensions};
+use crate::{ReadExtensions, Vector, VResult, WriteExtensions};
+
+#[test]
+fn vector_types() {
+    let mut vec1 = Vector::from([1]);
+    assert_eq!(vec1.x, 1);
+
+    vec1.components_mut()[0] = 2;
+    assert_eq!(vec1.x, 2);
+    vec1.x = 3;
+    assert_eq!(vec1.x, 3);
+
+    let mut vec2 = Vector::from([1, 2]);
+    assert_eq!(vec2.x, 1);
+    assert_eq!(vec2.y, 2);
+
+    vec2.components_mut()[1] = 3;
+    assert_eq!(vec2.y, 3);
+    vec2.y = 4;
+    assert_eq!(vec2.y, 4);
+
+    let mut vec3 = Vector::from([1, 2, 3]);
+    assert_eq!(vec3.x, 1);
+    assert_eq!(vec3.y, 2);
+    assert_eq!(vec3.z, 3);
+
+    vec3.components_mut()[2] = 4;
+    assert_eq!(vec3.z, 4);
+    vec3.z = 5;
+    assert_eq!(vec3.z, 5);
+
+    let mut vec4 = Vector::from([1, 2, 3, 4]);
+    assert_eq!(vec4.x, 1);
+    assert_eq!(vec4.y, 2);
+    assert_eq!(vec4.z, 3);
+    assert_eq!(vec4.w, 4);
+
+    vec4.components_mut()[3] = 5;
+    assert_eq!(vec4.w, 5);
+    vec4.w = 6;
+    assert_eq!(vec4.w, 6);
+}
 
 #[test]
 fn read_write_string() {

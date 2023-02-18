@@ -21,15 +21,16 @@ pub struct ChunkManager {
 }
 
 impl ChunkManager {
-    pub fn new<P: AsRef<str>>(path: P, autosave_interval: Duration) -> VResult<Arc<Self>> {
-        let manager = Arc::new(Self {
-            database: ChunkDatabase::new(path)?
-        });
+    pub fn new<P: AsRef<str>>(
+        path: P,
+        autosave_interval: Duration,
+    ) -> VResult<Arc<Self>> {
+        let manager = Arc::new(Self { database: ChunkDatabase::new(path)? });
 
         let clone = manager.clone();
-        tokio::spawn(async move {
-            clone.autosave_job(autosave_interval).await
-        });
+        tokio::spawn(
+            async move { clone.autosave_job(autosave_interval).await },
+        );
 
         Ok(manager)
     }
@@ -41,7 +42,7 @@ impl ChunkManager {
         todo!("Implement chunk flush.");
 
         Ok(())
-    }   
+    }
 
     /// Simple job that runs [`flush`](Self::flush) on a specified interval.
     async fn autosave_job(self: Arc<Self>, interval: Duration) {

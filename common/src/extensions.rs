@@ -25,6 +25,7 @@ lazy_static! {
         SocketAddr::V4(SocketAddrV4::new(Ipv4Addr::new(255, 255, 255, 255), 19132));
 }
 
+/// Trait implemented for types that can be used as variable integers.
 pub trait VarInt: Sized + ShrAssign<Self> + PartialOrd<Self> {}
 
 impl VarInt for u32 {}
@@ -32,6 +33,7 @@ impl VarInt for i32 {}
 impl VarInt for u64 {}
 impl VarInt for i64 {}
 
+/// Determines the size in bytes of the given variable integer.
 pub fn size_of_var<T: VarInt + FromPrimitive>(mut value: T) -> usize {
     let mut count = 0;
     while value >= T::from_u32(0x80).unwrap() {

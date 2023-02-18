@@ -1,7 +1,9 @@
+use std::ops::{Deref, DerefMut};
 use bytes::{BufMut, BytesMut};
 
 /// Type and size independent vector type
 #[derive(Debug, Clone)]
+#[repr(C)]
 pub struct Vector<T, const N: usize> {
     components: [T; N],
 }
@@ -9,6 +11,16 @@ pub struct Vector<T, const N: usize> {
 impl<T: Clone, const N: usize> Vector<T, N> {
     pub fn components(&self) -> [T; N] {
         self.components.clone()
+    }
+}
+
+impl<T, const N: usize> Vector<T, N> {
+    pub fn components_ref(&self) -> &[T; N] {
+        &self.components
+    }
+
+    pub fn components_mut(&mut self) -> &mut [T; N] {
+        &mut self.components
     }
 }
 
@@ -23,6 +35,88 @@ impl<const N: usize> Vector<f32, N> {
         for i in 0..N {
             buffer.put_f32(self.components[i]);
         }
+    }
+}
+
+#[repr(C)]
+pub struct Vector1Accessors<T> {
+    pub x: T
+}
+
+impl<T> Deref for Vector<T, 1> {
+    type Target = Vector1Accessors<T>;
+
+    fn deref(&self) -> &Self::Target {
+        unsafe { &*(self as *const _ as *const Vector1Accessors<T>) }
+    }
+}
+
+impl<T> DerefMut for Vector<T, 1> {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        unsafe { &mut *(self as *mut _ as *mut Vector1Accessors<T>) }
+    }
+}
+
+#[repr(C)]
+pub struct Vector2Accessors<T> {
+    pub x: T,
+    pub y: T
+}
+
+impl<T> Deref for Vector<T, 2> {
+    type Target = Vector2Accessors<T>;
+
+    fn deref(&self) -> &Self::Target {
+        unsafe { &*(self as *const _ as *const Vector2Accessors<T>) }
+    }
+}
+
+impl<T> DerefMut for Vector<T, 2> {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        unsafe { &mut *(self as *mut _ as *mut Vector2Accessors<T>) }
+    }
+}
+
+#[repr(C)]
+pub struct Vector3Accessors<T> {
+    pub x: T,
+    pub y: T,
+    pub z: T
+}
+
+impl<T> Deref for Vector<T, 3> {
+    type Target = Vector3Accessors<T>;
+
+    fn deref(&self) -> &Self::Target {
+        unsafe { &*(self as *const _ as *const Vector3Accessors<T>) }
+    }
+}
+
+impl<T> DerefMut for Vector<T, 3> {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        unsafe { &mut *(self as *mut _ as *mut Vector3Accessors<T>) }
+    }
+}
+
+#[repr(C)]
+pub struct Vector4Accessors<T> {
+    pub x: T,
+    pub y: T,
+    pub z: T,
+    pub w: T
+}
+
+impl<T> Deref for Vector<T, 4> {
+    type Target = Vector4Accessors<T>;
+
+    fn deref(&self) -> &Self::Target {
+        unsafe { &*(self as *const _ as *const Vector4Accessors<T>) }
+    }
+}
+
+impl<T> DerefMut for Vector<T, 4> {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        unsafe { &mut *(self as *mut _ as *mut Vector4Accessors<T>) }
     }
 }
 

@@ -6,25 +6,19 @@ use base64::Engine;
 use bytes::{BufMut, BytesMut};
 use common::{bail, VResult};
 use ctr::cipher::KeyIvInit;
-// use ecdsa::elliptic_curve::pkcs8::EncodePrivateKey;
-use p384::ecdsa::SigningKey;
+use ctr::cipher::{StreamCipher, StreamCipherSeekCore};
 use flate2::read::DeflateDecoder;
 use jsonwebtoken::{Algorithm, DecodingKey, EncodingKey, Validation};
 use lazy_static::lazy_static;
 use p384::ecdh::diffie_hellman;
+use p384::ecdsa::SigningKey;
+use p384::pkcs8::{DecodePublicKey, EncodePrivateKey, EncodePublicKey};
 use p384::{NistP384, PublicKey};
-// use p384::ecdh::{diffie_hellman, SharedSecret};
-// use p384::PublicKey;
-// use p384::{NistP384, SecretKey};
 use parking_lot::Mutex;
 use rand::distributions::Alphanumeric;
 use rand::rngs::OsRng;
 use rand::Rng;
 use sha2::{Digest, Sha256};
-use p384::pkcs8::{DecodePublicKey, EncodePublicKey, EncodePrivateKey};
-// use spki::der::SecretDocument;
-// use spki::{DecodePublicKey, EncodePublicKey};
-use ctr::cipher::{StreamCipher, StreamCipherSeekCore};
 
 type Aes256CtrBE = ctr::Ctr64BE<aes::Aes256>;
 

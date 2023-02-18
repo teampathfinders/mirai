@@ -22,7 +22,7 @@ impl Deserialize for BlockPickRequest {
         let position = buffer.get_vec3i();
         let with_nbt = buffer.get_bool();
         let hotbar_slot = buffer.get_u8();
-
+        
         Ok(Self {
             position,
             with_nbt,
