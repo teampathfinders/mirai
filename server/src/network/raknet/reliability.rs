@@ -49,11 +49,13 @@ impl TryFrom<u8> for Reliability {
 
 impl Reliability {
     /// Returns whether this reliability is reliable.
+    #[inline]
     pub const fn is_reliable(self) -> bool {
         !matches!(self, Self::Unreliable | Self::UnreliableSequenced)
     }
 
     /// Returns whether this reliability is ordered.
+    #[inline]
     pub const fn is_ordered(self) -> bool {
         matches!(
             self,
@@ -64,6 +66,7 @@ impl Reliability {
     }
 
     /// Returns whether this reliability is sequenced.
+    #[inline]
     pub const fn is_sequenced(self) -> bool {
         matches!(self, Self::UnreliableSequenced | Self::ReliableSequenced)
     }

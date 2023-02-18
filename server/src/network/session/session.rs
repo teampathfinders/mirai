@@ -91,7 +91,7 @@ pub struct Session {
     /// Indicates whether this session is active.
     pub active: CancellationToken,
     /// Batch number last assigned by the server.
-    pub batch_number: AtomicU32,
+    pub batch_sequence_number: AtomicU32,
     /// Sequence index last assigned by the server.
     pub sequence_index: AtomicU32,
     /// Acknowledgment index last used by the server.
@@ -144,7 +144,7 @@ impl Session {
             guid,
             last_update: RwLock::new(Instant::now()),
             active: CancellationToken::new(),
-            batch_number: Default::default(),
+            batch_sequence_number: Default::default(),
             sequence_index: Default::default(),
             acknowledgment_index: Default::default(),
             compound_id: Default::default(),
@@ -218,12 +218,14 @@ impl Session {
         self.initialized.load(Ordering::SeqCst)
     }
 
+    #[inline]
     pub fn get_identity_data(&self) -> VResult<&IdentityData> {
         self.identity.get().ok_or_else(|| {
             error!(NotInitialized, "Identity data has not been initialised yet")
         })
     }
 
+    #[inline]
     pub fn get_user_data(&self) -> VResult<&UserData> {
         self.user_data.get().ok_or_else(|| {
             error!(NotInitialized, "User data has not been initialised yet")
@@ -231,6 +233,7 @@ impl Session {
     }
 
     /// Retrieves the identity of the client.
+    #[inline]
     pub fn get_uuid(&self) -> VResult<&Uuid> {
         let identity = self.identity.get().ok_or_else(|| {
             error!(
@@ -242,6 +245,7 @@ impl Session {
     }
 
     /// Retrieves the XUID of the client.
+    #[inline]
     pub fn get_xuid(&self) -> VResult<u64> {
         let identity = self.identity.get().ok_or_else(|| {
             error!(NotInitialized, "XUID data has not been initialised yet")
@@ -250,6 +254,7 @@ impl Session {
     }
 
     /// Retrieves the display name of the client.
+    #[inline]
     pub fn get_display_name(&self) -> VResult<&str> {
         let identity = self.identity.get().ok_or_else(|| {
             error!(
@@ -260,12 +265,14 @@ impl Session {
         Ok(&identity.display_name)
     }
 
+    #[inline]
     pub fn get_encryptor(&self) -> VResult<&Encryptor> {
         self.encryptor.get().ok_or_else(|| {
             error!(NotInitialized, "Encryption has not been initialised yet")
         })
-    }
+    }   
 
+    #[inline]
     pub fn get_device_os(&self) -> VResult<DeviceOS> {
         let data = self.user_data.get().ok_or_else(|| {
             error!(
@@ -277,6 +284,7 @@ impl Session {
     }
 
     /// Returns the randomly generated GUID given by the client itself.
+    #[inline]
     pub const fn get_guid(&self) -> u64 {
         self.guid
     }
@@ -367,6 +375,7 @@ impl Session {
 
     /// Called by the [`SessionTracker`](super::tracker::SessionTracker) to forward packets from the network service to
     /// the session corresponding to the client.
+    #[inline]
     pub fn on_packet_received(self: &Arc<Self>, buffer: BytesMut) {
         self.receive_queue.push(buffer);
     }

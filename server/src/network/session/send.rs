@@ -32,6 +32,7 @@ const DEFAULT_CONFIG: PacketConfig = PacketConfig {
 impl Session {
     /// Sends a game packet with default settings
     /// (reliable ordered and medium priority)
+    #[inline]
     pub fn send<T: GamePacket + Encodable>(&self, packet: T) -> VResult<()> {
         self.send_packet_with_config(packet, DEFAULT_CONFIG)
     }
@@ -86,6 +87,7 @@ impl Session {
 
     /// Sends a raw buffer with default settings
     /// (reliable ordered and medium priority).
+    #[inline]
     pub fn send_raw_buffer(&self, buffer: BytesMut) {
         self.send_raw_buffer_with_config(buffer, DEFAULT_CONFIG);
     }
@@ -190,15 +192,17 @@ impl Session {
             let frame_size = frame.body.len() + std::mem::size_of::<Frame>();
 
             if frame_size > self.mtu as usize {
-                self.batch_number.fetch_sub(1, Ordering::SeqCst);
+                self.batch_sequence_number.fetch_sub(1, Ordering::SeqCst);
 
                 let compound = self.split_frame(frame);
                 self.send_raw_frames(compound).await?;
             }
         }
 
-        let mut batch = FrameBatch::default()
-            .batch_number(self.batch_number.fetch_add(1, Ordering::SeqCst));
+        let mut batch = FrameBatch {
+            sequence_number: self.batch_sequence_number.fetch_add(1, Ordering::SeqCst),
+            frames: vec![]
+        };
 
         let mut has_reliable_packet = false;
         for mut frame in frames {
@@ -237,8 +241,8 @@ impl Session {
 
                 has_reliable_packet = false;
                 batch = FrameBatch {
-                    batch_number: self
-                        .batch_number
+                    sequence_number: self
+                        .batch_sequence_number
                         .fetch_add(1, Ordering::SeqCst),
                     frames: vec![frame],
                 };
@@ -255,7 +259,7 @@ impl Session {
             // TODO: Add IPv6 support
             self.ipv4_socket.send_to(&encoded, self.address).await?;
         } else {
-            self.batch_number.fetch_sub(1, Ordering::SeqCst);
+            self.batch_sequence_number.fetch_sub(1, Ordering::SeqCst);
         }
 
         Ok(())

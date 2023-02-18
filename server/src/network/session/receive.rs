@@ -63,10 +63,10 @@ impl Session {
     async fn handle_frame_batch(&self, task: BytesMut) -> VResult<()> {
         let batch = FrameBatch::decode(task)?;
         self.client_batch_number
-            .fetch_max(batch.get_batch_number(), Ordering::SeqCst);
+            .fetch_max(batch.sequence_number, Ordering::SeqCst);
 
-        for frame in batch.get_frames() {
-            self.handle_frame(frame, batch.get_batch_number()).await?;
+        for frame in &batch.frames {
+            self.handle_frame(frame, batch.sequence_number).await?;
         }
 
         Ok(())

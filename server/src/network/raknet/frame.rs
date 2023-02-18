@@ -27,7 +27,7 @@ pub const NEEDS_B_AND_AS_BIT_FLAG: u8 = 0x04;
 #[derive(Debug, Default, Clone)]
 pub struct FrameBatch {
     /// Unique ID of this frame batch.
-    pub batch_number: u32,
+    pub sequence_number: u32,
     /// Individual frames
     pub frames: Vec<Frame>,
 }
@@ -35,6 +35,7 @@ pub struct FrameBatch {
 impl FrameBatch {
     /// Gives a rough estimate of the size of this batch in bytes.
     /// This estimate will always be greater than the actual size of the batch.
+    #[inline]
     pub fn estimate_size(&self) -> usize {
         std::mem::size_of::<Self>()
             + self.frames.iter().fold(0, |acc, f| {
@@ -42,24 +43,7 @@ impl FrameBatch {
             })
     }
 
-    pub const fn batch_number(mut self, batch_number: u32) -> Self {
-        self.batch_number = batch_number;
-        self
-    }
-
-    pub const fn get_batch_number(&self) -> u32 {
-        self.batch_number
-    }
-
-    pub fn push(mut self, frame: Frame) -> Self {
-        self.frames.push(frame);
-        self
-    }
-
-    pub fn get_frames(&self) -> &[Frame] {
-        &self.frames
-    }
-
+    #[inline]
     pub fn is_empty(&self) -> bool {
         self.frames.is_empty()
     }
@@ -77,7 +61,7 @@ impl Decodable for FrameBatch {
         }
         assert_eq!(buffer.remaining(), 0);
 
-        Ok(Self { batch_number, frames })
+        Ok(Self { sequence_number: batch_number, frames })
     }
 }
 
@@ -86,7 +70,7 @@ impl Encodable for FrameBatch {
         let mut buffer = BytesMut::new();
 
         buffer.put_u8(CONNECTED_PEER_BIT_FLAG);
-        buffer.put_u24_le(self.batch_number);
+        buffer.put_u24_le(self.sequence_number);
 
         for frame in &self.frames {
             frame.encode(&mut buffer);

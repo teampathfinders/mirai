@@ -23,6 +23,7 @@ impl OrderChannel {
         }
     }
 
+    #[inline]
     pub fn get_server_index(&self) -> u32 {
         self.last_server_index.fetch_add(1, Ordering::SeqCst)
     }

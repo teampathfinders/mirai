@@ -42,6 +42,7 @@ impl SendQueue {
         }
     }
 
+    #[inline]
     pub fn is_empty(&self) -> bool {
         self.is_empty.load(Ordering::SeqCst)
     }

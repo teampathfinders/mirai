@@ -67,6 +67,7 @@ impl SessionManager {
         self.session_list.insert(address, session);
     }
 
+    #[inline]
     pub fn set_level_manager(
         &self,
         level_manager: Weak<LevelManager>,
@@ -164,15 +165,18 @@ impl SessionManager {
     }
 
     /// Returns how many clients are currently connected this tracker.
+    #[inline]
     pub fn session_count(&self) -> usize {
         self.session_list.len()
     }
 
     /// Returns the maximum amount of sessions this tracker will allow.
+    #[inline]
     pub fn max_session_count(&self) -> usize {
         SERVER_CONFIG.read().max_players
     }
 
+    #[inline]
     async fn garbage_collector(
         session_list: Arc<DashMap<SocketAddr, Arc<Session>>>,
     ) -> ! {

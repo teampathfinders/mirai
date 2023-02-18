@@ -13,8 +13,9 @@ impl RecoveryQueue {
         Self { frames: DashMap::new() }
     }
 
+    #[inline]
     pub fn insert(&self, batch: FrameBatch) {
-        self.frames.insert(batch.get_batch_number(), batch);
+        self.frames.insert(batch.sequence_number, batch);
     }
 
     pub fn confirm(&self, records: &Vec<AcknowledgementRecord>) {
