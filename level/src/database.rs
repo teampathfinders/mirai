@@ -8,6 +8,8 @@ use crate::ffi;
 /// Rust interface around a C++ LevelDB database.
 #[derive(Debug)]
 pub struct ChunkDatabase {
+    /// Pointer to the C++ Database struct, containing the database and corresponding options.
+    /// This data is heap-allocated and must therefore also be deallocated by C++ when it is no longer needed.
     pointer: *mut c_void,
 }
 
@@ -69,15 +71,20 @@ impl ChunkDatabase {
 
 impl Drop for ChunkDatabase {
     fn drop(&mut self) {
+        // Make sure to clean up the LevelDB resources when the database is dropped.
+        // This can only be done by C++.
         unsafe {
             ffi::level_close_database(self.pointer);
         }
     }
 }
 
+/// SAFETY: The LevelDB authors explicitly state their database is thread-safe.
 unsafe impl Send for ChunkDatabase {}
+/// SAFETY: The LevelDB authors explicitly state their database is thread-safe.
 unsafe impl Sync for ChunkDatabase {}
 
+/// Translates an error received from the FFI, into a [`VError`].
 fn translate_ffi_error(result: ffi::LevelResult) -> VError {
     let ffi_err = unsafe {
         // SAFETY: This string is guaranteed to have a null termination character.
