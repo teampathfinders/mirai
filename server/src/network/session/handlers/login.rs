@@ -212,7 +212,8 @@ impl Session {
         let play_status = PlayStatus { status: Status::PlayerSpawn };
         self.send(play_status)?;
 
-        let commands = self.level_manager
+        let commands = self
+            .level_manager
             .get_commands()
             .iter()
             .map(|kv| kv.value().clone())

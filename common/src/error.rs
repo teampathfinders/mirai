@@ -201,6 +201,9 @@ impl<T> From<snap::write::IntoInnerError<T>> for VError {
 
 impl From<dashmap::TryReserveError> for VError {
     fn from(_: dashmap::TryReserveError) -> Self {
-        Self::new(VErrorKind::Other, "Failed to reserve Dashmap space".to_owned())
+        Self::new(
+            VErrorKind::Other,
+            "Failed to reserve Dashmap space".to_owned(),
+        )
     }
 }

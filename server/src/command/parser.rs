@@ -1,3 +1,4 @@
+use std::cmp::Ordering;
 use std::collections::HashMap;
 
 use std::str::Split;
@@ -35,7 +36,7 @@ pub struct ParsedCommand {
 impl ParsedCommand {
     /// Parses the command and verifies the arguments.
     pub fn parse(command_list: &DashMap<String, Command>, raw: &str)
-        -> Result<ParsedCommand, String>
+        -> Result<Self, String>
     {
         let mut parts = raw.split(' ');
         
@@ -56,19 +57,23 @@ impl ParsedCommand {
             for overload in &command.overloads {
                 let parse_result = parse_overload(overload, parts.clone());
                 if let Ok(parsed) = parse_result {
-                    return Ok(ParsedCommand {
+                    return Ok(Self {
                         name, parameters: parsed
                     })
                 } else {
                     let err = parse_result.unwrap_err();
 
                     // Only log the overload that was most "successful". (i.e. most arguments parsed correctly)
-                    if furthest_param < err.1 as i32 {
-                        latest_error = err.0;
-                        furthest_param = err.1 as i32;
-                    } else if furthest_param == err.1 as i32 {
-                        // If two overloads are equally succesfull, use the newest one only.
-                        latest_error = err.0;
+                    match furthest_param.cmp(&(err.1 as i32)) {
+                        Ordering::Less => {
+                            latest_error = err.0;
+                            furthest_param = err.1 as i32
+                        },
+                        // If two overloads are equally successful, use the newest one only.
+                        Ordering::Equal => {
+                            latest_error = err.0;
+                        },
+                        Ordering::Greater => ()
                     }
                 }
             }
@@ -89,12 +94,10 @@ fn parse_overload(overload: &CommandOverload, mut parts: Split<char>)
     for (i, parameter) in overload.parameters.iter().enumerate() {
         let part = if let Some(part) = parts.next() {
             part
+        } else if parameter.optional {
+            return Ok(parsed)
         } else {
-            if parameter.optional {
-                return Ok(parsed)
-            } else {
-                return Err((format!("Expected {} arguments, got {}", overload.parameters.len(), i), i))
-            }
+            return Err((format!("Expected {} arguments, got {}", overload.parameters.len(), i), i))
         };
 
         // Verify that the argument matches one of the predefined options.

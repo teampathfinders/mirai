@@ -270,7 +270,7 @@ impl Session {
         self.encryptor.get().ok_or_else(|| {
             error!(NotInitialized, "Encryption has not been initialised yet")
         })
-    }   
+    }
 
     #[inline]
     pub fn get_device_os(&self) -> VResult<DeviceOS> {

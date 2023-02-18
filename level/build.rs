@@ -25,6 +25,15 @@ fn main() {
         );
     }
 
+    // println!(
+    //     "cargo:rustc-link-search=native={}/build/RelWithDebInfo",
+    //     dst.display()
+    // );
+    // println!(
+    //     "cargo:rustc-link-search=native={}/build/vendor/RelWithDebInfo",
+    //     dst.display()
+    // );
+
     println!("cargo:rustc-link-lib=static=leveldb-wrapper");
     println!("cargo:rustc-link-lib=static=leveldb-mcpe");
 }

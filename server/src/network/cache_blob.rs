@@ -16,7 +16,7 @@ impl CacheBlob {
     }
 
     #[inline]
-    pub fn len(&self) -> usize {
+    pub const fn len(&self) -> usize {
         std::mem::size_of::<u64>() + self.payload.len()
     }
 }

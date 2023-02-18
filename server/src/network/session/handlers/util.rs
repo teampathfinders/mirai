@@ -8,7 +8,10 @@ use common::{
 };
 
 use crate::command::ParsedCommand;
-use crate::network::packets::command::{CommandRequest, SettingsCommand, CommandOutput, CommandOutputType, CommandOutputMessage};
+use crate::network::packets::command::{
+    CommandOutput, CommandOutputMessage, CommandOutputType, CommandRequest,
+    SettingsCommand,
+};
 use crate::network::packets::login::{ItemStack, ItemType, PermissionLevel};
 use crate::network::packets::{AbilityData, AddPlayer};
 use crate::network::{
@@ -111,13 +114,11 @@ impl Session {
                 request_id: &request.request_id,
                 output_type: CommandOutputType::AllOutput,
                 success_count: 0,
-                output: &[
-                    CommandOutputMessage {
-                        is_success: false,
-                        message: &result.unwrap_err(),
-                        parameters: &[]
-                    }
-                ]
+                output: &[CommandOutputMessage {
+                    is_success: false,
+                    message: &result.unwrap_err(),
+                    parameters: &[],
+                }],
             };
             self.send(command_output)?;
         }

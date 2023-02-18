@@ -27,93 +27,6 @@ impl GamePacket for AvailableCommands<'_> {
 
 impl Encodable for AvailableCommands<'_> {
     fn encode(&self) -> VResult<BytesMut> {
-        // let mut buffer = BytesMut::new();
-
-        // let mut enum_set = HashSet::new();
-        // let mut enum_values = HashSet::new();
-
-        // let mut suffix_set = HashSet::new();
-
-        // for command in self.commands {
-        //     if let Some(ref aliases) = command.aliases {
-        //         enum_set.insert(aliases);
-                
-        //         for option in &aliases.options {
-        //             enum_values.insert(option);
-        //         }
-        //     }
-
-        //     for overload in &command.overloads {
-        //         for parameter in &overload.parameters {
-        //             if let Some(ref param_enum) = parameter.enum_data {
-        //                 enum_set.insert(param_enum);
-
-        //                 for option in &param_enum.options {
-        //                     enum_values.insert(option);
-        //                 }
-        //             }
-
-        //             if let Some(ref suffix) = parameter.suffix {
-        //                 suffix_set.insert(suffix);
-        //             }
-        //         }
-        //     }       
-
-        //     // Encode enums.
-        //     buffer.put_var_u32(enum_values.len() as u32);
-        //     for value in enum_values {
-        //         buffer.put_string(value);
-        //     }   
-
-        //     // Encode suffixes.
-        //     buffer.put_var_u32(suffix_set.len() as u32);
-        //     for suffix in suffix_set {
-        //         buffer.put_string(suffix);
-        //     }
-
-        //     buffer.put_var_u32(enum_set.len() as u32);
-        //     for command_enum in enum_set {
-        //         buffer.put_string(&command_enum.name);
-                
-        //         buffer.put_var_u32(command_enum.options.len() as u32);
-        //         for option in &command_enum.options {
-        //             let index = enum_values
-        //                 .iter()
-        //                 .enumerate()
-        //                 .find(|(k, v)| option == **v);
-
-                    
-        //             if index.is_none() {
-        //                 todo!();
-        //             }
-        //             let index = index.unwrap().0;
-
-        //             let enum_value_count = enum_values.len();
-        //             if enum_value_count <= u8::MAX as usize {
-        //                 buffer.put_u8(index as u8);
-        //             } else if enum_value_count <= u16::MAX as usize {
-        //                 buffer.put_i16_le(index as i16);
-        //             } else {
-        //                 buffer.put_i32_le(index as i32);
-        //             }
-        //         }
-        //     }
-
-        //     buffer.put_var_u32(self.commands.len() as u32);
-        //     for command in self.commands {
-        //         buffer.put_string(&command.name);
-        //         buffer.put_string(&command.description);
-        //         buffer.put_i16_le(0);
-        //         buffer.put_u8(command.permission_level as u8);
-
-        //         buffer.put_i16_le(if let Some(ref aliases) = command.aliases {
-
-        //         })
-        //     }
-        // }
-
-        // Ok(buffer)
-
         let mut buffer = BytesMut::new();
 
         let mut value_indices = HashMap::new();
@@ -145,14 +58,12 @@ impl Encodable for AvailableCommands<'_> {
         for command in self.commands {
             for overload in &command.overloads {
                 for parameter in &overload.parameters {
-                    if !parameter.suffix.is_empty() {
-                        if !suffix_indices.contains_key(&parameter.suffix) {
-                            suffix_indices.insert(
-                                &parameter.suffix,
-                                suffixes.len() as u32,
-                            );
-                            suffixes.push(&parameter.suffix);
-                        }
+                    if !parameter.suffix.is_empty() && !suffix_indices.contains_key(&parameter.suffix) {
+                        suffix_indices.insert(
+                            &parameter.suffix,
+                            suffixes.len() as u32,
+                        );
+                        suffixes.push(&parameter.suffix);
                     }
                 }
             }
@@ -178,10 +89,8 @@ impl Encodable for AvailableCommands<'_> {
                 for parameter in &overload.parameters {
                     if let Some(ref command_enum) = parameter.command_enum {
                         if !command_enum.dynamic
-                        && !command_enum.options.is_empty()
-                    {
-                        if !enum_indices
-                            .contains_key(&command_enum.enum_id)
+                            && !command_enum.options.is_empty()
+                            && !enum_indices.contains_key(&command_enum.enum_id)
                         {
                             enum_indices.insert(
                                 command_enum.enum_id.clone(),
@@ -189,7 +98,6 @@ impl Encodable for AvailableCommands<'_> {
                             );
                             enums.push(command_enum.clone());
                         }
-                    }
                     }
                 }
             }
@@ -201,16 +109,12 @@ impl Encodable for AvailableCommands<'_> {
             for overload in &command.overloads {
                 for parameter in &overload.parameters {
                     if let Some(ref command_enum) = parameter.command_enum {
-                        if command_enum.dynamic {
-                            if !dynamic_indices
-                                .contains_key(&command_enum.enum_id)
-                            {
-                                dynamic_indices.insert(
-                                    &command_enum.enum_id,
-                                    dynamic_enums.len() as u32,
-                                );
-                                dynamic_enums.push(&parameter.command_enum);
-                            }
+                        if command_enum.dynamic && !dynamic_indices.contains_key(&command_enum.enum_id) {
+                            dynamic_indices.insert(
+                                &command_enum.enum_id,
+                                dynamic_enums.len() as u32,
+                            );
+                            dynamic_enums.push(&parameter.command_enum);
                         }
                     }
                 }
@@ -239,18 +143,18 @@ impl Encodable for AvailableCommands<'_> {
                 } else if index_count <= u16::MAX as u32 {
                     buffer.put_u16_le(value_indices[option] as u16);
                 } else {
-                    buffer.put_u32_le(value_indices[option] as u32);
+                    buffer.put_u32_le(value_indices[option]);
                 }
             }
         }
 
         buffer.put_var_u32(self.commands.len() as u32);
         for command in self.commands {
-            let mut alias = -1i32;
-            if !command.aliases.is_empty() {
-                alias =
-                    enum_indices[&(command.name.clone() + "Aliases")] as i32;
-            }
+            let mut alias = if !command.aliases.is_empty() {
+                enum_indices[&(command.name.clone() + "Aliases")] as i32
+            } else {
+                -1
+            };
 
             buffer.put_string(&command.name);
             buffer.put_string(&command.description);
@@ -290,14 +194,12 @@ impl Encodable for AvailableCommands<'_> {
         }
 
         buffer.put_var_u32(dynamic_enums.len() as u32);
-        for dynamic_enum in &dynamic_enums {
-            if let Some(ref dynamic_enum) = dynamic_enum {
-                buffer.put_string(&dynamic_enum.enum_id);
-                buffer.put_var_u32(dynamic_enum.options.len() as u32);
+        for dynamic_enum in dynamic_enums.iter().copied().flatten() {
+            buffer.put_string(&dynamic_enum.enum_id);
+            buffer.put_var_u32(dynamic_enum.options.len() as u32);
 
-                for option in &dynamic_enum.options {
-                    buffer.put_string(option);
-                }
+            for option in &dynamic_enum.options {
+                buffer.put_string(option);
             }
         }
 

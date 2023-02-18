@@ -200,8 +200,10 @@ impl Session {
         }
 
         let mut batch = FrameBatch {
-            sequence_number: self.batch_sequence_number.fetch_add(1, Ordering::SeqCst),
-            frames: vec![]
+            sequence_number: self
+                .batch_sequence_number
+                .fetch_add(1, Ordering::SeqCst),
+            frames: vec![],
         };
 
         let mut has_reliable_packet = false;

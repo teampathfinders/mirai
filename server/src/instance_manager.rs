@@ -11,8 +11,8 @@ use tokio::sync::OnceCell;
 use tokio_util::sync::CancellationToken;
 
 use crate::command::{
-    Command, CommandEnum, CommandOverload, CommandParameter,
-    CommandDataType, CommandPermissionLevel,
+    Command, CommandDataType, CommandEnum, CommandOverload, CommandParameter,
+    CommandPermissionLevel,
 };
 use crate::config::SERVER_CONFIG;
 use crate::level_manager::LevelManager;

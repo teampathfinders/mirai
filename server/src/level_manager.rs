@@ -1,8 +1,8 @@
 use std::sync::Arc;
 
 use common::VResult;
-use dashmap::DashMap;
 use dashmap::mapref::one::Ref;
+use dashmap::DashMap;
 use parking_lot::{RwLock, RwLockReadGuard};
 
 use crate::command::Command;
@@ -37,7 +37,7 @@ impl LevelManager {
 
     /// Returns a list of available commands.
     #[inline]
-    pub fn get_commands(&self) -> &DashMap<String, Command> {
+    pub const fn get_commands(&self) -> &DashMap<String, Command> {
         &self.commands
     }
 

@@ -214,7 +214,8 @@ pub fn parse_identity_data(
 ) -> VResult<IdentityTokenPayload> {
     let token_length = buffer.get_u32_le();
     let position = buffer.len() - buffer.remaining();
-    let token_chain = &buffer.as_ref()[position..(position + token_length as usize)];
+    let token_chain =
+        &buffer.as_ref()[position..(position + token_length as usize)];
 
     tracing::debug!("{}", String::from_utf8_lossy(token_chain).to_string());
 

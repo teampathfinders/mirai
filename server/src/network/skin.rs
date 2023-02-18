@@ -378,7 +378,7 @@ mod base64 {
     pub fn deserialize<'de, D: Deserializer<'de>>(d: D) -> Result<Bytes, D::Error> {
         let base64 = String::deserialize(d)?;
 
-        let bytes = ENGINE.decode(base64).map_err(|e| serde::de::Error::custom(e))?;
+        let bytes = ENGINE.decode(base64).map_err(serde::de::Error::custom)?;
         Ok(Bytes::from(bytes))
     }
 }
@@ -392,9 +392,9 @@ mod base64_string {
 
     pub fn deserialize<'de, D: Deserializer<'de>>(d: D) -> Result<String, D::Error> {
         let base64 = String::deserialize(d)?;
-        let bytes = ENGINE.decode(base64).map_err(|e| serde::de::Error::custom(e))?;
+        let bytes = ENGINE.decode(base64).map_err(serde::de::Error::custom)?;
 
-        String::from_utf8(bytes).map_err(|e| serde::de::Error::custom(e))
+        String::from_utf8(bytes).map_err(serde::de::Error::custom)
     }
 }
 
