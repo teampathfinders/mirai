@@ -1,5 +1,5 @@
 use bytes::BytesMut;
-use common::{Encodable, VResult, WriteExtensions};
+use common::{Encodable, VResult, WriteExtensions, size_of_var};
 
 use crate::network::packets::GamePacket;
 
@@ -16,7 +16,11 @@ impl GamePacket for ConnectAutomationClient<'_> {
 
 impl Encodable for ConnectAutomationClient<'_> {
     fn encode(&self) -> VResult<BytesMut> {
-        let mut buffer = BytesMut::with_capacity(1 + self.server_uri.len());
+        let packet_size =
+            size_of_var(self.server_uri.len() as u32) +
+            self.server_uri.len();
+
+        let mut buffer = BytesMut::with_capacity(packet_size);
 
         buffer.put_string(self.server_uri);
 

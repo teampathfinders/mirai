@@ -1,5 +1,5 @@
 use bytes::BytesMut;
-use common::{bail, Decodable, Encodable, ReadExtensions, Vector3f, VError, VResult, WriteExtensions};
+use common::{bail, Decodable, Encodable, ReadExtensions, Vector3f, VError, VResult, WriteExtensions, size_of_var};
 use crate::network::packets::GamePacket;
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
@@ -245,7 +245,11 @@ impl GamePacket for LevelEvent {
 
 impl Encodable for LevelEvent {
     fn encode(&self) -> VResult<BytesMut> {
-        let mut buffer = BytesMut::new();
+        let packet_size =
+            size_of_var(self.event_type as i32) + 3 * 4 + 
+            size_of_var(self.event_data);
+
+        let mut buffer = BytesMut::with_capacity(packet_size);
 
         buffer.put_var_i32(self.event_type as i32);
         buffer.put_vec3f(&self.position);

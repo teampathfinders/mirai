@@ -1,5 +1,5 @@
 use bytes::{BufMut, BytesMut};
-use common::{VResult, Vector, Vector3f, Vector3i, WriteExtensions};
+use common::{VResult, Vector, Vector3f, Vector3i, WriteExtensions, size_of_var};
 
 use common::Encodable;
 
@@ -24,7 +24,10 @@ impl GamePacket for PlaySound<'_> {
 
 impl Encodable for PlaySound<'_> {
     fn encode(&self) -> VResult<BytesMut> {
-        let mut buffer = BytesMut::new();
+        let mut buffer = BytesMut::with_capacity(
+            size_of_var(self.name.len() as u32) + self.name.len() +
+            3 * 4 + 4 + 4
+        );
 
         buffer.put_string(self.name);
         buffer.put_vec3i(&self.position);

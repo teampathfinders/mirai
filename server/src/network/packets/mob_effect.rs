@@ -1,5 +1,5 @@
 use bytes::{BufMut, BytesMut};
-use common::{VResult, WriteExtensions};
+use common::{VResult, WriteExtensions, size_of_var};
 
 use common::Encodable;
 
@@ -76,7 +76,13 @@ impl GamePacket for MobEffectUpdate {
 
 impl Encodable for MobEffectUpdate {
     fn encode(&self) -> VResult<BytesMut> {
-        let mut buffer = BytesMut::new();
+        let packet_size = 
+            size_of_var(self.runtime_id) + 1 +
+            size_of_var(self.effect_kind as i32) +
+            size_of_var(self.amplifier) + 1 +
+            size_of_var(self.duration);
+
+        let mut buffer = BytesMut::with_capacity(packet_size);
 
         buffer.put_var_u64(self.runtime_id);
         buffer.put_u8(self.action as u8);

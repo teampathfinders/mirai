@@ -1,5 +1,5 @@
 use bytes::BytesMut;
-use common::{VResult, WriteExtensions};
+use common::{VResult, WriteExtensions, size_of_var};
 
 use common::Encodable;
 
@@ -18,7 +18,7 @@ impl GamePacket for SetTime {
 
 impl Encodable for SetTime {
     fn encode(&self) -> VResult<BytesMut> {
-        let mut buffer = BytesMut::new();
+        let mut buffer = BytesMut::with_capacity(size_of_var(self.time));
 
         buffer.put_var_i32(self.time);
 

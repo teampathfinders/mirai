@@ -1,5 +1,5 @@
 use bytes::{BufMut, BytesMut};
-use common::{VResult, WriteExtensions};
+use common::{VResult, WriteExtensions, size_of_var};
 
 use common::Encodable;
 
@@ -20,7 +20,11 @@ impl GamePacket for ToastRequest<'_> {
 
 impl Encodable for ToastRequest<'_> {
     fn encode(&self) -> VResult<BytesMut> {
-        let mut buffer = BytesMut::new();
+        let packet_size = 
+            size_of_var(self.title.len() as u32) + self.title.len() +
+            size_of_var(self.message.len() as u32) + self.message.len();
+
+        let mut buffer = BytesMut::with_capacity(packet_size);
 
         buffer.put_string(self.title);
         buffer.put_string(self.message);

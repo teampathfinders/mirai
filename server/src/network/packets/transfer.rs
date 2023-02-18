@@ -1,7 +1,7 @@
 use std::net::SocketAddr;
 
 use bytes::{BufMut, BytesMut};
-use common::{VResult, WriteExtensions};
+use common::{VResult, WriteExtensions, size_of_var};
 
 use common::Encodable;
 
@@ -21,9 +21,12 @@ impl GamePacket for Transfer {
 
 impl Encodable for Transfer {
     fn encode(&self) -> VResult<BytesMut> {
-        let mut buffer = BytesMut::new();
+        let addr_string = self.address.ip().to_string();
+        let packet_size = size_of_var(addr_string.len() as u32) + addr_string.len() + 2;
 
-        buffer.put_string(&self.address.ip().to_string());
+        let mut buffer = BytesMut::with_capacity(packet_size);
+
+        buffer.put_string(&addr_string);
         buffer.put_u16_le(self.address.port());
 
         Ok(buffer)

@@ -43,6 +43,11 @@ impl Session {
             bail!(BadPacket, "Client is only allowed to send chat messages, received {:?} instead", request.message_type)
         }
 
+        self.send(ToastRequest {
+            title: "Hello, title!",
+            message: "Hello, message!"
+        })?;
+
         // self.broadcast_others(AddPlayer {
         //     uuid: *self.get_uuid()?,
         //     username: self.get_display_name()?,

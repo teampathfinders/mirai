@@ -1,5 +1,5 @@
 use bytes::BytesMut;
-use common::{VResult, Vector3f, Vector3i, WriteExtensions};
+use common::{VResult, Vector3f, Vector3i, WriteExtensions, size_of_var};
 
 use common::Encodable;
 
@@ -33,8 +33,14 @@ impl GamePacket for AddPainting<'_> {
 
 impl Encodable for AddPainting<'_> {
     fn encode(&self) -> VResult<BytesMut> {
-        let mut buffer =
-            BytesMut::with_capacity(8 + 3 * 4 + 1 + 2 + self.name.len());
+        let packet_size =
+            size_of_var(self.runtime_id as i64) +
+            size_of_var(self.runtime_id) + 3 * 4 +
+            size_of_var(self.direction as i32) +
+            size_of_var(self.name.len() as u32) + 
+            self.name.len();
+
+        let mut buffer = BytesMut::with_capacity(packet_size);
 
         buffer.put_var_i64(self.runtime_id as i64); // Unique entity ID.
         buffer.put_var_u64(self.runtime_id);

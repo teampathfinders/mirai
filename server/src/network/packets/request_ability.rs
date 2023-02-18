@@ -46,8 +46,6 @@ impl Decodable for RequestAbility {
         let mut bool_value = false;
         let mut float_value = 0.0;
 
-        tracing::info!("{value_type}");
-
         if value_type == 1 {
             bool_value = buffer.get_bool();
         } else if value_type == 2 {

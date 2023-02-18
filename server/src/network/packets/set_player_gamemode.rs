@@ -44,7 +44,7 @@ impl GamePacket for SetPlayerGameMode {
 
 impl Encodable for SetPlayerGameMode {
     fn encode(&self) -> VResult<BytesMut> {
-        let mut buffer = BytesMut::new();
+        let mut buffer = BytesMut::with_capacity(1);
 
         buffer.put_var_i32(self.game_mode as i32);
 

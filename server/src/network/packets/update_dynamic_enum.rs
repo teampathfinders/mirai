@@ -1,5 +1,5 @@
 use bytes::{BufMut, BytesMut};
-use common::{VResult, WriteExtensions};
+use common::{VResult, WriteExtensions, size_of_var};
 
 use common::Encodable;
 
@@ -30,7 +30,12 @@ impl GamePacket for UpdateDynamicEnum<'_> {
 
 impl Encodable for UpdateDynamicEnum<'_> {
     fn encode(&self) -> VResult<BytesMut> {
-        let mut buffer = BytesMut::new();
+        let packet_size =
+            size_of_var(self.enum_id.len() as u32) + self.enum_id.len() +
+            size_of_var(self.options.len() as u32) +
+            self.options.iter().fold(0, |acc, o| acc + size_of_var(o.len() as u32) + o.len()) + 1;
+
+        let mut buffer = BytesMut::with_capacity(packet_size);
 
         buffer.put_string(self.enum_id);
         buffer.put_var_u32(self.options.len() as u32);

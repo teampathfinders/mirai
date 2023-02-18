@@ -1,5 +1,5 @@
 use bytes::BytesMut;
-use common::{bail, BlockPosition, Decodable, Encodable, ReadExtensions, VError, VResult, WriteExtensions};
+use common::{bail, BlockPosition, Decodable, Encodable, ReadExtensions, VError, VResult, WriteExtensions, size_of_var};
 use crate::network::packets::GamePacket;
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
@@ -31,7 +31,14 @@ impl GamePacket for BlockEvent {
 
 impl Encodable for BlockEvent {
     fn encode(&self) -> VResult<BytesMut> {
-        let mut buffer = BytesMut::new();
+        let packet_size = 
+            size_of_var(self.position.x) +
+            size_of_var(self.position.y) +
+            size_of_var(self.position.z) +
+            size_of_var(self.event_type as i32) +
+            size_of_var(self.event_data);
+
+        let mut buffer = BytesMut::with_capacity(packet_size);
 
         buffer.put_block_pos(&self.position);
         buffer.put_var_i32(self.event_type as i32);

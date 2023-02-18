@@ -1,5 +1,5 @@
 use bytes::BytesMut;
-use common::{bail, ReadExtensions, VError, VResult, WriteExtensions};
+use common::{bail, ReadExtensions, VError, VResult, WriteExtensions, size_of_var};
 
 use common::{Decodable, Encodable};
 
@@ -40,7 +40,9 @@ impl GamePacket for CreditsUpdate {
 
 impl Encodable for CreditsUpdate {
     fn encode(&self) -> VResult<BytesMut> {
-        let mut buffer = BytesMut::new();
+        let mut buffer = BytesMut::with_capacity(
+            size_of_var(self.runtime_id) + size_of_var(self.status as i32)
+        );
 
         buffer.put_var_u64(self.runtime_id);
         buffer.put_var_i32(self.status as i32);

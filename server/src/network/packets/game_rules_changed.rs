@@ -1,5 +1,5 @@
 use bytes::BytesMut;
-use common::{Encodable, VResult, WriteExtensions};
+use common::{Encodable, VResult, WriteExtensions, size_of_var};
 
 use super::GamePacket;
 

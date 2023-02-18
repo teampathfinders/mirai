@@ -1,10 +1,10 @@
 use bytes::{BufMut, BytesMut};
 
-use common::VResult;
+use common::{VResult, size_of_var};
 use common::{ReadExtensions, WriteExtensions};
 
 /// Game packets are prefixed with a length and a header.
-/// The header contains the packet ID and target/subclient IDs in case of splitscreen multiplayer.
+/// The header contains the packet ID and target/subclient IDs in case of split screen multiplayer.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Header {
     /// Packet ID
@@ -32,8 +32,8 @@ impl Header {
         let value = self.id
             | ((self.sender_subclient as u32) << 10)
             | ((self.target_subclient as u32) << 12);
-
-        let mut buffer = BytesMut::new();
+        
+        let mut buffer = BytesMut::with_capacity(size_of_var(value));
         buffer.put_var_u32(value);
 
         buffer

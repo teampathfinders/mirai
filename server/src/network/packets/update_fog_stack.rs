@@ -1,5 +1,5 @@
 use bytes::BytesMut;
-use common::{Encodable, VResult, WriteExtensions};
+use common::{Encodable, VResult, WriteExtensions, size_of_var};
 
 use super::GamePacket;
 
@@ -16,7 +16,11 @@ impl GamePacket for UpdateFogStack<'_> {
 
 impl Encodable for UpdateFogStack<'_> {
     fn encode(&self) -> VResult<BytesMut> {
-        let mut buffer = BytesMut::new();
+        let packet_size =
+            size_of_var(self.stack.len() as u32) +
+            self.stack.iter().fold(0, |acc, f| acc + size_of_var(f.len() as u32) + f.len());
+
+        let mut buffer = BytesMut::with_capacity(packet_size);
 
         buffer.put_var_u32(self.stack.len() as u32);
         for fog in self.stack {

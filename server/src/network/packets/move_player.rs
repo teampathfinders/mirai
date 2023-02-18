@@ -1,6 +1,6 @@
 use bytes::{Buf, BufMut, BytesMut};
 use common::{
-    bail, ReadExtensions, VError, VResult, Vector3f, WriteExtensions,
+    bail, ReadExtensions, VError, VResult, Vector3f, WriteExtensions, size_of_var,
 };
 
 use common::{Decodable, Encodable};
@@ -72,7 +72,18 @@ impl GamePacket for MovePlayer {
 
 impl Encodable for MovePlayer {
     fn encode(&self) -> VResult<BytesMut> {
-        let mut buffer = BytesMut::new();
+        let packet_size = 
+            size_of_var(self.runtime_id) +
+            3 * 4 + 3 * 4 + 1 + 1 +
+            size_of_var(self.ridden_runtime_id) +
+            size_of_var(self.tick) +
+            if self.mode == MovementMode::Teleport {
+                4 + 4
+            } else {
+                0
+            };
+
+        let mut buffer = BytesMut::with_capacity(packet_size);
 
         buffer.put_var_u64(self.runtime_id);
         buffer.put_vec3f(&self.position);

@@ -1,5 +1,5 @@
 use bytes::BytesMut;
-use common::{VResult, WriteExtensions};
+use common::{VResult, WriteExtensions, size_of_var};
 
 use common::Encodable;
 
@@ -18,7 +18,8 @@ impl GamePacket for ShowProfile<'_> {
 
 impl Encodable for ShowProfile<'_> {
     fn encode(&self) -> VResult<BytesMut> {
-        let mut buffer = BytesMut::with_capacity(1 + self.xuid.len());
+        let packet_size = size_of_var(self.xuid.len() as u32) + self.xuid.len();
+        let mut buffer = BytesMut::with_capacity(packet_size);
 
         buffer.put_string(self.xuid);
 

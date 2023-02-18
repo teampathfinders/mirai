@@ -1,7 +1,9 @@
 use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr, SocketAddrV4};
+use std::ops::ShrAssign;
 
 use bytes::{Buf, BufMut};
 use lazy_static::lazy_static;
+use num_traits::FromPrimitive;
 
 use crate::bail;
 use crate::BlockPosition;
@@ -21,6 +23,23 @@ lazy_static! {
     /// Constant IP address, set to 255.255.255:19132
     pub static ref EMPTY_IPV4_ADDRESS: SocketAddr =
         SocketAddr::V4(SocketAddrV4::new(Ipv4Addr::new(255, 255, 255, 255), 19132));
+}
+
+pub trait VarInt: Sized + ShrAssign<Self> + PartialOrd<Self> {}
+
+impl VarInt for u32 {}
+impl VarInt for i32 {}
+impl VarInt for u64 {}
+impl VarInt for i64 {}
+
+pub fn size_of_var<T: VarInt + FromPrimitive>(mut value: T) -> usize {
+    let mut count = 0;
+    while value >= T::from_u32(0x80).unwrap() {
+        count += 1;
+        value >>= T::from_u32(7).unwrap();
+    }
+
+    count + 1
 }
 
 /// Provides extra functions for byte buffers.
