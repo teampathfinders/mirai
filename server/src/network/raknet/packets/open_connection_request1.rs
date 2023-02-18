@@ -1,6 +1,6 @@
 use bytes::{Buf, BytesMut};
 
-use common::vassert;
+use common::nvassert;
 use common::Decodable;
 use common::VResult;
 
@@ -27,7 +27,7 @@ impl Decodable for OpenConnectionRequest1 {
     fn decode(mut buffer: BytesMut) -> VResult<Self> {
         let mtu = buffer.len() as u16 + 28;
 
-        vassert!(buffer.get_u8() == Self::ID);
+        nvassert!(buffer.get_u8() == Self::ID);
 
         buffer.advance(16); // Skip magic
         let protocol_version = buffer.get_u8();

@@ -11,7 +11,7 @@ use crate::crypto::{
 use crate::network::packets::GamePacket;
 use common::Decodable;
 use common::ReadExtensions;
-use common::{bail, vassert};
+use common::{bail, nvassert};
 use common::{VError, VResult};
 use crate::network::Skin;
 
@@ -70,7 +70,7 @@ impl Decodable for Login {
         let identity_data = parse_identity_data(&mut buffer)?;
         let data =
             parse_user_data(&mut buffer, &identity_data.public_key)?;
-
+        
         Ok(Self {
             identity: IdentityData {
                 uuid: identity_data.client_data.uuid,

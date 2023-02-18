@@ -1,6 +1,6 @@
 use bytes::{Buf, BytesMut};
 
-use common::vassert;
+use common::nvassert;
 use common::Decodable;
 use common::VResult;
 
@@ -21,7 +21,7 @@ impl ConnectionRequest {
 
 impl Decodable for ConnectionRequest {
     fn decode(mut buffer: BytesMut) -> VResult<Self> {
-        vassert!(buffer.get_u8() == Self::ID);
+        nvassert!(buffer.get_u8() == Self::ID);
 
         let guid = buffer.get_i64();
         let time = buffer.get_i64();

@@ -2,7 +2,7 @@ use std::ops::Range;
 
 use bytes::{Buf, BufMut, BytesMut};
 
-use common::vassert;
+use common::nvassert;
 use common::VResult;
 use common::{Decodable, Encodable};
 use common::{ReadExtensions, WriteExtensions};
@@ -80,7 +80,7 @@ impl Encodable for Acknowledgement {
 
 impl Decodable for Acknowledgement {
     fn decode(mut buffer: BytesMut) -> VResult<Self> {
-        vassert!(buffer.get_u8() == Self::ID);
+        nvassert!(buffer.get_u8() == Self::ID);
         let records = decode_records(buffer);
         Ok(Self { records })
     }
@@ -108,7 +108,7 @@ impl Encodable for NegativeAcknowledgement {
 
 impl Decodable for NegativeAcknowledgement {
     fn decode(mut buffer: BytesMut) -> VResult<Self> {
-        vassert!(buffer.get_u8() == Self::ID);
+        nvassert!(buffer.get_u8() == Self::ID);
         let records = decode_records(buffer);
         Ok(Self { records })
     }

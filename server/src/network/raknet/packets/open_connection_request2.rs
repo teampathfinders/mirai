@@ -1,6 +1,6 @@
 use bytes::{Buf, BytesMut};
 
-use common::vassert;
+use common::nvassert;
 use common::Decodable;
 use common::ReadExtensions;
 use common::VResult;
@@ -21,7 +21,7 @@ impl OpenConnectionRequest2 {
 
 impl Decodable for OpenConnectionRequest2 {
     fn decode(mut buffer: BytesMut) -> VResult<Self> {
-        vassert!(buffer.get_u8() == Self::ID);
+        nvassert!(buffer.get_u8() == Self::ID);
 
         buffer.advance(16); // Skip magic
         buffer.get_addr()?; // Skip server address

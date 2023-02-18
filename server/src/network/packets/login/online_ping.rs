@@ -1,6 +1,6 @@
 use bytes::{Buf, BytesMut};
 
-use common::vassert;
+use common::nvassert;
 use common::Decodable;
 use common::VResult;
 
@@ -19,7 +19,7 @@ impl OnlinePing {
 
 impl Decodable for OnlinePing {
     fn decode(mut buffer: BytesMut) -> VResult<Self> {
-        vassert!(buffer.get_u8() == Self::ID);
+        nvassert!(buffer.get_u8() == Self::ID);
 
         let time = buffer.get_i64();
 

@@ -3,7 +3,7 @@ use std::backtrace::Backtrace;
 /// Verifies that the given expression evaluates to true,
 /// or returns an error
 #[macro_export]
-macro_rules! vassert {
+macro_rules! nvassert {
     ($expression: expr, $message: expr) => {
         if ($expression) == false {
             $crate::bail!(AssertionFailure, "{} | {}", $expression, $message);
@@ -11,7 +11,7 @@ macro_rules! vassert {
     };
 
     ($expression: expr) => {
-        vassert!(
+        nvassert!(
             $expression,
             format!("Assertion failed: {}", stringify!($expression))
         );

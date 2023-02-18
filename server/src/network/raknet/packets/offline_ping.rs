@@ -1,6 +1,6 @@
 use bytes::{Buf, BytesMut};
 
-use common::vassert;
+use common::nvassert;
 use common::Decodable;
 use common::VResult;
 
@@ -26,7 +26,7 @@ impl OfflinePing {
 
 impl Decodable for OfflinePing {
     fn decode(mut buffer: BytesMut) -> VResult<Self> {
-        vassert!(buffer.get_u8() == Self::ID);
+        nvassert!(buffer.get_u8() == Self::ID);
 
         let time = buffer.get_i64();
         buffer.advance(16); // Skip offline message data

@@ -24,7 +24,7 @@ use crate::network::raknet::packets::{
 };
 use crate::network::raknet::{Frame, FrameBatch};
 use crate::network::session::session::Session;
-use common::{bail, vassert, ReadExtensions, VResult};
+use common::{bail, nvassert, ReadExtensions, VResult};
 use common::{Decodable, Encodable};
 
 impl Session {
@@ -140,7 +140,7 @@ impl Session {
     }
 
     async fn handle_game_packet(&self, mut packet: BytesMut) -> VResult<()> {
-        vassert!(packet.get_u8() == 0xfe);
+        nvassert!(packet.get_u8() == 0xfe);
 
         // Decrypt packet
         if self.encryptor.initialized() {
