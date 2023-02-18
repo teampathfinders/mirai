@@ -24,7 +24,10 @@ impl LevelManager {
     pub fn new(session_manager: Arc<SessionManager>) -> Self {
         Self {
             commands: DashMap::new(),
-            game_rules: DashMap::new(),
+            game_rules: DashMap::from_iter([
+                ("showcoordinates".to_owned(), GameRule::ShowCoordinates(false)),
+                ("naturalregeneration".to_owned(), GameRule::NaturalRegeneration(false))
+            ]),
             session_manager,
         }
     }
@@ -52,6 +55,12 @@ impl LevelManager {
         commands.iter().for_each(|cmd| {
             self.commands.insert(cmd.name.clone(), cmd.clone());
         });
+    }
+
+    /// Returns the specified game rule
+    #[inline]
+    pub fn get_game_rule(&self, name: &str) -> Option<GameRule> {
+        self.game_rules.get(name).map(|kv| *kv.value())
     }
 
     /// Returns a list of currently applied game rules.

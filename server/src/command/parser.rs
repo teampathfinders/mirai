@@ -27,6 +27,16 @@ pub enum ParsedArgument {
     String(String)
 }
 
+impl ParsedArgument {
+    pub fn get_string(&self) -> VResult<&str> {
+        if let Self::String(ref value) = self {
+            Ok(value)
+        } else {
+            bail!(InvalidCommand, "Expected string, found {:?}", self)
+        }
+    }
+}
+
 #[derive(Debug)]
 pub struct ParsedCommand {
     pub name: String,

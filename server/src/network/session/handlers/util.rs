@@ -43,43 +43,6 @@ impl Session {
             bail!(BadPacket, "Client is only allowed to send chat messages, received {:?} instead", request.message_type)
         }
 
-        self.send(ToastRequest {
-            title: "Hello, title!",
-            message: "Hello, message!"
-        })?;
-
-        // self.broadcast_others(AddPlayer {
-        //     uuid: *self.get_uuid()?,
-        //     username: self.get_display_name()?,
-        //     runtime_id: self.runtime_id,
-        //     position: Vector3f::from([0.0, 0.0, 0.0]),
-        //     velocity: Vector3f::from([0.0, 0.0, 0.0]),
-        //     rotation: Vector3f::from([0.0, 0.0, 0.0]),
-        //     game_mode: GameMode::Creative,
-        //     held_item: ItemStack {
-        //         item_type: ItemType {
-        //             network_id: 0,
-        //             metadata: 0
-        //         },
-        //         runtime_id: 0,
-        //         count: 0,
-        //         nbt_data: nbt::Value::End,
-        //         can_be_placed_on: vec![],
-        //         can_break: vec![],
-        //         has_network_id: false,
-        //     },
-        //     metadata: HashMap::new(),
-        //     ability_data: AbilityData {
-        //         entity_id: 2,
-        //         permission_level: PermissionLevel::Operator,
-        //         command_permission_level: CommandPermissionLevel::Admin,
-        //         layers: &[],
-        //     },
-        //     links: &[],
-        //     device_id: &self.get_user_data()?.device_id,
-        //     device_os: self.get_device_os()?,
-        // })?;
-
         // We must also return the packet to the client that sent it.
         // Otherwise their message won't be displayed in their own chat.
         self.broadcast(request)
@@ -112,9 +75,38 @@ impl Session {
         let result = ParsedCommand::parse(command_list, &request.command);
 
         if let Ok(parsed) = result {
-            tracing::info!("{parsed:?}");
+            let output = match parsed.name.as_str() {
+                "gamerule" => self.level_manager.handle_gamerule_command(parsed),
+                _ => todo!()
+            };
+
+            if let Ok(message) = output {
+                self.send(CommandOutput {
+                    origin: request.origin,
+                    request_id: &request.request_id,
+                    output_type: CommandOutputType::AllOutput,
+                    success_count: 1,
+                    output: &[CommandOutputMessage {
+                        is_success: true,
+                        message: &message,
+                        parameters: &[]
+                    }]
+                })?;
+            } else {
+                self.send(CommandOutput {
+                    origin: request.origin,
+                    request_id: &request.request_id,
+                    output_type: CommandOutputType::AllOutput,
+                    success_count: 0,
+                    output: &[CommandOutputMessage {
+                        is_success: false,
+                        message: &output.unwrap_err().to_string(),
+                        parameters: &[],
+                    }],
+                })?;
+            }
         } else {
-            let command_output = CommandOutput {
+            self.send(CommandOutput {
                 origin: request.origin,
                 request_id: &request.request_id,
                 output_type: CommandOutputType::AllOutput,
@@ -124,8 +116,7 @@ impl Session {
                     message: &result.unwrap_err(),
                     parameters: &[],
                 }],
-            };
-            self.send(command_output)?;
+            })?;
         }
 
         Ok(())
