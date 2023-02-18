@@ -1,5 +1,5 @@
 use bytes::{Buf, BufMut, BytesMut};
-use common::{bail, Decodable, Encodable, VResult};
+use common::{bail, Deserialize, Serialize, VResult};
 
 const CHUNK_SIZE: usize = 4096;
 
@@ -54,15 +54,18 @@ impl StorageRecord {
     }
 
     fn encode(&self, buffer: &mut BytesMut) {
-        todo!()
+        // Determine the required bits per index
+
     }
 }
 
+/// Represents the blocks in a sub chunk.
 #[derive(Debug, Clone)]
 pub struct SubChunk {
     /// Version of the chunk.
     /// This version affects the format of the chunk.
     version: u8,
+    /// Chunk index.
     index: u8,
     /// Layers of this chunk.
     /// The first layer contains blocks,
@@ -70,8 +73,8 @@ pub struct SubChunk {
     storage_records: Vec<StorageRecord>,
 }
 
-impl Decodable for SubChunk {
-    fn decode(mut buffer: BytesMut) -> VResult<Self> {
+impl Deserialize for SubChunk {
+    fn deserialize(mut buffer: BytesMut) -> VResult<Self> {
         let version = buffer.get_u8();
         match version {
             1 => todo!(),
@@ -93,8 +96,8 @@ impl Decodable for SubChunk {
     }
 }
 
-impl Encodable for SubChunk {
-    fn encode(&self) -> VResult<BytesMut> {
+impl Serialize for SubChunk {
+    fn serialize(&self) -> VResult<BytesMut> {
         let mut buffer = BytesMut::new();
 
         buffer.put_u8(self.version);

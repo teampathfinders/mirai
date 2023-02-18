@@ -1,6 +1,6 @@
 use bytes::{BufMut, BytesMut};
 
-use common::Encodable;
+use common::Serialize;
 use common::VResult;
 
 /// Sent by the server or client in response to an [`OnlinePing`](super::OnlinePing) packet.
@@ -17,8 +17,8 @@ impl OnlinePong {
     pub const ID: u8 = 0x03;
 }
 
-impl Encodable for OnlinePong {
-    fn encode(&self) -> VResult<BytesMut> {
+impl Serialize for OnlinePong {
+    fn serialize(&self) -> VResult<BytesMut> {
         let mut buffer = BytesMut::with_capacity(1 + 8 + 8);
 
         buffer.put_u8(Self::ID);

@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use bytes::{BufMut, BytesMut};
 use level::Dimension;
 
-use common::Encodable;
+use common::Serialize;
 use common::{bail, VError, VResult};
 use common::{BlockPosition, Vector2f, Vector3f, WriteExtensions};
 use crate::network::packets::{CLIENT_VERSION_STRING, Difficulty, GameMode, GamePacket, GameRule};
@@ -269,8 +269,8 @@ impl GamePacket for StartGame<'_> {
     const ID: u32 = 0x0B;
 }
 
-impl Encodable for StartGame<'_> {
-    fn encode(&self) -> VResult<BytesMut> {
+impl Serialize for StartGame<'_> {
+    fn serialize(&self) -> VResult<BytesMut> {
         let mut buffer = BytesMut::new();
 
         buffer.put_var_i64(self.entity_id);

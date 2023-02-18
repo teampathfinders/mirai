@@ -1,5 +1,5 @@
 use bytes::{BufMut, BytesMut};
-use common::{Encodable, VResult, WriteExtensions};
+use common::{Serialize, VResult, WriteExtensions};
 
 use super::GamePacket;
 
@@ -30,8 +30,8 @@ impl GamePacket for SetScoreboardIdentity {
     const ID: u32 = 0x70;
 }
 
-impl Encodable for SetScoreboardIdentity {
-    fn encode(&self) -> VResult<BytesMut> {
+impl Serialize for SetScoreboardIdentity {
+    fn serialize(&self) -> VResult<BytesMut> {
         let mut buffer = BytesMut::new();
 
         buffer.put_u8(self.action as u8);

@@ -1,7 +1,7 @@
 use bytes::{Buf, BytesMut};
 
 use common::nvassert;
-use common::Decodable;
+use common::Deserialize;
 use common::ReadExtensions;
 use common::VResult;
 
@@ -19,8 +19,8 @@ impl OpenConnectionRequest2 {
     pub const ID: u8 = 0x07;
 }
 
-impl Decodable for OpenConnectionRequest2 {
-    fn decode(mut buffer: BytesMut) -> VResult<Self> {
+impl Deserialize for OpenConnectionRequest2 {
+    fn deserialize(mut buffer: BytesMut) -> VResult<Self> {
         nvassert!(buffer.get_u8() == Self::ID);
 
         buffer.advance(16); // Skip magic

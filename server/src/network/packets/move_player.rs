@@ -3,7 +3,7 @@ use common::{
     bail, ReadExtensions, VError, VResult, Vector3f, WriteExtensions, size_of_var,
 };
 
-use common::{Decodable, Encodable};
+use common::{Deserialize, Serialize};
 
 use super::GamePacket;
 
@@ -70,8 +70,8 @@ impl GamePacket for MovePlayer {
     const ID: u32 = 0x13;
 }
 
-impl Encodable for MovePlayer {
-    fn encode(&self) -> VResult<BytesMut> {
+impl Serialize for MovePlayer {
+    fn serialize(&self) -> VResult<BytesMut> {
         let packet_size = 
             size_of_var(self.runtime_id) +
             3 * 4 + 3 * 4 + 1 + 1 +
@@ -103,8 +103,8 @@ impl Encodable for MovePlayer {
     }
 }
 
-impl Decodable for MovePlayer {
-    fn decode(mut buffer: BytesMut) -> VResult<Self> {
+impl Deserialize for MovePlayer {
+    fn deserialize(mut buffer: BytesMut) -> VResult<Self> {
         let runtime_id = buffer.get_var_u64()?;
         let position = buffer.get_vec3f();
         let rotation = buffer.get_vec3f();

@@ -1,6 +1,6 @@
 use bytes::{Buf, BufMut, BytesMut, Bytes};
 use common::{
-    bail, Encodable, ReadExtensions, VError, VResult, WriteExtensions,
+    bail, Serialize, ReadExtensions, VError, VResult, WriteExtensions,
 };
 use serde::Deserialize;
 use serde_repr::Deserialize_repr;

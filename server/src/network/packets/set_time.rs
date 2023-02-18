@@ -1,7 +1,7 @@
 use bytes::BytesMut;
 use common::{VResult, WriteExtensions, size_of_var};
 
-use common::Encodable;
+use common::Serialize;
 
 use super::GamePacket;
 
@@ -16,8 +16,8 @@ impl GamePacket for SetTime {
     const ID: u32 = 0x0a;
 }
 
-impl Encodable for SetTime {
-    fn encode(&self) -> VResult<BytesMut> {
+impl Serialize for SetTime {
+    fn serialize(&self) -> VResult<BytesMut> {
         let mut buffer = BytesMut::with_capacity(size_of_var(self.time));
 
         buffer.put_var_i32(self.time);

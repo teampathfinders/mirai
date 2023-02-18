@@ -5,7 +5,7 @@ use bytes::{Buf, BufMut, BytesMut};
 use crate::network::raknet::Reliability;
 use common::nvassert;
 use common::VResult;
-use common::{Decodable, Encodable};
+use common::{Deserialize, Serialize};
 use common::{ReadExtensions, WriteExtensions};
 
 /// Bit flag indicating that the packet is encapsulated in a frame.
@@ -49,8 +49,8 @@ impl FrameBatch {
     }
 }
 
-impl Decodable for FrameBatch {
-    fn decode(mut buffer: BytesMut) -> VResult<Self> {
+impl Deserialize for FrameBatch {
+    fn deserialize(mut buffer: BytesMut) -> VResult<Self> {
         nvassert!(buffer.get_u8() & 0x80 != 0);
 
         let batch_number = buffer.get_u24_le();
@@ -65,8 +65,8 @@ impl Decodable for FrameBatch {
     }
 }
 
-impl Encodable for FrameBatch {
-    fn encode(&self) -> VResult<BytesMut> {
+impl Serialize for FrameBatch {
+    fn serialize(&self) -> VResult<BytesMut> {
         let mut buffer = BytesMut::new();
 
         buffer.put_u8(CONNECTED_PEER_BIT_FLAG);

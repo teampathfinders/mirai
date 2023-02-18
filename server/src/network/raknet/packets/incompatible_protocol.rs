@@ -1,7 +1,7 @@
 use bytes::{BufMut, BytesMut};
 
 use crate::network::raknet::{OFFLINE_MESSAGE_DATA, RAKNET_VERSION};
-use common::Encodable;
+use common::Serialize;
 use common::VResult;
 
 /// Notifies the client that they're using a version of the Raknet protocol that is incompatible
@@ -21,8 +21,8 @@ impl IncompatibleProtocol {
     pub const ID: u8 = 0x19;
 }
 
-impl Encodable for IncompatibleProtocol {
-    fn encode(&self) -> VResult<BytesMut> {
+impl Serialize for IncompatibleProtocol {
+    fn serialize(&self) -> VResult<BytesMut> {
         let mut buffer = BytesMut::with_capacity(1 + 1 + 16 + 8);
 
         buffer.put_u8(Self::ID);

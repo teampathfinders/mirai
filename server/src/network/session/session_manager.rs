@@ -12,7 +12,7 @@ use crate::level_manager::LevelManager;
 use crate::network::raknet::RawPacket;
 use crate::network::session::session::Session;
 use crate::{config::SERVER_CONFIG, network::packets::GamePacket};
-use common::{error, Encodable, VResult};
+use common::{error, Serialize, VResult};
 
 const GARBAGE_COLLECT_INTERVAL: Duration = Duration::from_secs(10);
 
@@ -93,7 +93,7 @@ impl SessionManager {
     }
 
     /// Sends a packet to every *initialized* session on the server.
-    pub fn broadcast<P: GamePacket + Encodable>(&self, packet: P) {
+    pub fn broadcast<P: GamePacket + Serialize + Clone>(&self, packet: P) {
         for kv in self.session_list.iter() {
             let session = kv.value();
             // Don't broadcast to uninitialised sessions.
@@ -115,7 +115,7 @@ impl SessionManager {
     }
 
     /// Sends a packet to every *initialized* session on the server except the session with the given XUID.
-    pub fn broadcast_except<P: GamePacket + Encodable>(
+    pub fn broadcast_except<P: GamePacket + Serialize + Clone>(
         &self,
         packet: P,
         xuid: u64,

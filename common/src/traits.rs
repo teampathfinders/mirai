@@ -2,17 +2,16 @@ use bytes::BytesMut;
 
 use crate::VResult;
 
-/// Trait that all server to client packets should implement.
-/// The Clone trait is required for broadcasting
-pub trait Encodable: Clone {
-    /// Encodes the packet into proper binary format.
-    fn encode(&self) -> VResult<BytesMut>;
+/// Trait that describes an object that can be serialised from raw bytes.
+pub trait Serialize {
+    /// Serializes the object into binary format.
+    fn serialize(&self) -> VResult<BytesMut>;
 }
 
-/// Trait that all client to server packets should implement.
-pub trait Decodable {
-    /// Decodes the buffer into the specified packet.
-    fn decode(buffer: BytesMut) -> VResult<Self>
+/// Trait that describes an object that can be deserialised from raw bytes.
+pub trait Deserialize {
+    /// Deserializes the given buffer, returning the object.
+    fn deserialize(buffer: BytesMut) -> VResult<Self>
     where
         Self: Sized;
 }

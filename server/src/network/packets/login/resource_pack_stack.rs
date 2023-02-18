@@ -1,7 +1,7 @@
 use bytes::{BufMut, BytesMut};
 
 use crate::network::packets::GamePacket;
-use common::Encodable;
+use common::Serialize;
 use common::VResult;
 use common::WriteExtensions;
 
@@ -54,8 +54,8 @@ impl GamePacket for ResourcePackStack<'_> {
     const ID: u32 = 0x07;
 }
 
-impl Encodable for ResourcePackStack<'_> {
-    fn encode(&self) -> VResult<BytesMut> {
+impl Serialize for ResourcePackStack<'_> {
+    fn serialize(&self) -> VResult<BytesMut> {
         let mut buffer = BytesMut::new();
 
         buffer.put_bool(self.forced_to_accept);

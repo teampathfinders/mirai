@@ -1,7 +1,7 @@
 use bytes::{BufMut, BytesMut};
 use common::{VResult, WriteExtensions, size_of_var};
 
-use common::Encodable;
+use common::Serialize;
 
 use super::GamePacket;
 
@@ -18,8 +18,8 @@ impl GamePacket for ToastRequest<'_> {
     const ID: u32 = 0xba;
 }
 
-impl Encodable for ToastRequest<'_> {
-    fn encode(&self) -> VResult<BytesMut> {
+impl Serialize for ToastRequest<'_> {
+    fn serialize(&self) -> VResult<BytesMut> {
         let packet_size = 
             size_of_var(self.title.len() as u32) + self.title.len() +
             size_of_var(self.message.len() as u32) + self.message.len();

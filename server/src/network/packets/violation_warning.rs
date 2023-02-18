@@ -2,7 +2,7 @@ use bytes::BytesMut;
 
 use crate::network::packets::GamePacket;
 use common::bail;
-use common::Decodable;
+use common::Deserialize;
 use common::ReadExtensions;
 use common::{VError, VResult};
 
@@ -58,8 +58,8 @@ impl GamePacket for ViolationWarning {
     const ID: u32 = 0x9c;
 }
 
-impl Decodable for ViolationWarning {
-    fn decode(mut buffer: BytesMut) -> VResult<Self> {
+impl Deserialize for ViolationWarning {
+    fn deserialize(mut buffer: BytesMut) -> VResult<Self> {
         tracing::debug!("{:x?}", buffer.as_ref());
 
         let warning_type = ViolationType::try_from(buffer.get_var_i32()?)?;

@@ -1,7 +1,7 @@
 use bytes::{BufMut, BytesMut};
 use common::{VResult, WriteExtensions, size_of_var};
 
-use common::Encodable;
+use common::Serialize;
 
 use super::GamePacket;
 
@@ -74,8 +74,8 @@ impl GamePacket for MobEffectUpdate {
     const ID: u32 = 0x1c;
 }
 
-impl Encodable for MobEffectUpdate {
-    fn encode(&self) -> VResult<BytesMut> {
+impl Serialize for MobEffectUpdate {
+    fn serialize(&self) -> VResult<BytesMut> {
         let packet_size = 
             size_of_var(self.runtime_id) + 1 +
             size_of_var(self.effect_kind as i32) +

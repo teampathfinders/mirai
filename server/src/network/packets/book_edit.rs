@@ -1,5 +1,5 @@
 use bytes::{Buf, BufMut, BytesMut};
-use common::{bail, Decodable, Encodable, ReadExtensions, VError, VResult};
+use common::{bail, Deserialize, Serialize, ReadExtensions, VError, VResult};
 use crate::network::packets::GamePacket;
 
 /// Sent when the client makes changes to a book.
@@ -53,8 +53,8 @@ impl GamePacket for BookEdit {
     const ID: u32 = 0x61;
 }
 
-impl Decodable for BookEdit {
-    fn decode(mut buffer: BytesMut) -> VResult<Self>{
+impl Deserialize for BookEdit {
+    fn deserialize(mut buffer: BytesMut) -> VResult<Self>{
         let action = buffer.get_u8();;
         let inventory_slot = buffer.get_u8();
 

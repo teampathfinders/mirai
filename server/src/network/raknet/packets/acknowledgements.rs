@@ -4,7 +4,7 @@ use bytes::{Buf, BufMut, BytesMut};
 
 use common::nvassert;
 use common::VResult;
-use common::{Decodable, Encodable};
+use common::{Deserialize, Serialize};
 use common::{ReadExtensions, WriteExtensions};
 
 /// Record containing IDs of confirmed packets.
@@ -70,16 +70,16 @@ impl Acknowledgement {
     pub const ID: u8 = 0xc0;
 }
 
-impl Encodable for Acknowledgement {
-    fn encode(&self) -> VResult<BytesMut> {
+impl Serialize for Acknowledgement {
+    fn serialize(&self) -> VResult<BytesMut> {
         let mut buffer = BytesMut::with_capacity(10);
         buffer.put_u8(Self::ID);
         Ok(encode_records(buffer, &self.records))
     }
 }
 
-impl Decodable for Acknowledgement {
-    fn decode(mut buffer: BytesMut) -> VResult<Self> {
+impl Deserialize for Acknowledgement {
+    fn deserialize(mut buffer: BytesMut) -> VResult<Self> {
         nvassert!(buffer.get_u8() == Self::ID);
         let records = decode_records(buffer);
         Ok(Self { records })
@@ -98,16 +98,16 @@ impl NegativeAcknowledgement {
     pub const ID: u8 = 0xa0;
 }
 
-impl Encodable for NegativeAcknowledgement {
-    fn encode(&self) -> VResult<BytesMut> {
+impl Serialize for NegativeAcknowledgement {
+    fn serialize(&self) -> VResult<BytesMut> {
         let mut buffer = BytesMut::with_capacity(10);
         buffer.put_u8(Self::ID);
         Ok(encode_records(buffer, &self.records))
     }
 }
 
-impl Decodable for NegativeAcknowledgement {
-    fn decode(mut buffer: BytesMut) -> VResult<Self> {
+impl Deserialize for NegativeAcknowledgement {
+    fn deserialize(mut buffer: BytesMut) -> VResult<Self> {
         nvassert!(buffer.get_u8() == Self::ID);
         let records = decode_records(buffer);
         Ok(Self { records })

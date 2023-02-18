@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 use bytes::{BytesMut, BufMut};
-use common::{Vector3f, Encodable, VResult, WriteExtensions};
+use common::{Vector3f, Serialize, VResult, WriteExtensions};
 use uuid::Uuid;
 use crate::command::CommandPermissionLevel;
 use crate::network::packets::login::{DeviceOS, ItemStack, PermissionLevel};
@@ -162,8 +162,8 @@ impl GamePacket for AddPlayer<'_> {
     const ID: u32 = 0x0c;
 }
 
-impl Encodable for AddPlayer<'_> {
-    fn encode(&self) -> VResult<BytesMut> {
+impl Serialize for AddPlayer<'_> {
+    fn serialize(&self) -> VResult<BytesMut> {
         let mut buffer = BytesMut::new();
 
         buffer.put_uuid(&self.uuid);

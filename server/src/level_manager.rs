@@ -1,4 +1,6 @@
 use std::sync::Arc;
+use std::sync::atomic::AtomicU64;
+use std::time::Duration;
 
 use common::VResult;
 use dashmap::mapref::one::Ref;
@@ -11,25 +13,36 @@ use crate::network::{
     session::SessionManager,
 };
 
+/// Interval between standard Minecraft ticks.
+const LEVEL_TICK_INTERVAL: Duration = Duration::from_millis(1000 / 20);
+
 #[derive(Debug)]
 pub struct LevelManager {
+    /// List of commands available in this level.
     commands: DashMap<String, Command>,
     /// Currently set game rules.
     game_rules: DashMap<String, GameRule>,
     /// Used to broadcast level events to the sessions.
     session_manager: Arc<SessionManager>,
+    /// Current world tick.
+    /// This is the standard Minecraft tick.
+    /// The level is ticked 20 times every second.
+    tick: AtomicU64
 }
 
 impl LevelManager {
-    pub fn new(session_manager: Arc<SessionManager>) -> Self {
-        Self {
+    pub fn new(session_manager: Arc<SessionManager>) -> Arc<Self> {
+        let manager = Arc::new(Self {
             commands: DashMap::new(),
             game_rules: DashMap::from_iter([
                 ("showcoordinates".to_owned(), GameRule::ShowCoordinates(false)),
                 ("naturalregeneration".to_owned(), GameRule::NaturalRegeneration(false))
             ]),
             session_manager,
-        }
+            tick: AtomicU64::new(0)
+        });
+
+        manager
     }
 
     /// Returns the requested command

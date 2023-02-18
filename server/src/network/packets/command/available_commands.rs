@@ -3,7 +3,7 @@ use std::collections::{HashMap, HashSet};
 use bytes::{BufMut, BytesMut};
 use common::{bail, VResult, WriteExtensions};
 
-use common::Encodable;
+use common::Serialize;
 
 use crate::network::packets::GamePacket;
 use crate::command::CommandEnum;
@@ -25,8 +25,8 @@ impl GamePacket for AvailableCommands<'_> {
     const ID: u32 = 0x4c;
 }
 
-impl Encodable for AvailableCommands<'_> {
-    fn encode(&self) -> VResult<BytesMut> {
+impl Serialize for AvailableCommands<'_> {
+    fn serialize(&self) -> VResult<BytesMut> {
         let mut buffer = BytesMut::new();
 
         let mut value_indices = HashMap::new();

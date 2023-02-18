@@ -4,7 +4,7 @@ use bytes::{BufMut, BytesMut};
 use nbt::Value;
 
 use crate::network::packets::GamePacket;
-use common::Encodable;
+use common::Serialize;
 use common::VResult;
 use common::WriteExtensions;
 
@@ -82,8 +82,8 @@ impl GamePacket for CreativeContent<'_> {
     const ID: u32 = 0x91;
 }
 
-impl Encodable for CreativeContent<'_> {
-    fn encode(&self) -> VResult<BytesMut> {
+impl Serialize for CreativeContent<'_> {
+    fn serialize(&self) -> VResult<BytesMut> {
         let mut buffer = BytesMut::new();
 
         buffer.put_var_u32(self.items.len() as u32);

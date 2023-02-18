@@ -1,7 +1,7 @@
 use bytes::{BufMut, BytesMut};
 use common::{VResult, Vector, Vector3f, Vector3i, WriteExtensions, size_of_var};
 
-use common::Encodable;
+use common::Serialize;
 
 use super::GamePacket;
 
@@ -22,8 +22,8 @@ impl GamePacket for PlaySound<'_> {
     const ID: u32 = 0x56;
 }
 
-impl Encodable for PlaySound<'_> {
-    fn encode(&self) -> VResult<BytesMut> {
+impl Serialize for PlaySound<'_> {
+    fn serialize(&self) -> VResult<BytesMut> {
         let mut buffer = BytesMut::with_capacity(
             size_of_var(self.name.len() as u32) + self.name.len() +
             3 * 4 + 4 + 4

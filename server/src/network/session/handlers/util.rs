@@ -4,7 +4,7 @@ use std::time::Duration;
 
 use bytes::BytesMut;
 use common::{
-    bail, BlockPosition, Decodable, VResult, Vector3f, Vector3i, Vector4f,
+    bail, BlockPosition, Deserialize, VResult, Vector3f, Vector3i, Vector4f,
 };
 
 use crate::command::ParsedCommand;
@@ -31,14 +31,14 @@ use crate::network::{
 
 impl Session {
     pub fn handle_settings_command(&self, packet: BytesMut) -> VResult<()> {
-        let request = SettingsCommand::decode(packet)?;
+        let request = SettingsCommand::deserialize(packet)?;
         tracing::info!("{request:?}");
 
         Ok(())
     }
 
     pub fn handle_text_message(&self, packet: BytesMut) -> VResult<()> {
-        let request = TextMessage::decode(packet)?;
+        let request = TextMessage::deserialize(packet)?;
         if request.message_type != MessageType::Chat {
             bail!(BadPacket, "Client is only allowed to send chat messages, received {:?} instead", request.message_type)
         }
@@ -49,26 +49,26 @@ impl Session {
     }
 
     pub fn handle_skin_update(&self, packet: BytesMut) -> VResult<()> {
-        let request = UpdateSkin::decode(packet)?;
+        let request = UpdateSkin::deserialize(packet)?;
         self.broadcast(request)
     }
 
     pub fn handle_ability_request(&self, packet: BytesMut) -> VResult<()> {
-        let request = RequestAbility::decode(packet)?;
+        let request = RequestAbility::deserialize(packet)?;
         tracing::info!("{request:?}");
 
         Ok(())
     }
 
     pub fn handle_animation(&self, packet: BytesMut) -> VResult<()> {
-        let request = Animate::decode(packet)?;
+        let request = Animate::deserialize(packet)?;
         tracing::info!("{request:?}");
 
         Ok(())
     }
 
     pub fn handle_command_request(&self, packet: BytesMut) -> VResult<()> {
-        let request = CommandRequest::decode(packet)?;
+        let request = CommandRequest::deserialize(packet)?;
         tracing::info!("{request:?}");
 
         let command_list = self.level_manager.get_commands();

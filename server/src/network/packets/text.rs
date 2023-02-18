@@ -1,7 +1,7 @@
 use bytes::{Buf, BufMut, BytesMut};
 use common::{bail, ReadExtensions, VError, VResult, WriteExtensions};
 
-use common::{Decodable, Encodable};
+use common::{Deserialize, Serialize};
 
 use super::GamePacket;
 
@@ -74,8 +74,8 @@ impl GamePacket for TextMessage {
     const ID: u32 = 0x09;
 }
 
-impl Encodable for TextMessage {
-    fn encode(&self) -> VResult<BytesMut> {
+impl Serialize for TextMessage {
+    fn serialize(&self) -> VResult<BytesMut> {
         let mut buffer = BytesMut::new();
 
         buffer.put_u8(self.message_type as u8);
@@ -115,8 +115,8 @@ impl Encodable for TextMessage {
     }
 }
 
-impl Decodable for TextMessage {
-    fn decode(mut buffer: BytesMut) -> VResult<Self> {
+impl Deserialize for TextMessage {
+    fn deserialize(mut buffer: BytesMut) -> VResult<Self> {
         let message_type = MessageType::try_from(buffer.get_u8())?;
         let needs_translation = buffer.get_bool();
         let message;

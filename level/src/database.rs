@@ -5,11 +5,14 @@ use common::{error, VError, VResult};
 
 use crate::ffi;
 
-pub struct Database {
+/// Rust interface around a C++ LevelDB database.
+#[derive(Debug)]
+pub struct ChunkDatabase {
     pointer: *mut c_void,
 }
 
-impl Database {
+impl ChunkDatabase {
+    /// Opens the database at the specified path.
     pub fn new<P: AsRef<str>>(path: P) -> VResult<Self> {
         let ffi_path = CString::new(path.as_ref())?;
         let result = unsafe {
@@ -25,6 +28,8 @@ impl Database {
         }
     }
 
+    /// Loads the value of the given key.
+    /// This function requires a raw key, i.e. the key must have been serialised already.
     pub fn get_raw_key<K: AsRef<[u8]>>(&self, key: K) -> VResult<BytesMut> {
         let key = key.as_ref();
         let result = unsafe {
@@ -62,7 +67,7 @@ impl Database {
     }
 }
 
-impl Drop for Database {
+impl Drop for ChunkDatabase {
     fn drop(&mut self) {
         unsafe {
             ffi::level_close_database(self.pointer);
@@ -70,8 +75,8 @@ impl Drop for Database {
     }
 }
 
-unsafe impl Send for Database {}
-unsafe impl Sync for Database {}
+unsafe impl Send for ChunkDatabase {}
+unsafe impl Sync for ChunkDatabase {}
 
 fn translate_ffi_error(result: ffi::LevelResult) -> VError {
     let ffi_err = unsafe {

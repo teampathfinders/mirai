@@ -1,12 +1,12 @@
-use common::{Decodable, Encodable};
+use common::{Deserialize, Serialize};
 
 use crate::{
-    database::Database, DatabaseKey, DatabaseTag, Dimension, SubChunk,
+    database::ChunkDatabase, DatabaseKey, DatabaseTag, Dimension, SubChunk,
 };
 
 #[test]
 fn database_open() {
-    let db = Database::new("test/db").unwrap();
+    let db = ChunkDatabase::new("test/db").unwrap();
     let key = DatabaseKey {
         x: 0,
         y: 0,
@@ -14,11 +14,11 @@ fn database_open() {
         dimension: Dimension::Overworld,
         tag: DatabaseTag::SubChunk,
     }
-    .encode()
+    .serialize()
     .unwrap();
 
     let data = db.get_raw_key(key).unwrap();
-    let sub_chunk = SubChunk::decode(data).unwrap();
+    let sub_chunk = SubChunk::deserialize(data).unwrap();
 
     println!("{sub_chunk:?}");
 }

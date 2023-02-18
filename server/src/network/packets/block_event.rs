@@ -1,5 +1,5 @@
 use bytes::BytesMut;
-use common::{bail, BlockPosition, Decodable, Encodable, ReadExtensions, VError, VResult, WriteExtensions, size_of_var};
+use common::{bail, BlockPosition, Deserialize, Serialize, ReadExtensions, VError, VResult, WriteExtensions, size_of_var};
 use crate::network::packets::GamePacket;
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
@@ -29,8 +29,8 @@ impl GamePacket for BlockEvent {
     const ID: u32 = 0x1a;
 }
 
-impl Encodable for BlockEvent {
-    fn encode(&self) -> VResult<BytesMut> {
+impl Serialize for BlockEvent {
+    fn serialize(&self) -> VResult<BytesMut> {
         let packet_size = 
             size_of_var(self.position.x) +
             size_of_var(self.position.y) +
@@ -48,8 +48,8 @@ impl Encodable for BlockEvent {
     }
 }
 
-impl Decodable for BlockEvent {
-    fn decode(mut buffer: BytesMut) -> VResult<Self> {
+impl Deserialize for BlockEvent {
+    fn deserialize(mut buffer: BytesMut) -> VResult<Self> {
         let position = buffer.get_block_pos()?;
         let event_type = BlockEventType::try_from(buffer.get_var_i32()?)?;
         let event_data = buffer.get_var_i32()?;

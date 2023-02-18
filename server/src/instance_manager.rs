@@ -32,7 +32,7 @@ use crate::network::raknet::RAKNET_VERSION;
 use crate::network::session::SessionManager;
 use common::AsyncDeque;
 use common::{error, VResult};
-use common::{Decodable, Encodable};
+use common::{Deserialize, Serialize};
 
 /// Local IPv4 address
 pub const IPV4_LOCAL_ADDR: Ipv4Addr = Ipv4Addr::UNSPECIFIED;
@@ -82,11 +82,9 @@ impl InstanceManager {
                 .await?,
         );
 
-        let session_manager =
-            Arc::new(SessionManager::new(global_token.clone()));
+        let session_manager = Arc::new(SessionManager::new(global_token.clone()));
+        let level_manager = LevelManager::new(session_manager.clone());
 
-        let level_manager =
-            Arc::new(LevelManager::new(session_manager.clone()));
         level_manager.add_command(Command {
             name: "gamerule".to_owned(),
             description: "Sets or queries a game rule value.".to_owned(),
@@ -263,13 +261,13 @@ impl InstanceManager {
         self: Arc<Self>,
         packet: RawPacket,
     ) -> VResult<()> {
-        let ping = OfflinePing::decode(packet.buffer.clone())?;
+        let ping = OfflinePing::deserialize(packet.buffer.clone())?;
         let pong = OfflinePong {
             time: ping.time,
             server_guid: self.guid,
             metadata: self.metadata(),
         }
-        .encode()?;
+        .serialize()?;
 
         self.ipv4_socket
             .send_to(pong.as_ref(), packet.address)
@@ -282,10 +280,10 @@ impl InstanceManager {
         self: Arc<Self>,
         packet: RawPacket,
     ) -> VResult<()> {
-        let request = OpenConnectionRequest1::decode(packet.buffer.clone())?;
+        let request = OpenConnectionRequest1::deserialize(packet.buffer.clone())?;
         if request.protocol_version != RAKNET_VERSION {
             let reply =
-                IncompatibleProtocol { server_guid: self.guid }.encode()?;
+                IncompatibleProtocol { server_guid: self.guid }.serialize()?;
 
             self.ipv4_socket
                 .send_to(reply.as_ref(), packet.address)
@@ -295,7 +293,7 @@ impl InstanceManager {
 
         let reply =
             OpenConnectionReply1 { mtu: request.mtu, server_guid: self.guid }
-                .encode()?;
+                .serialize()?;
 
         self.ipv4_socket
             .send_to(reply.as_ref(), packet.address)
@@ -311,13 +309,13 @@ impl InstanceManager {
         self: Arc<Self>,
         packet: RawPacket,
     ) -> VResult<()> {
-        let request = OpenConnectionRequest2::decode(packet.buffer.clone())?;
+        let request = OpenConnectionRequest2::deserialize(packet.buffer.clone())?;
         let reply = OpenConnectionReply2 {
             server_guid: self.guid,
             mtu: request.mtu,
             client_address: packet.address,
         }
-        .encode()?;
+        .serialize()?;
 
         self.session_manager.add_session(
             self.ipv4_socket.clone(),

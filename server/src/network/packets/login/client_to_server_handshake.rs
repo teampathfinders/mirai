@@ -2,7 +2,7 @@ use bytes::{Buf, BytesMut};
 
 use crate::network::packets::GamePacket;
 use common::nvassert;
-use common::Decodable;
+use common::Deserialize;
 use common::VResult;
 
 /// Sent by the client in response to a [`ServerToClientHandshake`](super::ServerToClientHandshake)
@@ -17,8 +17,8 @@ impl GamePacket for ClientToServerHandshake {
     const ID: u32 = 0x04;
 }
 
-impl Decodable for ClientToServerHandshake {
-    fn decode(mut buffer: BytesMut) -> VResult<Self> {
+impl Deserialize for ClientToServerHandshake {
+    fn deserialize(mut buffer: BytesMut) -> VResult<Self> {
         Ok(Self)
     }
 }

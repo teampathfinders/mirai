@@ -1,5 +1,5 @@
 use bytes::BytesMut;
-use common::{Decodable, ReadExtensions, VResult};
+use common::{Deserialize, ReadExtensions, VResult};
 use crate::network::packets::GamePacket;
 
 #[derive(Debug, Clone)]
@@ -12,8 +12,8 @@ impl GamePacket for GenericLevelEvent {
     const ID: u32 = 0x7c;
 }
 
-impl Decodable for GenericLevelEvent {
-    fn decode(mut buffer: BytesMut) -> VResult<Self> {
+impl Deserialize for GenericLevelEvent {
+    fn deserialize(mut buffer: BytesMut) -> VResult<Self> {
         let event_id = buffer.get_var_i32()?;
         let data = nbt::read_le(&mut buffer)?;
 

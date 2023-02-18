@@ -1,7 +1,7 @@
 use bytes::BytesMut;
 use common::{VResult, Vector3f, WriteExtensions};
 
-use common::Encodable;
+use common::Serialize;
 
 use super::GamePacket;
 
@@ -15,8 +15,8 @@ impl GamePacket for SpawnExperienceOrb {
     const ID: u32 = 0x42;
 }
 
-impl Encodable for SpawnExperienceOrb {
-    fn encode(&self) -> VResult<BytesMut> {
+impl Serialize for SpawnExperienceOrb {
+    fn serialize(&self) -> VResult<BytesMut> {
         let mut buffer = BytesMut::with_capacity(3 * 4 + 1);
 
         buffer.put_vec3f(&self.position);

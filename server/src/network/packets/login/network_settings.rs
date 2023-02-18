@@ -1,7 +1,7 @@
 use bytes::{BufMut, BytesMut};
 
 use crate::network::packets::GamePacket;
-use common::Encodable;
+use common::Serialize;
 use common::VResult;
 use common::WriteExtensions;
 
@@ -52,8 +52,8 @@ impl GamePacket for NetworkSettings {
     const ID: u32 = 0x8f;
 }
 
-impl Encodable for NetworkSettings {
-    fn encode(&self) -> VResult<BytesMut> {
+impl Serialize for NetworkSettings {
+    fn serialize(&self) -> VResult<BytesMut> {
         let mut buffer = BytesMut::with_capacity(2 + 2 + 1 + 1 + 4);
 
         buffer.put_u16(self.compression_threshold);

@@ -2,7 +2,7 @@ use bytes::{Buf, BytesMut};
 
 use crate::network::packets::GamePacket;
 use common::bail;
-use common::Decodable;
+use common::Deserialize;
 use common::ReadExtensions;
 use common::{VError, VResult};
 
@@ -52,8 +52,8 @@ impl GamePacket for ResourcePackClientResponse {
     const ID: u32 = 0x08;
 }
 
-impl Decodable for ResourcePackClientResponse {
-    fn decode(mut buffer: BytesMut) -> VResult<Self> {
+impl Deserialize for ResourcePackClientResponse {
+    fn deserialize(mut buffer: BytesMut) -> VResult<Self> {
         let status = ResourcePackStatus::try_from(buffer.get_u8())?;
         let length = buffer.get_u16();
 

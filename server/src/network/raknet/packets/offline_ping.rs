@@ -1,7 +1,7 @@
 use bytes::{Buf, BytesMut};
 
 use common::nvassert;
-use common::Decodable;
+use common::Deserialize;
 use common::VResult;
 
 /// Sent to retrieve information about the server
@@ -24,8 +24,8 @@ impl OfflinePing {
     pub const ID: u8 = 0x01;
 }
 
-impl Decodable for OfflinePing {
-    fn decode(mut buffer: BytesMut) -> VResult<Self> {
+impl Deserialize for OfflinePing {
+    fn deserialize(mut buffer: BytesMut) -> VResult<Self> {
         nvassert!(buffer.get_u8() == Self::ID);
 
         let time = buffer.get_i64();

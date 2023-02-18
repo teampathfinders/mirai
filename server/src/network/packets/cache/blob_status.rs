@@ -1,5 +1,5 @@
 use bytes::{Buf, BytesMut};
-use common::{Decodable, ReadExtensions, VResult};
+use common::{Deserialize, ReadExtensions, VResult};
 use crate::network::packets::GamePacket;
 
 #[derive(Debug, Clone)]
@@ -15,8 +15,8 @@ impl GamePacket for CacheBlobStatus {
     const ID: u32 = 0x87;
 }
 
-impl Decodable for CacheBlobStatus {
-    fn decode(mut buffer: BytesMut) -> VResult<Self> {
+impl Deserialize for CacheBlobStatus {
+    fn deserialize(mut buffer: BytesMut) -> VResult<Self> {
         let miss_count = buffer.get_var_u32()?;
         let hit_count = buffer.get_var_u32()?;
 

@@ -25,7 +25,7 @@ use crate::network::raknet::packets::{
 use crate::network::raknet::{Frame, FrameBatch};
 use crate::network::session::session::Session;
 use common::{bail, nvassert, ReadExtensions, VResult};
-use common::{Decodable, Encodable};
+use common::{Deserialize, Serialize};
 
 impl Session {
     /// Processes the raw packet coming directly from the network.
@@ -61,7 +61,7 @@ impl Session {
     /// * Discarding old sequenced frames
     /// * Acknowledging reliable packets
     async fn handle_frame_batch(&self, task: BytesMut) -> VResult<()> {
-        let batch = FrameBatch::decode(task)?;
+        let batch = FrameBatch::deserialize(task)?;
         self.client_batch_number
             .fetch_max(batch.sequence_number, Ordering::SeqCst);
 

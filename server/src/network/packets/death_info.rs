@@ -1,7 +1,7 @@
 use bytes::BytesMut;
 use common::{VResult, WriteExtensions, size_of_var};
 
-use common::Encodable;
+use common::Serialize;
 
 use super::GamePacket;
 
@@ -18,8 +18,8 @@ impl GamePacket for DeathInfo<'_> {
     const ID: u32 = 0xbd;
 }
 
-impl Encodable for DeathInfo<'_> {
-    fn encode(&self) -> VResult<BytesMut> {
+impl Serialize for DeathInfo<'_> {
+    fn serialize(&self) -> VResult<BytesMut> {
         let packet_size = size_of_var(self.cause.len() as u32) + self.cause.len() +
         size_of_var(self.messages.len() as u32) + 
         self.messages.iter().fold(0, |acc, m| acc + size_of_var(m.len() as u32) + m.len());

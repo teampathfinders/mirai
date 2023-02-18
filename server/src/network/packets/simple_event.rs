@@ -1,5 +1,5 @@
 use bytes::{Buf, BufMut, BytesMut};
-use common::{bail, Decodable, Encodable, VError, VResult};
+use common::{bail, Deserialize, Serialize, VError, VResult};
 use crate::network::packets::GamePacket;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -26,8 +26,8 @@ impl GamePacket for SimpleEvent {
     const ID: u32 = 0x40;
 }
 
-impl Encodable for SimpleEvent {
-    fn encode(&self) -> VResult<BytesMut> {
+impl Serialize for SimpleEvent {
+    fn serialize(&self) -> VResult<BytesMut> {
         let mut buffer = BytesMut::with_capacity(2);
 
         buffer.put_i16_le(*self as i16);
@@ -36,8 +36,8 @@ impl Encodable for SimpleEvent {
     }
 }
 
-impl Decodable for SimpleEvent {
-    fn decode(mut buffer: BytesMut) -> VResult<Self> {
+impl Deserialize for SimpleEvent {
+    fn deserialize(mut buffer: BytesMut) -> VResult<Self> {
         Self::try_from(buffer.get_i16_le())
     }
 }

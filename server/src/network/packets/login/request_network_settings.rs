@@ -1,7 +1,7 @@
 use bytes::{Buf, BytesMut};
 
 use common::nvassert;
-use common::Decodable;
+use common::Deserialize;
 use common::VResult;
 
 /// Sent by the client to request a [`NetworkSettings`](super::NetworkSettings) packet.
@@ -16,8 +16,8 @@ impl RequestNetworkSettings {
     pub const ID: u32 = 0xc1;
 }
 
-impl Decodable for RequestNetworkSettings {
-    fn decode(mut buffer: BytesMut) -> VResult<Self> {
+impl Deserialize for RequestNetworkSettings {
+    fn deserialize(mut buffer: BytesMut) -> VResult<Self> {
         let protocol_version = buffer.get_u32();
 
         Ok(Self { protocol_version })

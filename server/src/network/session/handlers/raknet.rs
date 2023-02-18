@@ -10,17 +10,17 @@ use crate::network::session::send::PacketConfig;
 use crate::network::session::send_queue::SendPriority;
 use crate::network::session::session::Session;
 use common::VResult;
-use common::{Decodable, Encodable};
+use common::{Deserialize, Serialize};
 
 impl Session {
     /// Handles a [`ConnectionRequest`] packet.
     pub fn handle_connection_request(&self, task: BytesMut) -> VResult<()> {
-        let request = ConnectionRequest::decode(task)?;
+        let request = ConnectionRequest::deserialize(task)?;
         let response = ConnectionRequestAccepted {
             client_address: self.address,
             request_time: request.time,
         }
-        .encode()?;
+        .serialize()?;
 
         self.send_raw_buffer(response);
         tracing::trace!("Accepted connection request");
@@ -33,19 +33,19 @@ impl Session {
         &self,
         task: BytesMut,
     ) -> VResult<()> {
-        let request = NewIncomingConnection::decode(task)?;
+        let request = NewIncomingConnection::deserialize(task)?;
         Ok(())
     }
 
     /// Handles an [`OnlinePing`] packet.
     pub fn handle_online_ping(&self, task: BytesMut) -> VResult<()> {
-        let ping = OnlinePing::decode(task)?;
+        let ping = OnlinePing::deserialize(task)?;
         let pong = OnlinePong {
             ping_time: ping.time,
             pong_time: ping.time,
         };
 
-        let pong = pong.encode()?;
+        let pong = pong.serialize()?;
         self.send_raw_buffer_with_config(
             pong,
             PacketConfig {

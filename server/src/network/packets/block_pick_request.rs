@@ -1,5 +1,5 @@
 use bytes::{Buf, BytesMut};
-use common::{BlockPosition, Decodable, ReadExtensions, Vector3i, VResult};
+use common::{BlockPosition, Deserialize, ReadExtensions, Vector3i, VResult};
 use crate::network::packets::GamePacket;
 
 /// Sent by the client when the user requests a block using the block pick key.
@@ -17,8 +17,8 @@ impl GamePacket for BlockPickRequest {
     const ID: u32 = 0x22;
 }
 
-impl Decodable for BlockPickRequest {
-    fn decode(mut buffer: BytesMut) -> VResult<Self> where Self: Sized {
+impl Deserialize for BlockPickRequest {
+    fn deserialize(mut buffer: BytesMut) -> VResult<Self> where Self: Sized {
         let position = buffer.get_vec3i();
         let with_nbt = buffer.get_bool();
         let hotbar_slot = buffer.get_u8();

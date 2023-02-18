@@ -1,7 +1,7 @@
 use bytes::BytesMut;
 use common::{VResult, Vector3f, WriteExtensions};
 
-use common::Encodable;
+use common::Serialize;
 use level::Dimension;
 
 use super::GamePacket;
@@ -22,8 +22,8 @@ impl GamePacket for ChangeDimension {
     const ID: u32 = 0x3d;
 }
 
-impl Encodable for ChangeDimension {
-    fn encode(&self) -> VResult<BytesMut> {
+impl Serialize for ChangeDimension {
+    fn serialize(&self) -> VResult<BytesMut> {
         let mut buffer = BytesMut::with_capacity(1 + 3 * 4 + 1);
 
         buffer.put_var_i32(self.dimension as i32);

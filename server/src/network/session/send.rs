@@ -17,7 +17,7 @@ use crate::network::session::send_queue::SendPriority;
 use crate::network::session::session::Session;
 use common::ReadExtensions;
 use common::VResult;
-use common::{Decodable, Encodable};
+use common::{Deserialize, Serialize};
 
 pub struct PacketConfig {
     pub reliability: Reliability,
@@ -33,12 +33,12 @@ impl Session {
     /// Sends a game packet with default settings
     /// (reliable ordered and medium priority)
     #[inline]
-    pub fn send<T: GamePacket + Encodable>(&self, packet: T) -> VResult<()> {
+    pub fn send<T: GamePacket + Serialize>(&self, packet: T) -> VResult<()> {
         self.send_packet_with_config(packet, DEFAULT_CONFIG)
     }
 
     /// Sends a game packet with custom reliability and priority
-    pub fn send_packet_with_config<T: GamePacket + Encodable>(
+    pub fn send_packet_with_config<T: GamePacket + Serialize>(
         &self,
         packet: T,
         config: PacketConfig,
@@ -48,7 +48,7 @@ impl Session {
         let mut buffer = BytesMut::new();
         buffer.put_u8(GAME_PACKET_ID);
 
-        let mut packet_buffer = packet.encode()?;
+        let mut packet_buffer = packet.serialize()?;
         if self.compression_enabled.load(Ordering::SeqCst) {
             let (algorithm, threshold) = {
                 let config = SERVER_CONFIG.read();
@@ -179,7 +179,7 @@ impl Session {
             }
         }
 
-        let ack = Acknowledgement { records }.encode()?;
+        let ack = Acknowledgement { records }.serialize()?;
         self.ipv4_socket.send_to(&ack, self.address).await?;
 
         Ok(())
@@ -236,7 +236,7 @@ impl Session {
                     self.recovery_queue.insert(batch.clone());
                 }
 
-                let encoded = batch.encode()?;
+                let encoded = batch.serialize()?;
 
                 // TODO: Add IPv6 support
                 self.ipv4_socket.send_to(&encoded, self.address).await?;
@@ -256,7 +256,7 @@ impl Session {
             if has_reliable_packet {
                 self.recovery_queue.insert(batch.clone());
             }
-            let encoded = batch.encode()?;
+            let encoded = batch.serialize()?;
 
             // TODO: Add IPv6 support
             self.ipv4_socket.send_to(&encoded, self.address).await?;

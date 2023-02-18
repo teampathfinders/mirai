@@ -1,7 +1,7 @@
 use bytes::{BufMut, BytesMut};
 
 use crate::network::packets::GamePacket;
-use common::Encodable;
+use common::Serialize;
 use common::VResult;
 use common::WriteExtensions;
 
@@ -18,8 +18,8 @@ impl GamePacket for ServerToClientHandshake<'_> {
     const ID: u32 = 0x03;
 }
 
-impl Encodable for ServerToClientHandshake<'_> {
-    fn encode(&self) -> VResult<BytesMut> {
+impl Serialize for ServerToClientHandshake<'_> {
+    fn serialize(&self) -> VResult<BytesMut> {
         let mut buffer = BytesMut::with_capacity(2 + self.jwt.len());
 
         buffer.put_string(self.jwt);

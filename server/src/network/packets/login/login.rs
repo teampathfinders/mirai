@@ -1,7 +1,6 @@
 use base64::Engine;
 use bytes::{Buf, BytesMut};
 use jsonwebtoken::{Algorithm, DecodingKey, Validation};
-use serde::Deserialize;
 use serde_repr::Deserialize_repr;
 use spki::SubjectPublicKeyInfo;
 
@@ -9,7 +8,7 @@ use crate::crypto::{
     parse_identity_data, parse_user_data, IdentityData, UserData,
 };
 use crate::network::packets::GamePacket;
-use common::Decodable;
+use common::Deserialize;
 use common::ReadExtensions;
 use common::{bail, nvassert};
 use common::{VError, VResult};
@@ -48,7 +47,7 @@ pub enum UiProfile {
 
 /// Packet received by the client before initiating encryption.
 /// A [`ServerToClientHandshake`](super::ServerToClientHandshake) should be sent in response.
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct Login {
     /// Identity data (Xbox account ID, username, etc.)
     pub identity: IdentityData,
@@ -62,8 +61,8 @@ impl GamePacket for Login {
     const ID: u32 = 0x01;
 }
 
-impl Decodable for Login {
-    fn decode(mut buffer: BytesMut) -> VResult<Self> {
+impl Deserialize for Login {
+    fn deserialize(mut buffer: BytesMut) -> VResult<Self> {
         buffer.advance(4); // Skip protocol version, use the one in RequestNetworkSettings instead.
         buffer.get_var_u32()?;
 

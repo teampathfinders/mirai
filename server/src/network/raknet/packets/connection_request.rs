@@ -1,7 +1,7 @@
 use bytes::{Buf, BytesMut};
 
 use common::nvassert;
-use common::Decodable;
+use common::Deserialize;
 use common::VResult;
 
 /// Sent by the client to initiate a full connection.
@@ -19,8 +19,8 @@ impl ConnectionRequest {
     pub const ID: u8 = 0x09;
 }
 
-impl Decodable for ConnectionRequest {
-    fn decode(mut buffer: BytesMut) -> VResult<Self> {
+impl Deserialize for ConnectionRequest {
+    fn deserialize(mut buffer: BytesMut) -> VResult<Self> {
         nvassert!(buffer.get_u8() == Self::ID);
 
         let guid = buffer.get_i64();

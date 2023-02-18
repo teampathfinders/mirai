@@ -1,7 +1,7 @@
 use bytes::BytesMut;
 use common::{VResult, WriteExtensions};
 
-use common::Encodable;
+use common::Serialize;
 
 use super::GamePacket;
 
@@ -18,8 +18,8 @@ impl GamePacket for SetCommandsEnabled {
     const ID: u32 = 0x3b;
 }
 
-impl Encodable for SetCommandsEnabled {
-    fn encode(&self) -> VResult<BytesMut> {
+impl Serialize for SetCommandsEnabled {
+    fn serialize(&self) -> VResult<BytesMut> {
         let mut buffer = BytesMut::with_capacity(1);
 
         buffer.put_bool(self.enabled);

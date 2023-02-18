@@ -1,7 +1,7 @@
 use std::{any::TypeId, fmt};
 
 use bytes::BytesMut;
-use common::{Encodable, VResult, WriteExtensions, size_of_var, bail};
+use common::{Serialize, VResult, WriteExtensions, size_of_var, bail};
 
 use crate::command::ParsedArgument;
 
@@ -263,8 +263,8 @@ impl GamePacket for GameRulesChanged<'_> {
     const ID: u32 = 0x48;
 }
 
-impl Encodable for GameRulesChanged<'_> {
-    fn encode(&self) -> VResult<BytesMut> {
+impl Serialize for GameRulesChanged<'_> {
+    fn serialize(&self) -> VResult<BytesMut> {
         let mut buffer = BytesMut::new();
 
         buffer.put_var_u32(self.game_rules.len() as u32);

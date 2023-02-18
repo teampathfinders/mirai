@@ -3,7 +3,7 @@ use std::time::Duration;
 use bytes::BytesMut;
 use common::{VResult, WriteExtensions};
 
-use common::Encodable;
+use common::Serialize;
 
 use super::GamePacket;
 
@@ -45,8 +45,8 @@ impl GamePacket for SetTitle<'_> {
     const ID: u32 = 0x58;
 }
 
-impl Encodable for SetTitle<'_> {
-    fn encode(&self) -> VResult<BytesMut> {
+impl Serialize for SetTitle<'_> {
+    fn serialize(&self) -> VResult<BytesMut> {
         let mut buffer = BytesMut::new();
 
         buffer.put_var_i32(self.action as i32);

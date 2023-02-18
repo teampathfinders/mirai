@@ -2,7 +2,7 @@ use bytes::{Buf, BytesMut};
 use uuid::Uuid;
 use common::{bail, ReadExtensions, VError, VResult, WriteExtensions};
 
-use common::Decodable;
+use common::Deserialize;
 
 use crate::network::packets::GamePacket;
 
@@ -73,8 +73,8 @@ impl GamePacket for CommandRequest {
     const ID: u32 = 0x4d;
 }
 
-impl Decodable for CommandRequest {
-    fn decode(mut buffer: BytesMut) -> VResult<Self> {
+impl Deserialize for CommandRequest {
+    fn deserialize(mut buffer: BytesMut) -> VResult<Self> {
         let command = buffer.get_string()?;
         let origin = CommandOriginType::try_from(buffer.get_var_u32()?)?;
         buffer.advance(16);

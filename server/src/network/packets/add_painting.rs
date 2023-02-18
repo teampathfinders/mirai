@@ -1,7 +1,7 @@
 use bytes::BytesMut;
 use common::{VResult, Vector3f, Vector3i, WriteExtensions, size_of_var};
 
-use common::Encodable;
+use common::Serialize;
 
 use super::GamePacket;
 
@@ -31,8 +31,8 @@ impl GamePacket for AddPainting<'_> {
     const ID: u32 = 0x16;
 }
 
-impl Encodable for AddPainting<'_> {
-    fn encode(&self) -> VResult<BytesMut> {
+impl Serialize for AddPainting<'_> {
+    fn serialize(&self) -> VResult<BytesMut> {
         let packet_size =
             size_of_var(self.runtime_id as i64) +
             size_of_var(self.runtime_id) + 3 * 4 +

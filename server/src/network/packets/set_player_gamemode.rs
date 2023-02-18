@@ -1,7 +1,7 @@
 use bytes::BytesMut;
 use common::{bail, ReadExtensions, VError, VResult, WriteExtensions};
 
-use common::{Decodable, Encodable};
+use common::{Deserialize, Serialize};
 
 use super::GamePacket;
 
@@ -42,8 +42,8 @@ impl GamePacket for SetPlayerGameMode {
     const ID: u32 = 0x3e;
 }
 
-impl Encodable for SetPlayerGameMode {
-    fn encode(&self) -> VResult<BytesMut> {
+impl Serialize for SetPlayerGameMode {
+    fn serialize(&self) -> VResult<BytesMut> {
         let mut buffer = BytesMut::with_capacity(1);
 
         buffer.put_var_i32(self.game_mode as i32);
@@ -52,8 +52,8 @@ impl Encodable for SetPlayerGameMode {
     }
 }
 
-impl Decodable for SetPlayerGameMode {
-    fn decode(mut buffer: BytesMut) -> VResult<Self> {
+impl Deserialize for SetPlayerGameMode {
+    fn deserialize(mut buffer: BytesMut) -> VResult<Self> {
         let game_mode = GameMode::try_from(buffer.get_var_i32()?)?;
         Ok(Self { game_mode })
     }

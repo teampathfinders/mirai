@@ -1,7 +1,7 @@
 use bytes::{Bytes, BytesMut};
 use common::{bail, ReadExtensions, VError, VResult, WriteExtensions};
 
-use common::{Decodable, Encodable};
+use common::{Deserialize, Serialize};
 
 use super::GamePacket;
 
@@ -41,8 +41,8 @@ impl GamePacket for SetDifficulty {
     const ID: u32 = 0x3c;
 }
 
-impl Encodable for SetDifficulty {
-    fn encode(&self) -> VResult<BytesMut> {
+impl Serialize for SetDifficulty {
+    fn serialize(&self) -> VResult<BytesMut> {
         let mut buffer = BytesMut::with_capacity(1);
 
         buffer.put_var_i32(self.difficulty as i32);
@@ -51,8 +51,8 @@ impl Encodable for SetDifficulty {
     }
 }
 
-impl Decodable for SetDifficulty {
-    fn decode(mut buffer: BytesMut) -> VResult<Self> {
+impl Deserialize for SetDifficulty {
+    fn deserialize(mut buffer: BytesMut) -> VResult<Self> {
         let difficulty = Difficulty::try_from(buffer.get_var_i32()?)?;
         Ok(Self { difficulty })
     }

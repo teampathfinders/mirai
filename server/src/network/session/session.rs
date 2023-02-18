@@ -25,7 +25,7 @@ use crate::network::session::order_channel::OrderChannel;
 use crate::network::session::recovery_queue::RecoveryQueue;
 use crate::network::session::send_queue::SendQueue;
 use crate::network::Skin;
-use common::{bail, AsyncDeque, Encodable};
+use common::{bail, AsyncDeque, Serialize};
 use common::{error, VResult};
 
 use super::SessionManager;
@@ -314,7 +314,7 @@ impl Session {
     }
 
     /// Sends a packet to all initialised sessions including self.
-    pub fn broadcast<P: GamePacket + Encodable>(
+    pub fn broadcast<P: GamePacket + Serialize + Clone>(
         &self,
         packet: P,
     ) -> VResult<()> {
@@ -328,7 +328,7 @@ impl Session {
     }
 
     /// Sends a packet to all initialised sessions other than self.
-    pub fn broadcast_others<P: GamePacket + Encodable>(
+    pub fn broadcast_others<P: GamePacket + Serialize + Clone>(
         &self,
         packet: P,
     ) -> VResult<()> {

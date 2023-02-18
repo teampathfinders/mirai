@@ -3,7 +3,7 @@ use common::{
     bail, ReadExtensions, VError, VResult, Vector3f, WriteExtensions, size_of_var,
 };
 
-use common::{Decodable, Encodable};
+use common::{Deserialize, Serialize};
 
 use super::GamePacket;
 
@@ -38,8 +38,8 @@ impl GamePacket for Respawn {
     const ID: u32 = 0x2d;
 }
 
-impl Encodable for Respawn {
-    fn encode(&self) -> VResult<BytesMut> {
+impl Serialize for Respawn {
+    fn serialize(&self) -> VResult<BytesMut> {
         let mut buffer = BytesMut::with_capacity(
             3 * 4 + 1 + size_of_var(self.runtime_id)
         );
@@ -52,8 +52,8 @@ impl Encodable for Respawn {
     }
 }
 
-impl Decodable for Respawn {
-    fn decode(mut buffer: BytesMut) -> VResult<Self> {
+impl Deserialize for Respawn {
+    fn deserialize(mut buffer: BytesMut) -> VResult<Self> {
         let position = buffer.get_vec3f();
         let state = RespawnState::try_from(buffer.get_u8())?;
         let runtime_id = buffer.get_var_u64()?;

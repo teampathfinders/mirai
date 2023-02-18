@@ -3,7 +3,7 @@ use std::net::SocketAddr;
 use bytes::{Buf, BytesMut};
 
 use common::nvassert;
-use common::Decodable;
+use common::Deserialize;
 use common::VResult;
 use common::{ReadExtensions, EMPTY_IPV4_ADDRESS};
 
@@ -16,8 +16,8 @@ impl NewIncomingConnection {
     pub const ID: u8 = 0x13;
 }
 
-impl Decodable for NewIncomingConnection {
-    fn decode(mut buffer: BytesMut) -> VResult<Self> {
+impl Deserialize for NewIncomingConnection {
+    fn deserialize(mut buffer: BytesMut) -> VResult<Self> {
         nvassert!(buffer.get_u8() == Self::ID);
 
         // No data in this packet is used, there is no point in decoding it

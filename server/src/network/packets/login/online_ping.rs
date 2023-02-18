@@ -1,7 +1,7 @@
 use bytes::{Buf, BytesMut};
 
 use common::nvassert;
-use common::Decodable;
+use common::Deserialize;
 use common::VResult;
 
 /// Sent by the client or server to ping the other side.
@@ -17,8 +17,8 @@ impl OnlinePing {
     pub const ID: u8 = 0x00;
 }
 
-impl Decodable for OnlinePing {
-    fn decode(mut buffer: BytesMut) -> VResult<Self> {
+impl Deserialize for OnlinePing {
+    fn deserialize(mut buffer: BytesMut) -> VResult<Self> {
         nvassert!(buffer.get_u8() == Self::ID);
 
         let time = buffer.get_i64();

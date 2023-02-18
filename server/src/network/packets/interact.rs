@@ -1,7 +1,7 @@
 use bytes::{Buf, BytesMut};
 use common::{bail, ReadExtensions, VError, VResult, Vector3f};
 
-use common::Decodable;
+use common::Deserialize;
 
 use super::GamePacket;
 
@@ -42,8 +42,8 @@ impl GamePacket for Interact {
     const ID: u32 = 0x21;
 }
 
-impl Decodable for Interact {
-    fn decode(mut buffer: BytesMut) -> VResult<Self> {
+impl Deserialize for Interact {
+    fn deserialize(mut buffer: BytesMut) -> VResult<Self> {
         let action = InteractAction::try_from(buffer.get_u8())?;
         let target_runtime_id = buffer.get_var_u64()?;
 

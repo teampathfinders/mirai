@@ -1,5 +1,5 @@
 use bytes::{BytesMut, BufMut};
-use common::{Encodable, VResult, WriteExtensions};
+use common::{Serialize, VResult, WriteExtensions};
 use uuid::Uuid;
 use crate::network::packets::login::DeviceOS;
 use crate::network::Skin;
@@ -38,8 +38,8 @@ impl GamePacket for PlayerListAdd<'_> {
     const ID: u32 = 0x3f;
 }
 
-impl Encodable for PlayerListAdd<'_> {
-    fn encode(&self) -> VResult<BytesMut> {
+impl Serialize for PlayerListAdd<'_> {
+    fn serialize(&self) -> VResult<BytesMut> {
         tracing::debug!("{self:?}");
 
         let mut buffer = BytesMut::new();
@@ -77,8 +77,8 @@ impl GamePacket for PlayerListRemove<'_> {
     const ID: u32 = 0x3f;
 }
 
-impl Encodable for PlayerListRemove<'_> {
-    fn encode(&self) -> VResult<BytesMut> {
+impl Serialize for PlayerListRemove<'_> {
+    fn serialize(&self) -> VResult<BytesMut> {
         let mut buffer = BytesMut::with_capacity(2 + self.entries.len() * 16);
 
         buffer.put_u8(1); // Remove player.

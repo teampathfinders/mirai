@@ -1,5 +1,5 @@
 use bytes::{BufMut, BytesMut};
-use common::{Encodable, VResult, WriteExtensions};
+use common::{Serialize, VResult, WriteExtensions};
 use crate::network::packets::GamePacket;
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
@@ -53,8 +53,8 @@ impl GamePacket for BossEvent<'_> {
     const ID: u32 = 0x4a;
 }
 
-impl Encodable for BossEvent<'_> {
-    fn encode(&self) -> VResult<BytesMut> {
+impl Serialize for BossEvent<'_> {
+    fn serialize(&self) -> VResult<BytesMut> {
         let mut buffer = BytesMut::new();
 
         buffer.put_var_i64(self.boss_unique_id);

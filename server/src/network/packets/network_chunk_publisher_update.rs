@@ -1,7 +1,7 @@
 use bytes::{BufMut, BytesMut};
 use common::{BlockPosition, VResult, WriteExtensions, size_of_var};
 
-use common::Encodable;
+use common::Serialize;
 
 use super::GamePacket;
 
@@ -15,8 +15,8 @@ impl GamePacket for NetworkChunkPublisherUpdate {
     const ID: u32 = 0x79;
 }
 
-impl Encodable for NetworkChunkPublisherUpdate {
-    fn encode(&self) -> VResult<BytesMut> {
+impl Serialize for NetworkChunkPublisherUpdate {
+    fn serialize(&self) -> VResult<BytesMut> {
         let packet_size =
             size_of_var(self.position.x) +
             size_of_var(self.position.y) +

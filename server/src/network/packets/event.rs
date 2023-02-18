@@ -1,5 +1,5 @@
 use bytes::{Buf, BytesMut};
-use common::{bail, Decodable, ReadExtensions, VResult};
+use common::{bail, Deserialize, ReadExtensions, VResult};
 use level::Dimension;
 use crate::network::packets::GamePacket;
 

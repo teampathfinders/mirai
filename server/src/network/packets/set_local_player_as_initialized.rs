@@ -1,7 +1,7 @@
 use bytes::BytesMut;
 use common::{ReadExtensions, VResult};
 
-use common::Decodable;
+use common::Deserialize;
 
 use super::GamePacket;
 
@@ -16,8 +16,8 @@ impl GamePacket for SetLocalPlayerAsInitialized {
     const ID: u32 = 0x71;
 }
 
-impl Decodable for SetLocalPlayerAsInitialized {
-    fn decode(mut buffer: BytesMut) -> VResult<Self> {
+impl Deserialize for SetLocalPlayerAsInitialized {
+    fn deserialize(mut buffer: BytesMut) -> VResult<Self> {
         Ok(Self { runtime_id: buffer.get_var_u64()? })
     }
 }

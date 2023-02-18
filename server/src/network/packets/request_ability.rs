@@ -1,7 +1,7 @@
 use bytes::{Buf, BytesMut};
 use common::{bail, ReadExtensions, VError, VResult};
 
-use common::Decodable;
+use common::Deserialize;
 
 use super::GamePacket;
 
@@ -38,8 +38,8 @@ impl GamePacket for RequestAbility {
     const ID: u32 = 0xb8;
 }
 
-impl Decodable for RequestAbility {
-    fn decode(mut buffer: BytesMut) -> VResult<Self> {
+impl Deserialize for RequestAbility {
+    fn deserialize(mut buffer: BytesMut) -> VResult<Self> {
         let ability_type = buffer.get_var_i32()?;
         let value_type = buffer.get_u8();
 

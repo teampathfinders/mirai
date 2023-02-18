@@ -1,7 +1,7 @@
 use bytes::BytesMut;
 use common::{bail, ReadExtensions, VError, VResult, WriteExtensions, size_of_var};
 
-use common::{Decodable, Encodable};
+use common::{Deserialize, Serialize};
 
 use super::GamePacket;
 
@@ -38,8 +38,8 @@ impl GamePacket for CreditsUpdate {
     const ID: u32 = 0x4b;
 }
 
-impl Encodable for CreditsUpdate {
-    fn encode(&self) -> VResult<BytesMut> {
+impl Serialize for CreditsUpdate {
+    fn serialize(&self) -> VResult<BytesMut> {
         let mut buffer = BytesMut::with_capacity(
             size_of_var(self.runtime_id) + size_of_var(self.status as i32)
         );
@@ -51,8 +51,8 @@ impl Encodable for CreditsUpdate {
     }
 }
 
-impl Decodable for CreditsUpdate {
-    fn decode(mut buffer: BytesMut) -> VResult<Self> {
+impl Deserialize for CreditsUpdate {
+    fn deserialize(mut buffer: BytesMut) -> VResult<Self> {
         let runtime_id = buffer.get_var_u64()?;
         let status = CreditsStatus::try_from(buffer.get_var_i32()?)?;
 

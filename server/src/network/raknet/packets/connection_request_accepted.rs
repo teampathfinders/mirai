@@ -4,7 +4,7 @@ use std::time::{SystemTime, UNIX_EPOCH};
 use bytes::{BufMut, BytesMut};
 
 use crate::instance_manager::IPV4_LOCAL_ADDR;
-use common::Encodable;
+use common::Serialize;
 use common::VResult;
 use common::{
     WriteExtensions, EMPTY_IPV4_ADDRESS, IPV4_MEM_SIZE, IPV6_MEM_SIZE,
@@ -24,8 +24,8 @@ impl ConnectionRequestAccepted {
     pub const ID: u8 = 0x10;
 }
 
-impl Encodable for ConnectionRequestAccepted {
-    fn encode(&self) -> VResult<BytesMut> {
+impl Serialize for ConnectionRequestAccepted {
+    fn serialize(&self) -> VResult<BytesMut> {
         let mut buffer = BytesMut::with_capacity(
             1 + IPV6_MEM_SIZE + 2 + 10 * IPV4_MEM_SIZE + 8 + 8,
         );

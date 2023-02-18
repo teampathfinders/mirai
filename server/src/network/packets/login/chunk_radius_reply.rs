@@ -1,7 +1,7 @@
 use bytes::BytesMut;
 use common::{VResult, WriteExtensions};
 
-use common::Encodable;
+use common::Serialize;
 use crate::network::packets::GamePacket;
 
 /// Sent in response to [`ChunkRadiusRequest`](super::ChunkRadiusRequest), to notify the client of the allowed render distance.
@@ -15,8 +15,8 @@ impl GamePacket for ChunkRadiusReply {
     const ID: u32 = 0x46;
 }
 
-impl Encodable for ChunkRadiusReply {
-    fn encode(&self) -> VResult<BytesMut> {
+impl Serialize for ChunkRadiusReply {
+    fn serialize(&self) -> VResult<BytesMut> {
         // Chunk radius is virtually always one byte,
         // unless a chunk radius larger than 128 chunks is specified.
         let mut buffer = BytesMut::with_capacity(1);

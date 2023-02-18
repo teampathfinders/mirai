@@ -1,7 +1,7 @@
 use bytes::{BufMut, BytesMut};
 use common::VResult;
 
-use common::Encodable;
+use common::Serialize;
 
 use super::GamePacket;
 
@@ -35,8 +35,8 @@ impl GamePacket for CameraShake {
     const ID: u32 = 0x9f;
 }
 
-impl Encodable for CameraShake {
-    fn encode(&self) -> VResult<BytesMut> {
+impl Serialize for CameraShake {
+    fn serialize(&self) -> VResult<BytesMut> {
         let mut buffer = BytesMut::with_capacity(4 + 4 + 1 + 1);
 
         buffer.put_f32_le(self.intensity);

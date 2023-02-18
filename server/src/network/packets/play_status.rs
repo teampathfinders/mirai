@@ -1,7 +1,7 @@
 use bytes::{BufMut, BytesMut};
 
 use crate::network::packets::GamePacket;
-use common::Encodable;
+use common::Serialize;
 use common::VResult;
 use common::WriteExtensions;
 
@@ -40,8 +40,8 @@ impl GamePacket for PlayStatus {
     const ID: u32 = 0x02;
 }
 
-impl Encodable for PlayStatus {
-    fn encode(&self) -> VResult<BytesMut> {
+impl Serialize for PlayStatus {
+    fn serialize(&self) -> VResult<BytesMut> {
         let mut buffer = BytesMut::with_capacity(4);
 
         buffer.put_u32(self.status as u32);

@@ -1,5 +1,5 @@
 use bytes::{BufMut, BytesMut};
-use common::{Encodable, VResult, WriteExtensions};
+use common::{Serialize, VResult, WriteExtensions};
 use crate::network::packets::GamePacket;
 
 #[derive(Debug, Clone)]
@@ -14,8 +14,8 @@ impl GamePacket for ContainerClose {
     const ID: u32 = 0x2f;
 }
 
-impl Encodable for ContainerClose {
-    fn encode(&self) -> VResult<BytesMut> {
+impl Serialize for ContainerClose {
+    fn serialize(&self) -> VResult<BytesMut> {
         let mut buffer = BytesMut::with_capacity(2);
 
         buffer.put_u8(self.window_id);

@@ -1,7 +1,7 @@
 use bytes::{BufMut, BytesMut};
 
 use crate::network::raknet::OFFLINE_MESSAGE_DATA;
-use common::Encodable;
+use common::Serialize;
 use common::VResult;
 
 /// Sent in response to [`OpenConnectionRequest1`](super::open_connection_request1::OpenConnectionRequest1).
@@ -20,8 +20,8 @@ impl OpenConnectionReply1 {
     pub const ID: u8 = 0x06;
 }
 
-impl Encodable for OpenConnectionReply1 {
-    fn encode(&self) -> VResult<BytesMut> {
+impl Serialize for OpenConnectionReply1 {
+    fn serialize(&self) -> VResult<BytesMut> {
         let mut buffer = BytesMut::with_capacity(1 + 16 + 8 + 1 + 2);
 
         buffer.put_u8(Self::ID);

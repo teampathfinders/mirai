@@ -1,7 +1,7 @@
 use bytes::BytesMut;
 use common::{VResult, WriteExtensions, size_of_var};
 
-use common::Encodable;
+use common::Serialize;
 
 use super::GamePacket;
 
@@ -16,8 +16,8 @@ impl GamePacket for ShowProfile<'_> {
     const ID: u32 = 0x68;
 }
 
-impl Encodable for ShowProfile<'_> {
-    fn encode(&self) -> VResult<BytesMut> {
+impl Serialize for ShowProfile<'_> {
+    fn serialize(&self) -> VResult<BytesMut> {
         let packet_size = size_of_var(self.xuid.len() as u32) + self.xuid.len();
         let mut buffer = BytesMut::with_capacity(packet_size);
 

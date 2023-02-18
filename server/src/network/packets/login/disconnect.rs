@@ -1,7 +1,7 @@
 use bytes::{BufMut, BytesMut};
 
 use crate::network::packets::GamePacket;
-use common::Encodable;
+use common::Serialize;
 use common::VResult;
 use common::WriteExtensions;
 
@@ -27,8 +27,8 @@ impl GamePacket for Disconnect<'_> {
     const ID: u32 = 0x05;
 }
 
-impl Encodable for Disconnect<'_> {
-    fn encode(&self) -> VResult<BytesMut> {
+impl Serialize for Disconnect<'_> {
+    fn serialize(&self) -> VResult<BytesMut> {
         let mut buffer =
             BytesMut::with_capacity(1 + 4 + self.kick_message.len());
 

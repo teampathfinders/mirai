@@ -1,7 +1,7 @@
 use bytes::{Buf, BytesMut};
 use common::{bail, ReadExtensions, VError, VResult, WriteExtensions};
 
-use common::Decodable;
+use common::Deserialize;
 
 use super::GamePacket;
 
@@ -52,8 +52,8 @@ impl GamePacket for Animate {
     const ID: u32 = 0x2c;
 }
 
-impl Decodable for Animate {
-    fn decode(mut buffer: BytesMut) -> VResult<Self> {
+impl Deserialize for Animate {
+    fn deserialize(mut buffer: BytesMut) -> VResult<Self> {
         let action_type = AnimateAction::try_from(buffer.get_var_i32()?)?;
         let runtime_id = buffer.get_var_u64()?;
 

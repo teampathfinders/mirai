@@ -30,7 +30,7 @@ use crate::network::raknet::{Frame, FrameBatch};
 use crate::network::session::send_queue::SendPriority;
 use crate::network::session::session::Session;
 use common::{
-    bail, error, BlockPosition, Decodable, VResult, Vector2f, Vector3f,
+    bail, error, BlockPosition, Deserialize, VResult, Vector2f, Vector3f,
     Vector3i,
 };
 
@@ -38,7 +38,7 @@ impl Session {
     /// Handles a [`ClientCacheStatus`] packet.
     /// This stores the result in the [`Session::cache_support`] field.
     pub fn handle_cache_status(&self, mut packet: BytesMut) -> VResult<()> {
-        let request = CacheStatus::decode(packet)?;
+        let request = CacheStatus::deserialize(packet)?;
         self.cache_support.set(request.supports_cache)?;
 
         Ok(())
@@ -48,7 +48,7 @@ impl Session {
         &self,
         mut packet: BytesMut,
     ) -> VResult<()> {
-        let request = ViolationWarning::decode(packet)?;
+        let request = ViolationWarning::deserialize(packet)?;
         tracing::error!("Received violation warning: {request:?}");
 
         self.kick("Violation warning")?;
@@ -64,7 +64,7 @@ impl Session {
         &self,
         mut packet: BytesMut,
     ) -> VResult<()> {
-        let request = SetLocalPlayerAsInitialized::decode(packet)?;
+        let request = SetLocalPlayerAsInitialized::deserialize(packet)?;
 
         // Add player to other's player lists.
         tracing::info!("{} has connected", self.get_display_name()?);
@@ -117,7 +117,7 @@ impl Session {
         &self,
         mut packet: BytesMut,
     ) -> VResult<()> {
-        let request = ChunkRadiusRequest::decode(packet)?;
+        let request = ChunkRadiusRequest::deserialize(packet)?;
         let reply = ChunkRadiusReply {
             allowed_radius: SERVER_CONFIG.read().allowed_render_distance,
         };
@@ -130,7 +130,7 @@ impl Session {
         &self,
         mut packet: BytesMut,
     ) -> VResult<()> {
-        let request = ResourcePackClientResponse::decode(packet)?;
+        let request = ResourcePackClientResponse::deserialize(packet)?;
 
         // TODO: Implement resource packs.
 
@@ -230,7 +230,7 @@ impl Session {
         &self,
         mut packet: BytesMut,
     ) -> VResult<()> {
-        ClientToServerHandshake::decode(packet)?;
+        ClientToServerHandshake::deserialize(packet)?;
 
         let response = PlayStatus { status: Status::LoginSuccess };
         self.send(response)?;
@@ -260,7 +260,7 @@ impl Session {
 
     /// Handles a [`Login`] packet.
     pub async fn handle_login(&self, mut packet: BytesMut) -> VResult<()> {
-        let request = Login::decode(packet);
+        let request = Login::deserialize(packet);
         let request = match request {
             Ok(r) => r,
             Err(e) => {
@@ -289,7 +289,7 @@ impl Session {
         &self,
         mut packet: BytesMut,
     ) -> VResult<()> {
-        let request = RequestNetworkSettings::decode(packet)?;
+        let request = RequestNetworkSettings::deserialize(packet)?;
         if request.protocol_version != NETWORK_VERSION {
             if request.protocol_version > NETWORK_VERSION {
                 let response = PlayStatus { status: Status::FailedServer };

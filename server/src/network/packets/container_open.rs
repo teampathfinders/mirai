@@ -1,5 +1,5 @@
 use bytes::{BufMut, BytesMut};
-use common::{BlockPosition, Encodable, Vector3i, VResult, WriteExtensions, size_of_var};
+use common::{BlockPosition, Serialize, Vector3i, VResult, WriteExtensions, size_of_var};
 use crate::network::packets::GamePacket;
 
 #[derive(Debug, Clone)]
@@ -14,8 +14,8 @@ impl GamePacket for ContainerOpen {
     const ID: u32 = 0x2e;
 }
 
-impl Encodable for ContainerOpen {
-    fn encode(&self) -> VResult<BytesMut> {
+impl Serialize for ContainerOpen {
+    fn serialize(&self) -> VResult<BytesMut> {
         let mut buffer = BytesMut::with_capacity(
             1 + 1 + 3 * 4 + size_of_var(self.container_entity_unique_id)
         );

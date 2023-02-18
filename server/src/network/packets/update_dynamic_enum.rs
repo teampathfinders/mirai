@@ -1,7 +1,7 @@
 use bytes::{BufMut, BytesMut};
 use common::{VResult, WriteExtensions, size_of_var};
 
-use common::Encodable;
+use common::Serialize;
 
 use super::GamePacket;
 
@@ -28,8 +28,8 @@ impl GamePacket for UpdateDynamicEnum<'_> {
     const ID: u32 = 0x72;
 }
 
-impl Encodable for UpdateDynamicEnum<'_> {
-    fn encode(&self) -> VResult<BytesMut> {
+impl Serialize for UpdateDynamicEnum<'_> {
+    fn serialize(&self) -> VResult<BytesMut> {
         let packet_size =
             size_of_var(self.enum_id.len() as u32) + self.enum_id.len() +
             size_of_var(self.options.len() as u32) +

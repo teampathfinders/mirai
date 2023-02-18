@@ -1,7 +1,7 @@
 use bytes::{BufMut, BytesMut};
 use common::{VResult, Vector2i, WriteExtensions};
 
-use common::Encodable;
+use common::Serialize;
 
 use super::GamePacket;
 
@@ -37,8 +37,8 @@ impl GamePacket for LevelChunk {
     const ID: u32 = 0x3a;
 }
 
-impl Encodable for LevelChunk {
-    fn encode(&self) -> VResult<BytesMut> {
+impl Serialize for LevelChunk {
+    fn serialize(&self) -> VResult<BytesMut> {
         let mut buffer = BytesMut::new();
 
         buffer.put_vec2i(&self.position);

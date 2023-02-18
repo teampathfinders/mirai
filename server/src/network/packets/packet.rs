@@ -3,7 +3,7 @@ use bytes::{Buf, BufMut, BytesMut};
 use crate::network::packets::GamePacket;
 use crate::network::raknet::Header;
 use common::nvassert;
-use common::Encodable;
+use common::Serialize;
 use common::VResult;
 use common::{ReadExtensions, WriteExtensions};
 
@@ -37,11 +37,11 @@ impl<T: GamePacket> Packet<T> {
     }
 }
 
-impl<T: GamePacket + Encodable> Encodable for Packet<T> {
-    fn encode(&self) -> VResult<BytesMut> {
+impl<T: GamePacket + Serialize> Serialize for Packet<T> {
+    fn serialize(&self) -> VResult<BytesMut> {
         let mut buffer = BytesMut::new();
         let header = self.header.encode();
-        let body = self.internal_packet.encode()?;
+        let body = self.internal_packet.serialize()?;
 
         buffer.put_var_u32(header.len() as u32 + body.len() as u32);
 

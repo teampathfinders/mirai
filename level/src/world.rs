@@ -1,5 +1,5 @@
 use bytes::{BufMut, BytesMut};
-use common::{Encodable, VResult};
+use common::{Serialize, VResult};
 
 /// Database key prefixes.
 ///
@@ -45,8 +45,8 @@ pub struct DatabaseKey {
     pub tag: DatabaseTag,
 }
 
-impl Encodable for DatabaseKey {
-    fn encode(&self) -> VResult<BytesMut> {
+impl Serialize for DatabaseKey {
+    fn serialize(&self) -> VResult<BytesMut> {
         let mut buffer = BytesMut::with_capacity(
             4 + 4
                 + if self.dimension != Dimension::Overworld {

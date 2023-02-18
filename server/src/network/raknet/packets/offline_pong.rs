@@ -1,7 +1,7 @@
 use bytes::{BufMut, BytesMut};
 
 use crate::network::raknet::OFFLINE_MESSAGE_DATA;
-use common::Encodable;
+use common::Serialize;
 use common::VResult;
 use common::WriteExtensions;
 
@@ -24,8 +24,8 @@ impl OfflinePong {
     pub const ID: u8 = 0x1c;
 }
 
-impl Encodable for OfflinePong {
-    fn encode(&self) -> VResult<BytesMut> {
+impl Serialize for OfflinePong {
+    fn serialize(&self) -> VResult<BytesMut> {
         let mut buffer =
             BytesMut::with_capacity(1 + 8 + 8 + 16 + 2 + self.metadata.len());
 

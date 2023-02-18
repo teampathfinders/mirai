@@ -1,5 +1,5 @@
 use bytes::{BufMut, BytesMut};
-use common::{Encodable, VResult, Vector3f, Vector4f, WriteExtensions};
+use common::{Serialize, VResult, Vector3f, Vector4f, WriteExtensions};
 
 use super::GamePacket;
 
@@ -28,8 +28,8 @@ impl GamePacket for ClientBoundDebugRenderer<'_> {
     const ID: u32 = 0xa4;
 }
 
-impl Encodable for ClientBoundDebugRenderer<'_> {
-    fn encode(&self) -> VResult<BytesMut> {
+impl Serialize for ClientBoundDebugRenderer<'_> {
+    fn serialize(&self) -> VResult<BytesMut> {
         let mut buffer = BytesMut::new();
 
         buffer.put_i32_le(self.action as i32);

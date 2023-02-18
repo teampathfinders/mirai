@@ -1,5 +1,5 @@
 use bytes::BytesMut;
-use common::{Encodable, VResult, WriteExtensions};
+use common::{Serialize, VResult, WriteExtensions};
 use crate::network::cache_blob::CacheBlob;
 use crate::network::packets::GamePacket;
 
@@ -12,8 +12,8 @@ impl GamePacket for CacheMissResponse<'_> {
     const ID: u32 = 0x88;
 }
 
-impl Encodable for CacheMissResponse<'_> {
-    fn encode(&self) -> VResult<BytesMut> {
+impl Serialize for CacheMissResponse<'_> {
+    fn serialize(&self) -> VResult<BytesMut> {
         let mut buffer = BytesMut::with_capacity(
             1 + self.blobs.iter().fold(0, |acc, blob| acc + blob.len())
         );

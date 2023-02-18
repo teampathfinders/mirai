@@ -1,7 +1,7 @@
 use bytes::BytesMut;
 use common::VResult;
 
-use common::Encodable;
+use common::Serialize;
 
 use super::GamePacket;
 
@@ -15,8 +15,8 @@ impl GamePacket for BiomeDefinitionList {
     const ID: u32 = 0x7a;
 }
 
-impl Encodable for BiomeDefinitionList {
-    fn encode(&self) -> VResult<BytesMut> {
+impl Serialize for BiomeDefinitionList {
+    fn serialize(&self) -> VResult<BytesMut> {
         Ok(BytesMut::from(DEFINITIONS))
     }
 }

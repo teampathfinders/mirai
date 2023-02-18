@@ -1,5 +1,5 @@
 use bytes::Bytes;
-use common::Encodable;
+use common::Serialize;
 use crate::network::packets::GamePacket;
 
 /// Lets the client know about the entities available on the server.
