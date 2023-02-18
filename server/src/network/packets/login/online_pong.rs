@@ -4,7 +4,7 @@ use common::Serialize;
 use common::VResult;
 
 /// Sent by the server or client in response to an [`OnlinePing`](super::OnlinePing) packet.
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct OnlinePong {
     /// Timestamp of when the ping was sent.
     pub ping_time: i64,

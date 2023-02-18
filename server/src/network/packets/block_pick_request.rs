@@ -3,7 +3,7 @@ use common::{BlockPosition, Deserialize, ReadExtensions, Vector3i, VResult};
 use crate::network::packets::GamePacket;
 
 /// Sent by the client when the user requests a block using the block pick key.
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct BlockPickRequest {
     /// Position of the block to pick.
     pub position: Vector3i,

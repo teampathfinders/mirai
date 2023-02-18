@@ -82,7 +82,8 @@ impl InstanceManager {
                 .await?,
         );
 
-        let session_manager = Arc::new(SessionManager::new(global_token.clone()));
+        let session_manager =
+            Arc::new(SessionManager::new(global_token.clone()));
         let level_manager = LevelManager::new(session_manager.clone());
 
         level_manager.add_command(Command {
@@ -280,7 +281,8 @@ impl InstanceManager {
         self: Arc<Self>,
         packet: RawPacket,
     ) -> VResult<()> {
-        let request = OpenConnectionRequest1::deserialize(packet.buffer.clone())?;
+        let request =
+            OpenConnectionRequest1::deserialize(packet.buffer.clone())?;
         if request.protocol_version != RAKNET_VERSION {
             let reply =
                 IncompatibleProtocol { server_guid: self.guid }.serialize()?;
@@ -309,7 +311,8 @@ impl InstanceManager {
         self: Arc<Self>,
         packet: RawPacket,
     ) -> VResult<()> {
-        let request = OpenConnectionRequest2::deserialize(packet.buffer.clone())?;
+        let request =
+            OpenConnectionRequest2::deserialize(packet.buffer.clone())?;
         let reply = OpenConnectionReply2 {
             server_guid: self.guid,
             mtu: request.mtu,

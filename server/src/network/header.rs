@@ -1,6 +1,6 @@
 use bytes::{BufMut, BytesMut};
 
-use common::{VResult, size_of_var};
+use common::{size_of_var, VResult};
 use common::{ReadExtensions, WriteExtensions};
 
 /// Game packets are prefixed with a length and a header.
@@ -32,7 +32,7 @@ impl Header {
         let value = self.id
             | ((self.sender_subclient as u32) << 10)
             | ((self.target_subclient as u32) << 12);
-        
+
         let mut buffer = BytesMut::with_capacity(size_of_var(value));
         buffer.put_var_u32(value);
 

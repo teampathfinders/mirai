@@ -35,7 +35,7 @@ pub struct ClientThrottleSettings {
 }
 
 /// Sent by the server to modify network related settings.
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct NetworkSettings {
     /// Minimum size of a packet that is compressed.
     /// Any packets below this threshold will not be compressed.

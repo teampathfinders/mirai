@@ -40,7 +40,7 @@ pub struct BehaviorPackEntry {
     pub subpack_name: String,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct ResourcePackStack<'a> {
     pub forced_to_accept: bool,
     pub resource_packs: &'a [ResourcePackStackEntry],

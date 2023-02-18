@@ -76,8 +76,10 @@ impl Session {
 
         if let Ok(parsed) = result {
             let output = match parsed.name.as_str() {
-                "gamerule" => self.level_manager.handle_gamerule_command(parsed),
-                _ => todo!()
+                "gamerule" => {
+                    self.level_manager.handle_gamerule_command(parsed)
+                }
+                _ => todo!(),
             };
 
             if let Ok(message) = output {
@@ -89,8 +91,8 @@ impl Session {
                     output: &[CommandOutputMessage {
                         is_success: true,
                         message: &message,
-                        parameters: &[]
-                    }]
+                        parameters: &[],
+                    }],
                 })?;
             } else {
                 self.send(CommandOutput {

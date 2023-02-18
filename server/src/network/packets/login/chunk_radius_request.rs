@@ -4,7 +4,7 @@ use common::Deserialize;
 use crate::network::packets::GamePacket;
 
 /// Sent by the client to request the maximum render distance.
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct ChunkRadiusRequest {
     /// Requested render distance (in chunks).
     pub radius: i32,

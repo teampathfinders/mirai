@@ -39,7 +39,7 @@ impl TryFrom<u8> for ResourcePackStatus {
 
 /// Sent in response to [`ResourcePacksInfo`](super::ResourcePacksInfo) and
 /// [`ResourcePackStack`](super::ResourcePackStack).
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct ResourcePackClientResponse {
     /// The response status.
     pub status: ResourcePackStatus,

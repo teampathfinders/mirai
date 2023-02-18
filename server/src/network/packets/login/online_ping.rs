@@ -6,7 +6,7 @@ use common::VResult;
 
 /// Sent by the client or server to ping the other side.
 /// An [`OnlinePong`](super::OnlinePong) packet should be sent in response.
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct OnlinePing {
     /// Timestamp of when the ping was sent.
     pub time: i64,

@@ -6,7 +6,7 @@ use common::Serialize;
 use super::GamePacket;
 
 /// Plays a sound for the client.
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct PlaySound<'s> {
     /// Name of the sound.
     pub name: &'s str,

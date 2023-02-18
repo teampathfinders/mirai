@@ -10,7 +10,7 @@ use crate::config::SERVER_CONFIG;
 use crate::network::header::Header;
 use crate::network::packets::login::CompressionAlgorithm;
 use crate::network::packets::{GamePacket, Packet, GAME_PACKET_ID};
-use crate::network::raknet::packets::{Acknowledgement, AcknowledgementRecord};
+use crate::network::raknet::packets::{Ack, AckRecord};
 use crate::network::raknet::Reliability;
 use crate::network::raknet::{Frame, FrameBatch};
 use crate::network::session::send_queue::SendPriority;
@@ -172,14 +172,14 @@ impl Session {
             if !is_last && id + 1 == confirmed[index + 1] {
                 consecutive.push(*id);
             } else if consecutive.is_empty() {
-                records.push(AcknowledgementRecord::Single(*id));
+                records.push(AckRecord::Single(*id));
             } else {
-                records.push(AcknowledgementRecord::Range(consecutive[0]..*id));
+                records.push(AckRecord::Range(consecutive[0]..*id));
                 consecutive.clear();
             }
         }
 
-        let ack = Acknowledgement { records }.serialize()?;
+        let ack = Ack { records }.serialize()?;
         self.ipv4_socket.send_to(&ack, self.address).await?;
 
         Ok(())

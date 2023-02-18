@@ -5,7 +5,7 @@ use common::Deserialize;
 use common::VResult;
 
 /// Sent by the client to request a [`NetworkSettings`](super::NetworkSettings) packet.
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct RequestNetworkSettings {
     /// Minecraft network version
     pub protocol_version: u32,

@@ -55,7 +55,6 @@ impl StorageRecord {
 
     fn encode(&self, buffer: &mut BytesMut) {
         // Determine the required bits per index
-
     }
 }
 

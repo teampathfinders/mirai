@@ -9,7 +9,7 @@ use common::{ReadExtensions, WriteExtensions};
 
 /// Record containing IDs of confirmed packets.
 #[derive(Debug, Clone)]
-pub enum AcknowledgementRecord {
+pub enum AckRecord {
     /// A single ID
     Single(u32),
     /// Range of IDs
@@ -17,18 +17,15 @@ pub enum AcknowledgementRecord {
 }
 
 /// Encodes a list of acknowledgement records.
-fn encode_records(
-    mut buffer: BytesMut,
-    records: &[AcknowledgementRecord],
-) -> BytesMut {
+fn encode_records(mut buffer: BytesMut, records: &[AckRecord]) -> BytesMut {
     buffer.put_i16(records.len() as i16);
     for record in records {
         match record {
-            AcknowledgementRecord::Single(id) => {
+            AckRecord::Single(id) => {
                 buffer.put_u8(1); // Is single
                 buffer.put_u24_le(*id);
             }
-            AcknowledgementRecord::Range(range) => {
+            AckRecord::Range(range) => {
                 buffer.put_u8(0); // Is range
                 buffer.put_u24_le(range.start);
                 buffer.put_u24_le(range.end);
@@ -40,18 +37,18 @@ fn encode_records(
 }
 
 /// Decodes a list of acknowledgement records.
-fn decode_records(mut buffer: BytesMut) -> Vec<AcknowledgementRecord> {
+fn decode_records(mut buffer: BytesMut) -> Vec<AckRecord> {
     let record_count = buffer.get_u16();
     let mut records = Vec::with_capacity(record_count as usize);
 
     for _ in 0..record_count {
         let is_range = buffer.get_u8() == 0;
         if is_range {
-            records.push(AcknowledgementRecord::Range(
+            records.push(AckRecord::Range(
                 buffer.get_u24_le()..buffer.get_u24_le(),
             ));
         } else {
-            records.push(AcknowledgementRecord::Single(buffer.get_u24_le()));
+            records.push(AckRecord::Single(buffer.get_u24_le()));
         }
     }
 
@@ -59,18 +56,18 @@ fn decode_records(mut buffer: BytesMut) -> Vec<AcknowledgementRecord> {
 }
 
 /// Confirms that packets have been received.
-#[derive(Debug, Clone)]
-pub struct Acknowledgement {
+#[derive(Debug)]
+pub struct Ack {
     /// Records containing IDs of received packets.
-    pub records: Vec<AcknowledgementRecord>,
+    pub records: Vec<AckRecord>,
 }
 
-impl Acknowledgement {
+impl Ack {
     /// Unique identifier for this packet.
     pub const ID: u8 = 0xc0;
 }
 
-impl Serialize for Acknowledgement {
+impl Serialize for Ack {
     fn serialize(&self) -> VResult<BytesMut> {
         let mut buffer = BytesMut::with_capacity(10);
         buffer.put_u8(Self::ID);
@@ -78,7 +75,7 @@ impl Serialize for Acknowledgement {
     }
 }
 
-impl Deserialize for Acknowledgement {
+impl Deserialize for Ack {
     fn deserialize(mut buffer: BytesMut) -> VResult<Self> {
         nvassert!(buffer.get_u8() == Self::ID);
         let records = decode_records(buffer);
@@ -86,19 +83,19 @@ impl Deserialize for Acknowledgement {
     }
 }
 
-/// Notifiers the recipient of possibly lost packets.
-#[derive(Debug, Clone)]
-pub struct NegativeAcknowledgement {
+/// Notifies the recipient of possibly lost packets.
+#[derive(Debug)]
+pub struct Nak {
     /// Records containing the missing IDs
-    pub records: Vec<AcknowledgementRecord>,
+    pub records: Vec<AckRecord>,
 }
 
-impl NegativeAcknowledgement {
+impl Nak {
     /// Unique identifier of this packet.
     pub const ID: u8 = 0xa0;
 }
 
-impl Serialize for NegativeAcknowledgement {
+impl Serialize for Nak {
     fn serialize(&self) -> VResult<BytesMut> {
         let mut buffer = BytesMut::with_capacity(10);
         buffer.put_u8(Self::ID);
@@ -106,7 +103,7 @@ impl Serialize for NegativeAcknowledgement {
     }
 }
 
-impl Deserialize for NegativeAcknowledgement {
+impl Deserialize for Nak {
     fn deserialize(mut buffer: BytesMut) -> VResult<Self> {
         nvassert!(buffer.get_u8() == Self::ID);
         let records = decode_records(buffer);

@@ -9,7 +9,7 @@ use common::VResult;
 /// to confirm that encryption is working.
 ///
 /// It has no data.
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct ClientToServerHandshake;
 
 impl GamePacket for ClientToServerHandshake {

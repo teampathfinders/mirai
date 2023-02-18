@@ -19,8 +19,7 @@ use crate::network::packets::{
     GAME_PACKET_ID,
 };
 use crate::network::raknet::packets::{
-    Acknowledgement, ConnectionRequest, DisconnectNotification,
-    NegativeAcknowledgement, NewIncomingConnection,
+    Ack, ConnectionRequest, DisconnectNotification, Nak, NewIncomingConnection,
 };
 use crate::network::raknet::{Frame, FrameBatch};
 use crate::network::session::session::Session;
@@ -47,8 +46,8 @@ impl Session {
 
         let packet_id = *packet.first().unwrap();
         match packet_id {
-            Acknowledgement::ID => self.handle_ack(packet),
-            NegativeAcknowledgement::ID => self.handle_nack(packet).await,
+            Ack::ID => self.handle_ack(packet),
+            Nak::ID => self.handle_nack(packet).await,
             _ => self.handle_frame_batch(packet).await,
         }
     }

@@ -7,7 +7,7 @@ use common::VResult;
 /// Sent to retrieve information about the server
 /// while the user is in Minecraft's server tab.
 /// An [`OfflinePong`](super::offline_pong::OfflinePong) packet should be sent in response.
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct OfflinePing {
     /// Time when this ping was sent.
     /// Used to measure server latency.

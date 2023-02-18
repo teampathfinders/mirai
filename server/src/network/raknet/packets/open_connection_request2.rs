@@ -6,7 +6,7 @@ use common::ReadExtensions;
 use common::VResult;
 
 /// Sent by the client, in response to [`OpenConnectionReply2`](super::open_connection_reply2::OpenConnectionReply2).
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct OpenConnectionRequest2 {
     /// MTU of the connection.
     pub mtu: u16,

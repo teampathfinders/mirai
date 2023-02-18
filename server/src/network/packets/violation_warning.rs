@@ -42,7 +42,7 @@ impl TryFrom<i32> for ViolationSeverity {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct ViolationWarning {
     /// Type of the violation.
     pub warning_type: ViolationType,

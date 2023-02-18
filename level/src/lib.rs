@@ -12,5 +12,5 @@ pub use world::*;
 
 #[derive(Debug)]
 pub struct ChunkManager {
-    database: ChunkDatabase
+    database: ChunkDatabase,
 }

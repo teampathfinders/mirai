@@ -1,5 +1,5 @@
-use std::sync::Arc;
 use std::sync::atomic::AtomicU64;
+use std::sync::Arc;
 use std::time::Duration;
 
 use common::VResult;
@@ -27,7 +27,7 @@ pub struct LevelManager {
     /// Current world tick.
     /// This is the standard Minecraft tick.
     /// The level is ticked 20 times every second.
-    tick: AtomicU64
+    tick: AtomicU64,
 }
 
 impl LevelManager {
@@ -35,11 +35,17 @@ impl LevelManager {
         let manager = Arc::new(Self {
             commands: DashMap::new(),
             game_rules: DashMap::from_iter([
-                ("showcoordinates".to_owned(), GameRule::ShowCoordinates(false)),
-                ("naturalregeneration".to_owned(), GameRule::NaturalRegeneration(false))
+                (
+                    "showcoordinates".to_owned(),
+                    GameRule::ShowCoordinates(false),
+                ),
+                (
+                    "naturalregeneration".to_owned(),
+                    GameRule::NaturalRegeneration(false),
+                ),
             ]),
             session_manager,
-            tick: AtomicU64::new(0)
+            tick: AtomicU64::new(0),
         });
 
         manager

@@ -59,7 +59,7 @@ pub struct ResourcePack {
 /// 
 /// If the server has no resource packs, a [`ResourcePackStack`](super::ResourcePackStack) packet can be sent immediately after this one
 /// to prevent a client response.
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct ResourcePacksInfo<'a> {
     /// Forces the client to accept the packs to be able to join the server.
     pub required: bool,
