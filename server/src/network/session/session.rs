@@ -71,16 +71,10 @@ pub struct Session {
     pub runtime_id: u64,
     pub level_manager: Arc<LevelManager>,
     /// Sends packets into the broadcasting channel.
-    pub broadcast_send: broadcast::Sender<BroadcastPacket>,
-    /// Receives packets from the broadcasting channel.
-    pub broadcast_recv: broadcast::Receiver<BroadcastPacket>,
+    pub broadcast: broadcast::Sender<BroadcastPacket>,
 
     /// Indicates whether this session is active.
     pub active: CancellationToken,
-    /// Keeps track of all unprocessed received packets.
-    /// This receiver is wrapped in a mutex because the recv method requires a mutable borrow.
-    /// In addition, this in async mutex as the lock needs to be held across an await point.
-    pub receiver: tokio::sync::Mutex<mpsc::Receiver<Bytes>>,
 
     /// Current tick of this session, this is increased by one every time the session
     /// processes packets.
@@ -125,8 +119,8 @@ pub struct Session {
 impl Session {
     /// Creates a new session.
     pub fn new(
-        broadcast_send: broadcast::Sender<BroadcastPacket>,
-        receiver: mpsc::Receiver<Bytes>,
+        broadcast: broadcast::Sender<BroadcastPacket>,
+        mut receiver: mpsc::Receiver<Bytes>,
         level_manager: Arc<LevelManager>,
         ipv4_socket: Arc<UdpSocket>,
         address: SocketAddr,
@@ -141,11 +135,9 @@ impl Session {
             cache_support: OnceCell::new(),
             initialized: AtomicBool::new(false),
             runtime_id: RUNTIME_ID_COUNTER.fetch_add(1, Ordering::SeqCst),
-            broadcast_recv: broadcast_send.subscribe(),
-            broadcast_send,
+            broadcast,
             level_manager,
 
-            receiver: tokio::sync::Mutex::new(receiver),
             current_tick: AtomicU64::new(0),
             ipv4_socket,
             mtu,
@@ -207,11 +199,26 @@ impl Session {
         {
             let session = session.clone();
             tokio::spawn(async move {
+                let mut broadcast_recv = session.broadcast.subscribe();
                 while !session.active.is_cancelled() {
-                    match session.handle_raw_packet().await {
-                        Ok(_) => (),
-                        Err(e) => tracing::error!("{e}"),
-                    }
+                    tokio::select! {
+                        pk = receiver.recv() => {
+                            if let Some(pk) = pk {
+                                match session.process_raw_packet(pk).await {
+                                    Ok(_) => (),
+                                    Err(e) => tracing::error!("{e}"),
+                                }
+                            }
+                        },
+                        pk = broadcast_recv.recv() => {
+                            if let Ok(pk) = pk {
+                                match session.process_broadcast(pk) {
+                                    Ok(_) => (),
+                                    Err(e) => tracing::error!("{e}"),
+                                }
+                            }
+                        }
+                    };
                 }
             });
         }
@@ -324,7 +331,7 @@ impl Session {
         &self,
         pk: P,
     ) -> VResult<()> {
-        self.broadcast_send.send(BroadcastPacket::new(pk, None)?)?;
+        self.broadcast.send(BroadcastPacket::new(pk, None)?)?;
         Ok(())
     }
 
@@ -333,7 +340,7 @@ impl Session {
         &self,
         pk: P,
     ) -> VResult<()> {
-        self.broadcast_send.send(
+        self.broadcast.send(
             BroadcastPacket::new(pk, Some(
                 NonZeroU64::new(self.get_xuid()?)
                     .ok_or_else(|| error!(NotInitialized, "XUID was 0"))?,

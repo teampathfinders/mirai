@@ -19,7 +19,7 @@ use common::{error, Serialize, VResult, bail};
 
 const BROADCAST_CHANNEL_CAPACITY: usize = 16;
 const FORWARD_TIMEOUT: Duration = Duration::from_millis(20);
-const GARBAGE_COLLECT_INTERVAL: Duration = Duration::from_secs(10);
+const GARBAGE_COLLECT_INTERVAL: Duration = Duration::from_secs(1);
 
 /// Keeps track of all sessions on the server.
 #[derive(Debug)]

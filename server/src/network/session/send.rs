@@ -24,7 +24,7 @@ pub struct PacketConfig {
     pub priority: SendPriority,
 }
 
-const DEFAULT_CONFIG: PacketConfig = PacketConfig {
+pub const DEFAULT_SEND_CONFIG: PacketConfig = PacketConfig {
     reliability: Reliability::ReliableOrdered,
     priority: SendPriority::Medium,
 };
@@ -35,26 +35,25 @@ impl Session {
     #[inline]
     pub fn send<T: ConnectedPacket + Serialize>(&self, pk: T) -> VResult<()> {
         let pk = Packet::new(pk);
-        self.send_packet_with_config(pk, DEFAULT_CONFIG)
+        self.send_serialized(pk.serialize()?, DEFAULT_SEND_CONFIG)
     }
 
     /// Sends a game packet with custom reliability and priority
-    pub fn send_packet_with_config<T: ConnectedPacket + Serialize>(
+    pub fn send_serialized(
         &self,
-        packet: Packet<T>,
+        mut pk: Bytes,
         config: PacketConfig,
     ) -> VResult<()> {
         let mut buffer = BytesMut::new();
         buffer.put_u8(GAME_PACKET_ID);
 
-        let mut packet_buffer = packet.serialize()?;
         if self.compression_enabled.load(Ordering::SeqCst) {
             let (algorithm, threshold) = {
                 let config = SERVER_CONFIG.read();
                 (config.compression_algorithm, config.compression_threshold)
             };
 
-            if packet_buffer.len() > threshold as usize {
+            if pk.len() > threshold as usize {
                 // Compress packet
                 match SERVER_CONFIG.read().compression_algorithm {
                     CompressionAlgorithm::Snappy => {
@@ -66,8 +65,8 @@ impl Session {
                             Compression::best(),
                         );
 
-                        writer.write_all(packet_buffer.as_ref())?;
-                        packet_buffer =
+                        writer.write_all(pk.as_ref())?;
+                        pk =
                             Bytes::copy_from_slice(writer.finish()?.as_slice());
                     }
                 }
@@ -75,10 +74,10 @@ impl Session {
         }
 
         if let Some(encryptor) = self.encryptor.get() {
-            packet_buffer = encryptor.encrypt(packet_buffer)?;
+            pk = encryptor.encrypt(pk)?;
         }
 
-        buffer.put(packet_buffer);
+        buffer.put(pk);
 
         self.send_raw_buffer_with_config(buffer.freeze(), config);
         Ok(())
@@ -88,7 +87,7 @@ impl Session {
     /// (reliable ordered and medium priority).
     #[inline]
     pub fn send_raw_buffer(&self, buffer: Bytes) {
-        self.send_raw_buffer_with_config(buffer, DEFAULT_CONFIG);
+        self.send_raw_buffer_with_config(buffer, DEFAULT_SEND_CONFIG);
     }
 
     /// Sends a raw buffer with custom reliability and priority.
@@ -112,6 +111,7 @@ impl Session {
         }
 
         if tick % 2 == 0 {
+            // Also flush broadcast packets.
             if let Some(frames) = self.send_queue.flush(SendPriority::Medium) {
                 self.send_raw_frames(frames).await?;
             }

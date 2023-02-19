@@ -16,7 +16,7 @@ use crate::network::packets::login::{
 use crate::network::packets::{
     Animate, ConnectedPacket, Interact, MovePlayer, RequestAbility,
     SetLocalPlayerAsInitialized, TextMessage, UpdateSkin, ViolationWarning,
-    GAME_PACKET_ID,
+    GAME_PACKET_ID, BroadcastPacket,
 };
 use crate::network::raknet::packets::{
     Ack, ConnectionRequest, DisconnectNotification, Nak, NewIncomingConnection,
@@ -26,36 +26,39 @@ use crate::network::session::session::Session;
 use common::{bail, nvassert, ReadExtensions, VResult};
 use common::{Deserialize, Serialize};
 
+use super::DEFAULT_SEND_CONFIG;
+
 impl Session {
     /// Processes the raw packet coming directly from the network.
     ///
     /// If a packet is an ACK or NACK type, it will be responded to accordingly (using [`Session::handle_ack`] and [`Session::handle_nack`]).
     /// Frame batches are processed by [`Session::handle_frame_batch`].
-    pub async fn handle_raw_packet(&self) -> VResult<bool> {
-        let recv = {
-            let mut lock = self.receiver.lock().await;
-            lock.recv().await
-        };
+    pub async fn process_raw_packet(&self, pk: Bytes) -> VResult<bool> {
+        *self.last_update.write() = Instant::now();
 
-        if let Some(pk) = recv {
-            *self.last_update.write() = Instant::now();
-
-            if pk.is_empty() {
-                bail!(BadPacket, "Packet is empty");
-            }
-
-            let pk_id = *pk.first().unwrap();
-            match pk_id {
-                Ack::ID => self.handle_ack(pk)?,
-                Nak::ID => self.handle_nack(pk).await?,
-                _ => self.handle_frame_batch(pk).await?,
-            }
-
-            return Ok(true);
-        } else {
-            // Channel has closed, shut down session.
-            return Ok(false);
+        if pk.is_empty() {
+            bail!(BadPacket, "Packet is empty");
         }
+
+        let pk_id = *pk.first().unwrap();
+        match pk_id {
+            Ack::ID => self.handle_ack(pk)?,
+            Nak::ID => self.handle_nack(pk).await?,
+            _ => self.handle_frame_batch(pk).await?,
+        }
+
+        return Ok(true);
+    }
+
+    pub fn process_broadcast(&self, pk: BroadcastPacket) -> VResult<()> {
+        if let Ok(xuid) = self.get_xuid() {
+            if let Some(sender) = pk.sender {
+                // Source is self, do not send.
+                return Ok(())
+            }
+        }
+
+        self.send_serialized(pk.content, DEFAULT_SEND_CONFIG)
     }
 
     /// Processes a batch of frames.
