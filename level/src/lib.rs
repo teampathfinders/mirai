@@ -12,9 +12,9 @@ use common::VResult;
 use database::ChunkDatabase;
 pub use sub_chunk::*;
 use tokio::{
-    sync::oneshot::{Receiver, Sender},
-    task::JoinHandle,
+    sync::oneshot::{Receiver, Sender}
 };
+use tokio_util::sync::CancellationToken;
 pub use world::*;
 
 /// Interface that is used to read and write world data.
@@ -22,16 +22,21 @@ pub use world::*;
 pub struct ChunkManager {
     /// Chunk database
     database: ChunkDatabase,
+    token: CancellationToken
 }
 
 impl ChunkManager {
     pub fn new<P: AsRef<str>>(
         path: P,
         autosave_interval: Duration,
+        token: CancellationToken
     ) -> VResult<(Arc<Self>, Receiver<()>)> {
         tracing::info!("Loading level {}...", path.as_ref());
 
-        let manager = Arc::new(Self { database: ChunkDatabase::new(path)? });
+        let manager = Arc::new(Self { 
+            database: ChunkDatabase::new(path)?,
+            token
+        });
 
         let clone = manager.clone();
         let (sender, receiver) = tokio::sync::oneshot::channel();
@@ -51,7 +56,7 @@ impl ChunkManager {
 
     /// Simple job that runs [`flush`](Self::flush) on a specified interval.
     async fn autosave_job(
-        self: Arc<Self>,
+        &self,
         sender: Sender<()>,
         interval: Duration,
     ) {
@@ -60,17 +65,22 @@ impl ChunkManager {
         // Run until there are no more references to the chunk manager.
         // (other than this job).
         //
-        // This prevents a memory leak in case someone drops the database.
-        while Arc::strong_count(&self) > 1 {
+        // This prevents a memory leak in case someone drops the chunk manager.
+        loop {
             match self.flush() {
                 Ok(_) => (),
                 Err(e) => {
                     tracing::error!("Failed to save level: {e}");
                 }
             }
-            interval.tick().await;
+            
+            tokio::select! {
+                _ = interval.tick() => (),
+                _ = self.token.cancelled() => break
+            };
         }
 
+        // Save before closing.
         match self.flush() {
             Ok(_) => (),
             Err(e) => {

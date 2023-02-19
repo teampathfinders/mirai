@@ -77,6 +77,19 @@ impl SessionManager {
             mtu,
             client_guid,
         );
+
+        // Lightweight task that removes the session from the list when it is no longer active.
+        // This prevents cyclic references.
+        {
+            let list = self.list.clone();
+            let session = session.clone();
+
+            tokio::spawn(async move {
+                session.cancelled().await;
+                list.remove(&session.address);
+            });
+        }
+
         self.list.insert(address, (sender, session));
     }
 
@@ -125,6 +138,7 @@ impl SessionManager {
     }
 
     /// Kicks all sessions from the server, displaying the given message.
+    /// This function also waits for all sessions to be destroyed.
     pub async fn kick_all<S: AsRef<str>>(&self, message: S) -> VResult<()> {
         self.broadcast.send(BroadcastPacket::new(
             Disconnect {
@@ -133,6 +147,10 @@ impl SessionManager {
             },
             None
         )?)?;
+        
+        for session in self.list.iter() {
+            session.value().1.cancelled().await;
+        }
 
         // Clear to get rid of references, so that the sessions are dropped once they're ready.
         self.list.clear();

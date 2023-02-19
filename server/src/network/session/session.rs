@@ -370,6 +370,11 @@ impl Session {
         !self.active.is_cancelled()
     }
 
+    #[inline]
+    pub async fn cancelled(&self) {
+        self.active.cancelled().await;
+    }
+
     /// Performs tasks not related to packet processing
     async fn tick(self: &Arc<Self>) -> VResult<()> {
         let current_tick = self.current_tick.fetch_add(1, Ordering::SeqCst);

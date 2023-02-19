@@ -9,6 +9,7 @@ use level::ChunkManager;
 use parking_lot::{RwLock, RwLockReadGuard};
 use tokio::sync::oneshot::Receiver;
 use tokio::task::JoinHandle;
+use tokio_util::sync::CancellationToken;
 
 use crate::command::Command;
 use crate::config::SERVER_CONFIG;
@@ -34,11 +35,13 @@ pub struct LevelManager {
     /// This is the standard Minecraft tick.
     /// The level is ticked 20 times every second.
     tick: AtomicU64,
+    token: CancellationToken
 }
 
 impl LevelManager {
     pub fn new(
         session_manager: Arc<SessionManager>,
+        token: CancellationToken
     ) -> VResult<(Arc<Self>, Receiver<()>)> {
         let (world_path, autosave_interval) = {
             let config = SERVER_CONFIG.read();
@@ -46,7 +49,8 @@ impl LevelManager {
         };
 
         let (chunks, chunk_notifier) =
-            ChunkManager::new(world_path, autosave_interval)?;
+            ChunkManager::new(world_path, autosave_interval, token.clone())?;
+
         let manager = Arc::new(Self {
             chunks,
             commands: DashMap::new(),
@@ -62,6 +66,7 @@ impl LevelManager {
             ]),
             session_manager,
             tick: AtomicU64::new(0),
+            token
         });
 
         Ok((manager, chunk_notifier))

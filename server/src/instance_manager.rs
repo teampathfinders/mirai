@@ -81,7 +81,7 @@ impl InstanceManager {
             Arc::new(SessionManager::new(token.clone()));
 
         let (level_manager, level_notifier) =
-            LevelManager::new(session_manager.clone())?;
+            LevelManager::new(session_manager.clone(), token.clone())?;
 
         level_manager.add_command(Command {
             name: "gamerule".to_owned(),
