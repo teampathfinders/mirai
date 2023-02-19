@@ -1,7 +1,7 @@
 use std::net::SocketAddr;
 use std::time::{SystemTime, UNIX_EPOCH};
 
-use bytes::{BufMut, BytesMut};
+use bytes::{BufMut, BytesMut, Bytes};
 
 use crate::instance_manager::IPV4_LOCAL_ADDR;
 use common::Serialize;
@@ -25,7 +25,7 @@ impl ConnectionRequestAccepted {
 }
 
 impl Serialize for ConnectionRequestAccepted {
-    fn serialize(&self) -> VResult<BytesMut> {
+    fn serialize(&self) -> VResult<Bytes> {
         let mut buffer = BytesMut::with_capacity(
             1 + IPV6_MEM_SIZE + 2 + 10 * IPV4_MEM_SIZE + 8 + 8,
         );
@@ -40,6 +40,6 @@ impl Serialize for ConnectionRequestAccepted {
         buffer.put_i64(self.request_time);
         buffer.put_i64(self.request_time); // Response time
 
-        Ok(buffer)
+        Ok(buffer.freeze())
     }
 }

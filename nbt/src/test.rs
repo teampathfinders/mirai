@@ -1,4 +1,4 @@
-use bytes::{BytesMut, Bytes};
+use bytes::{Bytes, BytesMut};
 
 use crate::{RefTag, Tag, Value};
 use std::collections::HashMap;

@@ -1,4 +1,4 @@
-use bytes::{BufMut, BytesMut};
+use bytes::{BufMut, Bytes, BytesMut};
 use common::{Serialize, VResult};
 
 /// Database key prefixes.
@@ -46,7 +46,7 @@ pub struct DatabaseKey {
 }
 
 impl Serialize for DatabaseKey {
-    fn serialize(&self) -> VResult<BytesMut> {
+    fn serialize(&self) -> VResult<Bytes> {
         let mut buffer = BytesMut::with_capacity(
             4 + 4
                 + if self.dimension != Dimension::Overworld {
@@ -74,7 +74,7 @@ impl Serialize for DatabaseKey {
             buffer.put_i8(self.y);
         }
 
-        Ok(buffer)
+        Ok(buffer.freeze())
     }
 }
 

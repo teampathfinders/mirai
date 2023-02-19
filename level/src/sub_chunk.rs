@@ -1,4 +1,4 @@
-use bytes::{Buf, BufMut, BytesMut, Bytes};
+use bytes::{Buf, BufMut, Bytes, BytesMut};
 use common::{bail, BlockPosition, Deserialize, Serialize, VResult, Vector3b};
 
 const CHUNK_SIZE: usize = 4096;
@@ -171,7 +171,8 @@ impl Deserialize for SubChunk {
 
                 println!("Decoding {storage_count} records");
                 for _ in 0..storage_count {
-                    storage_records.push(StorageRecord::deserialize(&mut buffer)?);
+                    storage_records
+                        .push(StorageRecord::deserialize(&mut buffer)?);
                 }
 
                 Ok(Self { version, index, storage_records })

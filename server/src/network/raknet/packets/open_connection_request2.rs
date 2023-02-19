@@ -1,3 +1,4 @@
+use bytes::Bytes;
 use bytes::{Buf, BytesMut};
 
 use common::nvassert;
@@ -20,7 +21,7 @@ impl OpenConnectionRequest2 {
 }
 
 impl Deserialize for OpenConnectionRequest2 {
-    fn deserialize(mut buffer: BytesMut) -> VResult<Self> {
+    fn deserialize(mut buffer: Bytes) -> VResult<Self> {
         nvassert!(buffer.get_u8() == Self::ID);
 
         buffer.advance(16); // Skip magic

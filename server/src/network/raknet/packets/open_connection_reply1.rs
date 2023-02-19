@@ -1,3 +1,4 @@
+use bytes::Bytes;
 use bytes::{BufMut, BytesMut};
 
 use crate::network::raknet::OFFLINE_MESSAGE_DATA;
@@ -21,7 +22,7 @@ impl OpenConnectionReply1 {
 }
 
 impl Serialize for OpenConnectionReply1 {
-    fn serialize(&self) -> VResult<BytesMut> {
+    fn serialize(&self) -> VResult<Bytes> {
         let mut buffer = BytesMut::with_capacity(1 + 16 + 8 + 1 + 2);
 
         buffer.put_u8(Self::ID);
@@ -32,6 +33,6 @@ impl Serialize for OpenConnectionReply1 {
         buffer.put_u8(0);
         buffer.put_u16(self.mtu);
 
-        Ok(buffer)
+        Ok(buffer.freeze())
     }
 }

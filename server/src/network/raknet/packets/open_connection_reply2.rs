@@ -1,5 +1,6 @@
 use std::net::SocketAddr;
 
+use bytes::Bytes;
 use bytes::{BufMut, BytesMut};
 
 use crate::network::raknet::OFFLINE_MESSAGE_DATA;
@@ -26,7 +27,7 @@ impl OpenConnectionReply2 {
 }
 
 impl Serialize for OpenConnectionReply2 {
-    fn serialize(&self) -> VResult<BytesMut> {
+    fn serialize(&self) -> VResult<Bytes> {
         let mut buffer =
             BytesMut::with_capacity(1 + 16 + 8 + 1 + 16 + 2 + 2 + 1);
 
@@ -37,6 +38,6 @@ impl Serialize for OpenConnectionReply2 {
         buffer.put_u16(self.mtu);
         buffer.put_bool(false); // Encryption not enabled, must be false to continue login sequence
 
-        Ok(buffer)
+        Ok(buffer.freeze())
     }
 }

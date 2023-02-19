@@ -40,10 +40,7 @@ impl Value {
         Ok(name)
     }
 
-    fn decode_tag_value_net(
-        stream: &mut Bytes,
-        tag_type: u8,
-    ) -> VResult<Self> {
+    fn decode_tag_value_net(stream: &mut Bytes, tag_type: u8) -> VResult<Self> {
         Ok(match tag_type {
             TAG_END => Self::End,
             TAG_BYTE => {
