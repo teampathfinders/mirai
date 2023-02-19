@@ -1,6 +1,6 @@
 use std::{
-    ffi::{c_int, c_void},
-    os::raw::c_char,
+    ffi::{c_void},
+    os::raw::{c_char, c_int},
 };
 
 #[derive(Debug)]

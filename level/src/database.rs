@@ -1,4 +1,4 @@
-use std::ffi::{c_char, c_int, c_void, CStr, CString};
+use std::{ffi::{c_void, CStr, CString}, os::raw::{c_int, c_char}};
 
 use bytes::BytesMut;
 use common::{error, VError, VResult};

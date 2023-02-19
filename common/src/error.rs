@@ -1,5 +1,3 @@
-use std::backtrace::Backtrace;
-
 /// Verifies that the given expression evaluates to true,
 /// or returns an error
 #[macro_export]
@@ -89,7 +87,6 @@ pub enum VErrorKind {
 #[derive(Debug)]
 pub struct VError {
     kind: VErrorKind,
-    backtrace: Backtrace,
     message: String,
 }
 
@@ -98,19 +95,13 @@ impl VError {
     pub fn new(kind: VErrorKind, message: String) -> Self {
         Self {
             kind,
-            message,
-            backtrace: Backtrace::capture(),
+            message
         }
     }
 
     #[inline]
     pub const fn kind(&self) -> VErrorKind {
         self.kind
-    }
-
-    #[inline]
-    pub const fn backtrace(&self) -> &Backtrace {
-        &self.backtrace
     }
 }
 
