@@ -9,7 +9,7 @@ use tokio_util::sync::CancellationToken;
 
 use crate::instance_manager::InstanceManager;
 use crate::level_manager::LevelManager;
-use crate::network::raknet::RawPacket;
+use crate::network::raknet::BufPacket;
 use crate::network::session::session::Session;
 use crate::{config::SERVER_CONFIG, network::packets::GamePacket};
 use common::{error, Serialize, VResult};
@@ -77,12 +77,12 @@ impl SessionManager {
     }
 
     /// Forwards a packet from the network service to the correct session.
-    pub fn forward_packet(&self, packet: RawPacket) -> VResult<()> {
+    pub fn forward_packet(&self, packet: BufPacket) -> VResult<()> {
         self.session_list
-            .get(&packet.address)
+            .get(&packet.addr)
             .map(|r| {
                 let session = r.value();
-                session.receive_queue.push(packet.buffer);
+                session.receive_queue.push(packet.buf);
             })
             .ok_or_else(|| {
                 error!(

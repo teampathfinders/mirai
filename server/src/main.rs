@@ -41,7 +41,7 @@ fn main() -> VResult<()> {
 /// The asynchronous entrypoint that is ran by Tokio.
 async fn app() -> VResult<()> {
     loop {
-        let controller = InstanceManager::new().await?;
+        InstanceManager::run().await?;
         /// Register handler to shut down server on Ctrl-C signal
         // fn register_shutdown_handler(instance: Arc<Self>) {
         //     tokio::spawn(async move {
@@ -56,8 +56,6 @@ async fn app() -> VResult<()> {
         //         }
         //     });
         // }
-
-        controller.run();
 
         // match controller.run().await {
         //     Ok(_) => {

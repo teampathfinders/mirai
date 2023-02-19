@@ -1,23 +1,23 @@
 use std::net::SocketAddr;
 
-use bytes::BytesMut;
+use bytes::{BytesMut, Bytes};
 
 use crate::network::raknet::CONNECTED_PEER_BIT_FLAG;
 
 /// Raw byte data received directly from the UDP socket.
 #[derive(Debug)]
-pub struct RawPacket {
+pub struct BufPacket {
     /// Data contained in the packet
-    pub buffer: BytesMut,
+    pub buf: Bytes,
     /// IP address of the sender or recipient
-    pub address: SocketAddr,
+    pub addr: SocketAddr,
 }
 
-impl RawPacket {
+impl BufPacket {
     /// Checks whether this frame is encapsulated in a [`Frame`](super::frame::Frame).
     #[inline]
-    pub fn is_offline_packet(&self) -> bool {
-        self.buffer
+    pub fn is_unconnected(&self) -> bool {
+        self.buf
             .first()
             .map_or(false, |f| f & CONNECTED_PEER_BIT_FLAG == 0)
     }
@@ -30,6 +30,6 @@ impl RawPacket {
     /// So this should generally only be used for packets that are not encapsulated.
     #[inline]
     pub fn packet_id(&self) -> Option<u8> {
-        self.buffer.first().copied()
+        self.buf.first().copied()
     }
 }

@@ -1,4 +1,4 @@
-use bytes::{Buf, BufMut, BytesMut};
+use bytes::{Buf, BufMut, BytesMut, Bytes};
 use common::{bail, BlockPosition, Deserialize, Serialize, VResult, Vector3b};
 
 const CHUNK_SIZE: usize = 4096;
@@ -15,7 +15,7 @@ pub struct StorageRecord {
 }
 
 impl StorageRecord {
-    fn deserialize(buffer: &mut BytesMut) -> VResult<Self> {
+    fn deserialize(buffer: &mut Bytes) -> VResult<Self> {
         // Size of each index in bits.
         let index_size = buffer.get_u8() >> 1;
         if index_size == 0x7f {
@@ -158,7 +158,7 @@ impl SubChunk {
 }
 
 impl Deserialize for SubChunk {
-    fn deserialize(mut buffer: BytesMut) -> VResult<Self> {
+    fn deserialize(mut buffer: Bytes) -> VResult<Self> {
         let version = buffer.get_u8();
         match version {
             1 => todo!(),
@@ -182,7 +182,7 @@ impl Deserialize for SubChunk {
 }
 
 impl Serialize for SubChunk {
-    fn serialize(&self) -> VResult<BytesMut> {
+    fn serialize(&self) -> VResult<Bytes> {
         let mut buffer = BytesMut::new();
 
         buffer.put_u8(self.version);
@@ -202,6 +202,6 @@ impl Serialize for SubChunk {
             _ => bail!(InvalidChunk, "Invalid chunk version {}", self.version),
         }
 
-        Ok(buffer)
+        Ok(buffer.freeze())
     }
 }
