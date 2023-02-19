@@ -80,7 +80,7 @@ impl ChunkManager {
         drop(self);
 
         // Send the signal that the level has been closed.
-        sender.send(());
+        let _ = sender.send(());
         tracing::info!("Closed level");
     }
 }

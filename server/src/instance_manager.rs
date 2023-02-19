@@ -71,14 +71,14 @@ impl InstanceManager {
             (lock.ipv4_port, lock.ipv6_port)
         };
 
-        let global_token = CancellationToken::new();
+        let token = CancellationToken::new();
         let udp_socket = Arc::new(
             UdpSocket::bind(SocketAddrV4::new(IPV4_LOCAL_ADDR, ipv4_port))
                 .await?,
         );
 
         let session_manager =
-            Arc::new(SessionManager::new(global_token.clone()));
+            Arc::new(SessionManager::new(token.clone()));
 
         let (level_manager, level_notifier) =
             LevelManager::new(session_manager.clone())?;
@@ -181,32 +181,36 @@ impl InstanceManager {
         let receiver_task = {
             let udp_socket = udp_socket.clone();
             let session_manager = session_manager.clone();
+            let token = token.clone();
         
             tokio::spawn(async move { 
                 Self::udp_recv_job(
-                    udp_socket, session_manager
+                    token, udp_socket, session_manager
                 ).await 
             })
         };
 
         tracing::info!("Server started");
 
-        receiver_task.await;
+        // Wait for either Ctrl-C or token cancel...
+        tokio::select! {
+            _ = token.cancelled() => (),
+            _ = tokio::signal::ctrl_c() => ()
+        };
+        
+        // then shut down all services.
+        tracing::info!("Disconnecting all clients");
+        session_manager.kick_all("Server closed").await;
+
+        tracing::info!("Waiting for services to shut down...");
+        token.cancel();
+
+        drop(session_manager);
+        drop(level_manager);
+
+        tokio::join!(receiver_task, level_notifier);
 
         Ok(())
-    }
-
-    /// Shut down the server by cancelling the global token
-    pub async fn shutdown(mut self) {
-        tracing::info!("Disconnecting all clients");
-        self.session_manager.kick_all("Server closed").await;
-        tracing::info!("Notifying services");
-        self.token.cancel();
-
-        // Destroy level manager
-        tracing::info!("Shutting down chunk manager");
-        *self.level_manager.write() = None;
-        let _ = self.level_notifier.await;
     }
 
     /// Generates a response to the [`OfflinePing`] packet with [`OfflinePong`].
@@ -273,6 +277,7 @@ impl InstanceManager {
 
     /// Receives packets from IPv4 clients and adds them to the receive queue
     async fn udp_recv_job(
+        token: CancellationToken,
         udp_socket: Arc<UdpSocket>,
         sess_manager: Arc<SessionManager>
     ) {
@@ -294,7 +299,8 @@ impl InstanceManager {
                             continue
                         }
                     }
-                }
+                },
+                _ = token.cancelled() => break
             };
 
             let mut pk = BufPacket {
@@ -364,6 +370,8 @@ impl InstanceManager {
                 sess_manager.forward_packet(pk);
             }
         }
+
+        tracing::info!("UDP service shut down");
     }
 
     /// Generates a new metadata string using the given description and new player count.

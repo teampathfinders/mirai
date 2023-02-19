@@ -38,41 +38,6 @@ fn main() -> VResult<()> {
     init_runtime()
 }
 
-/// The asynchronous entrypoint that is ran by Tokio.
-async fn app() -> VResult<()> {
-    loop {
-        InstanceManager::run().await?;
-        // /// Register handler to shut down server on Ctrl-C signal
-        // fn register_shutdown_handler(instance: Arc<Self>) {
-        //     tokio::spawn(async move {
-        //         tokio::select! {
-        //             _ = signal::ctrl_c() => {
-        //                 tracing::info!("Shutting down...");
-        //                 instance.shutdown().await
-        //             },
-        //             _ = instance.token.cancelled() => {
-        //                 // Token has been cancelled by something else, this service is no longer needed
-        //             }
-        //         }
-        //     });
-        // }
-
-        // match controller.run().await {
-        //     Ok(_) => {
-        //         break;
-        //     }
-        //     Err(e) => {
-        //         tracing::error!(
-        //             "The server probably crashed, restarting it..."
-        //         );
-        //         tracing::error!("Cause: {e:?}");
-        //     }
-        // }
-    }
-
-    Ok(())
-}
-
 fn init_runtime() -> VResult<()> {
     let runtime = runtime::Builder::new_multi_thread()
         .enable_io()
@@ -88,7 +53,7 @@ fn init_runtime() -> VResult<()> {
         .expect("Failed to build runtime");
 
     tracing::info!("Starting server...");
-    runtime.block_on(app())
+    runtime.block_on(InstanceManager::run())
 }
 
 /// Initialises logging with tokio-console.

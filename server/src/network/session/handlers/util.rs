@@ -69,8 +69,7 @@ impl Session {
 
     pub fn handle_command_request(&self, pk: Bytes) -> VResult<()> {
         let request = CommandRequest::deserialize(pk)?;
-        tracing::info!("{request:?}");
-
+        
         let command_list = self.level_manager.get_commands();
         let result = ParsedCommand::parse(command_list, &request.command);
 

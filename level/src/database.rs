@@ -19,22 +19,18 @@ pub struct ChunkDatabase {
 impl ChunkDatabase {
     /// Opens the database at the specified path.
     pub fn new<P: AsRef<str>>(path: P) -> VResult<Self> {
-        Ok(Self {
-            pointer: std::ptr::null_mut()
-        })
+        let ffi_path = CString::new(path.as_ref())?;
+        let result = unsafe {
+            // SAFETY: This function is guaranteed to not return exceptions.
+            // It also does not modify the argument and returns a valid struct.
+            ffi::level_open_database(ffi_path.as_ptr())
+        };
 
-        // let ffi_path = CString::new(path.as_ref())?;
-        // let result = unsafe {
-        //     // SAFETY: This function is guaranteed to not return exceptions.
-        //     // It also does not modify the argument and returns a valid struct.
-        //     ffi::level_open_database(ffi_path.as_ptr())
-        // };
-
-        // if result.is_success == 1 {
-        //     Ok(Self { pointer: result.data })
-        // } else {
-        //     Err(translate_ffi_error(result))
-        // }
+        if result.is_success == 1 {
+            Ok(Self { pointer: result.data })
+        } else {
+            Err(translate_ffi_error(result))
+        }
     }
 
     /// Loads the value of the given key.
