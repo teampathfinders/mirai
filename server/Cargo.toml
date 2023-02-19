@@ -3,6 +3,10 @@ name = "nova"
 version = "0.1.0"
 edition = "2021"
 authors = ["RadiatedMonkey"]
+description = "Lightweight, dedicated server software for Minecraft: Bedrock Edition"
+repository = "https://github.com/teampathfinders/nova"
+license = "Apache-2.0"
+build = "build.rs"
 
 [features]
 # Requires the tokio_unstable rustc flag
@@ -35,3 +39,4 @@ common = { path = "../common" }
 level = { path = "../level" }
 serde_repr = "0.1.10"
 uuid = { version = "1.3.0", features = ["serde"] }
+clap = { version = "4.1.6", features = ["cargo"] }

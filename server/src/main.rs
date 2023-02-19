@@ -7,6 +7,7 @@ extern crate core;
 
 use std::sync::atomic::{AtomicU16, Ordering};
 
+use clap::{Command, crate_authors, crate_description};
 use tokio::runtime;
 
 use crate::instance_manager::InstanceManager;
@@ -22,8 +23,19 @@ mod network;
 #[cfg(test)]
 mod test;
 
+fn main() -> VResult<()> {
+    let matches = Command::new("nova")
+        .version(env!("GIT_COMMIT_HASH"))
+        .author(crate_authors!("\n"))
+        .about(crate_description!())
+        .get_matches();
+
+    init_logging();
+    init_runtime()
+}
+
 /// The asynchronous entrypoint that is ran by Tokio.
-async fn app_main() -> VResult<()> {
+async fn app() -> VResult<()> {
     loop {
         let controller = InstanceManager::new().await?;
         match controller.run().await {
@@ -42,10 +54,7 @@ async fn app_main() -> VResult<()> {
     Ok(())
 }
 
-/// Program entrypoint
-fn main() -> VResult<()> {
-    init_logging();
-
+fn init_runtime() -> VResult<()> {
     let runtime = runtime::Builder::new_multi_thread()
         .enable_io()
         .enable_time()
@@ -60,7 +69,7 @@ fn main() -> VResult<()> {
         .expect("Failed to build runtime");
 
     tracing::info!("Starting server...");
-    runtime.block_on(app_main())
+    runtime.block_on(app())
 }
 
 /// Initialises logging with tokio-console.
