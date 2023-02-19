@@ -186,22 +186,22 @@ impl InstanceManager {
 
         session_manager.set_level_manager(Arc::downgrade(&level_manager))?;
 
-        let receiver_task = {
-            let controller = self.clone();
-            tokio::spawn(async move { controller.v4_receiver_task().await })
-        };
+        // let receiver_task = {
+        //     let controller = self.clone();
+        //     tokio::spawn(async move { controller.v4_receiver_task().await })
+        // };
 
-        let sender_task = {
-            let controller = self.clone();
-            tokio::spawn(async move { controller.v4_sender_task().await })
-        };
+        // let sender_task = {
+        //     let controller = self.clone();
+        //     tokio::spawn(async move { controller.v4_sender_task().await })
+        // };
 
-        {
-            let controller = self.clone();
-            tokio::spawn(
-                async move { controller.metadata_refresh_task().await },
-            );
-        }
+        // {
+        //     let controller = self.clone();
+        //     tokio::spawn(
+        //         async move { controller.metadata_refresh_task().await },
+        //     );
+        // }
 
         tracing::info!("Server started");
         // The metadata task is not important for shutdown, we don't have to wait for it.
@@ -258,7 +258,7 @@ impl InstanceManager {
     fn process_open_connection_request1(
         pk: BufPacket,
         server_guid: u64,
-    ) -> VResult<()> {
+    ) -> VResult<BufPacket> {
         let request = OpenConnectionRequest1::deserialize(pk.buf)?;
 
         if request.protocol_version != RAKNET_VERSION {
@@ -277,16 +277,17 @@ impl InstanceManager {
     /// From this point, all packets are encoded in a [`Frame`](crate::network::raknet::Frame).
     #[inline]
     fn process_open_connection_request2(
+        pk: BufPacket,
         udp_socket: Arc<UdpSocket>,
         sess_manager: Arc<SessionManager>,
-        pk: BufPacket,
-    ) -> VResult<()> {
+        server_guid: u64
+    ) -> VResult<BufPacket> {
         let request = OpenConnectionRequest2::deserialize(pk.buf)?;
 
         pk.buf = OpenConnectionReply2 {
             server_guid,
             mtu: request.mtu,
-            client_address: &pk.addr,
+            client_address: pk.addr,
         }
         .serialize()?;
 
@@ -329,6 +330,8 @@ impl InstanceManager {
 
             if pk.is_unconnected() {
                 let udp_socket = udp_socket.clone();
+                let session_manager = sess_manager.clone();
+                let metadata = metadata.clone();
 
                 tokio::spawn(async move {
                     let id = if let Some(id) = pk.packet_id() {
@@ -338,7 +341,7 @@ impl InstanceManager {
                         return;
                     };
 
-                    pk = match id {
+                    let pk_result = match id {
                         OfflinePing::ID => Self::process_unconnected_ping(
                             pk,
                             server_guid,
@@ -353,19 +356,29 @@ impl InstanceManager {
                         OpenConnectionRequest2::ID => {
                             Self::process_open_connection_request2(
                                 pk,
-                                sess_manager,
-                                udp_socket,
+                                udp_socket.clone(),
+                                session_manager
                             )
                         }
-                        _ => tracing::error!(
-                            "Invalid unconnected packet ID: {id:x}"
-                        ),
+                        _ => {
+                            tracing::error!(
+                                "Invalid unconnected packet ID: {id:x}"
+                            );
+                            return
+                        },
                     };
 
-                    match udp_socket.send_to(pk.buf.as_ref(), pk.addr).await {
-                        Ok(_) => (),
+                    match pk_result {
+                        Ok(pk) => {
+                            match udp_socket.send_to(pk.buf.as_ref(), pk.addr).await {
+                                Ok(_) => (),
+                                Err(e) => {
+                                    tracing::error!("Unable to send unconnected packet to client: {e}");
+                                }
+                            }
+                        },
                         Err(e) => {
-                            tracing::error!("Unable to send unconnected packet to client: {e}");
+                            tracing::error!("{e}");
                         }
                     }
                 });

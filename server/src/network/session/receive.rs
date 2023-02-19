@@ -120,26 +120,26 @@ impl Session {
     }
 
     /// Processes an unencapsulated game packet.
-    async fn handle_unframed_packet(&self, mut task: BytesMut) -> VResult<()> {
-        let bytes = task.as_ref();
+    async fn handle_unframed_packet(&self, mut pk: Bytes) -> VResult<()> {
+        let bytes = pk.as_ref();
 
-        let packet_id = *task.first().expect("Game packet buffer was empty");
+        let packet_id = *pk.first().expect("Game packet buffer was empty");
         match packet_id {
-            GAME_PACKET_ID => self.handle_game_packet(task).await?,
+            GAME_PACKET_ID => self.handle_game_packet(pk).await?,
             DisconnectNotification::ID => self.flag_for_close(),
-            ConnectionRequest::ID => self.handle_connection_request(task)?,
+            ConnectionRequest::ID => self.handle_connection_request(pk)?,
             NewIncomingConnection::ID => {
-                self.handle_new_incoming_connection(task)?
+                self.handle_new_incoming_connection(pk)?
             }
-            OnlinePing::ID => self.handle_online_ping(task)?,
+            OnlinePing::ID => self.handle_online_ping(pk)?,
             id => bail!(BadPacket, "Invalid Raknet packet ID: {}", id),
         }
 
         Ok(())
     }
 
-    async fn handle_game_packet(&self, mut packet: BytesMut) -> VResult<()> {
-        nvassert!(packet.get_u8() == 0xfe);
+    async fn handle_game_packet(&self, mut pk: Bytes) -> VResult<()> {
+        nvassert!(pk.get_u8() == 0xfe);
 
         // Decrypt packet
         if self.encryptor.initialized() {
@@ -149,7 +149,7 @@ impl Session {
                 .get()
                 .expect("Encryptor was destroyed while it was in use");
 
-            packet = match encryptor.decrypt(packet) {
+            pk = match encryptor.decrypt(pk) {
                 Ok(t) => t,
                 Err(e) => {
                     return Err(e);
@@ -170,7 +170,7 @@ impl Session {
 
         if compression_enabled
             && compression_threshold != 0
-            && packet.len() > compression_threshold as usize
+            && pk.len() > compression_threshold as usize
         {
             // Packet is compressed
             let decompressed = match SERVER_CONFIG.read().compression_algorithm
@@ -180,53 +180,54 @@ impl Session {
                 }
                 CompressionAlgorithm::Deflate => {
                     let mut reader =
-                        flate2::read::DeflateDecoder::new(packet.as_ref());
+                        flate2::read::DeflateDecoder::new(pk.as_ref());
+                        
                     let mut decompressed = Vec::new();
                     reader.read_to_end(&mut decompressed)?;
                     // .context("Failed to decompress packet using Deflate")?;
 
-                    BytesMut::from(decompressed.as_slice())
+                    Bytes::from(decompressed.as_slice())
                 }
             };
 
             self.handle_decompressed_game_packet(decompressed).await
         } else {
-            self.handle_decompressed_game_packet(packet).await
+            self.handle_decompressed_game_packet(pk).await
         }
     }
 
     async fn handle_decompressed_game_packet(
         &self,
-        mut packet: BytesMut,
+        mut pk: Bytes,
     ) -> VResult<()> {
-        let length = packet.get_var_u32()?;
-        let header = Header::decode(&mut packet)?;
+        let length = pk.get_var_u32()?;
+        let header = Header::decode(&mut pk)?;
 
         match header.id {
             RequestNetworkSettings::ID => {
-                self.handle_request_network_settings(packet)
+                self.handle_request_network_settings(pk)
             }
-            Login::ID => self.handle_login(packet).await,
+            Login::ID => self.handle_login(pk).await,
             ClientToServerHandshake::ID => {
-                self.handle_client_to_server_handshake(packet)
+                self.handle_client_to_server_handshake(pk)
             }
-            CacheStatus::ID => self.handle_cache_status(packet),
+            CacheStatus::ID => self.handle_cache_status(pk),
             ResourcePackClientResponse::ID => {
-                self.handle_resource_pack_client_response(packet)
+                self.handle_resource_pack_client_response(pk)
             }
-            ViolationWarning::ID => self.handle_violation_warning(packet),
-            ChunkRadiusRequest::ID => self.handle_chunk_radius_request(packet),
-            Interact::ID => self.handle_interaction(packet),
-            TextMessage::ID => self.handle_text_message(packet),
+            ViolationWarning::ID => self.handle_violation_warning(pk),
+            ChunkRadiusRequest::ID => self.handle_chunk_radius_request(pk),
+            Interact::ID => self.handle_interaction(pk),
+            TextMessage::ID => self.handle_text_message(pk),
             SetLocalPlayerAsInitialized::ID => {
-                self.handle_local_player_initialized(packet)
+                self.handle_local_player_initialized(pk)
             }
-            MovePlayer::ID => self.handle_move_player(packet),
-            RequestAbility::ID => self.handle_ability_request(packet),
-            Animate::ID => self.handle_animation(packet),
-            CommandRequest::ID => self.handle_command_request(packet),
-            UpdateSkin::ID => self.handle_skin_update(packet),
-            SettingsCommand::ID => self.handle_settings_command(packet),
+            MovePlayer::ID => self.handle_move_player(pk),
+            RequestAbility::ID => self.handle_ability_request(pk),
+            Animate::ID => self.handle_animation(pk),
+            CommandRequest::ID => self.handle_command_request(pk),
+            UpdateSkin::ID => self.handle_skin_update(pk),
+            SettingsCommand::ID => self.handle_settings_command(pk),
             id => bail!(BadPacket, "Invalid game packet: {id:#04x}"),
         }
     }

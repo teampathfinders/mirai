@@ -3,7 +3,7 @@ use std::io::Read;
 use std::sync::atomic::{AtomicU16, AtomicU32, AtomicU64, Ordering};
 
 use base64::Engine;
-use bytes::{BufMut, BytesMut};
+use bytes::{BufMut, BytesMut, Bytes};
 use common::{bail, VResult};
 use ctr::cipher::KeyIvInit;
 use ctr::cipher::{StreamCipher, StreamCipherSeekCore};
@@ -160,7 +160,7 @@ impl Encryptor {
     ///
     /// If the checksum does not match, a [`BadPacket`](common::VErrorKind::BadPacket) error is returned.
     /// The client must be disconnected if this fails, because the data has probably been tampered with.
-    pub fn decrypt(&self, mut buffer: BytesMut) -> VResult<BytesMut> {
+    pub fn decrypt(&self, mut buffer: Bytes) -> VResult<Bytes> {
         if buffer.len() < 9 {
             bail!(
                 BadPacket,
@@ -187,14 +187,14 @@ impl Encryptor {
     }
 
     /// Encrypts a packet and appends the computed checksum.
-    pub fn encrypt(&self, mut buffer: BytesMut) -> BytesMut {
+    pub fn encrypt(&self, mut buffer: Bytes) -> Bytes {
         let counter = self.send_counter.fetch_add(1, Ordering::SeqCst);
         let checksum = self.compute_checksum(&buffer, counter);
 
-        buffer.put(checksum.as_ref());
+        let buffer = [buffer, Bytes::from(checksum.as_slice())].concat();
         self.cipher_encrypt.lock().apply_keystream(buffer.as_mut());
 
-        buffer
+        Bytes::from(buffer)
     }
 
     /// Returns the packet send counter.

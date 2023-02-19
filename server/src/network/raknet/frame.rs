@@ -104,12 +104,12 @@ pub struct Frame {
     /// Channel to perform ordering in
     pub order_channel: u8,
     /// Raw bytes of the body.
-    pub body: BytesMut,
+    pub body: Bytes,
 }
 
 impl Frame {
     /// Creates a new frame.
-    pub fn new(reliability: Reliability, body: BytesMut) -> Self {
+    pub fn new(reliability: Reliability, body: Bytes) -> Self {
         Self { reliability, body, ..Default::default() }
     }
 
@@ -148,13 +148,8 @@ impl Frame {
             compound_index = buffer.get_u32();
         }
 
-        let mut body = BytesMut::with_capacity(length as usize);
-        body.resize(length as usize, 0u8);
-
         let position = buffer.len() - buffer.remaining();
-        body.copy_from_slice(
-            &buffer.as_ref()[position..(position + length as usize)],
-        );
+        let mut body = Bytes::from(&buffer.as_ref()[position..(position + length as usize)],);
         buffer.advance(length as usize);
 
         let frame = Self {

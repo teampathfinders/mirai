@@ -20,8 +20,9 @@ fn read_write_header() {
         target_subclient: 2,
     };
 
-    let mut buffer = header.encode();
-    assert_eq!(Header::decode(&mut buffer).unwrap(), header);
+    let mut buffer = BytesMut::new();
+    header.encode(&mut buffer);
+    assert_eq!(Header::decode(&mut buffer.freeze()).unwrap(), header);
 }
 
 #[test]

@@ -10,7 +10,7 @@ use common::VResult;
 pub struct OpenConnectionReply1 {
     /// GUID of the server.
     /// Corresponds to [`ServerInstance::guid`](crate::ServerInstance::guid).
-    pub server_guid: i64,
+    pub server_guid: u64,
     /// MTU of the connection.
     /// This should be given the same value as [`OpenConnectionRequest1::mtu`](super::open_connection_request1::OpenConnectionRequest1::mtu).
     pub mtu: u16,
@@ -27,7 +27,7 @@ impl Serialize for OpenConnectionReply1 {
 
         buffer.put_u8(Self::ID);
         buffer.put(OFFLINE_MESSAGE_DATA);
-        buffer.put_i64(self.server_guid);
+        buffer.put_u64(self.server_guid);
         // Disable security, required for login sequence.
         // Encryption will be enabled later on.
         buffer.put_u8(0);

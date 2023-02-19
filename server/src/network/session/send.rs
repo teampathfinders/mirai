@@ -2,7 +2,7 @@ use std::io::Write;
 use std::sync::atomic::Ordering;
 
 use async_recursion::async_recursion;
-use bytes::{Buf, BufMut, BytesMut};
+use bytes::{Buf, BufMut, BytesMut, Bytes};
 use flate2::write::DeflateEncoder;
 use flate2::Compression;
 
@@ -69,7 +69,7 @@ impl Session {
 
                         writer.write_all(packet_buffer.as_ref())?;
                         packet_buffer =
-                            BytesMut::from(writer.finish()?.as_slice());
+                            Bytes::from(writer.finish()?.as_slice());
                     }
                 }
             }
@@ -81,21 +81,21 @@ impl Session {
 
         buffer.put(packet_buffer);
 
-        self.send_raw_buffer_with_config(buffer, config);
+        self.send_raw_buffer_with_config(buffer.freeze(), config);
         Ok(())
     }
 
     /// Sends a raw buffer with default settings
     /// (reliable ordered and medium priority).
     #[inline]
-    pub fn send_raw_buffer(&self, buffer: BytesMut) {
+    pub fn send_raw_buffer(&self, buffer: Bytes) {
         self.send_raw_buffer_with_config(buffer, DEFAULT_CONFIG);
     }
 
     /// Sends a raw buffer with custom reliability and priority.
     pub fn send_raw_buffer_with_config(
         &self,
-        buffer: BytesMut,
+        buffer: Bytes,
         config: PacketConfig,
     ) {
         self.send_queue.insert_raw(
@@ -292,7 +292,7 @@ impl Session {
                 compound_index: i as u32,
                 compound_size: compound_size as u32,
                 compound_id,
-                body: BytesMut::from(chunk),
+                body: Bytes::from(chunk),
                 ..Default::default()
             };
 

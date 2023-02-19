@@ -13,7 +13,7 @@ use common::WriteExtensions;
 pub struct OpenConnectionReply2 {
     /// GUID of the server.
     /// Corresponds to [`ServerInstance::guid`](crate::ServerInstance::guid).
-    pub server_guid: i64,
+    pub server_guid: u64,
     /// IP address of the client.
     pub client_address: SocketAddr,
     /// MTU of the connection.
@@ -33,7 +33,7 @@ impl Serialize for OpenConnectionReply2 {
 
         buffer.put_u8(Self::ID);
         buffer.put(OFFLINE_MESSAGE_DATA);
-        buffer.put_i64(self.server_guid);
+        buffer.put_u64(self.server_guid);
         buffer.put_addr(self.client_address);
         buffer.put_u16(self.mtu);
         buffer.put_bool(false); // Encryption not enabled, must be false to continue login sequence
