@@ -15,7 +15,7 @@ pub struct StorageRecord {
 }
 
 impl StorageRecord {
-    fn decode(buffer: &mut BytesMut) -> VResult<Self> {
+    fn deserialize(buffer: &mut BytesMut) -> VResult<Self> {
         // Size of each index in bits.
         let index_size = buffer.get_u8() >> 1;
         if index_size == 0x7f {
@@ -69,7 +69,7 @@ impl StorageRecord {
         Ok(Self { indices, palette })
     }
 
-    fn encode(&self, buffer: &mut BytesMut) {
+    fn serialize(&self, buffer: &mut BytesMut) {
         // Determine the required bits per index
         let index_size = {
             let palette_size = self.palette.len();
@@ -171,7 +171,7 @@ impl Deserialize for SubChunk {
 
                 println!("Decoding {storage_count} records");
                 for _ in 0..storage_count {
-                    storage_records.push(StorageRecord::decode(&mut buffer)?);
+                    storage_records.push(StorageRecord::deserialize(&mut buffer)?);
                 }
 
                 Ok(Self { version, index, storage_records })
@@ -196,7 +196,7 @@ impl Serialize for SubChunk {
                 }
 
                 for storage_record in &self.storage_records {
-                    storage_record.encode(&mut buffer);
+                    storage_record.serialize(&mut buffer);
                 }
             }
             _ => bail!(InvalidChunk, "Invalid chunk version {}", self.version),

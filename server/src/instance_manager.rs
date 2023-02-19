@@ -7,7 +7,9 @@ use parking_lot::RwLock;
 use rand::Rng;
 use tokio::net::UdpSocket;
 use tokio::signal;
-use tokio::sync::OnceCell;
+use tokio::sync::{OnceCell, mpsc};
+use tokio::sync::oneshot::Receiver;
+use tokio::task::JoinHandle;
 use tokio_util::sync::CancellationToken;
 
 use crate::command::{
@@ -65,7 +67,10 @@ pub struct InstanceManager {
     /// Service that manages all player sessions.
     session_manager: Arc<SessionManager>,
     /// Manages the level.
-    level_manager: Arc<LevelManager>,
+    level_manager: RwLock<Option<Arc<LevelManager>>>,
+    /// Channel that the LevelManager sends a message to when it has fully shutdown.
+    /// This is to make sure that the world has been saved and safely shut down before shutting down the server.
+    level_notifier: Receiver<()>
 }
 
 impl InstanceManager {
@@ -84,8 +89,8 @@ impl InstanceManager {
 
         let session_manager =
             Arc::new(SessionManager::new(global_token.clone()));
-        let level_manager = LevelManager::new(session_manager.clone());
 
+        let (level_manager, level_notifier) = LevelManager::new(session_manager.clone())?;
         level_manager.add_command(Command {
             name: "gamerule".to_owned(),
             description: "Sets or queries a game rule value.".to_owned(),
@@ -180,28 +185,6 @@ impl InstanceManager {
 
         session_manager.set_level_manager(Arc::downgrade(&level_manager))?;
 
-        let server = Arc::new(Self {
-            guid: rand::thread_rng().gen(),
-            metadata: RwLock::new(String::new()),
-
-            ipv4_socket,
-            ipv4_port,
-
-            inward_queue: Arc::new(AsyncDeque::new(10)),
-            outward_queue: Arc::new(AsyncDeque::new(10)),
-
-            session_manager,
-            level_manager,
-            token: global_token,
-        });
-
-        Ok(server)
-    }
-
-    /// Run the server.
-    pub async fn run(self: Arc<Self>) -> VResult<()> {
-        Self::register_shutdown_handler(self.clone());
-
         let receiver_task = {
             let controller = self.clone();
             tokio::spawn(async move { controller.v4_receiver_task().await })
@@ -223,15 +206,36 @@ impl InstanceManager {
         // The metadata task is not important for shutdown, we don't have to wait for it.
         let _ = tokio::join!(receiver_task, sender_task);
 
-        Ok(())
+        let server = Arc::new(Self {
+            guid: rand::thread_rng().gen(),
+            metadata: RwLock::new(String::new()),
+
+            ipv4_socket,
+            ipv4_port,
+
+            inward_queue: Arc::new(AsyncDeque::new(10)),
+            outward_queue: Arc::new(AsyncDeque::new(10)),
+
+            session_manager,
+            level_manager: RwLock::new(Some(level_manager)),
+            token: global_token,
+            level_notifier
+        });
+
+        Ok(server)
     }
 
     /// Shut down the server by cancelling the global token
-    pub async fn shutdown(&self) {
+    pub async fn shutdown(mut self) {
         tracing::info!("Disconnecting all clients");
         self.session_manager.kick_all("Server closed").await;
         tracing::info!("Notifying services");
         self.token.cancel();
+
+        // Destroy level manager
+        tracing::info!("Shutting down chunk manager");
+        *self.level_manager.write() = None;
+        let _ = self.level_notifier.await;
     }
 
     /// Processes any packets that are sent before a session has been created.
@@ -334,7 +338,9 @@ impl InstanceManager {
     }
 
     /// Receives packets from IPv4 clients and adds them to the receive queue
-    async fn v4_receiver_task(self: Arc<Self>) {
+    async fn v4_receiver_task(
+        udp_socket: Arc<UdpSocket>
+    ) {
         let mut receive_buffer = [0u8; RECV_BUF_SIZE];
 
         loop {
@@ -385,18 +391,21 @@ impl InstanceManager {
     }
 
     /// Sends packets from the send queue
-    async fn v4_sender_task(self: Arc<Self>) {
+    async fn v4_sender_task(
+        udp_socket: Arc<UdpSocket>, 
+        mut queue: mpsc::Receiver<RawPacket>
+    ) {
         loop {
-            let task = tokio::select! {
-                _ = self.token.cancelled() => break,
-                t = self.outward_queue.pop() => t
-            };
-
-            match self.ipv4_socket.send_to(&task.buffer, task.address).await {
-                Ok(_) => (),
-                Err(e) => {
-                    tracing::error!("Failed to send packet: {e:?}");
+            if let Some(sendable) = queue.recv().await {
+                match udp_socket.send_to(&sendable.buffer, sendable.address).await {
+                    Ok(_) => (),
+                    Err(e) => {
+                        tracing::error!("Failed to send packet: {e:?}");
+                    }
                 }
+            } else {
+                // Channel has been closed, shut down task.
+                return
             }
         }
     }
@@ -438,17 +447,17 @@ impl InstanceManager {
     }
 
     /// Register handler to shut down server on Ctrl-C signal
-    fn register_shutdown_handler(instance: Arc<Self>) {
-        tokio::spawn(async move {
-            tokio::select! {
-                _ = signal::ctrl_c() => {
-                    tracing::info!("Shutting down...");
-                    instance.shutdown().await
-                },
-                _ = instance.token.cancelled() => {
-                    // Token has been cancelled by something else, this service is no longer needed
-                }
-            }
-        });
-    }
+    // fn register_shutdown_handler(instance: Arc<Self>) {
+    //     tokio::spawn(async move {
+    //         tokio::select! {
+    //             _ = signal::ctrl_c() => {
+    //                 tracing::info!("Shutting down...");
+    //                 instance.shutdown().await
+    //             },
+    //             _ = instance.token.cancelled() => {
+    //                 // Token has been cancelled by something else, this service is no longer needed
+    //             }
+    //         }
+    //     });
+    // }
 }

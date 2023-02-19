@@ -1,3 +1,5 @@
+use std::time::Duration;
+
 use lazy_static::lazy_static;
 use parking_lot::RwLock;
 
@@ -26,6 +28,11 @@ pub struct ServerConfig {
     /// Maximum render distance that the server will accept.
     /// Clients requesting a higher value will be told to use this.
     pub allowed_render_distance: i32,
+    /// Interval between world autosaves.
+    /// Set to 0 to disable autosaves.
+    pub autosave_interval: Duration,
+    /// Path to the world to host.
+    pub level_path: String
 }
 
 lazy_static! {
@@ -42,6 +49,8 @@ lazy_static! {
             scalar: 0.0
         },
         server_name: "Pathfinders",
-        allowed_render_distance: 16
+        allowed_render_distance: 16,
+        autosave_interval: Duration::from_secs(10),
+        level_path: String::from("level/test/db")
     });
 }

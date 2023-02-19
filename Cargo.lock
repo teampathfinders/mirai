@@ -1005,6 +1005,7 @@ dependencies = [
  "common",
  "nbt",
  "tokio",
+ "tokio-util",
  "tracing",
 ]
 

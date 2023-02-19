@@ -42,17 +42,34 @@ fn main() -> VResult<()> {
 async fn app() -> VResult<()> {
     loop {
         let controller = InstanceManager::new().await?;
-        match controller.run().await {
-            Ok(_) => {
-                break;
-            }
-            Err(e) => {
-                tracing::error!(
-                    "The server probably crashed, restarting it..."
-                );
-                tracing::error!("Cause: {e:?}");
-            }
-        }
+        /// Register handler to shut down server on Ctrl-C signal
+        // fn register_shutdown_handler(instance: Arc<Self>) {
+        //     tokio::spawn(async move {
+        //         tokio::select! {
+        //             _ = signal::ctrl_c() => {
+        //                 tracing::info!("Shutting down...");
+        //                 instance.shutdown().await
+        //             },
+        //             _ = instance.token.cancelled() => {
+        //                 // Token has been cancelled by something else, this service is no longer needed
+        //             }
+        //         }
+        //     });
+        // }
+
+        controller.run();
+
+        // match controller.run().await {
+        //     Ok(_) => {
+        //         break;
+        //     }
+        //     Err(e) => {
+        //         tracing::error!(
+        //             "The server probably crashed, restarting it..."
+        //         );
+        //         tracing::error!("Cause: {e:?}");
+        //     }
+        // }
     }
 
     Ok(())
