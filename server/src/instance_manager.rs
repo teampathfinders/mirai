@@ -287,7 +287,10 @@ impl InstanceManager {
             sess_manager.session_count(), sess_manager.max_session_count()
         );
 
-        let mut recv_buf = [0u8; RECV_BUF_SIZE];
+        // This is heap-allocated because stack data is stored inline in tasks.
+        // If it were to be stack-allocated, Tokio would have to copy the entire buffer each time
+        // the task is moved across threads.
+        let mut recv_buf = vec![0u8; RECV_BUF_SIZE];
 
         loop {
             let (n, address) = tokio::select! {
