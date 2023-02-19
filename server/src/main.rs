@@ -7,7 +7,7 @@ extern crate core;
 
 use std::sync::atomic::{AtomicU16, Ordering};
 
-use clap::{Command, crate_authors, crate_description};
+use clap::{crate_authors, crate_description, Command};
 use tokio::runtime;
 
 use crate::instance_manager::InstanceManager;

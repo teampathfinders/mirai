@@ -2,7 +2,7 @@ use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr};
 
 use bytes::BytesMut;
 
-use crate::{ReadExtensions, Vector, VResult, WriteExtensions};
+use crate::{ReadExtensions, VResult, Vector, WriteExtensions};
 
 #[test]
 fn vector_types() {

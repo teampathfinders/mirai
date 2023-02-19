@@ -1,11 +1,10 @@
 use std::process::Command;
+use chrono::prelude::*;
 
 // Load the current Git commit hash.
 fn main() {
     let output = Command::new("git")
-        .args(&[
-            "rev-parse", "HEAD"
-        ])
+        .args(&["rev-parse", "HEAD"])
         .output()
         .unwrap();
 
@@ -14,6 +13,7 @@ fn main() {
         .chars()
         .take(7)
         .collect::<String>();
-    
-    println!("cargo:rustc-env=GIT_COMMIT_HASH={git_hash}");
+
+    let build_date = Utc::now().format("%Y-%m-%dT%H:%M:%SZ").to_string();
+    println!("cargo:rustc-env=GIT_COMMIT_HASH={git_hash} (build {build_date})");
 }

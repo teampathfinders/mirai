@@ -40,3 +40,6 @@ level = { path = "../level" }
 serde_repr = "0.1.10"
 uuid = { version = "1.3.0", features = ["serde"] }
 clap = { version = "4.1.6", features = ["cargo"] }
+
+[build-dependencies]
+chrono = "0.4.23"

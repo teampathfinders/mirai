@@ -1,5 +1,5 @@
-use std::ops::{Deref, DerefMut};
 use bytes::{BufMut, BytesMut};
+use std::ops::{Deref, DerefMut};
 
 /// Type and size independent vector type
 #[derive(Debug, Clone)]
@@ -40,7 +40,7 @@ impl<const N: usize> Vector<f32, N> {
 
 #[repr(C)]
 pub struct Vector1Accessors<T> {
-    pub x: T
+    pub x: T,
 }
 
 impl<T> Deref for Vector<T, 1> {
@@ -60,7 +60,7 @@ impl<T> DerefMut for Vector<T, 1> {
 #[repr(C)]
 pub struct Vector2Accessors<T> {
     pub x: T,
-    pub y: T
+    pub y: T,
 }
 
 impl<T> Deref for Vector<T, 2> {
@@ -81,7 +81,7 @@ impl<T> DerefMut for Vector<T, 2> {
 pub struct Vector3Accessors<T> {
     pub x: T,
     pub y: T,
-    pub z: T
+    pub z: T,
 }
 
 impl<T> Deref for Vector<T, 3> {
@@ -103,7 +103,7 @@ pub struct Vector4Accessors<T> {
     pub x: T,
     pub y: T,
     pub z: T,
-    pub w: T
+    pub w: T,
 }
 
 impl<T> Deref for Vector<T, 4> {

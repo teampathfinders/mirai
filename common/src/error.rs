@@ -93,10 +93,7 @@ pub struct VError {
 impl VError {
     #[inline]
     pub fn new(kind: VErrorKind, message: String) -> Self {
-        Self {
-            kind,
-            message
-        }
+        Self { kind, message }
     }
 
     #[inline]
