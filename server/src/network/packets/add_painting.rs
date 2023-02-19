@@ -1,9 +1,9 @@
-use bytes::BytesMut;
+use bytes::{BytesMut, Bytes};
 use common::{VResult, Vector3f, Vector3i, WriteExtensions, size_of_var};
 
 use common::Serialize;
 
-use super::GamePacket;
+use super::ConnectedPacket;
 
 /// Directions a painting can face.
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
@@ -27,12 +27,12 @@ pub struct AddPainting<'a> {
     pub name: &'a str,
 }
 
-impl GamePacket for AddPainting<'_> {
+impl ConnectedPacket for AddPainting<'_> {
     const ID: u32 = 0x16;
 }
 
 impl Serialize for AddPainting<'_> {
-    fn serialize(&self) -> VResult<BytesMut> {
+    fn serialize(&self) -> VResult<Bytes> {
         let packet_size =
             size_of_var(self.runtime_id as i64) +
             size_of_var(self.runtime_id) + 3 * 4 +
@@ -48,6 +48,6 @@ impl Serialize for AddPainting<'_> {
         buffer.put_var_i32(self.direction as i32);
         buffer.put_string(self.name);
 
-        Ok(buffer)
+        Ok(buffer.freeze())
     }
 }

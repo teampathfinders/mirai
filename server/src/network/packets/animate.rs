@@ -1,9 +1,9 @@
-use bytes::{Buf, BytesMut};
+use bytes::{Buf, BytesMut, Bytes};
 use common::{bail, ReadExtensions, VError, VResult, WriteExtensions};
 
 use common::Deserialize;
 
-use super::GamePacket;
+use super::ConnectedPacket;
 
 /// Type of animation to perform.
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
@@ -48,12 +48,12 @@ pub struct Animate {
     pub rowing_time: f32,
 }
 
-impl GamePacket for Animate {
+impl ConnectedPacket for Animate {
     const ID: u32 = 0x2c;
 }
 
 impl Deserialize for Animate {
-    fn deserialize(mut buffer: BytesMut) -> VResult<Self> {
+    fn deserialize(mut buffer: Bytes) -> VResult<Self> {
         let action_type = AnimateAction::try_from(buffer.get_var_i32()?)?;
         let runtime_id = buffer.get_var_u64()?;
 

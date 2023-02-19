@@ -1,11 +1,11 @@
 use std::{any::TypeId, fmt};
 
-use bytes::BytesMut;
+use bytes::{BytesMut, Bytes};
 use common::{Serialize, VResult, WriteExtensions, size_of_var, bail};
 
 use crate::command::ParsedArgument;
 
-use super::GamePacket;
+use super::ConnectedPacket;
 
 pub const BOOLEAN_GAME_RULES: &[&str] = &[
     "commandblocksenabled",
@@ -170,7 +170,7 @@ impl GameRule {
         }
     }
 
-    pub fn encode(&self, buffer: &mut BytesMut) {
+    pub fn serialize(&self, buffer: &mut BytesMut) {
         buffer.put_string(self.name());
         buffer.put_bool(true); // Player can modify. Doesn't seem to do anything.
 
@@ -259,19 +259,19 @@ pub struct GameRulesChanged<'a> {
     pub game_rules: &'a [GameRule],
 }
 
-impl GamePacket for GameRulesChanged<'_> {
+impl ConnectedPacket for GameRulesChanged<'_> {
     const ID: u32 = 0x48;
 }
 
 impl Serialize for GameRulesChanged<'_> {
-    fn serialize(&self) -> VResult<BytesMut> {
+    fn serialize(&self) -> VResult<Bytes> {
         let mut buffer = BytesMut::new();
 
         buffer.put_var_u32(self.game_rules.len() as u32);
         for game_rule in self.game_rules {
-            game_rule.encode(&mut buffer);
+            game_rule.serialize(&mut buffer);
         }
 
-        Ok(buffer)
+        Ok(buffer.freeze())
     }
 }

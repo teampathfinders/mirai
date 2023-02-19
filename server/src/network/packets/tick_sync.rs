@@ -1,9 +1,9 @@
-use bytes::{Buf, BufMut, BytesMut};
+use bytes::{Buf, BufMut, BytesMut, Bytes};
 use common::VResult;
 
 use common::{Deserialize, Serialize};
 
-use super::GamePacket;
+use super::ConnectedPacket;
 
 /// Synchronises the current tick.
 ///
@@ -16,12 +16,12 @@ pub struct TickSync {
     pub response: u64,
 }
 
-impl GamePacket for TickSync {
+impl ConnectedPacket for TickSync {
     const ID: u32 = 0x17;
 }
 
 impl Deserialize for TickSync {
-    fn deserialize(mut buffer: BytesMut) -> VResult<Self> {
+    fn deserialize(mut buffer: Bytes) -> VResult<Self> {
         let request = buffer.get_u64();
         let response = buffer.get_u64();
 
@@ -30,12 +30,12 @@ impl Deserialize for TickSync {
 }
 
 impl Serialize for TickSync {
-    fn serialize(&self) -> VResult<BytesMut> {
+    fn serialize(&self) -> VResult<Bytes> {
         let mut buffer = BytesMut::with_capacity(16);
 
         buffer.put_u64(self.request);
         buffer.put_u64(self.response);
 
-        Ok(buffer)
+        Ok(buffer.freeze())
     }
 }

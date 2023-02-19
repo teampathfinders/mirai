@@ -3,18 +3,18 @@ use crate::{
     TAG_FLOAT, TAG_INT, TAG_INT_ARRAY, TAG_LIST, TAG_LONG, TAG_LONG_ARRAY,
     TAG_SHORT, TAG_STRING,
 };
-use bytes::{Buf, BytesMut};
+use bytes::{Buf, Bytes};
 use common::{bail, VResult};
 use std::collections::HashMap;
 
-pub fn read_le(stream: &mut BytesMut) -> VResult<Tag> {
+pub fn read_le(stream: &mut Bytes) -> VResult<Tag> {
     let (name, value) = Value::decode_tag_le(stream)?;
 
     Ok(Tag { name, value })
 }
 
 impl Value {
-    fn decode_tag_le(stream: &mut BytesMut) -> VResult<(String, Self)> {
+    fn decode_tag_le(stream: &mut Bytes) -> VResult<(String, Self)> {
         let tag_type = stream.get_u8();
         if tag_type == TAG_END {
             return Ok((String::new(), Self::End));
@@ -26,7 +26,7 @@ impl Value {
         Ok((name, value))
     }
 
-    fn decode_tag_name_le(stream: &mut BytesMut) -> String {
+    fn decode_tag_name_le(stream: &mut Bytes) -> String {
         let length = stream.get_u16_le();
         let cursor = stream.len() - stream.remaining();
 
@@ -40,10 +40,7 @@ impl Value {
         name
     }
 
-    fn decode_tag_value_le(
-        stream: &mut BytesMut,
-        tag_type: u8,
-    ) -> VResult<Self> {
+    fn decode_tag_value_le(stream: &mut Bytes, tag_type: u8) -> VResult<Self> {
         Ok(match tag_type {
             TAG_END => Self::End,
             TAG_BYTE => {

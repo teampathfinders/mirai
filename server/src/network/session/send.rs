@@ -2,14 +2,14 @@ use std::io::Write;
 use std::sync::atomic::Ordering;
 
 use async_recursion::async_recursion;
-use bytes::{Buf, BufMut, BytesMut};
+use bytes::{Buf, BufMut, Bytes, BytesMut};
 use flate2::write::DeflateEncoder;
 use flate2::Compression;
 
 use crate::config::SERVER_CONFIG;
 use crate::network::header::Header;
 use crate::network::packets::login::CompressionAlgorithm;
-use crate::network::packets::{GamePacket, Packet, GAME_PACKET_ID};
+use crate::network::packets::{ConnectedPacket, Packet, GAME_PACKET_ID};
 use crate::network::raknet::packets::{Ack, AckRecord};
 use crate::network::raknet::Reliability;
 use crate::network::raknet::{Frame, FrameBatch};
@@ -24,7 +24,7 @@ pub struct PacketConfig {
     pub priority: SendPriority,
 }
 
-const DEFAULT_CONFIG: PacketConfig = PacketConfig {
+pub const DEFAULT_SEND_CONFIG: PacketConfig = PacketConfig {
     reliability: Reliability::ReliableOrdered,
     priority: SendPriority::Medium,
 };
@@ -33,29 +33,27 @@ impl Session {
     /// Sends a game packet with default settings
     /// (reliable ordered and medium priority)
     #[inline]
-    pub fn send<T: GamePacket + Serialize>(&self, packet: T) -> VResult<()> {
-        self.send_packet_with_config(packet, DEFAULT_CONFIG)
+    pub fn send<T: ConnectedPacket + Serialize>(&self, pk: T) -> VResult<()> {
+        let pk = Packet::new(pk);
+        self.send_serialized(pk.serialize()?, DEFAULT_SEND_CONFIG)
     }
 
     /// Sends a game packet with custom reliability and priority
-    pub fn send_packet_with_config<T: GamePacket + Serialize>(
+    pub fn send_serialized(
         &self,
-        packet: T,
+        mut pk: Bytes,
         config: PacketConfig,
     ) -> VResult<()> {
-        let packet = Packet::new(packet).subclients(0, 0);
-
         let mut buffer = BytesMut::new();
         buffer.put_u8(GAME_PACKET_ID);
 
-        let mut packet_buffer = packet.serialize()?;
         if self.compression_enabled.load(Ordering::SeqCst) {
             let (algorithm, threshold) = {
                 let config = SERVER_CONFIG.read();
                 (config.compression_algorithm, config.compression_threshold)
             };
 
-            if packet_buffer.len() > threshold as usize {
+            if pk.len() > threshold as usize {
                 // Compress packet
                 match SERVER_CONFIG.read().compression_algorithm {
                     CompressionAlgorithm::Snappy => {
@@ -67,35 +65,35 @@ impl Session {
                             Compression::best(),
                         );
 
-                        writer.write_all(packet_buffer.as_ref())?;
-                        packet_buffer =
-                            BytesMut::from(writer.finish()?.as_slice());
+                        writer.write_all(pk.as_ref())?;
+                        pk =
+                            Bytes::copy_from_slice(writer.finish()?.as_slice());
                     }
                 }
             }
         }
 
         if let Some(encryptor) = self.encryptor.get() {
-            packet_buffer = encryptor.encrypt(packet_buffer);
+            pk = encryptor.encrypt(pk)?;
         }
 
-        buffer.put(packet_buffer);
+        buffer.put(pk);
 
-        self.send_raw_buffer_with_config(buffer, config);
+        self.send_raw_buffer_with_config(buffer.freeze(), config);
         Ok(())
     }
 
     /// Sends a raw buffer with default settings
     /// (reliable ordered and medium priority).
     #[inline]
-    pub fn send_raw_buffer(&self, buffer: BytesMut) {
-        self.send_raw_buffer_with_config(buffer, DEFAULT_CONFIG);
+    pub fn send_raw_buffer(&self, buffer: Bytes) {
+        self.send_raw_buffer_with_config(buffer, DEFAULT_SEND_CONFIG);
     }
 
     /// Sends a raw buffer with custom reliability and priority.
     pub fn send_raw_buffer_with_config(
         &self,
-        buffer: BytesMut,
+        buffer: Bytes,
         config: PacketConfig,
     ) {
         self.send_queue.insert_raw(
@@ -113,6 +111,7 @@ impl Session {
         }
 
         if tick % 2 == 0 {
+            // Also flush broadcast packets.
             if let Some(frames) = self.send_queue.flush(SendPriority::Medium) {
                 self.send_raw_frames(frames).await?;
             }
@@ -162,6 +161,7 @@ impl Session {
             confirmed
         };
         confirmed.dedup();
+        confirmed.sort_unstable();
 
         let mut records = Vec::new();
         let mut consecutive = Vec::new();
@@ -292,7 +292,7 @@ impl Session {
                 compound_index: i as u32,
                 compound_size: compound_size as u32,
                 compound_id,
-                body: BytesMut::from(chunk),
+                body: Bytes::copy_from_slice(chunk),
                 ..Default::default()
             };
 

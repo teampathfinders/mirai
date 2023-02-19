@@ -1,6 +1,7 @@
+use bytes::Bytes;
 use bytes::{BufMut, BytesMut};
 
-use crate::network::packets::GamePacket;
+use crate::network::packets::ConnectedPacket;
 use common::Serialize;
 use common::VResult;
 use common::WriteExtensions;
@@ -36,16 +37,16 @@ pub struct PlayStatus {
     pub status: Status,
 }
 
-impl GamePacket for PlayStatus {
+impl ConnectedPacket for PlayStatus {
     const ID: u32 = 0x02;
 }
 
 impl Serialize for PlayStatus {
-    fn serialize(&self) -> VResult<BytesMut> {
+    fn serialize(&self) -> VResult<Bytes> {
         let mut buffer = BytesMut::with_capacity(4);
 
         buffer.put_u32(self.status as u32);
 
-        Ok(buffer)
+        Ok(buffer.freeze())
     }
 }

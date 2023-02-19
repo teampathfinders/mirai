@@ -1,9 +1,9 @@
-use bytes::BytesMut;
+use bytes::{BytesMut, Bytes};
 use common::{VResult, WriteExtensions, size_of_var};
 
 use common::Serialize;
 
-use super::GamePacket;
+use super::ConnectedPacket;
 
 /// Sets the current time for the client.
 #[derive(Debug, Clone)]
@@ -12,16 +12,16 @@ pub struct SetTime {
     pub time: i32,
 }
 
-impl GamePacket for SetTime {
+impl ConnectedPacket for SetTime {
     const ID: u32 = 0x0a;
 }
 
 impl Serialize for SetTime {
-    fn serialize(&self) -> VResult<BytesMut> {
+    fn serialize(&self) -> VResult<Bytes> {
         let mut buffer = BytesMut::with_capacity(size_of_var(self.time));
 
         buffer.put_var_i32(self.time);
 
-        Ok(buffer)
+        Ok(buffer.freeze())
     }
 }

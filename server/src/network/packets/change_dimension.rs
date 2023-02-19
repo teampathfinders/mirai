@@ -1,10 +1,10 @@
-use bytes::BytesMut;
+use bytes::{BytesMut, Bytes};
 use common::{VResult, Vector3f, WriteExtensions};
 
 use common::Serialize;
 use level::Dimension;
 
-use super::GamePacket;
+use super::ConnectedPacket;
 
 /// Used to transfer the client to another dimension.
 #[derive(Debug, Clone)]
@@ -18,18 +18,18 @@ pub struct ChangeDimension {
     pub respawn: bool,
 }
 
-impl GamePacket for ChangeDimension {
+impl ConnectedPacket for ChangeDimension {
     const ID: u32 = 0x3d;
 }
 
 impl Serialize for ChangeDimension {
-    fn serialize(&self) -> VResult<BytesMut> {
+    fn serialize(&self) -> VResult<Bytes> {
         let mut buffer = BytesMut::with_capacity(1 + 3 * 4 + 1);
 
         buffer.put_var_i32(self.dimension as i32);
         buffer.put_vec3f(&self.position);
         buffer.put_bool(self.respawn);
 
-        Ok(buffer)
+        Ok(buffer.freeze())
     }
 }

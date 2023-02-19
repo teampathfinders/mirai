@@ -1,6 +1,7 @@
+use bytes::Bytes;
 use bytes::{BufMut, BytesMut};
 
-use crate::network::packets::GamePacket;
+use crate::network::packets::ConnectedPacket;
 use common::Serialize;
 use common::VResult;
 use common::WriteExtensions;
@@ -47,13 +48,13 @@ pub struct NetworkSettings {
     pub client_throttle: ClientThrottleSettings,
 }
 
-impl GamePacket for NetworkSettings {
+impl ConnectedPacket for NetworkSettings {
     /// Unique ID of this packet.
     const ID: u32 = 0x8f;
 }
 
 impl Serialize for NetworkSettings {
-    fn serialize(&self) -> VResult<BytesMut> {
+    fn serialize(&self) -> VResult<Bytes> {
         let mut buffer = BytesMut::with_capacity(2 + 2 + 1 + 1 + 4);
 
         buffer.put_u16(self.compression_threshold);
@@ -62,6 +63,6 @@ impl Serialize for NetworkSettings {
         buffer.put_u8(self.client_throttle.threshold);
         buffer.put_f32(self.client_throttle.scalar);
 
-        Ok(buffer)
+        Ok(buffer.freeze())
     }
 }

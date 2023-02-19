@@ -1,7 +1,7 @@
-use bytes::{BufMut, BytesMut};
+use bytes::{BufMut, BytesMut, Bytes};
 use common::{Serialize, VResult, WriteExtensions};
 
-use super::GamePacket;
+use super::ConnectedPacket;
 
 /// An action to perform on an identity entry.
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
@@ -26,12 +26,12 @@ pub struct SetScoreboardIdentity {
     pub entries: Vec<ScoreboardIdentityEntry>,
 }
 
-impl GamePacket for SetScoreboardIdentity {
+impl ConnectedPacket for SetScoreboardIdentity {
     const ID: u32 = 0x70;
 }
 
 impl Serialize for SetScoreboardIdentity {
-    fn serialize(&self) -> VResult<BytesMut> {
+    fn serialize(&self) -> VResult<Bytes> {
         let mut buffer = BytesMut::new();
 
         buffer.put_u8(self.action as u8);
@@ -51,6 +51,6 @@ impl Serialize for SetScoreboardIdentity {
             }
         }
 
-        Ok(buffer)
+        Ok(buffer.freeze())
     }
 }

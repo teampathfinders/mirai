@@ -1,9 +1,9 @@
-use bytes::{BufMut, BytesMut};
+use bytes::{BufMut, BytesMut, Bytes};
 use common::{VResult, WriteExtensions, size_of_var};
 
 use common::Serialize;
 
-use super::GamePacket;
+use super::ConnectedPacket;
 
 /// Action to perform on the dynamic enum.
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
@@ -24,12 +24,12 @@ pub struct UpdateDynamicEnum<'a> {
     pub action: SoftEnumAction,
 }
 
-impl GamePacket for UpdateDynamicEnum<'_> {
+impl ConnectedPacket for UpdateDynamicEnum<'_> {
     const ID: u32 = 0x72;
 }
 
 impl Serialize for UpdateDynamicEnum<'_> {
-    fn serialize(&self) -> VResult<BytesMut> {
+    fn serialize(&self) -> VResult<Bytes> {
         let packet_size =
             size_of_var(self.enum_id.len() as u32) + self.enum_id.len() +
             size_of_var(self.options.len() as u32) +
@@ -44,6 +44,6 @@ impl Serialize for UpdateDynamicEnum<'_> {
         }
         buffer.put_u8(self.action as u8);
 
-        Ok(buffer)
+        Ok(buffer.freeze())
     }
 }

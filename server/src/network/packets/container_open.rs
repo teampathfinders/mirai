@@ -1,6 +1,6 @@
-use bytes::{BufMut, BytesMut};
+use bytes::{BufMut, BytesMut, Bytes};
 use common::{BlockPosition, Serialize, Vector3i, VResult, WriteExtensions, size_of_var};
-use crate::network::packets::GamePacket;
+use crate::network::packets::ConnectedPacket;
 
 #[derive(Debug, Clone)]
 pub struct ContainerOpen {
@@ -10,12 +10,12 @@ pub struct ContainerOpen {
     pub container_entity_unique_id: i64
 }
 
-impl GamePacket for ContainerOpen {
+impl ConnectedPacket for ContainerOpen {
     const ID: u32 = 0x2e;
 }
 
 impl Serialize for ContainerOpen {
-    fn serialize(&self) -> VResult<BytesMut> {
+    fn serialize(&self) -> VResult<Bytes> {
         let mut buffer = BytesMut::with_capacity(
             1 + 1 + 3 * 4 + size_of_var(self.container_entity_unique_id)
         );
@@ -25,6 +25,6 @@ impl Serialize for ContainerOpen {
         buffer.put_vec3i(&self.position);
         buffer.put_var_i64(self.container_entity_unique_id);
 
-        Ok(buffer)
+        Ok(buffer.freeze())
     }
 }

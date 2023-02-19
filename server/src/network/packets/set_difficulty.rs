@@ -3,7 +3,7 @@ use common::{bail, ReadExtensions, VError, VResult, WriteExtensions};
 
 use common::{Deserialize, Serialize};
 
-use super::GamePacket;
+use super::ConnectedPacket;
 
 /// The Minecraft difficulties.
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
@@ -37,22 +37,22 @@ pub struct SetDifficulty {
     pub difficulty: Difficulty,
 }
 
-impl GamePacket for SetDifficulty {
+impl ConnectedPacket for SetDifficulty {
     const ID: u32 = 0x3c;
 }
 
 impl Serialize for SetDifficulty {
-    fn serialize(&self) -> VResult<BytesMut> {
+    fn serialize(&self) -> VResult<Bytes> {
         let mut buffer = BytesMut::with_capacity(1);
 
         buffer.put_var_i32(self.difficulty as i32);
 
-        Ok(buffer)
+        Ok(buffer.freeze())
     }
 }
 
 impl Deserialize for SetDifficulty {
-    fn deserialize(mut buffer: BytesMut) -> VResult<Self> {
+    fn deserialize(mut buffer: Bytes) -> VResult<Self> {
         let difficulty = Difficulty::try_from(buffer.get_var_i32()?)?;
         Ok(Self { difficulty })
     }

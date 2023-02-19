@@ -1,5 +1,6 @@
 use std::net::SocketAddr;
 
+use bytes::Bytes;
 use bytes::{Buf, BytesMut};
 
 use common::nvassert;
@@ -17,7 +18,7 @@ impl NewIncomingConnection {
 }
 
 impl Deserialize for NewIncomingConnection {
-    fn deserialize(mut buffer: BytesMut) -> VResult<Self> {
+    fn deserialize(mut buffer: Bytes) -> VResult<Self> {
         nvassert!(buffer.get_u8() == Self::ID);
 
         // No data in this packet is used, there is no point in decoding it

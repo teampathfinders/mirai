@@ -1,9 +1,9 @@
-use bytes::BytesMut;
+use bytes::{BytesMut, Bytes};
 use common::{bail, ReadExtensions, VError, VResult, WriteExtensions};
 
 use common::{Deserialize, Serialize};
 
-use super::GamePacket;
+use super::ConnectedPacket;
 
 /// The Minecraft game modes.
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
@@ -38,22 +38,22 @@ pub struct SetPlayerGameMode {
     pub game_mode: GameMode,
 }
 
-impl GamePacket for SetPlayerGameMode {
+impl ConnectedPacket for SetPlayerGameMode {
     const ID: u32 = 0x3e;
 }
 
 impl Serialize for SetPlayerGameMode {
-    fn serialize(&self) -> VResult<BytesMut> {
+    fn serialize(&self) -> VResult<Bytes> {
         let mut buffer = BytesMut::with_capacity(1);
 
         buffer.put_var_i32(self.game_mode as i32);
 
-        Ok(buffer)
+        Ok(buffer.freeze())
     }
 }
 
 impl Deserialize for SetPlayerGameMode {
-    fn deserialize(mut buffer: BytesMut) -> VResult<Self> {
+    fn deserialize(mut buffer: Bytes) -> VResult<Self> {
         let game_mode = GameMode::try_from(buffer.get_var_i32()?)?;
         Ok(Self { game_mode })
     }

@@ -1,7 +1,7 @@
-use bytes::{BufMut, BytesMut};
+use bytes::{BufMut, BytesMut, Bytes};
 use common::{Serialize, VResult, Vector3f, Vector4f, WriteExtensions};
 
-use super::GamePacket;
+use super::ConnectedPacket;
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum DebugRendererAction {
@@ -24,12 +24,12 @@ pub struct ClientBoundDebugRenderer<'a> {
     pub duration: i64,
 }
 
-impl GamePacket for ClientBoundDebugRenderer<'_> {
+impl ConnectedPacket for ClientBoundDebugRenderer<'_> {
     const ID: u32 = 0xa4;
 }
 
 impl Serialize for ClientBoundDebugRenderer<'_> {
-    fn serialize(&self) -> VResult<BytesMut> {
+    fn serialize(&self) -> VResult<Bytes> {
         let mut buffer = BytesMut::new();
 
         buffer.put_i32_le(self.action as i32);
@@ -40,6 +40,6 @@ impl Serialize for ClientBoundDebugRenderer<'_> {
             buffer.put_i64_le(self.duration);
         }
 
-        Ok(buffer)
+        Ok(buffer.freeze())
     }
 }

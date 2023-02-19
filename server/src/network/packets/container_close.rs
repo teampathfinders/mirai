@@ -1,6 +1,6 @@
-use bytes::{BufMut, BytesMut};
+use bytes::{BufMut, BytesMut, Bytes};
 use common::{Serialize, VResult, WriteExtensions};
-use crate::network::packets::GamePacket;
+use crate::network::packets::ConnectedPacket;
 
 #[derive(Debug, Clone)]
 pub struct ContainerClose {
@@ -10,17 +10,17 @@ pub struct ContainerClose {
     pub server_initiated: bool
 }
 
-impl GamePacket for ContainerClose {
+impl ConnectedPacket for ContainerClose {
     const ID: u32 = 0x2f;
 }
 
 impl Serialize for ContainerClose {
-    fn serialize(&self) -> VResult<BytesMut> {
+    fn serialize(&self) -> VResult<Bytes> {
         let mut buffer = BytesMut::with_capacity(2);
 
         buffer.put_u8(self.window_id);
         buffer.put_bool(self.server_initiated);
 
-        Ok(buffer)
+        Ok(buffer.freeze())
     }
 }

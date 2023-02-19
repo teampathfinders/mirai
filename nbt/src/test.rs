@@ -1,4 +1,4 @@
-use bytes::BytesMut;
+use bytes::{Bytes, BytesMut};
 
 use crate::{RefTag, Tag, Value};
 use std::collections::HashMap;
@@ -25,12 +25,12 @@ fn hello_world_write_nbt() {
 
 #[test]
 fn bigtest_nbt() {
-    crate::read_be(&mut BytesMut::from(BIGTEST_NBT)).unwrap();
+    crate::read_be(&mut Bytes::from(BIGTEST_NBT)).unwrap();
 }
 
 #[test]
 fn hello_world_nbt() {
-    let decoded = crate::read_be(&mut BytesMut::from(HELLO_WORLD_NBT)).unwrap();
+    let decoded = crate::read_be(&mut Bytes::from(HELLO_WORLD_NBT)).unwrap();
     println!("{decoded:?}");
 
     assert_eq!(
@@ -47,5 +47,5 @@ fn hello_world_nbt() {
 
 #[test]
 fn player_nan_value_nbt() {
-    crate::read_be(&mut BytesMut::from(PLAYER_NAN_VALUE_NBT)).unwrap();
+    crate::read_be(&mut Bytes::from(PLAYER_NAN_VALUE_NBT)).unwrap();
 }

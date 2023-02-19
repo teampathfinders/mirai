@@ -1,6 +1,7 @@
+use bytes::Bytes;
 use bytes::{Buf, BytesMut};
 
-use crate::network::packets::GamePacket;
+use crate::network::packets::ConnectedPacket;
 use common::Deserialize;
 use common::ReadExtensions;
 use common::VResult;
@@ -12,12 +13,12 @@ pub struct CacheStatus {
     pub supports_cache: bool,
 }
 
-impl GamePacket for CacheStatus {
+impl ConnectedPacket for CacheStatus {
     const ID: u32 = 0x81;
 }
 
 impl Deserialize for CacheStatus {
-    fn deserialize(mut buffer: BytesMut) -> VResult<Self> {
+    fn deserialize(mut buffer: Bytes) -> VResult<Self> {
         let support = buffer.get_bool();
 
         Ok(Self { supports_cache: support })

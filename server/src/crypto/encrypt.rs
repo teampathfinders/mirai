@@ -3,7 +3,7 @@ use std::io::Read;
 use std::sync::atomic::{AtomicU16, AtomicU32, AtomicU64, Ordering};
 
 use base64::Engine;
-use bytes::{BufMut, BytesMut};
+use bytes::{BufMut, Bytes, BytesMut};
 use common::{bail, VResult};
 use ctr::cipher::KeyIvInit;
 use ctr::cipher::{StreamCipher, StreamCipherSeekCore};
@@ -122,8 +122,6 @@ impl Encryptor {
             }
         };
 
-        tracing::debug!("{jwt}");
-
         // Perform the key exchange
         let shared_secret = diffie_hellman(
             private_key.as_nonzero_scalar(),
@@ -160,7 +158,7 @@ impl Encryptor {
     ///
     /// If the checksum does not match, a [`BadPacket`](common::VErrorKind::BadPacket) error is returned.
     /// The client must be disconnected if this fails, because the data has probably been tampered with.
-    pub fn decrypt(&self, mut buffer: BytesMut) -> VResult<BytesMut> {
+    pub fn decrypt(&self, mut buffer: Bytes) -> VResult<Bytes> {
         if buffer.len() < 9 {
             bail!(
                 BadPacket,
@@ -169,12 +167,17 @@ impl Encryptor {
             );
         }
 
-        self.cipher_decrypt.lock().apply_keystream(buffer.as_mut());
+        let mut decryption_output = BytesMut::with_capacity(buffer.len());
+        decryption_output.resize(buffer.len(), 0x00);
+
+        self.cipher_decrypt.lock().apply_keystream_b2b(
+            buffer.as_ref(), decryption_output.as_mut()
+        )?;
         let counter = self.receive_counter.fetch_add(1, Ordering::SeqCst);
 
-        let checksum = &buffer.as_ref()[buffer.len() - 8..];
+        let checksum = &decryption_output.as_ref()[decryption_output.len() - 8..];
         let computed_checksum = self
-            .compute_checksum(&buffer.as_ref()[..buffer.len() - 8], counter);
+            .compute_checksum(&decryption_output.as_ref()[..decryption_output.len() - 8], counter);
 
         if !checksum.eq(&computed_checksum) {
             bail!(BadPacket, "Encryption checksums do not match");
@@ -183,18 +186,19 @@ impl Encryptor {
         // Remove checksum from data.
         buffer.truncate(buffer.len() - 8);
 
-        Ok(buffer)
+        Ok(decryption_output.freeze())
     }
 
     /// Encrypts a packet and appends the computed checksum.
-    pub fn encrypt(&self, mut buffer: BytesMut) -> BytesMut {
+    pub fn encrypt(&self, mut buffer: Bytes) -> VResult<Bytes> {
         let counter = self.send_counter.fetch_add(1, Ordering::SeqCst);
-        let checksum = self.compute_checksum(&buffer, counter);
+        let checksum = self.compute_checksum(buffer.as_ref(), counter);
 
-        buffer.put(checksum.as_ref());
+        let mut buffer = [buffer.as_ref(), &checksum].concat();
+
         self.cipher_encrypt.lock().apply_keystream(buffer.as_mut());
 
-        buffer
+        Ok(Bytes::from(buffer))
     }
 
     /// Returns the packet send counter.

@@ -1,12 +1,12 @@
 use base64::Engine;
-use bytes::{Buf, BytesMut};
+use bytes::{Buf, BytesMut, Bytes};
 use jsonwebtoken::{Algorithm, DecodingKey, Validation};
 use serde_repr::Deserialize_repr;
 
 use crate::crypto::{
     parse_identity_data, parse_user_data, IdentityData, UserData,
 };
-use crate::network::packets::GamePacket;
+use crate::network::packets::ConnectedPacket;
 use common::Deserialize;
 use common::ReadExtensions;
 use common::{bail, nvassert};
@@ -56,12 +56,12 @@ pub struct Login {
     pub skin: Skin
 }
 
-impl GamePacket for Login {
+impl ConnectedPacket for Login {
     const ID: u32 = 0x01;
 }
 
 impl Deserialize for Login {
-    fn deserialize(mut buffer: BytesMut) -> VResult<Self> {
+    fn deserialize(mut buffer: Bytes) -> VResult<Self> {
         buffer.advance(4); // Skip protocol version, use the one in RequestNetworkSettings instead.
         buffer.get_var_u32()?;
 

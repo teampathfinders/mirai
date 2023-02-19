@@ -1,15 +1,14 @@
+use bytes::Bytes;
 use bytes::{BufMut, BytesMut};
 use dashmap::DashMap;
 
 use crate::network::raknet::Frame;
 use crate::network::raknet::Reliability;
 
-type Fragment = BytesMut;
-
 /// Keeps track of packet fragments, merging them when all fragments have been received.
 #[derive(Debug, Default)]
 pub struct CompoundCollector {
-    compounds: DashMap<u16, Vec<Fragment>>,
+    compounds: DashMap<u16, Vec<Bytes>>,
 }
 
 impl CompoundCollector {
@@ -28,7 +27,8 @@ impl CompoundCollector {
                 self.compounds.entry(frame.compound_id).or_insert_with(|| {
                     let mut vec =
                         Vec::with_capacity(frame.compound_size as usize);
-                    vec.resize(frame.compound_size as usize, BytesMut::new());
+
+                    vec.resize(frame.compound_size as usize, Bytes::new());
                     vec
                 });
 
@@ -40,7 +40,7 @@ impl CompoundCollector {
             }
 
             fragments[frame.compound_index as usize] = frame.body.clone();
-            !fragments.iter().any(BytesMut::is_empty)
+            !fragments.iter().any(Bytes::is_empty)
         };
 
         if is_completed {
@@ -51,16 +51,8 @@ impl CompoundCollector {
 
             let fragments = &mut kv.1;
 
-            // Calculate total body size
-            let total_size = fragments.iter().fold(0, |acc, f| acc + f.len());
-
-            frame.body.clear();
-            frame.body.reserve(total_size - frame.body.capacity());
-
             // Merge all fragments
-            for mut fragment in fragments.iter() {
-                frame.body.put(fragment.as_ref());
-            }
+            frame.body = Bytes::copy_from_slice(fragments.concat().as_slice());
 
             // Set compound tag to false to make sure the completed packet isn't added into the
             // collector again.

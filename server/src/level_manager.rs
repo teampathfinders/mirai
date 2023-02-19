@@ -5,9 +5,14 @@ use std::time::Duration;
 use common::VResult;
 use dashmap::mapref::one::Ref;
 use dashmap::DashMap;
+use level::ChunkManager;
 use parking_lot::{RwLock, RwLockReadGuard};
+use tokio::sync::oneshot::Receiver;
+use tokio::task::JoinHandle;
+use tokio_util::sync::CancellationToken;
 
 use crate::command::Command;
+use crate::config::SERVER_CONFIG;
 use crate::network::{
     packets::{GameRule, GameRulesChanged},
     session::SessionManager,
@@ -18,6 +23,8 @@ const LEVEL_TICK_INTERVAL: Duration = Duration::from_millis(1000 / 20);
 
 #[derive(Debug)]
 pub struct LevelManager {
+    /// Used to load world data from disk.
+    chunks: Arc<ChunkManager>,
     /// List of commands available in this level.
     commands: DashMap<String, Command>,
     /// Currently set game rules.
@@ -28,11 +35,24 @@ pub struct LevelManager {
     /// This is the standard Minecraft tick.
     /// The level is ticked 20 times every second.
     tick: AtomicU64,
+    token: CancellationToken
 }
 
 impl LevelManager {
-    pub fn new(session_manager: Arc<SessionManager>) -> Arc<Self> {
+    pub fn new(
+        session_manager: Arc<SessionManager>,
+        token: CancellationToken
+    ) -> VResult<(Arc<Self>, Receiver<()>)> {
+        let (world_path, autosave_interval) = {
+            let config = SERVER_CONFIG.read();
+            (config.level_path.clone(), config.autosave_interval)
+        };
+
+        let (chunks, chunk_notifier) =
+            ChunkManager::new(world_path, autosave_interval, token.clone())?;
+
         let manager = Arc::new(Self {
+            chunks,
             commands: DashMap::new(),
             game_rules: DashMap::from_iter([
                 (
@@ -46,9 +66,10 @@ impl LevelManager {
             ]),
             session_manager,
             tick: AtomicU64::new(0),
+            token
         });
 
-        manager
+        Ok((manager, chunk_notifier))
     }
 
     /// Returns the requested command

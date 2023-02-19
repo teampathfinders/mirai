@@ -1,6 +1,7 @@
+use bytes::Bytes;
 use bytes::BytesMut;
 
-use crate::network::packets::GamePacket;
+use crate::network::packets::ConnectedPacket;
 use common::bail;
 use common::Deserialize;
 use common::ReadExtensions;
@@ -54,12 +55,12 @@ pub struct ViolationWarning {
     pub context: String,
 }
 
-impl GamePacket for ViolationWarning {
+impl ConnectedPacket for ViolationWarning {
     const ID: u32 = 0x9c;
 }
 
 impl Deserialize for ViolationWarning {
-    fn deserialize(mut buffer: BytesMut) -> VResult<Self> {
+    fn deserialize(mut buffer: Bytes) -> VResult<Self> {
         tracing::debug!("{:x?}", buffer.as_ref());
 
         let warning_type = ViolationType::try_from(buffer.get_var_i32()?)?;

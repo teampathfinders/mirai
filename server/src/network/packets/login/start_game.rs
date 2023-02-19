@@ -1,12 +1,12 @@
 use std::collections::HashMap;
 
-use bytes::{BufMut, BytesMut};
+use bytes::{BufMut, BytesMut, Bytes};
 use level::Dimension;
 
 use common::Serialize;
 use common::{bail, VError, VResult};
 use common::{BlockPosition, Vector2f, Vector3f, WriteExtensions};
-use crate::network::packets::{CLIENT_VERSION_STRING, Difficulty, GameMode, GamePacket, GameRule};
+use crate::network::packets::{CLIENT_VERSION_STRING, Difficulty, GameMode, ConnectedPacket, GameRule};
 use crate::network::packets::login::ExperimentData;
 
 #[derive(Debug, Copy, Clone)]
@@ -265,12 +265,12 @@ pub struct StartGame<'a> {
     pub client_side_generation: bool,
 }
 
-impl GamePacket for StartGame<'_> {
+impl ConnectedPacket for StartGame<'_> {
     const ID: u32 = 0x0B;
 }
 
 impl Serialize for StartGame<'_> {
-    fn serialize(&self) -> VResult<BytesMut> {
+    fn serialize(&self) -> VResult<Bytes> {
         let mut buffer = BytesMut::new();
 
         buffer.put_var_i64(self.entity_id);
@@ -305,7 +305,7 @@ impl Serialize for StartGame<'_> {
 
         buffer.put_var_u32(self.gamerules.len() as u32);
         for rule in self.gamerules {
-            rule.encode(&mut buffer);
+            rule.serialize(&mut buffer);
         }
 
         buffer.put_u32(self.experiments.len() as u32);
@@ -367,6 +367,6 @@ impl Serialize for StartGame<'_> {
         buffer.put_u128(self.world_template_id);
         buffer.put_bool(self.client_side_generation);
 
-        Ok(buffer)
+        Ok(buffer.freeze())
     }
 }

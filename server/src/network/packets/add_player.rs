@@ -1,11 +1,11 @@
 use std::collections::HashMap;
-use bytes::{BytesMut, BufMut};
+use bytes::{BytesMut, BufMut, Bytes};
 use common::{Vector3f, Serialize, VResult, WriteExtensions};
 use uuid::Uuid;
 use crate::command::CommandPermissionLevel;
 use crate::network::packets::login::{DeviceOS, ItemStack, PermissionLevel};
 
-use super::{GameMode, GamePacket};
+use super::{GameMode, ConnectedPacket};
 
 /// Type of an entity link.
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
@@ -158,12 +158,12 @@ pub struct AddPlayer<'a> {
     pub device_os: DeviceOS
 }
 
-impl GamePacket for AddPlayer<'_> {
+impl ConnectedPacket for AddPlayer<'_> {
     const ID: u32 = 0x0c;
 }
 
 impl Serialize for AddPlayer<'_> {
-    fn serialize(&self) -> VResult<BytesMut> {
+    fn serialize(&self) -> VResult<Bytes> {
         let mut buffer = BytesMut::new();
 
         buffer.put_uuid(&self.uuid);
@@ -189,6 +189,6 @@ impl Serialize for AddPlayer<'_> {
         buffer.put_string(self.device_id);
         buffer.put_i32_le(self.device_os as i32);
 
-        Ok(buffer)
+        Ok(buffer.freeze())
     }
 }

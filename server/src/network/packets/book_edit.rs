@@ -1,6 +1,6 @@
-use bytes::{Buf, BufMut, BytesMut};
+use bytes::{Buf, BufMut, BytesMut, Bytes};
 use common::{bail, Deserialize, Serialize, ReadExtensions, VError, VResult};
-use crate::network::packets::GamePacket;
+use crate::network::packets::ConnectedPacket;
 
 /// Sent when the client makes changes to a book.
 /// The client sends this packet every time the client briefly stops typing,
@@ -49,12 +49,12 @@ pub enum BookEditAction {
     }
 }
 
-impl GamePacket for BookEdit {
+impl ConnectedPacket for BookEdit {
     const ID: u32 = 0x61;
 }
 
 impl Deserialize for BookEdit {
-    fn deserialize(mut buffer: BytesMut) -> VResult<Self>{
+    fn deserialize(mut buffer: Bytes) -> VResult<Self>{
         let action = buffer.get_u8();;
         let inventory_slot = buffer.get_u8();
 

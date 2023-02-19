@@ -1,6 +1,7 @@
+use bytes::Bytes;
 use bytes::{Buf, BytesMut};
 
-use crate::network::packets::GamePacket;
+use crate::network::packets::ConnectedPacket;
 use common::bail;
 use common::Deserialize;
 use common::ReadExtensions;
@@ -47,13 +48,13 @@ pub struct ResourcePackClientResponse {
     pub pack_ids: Vec<String>,
 }
 
-impl GamePacket for ResourcePackClientResponse {
+impl ConnectedPacket for ResourcePackClientResponse {
     /// Unique ID of this packet.
     const ID: u32 = 0x08;
 }
 
 impl Deserialize for ResourcePackClientResponse {
-    fn deserialize(mut buffer: BytesMut) -> VResult<Self> {
+    fn deserialize(mut buffer: Bytes) -> VResult<Self> {
         let status = ResourcePackStatus::try_from(buffer.get_u8())?;
         let length = buffer.get_u16();
 

@@ -1,6 +1,6 @@
-use bytes::BytesMut;
+use bytes::{BytesMut, Bytes};
 use common::{Deserialize, ReadExtensions, VResult};
-use crate::network::packets::GamePacket;
+use crate::network::packets::ConnectedPacket;
 
 /// Sent by the client when changing settings that require the execution of commands.
 /// For instance, when the showcoordinates game rule is changed.
@@ -12,12 +12,12 @@ pub struct SettingsCommand {
     pub suppress_output: bool
 }
 
-impl GamePacket for SettingsCommand {
+impl ConnectedPacket for SettingsCommand {
     const ID: u32 = 0x8c;
 }
 
 impl Deserialize for SettingsCommand {
-    fn deserialize(mut buffer: BytesMut) -> VResult<Self> {
+    fn deserialize(mut buffer: Bytes) -> VResult<Self> {
         let command = buffer.get_string()?;
         let suppress_output = buffer.get_bool();
 

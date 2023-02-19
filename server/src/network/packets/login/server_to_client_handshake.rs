@@ -1,6 +1,8 @@
+use bytes::Bytes;
 use bytes::{BufMut, BytesMut};
+use common::size_of_var;
 
-use crate::network::packets::GamePacket;
+use crate::network::packets::ConnectedPacket;
 use common::Serialize;
 use common::VResult;
 use common::WriteExtensions;
@@ -14,16 +16,17 @@ pub struct ServerToClientHandshake<'a> {
     pub jwt: &'a str,
 }
 
-impl GamePacket for ServerToClientHandshake<'_> {
+impl ConnectedPacket for ServerToClientHandshake<'_> {
     const ID: u32 = 0x03;
 }
 
 impl Serialize for ServerToClientHandshake<'_> {
-    fn serialize(&self) -> VResult<BytesMut> {
-        let mut buffer = BytesMut::with_capacity(2 + self.jwt.len());
+    fn serialize(&self) -> VResult<Bytes> {
+        let packet_size = size_of_var(self.jwt.len() as u32) + self.jwt.len();
+        let mut buffer = BytesMut::with_capacity(packet_size);
 
         buffer.put_string(self.jwt);
 
-        Ok(buffer)
+        Ok(buffer.freeze())
     }
 }

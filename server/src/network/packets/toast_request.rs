@@ -1,9 +1,9 @@
-use bytes::{BufMut, BytesMut};
+use bytes::{BufMut, BytesMut, Bytes};
 use common::{VResult, WriteExtensions, size_of_var};
 
 use common::Serialize;
 
-use super::GamePacket;
+use super::ConnectedPacket;
 
 /// Displays a notification at the top of the screen.
 #[derive(Debug, Clone)]
@@ -14,12 +14,12 @@ pub struct ToastRequest<'a> {
     pub message: &'a str,
 }
 
-impl GamePacket for ToastRequest<'_> {
+impl ConnectedPacket for ToastRequest<'_> {
     const ID: u32 = 0xba;
 }
 
 impl Serialize for ToastRequest<'_> {
-    fn serialize(&self) -> VResult<BytesMut> {
+    fn serialize(&self) -> VResult<Bytes> {
         let packet_size = 
             size_of_var(self.title.len() as u32) + self.title.len() +
             size_of_var(self.message.len() as u32) + self.message.len();
@@ -29,6 +29,6 @@ impl Serialize for ToastRequest<'_> {
         buffer.put_string(self.title);
         buffer.put_string(self.message);
 
-        Ok(buffer)
+        Ok(buffer.freeze())
     }
 }

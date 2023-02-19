@@ -1,11 +1,11 @@
 use std::time::Duration;
 
-use bytes::BytesMut;
+use bytes::{BytesMut, Bytes};
 use common::{VResult, WriteExtensions};
 
 use common::Serialize;
 
-use super::GamePacket;
+use super::ConnectedPacket;
 
 /// Title action type.
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
@@ -41,12 +41,12 @@ pub struct SetTitle<'a> {
     pub platform_online_id: &'a str,
 }
 
-impl GamePacket for SetTitle<'_> {
+impl ConnectedPacket for SetTitle<'_> {
     const ID: u32 = 0x58;
 }
 
 impl Serialize for SetTitle<'_> {
-    fn serialize(&self) -> VResult<BytesMut> {
+    fn serialize(&self) -> VResult<Bytes> {
         let mut buffer = BytesMut::new();
 
         buffer.put_var_i32(self.action as i32);
@@ -57,6 +57,6 @@ impl Serialize for SetTitle<'_> {
         buffer.put_string(self.xuid);
         buffer.put_string(self.platform_online_id);
 
-        Ok(buffer)
+        Ok(buffer.freeze())
     }
 }

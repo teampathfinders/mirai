@@ -1,10 +1,10 @@
-use bytes::{Buf, BytesMut};
+use bytes::{Buf, BytesMut, Bytes};
 use uuid::Uuid;
 use common::{bail, ReadExtensions, VError, VResult, WriteExtensions};
 
 use common::Deserialize;
 
-use crate::network::packets::GamePacket;
+use crate::network::packets::ConnectedPacket;
 
 /// Command origin.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -69,12 +69,12 @@ pub struct CommandRequest {
     pub request_id: String,
 }
 
-impl GamePacket for CommandRequest {
+impl ConnectedPacket for CommandRequest {
     const ID: u32 = 0x4d;
 }
 
 impl Deserialize for CommandRequest {
-    fn deserialize(mut buffer: BytesMut) -> VResult<Self> {
+    fn deserialize(mut buffer: Bytes) -> VResult<Self> {
         let command = buffer.get_string()?;
         let origin = CommandOriginType::try_from(buffer.get_var_u32()?)?;
         buffer.advance(16);

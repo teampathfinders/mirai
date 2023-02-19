@@ -1,9 +1,9 @@
-use bytes::{BufMut, BytesMut};
+use bytes::{BufMut, BytesMut, Bytes};
 use common::{BlockPosition, VResult, WriteExtensions, size_of_var};
 
 use common::Serialize;
 
-use super::GamePacket;
+use super::ConnectedPacket;
 
 #[derive(Debug, Clone)]
 pub struct NetworkChunkPublisherUpdate {
@@ -11,12 +11,12 @@ pub struct NetworkChunkPublisherUpdate {
     pub radius: u32,
 }
 
-impl GamePacket for NetworkChunkPublisherUpdate {
+impl ConnectedPacket for NetworkChunkPublisherUpdate {
     const ID: u32 = 0x79;
 }
 
 impl Serialize for NetworkChunkPublisherUpdate {
-    fn serialize(&self) -> VResult<BytesMut> {
+    fn serialize(&self) -> VResult<Bytes> {
         let packet_size =
             size_of_var(self.position.x) +
             size_of_var(self.position.y) +
@@ -31,6 +31,6 @@ impl Serialize for NetworkChunkPublisherUpdate {
         // No saved chunks.
         buffer.put_u32(0);
 
-        Ok(buffer)
+        Ok(buffer.freeze())
     }
 }

@@ -1,9 +1,9 @@
-use bytes::{Buf, BytesMut};
+use bytes::{Buf, BytesMut, Bytes};
 use common::{bail, ReadExtensions, VError, VResult};
 
 use common::Deserialize;
 
-use super::GamePacket;
+use super::ConnectedPacket;
 
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub enum Ability {
@@ -34,12 +34,12 @@ pub struct RequestAbility {
     pub ability: Ability,
 }
 
-impl GamePacket for RequestAbility {
+impl ConnectedPacket for RequestAbility {
     const ID: u32 = 0xb8;
 }
 
 impl Deserialize for RequestAbility {
-    fn deserialize(mut buffer: BytesMut) -> VResult<Self> {
+    fn deserialize(mut buffer: Bytes) -> VResult<Self> {
         let ability_type = buffer.get_var_i32()?;
         let value_type = buffer.get_u8();
 

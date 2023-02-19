@@ -6,10 +6,11 @@ use std::sync::atomic::{
 use std::sync::{Arc, Weak};
 use std::time::{Duration, Instant};
 
-use bytes::BytesMut;
+use aes::cipher::typenum::NonZero;
+use bytes::{Bytes, BytesMut};
 use parking_lot::{Mutex, RwLock, RwLockReadGuard};
 use tokio::net::UdpSocket;
-use tokio::sync::OnceCell;
+use tokio::sync::{broadcast, mpsc, OnceCell};
 use tokio_util::sync::CancellationToken;
 use uuid::Uuid;
 
@@ -18,14 +19,15 @@ use crate::instance_manager::InstanceManager;
 use crate::level_manager::LevelManager;
 use crate::network::packets::login::{DeviceOS, Disconnect};
 use crate::network::packets::{
-    GamePacket, MessageType, PlayerListRemove, TextMessage,
+    BroadcastPacket, ConnectedPacket, MessageType, Packet, PlayerListRemove,
+    TextMessage,
 };
 use crate::network::session::compound_collector::CompoundCollector;
 use crate::network::session::order_channel::OrderChannel;
 use crate::network::session::recovery_queue::RecoveryQueue;
 use crate::network::session::send_queue::SendQueue;
 use crate::network::Skin;
-use common::{bail, AsyncDeque, Serialize};
+use common::{bail, Serialize};
 use common::{error, VResult};
 
 use super::SessionManager;
@@ -67,11 +69,12 @@ pub struct Session {
     pub initialized: AtomicBool,
     /// Runtime ID.
     pub runtime_id: u64,
-    /// Session list, used to access broadcasting.
-    /// This is a weak pointer because of the cyclic reference.
-    /// In principle, the tracker should always exist if there are sessions remaining.
-    pub session_manager: Arc<SessionManager>,
     pub level_manager: Arc<LevelManager>,
+    /// Sends packets into the broadcasting channel.
+    pub broadcast: broadcast::Sender<BroadcastPacket>,
+
+    /// Indicates whether this session is active.
+    pub active: CancellationToken,
 
     /// Current tick of this session, this is increased by one every time the session
     /// processes packets.
@@ -88,8 +91,6 @@ pub struct Session {
     pub guid: u64,
     /// Timestamp of when the last packet was received from this client.
     pub last_update: RwLock<Instant>,
-    /// Indicates whether this session is active.
-    pub active: CancellationToken,
     /// Batch number last assigned by the server.
     pub batch_sequence_number: AtomicU32,
     /// Sequence index last assigned by the server.
@@ -111,8 +112,6 @@ pub struct Session {
     pub confirmed_packets: Mutex<Vec<u32>>,
     /// Whether compression has been configured for this session.
     pub compression_enabled: AtomicBool,
-    /// Keeps track of all unprocessed received packets.
-    pub receive_queue: AsyncDeque<BytesMut>,
     /// Queue that stores packets in case they need to be recovered due to packet loss.
     pub recovery_queue: RecoveryQueue,
 }
@@ -120,7 +119,8 @@ pub struct Session {
 impl Session {
     /// Creates a new session.
     pub fn new(
-        session_manager: Arc<SessionManager>,
+        broadcast: broadcast::Sender<BroadcastPacket>,
+        mut receiver: mpsc::Receiver<Bytes>,
         level_manager: Arc<LevelManager>,
         ipv4_socket: Arc<UdpSocket>,
         address: SocketAddr,
@@ -135,7 +135,7 @@ impl Session {
             cache_support: OnceCell::new(),
             initialized: AtomicBool::new(false),
             runtime_id: RUNTIME_ID_COUNTER.fetch_add(1, Ordering::SeqCst),
-            session_manager,
+            broadcast,
             level_manager,
 
             current_tick: AtomicU64::new(0),
@@ -154,7 +154,6 @@ impl Session {
             send_queue: Default::default(),
             confirmed_packets: Mutex::new(Vec::new()),
             compression_enabled: AtomicBool::new(false),
-            receive_queue: AsyncDeque::new(5),
             address,
             recovery_queue: Default::default(),
         });
@@ -165,6 +164,7 @@ impl Session {
             tokio::spawn(async move {
                 let mut interval =
                     tokio::time::interval(INTERNAL_TICK_INTERVAL);
+
                 while !session.active.is_cancelled() {
                     match session.tick().await {
                         Ok(_) => (),
@@ -199,13 +199,26 @@ impl Session {
         {
             let session = session.clone();
             tokio::spawn(async move {
-                let mut interval = tokio::time::interval(TICK_INTERVAL);
+                let mut broadcast_recv = session.broadcast.subscribe();
                 while !session.active.is_cancelled() {
-                    match session.handle_raw_packet().await {
-                        Ok(_) => (),
-                        Err(e) => tracing::error!("{e}"),
-                    }
-                    interval.tick().await;
+                    tokio::select! {
+                        pk = receiver.recv() => {
+                            if let Some(pk) = pk {
+                                match session.process_raw_packet(pk).await {
+                                    Ok(_) => (),
+                                    Err(e) => tracing::error!("{e}"),
+                                }
+                            }
+                        },
+                        pk = broadcast_recv.recv() => {
+                            if let Ok(pk) = pk {
+                                match session.process_broadcast(pk) {
+                                    Ok(_) => (),
+                                    Err(e) => tracing::error!("{e}"),
+                                }
+                            }
+                        }
+                    };
                 }
             });
         }
@@ -314,26 +327,25 @@ impl Session {
     }
 
     /// Sends a packet to all initialised sessions including self.
-    pub fn broadcast<P: GamePacket + Serialize + Clone>(
+    pub fn broadcast<P: ConnectedPacket + Serialize + Clone>(
         &self,
-        packet: P,
+        pk: P,
     ) -> VResult<()> {
-        // Upgrade weak pointer to use it.
-        // let tracker = self.tracker
-        //     .upgrade()
-        //     .ok_or_else(|| error!(NotInitialized, "Session attempted to use tracker that does not exist anymore. This is definitely a bug"))?;
-
-        self.session_manager.broadcast(packet);
+        self.broadcast.send(BroadcastPacket::new(pk, None)?)?;
         Ok(())
     }
 
     /// Sends a packet to all initialised sessions other than self.
-    pub fn broadcast_others<P: GamePacket + Serialize + Clone>(
+    pub fn broadcast_others<P: ConnectedPacket + Serialize + Clone>(
         &self,
-        packet: P,
+        pk: P,
     ) -> VResult<()> {
-        self.session_manager
-            .broadcast_except(packet, self.get_xuid()?);
+        self.broadcast.send(
+            BroadcastPacket::new(pk, Some(
+                NonZeroU64::new(self.get_xuid()?)
+                    .ok_or_else(|| error!(NotInitialized, "XUID was 0"))?,
+            ))?)?;
+
         Ok(())
     }
 
@@ -358,6 +370,11 @@ impl Session {
         !self.active.is_cancelled()
     }
 
+    #[inline]
+    pub async fn cancelled(&self) {
+        self.active.cancelled().await;
+    }
+
     /// Performs tasks not related to packet processing
     async fn tick(self: &Arc<Self>) -> VResult<()> {
         let current_tick = self.current_tick.fetch_add(1, Ordering::SeqCst);
@@ -371,12 +388,5 @@ impl Session {
 
         self.flush().await?;
         Ok(())
-    }
-
-    /// Called by the [`SessionTracker`](super::tracker::SessionTracker) to forward packets from the network service to
-    /// the session corresponding to the client.
-    #[inline]
-    pub fn on_packet_received(self: &Arc<Self>, buffer: BytesMut) {
-        self.receive_queue.push(buffer);
     }
 }

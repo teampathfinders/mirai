@@ -3,7 +3,7 @@ use std::{
     os::raw::{c_char, c_int},
 };
 
-use bytes::BytesMut;
+use bytes::{Bytes, BytesMut};
 use common::{error, VError, VResult};
 
 use crate::ffi;
@@ -35,7 +35,7 @@ impl ChunkDatabase {
 
     /// Loads the value of the given key.
     /// This function requires a raw key, i.e. the key must have been serialised already.
-    pub fn get_raw_key<K: AsRef<[u8]>>(&self, key: K) -> VResult<BytesMut> {
+    pub fn get_raw_key<K: AsRef<[u8]>>(&self, key: K) -> VResult<Bytes> {
         let key = key.as_ref();
         let result = unsafe {
             // SAFETY: This function is guaranteed to not modify any arguments.
@@ -57,7 +57,7 @@ impl ChunkDatabase {
                 )
             };
 
-            let buffer = BytesMut::from(data);
+            let buffer = Bytes::from(data);
 
             unsafe {
                 // SAFETY: Data is safe to deallocate because BytesMut copies the data.

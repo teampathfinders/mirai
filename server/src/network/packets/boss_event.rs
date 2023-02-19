@@ -1,6 +1,6 @@
-use bytes::{BufMut, BytesMut};
+use bytes::{BufMut, BytesMut, Bytes};
 use common::{Serialize, VResult, WriteExtensions};
-use crate::network::packets::GamePacket;
+use crate::network::packets::ConnectedPacket;
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum BossEventColor {
@@ -49,12 +49,12 @@ pub struct BossEvent<'a> {
     pub event: BossEventType<'a>
 }
 
-impl GamePacket for BossEvent<'_> {
+impl ConnectedPacket for BossEvent<'_> {
     const ID: u32 = 0x4a;
 }
 
 impl Serialize for BossEvent<'_> {
-    fn serialize(&self) -> VResult<BytesMut> {
+    fn serialize(&self) -> VResult<Bytes> {
         let mut buffer = BytesMut::new();
 
         buffer.put_var_i64(self.boss_unique_id);
@@ -120,6 +120,6 @@ impl Serialize for BossEvent<'_> {
             }
         }
 
-        Ok(buffer)
+        Ok(buffer.freeze())
     }
 }

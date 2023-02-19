@@ -1,4 +1,4 @@
-use bytes::{BufMut, BytesMut};
+use bytes::{BufMut, Bytes, BytesMut};
 
 use common::{size_of_var, VResult};
 use common::{ReadExtensions, WriteExtensions};
@@ -17,7 +17,7 @@ pub struct Header {
 
 impl Header {
     /// Decodes the header.
-    pub fn decode(buffer: &mut BytesMut) -> VResult<Self> {
+    pub fn deserialize(buffer: &mut Bytes) -> VResult<Self> {
         let value = buffer.get_var_u32()?;
 
         let id = value & 0x3ff;
@@ -28,14 +28,13 @@ impl Header {
     }
 
     /// Encodes the header.
-    pub fn encode(&self) -> BytesMut {
+    pub fn serialize(&self) -> Bytes {
         let value = self.id
             | ((self.sender_subclient as u32) << 10)
             | ((self.target_subclient as u32) << 12);
 
         let mut buffer = BytesMut::with_capacity(size_of_var(value));
         buffer.put_var_u32(value);
-
-        buffer
+        buffer.freeze()
     }
 }

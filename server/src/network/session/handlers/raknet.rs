@@ -1,4 +1,4 @@
-use bytes::BytesMut;
+use bytes::{Bytes, BytesMut};
 
 use crate::network::packets::login::{OnlinePing, OnlinePong};
 use crate::network::raknet::packets::ConnectionRequest;
@@ -14,32 +14,27 @@ use common::{Deserialize, Serialize};
 
 impl Session {
     /// Handles a [`ConnectionRequest`] packet.
-    pub fn handle_connection_request(&self, task: BytesMut) -> VResult<()> {
-        let request = ConnectionRequest::deserialize(task)?;
-        let response = ConnectionRequestAccepted {
+    pub fn handle_connection_request(&self, pk: Bytes) -> VResult<()> {
+        let request = ConnectionRequest::deserialize(pk)?;
+        let reply = ConnectionRequestAccepted {
             client_address: self.address,
             request_time: request.time,
         }
         .serialize()?;
 
-        self.send_raw_buffer(response);
-        tracing::trace!("Accepted connection request");
-
+        self.send_raw_buffer(reply);
         Ok(())
     }
 
     /// Handles a [`NewIncomingConnection`] packet.
-    pub fn handle_new_incoming_connection(
-        &self,
-        task: BytesMut,
-    ) -> VResult<()> {
-        let request = NewIncomingConnection::deserialize(task)?;
+    pub fn handle_new_incoming_connection(&self, pk: Bytes) -> VResult<()> {
+        let request = NewIncomingConnection::deserialize(pk)?;
         Ok(())
     }
 
     /// Handles an [`OnlinePing`] packet.
-    pub fn handle_online_ping(&self, task: BytesMut) -> VResult<()> {
-        let ping = OnlinePing::deserialize(task)?;
+    pub fn handle_online_ping(&self, pk: Bytes) -> VResult<()> {
+        let ping = OnlinePing::deserialize(pk)?;
         let pong = OnlinePong {
             ping_time: ping.time,
             pong_time: ping.time,

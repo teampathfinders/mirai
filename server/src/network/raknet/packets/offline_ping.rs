@@ -1,3 +1,4 @@
+use bytes::Bytes;
 use bytes::{Buf, BytesMut};
 
 use common::nvassert;
@@ -11,12 +12,12 @@ use common::VResult;
 pub struct OfflinePing {
     /// Time when this ping was sent.
     /// Used to measure server latency.
-    pub time: i64,
+    pub time: u64,
     /// GUID of the client.
     ///
     /// Unknown what this is used for.
     /// It's randomised each time Minecraft is restarted and therefore can't be used to identify players.
-    pub client_guid: i64,
+    pub client_guid: u64,
 }
 
 impl OfflinePing {
@@ -25,12 +26,12 @@ impl OfflinePing {
 }
 
 impl Deserialize for OfflinePing {
-    fn deserialize(mut buffer: BytesMut) -> VResult<Self> {
+    fn deserialize(mut buffer: Bytes) -> VResult<Self> {
         nvassert!(buffer.get_u8() == Self::ID);
 
-        let time = buffer.get_i64();
+        let time = buffer.get_u64();
         buffer.advance(16); // Skip offline message data
-        let client_guid = buffer.get_i64();
+        let client_guid = buffer.get_u64();
 
         Ok(Self { time, client_guid })
     }

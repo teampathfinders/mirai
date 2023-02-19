@@ -1,11 +1,11 @@
-use bytes::{Buf, BufMut, BytesMut};
+use bytes::{Buf, BufMut, BytesMut, Bytes};
 use common::{
     bail, ReadExtensions, VError, VResult, Vector3f, WriteExtensions, size_of_var,
 };
 
 use common::{Deserialize, Serialize};
 
-use super::GamePacket;
+use super::ConnectedPacket;
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum MovementMode {
@@ -66,12 +66,12 @@ pub struct MovePlayer {
     pub tick: u64,
 }
 
-impl GamePacket for MovePlayer {
+impl ConnectedPacket for MovePlayer {
     const ID: u32 = 0x13;
 }
 
 impl Serialize for MovePlayer {
-    fn serialize(&self) -> VResult<BytesMut> {
+    fn serialize(&self) -> VResult<Bytes> {
         let packet_size = 
             size_of_var(self.runtime_id) +
             3 * 4 + 3 * 4 + 1 + 1 +
@@ -99,12 +99,12 @@ impl Serialize for MovePlayer {
 
         buffer.put_var_u64(self.tick);
 
-        Ok(buffer)
+        Ok(buffer.freeze())
     }
 }
 
 impl Deserialize for MovePlayer {
-    fn deserialize(mut buffer: BytesMut) -> VResult<Self> {
+    fn deserialize(mut buffer: Bytes) -> VResult<Self> {
         let runtime_id = buffer.get_var_u64()?;
         let position = buffer.get_vec3f();
         let rotation = buffer.get_vec3f();

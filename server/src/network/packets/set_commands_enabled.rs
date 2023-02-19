@@ -1,9 +1,9 @@
-use bytes::BytesMut;
+use bytes::{BytesMut, Bytes};
 use common::{VResult, WriteExtensions};
 
 use common::Serialize;
 
-use super::GamePacket;
+use super::ConnectedPacket;
 
 /// Enables or disables the usage of commands.
 ///
@@ -14,16 +14,16 @@ pub struct SetCommandsEnabled {
     pub enabled: bool,
 }
 
-impl GamePacket for SetCommandsEnabled {
+impl ConnectedPacket for SetCommandsEnabled {
     const ID: u32 = 0x3b;
 }
 
 impl Serialize for SetCommandsEnabled {
-    fn serialize(&self) -> VResult<BytesMut> {
+    fn serialize(&self) -> VResult<Bytes> {
         let mut buffer = BytesMut::with_capacity(1);
 
         buffer.put_bool(self.enabled);
 
-        Ok(buffer)
+        Ok(buffer.freeze())
     }
 }

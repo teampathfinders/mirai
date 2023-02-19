@@ -1,3 +1,4 @@
+use bytes::Bytes;
 use bytes::{BufMut, BytesMut};
 
 use crate::network::raknet::{OFFLINE_MESSAGE_DATA, RAKNET_VERSION};
@@ -13,7 +14,7 @@ use common::VResult;
 pub struct IncompatibleProtocol {
     /// Randomly generated GUID of the server.
     /// Corresponds to [`ServerInstance::guid`](crate::ServerInstance::guid).
-    pub server_guid: i64,
+    pub server_guid: u64,
 }
 
 impl IncompatibleProtocol {
@@ -22,14 +23,14 @@ impl IncompatibleProtocol {
 }
 
 impl Serialize for IncompatibleProtocol {
-    fn serialize(&self) -> VResult<BytesMut> {
+    fn serialize(&self) -> VResult<Bytes> {
         let mut buffer = BytesMut::with_capacity(1 + 1 + 16 + 8);
 
         buffer.put_u8(Self::ID);
         buffer.put_u8(RAKNET_VERSION);
         buffer.put(OFFLINE_MESSAGE_DATA);
-        buffer.put_i64(self.server_guid);
+        buffer.put_u64(self.server_guid);
 
-        Ok(buffer)
+        Ok(buffer.freeze())
     }
 }

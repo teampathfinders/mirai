@@ -1,9 +1,9 @@
-use bytes::{BufMut, BytesMut};
+use bytes::{BufMut, BytesMut, Bytes};
 use common::{VResult, Vector2i, WriteExtensions};
 
 use common::Serialize;
 
-use super::GamePacket;
+use super::ConnectedPacket;
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum SubChunkRequestMode {
@@ -33,12 +33,12 @@ pub struct LevelChunk {
     pub raw_payload: BytesMut,
 }
 
-impl GamePacket for LevelChunk {
+impl ConnectedPacket for LevelChunk {
     const ID: u32 = 0x3a;
 }
 
 impl Serialize for LevelChunk {
-    fn serialize(&self) -> VResult<BytesMut> {
+    fn serialize(&self) -> VResult<Bytes> {
         let mut buffer = BytesMut::new();
 
         buffer.put_vec2i(&self.position);
@@ -65,6 +65,6 @@ impl Serialize for LevelChunk {
 
         buffer.put(self.raw_payload.as_ref());
 
-        Ok(buffer)
+        Ok(buffer.freeze())
     }
 }

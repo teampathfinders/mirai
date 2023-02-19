@@ -1,9 +1,9 @@
-use bytes::{BufMut, BytesMut};
+use bytes::{BufMut, BytesMut, Bytes};
 use common::{VResult, WriteExtensions, size_of_var};
 
 use common::Serialize;
 
-use super::GamePacket;
+use super::ConnectedPacket;
 
 /// Operation to perform with the effect.
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
@@ -70,12 +70,12 @@ pub struct MobEffectUpdate {
     pub duration: i32,
 }
 
-impl GamePacket for MobEffectUpdate {
+impl ConnectedPacket for MobEffectUpdate {
     const ID: u32 = 0x1c;
 }
 
 impl Serialize for MobEffectUpdate {
-    fn serialize(&self) -> VResult<BytesMut> {
+    fn serialize(&self) -> VResult<Bytes> {
         let packet_size = 
             size_of_var(self.runtime_id) + 1 +
             size_of_var(self.effect_kind as i32) +
@@ -91,6 +91,6 @@ impl Serialize for MobEffectUpdate {
         buffer.put_bool(self.particles);
         buffer.put_var_i32(self.duration);
 
-        Ok(buffer)
+        Ok(buffer.freeze())
     }
 }

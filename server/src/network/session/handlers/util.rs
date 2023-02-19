@@ -2,7 +2,7 @@ use std::collections::HashMap;
 use std::net::{Ipv4Addr, SocketAddr, SocketAddrV4};
 use std::time::Duration;
 
-use bytes::BytesMut;
+use bytes::{Bytes, BytesMut};
 use common::{
     bail, BlockPosition, Deserialize, VResult, Vector3f, Vector3i, Vector4f,
 };
@@ -30,15 +30,15 @@ use crate::network::{
 };
 
 impl Session {
-    pub fn handle_settings_command(&self, packet: BytesMut) -> VResult<()> {
-        let request = SettingsCommand::deserialize(packet)?;
+    pub fn handle_settings_command(&self, pk: Bytes) -> VResult<()> {
+        let request = SettingsCommand::deserialize(pk)?;
         tracing::info!("{request:?}");
 
         Ok(())
     }
 
-    pub fn handle_text_message(&self, packet: BytesMut) -> VResult<()> {
-        let request = TextMessage::deserialize(packet)?;
+    pub fn handle_text_message(&self, pk: Bytes) -> VResult<()> {
+        let request = TextMessage::deserialize(pk)?;
         if request.message_type != MessageType::Chat {
             bail!(BadPacket, "Client is only allowed to send chat messages, received {:?} instead", request.message_type)
         }
@@ -48,29 +48,28 @@ impl Session {
         self.broadcast(request)
     }
 
-    pub fn handle_skin_update(&self, packet: BytesMut) -> VResult<()> {
-        let request = UpdateSkin::deserialize(packet)?;
+    pub fn handle_skin_update(&self, pk: Bytes) -> VResult<()> {
+        let request = UpdateSkin::deserialize(pk)?;
         self.broadcast(request)
     }
 
-    pub fn handle_ability_request(&self, packet: BytesMut) -> VResult<()> {
-        let request = RequestAbility::deserialize(packet)?;
+    pub fn handle_ability_request(&self, pk: Bytes) -> VResult<()> {
+        let request = RequestAbility::deserialize(pk)?;
         tracing::info!("{request:?}");
 
         Ok(())
     }
 
-    pub fn handle_animation(&self, packet: BytesMut) -> VResult<()> {
-        let request = Animate::deserialize(packet)?;
+    pub fn handle_animation(&self, pk: Bytes) -> VResult<()> {
+        let request = Animate::deserialize(pk)?;
         tracing::info!("{request:?}");
 
         Ok(())
     }
 
-    pub fn handle_command_request(&self, packet: BytesMut) -> VResult<()> {
-        let request = CommandRequest::deserialize(packet)?;
-        tracing::info!("{request:?}");
-
+    pub fn handle_command_request(&self, pk: Bytes) -> VResult<()> {
+        let request = CommandRequest::deserialize(pk)?;
+        
         let command_list = self.level_manager.get_commands();
         let result = ParsedCommand::parse(command_list, &request.command);
 

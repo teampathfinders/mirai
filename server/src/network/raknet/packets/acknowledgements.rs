@@ -1,5 +1,6 @@
 use std::ops::Range;
 
+use bytes::Bytes;
 use bytes::{Buf, BufMut, BytesMut};
 
 use common::nvassert;
@@ -17,7 +18,7 @@ pub enum AckRecord {
 }
 
 /// Encodes a list of acknowledgement records.
-fn encode_records(mut buffer: BytesMut, records: &[AckRecord]) -> BytesMut {
+fn encode_records(mut buffer: BytesMut, records: &[AckRecord]) -> Bytes {
     buffer.put_i16(records.len() as i16);
     for record in records {
         match record {
@@ -33,11 +34,11 @@ fn encode_records(mut buffer: BytesMut, records: &[AckRecord]) -> BytesMut {
         }
     }
 
-    buffer
+    buffer.freeze()
 }
 
 /// Decodes a list of acknowledgement records.
-fn decode_records(mut buffer: BytesMut) -> Vec<AckRecord> {
+fn decode_records(mut buffer: Bytes) -> Vec<AckRecord> {
     let record_count = buffer.get_u16();
     let mut records = Vec::with_capacity(record_count as usize);
 
@@ -68,7 +69,7 @@ impl Ack {
 }
 
 impl Serialize for Ack {
-    fn serialize(&self) -> VResult<BytesMut> {
+    fn serialize(&self) -> VResult<Bytes> {
         let mut buffer = BytesMut::with_capacity(10);
         buffer.put_u8(Self::ID);
         Ok(encode_records(buffer, &self.records))
@@ -76,7 +77,7 @@ impl Serialize for Ack {
 }
 
 impl Deserialize for Ack {
-    fn deserialize(mut buffer: BytesMut) -> VResult<Self> {
+    fn deserialize(mut buffer: Bytes) -> VResult<Self> {
         nvassert!(buffer.get_u8() == Self::ID);
         let records = decode_records(buffer);
         Ok(Self { records })
@@ -96,7 +97,7 @@ impl Nak {
 }
 
 impl Serialize for Nak {
-    fn serialize(&self) -> VResult<BytesMut> {
+    fn serialize(&self) -> VResult<Bytes> {
         let mut buffer = BytesMut::with_capacity(10);
         buffer.put_u8(Self::ID);
         Ok(encode_records(buffer, &self.records))
@@ -104,7 +105,7 @@ impl Serialize for Nak {
 }
 
 impl Deserialize for Nak {
-    fn deserialize(mut buffer: BytesMut) -> VResult<Self> {
+    fn deserialize(mut buffer: Bytes) -> VResult<Self> {
         nvassert!(buffer.get_u8() == Self::ID);
         let records = decode_records(buffer);
         Ok(Self { records })

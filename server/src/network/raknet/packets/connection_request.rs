@@ -1,3 +1,4 @@
+use bytes::Bytes;
 use bytes::{Buf, BytesMut};
 
 use common::nvassert;
@@ -20,7 +21,7 @@ impl ConnectionRequest {
 }
 
 impl Deserialize for ConnectionRequest {
-    fn deserialize(mut buffer: BytesMut) -> VResult<Self> {
+    fn deserialize(mut buffer: Bytes) -> VResult<Self> {
         nvassert!(buffer.get_u8() == Self::ID);
 
         let guid = buffer.get_i64();

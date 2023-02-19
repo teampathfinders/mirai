@@ -1,6 +1,7 @@
+use bytes::Bytes;
 use bytes::{BufMut, BytesMut};
 
-use crate::network::packets::GamePacket;
+use crate::network::packets::ConnectedPacket;
 use common::Serialize;
 use common::VResult;
 use common::WriteExtensions;
@@ -50,12 +51,12 @@ pub struct ResourcePackStack<'a> {
     pub experiments_previously_toggled: bool,
 }
 
-impl GamePacket for ResourcePackStack<'_> {
+impl ConnectedPacket for ResourcePackStack<'_> {
     const ID: u32 = 0x07;
 }
 
 impl Serialize for ResourcePackStack<'_> {
-    fn serialize(&self) -> VResult<BytesMut> {
+    fn serialize(&self) -> VResult<Bytes> {
         let mut buffer = BytesMut::new();
 
         buffer.put_bool(self.forced_to_accept);
@@ -79,6 +80,6 @@ impl Serialize for ResourcePackStack<'_> {
 
         buffer.put_bool(self.experiments_previously_toggled);
 
-        Ok(buffer)
+        Ok(buffer.freeze())
     }
 }

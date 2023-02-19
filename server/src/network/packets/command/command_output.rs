@@ -1,7 +1,7 @@
-use bytes::{BufMut, BytesMut};
+use bytes::{BufMut, BytesMut, Bytes};
 use uuid::Uuid;
 use common::{Deserialize, Serialize, ReadExtensions, VResult, WriteExtensions};
-use crate::network::packets::{GamePacket};
+use crate::network::packets::{ConnectedPacket};
 
 use super::CommandOriginType;
 
@@ -30,12 +30,12 @@ pub struct CommandOutput<'a> {
     pub output: &'a [CommandOutputMessage<'a>]
 }
 
-impl GamePacket for CommandOutput<'_> {
+impl ConnectedPacket for CommandOutput<'_> {
     const ID: u32 = 0x4f;
 }
 
 impl Serialize for CommandOutput<'_> {
-    fn serialize(&self) -> VResult<BytesMut> {
+    fn serialize(&self) -> VResult<Bytes> {
         let mut buffer = BytesMut::new();
 
         buffer.put_var_u32(self.origin as u32);
@@ -67,6 +67,6 @@ impl Serialize for CommandOutput<'_> {
             unimplemented!();
         }
 
-        Ok(buffer)
+        Ok(buffer.freeze())
     }
 }

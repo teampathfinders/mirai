@@ -1,3 +1,4 @@
+use bytes::Bytes;
 use bytes::{BufMut, BytesMut};
 
 use common::Serialize;
@@ -18,13 +19,13 @@ impl OnlinePong {
 }
 
 impl Serialize for OnlinePong {
-    fn serialize(&self) -> VResult<BytesMut> {
+    fn serialize(&self) -> VResult<Bytes> {
         let mut buffer = BytesMut::with_capacity(1 + 8 + 8);
 
         buffer.put_u8(Self::ID);
         buffer.put_i64(self.ping_time);
         buffer.put_i64(self.pong_time);
 
-        Ok(buffer)
+        Ok(buffer.freeze())
     }
 }

@@ -2,12 +2,14 @@ use std::net::{Ipv4Addr, Ipv6Addr, SocketAddrV4};
 use std::sync::Arc;
 use std::time::{Duration, SystemTime};
 
-use bytes::BytesMut;
+use bytes::{Bytes, BytesMut};
 use parking_lot::RwLock;
 use rand::Rng;
 use tokio::net::UdpSocket;
 use tokio::signal;
-use tokio::sync::OnceCell;
+use tokio::sync::oneshot::Receiver;
+use tokio::sync::{mpsc, OnceCell};
+use tokio::task::JoinHandle;
 use tokio_util::sync::CancellationToken;
 
 use crate::command::{
@@ -27,10 +29,10 @@ use crate::network::raknet::packets::OpenConnectionReply1;
 use crate::network::raknet::packets::OpenConnectionReply2;
 use crate::network::raknet::packets::OpenConnectionRequest1;
 use crate::network::raknet::packets::OpenConnectionRequest2;
-use crate::network::raknet::RawPacket;
+use crate::network::raknet::BufPacket;
 use crate::network::raknet::RAKNET_VERSION;
 use crate::network::session::SessionManager;
-use common::AsyncDeque;
+use common::bail;
 use common::{error, VResult};
 use common::{Deserialize, Serialize};
 
@@ -47,44 +49,39 @@ const METADATA_REFRESH_INTERVAL: Duration = Duration::from_secs(2);
 /// Global instance that manages all data and services of the server.
 #[derive(Debug)]
 pub struct InstanceManager {
-    /// Randomised GUID, required by Minecraft
-    guid: i64,
-    /// String containing info displayed in the server tab.
-    metadata: RwLock<String>,
     /// IPv4 UDP socket
-    ipv4_socket: Arc<UdpSocket>,
-    /// Port the IPv4 service is hosted on.
-    ipv4_port: u16,
-    /// Queue for incoming packets.
-    inward_queue: Arc<AsyncDeque<RawPacket>>,
-    /// Queue for packets waiting to be sent.
-    outward_queue: Arc<AsyncDeque<RawPacket>>,
+    udp4_socket: Arc<UdpSocket>,
     /// Token indicating whether the server is still running.
     /// All services listen to this token to determine whether they should shut down.
     token: CancellationToken,
     /// Service that manages all player sessions.
     session_manager: Arc<SessionManager>,
     /// Manages the level.
-    level_manager: Arc<LevelManager>,
+    level_manager: RwLock<Option<Arc<LevelManager>>>,
+    /// Channel that the LevelManager sends a message to when it has fully shutdown.
+    /// This is to make sure that the world has been saved and safely shut down before shutting down the server.
+    level_notifier: Receiver<()>,
 }
 
 impl InstanceManager {
     /// Creates a new server.
-    pub async fn new() -> VResult<Arc<Self>> {
+    pub async fn run() -> VResult<()> {
         let (ipv4_port, _ipv6_port) = {
             let lock = SERVER_CONFIG.read();
             (lock.ipv4_port, lock.ipv6_port)
         };
 
-        let global_token = CancellationToken::new();
-        let ipv4_socket = Arc::new(
+        let token = CancellationToken::new();
+        let udp_socket = Arc::new(
             UdpSocket::bind(SocketAddrV4::new(IPV4_LOCAL_ADDR, ipv4_port))
                 .await?,
         );
 
         let session_manager =
-            Arc::new(SessionManager::new(global_token.clone()));
-        let level_manager = LevelManager::new(session_manager.clone());
+            Arc::new(SessionManager::new(token.clone()));
+
+        let (level_manager, level_notifier) =
+            LevelManager::new(session_manager.clone(), token.clone())?;
 
         level_manager.add_command(Command {
             name: "gamerule".to_owned(),
@@ -180,275 +177,219 @@ impl InstanceManager {
 
         session_manager.set_level_manager(Arc::downgrade(&level_manager))?;
 
-        let server = Arc::new(Self {
-            guid: rand::thread_rng().gen(),
-            metadata: RwLock::new(String::new()),
-
-            ipv4_socket,
-            ipv4_port,
-
-            inward_queue: Arc::new(AsyncDeque::new(10)),
-            outward_queue: Arc::new(AsyncDeque::new(10)),
-
-            session_manager,
-            level_manager,
-            token: global_token,
-        });
-
-        Ok(server)
-    }
-
-    /// Run the server.
-    pub async fn run(self: Arc<Self>) -> VResult<()> {
-        Self::register_shutdown_handler(self.clone());
-
+        /// UDP receiver job.
         let receiver_task = {
-            let controller = self.clone();
-            tokio::spawn(async move { controller.v4_receiver_task().await })
+            let udp_socket = udp_socket.clone();
+            let session_manager = session_manager.clone();
+            let token = token.clone();
+        
+            tokio::spawn(async move { 
+                Self::udp_recv_job(
+                    token, udp_socket, session_manager
+                ).await 
+            })
         };
-
-        let sender_task = {
-            let controller = self.clone();
-            tokio::spawn(async move { controller.v4_sender_task().await })
-        };
-
-        {
-            let controller = self.clone();
-            tokio::spawn(
-                async move { controller.metadata_refresh_task().await },
-            );
-        }
 
         tracing::info!("Server started");
-        // The metadata task is not important for shutdown, we don't have to wait for it.
-        let _ = tokio::join!(receiver_task, sender_task);
 
-        Ok(())
-    }
-
-    /// Shut down the server by cancelling the global token
-    pub async fn shutdown(&self) {
+        // Wait for either Ctrl-C or token cancel...
+        tokio::select! {
+            _ = token.cancelled() => (),
+            _ = tokio::signal::ctrl_c() => ()
+        };
+        
+        // then shut down all services.
         tracing::info!("Disconnecting all clients");
-        self.session_manager.kick_all("Server closed").await;
-        tracing::info!("Notifying services");
-        self.token.cancel();
-    }
+        session_manager.kick_all("Server closed").await;
 
-    /// Processes any packets that are sent before a session has been created.
-    async fn handle_offline_packet(
-        self: Arc<Self>,
-        packet: RawPacket,
-    ) -> VResult<()> {
-        let id = packet
-            .packet_id()
-            .ok_or_else(|| error!(BadPacket, "Packet is missing payload"))?;
+        tracing::info!("Waiting for services to shut down...");
+        token.cancel();
 
-        match id {
-            OfflinePing::ID => self.handle_unconnected_ping(packet).await?,
-            OpenConnectionRequest1::ID => {
-                self.handle_open_connection_request1(packet).await?
-            }
-            OpenConnectionRequest2::ID => {
-                self.handle_open_connection_request2(packet).await?
-            }
-            _ => unimplemented!("Packet type not implemented"),
-        }
+        drop(session_manager);
+        drop(level_manager);
+
+        tokio::join!(receiver_task, level_notifier);
 
         Ok(())
     }
 
-    /// Responds to the [`OfflinePing`] packet with [`OfflinePong`].
-    async fn handle_unconnected_ping(
-        self: Arc<Self>,
-        packet: RawPacket,
-    ) -> VResult<()> {
-        let ping = OfflinePing::deserialize(packet.buffer.clone())?;
-        let pong = OfflinePong {
-            time: ping.time,
-            server_guid: self.guid,
-            metadata: self.metadata(),
-        }
-        .serialize()?;
+    /// Generates a response to the [`OfflinePing`] packet with [`OfflinePong`].
+    #[inline]
+    fn process_unconnected_ping(
+        mut pk: BufPacket,
+        server_guid: u64,
+        metadata: &str,
+    ) -> VResult<BufPacket> {
+        let ping = OfflinePing::deserialize(pk.buf)?;
+        pk.buf = OfflinePong { time: ping.time, server_guid, metadata }
+            .serialize()?;
 
-        self.ipv4_socket
-            .send_to(pong.as_ref(), packet.address)
-            .await?;
-        Ok(())
+        Ok(pk)
     }
 
-    /// Responds to the [`OpenConnectionRequest1`] packet with [`OpenConnectionReply1`].
-    async fn handle_open_connection_request1(
-        self: Arc<Self>,
-        packet: RawPacket,
-    ) -> VResult<()> {
-        let request =
-            OpenConnectionRequest1::deserialize(packet.buffer.clone())?;
+    /// Generates a response to the [`OpenConnectionRequest1`] packet with [`OpenConnectionReply1`].
+    #[inline]
+    fn process_open_connection_request1(
+        mut pk: BufPacket,
+        server_guid: u64,
+    ) -> VResult<BufPacket> {
+        let request = OpenConnectionRequest1::deserialize(pk.buf)?;
+
         if request.protocol_version != RAKNET_VERSION {
-            let reply =
-                IncompatibleProtocol { server_guid: self.guid }.serialize()?;
-
-            self.ipv4_socket
-                .send_to(reply.as_ref(), packet.address)
-                .await?;
-            return Ok(());
+            pk.buf = IncompatibleProtocol { server_guid }.serialize()?;
+            return Ok(pk);
         }
 
-        let reply =
-            OpenConnectionReply1 { mtu: request.mtu, server_guid: self.guid }
-                .serialize()?;
+        pk.buf = OpenConnectionReply1 { mtu: request.mtu, server_guid }
+            .serialize()?;
 
-        self.ipv4_socket
-            .send_to(reply.as_ref(), packet.address)
-            .await?;
-        Ok(())
+        Ok(pk)
     }
 
     /// Responds to the [`OpenConnectionRequest2`] packet with [`OpenConnectionReply2`].
     /// This is also when a session is created for the client.
     /// From this point, all packets are encoded in a [`Frame`](crate::network::raknet::Frame).
+    #[inline]
+    fn process_open_connection_request2(
+        mut pk: BufPacket,
+        udp_socket: Arc<UdpSocket>,
+        sess_manager: Arc<SessionManager>,
+        server_guid: u64,
+    ) -> VResult<BufPacket> {
+        let request = OpenConnectionRequest2::deserialize(pk.buf)?;
 
-    async fn handle_open_connection_request2(
-        self: Arc<Self>,
-        packet: RawPacket,
-    ) -> VResult<()> {
-        let request =
-            OpenConnectionRequest2::deserialize(packet.buffer.clone())?;
-        let reply = OpenConnectionReply2 {
-            server_guid: self.guid,
+        pk.buf = OpenConnectionReply2 {
+            server_guid,
             mtu: request.mtu,
-            client_address: packet.address,
+            client_address: pk.addr,
         }
         .serialize()?;
 
-        self.session_manager.add_session(
-            self.ipv4_socket.clone(),
-            packet.address,
+        sess_manager.add_session(
+            udp_socket,
+            pk.addr,
             request.mtu,
             request.client_guid,
         );
-        self.ipv4_socket
-            .send_to(reply.as_ref(), packet.address)
-            .await?;
 
-        Ok(())
+        Ok(pk)
     }
 
     /// Receives packets from IPv4 clients and adds them to the receive queue
-    async fn v4_receiver_task(self: Arc<Self>) {
-        let mut receive_buffer = [0u8; RECV_BUF_SIZE];
+    async fn udp_recv_job(
+        token: CancellationToken,
+        udp_socket: Arc<UdpSocket>,
+        sess_manager: Arc<SessionManager>
+    ) {
+        let server_guid = rand::thread_rng().gen();
+        let mut metadata = Self::refresh_metadata(
+            "description", server_guid,
+            sess_manager.session_count(), sess_manager.max_session_count()
+        );
+
+        let mut recv_buf = [0u8; RECV_BUF_SIZE];
 
         loop {
-            // Wait on both the cancellation token and socket at the same time.
-            // The token will immediately take over and stop the task when the server is shutting down.
             let (n, address) = tokio::select! {
-                result = self.ipv4_socket.recv_from(&mut receive_buffer) => {
-                     match result {
+                r = udp_socket.recv_from(&mut recv_buf) => {
+                    match r {
                         Ok(r) => r,
                         Err(e) => {
-                            tracing::error!("Could not receive packet: {e:?}");
-                            continue;
+                            tracing::error!("UdpSocket recv_from failed: {e}");
+                            continue
                         }
                     }
                 },
-                _ = self.token.cancelled() => {
-                    break
-                }
+                _ = token.cancelled() => break
             };
 
-            let raw_packet = RawPacket {
-                buffer: BytesMut::from(&receive_buffer[..n]),
-                address,
+            let mut pk = BufPacket {
+                buf: Bytes::copy_from_slice(&recv_buf[..n]),
+                addr: address,
             };
 
-            if raw_packet.is_offline_packet() {
-                let controller = self.clone();
+            if pk.is_unconnected() {
+                let udp_socket = udp_socket.clone();
+                let session_manager = sess_manager.clone();
+                let metadata = metadata.clone();
+                
                 tokio::spawn(async move {
-                    match controller.handle_offline_packet(raw_packet).await {
-                        Ok(_) => (),
-                        Err(e) => {
+                    let id = if let Some(id) = pk.packet_id() {
+                        id
+                    } else {
+                        tracing::error!("Unconnected packet was empty");
+                        return;
+                    };
+
+                    let pk_result = match id {
+                        OfflinePing::ID => Self::process_unconnected_ping(
+                            pk,
+                            server_guid,
+                            &metadata,
+                        ),
+                        OpenConnectionRequest1::ID => {
+                            Self::process_open_connection_request1(
+                                pk,
+                                server_guid,
+                            )
+                        }
+                        OpenConnectionRequest2::ID => {
+                            Self::process_open_connection_request2(
+                                pk,
+                                udp_socket.clone(),
+                                session_manager,
+                                server_guid,
+                            )
+                        }
+                        _ => {
                             tracing::error!(
-                                "Error occurred while processing offline packet: {e:?}"
+                                "Invalid unconnected packet ID: {id:x}"
                             );
+                            return;
+                        }
+                    };
+
+                    match pk_result {
+                        Ok(pk) => {
+                            match udp_socket
+                                .send_to(pk.buf.as_ref(), pk.addr)
+                                .await
+                            {
+                                Ok(_) => (),
+                                Err(e) => {
+                                    tracing::error!("Unable to send unconnected packet to client: {e}");
+                                }
+                            }
+                        }
+                        Err(e) => {
+                            tracing::error!("{e}");
                         }
                     }
                 });
             } else {
-                match self.session_manager.forward_packet(raw_packet) {
-                    Ok(_) => (),
-                    Err(e) => {
-                        tracing::error!("{}", e.to_string());
-                        continue;
-                    }
-                }
+                sess_manager.forward_packet(pk);
             }
         }
-    }
 
-    /// Sends packets from the send queue
-    async fn v4_sender_task(self: Arc<Self>) {
-        loop {
-            let task = tokio::select! {
-                _ = self.token.cancelled() => break,
-                t = self.outward_queue.pop() => t
-            };
-
-            match self.ipv4_socket.send_to(&task.buffer, task.address).await {
-                Ok(_) => (),
-                Err(e) => {
-                    tracing::error!("Failed to send packet: {e:?}");
-                }
-            }
-        }
-    }
-
-    /// Refreshes the server description and player counts on a specified interval.
-    async fn metadata_refresh_task(self: Arc<Self>) {
-        let mut interval = tokio::time::interval(METADATA_REFRESH_INTERVAL);
-        while !self.token.is_cancelled() {
-            let description =
-                format!("{} players", self.session_manager.session_count());
-            self.refresh_metadata(&description);
-            interval.tick().await;
-        }
+        tracing::info!("UDP service shut down");
     }
 
     /// Generates a new metadata string using the given description and new player count.
-    fn refresh_metadata(&self, description: &str) {
-        let new_id = format!(
+    fn refresh_metadata(
+        description: &str, server_guid: u64,
+        session_count: usize, max_session_count: usize
+    ) -> String {
+        format!(
             "MCPE;{};{};{};{};{};{};{};Survival;1;{};{};",
             description,
             NETWORK_VERSION,
             CLIENT_VERSION_STRING,
-            self.session_manager.session_count(),
-            self.session_manager.max_session_count(),
-            self.guid,
+            session_count,
+            max_session_count,
+            server_guid,
             SERVER_CONFIG.read().server_name,
-            self.ipv4_port,
+            19132,
             19133
-        );
-
-        let mut lock = self.metadata.write();
-        *lock = new_id;
-    }
-
-    /// Returns the current metadata string.
-    #[inline]
-    fn metadata(&self) -> String {
-        (*self.metadata.read()).clone()
-    }
-
-    /// Register handler to shut down server on Ctrl-C signal
-    fn register_shutdown_handler(instance: Arc<Self>) {
-        tokio::spawn(async move {
-            tokio::select! {
-                _ = signal::ctrl_c() => {
-                    tracing::info!("Shutting down...");
-                    instance.shutdown().await
-                },
-                _ = instance.token.cancelled() => {
-                    // Token has been cancelled by something else, this service is no longer needed
-                }
-            }
-        });
+        )
     }
 }
