@@ -1,7 +1,12 @@
 use bytes::{Buf, BufMut, BytesMut};
-use common::{bail, Deserialize, Serialize, VResult};
+use common::{bail, BlockPosition, Deserialize, Serialize, VResult, Vector3b};
 
 const CHUNK_SIZE: usize = 4096;
+
+#[inline]
+fn u32_ceil_div(lhs: u32, rhs: u32) -> u32 {
+    (lhs + rhs - 1) / rhs
+}
 
 #[derive(Debug, Clone)]
 pub struct StorageRecord {
@@ -20,17 +25,12 @@ impl StorageRecord {
         // Amount of indices that fit in a single 32-bit integer.
         let indices_per_word = u32::BITS as usize / index_size as usize;
         // Amount of words needed to encode 4096 block indices.
-        let word_count = {
-            let padding = match index_size {
-                3 | 5 | 6 => 1,
-                _ => 0,
-            };
-            CHUNK_SIZE / indices_per_word + padding
-        };
+        let word_count = CHUNK_SIZE / indices_per_word;
 
         let mask = !(!0u32 << index_size);
         let mut indices = [0u16; CHUNK_SIZE];
         for i in 0..word_count {
+            // println!("{i} {}", i * indices_per_word);
             let mut word = buffer.get_u32_le();
 
             for j in 0..indices_per_word {
@@ -39,6 +39,22 @@ impl StorageRecord {
 
                 word >>= index_size;
             }
+        }
+
+        // Padded sizes have an extra word.
+        match index_size {
+            3 | 5 | 6 => {
+                let mut word = buffer.get_u32_le();
+                let last_index =
+                    (word_count - 1) * indices_per_word + indices_per_word - 1;
+
+                let indices_left = 4096 - last_index;
+                for i in 0..indices_left {
+                    indices[last_index + i] = (word & mask) as u16;
+                    word >>= index_size;
+                }
+            }
+            _ => (),
         }
 
         // Size of the block palette.
@@ -55,7 +71,67 @@ impl StorageRecord {
 
     fn encode(&self, buffer: &mut BytesMut) {
         // Determine the required bits per index
+        let index_size = {
+            let palette_size = self.palette.len();
+
+            let mut bits_per_block = 0;
+            // Loop over allowed values.
+            for b in [1, 2, 3, 4, 5, 6, 8, 16] {
+                if 2usize.pow(b) >= palette_size {
+                    bits_per_block = b;
+                    break;
+                }
+            }
+
+            bits_per_block as u8
+        };
+
+        buffer.put_u8(index_size << 1);
+
+        // Amount of indices that fit in a single 32-bit integer.
+        let indices_per_word =
+            u32_ceil_div(u32::BITS, index_size as u32) as usize;
+        // Amount of words needed to encode 4096 block indices.
+        let word_count = {
+            let padding = match index_size {
+                3 | 5 | 6 => 1,
+                _ => 0,
+            };
+            CHUNK_SIZE / indices_per_word + padding
+        };
+
+        let mask = !(!0u32 << index_size);
+        for i in 0..word_count {
+            let mut word = 0;
+            for j in 0..indices_per_word {
+                let index =
+                    self.indices[i * indices_per_word + j] as u32 & mask;
+                word |= index;
+                word <<= indices_per_word;
+            }
+
+            buffer.put_u32_le(word);
+        }
+
+        buffer.put_u32_le(self.palette.len() as u32);
+        for entry in &self.palette {
+            nbt::write_le("", entry, buffer);
+        }
     }
+}
+
+fn pos_to_offset(position: Vector3b) -> usize {
+    16 * 16 * position.x as usize
+        + 16 * position.z as usize
+        + position.y as usize
+}
+
+fn offset_to_pos(offset: usize) -> Vector3b {
+    Vector3b::from([
+        (offset >> 8) as u8 & 0xf,
+        (offset >> 0) as u8 & 0xf,
+        (offset >> 4) as u8 & 0xf,
+    ])
 }
 
 /// Represents the blocks in a sub chunk.
@@ -72,6 +148,15 @@ pub struct SubChunk {
     storage_records: Vec<StorageRecord>,
 }
 
+impl SubChunk {
+    pub fn get(&self, position: Vector3b) -> Option<&nbt::Value> {
+        let offset = pos_to_offset(position);
+        let index = self.storage_records[0].indices[offset];
+
+        self.storage_records[0].palette.get(index as usize)
+    }
+}
+
 impl Deserialize for SubChunk {
     fn deserialize(mut buffer: BytesMut) -> VResult<Self> {
         let version = buffer.get_u8();
@@ -84,6 +169,7 @@ impl Deserialize for SubChunk {
                 let mut storage_records =
                     Vec::with_capacity(storage_count as usize);
 
+                println!("Decoding {storage_count} records");
                 for _ in 0..storage_count {
                     storage_records.push(StorageRecord::decode(&mut buffer)?);
                 }

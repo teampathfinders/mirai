@@ -130,6 +130,7 @@ pub type Vector4f = Vector<f32, 4>;
 pub type Vector2i = Vector<i32, 2>;
 /// 32-bit signed integer vector with 3 components.
 pub type Vector3i = Vector<i32, 3>;
+pub type Vector3b = Vector<u8, 3>;
 
 #[derive(Debug, Clone)]
 pub struct BlockPosition {
