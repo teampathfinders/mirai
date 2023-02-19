@@ -122,8 +122,6 @@ impl Encryptor {
             }
         };
 
-        tracing::debug!("{jwt}");
-
         // Perform the key exchange
         let shared_secret = diffie_hellman(
             private_key.as_nonzero_scalar(),
@@ -170,16 +168,16 @@ impl Encryptor {
         }
 
         let mut decryption_output = BytesMut::with_capacity(buffer.len());
+        decryption_output.resize(buffer.len(), 0x00);
 
         self.cipher_decrypt.lock().apply_keystream_b2b(
             buffer.as_ref(), decryption_output.as_mut()
-        );
-
+        )?;
         let counter = self.receive_counter.fetch_add(1, Ordering::SeqCst);
 
-        let checksum = &buffer.as_ref()[buffer.len() - 8..];
+        let checksum = &decryption_output.as_ref()[decryption_output.len() - 8..];
         let computed_checksum = self
-            .compute_checksum(&buffer.as_ref()[..buffer.len() - 8], counter);
+            .compute_checksum(&decryption_output.as_ref()[..decryption_output.len() - 8], counter);
 
         if !checksum.eq(&computed_checksum) {
             bail!(BadPacket, "Encryption checksums do not match");
@@ -192,18 +190,15 @@ impl Encryptor {
     }
 
     /// Encrypts a packet and appends the computed checksum.
-    pub fn encrypt(&self, mut buffer: Bytes) -> Bytes {
+    pub fn encrypt(&self, mut buffer: Bytes) -> VResult<Bytes> {
         let counter = self.send_counter.fetch_add(1, Ordering::SeqCst);
-        let checksum = self.compute_checksum(&buffer, counter);
+        let checksum = self.compute_checksum(buffer.as_ref(), counter);
 
-        let buffer = [buffer, Bytes::copy_from_slice(checksum.as_slice())].concat();
-        let mut encryption_output = BytesMut::with_capacity(buffer.len());
+        let mut buffer = [buffer.as_ref(), &checksum].concat();
 
-        self.cipher_encrypt.lock().apply_keystream_b2b(
-            buffer.as_ref(), encryption_output.as_mut()
-        );
+        self.cipher_encrypt.lock().apply_keystream(buffer.as_mut());
 
-        Bytes::from(buffer)
+        Ok(Bytes::from(buffer))
     }
 
     /// Returns the packet send counter.

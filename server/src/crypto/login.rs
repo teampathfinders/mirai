@@ -218,8 +218,6 @@ pub fn parse_identity_data(
     let token_chain =
         &buffer.as_ref()[position..(position + token_length as usize)];
 
-    tracing::debug!("{}", String::from_utf8_lossy(token_chain).to_string());
-
     let tokens = serde_json::from_slice::<TokenChain>(token_chain)?;
     buffer.advance(token_length as usize);
 
@@ -266,8 +264,6 @@ pub fn parse_user_data(
     let position = buffer.len() - buffer.remaining();
     let token = &buffer.as_ref()[position..(position + token_length as usize)];
     let token_string = String::from_utf8_lossy(token);
-
-    tracing::debug!("{token_string}");
 
     let user_data = parse_user_data_token(token_string.as_ref(), public_key)?;
 

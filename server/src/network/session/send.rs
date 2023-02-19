@@ -75,7 +75,7 @@ impl Session {
         }
 
         if let Some(encryptor) = self.encryptor.get() {
-            packet_buffer = encryptor.encrypt(packet_buffer);
+            packet_buffer = encryptor.encrypt(packet_buffer)?;
         }
 
         buffer.put(packet_buffer);
@@ -161,6 +161,7 @@ impl Session {
             confirmed
         };
         confirmed.dedup();
+        confirmed.sort_unstable();
 
         let mut records = Vec::new();
         let mut consecutive = Vec::new();

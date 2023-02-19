@@ -211,3 +211,9 @@ impl<T> From<tokio::sync::broadcast::error::SendError<T>> for VError {
         Self::new(VErrorKind::Other, value.to_string())
     }
 }
+
+impl From<cipher::StreamCipherError> for VError {
+    fn from(value: cipher::StreamCipherError) -> Self {
+        Self::new(VErrorKind::BadPacket, value.to_string())
+    }
+}

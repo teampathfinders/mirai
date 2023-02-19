@@ -133,8 +133,6 @@ impl Session {
         mtu: u16,
         guid: u64,
     ) -> Arc<Self> {
-        tracing::debug!("Session created");
-
         let session = Arc::new(Self {
             identity: OnceCell::new(),
             user_data: OnceCell::new(),
