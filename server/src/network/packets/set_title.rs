@@ -5,7 +5,7 @@ use common::{VResult, WriteExtensions};
 
 use common::Serialize;
 
-use super::GamePacket;
+use super::ConnectedPacket;
 
 /// Title action type.
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
@@ -41,7 +41,7 @@ pub struct SetTitle<'a> {
     pub platform_online_id: &'a str,
 }
 
-impl GamePacket for SetTitle<'_> {
+impl ConnectedPacket for SetTitle<'_> {
     const ID: u32 = 0x58;
 }
 

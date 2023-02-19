@@ -1,7 +1,7 @@
 use bytes::{BufMut, BytesMut};
 use common::{Serialize, VResult, WriteExtensions};
 
-use super::GamePacket;
+use super::ConnectedPacket;
 
 /// An action to perform on an identity entry.
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
@@ -26,7 +26,7 @@ pub struct SetScoreboardIdentity {
     pub entries: Vec<ScoreboardIdentityEntry>,
 }
 
-impl GamePacket for SetScoreboardIdentity {
+impl ConnectedPacket for SetScoreboardIdentity {
     const ID: u32 = 0x70;
 }
 

@@ -3,7 +3,7 @@ use common::{bail, ReadExtensions, VError, VResult};
 
 use common::Deserialize;
 
-use super::GamePacket;
+use super::ConnectedPacket;
 
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub enum Ability {
@@ -34,7 +34,7 @@ pub struct RequestAbility {
     pub ability: Ability,
 }
 
-impl GamePacket for RequestAbility {
+impl ConnectedPacket for RequestAbility {
     const ID: u32 = 0xb8;
 }
 

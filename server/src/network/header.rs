@@ -28,11 +28,13 @@ impl Header {
     }
 
     /// Encodes the header.
-    pub fn encode(&self, buffer: &mut BytesMut) {
+    pub fn encode(&self) -> Bytes {
         let value = self.id
             | ((self.sender_subclient as u32) << 10)
             | ((self.target_subclient as u32) << 12);
 
+        let buffer = BytesMut::with_capacity(size_of_var(value));
         buffer.put_var_u32(value);
+        buffer.freeze()
     }
 }

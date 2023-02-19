@@ -1,6 +1,6 @@
 use bytes::{BufMut, BytesMut};
 use common::{BlockPosition, Serialize, Vector3i, VResult, WriteExtensions, size_of_var};
-use crate::network::packets::GamePacket;
+use crate::network::packets::ConnectedPacket;
 
 #[derive(Debug, Clone)]
 pub struct ContainerOpen {
@@ -10,7 +10,7 @@ pub struct ContainerOpen {
     pub container_entity_unique_id: i64
 }
 
-impl GamePacket for ContainerOpen {
+impl ConnectedPacket for ContainerOpen {
     const ID: u32 = 0x2e;
 }
 

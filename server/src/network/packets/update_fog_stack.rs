@@ -1,7 +1,7 @@
 use bytes::BytesMut;
 use common::{Serialize, VResult, WriteExtensions, size_of_var};
 
-use super::GamePacket;
+use super::ConnectedPacket;
 
 /// Adds a fog to the client's fog stack.
 #[derive(Debug, Clone)]
@@ -10,7 +10,7 @@ pub struct UpdateFogStack<'s> {
     pub stack: &'s [String],
 }
 
-impl GamePacket for UpdateFogStack<'_> {
+impl ConnectedPacket for UpdateFogStack<'_> {
     const ID: u32 = 0xa0;
 }
 

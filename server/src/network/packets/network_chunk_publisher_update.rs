@@ -3,7 +3,7 @@ use common::{BlockPosition, VResult, WriteExtensions, size_of_var};
 
 use common::Serialize;
 
-use super::GamePacket;
+use super::ConnectedPacket;
 
 #[derive(Debug, Clone)]
 pub struct NetworkChunkPublisherUpdate {
@@ -11,7 +11,7 @@ pub struct NetworkChunkPublisherUpdate {
     pub radius: u32,
 }
 
-impl GamePacket for NetworkChunkPublisherUpdate {
+impl ConnectedPacket for NetworkChunkPublisherUpdate {
     const ID: u32 = 0x79;
 }
 

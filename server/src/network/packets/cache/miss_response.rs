@@ -1,14 +1,14 @@
 use bytes::BytesMut;
 use common::{Serialize, VResult, WriteExtensions};
 use crate::network::cache_blob::CacheBlob;
-use crate::network::packets::GamePacket;
+use crate::network::packets::ConnectedPacket;
 
 #[derive(Debug, Clone)]
 pub struct CacheMissResponse<'a> {
     pub blobs: &'a [CacheBlob]
 }
 
-impl GamePacket for CacheMissResponse<'_> {
+impl ConnectedPacket for CacheMissResponse<'_> {
     const ID: u32 = 0x88;
 }
 

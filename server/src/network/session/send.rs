@@ -9,7 +9,7 @@ use flate2::Compression;
 use crate::config::SERVER_CONFIG;
 use crate::network::header::Header;
 use crate::network::packets::login::CompressionAlgorithm;
-use crate::network::packets::{GamePacket, Packet, GAME_PACKET_ID};
+use crate::network::packets::{ConnectedPacket, Packet, GAME_PACKET_ID};
 use crate::network::raknet::packets::{Ack, AckRecord};
 use crate::network::raknet::Reliability;
 use crate::network::raknet::{Frame, FrameBatch};
@@ -33,18 +33,24 @@ impl Session {
     /// Sends a game packet with default settings
     /// (reliable ordered and medium priority)
     #[inline]
-    pub fn send<T: GamePacket + Serialize>(&self, packet: T) -> VResult<()> {
-        self.send_packet_with_config(packet, DEFAULT_CONFIG)
+    pub fn send<T: ConnectedPacket + Serialize>(&self, pk: T) -> VResult<()> {
+        let pk = Packet::new(pk);
+        self.send_packet_with_config(pk, DEFAULT_CONFIG)
+    }
+
+    /// Sends an already serialized packet body to the client.
+    #[inline]
+    pub fn send_serialized<T: ConnectedPacket + Serialize>(&self, serialized: Bytes) -> VResult<()> {
+        let pk = Packet::<T>::new_serialized(T::ID, serialized);
+        self.send_packet_with_config(pk, DEFAULT_CONFIG)
     }
 
     /// Sends a game packet with custom reliability and priority
-    pub fn send_packet_with_config<T: GamePacket + Serialize>(
+    pub fn send_packet_with_config<T: ConnectedPacket + Serialize>(
         &self,
-        packet: T,
+        packet: Packet<T>,
         config: PacketConfig,
     ) -> VResult<()> {
-        let packet = Packet::new(packet).subclients(0, 0);
-
         let mut buffer = BytesMut::new();
         buffer.put_u8(GAME_PACKET_ID);
 

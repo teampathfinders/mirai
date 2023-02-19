@@ -1,6 +1,6 @@
 use bytes::{BufMut, BytesMut};
 
-use crate::network::packets::GamePacket;
+use crate::network::packets::ConnectedPacket;
 use common::Serialize;
 use common::VResult;
 use common::WriteExtensions;
@@ -14,7 +14,7 @@ pub struct ServerToClientHandshake<'a> {
     pub jwt: &'a str,
 }
 
-impl GamePacket for ServerToClientHandshake<'_> {
+impl ConnectedPacket for ServerToClientHandshake<'_> {
     const ID: u32 = 0x03;
 }
 

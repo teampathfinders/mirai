@@ -3,7 +3,7 @@ use common::{VResult, WriteExtensions, size_of_var};
 
 use common::Serialize;
 
-use super::GamePacket;
+use super::ConnectedPacket;
 
 /// Operation to perform with the effect.
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
@@ -70,7 +70,7 @@ pub struct MobEffectUpdate {
     pub duration: i32,
 }
 
-impl GamePacket for MobEffectUpdate {
+impl ConnectedPacket for MobEffectUpdate {
     const ID: u32 = 0x1c;
 }
 

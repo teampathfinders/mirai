@@ -3,7 +3,7 @@ use common::VResult;
 
 use common::Serialize;
 
-use super::GamePacket;
+use super::ConnectedPacket;
 
 const DEFINITIONS: &[u8] = include_bytes!("../../../included/biomes.nbt");
 
@@ -11,7 +11,7 @@ const DEFINITIONS: &[u8] = include_bytes!("../../../included/biomes.nbt");
 #[derive(Debug, Clone)]
 pub struct BiomeDefinitionList;
 
-impl GamePacket for BiomeDefinitionList {
+impl ConnectedPacket for BiomeDefinitionList {
     const ID: u32 = 0x7a;
 }
 

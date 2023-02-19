@@ -32,7 +32,7 @@ use crate::network::raknet::packets::OpenConnectionRequest2;
 use crate::network::raknet::BufPacket;
 use crate::network::raknet::RAKNET_VERSION;
 use crate::network::session::SessionManager;
-use common::{bail, AsyncDeque};
+use common::{bail};
 use common::{error, VResult};
 use common::{Deserialize, Serialize};
 
@@ -57,10 +57,6 @@ pub struct InstanceManager {
     ipv4_socket: Arc<UdpSocket>,
     /// Port the IPv4 service is hosted on.
     ipv4_port: u16,
-    /// Queue for incoming packets.
-    inward_queue: Arc<AsyncDeque<BufPacket>>,
-    /// Queue for packets waiting to be sent.
-    outward_queue: Arc<AsyncDeque<BufPacket>>,
     /// Token indicating whether the server is still running.
     /// All services listen to this token to determine whether they should shut down.
     token: CancellationToken,
@@ -214,9 +210,6 @@ impl InstanceManager {
             ipv4_socket,
             ipv4_port,
 
-            inward_queue: Arc::new(AsyncDeque::new(10)),
-            outward_queue: Arc::new(AsyncDeque::new(10)),
-
             session_manager,
             level_manager: RwLock::new(Some(level_manager)),
             token: global_token,
@@ -357,7 +350,8 @@ impl InstanceManager {
                             Self::process_open_connection_request2(
                                 pk,
                                 udp_socket.clone(),
-                                session_manager
+                                session_manager,
+                                server_guid
                             )
                         }
                         _ => {

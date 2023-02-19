@@ -3,7 +3,7 @@ use common::{bail, ReadExtensions, VError, VResult, WriteExtensions};
 
 use common::{Deserialize, Serialize};
 
-use super::GamePacket;
+use super::ConnectedPacket;
 
 /// The Minecraft difficulties.
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
@@ -37,7 +37,7 @@ pub struct SetDifficulty {
     pub difficulty: Difficulty,
 }
 
-impl GamePacket for SetDifficulty {
+impl ConnectedPacket for SetDifficulty {
     const ID: u32 = 0x3c;
 }
 

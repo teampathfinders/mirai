@@ -5,7 +5,7 @@ use uuid::Uuid;
 use crate::command::CommandPermissionLevel;
 use crate::network::packets::login::{DeviceOS, ItemStack, PermissionLevel};
 
-use super::{GameMode, GamePacket};
+use super::{GameMode, ConnectedPacket};
 
 /// Type of an entity link.
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
@@ -158,7 +158,7 @@ pub struct AddPlayer<'a> {
     pub device_os: DeviceOS
 }
 
-impl GamePacket for AddPlayer<'_> {
+impl ConnectedPacket for AddPlayer<'_> {
     const ID: u32 = 0x0c;
 }
 

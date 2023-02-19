@@ -5,7 +5,7 @@ use common::{VResult, WriteExtensions, size_of_var};
 
 use common::Serialize;
 
-use super::GamePacket;
+use super::ConnectedPacket;
 
 /// Transfers the client to another server.
 /// The client does this by first returning to the main menu and then connecting to the selected server.
@@ -15,7 +15,7 @@ pub struct Transfer {
     pub address: SocketAddr,
 }
 
-impl GamePacket for Transfer {
+impl ConnectedPacket for Transfer {
     const ID: u32 = 0x55;
 }
 

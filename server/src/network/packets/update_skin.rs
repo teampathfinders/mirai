@@ -3,7 +3,7 @@ use common::{Serialize, VResult, WriteExtensions, Deserialize};
 use uuid::Uuid;
 use crate::network::Skin;
 
-use super::GamePacket;
+use super::ConnectedPacket;
 
 #[derive(Debug, Clone)]
 pub struct UpdateSkin {
@@ -11,7 +11,7 @@ pub struct UpdateSkin {
     pub skin: Skin,
 }
 
-impl GamePacket for UpdateSkin {
+impl ConnectedPacket for UpdateSkin {
     const ID: u32 = 0x5d;
 }
 

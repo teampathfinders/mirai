@@ -1,6 +1,6 @@
 use bytes::{BufMut, BytesMut};
 
-use crate::network::packets::GamePacket;
+use crate::network::packets::ConnectedPacket;
 use common::Serialize;
 use common::VResult;
 use common::WriteExtensions;
@@ -47,7 +47,7 @@ pub struct NetworkSettings {
     pub client_throttle: ClientThrottleSettings,
 }
 
-impl GamePacket for NetworkSettings {
+impl ConnectedPacket for NetworkSettings {
     /// Unique ID of this packet.
     const ID: u32 = 0x8f;
 }

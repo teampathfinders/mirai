@@ -1,7 +1,7 @@
 use common::{ReadExtensions, VResult};
 
 use common::Deserialize;
-use crate::network::packets::GamePacket;
+use crate::network::packets::ConnectedPacket;
 
 /// Sent by the client to request the maximum render distance.
 #[derive(Debug)]
@@ -10,7 +10,7 @@ pub struct ChunkRadiusRequest {
     pub radius: i32,
 }
 
-impl GamePacket for ChunkRadiusRequest {
+impl ConnectedPacket for ChunkRadiusRequest {
     const ID: u32 = 0x45;
 }
 

@@ -3,7 +3,7 @@ use common::VResult;
 
 use common::Serialize;
 
-use super::GamePacket;
+use super::ConnectedPacket;
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum CameraShakeType {
@@ -31,7 +31,7 @@ pub struct CameraShake {
     pub action: CameraShakeAction,
 }
 
-impl GamePacket for CameraShake {
+impl ConnectedPacket for CameraShake {
     const ID: u32 = 0x9f;
 }
 

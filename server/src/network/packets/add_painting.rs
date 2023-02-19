@@ -3,7 +3,7 @@ use common::{VResult, Vector3f, Vector3i, WriteExtensions, size_of_var};
 
 use common::Serialize;
 
-use super::GamePacket;
+use super::ConnectedPacket;
 
 /// Directions a painting can face.
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
@@ -27,7 +27,7 @@ pub struct AddPainting<'a> {
     pub name: &'a str,
 }
 
-impl GamePacket for AddPainting<'_> {
+impl ConnectedPacket for AddPainting<'_> {
     const ID: u32 = 0x16;
 }
 

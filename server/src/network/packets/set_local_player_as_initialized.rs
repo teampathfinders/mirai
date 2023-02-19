@@ -3,7 +3,7 @@ use common::{ReadExtensions, VResult};
 
 use common::Deserialize;
 
-use super::GamePacket;
+use super::ConnectedPacket;
 
 /// Sent by the client to indicate that the player has been fully initialised.
 #[derive(Debug, Clone)]
@@ -12,7 +12,7 @@ pub struct SetLocalPlayerAsInitialized {
     pub runtime_id: u64,
 }
 
-impl GamePacket for SetLocalPlayerAsInitialized {
+impl ConnectedPacket for SetLocalPlayerAsInitialized {
     const ID: u32 = 0x71;
 }
 

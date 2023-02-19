@@ -1,6 +1,6 @@
 use bytes::BytesMut;
 use common::{bail, Deserialize, Serialize, ReadExtensions, Vector3f, VError, VResult, WriteExtensions, size_of_var};
-use crate::network::packets::GamePacket;
+use crate::network::packets::ConnectedPacket;
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum LevelEventType {
@@ -239,7 +239,7 @@ pub struct LevelEvent {
     pub event_data: i32
 }
 
-impl GamePacket for LevelEvent {
+impl ConnectedPacket for LevelEvent {
     const ID: u32 = 0x19;
 }
 

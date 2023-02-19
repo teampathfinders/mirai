@@ -5,7 +5,7 @@ use common::{
 
 use common::{Deserialize, Serialize};
 
-use super::GamePacket;
+use super::ConnectedPacket;
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum MovementMode {
@@ -66,7 +66,7 @@ pub struct MovePlayer {
     pub tick: u64,
 }
 
-impl GamePacket for MovePlayer {
+impl ConnectedPacket for MovePlayer {
     const ID: u32 = 0x13;
 }
 

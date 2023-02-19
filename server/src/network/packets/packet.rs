@@ -1,32 +1,58 @@
+use std::num::NonZeroU64;
+
+use bytes::Bytes;
 use bytes::{Buf, BufMut, BytesMut};
 
-use crate::network::packets::GamePacket;
+use crate::network::packets::ConnectedPacket;
 use crate::network::raknet::Header;
 use common::nvassert;
 use common::Serialize;
 use common::VResult;
 use common::{ReadExtensions, WriteExtensions};
 
+#[derive(Debug, Clone)]
+pub struct BroadcastPacket {
+    pub sender: Option<NonZeroU64>,
+    pub packet: SerializedPacket
+}
+
+#[derive(Debug, Clone)]
+pub enum PacketContent<T: ConnectedPacket> {
+    Packet(T),
+    Serialized(Bytes)
+}
+
 /// A game packet.
 #[derive(Debug, Clone)]
-pub struct Packet<T: GamePacket> {
+pub struct Packet<T: ConnectedPacket> {
     /// Contains the packet ID and subclient IDs.
     header: Header,
     /// Actual packet data.
-    internal_packet: T,
+    content: PacketContent<T>,
 }
 
-impl<T: GamePacket> Packet<T> {
+impl<T: ConnectedPacket> Packet<T> {
     /// Creates a new packet.
-    pub const fn new(internal_packet: T) -> Self {
+    pub const fn new(pk: T) -> Self {
         Self {
             header: Header {
                 id: T::ID,
                 target_subclient: 0,
                 sender_subclient: 0,
             },
-            internal_packet,
+            content: PacketContent::Packet(pk),
         }
+    }
+
+    pub const fn new_serialized(serialized: Bytes) -> Self {
+        Self {
+            header: Header {
+                id: T::ID,
+                target_subclient: 0,
+                sender_subclient: 0
+            },
+            content: PacketContent::Serialized(serialized)
+        }   
     }
 
     /// Sets the subclient IDs.
@@ -37,11 +63,14 @@ impl<T: GamePacket> Packet<T> {
     }
 }
 
-impl<T: GamePacket + Serialize> Serialize for Packet<T> {
-    fn serialize(&self) -> VResult<BytesMut> {
+impl<T: ConnectedPacket + Serialize> Serialize for Packet<T> {
+    fn serialize(&self) -> VResult<Bytes> {
         let mut buffer = BytesMut::new();
-        let header = self.header.encode();
-        let body = self.internal_packet.serialize()?;
+        let header = self.header.serialize();
+        let body = match self.content {
+            PacketContent::Packet(pk) => pk.serialize()?,
+            PacketContent::Serialized(pk) => pk
+        };
 
         buffer.put_var_u32(header.len() as u32 + body.len() as u32);
 

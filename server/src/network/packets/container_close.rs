@@ -1,6 +1,6 @@
 use bytes::{BufMut, BytesMut};
 use common::{Serialize, VResult, WriteExtensions};
-use crate::network::packets::GamePacket;
+use crate::network::packets::ConnectedPacket;
 
 #[derive(Debug, Clone)]
 pub struct ContainerClose {
@@ -10,7 +10,7 @@ pub struct ContainerClose {
     pub server_initiated: bool
 }
 
-impl GamePacket for ContainerClose {
+impl ConnectedPacket for ContainerClose {
     const ID: u32 = 0x2f;
 }
 

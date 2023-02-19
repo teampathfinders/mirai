@@ -1,7 +1,7 @@
 use bytes::{Buf, BytesMut};
 use common::{bail, Deserialize, ReadExtensions, VResult};
 use level::Dimension;
-use crate::network::packets::GamePacket;
+use crate::network::packets::ConnectedPacket;
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 #[repr(u16)]
@@ -144,6 +144,6 @@ pub struct Event {
     pub event: EventType
 }
 
-impl GamePacket for Event {
+impl ConnectedPacket for Event {
     const ID: u32 = 0x41;
 }

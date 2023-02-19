@@ -5,7 +5,7 @@ use common::{
 
 use common::{Deserialize, Serialize};
 
-use super::GamePacket;
+use super::ConnectedPacket;
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum RespawnState {
@@ -34,7 +34,7 @@ pub struct Respawn {
     pub runtime_id: u64,
 }
 
-impl GamePacket for Respawn {
+impl ConnectedPacket for Respawn {
     const ID: u32 = 0x2d;
 }
 

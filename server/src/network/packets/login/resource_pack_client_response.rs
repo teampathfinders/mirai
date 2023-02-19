@@ -1,6 +1,6 @@
 use bytes::{Buf, BytesMut};
 
-use crate::network::packets::GamePacket;
+use crate::network::packets::ConnectedPacket;
 use common::bail;
 use common::Deserialize;
 use common::ReadExtensions;
@@ -47,7 +47,7 @@ pub struct ResourcePackClientResponse {
     pub pack_ids: Vec<String>,
 }
 
-impl GamePacket for ResourcePackClientResponse {
+impl ConnectedPacket for ResourcePackClientResponse {
     /// Unique ID of this packet.
     const ID: u32 = 0x08;
 }

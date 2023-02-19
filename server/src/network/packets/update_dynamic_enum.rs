@@ -3,7 +3,7 @@ use common::{VResult, WriteExtensions, size_of_var};
 
 use common::Serialize;
 
-use super::GamePacket;
+use super::ConnectedPacket;
 
 /// Action to perform on the dynamic enum.
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
@@ -24,7 +24,7 @@ pub struct UpdateDynamicEnum<'a> {
     pub action: SoftEnumAction,
 }
 
-impl GamePacket for UpdateDynamicEnum<'_> {
+impl ConnectedPacket for UpdateDynamicEnum<'_> {
     const ID: u32 = 0x72;
 }
 

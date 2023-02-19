@@ -1,6 +1,6 @@
 use bytes::{Buf, BytesMut};
 use common::{Deserialize, ReadExtensions, VResult};
-use crate::network::packets::GamePacket;
+use crate::network::packets::ConnectedPacket;
 
 #[derive(Debug, Clone)]
 pub struct CacheBlobStatus {
@@ -11,7 +11,7 @@ pub struct CacheBlobStatus {
     pub hits: Vec<u64>
 }
 
-impl GamePacket for CacheBlobStatus {
+impl ConnectedPacket for CacheBlobStatus {
     const ID: u32 = 0x87;
 }
 

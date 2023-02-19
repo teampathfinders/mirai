@@ -3,7 +3,7 @@ use common::{VResult, WriteExtensions, size_of_var};
 
 use common::Serialize;
 
-use super::GamePacket;
+use super::ConnectedPacket;
 
 /// Information about a player's death.
 #[derive(Debug, Clone)]
@@ -14,7 +14,7 @@ pub struct DeathInfo<'a> {
     pub messages: &'a [String],
 }
 
-impl GamePacket for DeathInfo<'_> {
+impl ConnectedPacket for DeathInfo<'_> {
     const ID: u32 = 0xbd;
 }
 

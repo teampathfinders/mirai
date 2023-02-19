@@ -1,6 +1,6 @@
 use bytes::BytesMut;
 use common::{Deserialize, ReadExtensions, VResult};
-use crate::network::packets::GamePacket;
+use crate::network::packets::ConnectedPacket;
 
 #[derive(Debug, Clone)]
 pub struct GenericLevelEvent {
@@ -8,7 +8,7 @@ pub struct GenericLevelEvent {
     pub data: nbt::Tag
 }
 
-impl GamePacket for GenericLevelEvent {
+impl ConnectedPacket for GenericLevelEvent {
     const ID: u32 = 0x7c;
 }
 

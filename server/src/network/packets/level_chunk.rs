@@ -3,7 +3,7 @@ use common::{VResult, Vector2i, WriteExtensions};
 
 use common::Serialize;
 
-use super::GamePacket;
+use super::ConnectedPacket;
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum SubChunkRequestMode {
@@ -33,7 +33,7 @@ pub struct LevelChunk {
     pub raw_payload: BytesMut,
 }
 
-impl GamePacket for LevelChunk {
+impl ConnectedPacket for LevelChunk {
     const ID: u32 = 0x3a;
 }
 

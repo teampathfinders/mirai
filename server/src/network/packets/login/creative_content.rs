@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use bytes::{BufMut, BytesMut};
 use nbt::Value;
 
-use crate::network::packets::GamePacket;
+use crate::network::packets::ConnectedPacket;
 use common::Serialize;
 use common::VResult;
 use common::WriteExtensions;
@@ -78,7 +78,7 @@ pub struct CreativeContent<'a> {
     pub items: &'a [ItemStack],
 }
 
-impl GamePacket for CreativeContent<'_> {
+impl ConnectedPacket for CreativeContent<'_> {
     const ID: u32 = 0x91;
 }
 

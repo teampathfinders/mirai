@@ -199,3 +199,21 @@ impl From<dashmap::TryReserveError> for VError {
         )
     }
 }
+
+impl<T> From<tokio::sync::mpsc::error::SendError<T>> for VError {
+    fn from(value: tokio::sync::mpsc::error::SendError<T>) -> Self {
+        Self::new(
+            VErrorKind::Other,
+            value.to_string()
+        )
+    }
+}
+
+impl<T> From<tokio::sync::broadcast::error::SendError<T>> for VError {
+    fn from(value: tokio::sync::broadcast::error::SendError<T>) -> Self {
+        Self::new(
+            VErrorKind::Other,
+            value.to_string()
+        )
+    }
+}

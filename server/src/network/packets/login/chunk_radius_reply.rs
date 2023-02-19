@@ -2,7 +2,7 @@ use bytes::BytesMut;
 use common::{VResult, WriteExtensions};
 
 use common::Serialize;
-use crate::network::packets::GamePacket;
+use crate::network::packets::ConnectedPacket;
 
 /// Sent in response to [`ChunkRadiusRequest`](super::ChunkRadiusRequest), to notify the client of the allowed render distance.
 #[derive(Debug, Clone)]
@@ -11,7 +11,7 @@ pub struct ChunkRadiusReply {
     pub allowed_radius: i32,
 }
 
-impl GamePacket for ChunkRadiusReply {
+impl ConnectedPacket for ChunkRadiusReply {
     const ID: u32 = 0x46;
 }
 

@@ -3,7 +3,7 @@ use common::{VResult, Vector, Vector3f, Vector3i, WriteExtensions, size_of_var};
 
 use common::Serialize;
 
-use super::GamePacket;
+use super::ConnectedPacket;
 
 /// Plays a sound for the client.
 #[derive(Debug)]
@@ -18,7 +18,7 @@ pub struct PlaySound<'s> {
     pub pitch: f32,
 }
 
-impl GamePacket for PlaySound<'_> {
+impl ConnectedPacket for PlaySound<'_> {
     const ID: u32 = 0x56;
 }
 

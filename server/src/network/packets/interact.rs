@@ -3,7 +3,7 @@ use common::{bail, ReadExtensions, VError, VResult, Vector3f};
 
 use common::Deserialize;
 
-use super::GamePacket;
+use super::ConnectedPacket;
 
 /// All types of interaction.
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
@@ -38,7 +38,7 @@ pub struct Interact {
     pub position: Vector3f,
 }
 
-impl GamePacket for Interact {
+impl ConnectedPacket for Interact {
     const ID: u32 = 0x21;
 }
 

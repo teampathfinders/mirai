@@ -1,6 +1,6 @@
 use bytes::{BufMut, BytesMut};
 
-use crate::network::packets::GamePacket;
+use crate::network::packets::ConnectedPacket;
 use common::Serialize;
 use common::VResult;
 use common::WriteExtensions;
@@ -36,7 +36,7 @@ pub struct PlayStatus {
     pub status: Status,
 }
 
-impl GamePacket for PlayStatus {
+impl ConnectedPacket for PlayStatus {
     const ID: u32 = 0x02;
 }
 

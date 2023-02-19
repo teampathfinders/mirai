@@ -1,7 +1,7 @@
 use bytes::BytesMut;
 use common::{Deserialize, Serialize, ReadExtensions, VResult, WriteExtensions};
 
-use super::{GameMode, GamePacket};
+use super::{GameMode, ConnectedPacket};
 
 /// Sets the default game mode of the world.
 #[derive(Debug, Clone)]
@@ -10,7 +10,7 @@ pub struct SetDefaultGameMode {
     pub game_mode: GameMode,
 }
 
-impl GamePacket for SetDefaultGameMode {
+impl ConnectedPacket for SetDefaultGameMode {
     const ID: u32 = 0x69;
 }
 

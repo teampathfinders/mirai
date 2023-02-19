@@ -4,7 +4,7 @@ use common::{bail, ReadExtensions, VError, VResult, WriteExtensions};
 
 use common::Deserialize;
 
-use crate::network::packets::GamePacket;
+use crate::network::packets::ConnectedPacket;
 
 /// Command origin.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -69,7 +69,7 @@ pub struct CommandRequest {
     pub request_id: String,
 }
 
-impl GamePacket for CommandRequest {
+impl ConnectedPacket for CommandRequest {
     const ID: u32 = 0x4d;
 }
 

@@ -1,6 +1,6 @@
 use bytes::BytesMut;
 use common::{bail, BlockPosition, Deserialize, Serialize, ReadExtensions, VError, VResult, WriteExtensions, size_of_var};
-use crate::network::packets::GamePacket;
+use crate::network::packets::ConnectedPacket;
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum BlockEventType {
@@ -25,7 +25,7 @@ pub struct BlockEvent {
     pub event_data: i32
 }
 
-impl GamePacket for BlockEvent {
+impl ConnectedPacket for BlockEvent {
     const ID: u32 = 0x1a;
 }
 

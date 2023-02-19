@@ -1,7 +1,7 @@
 use bytes::{BufMut, BytesMut};
 use uuid::Uuid;
 use common::{Deserialize, Serialize, ReadExtensions, VResult, WriteExtensions};
-use crate::network::packets::{GamePacket};
+use crate::network::packets::{ConnectedPacket};
 
 use super::CommandOriginType;
 
@@ -30,7 +30,7 @@ pub struct CommandOutput<'a> {
     pub output: &'a [CommandOutputMessage<'a>]
 }
 
-impl GamePacket for CommandOutput<'_> {
+impl ConnectedPacket for CommandOutput<'_> {
     const ID: u32 = 0x4f;
 }
 

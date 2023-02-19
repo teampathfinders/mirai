@@ -1,6 +1,6 @@
 use bytes::{Buf, BytesMut};
 
-use crate::network::packets::GamePacket;
+use crate::network::packets::ConnectedPacket;
 use common::nvassert;
 use common::Deserialize;
 use common::VResult;
@@ -12,7 +12,7 @@ use common::VResult;
 #[derive(Debug)]
 pub struct ClientToServerHandshake;
 
-impl GamePacket for ClientToServerHandshake {
+impl ConnectedPacket for ClientToServerHandshake {
     /// Unique ID of this packet.
     const ID: u32 = 0x04;
 }

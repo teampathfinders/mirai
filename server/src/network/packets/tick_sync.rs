@@ -3,7 +3,7 @@ use common::VResult;
 
 use common::{Deserialize, Serialize};
 
-use super::GamePacket;
+use super::ConnectedPacket;
 
 /// Synchronises the current tick.
 ///
@@ -16,7 +16,7 @@ pub struct TickSync {
     pub response: u64,
 }
 
-impl GamePacket for TickSync {
+impl ConnectedPacket for TickSync {
     const ID: u32 = 0x17;
 }
 

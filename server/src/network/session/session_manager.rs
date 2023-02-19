@@ -10,10 +10,11 @@ use tokio_util::sync::CancellationToken;
 
 use crate::instance_manager::InstanceManager;
 use crate::level_manager::LevelManager;
+use crate::network::packets::BroadcastPacket;
 use crate::network::packets::login::Disconnect;
 use crate::network::raknet::BufPacket;
 use crate::network::session::session::Session;
-use crate::{config::SERVER_CONFIG, network::packets::GamePacket};
+use crate::{config::SERVER_CONFIG, network::packets::ConnectedPacket};
 use common::{error, Serialize, VResult};
 
 const BROADCAST_CHANNEL_CAPACITY: usize = 16;
@@ -30,7 +31,7 @@ pub struct SessionManager {
     /// The level manager.
     level_manager: OnceCell<Weak<LevelManager>>,
     /// Channel used for packet broadcasting.
-    broadcast: broadcast::Sender<(u64, Bytes)>
+    broadcast: broadcast::Sender<BroadcastPacket>
 }
 
 impl SessionManager {
@@ -103,7 +104,7 @@ impl SessionManager {
             })
     }
 
-    pub fn broadcast<P: GamePacket + Serialize + Clone>(&self, pk: P) -> VResult<()> {
+    pub fn broadcast<P: ConnectedPacket + Serialize + Clone>(&self, pk: P) -> VResult<()> {
         let serialized = pk.serialize()?;
         self.broadcast.send((0, serialized))?;
 

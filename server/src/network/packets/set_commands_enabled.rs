@@ -3,7 +3,7 @@ use common::{VResult, WriteExtensions};
 
 use common::Serialize;
 
-use super::GamePacket;
+use super::ConnectedPacket;
 
 /// Enables or disables the usage of commands.
 ///
@@ -14,7 +14,7 @@ pub struct SetCommandsEnabled {
     pub enabled: bool,
 }
 
-impl GamePacket for SetCommandsEnabled {
+impl ConnectedPacket for SetCommandsEnabled {
     const ID: u32 = 0x3b;
 }
 

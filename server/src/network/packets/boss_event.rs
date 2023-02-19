@@ -1,6 +1,6 @@
 use bytes::{BufMut, BytesMut};
 use common::{Serialize, VResult, WriteExtensions};
-use crate::network::packets::GamePacket;
+use crate::network::packets::ConnectedPacket;
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum BossEventColor {
@@ -49,7 +49,7 @@ pub struct BossEvent<'a> {
     pub event: BossEventType<'a>
 }
 
-impl GamePacket for BossEvent<'_> {
+impl ConnectedPacket for BossEvent<'_> {
     const ID: u32 = 0x4a;
 }
 

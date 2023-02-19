@@ -14,7 +14,7 @@ use crate::network::packets::login::{
     OnlinePing, RequestNetworkSettings, ResourcePackClientResponse,
 };
 use crate::network::packets::{
-    Animate, GamePacket, Interact, MovePlayer, RequestAbility,
+    Animate, ConnectedPacket, Interact, MovePlayer, RequestAbility,
     SetLocalPlayerAsInitialized, TextMessage, UpdateSkin, ViolationWarning,
     GAME_PACKET_ID,
 };

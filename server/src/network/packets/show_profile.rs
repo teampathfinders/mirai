@@ -3,7 +3,7 @@ use common::{VResult, WriteExtensions, size_of_var};
 
 use common::Serialize;
 
-use super::GamePacket;
+use super::ConnectedPacket;
 
 /// Opens a dialog showing details about a player's Xbox account.
 #[derive(Debug, Clone)]
@@ -12,7 +12,7 @@ pub struct ShowProfile<'s> {
     pub xuid: &'s str,
 }
 
-impl GamePacket for ShowProfile<'_> {
+impl ConnectedPacket for ShowProfile<'_> {
     const ID: u32 = 0x68;
 }
 

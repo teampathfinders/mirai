@@ -3,7 +3,7 @@ use common::{bail, ReadExtensions, VError, VResult, WriteExtensions};
 
 use common::{Deserialize, Serialize};
 
-use super::GamePacket;
+use super::ConnectedPacket;
 
 /// The Minecraft game modes.
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
@@ -38,7 +38,7 @@ pub struct SetPlayerGameMode {
     pub game_mode: GameMode,
 }
 
-impl GamePacket for SetPlayerGameMode {
+impl ConnectedPacket for SetPlayerGameMode {
     const ID: u32 = 0x3e;
 }
 

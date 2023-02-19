@@ -3,7 +3,7 @@ use common::{VResult, Vector3f, WriteExtensions};
 
 use common::Serialize;
 
-use super::GamePacket;
+use super::ConnectedPacket;
 
 #[derive(Debug, Clone)]
 pub struct SpawnExperienceOrb {
@@ -11,7 +11,7 @@ pub struct SpawnExperienceOrb {
     pub amount: u32,
 }
 
-impl GamePacket for SpawnExperienceOrb {
+impl ConnectedPacket for SpawnExperienceOrb {
     const ID: u32 = 0x42;
 }
 

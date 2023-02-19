@@ -4,7 +4,7 @@ use uuid::Uuid;
 use crate::network::packets::login::DeviceOS;
 use crate::network::Skin;
 
-use super::{GamePacket};
+use super::{ConnectedPacket};
 
 #[derive(Debug, Clone)]
 pub struct PlayerListAddEntry<'a> {
@@ -34,7 +34,7 @@ pub struct PlayerListAdd<'a> {
     pub entries: &'a [PlayerListAddEntry<'a>],
 }
 
-impl GamePacket for PlayerListAdd<'_> {
+impl ConnectedPacket for PlayerListAdd<'_> {
     const ID: u32 = 0x3f;
 }
 
@@ -73,7 +73,7 @@ pub struct PlayerListRemove<'a> {
     pub entries: &'a [Uuid]
 }
 
-impl GamePacket for PlayerListRemove<'_> {
+impl ConnectedPacket for PlayerListRemove<'_> {
     const ID: u32 = 0x3f;
 }
 

@@ -3,7 +3,7 @@ use common::{bail, ReadExtensions, VError, VResult, WriteExtensions};
 
 use common::{Deserialize, Serialize};
 
-use super::GamePacket;
+use super::ConnectedPacket;
 
 /// Type of message.
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
@@ -70,7 +70,7 @@ pub struct TextMessage {
     pub platform_chat_id: String,
 }
 
-impl GamePacket for TextMessage {
+impl ConnectedPacket for TextMessage {
     const ID: u32 = 0x09;
 }
 

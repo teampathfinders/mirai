@@ -6,7 +6,7 @@ use level::Dimension;
 use common::Serialize;
 use common::{bail, VError, VResult};
 use common::{BlockPosition, Vector2f, Vector3f, WriteExtensions};
-use crate::network::packets::{CLIENT_VERSION_STRING, Difficulty, GameMode, GamePacket, GameRule};
+use crate::network::packets::{CLIENT_VERSION_STRING, Difficulty, GameMode, ConnectedPacket, GameRule};
 use crate::network::packets::login::ExperimentData;
 
 #[derive(Debug, Copy, Clone)]
@@ -265,7 +265,7 @@ pub struct StartGame<'a> {
     pub client_side_generation: bool,
 }
 
-impl GamePacket for StartGame<'_> {
+impl ConnectedPacket for StartGame<'_> {
     const ID: u32 = 0x0B;
 }
 

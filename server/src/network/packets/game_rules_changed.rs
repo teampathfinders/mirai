@@ -5,7 +5,7 @@ use common::{Serialize, VResult, WriteExtensions, size_of_var, bail};
 
 use crate::command::ParsedArgument;
 
-use super::GamePacket;
+use super::ConnectedPacket;
 
 pub const BOOLEAN_GAME_RULES: &[&str] = &[
     "commandblocksenabled",
@@ -259,7 +259,7 @@ pub struct GameRulesChanged<'a> {
     pub game_rules: &'a [GameRule],
 }
 
-impl GamePacket for GameRulesChanged<'_> {
+impl ConnectedPacket for GameRulesChanged<'_> {
     const ID: u32 = 0x48;
 }
 

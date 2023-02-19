@@ -1,7 +1,7 @@
 use bytes::{BufMut, BytesMut};
 use common::{Serialize, VResult, Vector3f, Vector4f, WriteExtensions};
 
-use super::GamePacket;
+use super::ConnectedPacket;
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum DebugRendererAction {
@@ -24,7 +24,7 @@ pub struct ClientBoundDebugRenderer<'a> {
     pub duration: i64,
 }
 
-impl GamePacket for ClientBoundDebugRenderer<'_> {
+impl ConnectedPacket for ClientBoundDebugRenderer<'_> {
     const ID: u32 = 0xa4;
 }
 

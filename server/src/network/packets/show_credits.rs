@@ -3,7 +3,7 @@ use common::{bail, ReadExtensions, VError, VResult, WriteExtensions, size_of_var
 
 use common::{Deserialize, Serialize};
 
-use super::GamePacket;
+use super::ConnectedPacket;
 
 /// Status of the credits display.
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
@@ -34,7 +34,7 @@ pub struct CreditsUpdate {
     pub status: CreditsStatus,
 }
 
-impl GamePacket for CreditsUpdate {
+impl ConnectedPacket for CreditsUpdate {
     const ID: u32 = 0x4b;
 }
 

@@ -1,6 +1,6 @@
 use bytes::{Buf, BufMut, BytesMut};
 use common::{bail, Deserialize, Serialize, VError, VResult};
-use crate::network::packets::GamePacket;
+use crate::network::packets::ConnectedPacket;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum SimpleEvent {
@@ -22,7 +22,7 @@ impl TryFrom<i16> for SimpleEvent {
     }
 }
 
-impl GamePacket for SimpleEvent {
+impl ConnectedPacket for SimpleEvent {
     const ID: u32 = 0x40;
 }
 

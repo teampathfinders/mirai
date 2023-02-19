@@ -4,7 +4,7 @@ use common::{VResult, Vector3f, WriteExtensions};
 use common::Serialize;
 use level::Dimension;
 
-use super::GamePacket;
+use super::ConnectedPacket;
 
 /// Used to transfer the client to another dimension.
 #[derive(Debug, Clone)]
@@ -18,7 +18,7 @@ pub struct ChangeDimension {
     pub respawn: bool,
 }
 
-impl GamePacket for ChangeDimension {
+impl ConnectedPacket for ChangeDimension {
     const ID: u32 = 0x3d;
 }
 

@@ -3,7 +3,7 @@ use common::{bail, ReadExtensions, VError, VResult, WriteExtensions};
 
 use common::Deserialize;
 
-use super::GamePacket;
+use super::ConnectedPacket;
 
 /// Type of animation to perform.
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
@@ -48,7 +48,7 @@ pub struct Animate {
     pub rowing_time: f32,
 }
 
-impl GamePacket for Animate {
+impl ConnectedPacket for Animate {
     const ID: u32 = 0x2c;
 }
 

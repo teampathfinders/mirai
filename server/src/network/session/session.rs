@@ -6,6 +6,7 @@ use std::sync::atomic::{
 use std::sync::{Arc, Weak};
 use std::time::{Duration, Instant};
 
+use aes::cipher::typenum::NonZero;
 use bytes::{BytesMut, Bytes};
 use parking_lot::{Mutex, RwLock, RwLockReadGuard};
 use tokio::net::UdpSocket;
@@ -18,14 +19,14 @@ use crate::instance_manager::InstanceManager;
 use crate::level_manager::LevelManager;
 use crate::network::packets::login::{DeviceOS, Disconnect};
 use crate::network::packets::{
-    GamePacket, MessageType, PlayerListRemove, TextMessage,
+    ConnectedPacket, MessageType, PlayerListRemove, TextMessage, BroadcastPacket, Packet,
 };
 use crate::network::session::compound_collector::CompoundCollector;
 use crate::network::session::order_channel::OrderChannel;
 use crate::network::session::recovery_queue::RecoveryQueue;
 use crate::network::session::send_queue::SendQueue;
 use crate::network::Skin;
-use common::{bail, AsyncDeque, Serialize};
+use common::{bail, Serialize};
 use common::{error, VResult};
 
 use super::SessionManager;
@@ -69,9 +70,9 @@ pub struct Session {
     pub runtime_id: u64,
     pub level_manager: Arc<LevelManager>,
     /// Sends packets into the broadcasting channel.
-    pub broadcast_send: broadcast::Sender<(u64, Bytes)>,
+    pub broadcast_send: broadcast::Sender<BroadcastPacket>,
     /// Receives packets from the broadcasting channel.
-    pub broadcast_recv: broadcast::Receiver<(u64, Bytes)>,
+    pub broadcast_recv: broadcast::Receiver<BroadcastPacket>,
 
     /// Keeps track of all unprocessed received packets.
     pub receiver: mpsc::Receiver<Bytes>,
@@ -120,7 +121,7 @@ pub struct Session {
 impl Session {
     /// Creates a new session.
     pub fn new(
-        broadcast_send: broadcast::Sender<(u64, Bytes)>,
+        broadcast_send: broadcast::Sender<BroadcastPacket>,
         receiver: mpsc::Receiver<Bytes>,
         level_manager: Arc<LevelManager>,
         ipv4_socket: Arc<UdpSocket>,
@@ -316,25 +317,31 @@ impl Session {
     }
 
     /// Sends a packet to all initialised sessions including self.
-    pub fn broadcast<P: GamePacket + Serialize + Clone>(
+    pub fn broadcast<P: ConnectedPacket + Serialize + Clone>(
         &self,
         packet: P,
     ) -> VResult<()> {
         // Broadcast
         let serialized = packet.serialize()?;
-        self.broadcast_send.send((self.get_xuid()?, serialized.clone()))?;
+        self.broadcast_send.send(BroadcastPacket {
+            sender: None, // Don't set source so every session processes it.
+            packet: Packet::<P>::new_serialized(serialized)
+        })?;
 
-        // Send to self as well.
-        self.send_serialized(serialized)
+        Ok(())
     }
 
     /// Sends a packet to all initialised sessions other than self.
-    pub fn broadcast_others<P: GamePacket + Serialize + Clone>(
+    pub fn broadcast_others<P: ConnectedPacket + Serialize + Clone>(
         &self,
         packet: P,
     ) -> VResult<()> {
         let serialized = packet.serialize()?;
-        self.broadcast_send.send((self.get_xuid()?, serialized))?;
+        self.broadcast_send.send(BroadcastPacket {
+            // Set source so that the broadcast is only processed by sessions other than this one
+            sender: Some(NonZeroU64::new(self.get_xuid()?).ok_or_else(|| error!(NotInitialized, "XUID was 0"))?),
+            packet: Packet::<P>::new_serialized(serialized)
+        })?;
 
         Ok(())
     }

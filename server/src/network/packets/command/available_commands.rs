@@ -5,7 +5,7 @@ use common::{bail, VResult, WriteExtensions};
 
 use common::Serialize;
 
-use crate::network::packets::GamePacket;
+use crate::network::packets::ConnectedPacket;
 use crate::command::CommandEnum;
 
 use crate::command::Command;
@@ -21,7 +21,7 @@ pub struct AvailableCommands<'a> {
     pub commands: &'a [Command],
 }
 
-impl GamePacket for AvailableCommands<'_> {
+impl ConnectedPacket for AvailableCommands<'_> {
     const ID: u32 = 0x4c;
 }
 

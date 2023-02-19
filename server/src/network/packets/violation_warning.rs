@@ -1,6 +1,6 @@
 use bytes::BytesMut;
 
-use crate::network::packets::GamePacket;
+use crate::network::packets::ConnectedPacket;
 use common::bail;
 use common::Deserialize;
 use common::ReadExtensions;
@@ -54,7 +54,7 @@ pub struct ViolationWarning {
     pub context: String,
 }
 
-impl GamePacket for ViolationWarning {
+impl ConnectedPacket for ViolationWarning {
     const ID: u32 = 0x9c;
 }
 

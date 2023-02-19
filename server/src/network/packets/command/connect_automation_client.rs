@@ -1,7 +1,7 @@
 use bytes::BytesMut;
 use common::{Serialize, VResult, WriteExtensions, size_of_var};
 
-use crate::network::packets::GamePacket;
+use crate::network::packets::ConnectedPacket;
 
 /// Connects the client to a Websocket server.
 #[derive(Debug, Clone)]
@@ -10,7 +10,7 @@ pub struct ConnectAutomationClient<'a> {
     pub server_uri: &'a str,
 }
 
-impl GamePacket for ConnectAutomationClient<'_> {
+impl ConnectedPacket for ConnectAutomationClient<'_> {
     const ID: u32 = 0x5f;
 }
 

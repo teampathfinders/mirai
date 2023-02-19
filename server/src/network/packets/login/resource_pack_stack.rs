@@ -1,6 +1,6 @@
 use bytes::{BufMut, BytesMut};
 
-use crate::network::packets::GamePacket;
+use crate::network::packets::ConnectedPacket;
 use common::Serialize;
 use common::VResult;
 use common::WriteExtensions;
@@ -50,7 +50,7 @@ pub struct ResourcePackStack<'a> {
     pub experiments_previously_toggled: bool,
 }
 
-impl GamePacket for ResourcePackStack<'_> {
+impl ConnectedPacket for ResourcePackStack<'_> {
     const ID: u32 = 0x07;
 }
 

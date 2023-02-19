@@ -6,7 +6,7 @@ use serde_repr::Deserialize_repr;
 use crate::crypto::{
     parse_identity_data, parse_user_data, IdentityData, UserData,
 };
-use crate::network::packets::GamePacket;
+use crate::network::packets::ConnectedPacket;
 use common::Deserialize;
 use common::ReadExtensions;
 use common::{bail, nvassert};
@@ -56,7 +56,7 @@ pub struct Login {
     pub skin: Skin
 }
 
-impl GamePacket for Login {
+impl ConnectedPacket for Login {
     const ID: u32 = 0x01;
 }
 
