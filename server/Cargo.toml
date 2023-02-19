@@ -43,3 +43,4 @@ clap = { version = "4.1.6", features = ["cargo"] }
 
 [build-dependencies]
 chrono = "0.4.23"
+vergen = "7.5.1"
