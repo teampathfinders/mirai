@@ -2,13 +2,13 @@ use std::net::{Ipv4Addr, Ipv6Addr, SocketAddrV4};
 use std::sync::Arc;
 use std::time::{Duration, SystemTime};
 
-use bytes::{BytesMut, Bytes};
+use bytes::{Bytes, BytesMut};
 use parking_lot::RwLock;
 use rand::Rng;
 use tokio::net::UdpSocket;
 use tokio::signal;
-use tokio::sync::{OnceCell, mpsc};
 use tokio::sync::oneshot::Receiver;
+use tokio::sync::{mpsc, OnceCell};
 use tokio::task::JoinHandle;
 use tokio_util::sync::CancellationToken;
 
@@ -32,7 +32,7 @@ use crate::network::raknet::packets::OpenConnectionRequest2;
 use crate::network::raknet::BufPacket;
 use crate::network::raknet::RAKNET_VERSION;
 use crate::network::session::SessionManager;
-use common::{AsyncDeque, bail};
+use common::{bail, AsyncDeque};
 use common::{error, VResult};
 use common::{Deserialize, Serialize};
 
@@ -70,7 +70,7 @@ pub struct InstanceManager {
     level_manager: RwLock<Option<Arc<LevelManager>>>,
     /// Channel that the LevelManager sends a message to when it has fully shutdown.
     /// This is to make sure that the world has been saved and safely shut down before shutting down the server.
-    level_notifier: Receiver<()>
+    level_notifier: Receiver<()>,
 }
 
 impl InstanceManager {
@@ -90,7 +90,8 @@ impl InstanceManager {
         let session_manager =
             Arc::new(SessionManager::new(global_token.clone()));
 
-        let (level_manager, level_notifier) = LevelManager::new(session_manager.clone())?;
+        let (level_manager, level_notifier) =
+            LevelManager::new(session_manager.clone())?;
         level_manager.add_command(Command {
             name: "gamerule".to_owned(),
             description: "Sets or queries a game rule value.".to_owned(),
@@ -219,7 +220,7 @@ impl InstanceManager {
             session_manager,
             level_manager: RwLock::new(Some(level_manager)),
             token: global_token,
-            level_notifier
+            level_notifier,
         });
 
         Ok(())
@@ -243,15 +244,11 @@ impl InstanceManager {
     fn process_unconnected_ping(
         pk: BufPacket,
         server_guid: u64,
-        metadata: &str
+        metadata: &str,
     ) -> VResult<BufPacket> {
         let ping = OfflinePing::deserialize(pk.buf)?;
-        pk.buf = OfflinePong {
-            time: ping.time,
-            server_guid,
-            metadata,
-        }
-        .serialize()?;
+        pk.buf = OfflinePong { time: ping.time, server_guid, metadata }
+            .serialize()?;
 
         Ok(pk)
     }
@@ -260,19 +257,17 @@ impl InstanceManager {
     #[inline]
     fn process_open_connection_request1(
         pk: BufPacket,
-        server_guid: u64
+        server_guid: u64,
     ) -> VResult<()> {
-        let request =
-            OpenConnectionRequest1::deserialize(pk.buf)?;
+        let request = OpenConnectionRequest1::deserialize(pk.buf)?;
 
         if request.protocol_version != RAKNET_VERSION {
             pk.buf = IncompatibleProtocol { server_guid }.serialize()?;
-            return Ok(pk)
+            return Ok(pk);
         }
 
-        pk.buf = OpenConnectionReply1 { 
-            mtu: request.mtu, server_guid 
-        }.serialize()?;
+        pk.buf = OpenConnectionReply1 { mtu: request.mtu, server_guid }
+            .serialize()?;
 
         Ok(pk)
     }
@@ -286,8 +281,7 @@ impl InstanceManager {
         sess_manager: Arc<SessionManager>,
         pk: BufPacket,
     ) -> VResult<()> {
-        let request =
-            OpenConnectionRequest2::deserialize(pk.buf)?;
+        let request = OpenConnectionRequest2::deserialize(pk.buf)?;
 
         pk.buf = OpenConnectionReply2 {
             server_guid,
@@ -311,7 +305,7 @@ impl InstanceManager {
         udp_socket: Arc<UdpSocket>,
         sess_manager: Arc<SessionManager>,
         server_guid: u64,
-        metadata: Arc<RwLock<String>>
+        metadata: Arc<RwLock<String>>,
     ) {
         let mut recv_buf = [0u8; RECV_BUF_SIZE];
 
@@ -331,30 +325,41 @@ impl InstanceManager {
             let mut pk = BufPacket {
                 buf: Bytes::from(&recv_buf[..n]),
                 addr: address,
-            };     
+            };
 
             if pk.is_unconnected() {
                 let udp_socket = udp_socket.clone();
-                
+
                 tokio::spawn(async move {
                     let id = if let Some(id) = pk.packet_id() {
                         id
                     } else {
                         tracing::error!("Unconnected packet was empty");
-                        return
+                        return;
                     };
-                    
+
                     pk = match id {
                         OfflinePing::ID => Self::process_unconnected_ping(
-                            pk, server_guid, metadata.read().as_str()
+                            pk,
+                            server_guid,
+                            metadata.read().as_str(),
                         ),
-                        OpenConnectionRequest1::ID => Self::process_open_connection_request1(
-                            pk, server_guid
+                        OpenConnectionRequest1::ID => {
+                            Self::process_open_connection_request1(
+                                pk,
+                                server_guid,
+                            )
+                        }
+                        OpenConnectionRequest2::ID => {
+                            Self::process_open_connection_request2(
+                                pk,
+                                sess_manager,
+                                udp_socket,
+                            )
+                        }
+                        _ => tracing::error!(
+                            "Invalid unconnected packet ID: {id:x}"
                         ),
-                        OpenConnectionRequest2::ID => Self::process_open_connection_request2(
-                            pk, sess_manager, udp_socket
-                        ),
-                        _ => tracing::error!("Invalid unconnected packet ID: {id:x}")
                     };
 
                     match udp_socket.send_to(pk.buf.as_ref(), pk.addr).await {
@@ -364,14 +369,14 @@ impl InstanceManager {
                         }
                     }
                 });
-            }    
+            }
         }
     }
 
     /// Sends packets from the send queue
     async fn udp_send_job(
-        udp_socket: Arc<UdpSocket>, 
-        mut queue: mpsc::Receiver<BufPacket>
+        udp_socket: Arc<UdpSocket>,
+        mut queue: mpsc::Receiver<BufPacket>,
     ) {
         loop {
             if let Some(sendable) = queue.recv().await {
@@ -383,7 +388,7 @@ impl InstanceManager {
                 }
             } else {
                 // Channel has been closed, shut down task.
-                return
+                return;
             }
         }
     }
@@ -424,7 +429,7 @@ impl InstanceManager {
         (*self.metadata.read()).clone()
     }
 
-    /// Register handler to shut down server on Ctrl-C signal
+    // /// Register handler to shut down server on Ctrl-C signal
     // fn register_shutdown_handler(instance: Arc<Self>) {
     //     tokio::spawn(async move {
     //         tokio::select! {

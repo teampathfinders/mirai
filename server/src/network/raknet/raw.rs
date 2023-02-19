@@ -1,6 +1,6 @@
 use std::net::SocketAddr;
 
-use bytes::{BytesMut, Bytes};
+use bytes::{Bytes, BytesMut};
 
 use crate::network::raknet::CONNECTED_PEER_BIT_FLAG;
 

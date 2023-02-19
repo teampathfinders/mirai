@@ -42,7 +42,7 @@ fn main() -> VResult<()> {
 async fn app() -> VResult<()> {
     loop {
         InstanceManager::run().await?;
-        /// Register handler to shut down server on Ctrl-C signal
+        // /// Register handler to shut down server on Ctrl-C signal
         // fn register_shutdown_handler(instance: Arc<Self>) {
         //     tokio::spawn(async move {
         //         tokio::select! {

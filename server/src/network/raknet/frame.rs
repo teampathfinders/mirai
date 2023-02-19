@@ -1,5 +1,6 @@
 use std::io::Read;
 
+use bytes::Bytes;
 use bytes::{Buf, BufMut, BytesMut};
 
 use crate::network::raknet::Reliability;
@@ -50,7 +51,7 @@ impl FrameBatch {
 }
 
 impl Deserialize for FrameBatch {
-    fn deserialize(mut buffer: BytesMut) -> VResult<Self> {
+    fn deserialize(mut buffer: Bytes) -> VResult<Self> {
         nvassert!(buffer.get_u8() & 0x80 != 0);
 
         let batch_number = buffer.get_u24_le();
@@ -66,7 +67,7 @@ impl Deserialize for FrameBatch {
 }
 
 impl Serialize for FrameBatch {
-    fn serialize(&self) -> VResult<BytesMut> {
+    fn serialize(&self) -> VResult<Bytes> {
         let mut buffer = BytesMut::new();
 
         buffer.put_u8(CONNECTED_PEER_BIT_FLAG);
@@ -76,7 +77,7 @@ impl Serialize for FrameBatch {
             frame.encode(&mut buffer);
         }
 
-        Ok(buffer)
+        Ok(buffer.freeze())
     }
 }
 
@@ -114,7 +115,7 @@ impl Frame {
 
     /// Decodes the frame.
     #[allow(clippy::useless_let_if_seq)]
-    fn decode(buffer: &mut BytesMut) -> VResult<Self> {
+    fn decode(buffer: &mut Bytes) -> VResult<Self> {
         let flags = buffer.get_u8();
 
         let reliability = Reliability::try_from(flags >> 5)?;

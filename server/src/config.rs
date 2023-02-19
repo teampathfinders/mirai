@@ -32,7 +32,7 @@ pub struct ServerConfig {
     /// Set to 0 to disable autosaves.
     pub autosave_interval: Duration,
     /// Path to the world to host.
-    pub level_path: String
+    pub level_path: String,
 }
 
 lazy_static! {

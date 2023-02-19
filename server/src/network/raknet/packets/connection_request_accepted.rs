@@ -1,7 +1,7 @@
 use std::net::SocketAddr;
 use std::time::{SystemTime, UNIX_EPOCH};
 
-use bytes::{BufMut, BytesMut, Bytes};
+use bytes::{BufMut, Bytes, BytesMut};
 
 use crate::instance_manager::IPV4_LOCAL_ADDR;
 use common::Serialize;

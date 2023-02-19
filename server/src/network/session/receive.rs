@@ -3,7 +3,7 @@ use std::sync::atomic::Ordering;
 use std::time::Instant;
 
 use async_recursion::async_recursion;
-use bytes::{Buf, BytesMut};
+use bytes::{Buf, Bytes, BytesMut};
 
 use crate::config::SERVER_CONFIG;
 use crate::network::header::Header;
@@ -59,7 +59,7 @@ impl Session {
     /// * Inserting packets into the compound collector
     /// * Discarding old sequenced frames
     /// * Acknowledging reliable packets
-    async fn handle_frame_batch(&self, task: BytesMut) -> VResult<()> {
+    async fn handle_frame_batch(&self, task: Bytes) -> VResult<()> {
         let batch = FrameBatch::deserialize(task)?;
         self.client_batch_number
             .fetch_max(batch.sequence_number, Ordering::SeqCst);

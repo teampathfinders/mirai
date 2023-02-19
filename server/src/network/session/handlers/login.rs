@@ -2,7 +2,7 @@ use std::collections::HashMap;
 use std::num::NonZeroU64;
 use std::sync::atomic::Ordering;
 
-use bytes::{BufMut, BytesMut};
+use bytes::{BufMut, Bytes, BytesMut};
 use jsonwebtoken::jwk::KeyOperations::Encrypt;
 use level::Dimension;
 
@@ -37,18 +37,15 @@ use common::{
 impl Session {
     /// Handles a [`ClientCacheStatus`] packet.
     /// This stores the result in the [`Session::cache_support`] field.
-    pub fn handle_cache_status(&self, mut packet: BytesMut) -> VResult<()> {
-        let request = CacheStatus::deserialize(packet)?;
+    pub fn handle_cache_status(&self, pk: Bytes) -> VResult<()> {
+        let request = CacheStatus::deserialize(pk)?;
         self.cache_support.set(request.supports_cache)?;
 
         Ok(())
     }
 
-    pub fn handle_violation_warning(
-        &self,
-        mut packet: BytesMut,
-    ) -> VResult<()> {
-        let request = ViolationWarning::deserialize(packet)?;
+    pub fn handle_violation_warning(&self, pk: Bytes) -> VResult<()> {
+        let request = ViolationWarning::deserialize(pk)?;
         tracing::error!("Received violation warning: {request:?}");
 
         self.kick("Violation warning")?;
@@ -60,11 +57,8 @@ impl Session {
     ///
     /// All connected sessions are notified of the new player
     /// and the new player gets a list of all current players.
-    pub fn handle_local_player_initialized(
-        &self,
-        mut packet: BytesMut,
-    ) -> VResult<()> {
-        let request = SetLocalPlayerAsInitialized::deserialize(packet)?;
+    pub fn handle_local_player_initialized(&self, pk: Bytes) -> VResult<()> {
+        let request = SetLocalPlayerAsInitialized::deserialize(pk)?;
 
         // Add player to other's player lists.
         tracing::info!("{} has connected", self.get_display_name()?);
@@ -113,24 +107,18 @@ impl Session {
     }
 
     /// Handles a [`ChunkRadiusRequest`] packet by returning the maximum allowed render distance.
-    pub fn handle_chunk_radius_request(
-        &self,
-        mut packet: BytesMut,
-    ) -> VResult<()> {
-        let request = ChunkRadiusRequest::deserialize(packet)?;
-        let reply = ChunkRadiusReply {
+    pub fn handle_chunk_radius_request(&self, pk: Bytes) -> VResult<()> {
+        let request = ChunkRadiusRequest::deserialize(pk)?;
+        self.send(ChunkRadiusReply {
             allowed_radius: SERVER_CONFIG.read().allowed_render_distance,
-        };
-        self.send(reply)?;
-
-        Ok(())
+        })
     }
 
     pub fn handle_resource_pack_client_response(
         &self,
-        mut packet: BytesMut,
+        pk: Bytes,
     ) -> VResult<()> {
-        let request = ResourcePackClientResponse::deserialize(packet)?;
+        let request = ResourcePackClientResponse::deserialize(pk)?;
 
         // TODO: Implement resource packs.
 
@@ -226,11 +214,8 @@ impl Session {
         Ok(())
     }
 
-    pub fn handle_client_to_server_handshake(
-        &self,
-        mut packet: BytesMut,
-    ) -> VResult<()> {
-        ClientToServerHandshake::deserialize(packet)?;
+    pub fn handle_client_to_server_handshake(&self, pk: Bytes) -> VResult<()> {
+        ClientToServerHandshake::deserialize(pk)?;
 
         let response = PlayStatus { status: Status::LoginSuccess };
         self.send(response)?;
@@ -259,8 +244,8 @@ impl Session {
     }
 
     /// Handles a [`Login`] packet.
-    pub async fn handle_login(&self, mut packet: BytesMut) -> VResult<()> {
-        let request = Login::deserialize(packet);
+    pub async fn handle_login(&self, pk: Bytes) -> VResult<()> {
+        let request = Login::deserialize(pk);
         let request = match request {
             Ok(r) => r,
             Err(e) => {
@@ -278,18 +263,15 @@ impl Session {
         // Flush packets before enabling encryption
         self.flush().await?;
 
-        self.send(ServerToClientHandshake { jwt: jwt.as_str() })?;
+        self.send(ServerToClientHandshake { jwt: &jwt })?;
         self.encryptor.set(encryptor)?;
 
         Ok(())
     }
 
     /// Handles a [`RequestNetworkSettings`] packet.
-    pub fn handle_request_network_settings(
-        &self,
-        mut packet: BytesMut,
-    ) -> VResult<()> {
-        let request = RequestNetworkSettings::deserialize(packet)?;
+    pub fn handle_request_network_settings(&self, pk: Bytes) -> VResult<()> {
+        let request = RequestNetworkSettings::deserialize(pk)?;
         if request.protocol_version != NETWORK_VERSION {
             if request.protocol_version > NETWORK_VERSION {
                 let response = PlayStatus { status: Status::FailedServer };
