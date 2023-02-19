@@ -133,6 +133,8 @@ impl Session {
         mtu: u16,
         guid: u64,
     ) -> Arc<Self> {
+        tracing::debug!("Session created");
+
         let session = Arc::new(Self {
             identity: OnceCell::new(),
             user_data: OnceCell::new(),
@@ -172,6 +174,7 @@ impl Session {
             tokio::spawn(async move {
                 let mut interval =
                     tokio::time::interval(INTERNAL_TICK_INTERVAL);
+
                 while !session.active.is_cancelled() {
                     match session.tick().await {
                         Ok(_) => (),
@@ -206,13 +209,11 @@ impl Session {
         {
             let session = session.clone();
             tokio::spawn(async move {
-                let mut interval = tokio::time::interval(TICK_INTERVAL);
                 while !session.active.is_cancelled() {
                     match session.handle_raw_packet().await {
                         Ok(_) => (),
                         Err(e) => tracing::error!("{e}"),
                     }
-                    interval.tick().await;
                 }
             });
         }

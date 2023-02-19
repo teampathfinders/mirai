@@ -174,7 +174,7 @@ impl Encryptor {
         self.cipher_decrypt.lock().apply_keystream_b2b(
             buffer.as_ref(), decryption_output.as_mut()
         );
-        
+
         let counter = self.receive_counter.fetch_add(1, Ordering::SeqCst);
 
         let checksum = &buffer.as_ref()[buffer.len() - 8..];

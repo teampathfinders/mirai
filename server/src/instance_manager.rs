@@ -49,14 +49,8 @@ const METADATA_REFRESH_INTERVAL: Duration = Duration::from_secs(2);
 /// Global instance that manages all data and services of the server.
 #[derive(Debug)]
 pub struct InstanceManager {
-    /// Randomised GUID, required by Minecraft
-    guid: i64,
-    /// String containing info displayed in the server tab.
-    metadata: RwLock<String>,
     /// IPv4 UDP socket
-    ipv4_socket: Arc<UdpSocket>,
-    /// Port the IPv4 service is hosted on.
-    ipv4_port: u16,
+    udp4_socket: Arc<UdpSocket>,
     /// Token indicating whether the server is still running.
     /// All services listen to this token to determine whether they should shut down.
     token: CancellationToken,
@@ -78,7 +72,7 @@ impl InstanceManager {
         };
 
         let global_token = CancellationToken::new();
-        let ipv4_socket = Arc::new(
+        let udp_socket = Arc::new(
             UdpSocket::bind(SocketAddrV4::new(IPV4_LOCAL_ADDR, ipv4_port))
                 .await?,
         );
@@ -88,6 +82,7 @@ impl InstanceManager {
 
         let (level_manager, level_notifier) =
             LevelManager::new(session_manager.clone())?;
+
         level_manager.add_command(Command {
             name: "gamerule".to_owned(),
             description: "Sets or queries a game rule value.".to_owned(),
@@ -182,39 +177,21 @@ impl InstanceManager {
 
         session_manager.set_level_manager(Arc::downgrade(&level_manager))?;
 
-        // let receiver_task = {
-        //     let controller = self.clone();
-        //     tokio::spawn(async move { controller.v4_receiver_task().await })
-        // };
-
-        // let sender_task = {
-        //     let controller = self.clone();
-        //     tokio::spawn(async move { controller.v4_sender_task().await })
-        // };
-
-        // {
-        //     let controller = self.clone();
-        //     tokio::spawn(
-        //         async move { controller.metadata_refresh_task().await },
-        //     );
-        // }
+        /// UDP receiver job.
+        let receiver_task = {
+            let udp_socket = udp_socket.clone();
+            let session_manager = session_manager.clone();
+        
+            tokio::spawn(async move { 
+                Self::udp_recv_job(
+                    udp_socket, session_manager
+                ).await 
+            })
+        };
 
         tracing::info!("Server started");
-        // The metadata task is not important for shutdown, we don't have to wait for it.
-        // let _ = tokio::join!(receiver_task, sender_task);
 
-        let server = Arc::new(Self {
-            guid: rand::thread_rng().gen(),
-            metadata: RwLock::new(String::new()),
-
-            ipv4_socket,
-            ipv4_port,
-
-            session_manager,
-            level_manager: RwLock::new(Some(level_manager)),
-            token: global_token,
-            level_notifier,
-        });
+        receiver_task.await;
 
         Ok(())
     }
@@ -297,10 +274,14 @@ impl InstanceManager {
     /// Receives packets from IPv4 clients and adds them to the receive queue
     async fn udp_recv_job(
         udp_socket: Arc<UdpSocket>,
-        sess_manager: Arc<SessionManager>,
-        server_guid: u64,
-        metadata: Arc<RwLock<String>>,
+        sess_manager: Arc<SessionManager>
     ) {
+        let server_guid = rand::thread_rng().gen();
+        let mut metadata = Self::refresh_metadata(
+            "description", server_guid,
+            sess_manager.session_count(), sess_manager.max_session_count()
+        );
+
         let mut recv_buf = [0u8; RECV_BUF_SIZE];
 
         loop {
@@ -325,7 +306,7 @@ impl InstanceManager {
                 let udp_socket = udp_socket.clone();
                 let session_manager = sess_manager.clone();
                 let metadata = metadata.clone();
-
+                
                 tokio::spawn(async move {
                     let id = if let Some(id) = pk.packet_id() {
                         id
@@ -338,7 +319,7 @@ impl InstanceManager {
                         OfflinePing::ID => Self::process_unconnected_ping(
                             pk,
                             server_guid,
-                            metadata.read().as_str(),
+                            &metadata,
                         ),
                         OpenConnectionRequest1::ID => {
                             Self::process_open_connection_request1(
@@ -379,78 +360,28 @@ impl InstanceManager {
                         }
                     }
                 });
-            }
-        }
-    }
-
-    /// Sends packets from the send queue
-    async fn udp_send_job(
-        udp_socket: Arc<UdpSocket>,
-        mut queue: mpsc::Receiver<BufPacket>,
-    ) {
-        loop {
-            if let Some(sendable) = queue.recv().await {
-                match udp_socket.send_to(&sendable.buf, sendable.addr).await {
-                    Ok(_) => (),
-                    Err(e) => {
-                        tracing::error!("Failed to send packet: {e:?}");
-                    }
-                }
             } else {
-                // Channel has been closed, shut down task.
-                return;
+                sess_manager.forward_packet(pk);
             }
-        }
-    }
-
-    /// Refreshes the server description and player counts on a specified interval.
-    async fn metadata_refresh_task(self: Arc<Self>) {
-        let mut interval = tokio::time::interval(METADATA_REFRESH_INTERVAL);
-        while !self.token.is_cancelled() {
-            let description =
-                format!("{} players", self.session_manager.session_count());
-            self.refresh_metadata(&description);
-            interval.tick().await;
         }
     }
 
     /// Generates a new metadata string using the given description and new player count.
-    fn refresh_metadata(&self, description: &str) {
-        let new_id = format!(
+    fn refresh_metadata(
+        description: &str, server_guid: u64,
+        session_count: usize, max_session_count: usize
+    ) -> String {
+        format!(
             "MCPE;{};{};{};{};{};{};{};Survival;1;{};{};",
             description,
             NETWORK_VERSION,
             CLIENT_VERSION_STRING,
-            self.session_manager.session_count(),
-            self.session_manager.max_session_count(),
-            self.guid,
+            session_count,
+            max_session_count,
+            server_guid,
             SERVER_CONFIG.read().server_name,
-            self.ipv4_port,
+            19132,
             19133
-        );
-
-        let mut lock = self.metadata.write();
-        *lock = new_id;
+        )
     }
-
-    /// Returns the current metadata string.
-    #[inline]
-    fn metadata(&self) -> String {
-        (*self.metadata.read()).clone()
-    }
-
-    // /// Register handler to shut down server on Ctrl-C signal
-    // fn register_shutdown_handler(instance: Arc<Self>) {
-    //     tokio::spawn(async move {
-    //         tokio::select! {
-    //             _ = signal::ctrl_c() => {
-    //                 tracing::info!("Shutting down...");
-    //                 instance.shutdown().await
-    //             },
-    //             _ = instance.token.cancelled() => {
-    //                 // Token has been cancelled by something else, this service is no longer needed
-    //             }
-    //         }
-    //     });
-    // }
 }

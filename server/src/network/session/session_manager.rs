@@ -15,9 +15,10 @@ use crate::network::packets::{BroadcastPacket, Packet};
 use crate::network::raknet::BufPacket;
 use crate::network::session::session::Session;
 use crate::{config::SERVER_CONFIG, network::packets::ConnectedPacket};
-use common::{error, Serialize, VResult};
+use common::{error, Serialize, VResult, bail};
 
 const BROADCAST_CHANNEL_CAPACITY: usize = 16;
+const FORWARD_TIMEOUT: Duration = Duration::from_millis(20);
 const GARBAGE_COLLECT_INTERVAL: Duration = Duration::from_secs(10);
 
 /// Keeps track of all sessions on the server.
@@ -89,18 +90,29 @@ impl SessionManager {
     }
 
     /// Forwards a packet from the network service to the correct session.
-    pub fn forward_packet(&self, packet: BufPacket) -> VResult<()> {
-        self.list
-            .get(&packet.addr)
-            .map(|r| {
-                let session = r.value();
-            })
-            .ok_or_else(|| {
-                error!(
-                    NotConnected,
-                    "Attempted to forward packet to non-existent session"
-                )
-            })
+    pub fn forward_packet(&self, pk: BufPacket) {
+        // Spawn a new task so that the UDP receiver isn't interrupted
+        // if forwarding takes a long amount time.
+        
+        let list = self.list.clone();
+        tokio::spawn(async move {
+            if let Some(session) = list.get(&pk.addr) {
+                match session.0.send_timeout(pk.buf, FORWARD_TIMEOUT).await {
+                    Ok(_) => (),
+                    Err(_) => {
+                        // Session incoming queue is full.
+                        // If after a 20 ms timeout it is still full, destroy the session,
+                        // it probably froze.
+                        tracing::error!(
+                            "Session queue is full, it seems like the session is hanging. Closing it"
+                        );
+                        session.1.flag_for_close();
+                    }
+                }
+            } else {
+                tracing::error!("Received online packet for unconnected client");
+            }
+        });
     }
 
     /// Sends the given packet to every session.

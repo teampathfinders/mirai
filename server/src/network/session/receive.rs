@@ -36,6 +36,7 @@ impl Session {
             let mut lock = self.receiver.lock().await;
             lock.recv().await
         };
+        tracing::info!("received");
 
         if let Some(pk) = recv {
             *self.last_update.write() = Instant::now();
