@@ -1,3 +1,4 @@
+use bytes::Bytes;
 use bytes::{BufMut, BytesMut};
 
 use crate::network::packets::ConnectedPacket;
@@ -53,7 +54,7 @@ impl ConnectedPacket for NetworkSettings {
 }
 
 impl Serialize for NetworkSettings {
-    fn serialize(&self) -> VResult<BytesMut> {
+    fn serialize(&self) -> VResult<Bytes> {
         let mut buffer = BytesMut::with_capacity(2 + 2 + 1 + 1 + 4);
 
         buffer.put_u16(self.compression_threshold);
@@ -62,6 +63,6 @@ impl Serialize for NetworkSettings {
         buffer.put_u8(self.client_throttle.threshold);
         buffer.put_f32(self.client_throttle.scalar);
 
-        Ok(buffer)
+        Ok(buffer.freeze())
     }
 }

@@ -1,4 +1,4 @@
-use bytes::BytesMut;
+use bytes::{BytesMut, Bytes};
 use common::{VResult, WriteExtensions, size_of_var};
 
 use common::Serialize;
@@ -19,7 +19,7 @@ impl ConnectedPacket for DeathInfo<'_> {
 }
 
 impl Serialize for DeathInfo<'_> {
-    fn serialize(&self) -> VResult<BytesMut> {
+    fn serialize(&self) -> VResult<Bytes> {
         let packet_size = size_of_var(self.cause.len() as u32) + self.cause.len() +
         size_of_var(self.messages.len() as u32) + 
         self.messages.iter().fold(0, |acc, m| acc + size_of_var(m.len() as u32) + m.len());
@@ -35,6 +35,6 @@ impl Serialize for DeathInfo<'_> {
             buffer.put_string(message);
         }
 
-        Ok(buffer)
+        Ok(buffer.freeze())
     }
 }

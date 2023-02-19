@@ -1,4 +1,4 @@
-use bytes::BytesMut;
+use bytes::{BytesMut, Bytes};
 use common::{Deserialize, ReadExtensions, VResult};
 use crate::network::packets::ConnectedPacket;
 
@@ -13,7 +13,7 @@ impl ConnectedPacket for GenericLevelEvent {
 }
 
 impl Deserialize for GenericLevelEvent {
-    fn deserialize(mut buffer: BytesMut) -> VResult<Self> {
+    fn deserialize(mut buffer: Bytes) -> VResult<Self> {
         let event_id = buffer.get_var_i32()?;
         let data = nbt::read_le(&mut buffer)?;
 

@@ -108,27 +108,19 @@ impl SessionManager {
         &self,
         pk: P,
     ) -> VResult<()> {
-        let serialized = pk.serialize()?;
-        self.broadcast.send(BroadcastPacket {
-            sender: None,
-            packet: Packet::<P>::new_serialized(serialized),
-        })?;
-
+        self.broadcast.send(BroadcastPacket::new(pk, None)?)?;
         Ok(())
     }
 
     /// Kicks all sessions from the server, displaying the given message.
     pub async fn kick_all<S: AsRef<str>>(&self, message: S) -> VResult<()> {
-        let serialized = Disconnect {
-            hide_disconnect_screen: false,
-            kick_message: message.as_ref(),
-        }
-        .serialize()?;
-
-        self.broadcast.send(BroadcastPacket {
-            sender: None,
-            packet: Packet::<Disconnect>::new_serialized(serialized),
-        })?;
+        self.broadcast.send(BroadcastPacket::new(
+            Disconnect {
+                hide_disconnect_screen: false,
+                kick_message: message.as_ref(),
+            },
+            None
+        )?)?;
 
         // Clear to get rid of references, so that the sessions are dropped once they're ready.
         self.list.clear();

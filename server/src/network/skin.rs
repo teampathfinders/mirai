@@ -127,7 +127,7 @@ pub struct PersonaPiece {
 }
 
 impl PersonaPiece {
-    fn encode(&self, buffer: &mut BytesMut) {
+    fn serialize(&self, buffer: &mut BytesMut) {
         buffer.put_string(&self.piece_id);
         buffer.put_string(self.piece_type.name());
         buffer.put_string(&self.pack_id);
@@ -135,7 +135,7 @@ impl PersonaPiece {
         buffer.put_string(&self.product_id);
     }
 
-    fn decode(buffer: &mut BytesMut) -> VResult<Self> {
+    fn deserialize(buffer: &mut Bytes) -> VResult<Self> {
         let piece_id = buffer.get_string()?;
         let piece_type = PersonaPieceType::try_from(buffer.get_string()?.as_str())?;
         let pack_id = buffer.get_string()?;
@@ -164,7 +164,7 @@ pub struct PersonaPieceTint {
 }
 
 impl PersonaPieceTint {
-    fn encode(&self, buffer: &mut BytesMut) {
+    fn serialize(&self, buffer: &mut BytesMut) {
         buffer.put_string(self.piece_type.name());
 
         buffer.put_u32_le(self.colors.len() as u32);
@@ -173,7 +173,7 @@ impl PersonaPieceTint {
         }
     }
 
-    fn decode(buffer: &mut BytesMut) -> VResult<Self> {
+    fn deserialize(buffer: &mut Bytes) -> VResult<Self> {
         let piece_type = PersonaPieceType::try_from(buffer.get_string()?.as_str())?;
 
         let color_count = buffer.get_u32_le();
@@ -263,7 +263,7 @@ pub struct SkinAnimation {
 }
 
 impl SkinAnimation {
-    pub fn encode(&self, buffer: &mut BytesMut) {
+    pub fn serialize(&self, buffer: &mut BytesMut) {
         buffer.put_u32_le(self.image_width);
         buffer.put_u32_le(self.image_height);
         
@@ -275,7 +275,7 @@ impl SkinAnimation {
         buffer.put_u32_le(self.expression_type as u32);
     }
 
-    pub fn decode(buffer: &mut BytesMut) -> VResult<Self> {
+    pub fn deserialize(buffer: &mut Bytes) -> VResult<Self> {
         let image_width = buffer.get_u32_le();
         let image_height = buffer.get_u32_le();
         let image_size = buffer.get_var_u32()?;
@@ -433,7 +433,7 @@ impl Skin {
         Ok(())
     }
 
-    pub fn encode(&self, buffer: &mut BytesMut) {
+    pub fn serialize(&self, buffer: &mut BytesMut) {
         buffer.put_string(&self.skin_id);
         buffer.put_string(&self.playfab_id);
         buffer.put_string(&self.resource_patch);
@@ -445,7 +445,7 @@ impl Skin {
 
         buffer.put_u32_le(self.animations.len() as u32);
         for animation in &self.animations {
-            animation.encode(buffer);
+            animation.serialize(buffer);
         }
 
         buffer.put_u32_le(self.cape_image_width);
@@ -464,12 +464,12 @@ impl Skin {
 
         buffer.put_u32_le(self.persona_pieces.len() as u32);
         for piece in &self.persona_pieces {
-            piece.encode(buffer);
+            piece.serialize(buffer);
         }
 
         buffer.put_u32_le(self.persona_piece_tints.len() as u32);
         for tint in &self.persona_piece_tints {
-            tint.encode(buffer);
+            tint.serialize(buffer);
         }
 
         buffer.put_bool(self.is_premium);
@@ -478,7 +478,7 @@ impl Skin {
         buffer.put_bool(self.is_primary_user);
     }
 
-    pub fn decode(buffer: &mut BytesMut) -> VResult<Self> {
+    pub fn deserialize(buffer: &mut Bytes) -> VResult<Self> {
         let skin_id = buffer.get_string()?;
         let playfab_id = buffer.get_string()?;
         let resource_patch = buffer.get_string()?;
@@ -491,7 +491,7 @@ impl Skin {
         let animation_count = buffer.get_u32_le();
         let mut animations = Vec::with_capacity(animation_count as usize);
         for _ in 0..animation_count {
-            animations.push(SkinAnimation::decode(buffer)?);
+            animations.push(SkinAnimation::deserialize(buffer)?);
         }
 
         let cape_image_width = buffer.get_u32_le();
@@ -510,13 +510,13 @@ impl Skin {
         let persona_piece_count = buffer.get_u32_le();
         let mut persona_pieces = Vec::with_capacity(persona_piece_count as usize);
         for _ in 0..persona_piece_count {
-            persona_pieces.push(PersonaPiece::decode(buffer)?);            
+            persona_pieces.push(PersonaPiece::deserialize(buffer)?);            
         }
 
         let persona_tint_count = buffer.get_u32_le();
         let mut persona_piece_tints = Vec::with_capacity(persona_tint_count as usize);
         for _ in 0..persona_piece_count {
-            persona_piece_tints.push(PersonaPieceTint::decode(buffer)?);
+            persona_piece_tints.push(PersonaPieceTint::deserialize(buffer)?);
         }
 
         let is_premium = buffer.get_bool();

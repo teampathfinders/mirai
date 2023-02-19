@@ -1,4 +1,4 @@
-use bytes::BytesMut;
+use bytes::{BytesMut, Bytes};
 use common::{VResult, WriteExtensions, size_of_var};
 
 use common::Serialize;
@@ -17,12 +17,12 @@ impl ConnectedPacket for ShowProfile<'_> {
 }
 
 impl Serialize for ShowProfile<'_> {
-    fn serialize(&self) -> VResult<BytesMut> {
+    fn serialize(&self) -> VResult<Bytes> {
         let packet_size = size_of_var(self.xuid.len() as u32) + self.xuid.len();
         let mut buffer = BytesMut::with_capacity(packet_size);
 
         buffer.put_string(self.xuid);
 
-        Ok(buffer)
+        Ok(buffer.freeze())
     }
 }

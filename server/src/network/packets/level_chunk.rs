@@ -1,4 +1,4 @@
-use bytes::{BufMut, BytesMut};
+use bytes::{BufMut, BytesMut, Bytes};
 use common::{VResult, Vector2i, WriteExtensions};
 
 use common::Serialize;
@@ -38,7 +38,7 @@ impl ConnectedPacket for LevelChunk {
 }
 
 impl Serialize for LevelChunk {
-    fn serialize(&self) -> VResult<BytesMut> {
+    fn serialize(&self) -> VResult<Bytes> {
         let mut buffer = BytesMut::new();
 
         buffer.put_vec2i(&self.position);
@@ -65,6 +65,6 @@ impl Serialize for LevelChunk {
 
         buffer.put(self.raw_payload.as_ref());
 
-        Ok(buffer)
+        Ok(buffer.freeze())
     }
 }

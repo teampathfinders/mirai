@@ -1,6 +1,6 @@
 use std::collections::{HashMap, HashSet};
 
-use bytes::{BufMut, BytesMut};
+use bytes::{BufMut, BytesMut, Bytes};
 use common::{bail, VResult, WriteExtensions};
 
 use common::Serialize;
@@ -26,7 +26,7 @@ impl ConnectedPacket for AvailableCommands<'_> {
 }
 
 impl Serialize for AvailableCommands<'_> {
-    fn serialize(&self) -> VResult<BytesMut> {
+    fn serialize(&self) -> VResult<Bytes> {
         let mut buffer = BytesMut::new();
 
         let mut value_indices = HashMap::new();
@@ -203,8 +203,8 @@ impl Serialize for AvailableCommands<'_> {
             }
         }
 
-        buffer.put_var_u32(0); // No constraints.
+        buffer.put_var_u32(0); // No constraints, they are useless.
 
-        Ok(buffer)
+        Ok(buffer.freeze())
     }
 }

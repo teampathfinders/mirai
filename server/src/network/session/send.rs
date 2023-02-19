@@ -38,16 +38,6 @@ impl Session {
         self.send_packet_with_config(pk, DEFAULT_CONFIG)
     }
 
-    /// Sends an already serialized packet body to the client.
-    #[inline]
-    pub fn send_serialized<T: ConnectedPacket + Serialize>(
-        &self,
-        serialized: Bytes,
-    ) -> VResult<()> {
-        let pk = Packet::<T>::new_serialized(serialized);
-        self.send_packet_with_config(pk, DEFAULT_CONFIG)
-    }
-
     /// Sends a game packet with custom reliability and priority
     pub fn send_packet_with_config<T: ConnectedPacket + Serialize>(
         &self,
@@ -78,7 +68,7 @@ impl Session {
 
                         writer.write_all(packet_buffer.as_ref())?;
                         packet_buffer =
-                            Bytes::from(writer.finish()?.as_slice());
+                            Bytes::copy_from_slice(writer.finish()?.as_slice());
                     }
                 }
             }
@@ -301,7 +291,7 @@ impl Session {
                 compound_index: i as u32,
                 compound_size: compound_size as u32,
                 compound_id,
-                body: Bytes::from(chunk),
+                body: Bytes::copy_from_slice(chunk),
                 ..Default::default()
             };
 

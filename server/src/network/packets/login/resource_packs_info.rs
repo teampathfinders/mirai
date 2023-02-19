@@ -1,3 +1,4 @@
+use bytes::Bytes;
 use bytes::{BufMut, BytesMut};
 
 use crate::network::packets::ConnectedPacket;
@@ -78,7 +79,7 @@ impl ConnectedPacket for ResourcePacksInfo<'_> {
 }
 
 impl Serialize for ResourcePacksInfo<'_> {
-    fn serialize(&self) -> VResult<BytesMut> {
+    fn serialize(&self) -> VResult<Bytes> {
         let mut buffer = BytesMut::new();
 
         buffer.put_bool(self.required);
@@ -108,6 +109,6 @@ impl Serialize for ResourcePacksInfo<'_> {
             buffer.put_bool(pack.rtx_enabled);
         }
 
-        Ok(buffer)
+        Ok(buffer.freeze())
     }
 }

@@ -1,3 +1,4 @@
+use bytes::Bytes;
 use bytes::{Buf, BytesMut};
 
 use crate::network::packets::ConnectedPacket;
@@ -53,7 +54,7 @@ impl ConnectedPacket for ResourcePackClientResponse {
 }
 
 impl Deserialize for ResourcePackClientResponse {
-    fn deserialize(mut buffer: BytesMut) -> VResult<Self> {
+    fn deserialize(mut buffer: Bytes) -> VResult<Self> {
         let status = ResourcePackStatus::try_from(buffer.get_u8())?;
         let length = buffer.get_u16();
 

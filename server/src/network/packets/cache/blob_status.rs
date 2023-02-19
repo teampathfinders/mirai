@@ -1,4 +1,4 @@
-use bytes::{Buf, BytesMut};
+use bytes::{Buf, BytesMut, Bytes};
 use common::{Deserialize, ReadExtensions, VResult};
 use crate::network::packets::ConnectedPacket;
 
@@ -16,7 +16,7 @@ impl ConnectedPacket for CacheBlobStatus {
 }
 
 impl Deserialize for CacheBlobStatus {
-    fn deserialize(mut buffer: BytesMut) -> VResult<Self> {
+    fn deserialize(mut buffer: Bytes) -> VResult<Self> {
         let miss_count = buffer.get_var_u32()?;
         let hit_count = buffer.get_var_u32()?;
 

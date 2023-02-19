@@ -1,4 +1,4 @@
-use bytes::{Buf, BytesMut};
+use bytes::{Buf, BytesMut, Bytes};
 use common::{bail, ReadExtensions, VError, VResult, Vector3f};
 
 use common::Deserialize;
@@ -43,7 +43,7 @@ impl ConnectedPacket for Interact {
 }
 
 impl Deserialize for Interact {
-    fn deserialize(mut buffer: BytesMut) -> VResult<Self> {
+    fn deserialize(mut buffer: Bytes) -> VResult<Self> {
         let action = InteractAction::try_from(buffer.get_u8())?;
         let target_runtime_id = buffer.get_var_u64()?;
 

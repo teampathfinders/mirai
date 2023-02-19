@@ -1,4 +1,4 @@
-use bytes::BytesMut;
+use bytes::{BytesMut, Bytes};
 use common::{VResult, Vector3f, WriteExtensions};
 
 use common::Serialize;
@@ -16,12 +16,12 @@ impl ConnectedPacket for SpawnExperienceOrb {
 }
 
 impl Serialize for SpawnExperienceOrb {
-    fn serialize(&self) -> VResult<BytesMut> {
+    fn serialize(&self) -> VResult<Bytes> {
         let mut buffer = BytesMut::with_capacity(3 * 4 + 1);
 
         buffer.put_vec3f(&self.position);
         buffer.put_var_u32(self.amount);
 
-        Ok(buffer)
+        Ok(buffer.freeze())
     }
 }

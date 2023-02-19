@@ -1,5 +1,5 @@
-use bytes::BytesMut;
-use common::{VResult, WriteExtensions};
+use bytes::{BytesMut, Bytes};
+use common::{VResult, WriteExtensions, size_of_var};
 
 use common::Serialize;
 use crate::network::packets::ConnectedPacket;
@@ -16,13 +16,12 @@ impl ConnectedPacket for ChunkRadiusReply {
 }
 
 impl Serialize for ChunkRadiusReply {
-    fn serialize(&self) -> VResult<BytesMut> {
-        // Chunk radius is virtually always one byte,
-        // unless a chunk radius larger than 128 chunks is specified.
-        let mut buffer = BytesMut::with_capacity(1);
+    fn serialize(&self) -> VResult<Bytes> {
+        let packet_size = size_of_var(self.allowed_radius);
+        let mut buffer = BytesMut::with_capacity(packet_size);
 
         buffer.put_var_i32(self.allowed_radius);
 
-        Ok(buffer)
+        Ok(buffer.freeze())
     }
 }

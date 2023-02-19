@@ -1,3 +1,4 @@
+use bytes::Bytes;
 use bytes::BytesMut;
 use common::VResult;
 
@@ -16,7 +17,7 @@ impl ConnectedPacket for BiomeDefinitionList {
 }
 
 impl Serialize for BiomeDefinitionList {
-    fn serialize(&self) -> VResult<BytesMut> {
-        Ok(BytesMut::from(DEFINITIONS))
+    fn serialize(&self) -> VResult<Bytes> {
+        Ok(Bytes::from_static(DEFINITIONS))
     }
 }

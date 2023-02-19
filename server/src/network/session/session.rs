@@ -141,8 +141,8 @@ impl Session {
             cache_support: OnceCell::new(),
             initialized: AtomicBool::new(false),
             runtime_id: RUNTIME_ID_COUNTER.fetch_add(1, Ordering::SeqCst),
-            broadcast_send,
             broadcast_recv: broadcast_send.subscribe(),
+            broadcast_send,
             level_manager,
 
             receiver: tokio::sync::Mutex::new(receiver),
@@ -323,32 +323,22 @@ impl Session {
     /// Sends a packet to all initialised sessions including self.
     pub fn broadcast<P: ConnectedPacket + Serialize + Clone>(
         &self,
-        packet: P,
+        pk: P,
     ) -> VResult<()> {
-        // Broadcast
-        let serialized = packet.serialize()?;
-        self.broadcast_send.send(BroadcastPacket {
-            sender: None, // Don't set source so every session processes it.
-            packet: Packet::<P>::new_serialized(serialized),
-        })?;
-
+        self.broadcast_send.send(BroadcastPacket::new(pk, None)?)?;
         Ok(())
     }
 
     /// Sends a packet to all initialised sessions other than self.
     pub fn broadcast_others<P: ConnectedPacket + Serialize + Clone>(
         &self,
-        packet: P,
+        pk: P,
     ) -> VResult<()> {
-        let serialized = packet.serialize()?;
-        self.broadcast_send.send(BroadcastPacket {
-            // Set source so that the broadcast is only processed by sessions other than this one
-            sender: Some(
+        self.broadcast_send.send(
+            BroadcastPacket::new(pk, Some(
                 NonZeroU64::new(self.get_xuid()?)
                     .ok_or_else(|| error!(NotInitialized, "XUID was 0"))?,
-            ),
-            packet: Packet::<P>::new_serialized(serialized),
-        })?;
+            ))?)?;
 
         Ok(())
     }

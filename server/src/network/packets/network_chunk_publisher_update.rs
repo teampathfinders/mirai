@@ -1,4 +1,4 @@
-use bytes::{BufMut, BytesMut};
+use bytes::{BufMut, BytesMut, Bytes};
 use common::{BlockPosition, VResult, WriteExtensions, size_of_var};
 
 use common::Serialize;
@@ -16,7 +16,7 @@ impl ConnectedPacket for NetworkChunkPublisherUpdate {
 }
 
 impl Serialize for NetworkChunkPublisherUpdate {
-    fn serialize(&self) -> VResult<BytesMut> {
+    fn serialize(&self) -> VResult<Bytes> {
         let packet_size =
             size_of_var(self.position.x) +
             size_of_var(self.position.y) +
@@ -31,6 +31,6 @@ impl Serialize for NetworkChunkPublisherUpdate {
         // No saved chunks.
         buffer.put_u32(0);
 
-        Ok(buffer)
+        Ok(buffer.freeze())
     }
 }

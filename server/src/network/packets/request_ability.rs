@@ -1,4 +1,4 @@
-use bytes::{Buf, BytesMut};
+use bytes::{Buf, BytesMut, Bytes};
 use common::{bail, ReadExtensions, VError, VResult};
 
 use common::Deserialize;
@@ -39,7 +39,7 @@ impl ConnectedPacket for RequestAbility {
 }
 
 impl Deserialize for RequestAbility {
-    fn deserialize(mut buffer: BytesMut) -> VResult<Self> {
+    fn deserialize(mut buffer: Bytes) -> VResult<Self> {
         let ability_type = buffer.get_var_i32()?;
         let value_type = buffer.get_u8();
 

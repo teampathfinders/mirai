@@ -1,4 +1,4 @@
-use bytes::BytesMut;
+use bytes::{BytesMut, Bytes};
 use common::{VResult, WriteExtensions};
 
 use common::Serialize;
@@ -19,11 +19,11 @@ impl ConnectedPacket for SetCommandsEnabled {
 }
 
 impl Serialize for SetCommandsEnabled {
-    fn serialize(&self) -> VResult<BytesMut> {
+    fn serialize(&self) -> VResult<Bytes> {
         let mut buffer = BytesMut::with_capacity(1);
 
         buffer.put_bool(self.enabled);
 
-        Ok(buffer)
+        Ok(buffer.freeze())
     }
 }

@@ -1,4 +1,4 @@
-use bytes::{Buf, BufMut, BytesMut};
+use bytes::{Buf, BufMut, BytesMut, Bytes};
 use common::{bail, Deserialize, Serialize, ReadExtensions, VError, VResult};
 use crate::network::packets::ConnectedPacket;
 
@@ -54,7 +54,7 @@ impl ConnectedPacket for BookEdit {
 }
 
 impl Deserialize for BookEdit {
-    fn deserialize(mut buffer: BytesMut) -> VResult<Self>{
+    fn deserialize(mut buffer: Bytes) -> VResult<Self>{
         let action = buffer.get_u8();;
         let inventory_slot = buffer.get_u8();
 

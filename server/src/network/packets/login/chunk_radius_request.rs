@@ -1,3 +1,4 @@
+use bytes::Bytes;
 use common::{ReadExtensions, VResult};
 
 use common::Deserialize;
@@ -15,7 +16,7 @@ impl ConnectedPacket for ChunkRadiusRequest {
 }
 
 impl Deserialize for ChunkRadiusRequest {
-    fn deserialize(mut buffer: bytes::BytesMut) -> VResult<Self> {
+    fn deserialize(mut buffer: Bytes) -> VResult<Self> {
         let radius = buffer.get_var_i32()?;
 
         Ok(Self { radius })

@@ -1,6 +1,6 @@
 use std::time::Duration;
 
-use bytes::BytesMut;
+use bytes::{BytesMut, Bytes};
 use common::{VResult, WriteExtensions};
 
 use common::Serialize;
@@ -46,7 +46,7 @@ impl ConnectedPacket for SetTitle<'_> {
 }
 
 impl Serialize for SetTitle<'_> {
-    fn serialize(&self) -> VResult<BytesMut> {
+    fn serialize(&self) -> VResult<Bytes> {
         let mut buffer = BytesMut::new();
 
         buffer.put_var_i32(self.action as i32);
@@ -57,6 +57,6 @@ impl Serialize for SetTitle<'_> {
         buffer.put_string(self.xuid);
         buffer.put_string(self.platform_online_id);
 
-        Ok(buffer)
+        Ok(buffer.freeze())
     }
 }

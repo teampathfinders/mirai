@@ -1,4 +1,4 @@
-use bytes::{BufMut, BytesMut};
+use bytes::{BufMut, BytesMut, Bytes};
 use common::{VResult, WriteExtensions, size_of_var};
 
 use common::Serialize;
@@ -75,7 +75,7 @@ impl ConnectedPacket for MobEffectUpdate {
 }
 
 impl Serialize for MobEffectUpdate {
-    fn serialize(&self) -> VResult<BytesMut> {
+    fn serialize(&self) -> VResult<Bytes> {
         let packet_size = 
             size_of_var(self.runtime_id) + 1 +
             size_of_var(self.effect_kind as i32) +
@@ -91,6 +91,6 @@ impl Serialize for MobEffectUpdate {
         buffer.put_bool(self.particles);
         buffer.put_var_i32(self.duration);
 
-        Ok(buffer)
+        Ok(buffer.freeze())
     }
 }

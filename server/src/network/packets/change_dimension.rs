@@ -1,4 +1,4 @@
-use bytes::BytesMut;
+use bytes::{BytesMut, Bytes};
 use common::{VResult, Vector3f, WriteExtensions};
 
 use common::Serialize;
@@ -23,13 +23,13 @@ impl ConnectedPacket for ChangeDimension {
 }
 
 impl Serialize for ChangeDimension {
-    fn serialize(&self) -> VResult<BytesMut> {
+    fn serialize(&self) -> VResult<Bytes> {
         let mut buffer = BytesMut::with_capacity(1 + 3 * 4 + 1);
 
         buffer.put_var_i32(self.dimension as i32);
         buffer.put_vec3f(&self.position);
         buffer.put_bool(self.respawn);
 
-        Ok(buffer)
+        Ok(buffer.freeze())
     }
 }

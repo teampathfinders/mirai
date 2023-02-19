@@ -1,3 +1,4 @@
+use bytes::Bytes;
 use bytes::BytesMut;
 
 use crate::network::packets::ConnectedPacket;
@@ -59,7 +60,7 @@ impl ConnectedPacket for ViolationWarning {
 }
 
 impl Deserialize for ViolationWarning {
-    fn deserialize(mut buffer: BytesMut) -> VResult<Self> {
+    fn deserialize(mut buffer: Bytes) -> VResult<Self> {
         tracing::debug!("{:x?}", buffer.as_ref());
 
         let warning_type = ViolationType::try_from(buffer.get_var_i32()?)?;

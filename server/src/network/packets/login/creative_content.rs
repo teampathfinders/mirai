@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 
+use bytes::Bytes;
 use bytes::{BufMut, BytesMut};
 use nbt::Value;
 
@@ -83,7 +84,7 @@ impl ConnectedPacket for CreativeContent<'_> {
 }
 
 impl Serialize for CreativeContent<'_> {
-    fn serialize(&self) -> VResult<BytesMut> {
+    fn serialize(&self) -> VResult<Bytes> {
         let mut buffer = BytesMut::new();
 
         buffer.put_var_u32(self.items.len() as u32);
@@ -91,6 +92,6 @@ impl Serialize for CreativeContent<'_> {
             item.encode(&mut buffer);
         }
 
-        Ok(buffer)
+        Ok(buffer.freeze())
     }
 }

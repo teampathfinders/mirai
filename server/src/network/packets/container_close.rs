@@ -1,4 +1,4 @@
-use bytes::{BufMut, BytesMut};
+use bytes::{BufMut, BytesMut, Bytes};
 use common::{Serialize, VResult, WriteExtensions};
 use crate::network::packets::ConnectedPacket;
 
@@ -15,12 +15,12 @@ impl ConnectedPacket for ContainerClose {
 }
 
 impl Serialize for ContainerClose {
-    fn serialize(&self) -> VResult<BytesMut> {
+    fn serialize(&self) -> VResult<Bytes> {
         let mut buffer = BytesMut::with_capacity(2);
 
         buffer.put_u8(self.window_id);
         buffer.put_bool(self.server_initiated);
 
-        Ok(buffer)
+        Ok(buffer.freeze())
     }
 }

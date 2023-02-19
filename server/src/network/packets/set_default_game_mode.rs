@@ -1,4 +1,4 @@
-use bytes::BytesMut;
+use bytes::{BytesMut, Bytes};
 use common::{Deserialize, Serialize, ReadExtensions, VResult, WriteExtensions};
 
 use super::{GameMode, ConnectedPacket};
@@ -15,7 +15,7 @@ impl ConnectedPacket for SetDefaultGameMode {
 }
 
 impl Deserialize for SetDefaultGameMode {
-    fn deserialize(mut buffer: BytesMut) -> VResult<Self> {
+    fn deserialize(mut buffer: Bytes) -> VResult<Self> {
         let game_mode = GameMode::try_from(buffer.get_var_i32()?)?;
 
         Ok(Self { game_mode })
@@ -23,11 +23,11 @@ impl Deserialize for SetDefaultGameMode {
 }
 
 impl Serialize for SetDefaultGameMode {
-    fn serialize(&self) -> VResult<BytesMut> {
+    fn serialize(&self) -> VResult<Bytes> {
         let mut buffer = BytesMut::with_capacity(1);
 
         buffer.put_var_i32(self.game_mode as i32);
 
-        Ok(buffer)
+        Ok(buffer.freeze())
     }
 }

@@ -1,4 +1,4 @@
-use bytes::BytesMut;
+use bytes::{BytesMut, Bytes};
 use common::{bail, Deserialize, Serialize, ReadExtensions, Vector3f, VError, VResult, WriteExtensions, size_of_var};
 use crate::network::packets::ConnectedPacket;
 
@@ -244,7 +244,7 @@ impl ConnectedPacket for LevelEvent {
 }
 
 impl Serialize for LevelEvent {
-    fn serialize(&self) -> VResult<BytesMut> {
+    fn serialize(&self) -> VResult<Bytes> {
         let packet_size =
             size_of_var(self.event_type as i32) + 3 * 4 + 
             size_of_var(self.event_data);
@@ -255,12 +255,12 @@ impl Serialize for LevelEvent {
         buffer.put_vec3f(&self.position);
         buffer.put_var_i32(self.event_data);
 
-        Ok(buffer)
+        Ok(buffer.freeze())
     }
 }
 
 impl Deserialize for LevelEvent {
-    fn deserialize(mut buffer: BytesMut) -> VResult<Self> {
+    fn deserialize(mut buffer: Bytes) -> VResult<Self> {
         let event_type = LevelEventType::try_from(buffer.get_var_i32()?)?;
         let position = buffer.get_vec3f();
         let event_data = buffer.get_var_i32()?;

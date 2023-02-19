@@ -149,7 +149,7 @@ impl Frame {
         }
 
         let position = buffer.len() - buffer.remaining();
-        let mut body = Bytes::from(
+        let mut body = Bytes::copy_from_slice(
             &buffer.as_ref()[position..(position + length as usize)],
         );
         buffer.advance(length as usize);

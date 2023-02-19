@@ -1,4 +1,4 @@
-use bytes::{Buf, BufMut, BytesMut};
+use bytes::{Buf, BufMut, Bytes, BytesMut};
 use common::{bail, ReadExtensions, VError, VResult, WriteExtensions};
 
 use common::{Deserialize, Serialize};
@@ -75,7 +75,7 @@ impl ConnectedPacket for TextMessage {
 }
 
 impl Serialize for TextMessage {
-    fn serialize(&self) -> VResult<BytesMut> {
+    fn serialize(&self) -> VResult<Bytes> {
         let mut buffer = BytesMut::new();
 
         buffer.put_u8(self.message_type as u8);
@@ -111,12 +111,12 @@ impl Serialize for TextMessage {
         buffer.put_string(&self.xuid);
         buffer.put_string(&self.platform_chat_id);
 
-        Ok(buffer)
+        Ok(buffer.freeze())
     }
 }
 
 impl Deserialize for TextMessage {
-    fn deserialize(mut buffer: BytesMut) -> VResult<Self> {
+    fn deserialize(mut buffer: Bytes) -> VResult<Self> {
         let message_type = MessageType::try_from(buffer.get_u8())?;
         let needs_translation = buffer.get_bool();
         let message;

@@ -1,4 +1,4 @@
-use bytes::BytesMut;
+use bytes::{BytesMut, Bytes};
 use common::{bail, BlockPosition, Deserialize, Serialize, ReadExtensions, VError, VResult, WriteExtensions, size_of_var};
 use crate::network::packets::ConnectedPacket;
 
@@ -30,7 +30,7 @@ impl ConnectedPacket for BlockEvent {
 }
 
 impl Serialize for BlockEvent {
-    fn serialize(&self) -> VResult<BytesMut> {
+    fn serialize(&self) -> VResult<Bytes> {
         let packet_size = 
             size_of_var(self.position.x) +
             size_of_var(self.position.y) +
@@ -44,12 +44,12 @@ impl Serialize for BlockEvent {
         buffer.put_var_i32(self.event_type as i32);
         buffer.put_var_i32(self.event_data);
 
-        Ok(buffer)
+        Ok(buffer.freeze())
     }
 }
 
 impl Deserialize for BlockEvent {
-    fn deserialize(mut buffer: BytesMut) -> VResult<Self> {
+    fn deserialize(mut buffer: Bytes) -> VResult<Self> {
         let position = buffer.get_block_pos()?;
         let event_type = BlockEventType::try_from(buffer.get_var_i32()?)?;
         let event_data = buffer.get_var_i32()?;

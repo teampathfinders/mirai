@@ -169,7 +169,12 @@ impl Encryptor {
             );
         }
 
-        self.cipher_decrypt.lock().apply_keystream(buffer.as_mut());
+        let mut decryption_output = BytesMut::with_capacity(buffer.len());
+
+        self.cipher_decrypt.lock().apply_keystream_b2b(
+            buffer.as_ref(), decryption_output.as_mut()
+        );
+        
         let counter = self.receive_counter.fetch_add(1, Ordering::SeqCst);
 
         let checksum = &buffer.as_ref()[buffer.len() - 8..];
@@ -183,7 +188,7 @@ impl Encryptor {
         // Remove checksum from data.
         buffer.truncate(buffer.len() - 8);
 
-        Ok(buffer)
+        Ok(decryption_output.freeze())
     }
 
     /// Encrypts a packet and appends the computed checksum.
@@ -191,8 +196,12 @@ impl Encryptor {
         let counter = self.send_counter.fetch_add(1, Ordering::SeqCst);
         let checksum = self.compute_checksum(&buffer, counter);
 
-        let buffer = [buffer, Bytes::from(checksum.as_slice())].concat();
-        self.cipher_encrypt.lock().apply_keystream(buffer.as_mut());
+        let buffer = [buffer, Bytes::copy_from_slice(checksum.as_slice())].concat();
+        let mut encryption_output = BytesMut::with_capacity(buffer.len());
+
+        self.cipher_encrypt.lock().apply_keystream_b2b(
+            buffer.as_ref(), encryption_output.as_mut()
+        );
 
         Bytes::from(buffer)
     }

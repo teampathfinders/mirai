@@ -65,8 +65,8 @@ impl Session {
     /// * Inserting packets into the compound collector
     /// * Discarding old sequenced frames
     /// * Acknowledging reliable packets
-    async fn handle_frame_batch(&self, task: Bytes) -> VResult<()> {
-        let batch = FrameBatch::deserialize(task)?;
+    async fn handle_frame_batch(&self, pk: Bytes) -> VResult<()> {
+        let batch = FrameBatch::deserialize(pk)?;
         self.client_batch_number
             .fetch_max(batch.sequence_number, Ordering::SeqCst);
 
@@ -159,13 +159,6 @@ impl Session {
                 Ok(t) => t,
                 Err(e) => {
                     return Err(e);
-
-                    // if matches!(e, VError::BadPacket(_)) {
-                    //     todo!();
-                    // }
-
-                    // TODO
-                    // todo!("Disconnect client because of invalid packet");
                 }
             }
         }

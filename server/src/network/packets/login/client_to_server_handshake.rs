@@ -1,3 +1,4 @@
+use bytes::Bytes;
 use bytes::{Buf, BytesMut};
 
 use crate::network::packets::ConnectedPacket;
@@ -18,7 +19,7 @@ impl ConnectedPacket for ClientToServerHandshake {
 }
 
 impl Deserialize for ClientToServerHandshake {
-    fn deserialize(mut buffer: BytesMut) -> VResult<Self> {
+    fn deserialize(mut buffer: Bytes) -> VResult<Self> {
         Ok(Self)
     }
 }

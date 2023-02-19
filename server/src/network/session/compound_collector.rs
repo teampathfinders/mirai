@@ -27,6 +27,7 @@ impl CompoundCollector {
                 self.compounds.entry(frame.compound_id).or_insert_with(|| {
                     let mut vec =
                         Vec::with_capacity(frame.compound_size as usize);
+
                     vec.resize(frame.compound_size as usize, Bytes::new());
                     vec
                 });
@@ -51,7 +52,7 @@ impl CompoundCollector {
             let fragments = &mut kv.1;
 
             // Merge all fragments
-            frame.body = Bytes::from(fragments.concat());
+            frame.body = Bytes::copy_from_slice(fragments.concat().as_slice());
 
             // Set compound tag to false to make sure the completed packet isn't added into the
             // collector again.

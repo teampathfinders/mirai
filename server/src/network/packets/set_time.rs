@@ -1,4 +1,4 @@
-use bytes::BytesMut;
+use bytes::{BytesMut, Bytes};
 use common::{VResult, WriteExtensions, size_of_var};
 
 use common::Serialize;
@@ -17,11 +17,11 @@ impl ConnectedPacket for SetTime {
 }
 
 impl Serialize for SetTime {
-    fn serialize(&self) -> VResult<BytesMut> {
+    fn serialize(&self) -> VResult<Bytes> {
         let mut buffer = BytesMut::with_capacity(size_of_var(self.time));
 
         buffer.put_var_i32(self.time);
 
-        Ok(buffer)
+        Ok(buffer.freeze())
     }
 }

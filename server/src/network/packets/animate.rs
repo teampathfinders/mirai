@@ -1,4 +1,4 @@
-use bytes::{Buf, BytesMut};
+use bytes::{Buf, BytesMut, Bytes};
 use common::{bail, ReadExtensions, VError, VResult, WriteExtensions};
 
 use common::Deserialize;
@@ -53,7 +53,7 @@ impl ConnectedPacket for Animate {
 }
 
 impl Deserialize for Animate {
-    fn deserialize(mut buffer: BytesMut) -> VResult<Self> {
+    fn deserialize(mut buffer: Bytes) -> VResult<Self> {
         let action_type = AnimateAction::try_from(buffer.get_var_i32()?)?;
         let runtime_id = buffer.get_var_u64()?;
 

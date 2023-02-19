@@ -1,4 +1,4 @@
-use bytes::{BufMut, BytesMut};
+use bytes::{BufMut, BytesMut, Bytes};
 use common::{Serialize, VResult, Vector3f, Vector4f, WriteExtensions};
 
 use super::ConnectedPacket;
@@ -29,7 +29,7 @@ impl ConnectedPacket for ClientBoundDebugRenderer<'_> {
 }
 
 impl Serialize for ClientBoundDebugRenderer<'_> {
-    fn serialize(&self) -> VResult<BytesMut> {
+    fn serialize(&self) -> VResult<Bytes> {
         let mut buffer = BytesMut::new();
 
         buffer.put_i32_le(self.action as i32);
@@ -40,6 +40,6 @@ impl Serialize for ClientBoundDebugRenderer<'_> {
             buffer.put_i64_le(self.duration);
         }
 
-        Ok(buffer)
+        Ok(buffer.freeze())
     }
 }

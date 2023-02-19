@@ -1,5 +1,5 @@
 use base64::Engine;
-use bytes::{Buf, BytesMut};
+use bytes::{Buf, BytesMut, Bytes};
 use jsonwebtoken::{Algorithm, DecodingKey, Validation};
 use serde_repr::Deserialize_repr;
 
@@ -61,7 +61,7 @@ impl ConnectedPacket for Login {
 }
 
 impl Deserialize for Login {
-    fn deserialize(mut buffer: BytesMut) -> VResult<Self> {
+    fn deserialize(mut buffer: Bytes) -> VResult<Self> {
         buffer.advance(4); // Skip protocol version, use the one in RequestNetworkSettings instead.
         buffer.get_var_u32()?;
 

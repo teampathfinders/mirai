@@ -1,6 +1,6 @@
 use std::net::SocketAddr;
 
-use bytes::{BufMut, BytesMut};
+use bytes::{BufMut, BytesMut, Bytes};
 use common::{VResult, WriteExtensions, size_of_var};
 
 use common::Serialize;
@@ -20,7 +20,7 @@ impl ConnectedPacket for Transfer {
 }
 
 impl Serialize for Transfer {
-    fn serialize(&self) -> VResult<BytesMut> {
+    fn serialize(&self) -> VResult<Bytes> {
         let addr_string = self.address.ip().to_string();
         let packet_size = size_of_var(addr_string.len() as u32) + addr_string.len() + 2;
 
@@ -29,6 +29,6 @@ impl Serialize for Transfer {
         buffer.put_string(&addr_string);
         buffer.put_u16_le(self.address.port());
 
-        Ok(buffer)
+        Ok(buffer.freeze())
     }
 }

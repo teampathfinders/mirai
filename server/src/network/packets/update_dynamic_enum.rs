@@ -1,4 +1,4 @@
-use bytes::{BufMut, BytesMut};
+use bytes::{BufMut, BytesMut, Bytes};
 use common::{VResult, WriteExtensions, size_of_var};
 
 use common::Serialize;
@@ -29,7 +29,7 @@ impl ConnectedPacket for UpdateDynamicEnum<'_> {
 }
 
 impl Serialize for UpdateDynamicEnum<'_> {
-    fn serialize(&self) -> VResult<BytesMut> {
+    fn serialize(&self) -> VResult<Bytes> {
         let packet_size =
             size_of_var(self.enum_id.len() as u32) + self.enum_id.len() +
             size_of_var(self.options.len() as u32) +
@@ -44,6 +44,6 @@ impl Serialize for UpdateDynamicEnum<'_> {
         }
         buffer.put_u8(self.action as u8);
 
-        Ok(buffer)
+        Ok(buffer.freeze())
     }
 }

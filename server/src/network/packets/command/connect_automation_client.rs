@@ -1,4 +1,4 @@
-use bytes::BytesMut;
+use bytes::{BytesMut, Bytes};
 use common::{Serialize, VResult, WriteExtensions, size_of_var};
 
 use crate::network::packets::ConnectedPacket;
@@ -15,7 +15,7 @@ impl ConnectedPacket for ConnectAutomationClient<'_> {
 }
 
 impl Serialize for ConnectAutomationClient<'_> {
-    fn serialize(&self) -> VResult<BytesMut> {
+    fn serialize(&self) -> VResult<Bytes> {
         let packet_size =
             size_of_var(self.server_uri.len() as u32) +
             self.server_uri.len();
@@ -24,6 +24,6 @@ impl Serialize for ConnectAutomationClient<'_> {
 
         buffer.put_string(self.server_uri);
 
-        Ok(buffer)
+        Ok(buffer.freeze())
     }
 }

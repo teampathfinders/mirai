@@ -1,4 +1,4 @@
-use bytes::BytesMut;
+use bytes::{BytesMut, Bytes};
 use common::{Serialize, VResult, WriteExtensions};
 use crate::network::cache_blob::CacheBlob;
 use crate::network::packets::ConnectedPacket;
@@ -13,7 +13,7 @@ impl ConnectedPacket for CacheMissResponse<'_> {
 }
 
 impl Serialize for CacheMissResponse<'_> {
-    fn serialize(&self) -> VResult<BytesMut> {
+    fn serialize(&self) -> VResult<Bytes> {
         let mut buffer = BytesMut::with_capacity(
             1 + self.blobs.iter().fold(0, |acc, blob| acc + blob.len())
         );
@@ -23,6 +23,6 @@ impl Serialize for CacheMissResponse<'_> {
             blob.encode(&mut buffer);
         }
 
-        Ok(buffer)
+        Ok(buffer.freeze())
     }
 }

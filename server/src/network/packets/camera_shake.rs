@@ -1,3 +1,4 @@
+use bytes::Bytes;
 use bytes::{BufMut, BytesMut};
 use common::VResult;
 
@@ -36,7 +37,7 @@ impl ConnectedPacket for CameraShake {
 }
 
 impl Serialize for CameraShake {
-    fn serialize(&self) -> VResult<BytesMut> {
+    fn serialize(&self) -> VResult<Bytes> {
         let mut buffer = BytesMut::with_capacity(4 + 4 + 1 + 1);
 
         buffer.put_f32_le(self.intensity);
@@ -44,6 +45,6 @@ impl Serialize for CameraShake {
         buffer.put_u8(self.shake_type as u8);
         buffer.put_u8(self.action as u8);
 
-        Ok(buffer)
+        Ok(buffer.freeze())
     }
 }

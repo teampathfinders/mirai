@@ -1,4 +1,4 @@
-use bytes::{Buf, BytesMut};
+use bytes::{Buf, BytesMut, Bytes};
 use common::{BlockPosition, Deserialize, ReadExtensions, Vector3i, VResult};
 use crate::network::packets::ConnectedPacket;
 
@@ -18,7 +18,7 @@ impl ConnectedPacket for BlockPickRequest {
 }
 
 impl Deserialize for BlockPickRequest {
-    fn deserialize(mut buffer: BytesMut) -> VResult<Self> where Self: Sized {
+    fn deserialize(mut buffer: Bytes) -> VResult<Self> {
         let position = buffer.get_vec3i();
         let with_nbt = buffer.get_bool();
         let hotbar_slot = buffer.get_u8();

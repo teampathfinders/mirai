@@ -1,4 +1,4 @@
-use bytes::{BufMut, BytesMut};
+use bytes::{BufMut, BytesMut, Bytes};
 use uuid::Uuid;
 use common::{Deserialize, Serialize, ReadExtensions, VResult, WriteExtensions};
 use crate::network::packets::{ConnectedPacket};
@@ -35,7 +35,7 @@ impl ConnectedPacket for CommandOutput<'_> {
 }
 
 impl Serialize for CommandOutput<'_> {
-    fn serialize(&self) -> VResult<BytesMut> {
+    fn serialize(&self) -> VResult<Bytes> {
         let mut buffer = BytesMut::new();
 
         buffer.put_var_u32(self.origin as u32);
@@ -67,6 +67,6 @@ impl Serialize for CommandOutput<'_> {
             unimplemented!();
         }
 
-        Ok(buffer)
+        Ok(buffer.freeze())
     }
 }

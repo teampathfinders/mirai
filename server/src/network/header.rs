@@ -33,7 +33,7 @@ impl Header {
             | ((self.sender_subclient as u32) << 10)
             | ((self.target_subclient as u32) << 12);
 
-        let buffer = BytesMut::with_capacity(size_of_var(value));
+        let mut buffer = BytesMut::with_capacity(size_of_var(value));
         buffer.put_var_u32(value);
         buffer.freeze()
     }

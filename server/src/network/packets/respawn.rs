@@ -1,4 +1,4 @@
-use bytes::{Buf, BufMut, BytesMut};
+use bytes::{Buf, BufMut, BytesMut, Bytes};
 use common::{
     bail, ReadExtensions, VError, VResult, Vector3f, WriteExtensions, size_of_var,
 };
@@ -39,7 +39,7 @@ impl ConnectedPacket for Respawn {
 }
 
 impl Serialize for Respawn {
-    fn serialize(&self) -> VResult<BytesMut> {
+    fn serialize(&self) -> VResult<Bytes> {
         let mut buffer = BytesMut::with_capacity(
             3 * 4 + 1 + size_of_var(self.runtime_id)
         );
@@ -48,12 +48,12 @@ impl Serialize for Respawn {
         buffer.put_u8(self.state as u8);
         buffer.put_var_u64(self.runtime_id);
 
-        Ok(buffer)
+        Ok(buffer.freeze())
     }
 }
 
 impl Deserialize for Respawn {
-    fn deserialize(mut buffer: BytesMut) -> VResult<Self> {
+    fn deserialize(mut buffer: Bytes) -> VResult<Self> {
         let position = buffer.get_vec3f();
         let state = RespawnState::try_from(buffer.get_u8())?;
         let runtime_id = buffer.get_var_u64()?;

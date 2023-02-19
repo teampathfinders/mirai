@@ -1,4 +1,4 @@
-use bytes::BytesMut;
+use bytes::{BytesMut, Bytes};
 use common::{bail, ReadExtensions, VError, VResult, WriteExtensions, size_of_var};
 
 use common::{Deserialize, Serialize};
@@ -39,7 +39,7 @@ impl ConnectedPacket for CreditsUpdate {
 }
 
 impl Serialize for CreditsUpdate {
-    fn serialize(&self) -> VResult<BytesMut> {
+    fn serialize(&self) -> VResult<Bytes> {
         let mut buffer = BytesMut::with_capacity(
             size_of_var(self.runtime_id) + size_of_var(self.status as i32)
         );
@@ -47,12 +47,12 @@ impl Serialize for CreditsUpdate {
         buffer.put_var_u64(self.runtime_id);
         buffer.put_var_i32(self.status as i32);
 
-        Ok(buffer)
+        Ok(buffer.freeze())
     }
 }
 
 impl Deserialize for CreditsUpdate {
-    fn deserialize(mut buffer: BytesMut) -> VResult<Self> {
+    fn deserialize(mut buffer: Bytes) -> VResult<Self> {
         let runtime_id = buffer.get_var_u64()?;
         let status = CreditsStatus::try_from(buffer.get_var_i32()?)?;
 

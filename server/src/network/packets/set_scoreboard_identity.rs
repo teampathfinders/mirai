@@ -1,4 +1,4 @@
-use bytes::{BufMut, BytesMut};
+use bytes::{BufMut, BytesMut, Bytes};
 use common::{Serialize, VResult, WriteExtensions};
 
 use super::ConnectedPacket;
@@ -31,7 +31,7 @@ impl ConnectedPacket for SetScoreboardIdentity {
 }
 
 impl Serialize for SetScoreboardIdentity {
-    fn serialize(&self) -> VResult<BytesMut> {
+    fn serialize(&self) -> VResult<Bytes> {
         let mut buffer = BytesMut::new();
 
         buffer.put_u8(self.action as u8);
@@ -51,6 +51,6 @@ impl Serialize for SetScoreboardIdentity {
             }
         }
 
-        Ok(buffer)
+        Ok(buffer.freeze())
     }
 }

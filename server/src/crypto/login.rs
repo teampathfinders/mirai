@@ -1,7 +1,7 @@
 use std::io::Write;
 
 use base64::Engine;
-use bytes::{Buf, BytesMut};
+use bytes::{Buf, BytesMut, Bytes};
 use common::{bail, error, VResult};
 use jsonwebtoken::{Algorithm, DecodingKey, Validation};
 use p384::pkcs8::spki;
@@ -211,7 +211,7 @@ fn parse_user_data_token(
 ///
 /// This contains such as the XUID, display name and public key.
 pub fn parse_identity_data(
-    buffer: &mut BytesMut,
+    buffer: &mut Bytes,
 ) -> VResult<IdentityTokenPayload> {
     let token_length = buffer.get_u32_le();
     let position = buffer.len() - buffer.remaining();
@@ -259,7 +259,7 @@ pub fn parse_identity_data(
 /// Parses the user data token from the login packet.
 /// This token contains the user's operating system, language, skin, etc.
 pub fn parse_user_data(
-    buffer: &mut BytesMut,
+    buffer: &mut Bytes,
     public_key: &str,
 ) -> VResult<UserDataTokenPayload> {
     let token_length = buffer.get_u32_le();

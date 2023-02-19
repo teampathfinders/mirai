@@ -42,17 +42,17 @@ impl ConnectedPacket for SetDifficulty {
 }
 
 impl Serialize for SetDifficulty {
-    fn serialize(&self) -> VResult<BytesMut> {
+    fn serialize(&self) -> VResult<Bytes> {
         let mut buffer = BytesMut::with_capacity(1);
 
         buffer.put_var_i32(self.difficulty as i32);
 
-        Ok(buffer)
+        Ok(buffer.freeze())
     }
 }
 
 impl Deserialize for SetDifficulty {
-    fn deserialize(mut buffer: BytesMut) -> VResult<Self> {
+    fn deserialize(mut buffer: Bytes) -> VResult<Self> {
         let difficulty = Difficulty::try_from(buffer.get_var_i32()?)?;
         Ok(Self { difficulty })
     }

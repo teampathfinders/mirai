@@ -1,4 +1,4 @@
-use bytes::BytesMut;
+use bytes::{BytesMut, Bytes};
 use common::{ReadExtensions, VResult};
 
 use common::Deserialize;
@@ -17,7 +17,7 @@ impl ConnectedPacket for SetLocalPlayerAsInitialized {
 }
 
 impl Deserialize for SetLocalPlayerAsInitialized {
-    fn deserialize(mut buffer: BytesMut) -> VResult<Self> {
+    fn deserialize(mut buffer: Bytes) -> VResult<Self> {
         Ok(Self { runtime_id: buffer.get_var_u64()? })
     }
 }

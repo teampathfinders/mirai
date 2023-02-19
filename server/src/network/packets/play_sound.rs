@@ -1,4 +1,4 @@
-use bytes::{BufMut, BytesMut};
+use bytes::{BufMut, BytesMut, Bytes};
 use common::{VResult, Vector, Vector3f, Vector3i, WriteExtensions, size_of_var};
 
 use common::Serialize;
@@ -23,7 +23,7 @@ impl ConnectedPacket for PlaySound<'_> {
 }
 
 impl Serialize for PlaySound<'_> {
-    fn serialize(&self) -> VResult<BytesMut> {
+    fn serialize(&self) -> VResult<Bytes> {
         let mut buffer = BytesMut::with_capacity(
             size_of_var(self.name.len() as u32) + self.name.len() +
             3 * 4 + 4 + 4
@@ -34,6 +34,6 @@ impl Serialize for PlaySound<'_> {
         buffer.put_f32_le(self.volume);
         buffer.put_f32_le(self.pitch);
 
-        Ok(buffer)
+        Ok(buffer.freeze())
     }
 }

@@ -1,4 +1,4 @@
-use bytes::{BufMut, BytesMut};
+use bytes::{BufMut, BytesMut, Bytes};
 use common::{VResult, WriteExtensions, size_of_var};
 
 use common::Serialize;
@@ -19,7 +19,7 @@ impl ConnectedPacket for ToastRequest<'_> {
 }
 
 impl Serialize for ToastRequest<'_> {
-    fn serialize(&self) -> VResult<BytesMut> {
+    fn serialize(&self) -> VResult<Bytes> {
         let packet_size = 
             size_of_var(self.title.len() as u32) + self.title.len() +
             size_of_var(self.message.len() as u32) + self.message.len();
@@ -29,6 +29,6 @@ impl Serialize for ToastRequest<'_> {
         buffer.put_string(self.title);
         buffer.put_string(self.message);
 
-        Ok(buffer)
+        Ok(buffer.freeze())
     }
 }

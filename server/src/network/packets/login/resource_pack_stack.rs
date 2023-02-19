@@ -1,3 +1,4 @@
+use bytes::Bytes;
 use bytes::{BufMut, BytesMut};
 
 use crate::network::packets::ConnectedPacket;
@@ -55,7 +56,7 @@ impl ConnectedPacket for ResourcePackStack<'_> {
 }
 
 impl Serialize for ResourcePackStack<'_> {
-    fn serialize(&self) -> VResult<BytesMut> {
+    fn serialize(&self) -> VResult<Bytes> {
         let mut buffer = BytesMut::new();
 
         buffer.put_bool(self.forced_to_accept);
@@ -79,6 +80,6 @@ impl Serialize for ResourcePackStack<'_> {
 
         buffer.put_bool(self.experiments_previously_toggled);
 
-        Ok(buffer)
+        Ok(buffer.freeze())
     }
 }

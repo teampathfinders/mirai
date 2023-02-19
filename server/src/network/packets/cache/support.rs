@@ -1,3 +1,4 @@
+use bytes::Bytes;
 use bytes::{Buf, BytesMut};
 
 use crate::network::packets::ConnectedPacket;
@@ -17,7 +18,7 @@ impl ConnectedPacket for CacheStatus {
 }
 
 impl Deserialize for CacheStatus {
-    fn deserialize(mut buffer: BytesMut) -> VResult<Self> {
+    fn deserialize(mut buffer: Bytes) -> VResult<Self> {
         let support = buffer.get_bool();
 
         Ok(Self { supports_cache: support })

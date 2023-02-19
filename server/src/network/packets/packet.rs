@@ -13,13 +13,16 @@ use common::{ReadExtensions, WriteExtensions};
 #[derive(Debug, Clone)]
 pub struct BroadcastPacket {
     pub sender: Option<NonZeroU64>,
-    pub packet: SerializedPacket
+    pub content: Bytes
 }
 
-#[derive(Debug, Clone)]
-pub enum PacketContent<T: ConnectedPacket> {
-    Packet(T),
-    Serialized(Bytes)
+impl BroadcastPacket {
+    pub fn new<T: ConnectedPacket + Serialize>(packet: T, sender: Option<NonZeroU64>) -> VResult<Self> {
+        Ok(Self {
+            sender,
+            content: Packet::new(packet).serialize()?
+        })
+    }
 }
 
 /// A game packet.
@@ -28,7 +31,7 @@ pub struct Packet<T: ConnectedPacket> {
     /// Contains the packet ID and subclient IDs.
     header: Header,
     /// Actual packet data.
-    content: PacketContent<T>,
+    content: T,
 }
 
 impl<T: ConnectedPacket> Packet<T> {
@@ -40,19 +43,8 @@ impl<T: ConnectedPacket> Packet<T> {
                 target_subclient: 0,
                 sender_subclient: 0,
             },
-            content: PacketContent::Packet(pk),
+            content: pk,
         }
-    }
-
-    pub const fn new_serialized(serialized: Bytes) -> Self {
-        Self {
-            header: Header {
-                id: T::ID,
-                target_subclient: 0,
-                sender_subclient: 0
-            },
-            content: PacketContent::Serialized(serialized)
-        }   
     }
 
     /// Sets the subclient IDs.
@@ -67,16 +59,13 @@ impl<T: ConnectedPacket + Serialize> Serialize for Packet<T> {
     fn serialize(&self) -> VResult<Bytes> {
         let mut buffer = BytesMut::new();
         let header = self.header.serialize();
-        let body = match self.content {
-            PacketContent::Packet(pk) => pk.serialize()?,
-            PacketContent::Serialized(pk) => pk
-        };
+        let body = self.content.serialize()?;
 
         buffer.put_var_u32(header.len() as u32 + body.len() as u32);
 
         buffer.put(header);
         buffer.put(body);
 
-        Ok(buffer)
+        Ok(buffer.freeze())
     }
 }

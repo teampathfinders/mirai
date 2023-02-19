@@ -1,3 +1,4 @@
+use bytes::Bytes;
 use bytes::{BufMut, BytesMut};
 
 use crate::network::packets::ConnectedPacket;
@@ -28,13 +29,13 @@ impl ConnectedPacket for Disconnect<'_> {
 }
 
 impl Serialize for Disconnect<'_> {
-    fn serialize(&self) -> VResult<BytesMut> {
+    fn serialize(&self) -> VResult<Bytes> {
         let mut buffer =
             BytesMut::with_capacity(1 + 4 + self.kick_message.len());
 
         buffer.put_bool(self.hide_disconnect_screen);
         buffer.put_string(self.kick_message);
 
-        Ok(buffer)
+        Ok(buffer.freeze())
     }
 }

@@ -1,4 +1,4 @@
-use bytes::{BufMut, BytesMut};
+use bytes::{BufMut, BytesMut, Bytes};
 use common::{Serialize, VResult, WriteExtensions};
 use crate::network::packets::ConnectedPacket;
 
@@ -54,7 +54,7 @@ impl ConnectedPacket for BossEvent<'_> {
 }
 
 impl Serialize for BossEvent<'_> {
-    fn serialize(&self) -> VResult<BytesMut> {
+    fn serialize(&self) -> VResult<Bytes> {
         let mut buffer = BytesMut::new();
 
         buffer.put_var_i64(self.boss_unique_id);
@@ -120,6 +120,6 @@ impl Serialize for BossEvent<'_> {
             }
         }
 
-        Ok(buffer)
+        Ok(buffer.freeze())
     }
 }

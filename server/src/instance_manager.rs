@@ -235,7 +235,7 @@ impl InstanceManager {
     /// Generates a response to the [`OfflinePing`] packet with [`OfflinePong`].
     #[inline]
     fn process_unconnected_ping(
-        pk: BufPacket,
+        mut pk: BufPacket,
         server_guid: u64,
         metadata: &str,
     ) -> VResult<BufPacket> {
@@ -249,7 +249,7 @@ impl InstanceManager {
     /// Generates a response to the [`OpenConnectionRequest1`] packet with [`OpenConnectionReply1`].
     #[inline]
     fn process_open_connection_request1(
-        pk: BufPacket,
+        mut pk: BufPacket,
         server_guid: u64,
     ) -> VResult<BufPacket> {
         let request = OpenConnectionRequest1::deserialize(pk.buf)?;
@@ -270,7 +270,7 @@ impl InstanceManager {
     /// From this point, all packets are encoded in a [`Frame`](crate::network::raknet::Frame).
     #[inline]
     fn process_open_connection_request2(
-        pk: BufPacket,
+        mut pk: BufPacket,
         udp_socket: Arc<UdpSocket>,
         sess_manager: Arc<SessionManager>,
         server_guid: u64,
