@@ -32,7 +32,7 @@ use crate::network::raknet::packets::OpenConnectionRequest2;
 use crate::network::raknet::BufPacket;
 use crate::network::raknet::RAKNET_VERSION;
 use crate::network::session::SessionManager;
-use common::{bail};
+use common::bail;
 use common::{error, VResult};
 use common::{Deserialize, Serialize};
 
@@ -201,7 +201,7 @@ impl InstanceManager {
 
         tracing::info!("Server started");
         // The metadata task is not important for shutdown, we don't have to wait for it.
-        let _ = tokio::join!(receiver_task, sender_task);
+        // let _ = tokio::join!(receiver_task, sender_task);
 
         let server = Arc::new(Self {
             guid: rand::thread_rng().gen(),
@@ -273,7 +273,7 @@ impl InstanceManager {
         pk: BufPacket,
         udp_socket: Arc<UdpSocket>,
         sess_manager: Arc<SessionManager>,
-        server_guid: u64
+        server_guid: u64,
     ) -> VResult<BufPacket> {
         let request = OpenConnectionRequest2::deserialize(pk.buf)?;
 
@@ -317,7 +317,7 @@ impl InstanceManager {
             };
 
             let mut pk = BufPacket {
-                buf: Bytes::from(&recv_buf[..n]),
+                buf: Bytes::copy_from_slice(&recv_buf[..n]),
                 addr: address,
             };
 
@@ -351,26 +351,29 @@ impl InstanceManager {
                                 pk,
                                 udp_socket.clone(),
                                 session_manager,
-                                server_guid
+                                server_guid,
                             )
                         }
                         _ => {
                             tracing::error!(
                                 "Invalid unconnected packet ID: {id:x}"
                             );
-                            return
-                        },
+                            return;
+                        }
                     };
 
                     match pk_result {
                         Ok(pk) => {
-                            match udp_socket.send_to(pk.buf.as_ref(), pk.addr).await {
+                            match udp_socket
+                                .send_to(pk.buf.as_ref(), pk.addr)
+                                .await
+                            {
                                 Ok(_) => (),
                                 Err(e) => {
                                     tracing::error!("Unable to send unconnected packet to client: {e}");
                                 }
                             }
-                        },
+                        }
                         Err(e) => {
                             tracing::error!("{e}");
                         }

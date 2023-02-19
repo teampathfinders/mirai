@@ -2,7 +2,7 @@ use std::io::Write;
 use std::sync::atomic::Ordering;
 
 use async_recursion::async_recursion;
-use bytes::{Buf, BufMut, BytesMut, Bytes};
+use bytes::{Buf, BufMut, Bytes, BytesMut};
 use flate2::write::DeflateEncoder;
 use flate2::Compression;
 
@@ -40,8 +40,11 @@ impl Session {
 
     /// Sends an already serialized packet body to the client.
     #[inline]
-    pub fn send_serialized<T: ConnectedPacket + Serialize>(&self, serialized: Bytes) -> VResult<()> {
-        let pk = Packet::<T>::new_serialized(T::ID, serialized);
+    pub fn send_serialized<T: ConnectedPacket + Serialize>(
+        &self,
+        serialized: Bytes,
+    ) -> VResult<()> {
+        let pk = Packet::<T>::new_serialized(serialized);
         self.send_packet_with_config(pk, DEFAULT_CONFIG)
     }
 

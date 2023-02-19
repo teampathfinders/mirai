@@ -7,10 +7,10 @@ use std::sync::{Arc, Weak};
 use std::time::{Duration, Instant};
 
 use aes::cipher::typenum::NonZero;
-use bytes::{BytesMut, Bytes};
+use bytes::{Bytes, BytesMut};
 use parking_lot::{Mutex, RwLock, RwLockReadGuard};
 use tokio::net::UdpSocket;
-use tokio::sync::{OnceCell, broadcast, mpsc};
+use tokio::sync::{broadcast, mpsc, OnceCell};
 use tokio_util::sync::CancellationToken;
 use uuid::Uuid;
 
@@ -19,7 +19,8 @@ use crate::instance_manager::InstanceManager;
 use crate::level_manager::LevelManager;
 use crate::network::packets::login::{DeviceOS, Disconnect};
 use crate::network::packets::{
-    ConnectedPacket, MessageType, PlayerListRemove, TextMessage, BroadcastPacket, Packet,
+    BroadcastPacket, ConnectedPacket, MessageType, Packet, PlayerListRemove,
+    TextMessage,
 };
 use crate::network::session::compound_collector::CompoundCollector;
 use crate::network::session::order_channel::OrderChannel;
@@ -74,8 +75,13 @@ pub struct Session {
     /// Receives packets from the broadcasting channel.
     pub broadcast_recv: broadcast::Receiver<BroadcastPacket>,
 
+    /// Indicates whether this session is active.
+    pub active: CancellationToken,
     /// Keeps track of all unprocessed received packets.
-    pub receiver: mpsc::Receiver<Bytes>,
+    /// This receiver is wrapped in a mutex because the recv method requires a mutable borrow.
+    /// In addition, this in async mutex as the lock needs to be held across an await point.
+    pub receiver: tokio::sync::Mutex<mpsc::Receiver<Bytes>>,
+
     /// Current tick of this session, this is increased by one every time the session
     /// processes packets.
     pub current_tick: AtomicU64,
@@ -91,8 +97,6 @@ pub struct Session {
     pub guid: u64,
     /// Timestamp of when the last packet was received from this client.
     pub last_update: RwLock<Instant>,
-    /// Indicates whether this session is active.
-    pub active: CancellationToken,
     /// Batch number last assigned by the server.
     pub batch_sequence_number: AtomicU32,
     /// Sequence index last assigned by the server.
@@ -137,11 +141,11 @@ impl Session {
             cache_support: OnceCell::new(),
             initialized: AtomicBool::new(false),
             runtime_id: RUNTIME_ID_COUNTER.fetch_add(1, Ordering::SeqCst),
-            broadcast_send: broadcast_send,
+            broadcast_send,
             broadcast_recv: broadcast_send.subscribe(),
             level_manager,
 
-            receiver,
+            receiver: tokio::sync::Mutex::new(receiver),
             current_tick: AtomicU64::new(0),
             ipv4_socket,
             mtu,
@@ -325,7 +329,7 @@ impl Session {
         let serialized = packet.serialize()?;
         self.broadcast_send.send(BroadcastPacket {
             sender: None, // Don't set source so every session processes it.
-            packet: Packet::<P>::new_serialized(serialized)
+            packet: Packet::<P>::new_serialized(serialized),
         })?;
 
         Ok(())
@@ -339,8 +343,11 @@ impl Session {
         let serialized = packet.serialize()?;
         self.broadcast_send.send(BroadcastPacket {
             // Set source so that the broadcast is only processed by sessions other than this one
-            sender: Some(NonZeroU64::new(self.get_xuid()?).ok_or_else(|| error!(NotInitialized, "XUID was 0"))?),
-            packet: Packet::<P>::new_serialized(serialized)
+            sender: Some(
+                NonZeroU64::new(self.get_xuid()?)
+                    .ok_or_else(|| error!(NotInitialized, "XUID was 0"))?,
+            ),
+            packet: Packet::<P>::new_serialized(serialized),
         })?;
 
         Ok(())

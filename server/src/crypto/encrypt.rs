@@ -3,7 +3,7 @@ use std::io::Read;
 use std::sync::atomic::{AtomicU16, AtomicU32, AtomicU64, Ordering};
 
 use base64::Engine;
-use bytes::{BufMut, BytesMut, Bytes};
+use bytes::{BufMut, Bytes, BytesMut};
 use common::{bail, VResult};
 use ctr::cipher::KeyIvInit;
 use ctr::cipher::{StreamCipher, StreamCipherSeekCore};

@@ -32,14 +32,18 @@ impl Session {
     /// If a packet is an ACK or NACK type, it will be responded to accordingly (using [`Session::handle_ack`] and [`Session::handle_nack`]).
     /// Frame batches are processed by [`Session::handle_frame_batch`].
     pub async fn handle_raw_packet(&self) -> VResult<bool> {
-        let recv = self.receiver.recv().await;
+        let recv = {
+            let mut lock = self.receiver.lock().await;
+            lock.recv().await
+        };
+
         if let Some(pk) = recv {
             *self.last_update.write() = Instant::now();
 
             if pk.is_empty() {
                 bail!(BadPacket, "Packet is empty");
             }
-    
+
             let pk_id = *pk.first().unwrap();
             match pk_id {
                 Ack::ID => self.handle_ack(pk)?,
@@ -47,10 +51,10 @@ impl Session {
                 _ => self.handle_frame_batch(pk).await?,
             }
 
-            return Ok(true)
+            return Ok(true);
         } else {
             // Channel has closed, shut down session.
-            return Ok(false)
+            return Ok(false);
         }
     }
 
@@ -188,7 +192,7 @@ impl Session {
                     reader.read_to_end(&mut decompressed)?;
                     // .context("Failed to decompress packet using Deflate")?;
 
-                    Bytes::from(decompressed.as_slice())
+                    Bytes::copy_from_slice(decompressed.as_slice())
                 }
             };
 
@@ -203,7 +207,7 @@ impl Session {
         mut pk: Bytes,
     ) -> VResult<()> {
         let length = pk.get_var_u32()?;
-        let header = Header::decode(&mut pk)?;
+        let header = Header::deserialize(&mut pk)?;
 
         match header.id {
             RequestNetworkSettings::ID => {

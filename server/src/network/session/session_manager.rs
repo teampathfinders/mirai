@@ -5,13 +5,13 @@ use std::time::Duration;
 use bytes::Bytes;
 use dashmap::DashMap;
 use tokio::net::UdpSocket;
-use tokio::sync::{OnceCell, broadcast, mpsc};
+use tokio::sync::{broadcast, mpsc, OnceCell};
 use tokio_util::sync::CancellationToken;
 
 use crate::instance_manager::InstanceManager;
 use crate::level_manager::LevelManager;
-use crate::network::packets::BroadcastPacket;
 use crate::network::packets::login::Disconnect;
+use crate::network::packets::{BroadcastPacket, Packet};
 use crate::network::raknet::BufPacket;
 use crate::network::session::session::Session;
 use crate::{config::SERVER_CONFIG, network::packets::ConnectedPacket};
@@ -31,7 +31,7 @@ pub struct SessionManager {
     /// The level manager.
     level_manager: OnceCell<Weak<LevelManager>>,
     /// Channel used for packet broadcasting.
-    broadcast: broadcast::Sender<BroadcastPacket>
+    broadcast: broadcast::Sender<BroadcastPacket>,
 }
 
 impl SessionManager {
@@ -94,7 +94,6 @@ impl SessionManager {
             .get(&packet.addr)
             .map(|r| {
                 let session = r.value();
-                
             })
             .ok_or_else(|| {
                 error!(
@@ -104,9 +103,16 @@ impl SessionManager {
             })
     }
 
-    pub fn broadcast<P: ConnectedPacket + Serialize + Clone>(&self, pk: P) -> VResult<()> {
+    /// Sends the given packet to every session.
+    pub fn broadcast<P: ConnectedPacket + Serialize + Clone>(
+        &self,
+        pk: P,
+    ) -> VResult<()> {
         let serialized = pk.serialize()?;
-        self.broadcast.send((0, serialized))?;
+        self.broadcast.send(BroadcastPacket {
+            sender: None,
+            packet: Packet::<P>::new_serialized(serialized),
+        })?;
 
         Ok(())
     }
@@ -115,11 +121,16 @@ impl SessionManager {
     pub async fn kick_all<S: AsRef<str>>(&self, message: S) -> VResult<()> {
         let serialized = Disconnect {
             hide_disconnect_screen: false,
-            kick_message: message.as_ref()
-        }.serialize()?;
+            kick_message: message.as_ref(),
+        }
+        .serialize()?;
 
-        self.broadcast.send((0, serialized))?;
-        // Clear to get rid of references
+        self.broadcast.send(BroadcastPacket {
+            sender: None,
+            packet: Packet::<Disconnect>::new_serialized(serialized),
+        })?;
+
+        // Clear to get rid of references, so that the sessions are dropped once they're ready.
         self.list.clear();
 
         Ok(())
