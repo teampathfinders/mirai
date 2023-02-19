@@ -2,18 +2,21 @@ use std::net::SocketAddr;
 use std::sync::{Arc, Weak};
 use std::time::Duration;
 
+use bytes::Bytes;
 use dashmap::DashMap;
 use tokio::net::UdpSocket;
-use tokio::sync::OnceCell;
+use tokio::sync::{OnceCell, broadcast, mpsc};
 use tokio_util::sync::CancellationToken;
 
 use crate::instance_manager::InstanceManager;
 use crate::level_manager::LevelManager;
+use crate::network::packets::login::Disconnect;
 use crate::network::raknet::BufPacket;
 use crate::network::session::session::Session;
 use crate::{config::SERVER_CONFIG, network::packets::GamePacket};
 use common::{error, Serialize, VResult};
 
+const BROADCAST_CHANNEL_CAPACITY: usize = 16;
 const GARBAGE_COLLECT_INTERVAL: Duration = Duration::from_secs(10);
 
 /// Keeps track of all sessions on the server.
@@ -23,26 +26,30 @@ pub struct SessionManager {
     /// Once this token is cancelled, the tracker will cancel all the sessions' individual tokens.
     global_token: CancellationToken,
     /// Map of all tracked sessions, listed by IP address.
-    session_list: Arc<DashMap<SocketAddr, Arc<Session>>>,
+    list: Arc<DashMap<SocketAddr, (mpsc::Sender<Bytes>, Arc<Session>)>>,
     /// The level manager.
     level_manager: OnceCell<Weak<LevelManager>>,
+    /// Channel used for packet broadcasting.
+    broadcast: broadcast::Sender<(u64, Bytes)>
 }
 
 impl SessionManager {
     /// Creates a new session tracker.
     pub fn new(global_token: CancellationToken) -> Self {
-        let session_list = Arc::new(DashMap::new());
+        let list = Arc::new(DashMap::new());
         {
-            let session_list = session_list.clone();
+            let list = list.clone();
             tokio::spawn(async move {
-                Self::garbage_collector(session_list).await;
+                Self::garbage_collector(list).await;
             });
         }
 
+        let (broadcast, _) = broadcast::channel(BROADCAST_CHANNEL_CAPACITY);
         Self {
             global_token,
-            session_list,
+            list,
             level_manager: OnceCell::new(),
+            broadcast,
         }
     }
 
@@ -54,17 +61,21 @@ impl SessionManager {
         mtu: u16,
         client_guid: u64,
     ) {
+        let (sender, receiver) = mpsc::channel(BROADCAST_CHANNEL_CAPACITY);
+
         let level_manager =
             self.level_manager.get().unwrap().upgrade().unwrap();
+
         let session = Session::new(
-            self.clone(),
+            self.broadcast.clone(),
+            receiver,
             level_manager,
             ipv4_socket,
             address,
             mtu,
             client_guid,
         );
-        self.session_list.insert(address, session);
+        self.list.insert(address, (sender, session));
     }
 
     #[inline]
@@ -78,11 +89,11 @@ impl SessionManager {
 
     /// Forwards a packet from the network service to the correct session.
     pub fn forward_packet(&self, packet: BufPacket) -> VResult<()> {
-        self.session_list
+        self.list
             .get(&packet.addr)
             .map(|r| {
                 let session = r.value();
-                session.receive_queue.push(packet.buf);
+                
             })
             .ok_or_else(|| {
                 error!(
@@ -92,82 +103,31 @@ impl SessionManager {
             })
     }
 
-    /// Sends a packet to every *initialized* session on the server.
-    pub fn broadcast<P: GamePacket + Serialize + Clone>(&self, packet: P) {
-        for kv in self.session_list.iter() {
-            let session = kv.value();
-            // Don't broadcast to uninitialised sessions.
-            if session.is_initialized() {
-                match session.send(packet.clone()) {
-                    Ok(_) => (),
-                    Err(e) => {
-                        let display_name = session
-                            .get_display_name()
-                            .unwrap_or("unknown session");
-                        tracing::error!(
-                            "Failed to broadcast to {}: {e}",
-                            display_name
-                        );
-                    }
-                }
-            }
-        }
-    }
+    pub fn broadcast<P: GamePacket + Serialize + Clone>(&self, pk: P) -> VResult<()> {
+        let serialized = pk.serialize()?;
+        self.broadcast.send((0, serialized))?;
 
-    /// Sends a packet to every *initialized* session on the server except the session with the given XUID.
-    pub fn broadcast_except<P: GamePacket + Serialize + Clone>(
-        &self,
-        packet: P,
-        xuid: u64,
-    ) {
-        for kv in self.session_list.iter() {
-            let session = kv.value();
-            let sess_xuid = match session.get_xuid() {
-                Ok(x) => x,
-                Err(_) => continue,
-            };
-
-            // Don't broadcast to uninitialised sessions.
-            if session.is_initialized() && xuid != sess_xuid {
-                tracing::info!("Sending packet to {}", sess_xuid);
-
-                match session.send(packet.clone()) {
-                    Ok(_) => (),
-                    Err(e) => {
-                        let display_name = session
-                            .get_display_name()
-                            .unwrap_or("unknown session");
-                        tracing::error!(
-                            "Failed to broadcast to {}: {e}",
-                            display_name
-                        );
-                    }
-                }
-            }
-        }
+        Ok(())
     }
 
     /// Kicks all sessions from the server, displaying the given message.
-    pub async fn kick_all<S: Into<String> + Send>(&self, message: S) {
-        // This is separate from broadcast because uninitialised sessions also
-        // need to receive this packet.
-        // Unlike broadcast, it also flushes all sessions to get rid of them as quickly as possible.
+    pub async fn kick_all<S: AsRef<str>>(&self, message: S) -> VResult<()> {
+        let serialized = Disconnect {
+            hide_disconnect_screen: false,
+            kick_message: message.as_ref()
+        }.serialize()?;
 
-        let message = message.into();
-        for x in self.session_list.iter() {
-            let session = x.value();
-            let _ = session.kick(&message);
-            let _ = session.flush_all().await;
-        }
-
+        self.broadcast.send((0, serialized))?;
         // Clear to get rid of references
-        self.session_list.clear();
+        self.list.clear();
+
+        Ok(())
     }
 
     /// Returns how many clients are currently connected this tracker.
     #[inline]
     pub fn session_count(&self) -> usize {
-        self.session_list.len()
+        self.list.len()
     }
 
     /// Returns the maximum amount of sessions this tracker will allow.
@@ -178,11 +138,11 @@ impl SessionManager {
 
     #[inline]
     async fn garbage_collector(
-        session_list: Arc<DashMap<SocketAddr, Arc<Session>>>,
+        list: Arc<DashMap<SocketAddr, (mpsc::Sender<Bytes>, Arc<Session>)>>,
     ) -> ! {
         let mut interval = tokio::time::interval(GARBAGE_COLLECT_INTERVAL);
         loop {
-            session_list.retain(|_, session| -> bool { session.is_active() });
+            list.retain(|_, session| -> bool { session.1.is_active() });
 
             interval.tick().await;
         }

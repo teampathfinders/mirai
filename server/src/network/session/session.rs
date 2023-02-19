@@ -6,10 +6,10 @@ use std::sync::atomic::{
 use std::sync::{Arc, Weak};
 use std::time::{Duration, Instant};
 
-use bytes::BytesMut;
+use bytes::{BytesMut, Bytes};
 use parking_lot::{Mutex, RwLock, RwLockReadGuard};
 use tokio::net::UdpSocket;
-use tokio::sync::OnceCell;
+use tokio::sync::{OnceCell, broadcast, mpsc};
 use tokio_util::sync::CancellationToken;
 use uuid::Uuid;
 
@@ -67,12 +67,14 @@ pub struct Session {
     pub initialized: AtomicBool,
     /// Runtime ID.
     pub runtime_id: u64,
-    /// Session list, used to access broadcasting.
-    /// This is a weak pointer because of the cyclic reference.
-    /// In principle, the tracker should always exist if there are sessions remaining.
-    pub session_manager: Arc<SessionManager>,
     pub level_manager: Arc<LevelManager>,
+    /// Sends packets into the broadcasting channel.
+    pub broadcast_send: broadcast::Sender<(u64, Bytes)>,
+    /// Receives packets from the broadcasting channel.
+    pub broadcast_recv: broadcast::Receiver<(u64, Bytes)>,
 
+    /// Keeps track of all unprocessed received packets.
+    pub receiver: mpsc::Receiver<Bytes>,
     /// Current tick of this session, this is increased by one every time the session
     /// processes packets.
     pub current_tick: AtomicU64,
@@ -111,8 +113,6 @@ pub struct Session {
     pub confirmed_packets: Mutex<Vec<u32>>,
     /// Whether compression has been configured for this session.
     pub compression_enabled: AtomicBool,
-    /// Keeps track of all unprocessed received packets.
-    pub receive_queue: AsyncDeque<BytesMut>,
     /// Queue that stores packets in case they need to be recovered due to packet loss.
     pub recovery_queue: RecoveryQueue,
 }
@@ -120,7 +120,8 @@ pub struct Session {
 impl Session {
     /// Creates a new session.
     pub fn new(
-        session_manager: Arc<SessionManager>,
+        broadcast_send: broadcast::Sender<(u64, Bytes)>,
+        receiver: mpsc::Receiver<Bytes>,
         level_manager: Arc<LevelManager>,
         ipv4_socket: Arc<UdpSocket>,
         address: SocketAddr,
@@ -135,9 +136,11 @@ impl Session {
             cache_support: OnceCell::new(),
             initialized: AtomicBool::new(false),
             runtime_id: RUNTIME_ID_COUNTER.fetch_add(1, Ordering::SeqCst),
-            session_manager,
+            broadcast_send: broadcast_send,
+            broadcast_recv: broadcast_send.subscribe(),
             level_manager,
 
+            receiver,
             current_tick: AtomicU64::new(0),
             ipv4_socket,
             mtu,
@@ -154,7 +157,6 @@ impl Session {
             send_queue: Default::default(),
             confirmed_packets: Mutex::new(Vec::new()),
             compression_enabled: AtomicBool::new(false),
-            receive_queue: AsyncDeque::new(5),
             address,
             recovery_queue: Default::default(),
         });
@@ -318,13 +320,12 @@ impl Session {
         &self,
         packet: P,
     ) -> VResult<()> {
-        // Upgrade weak pointer to use it.
-        // let tracker = self.tracker
-        //     .upgrade()
-        //     .ok_or_else(|| error!(NotInitialized, "Session attempted to use tracker that does not exist anymore. This is definitely a bug"))?;
+        // Broadcast
+        let serialized = packet.serialize()?;
+        self.broadcast_send.send((self.get_xuid()?, serialized.clone()))?;
 
-        self.session_manager.broadcast(packet);
-        Ok(())
+        // Send to self as well.
+        self.send_serialized(serialized)
     }
 
     /// Sends a packet to all initialised sessions other than self.
@@ -332,8 +333,9 @@ impl Session {
         &self,
         packet: P,
     ) -> VResult<()> {
-        self.session_manager
-            .broadcast_except(packet, self.get_xuid()?);
+        let serialized = packet.serialize()?;
+        self.broadcast_send.send((self.get_xuid()?, serialized))?;
+
         Ok(())
     }
 
@@ -371,12 +373,5 @@ impl Session {
 
         self.flush().await?;
         Ok(())
-    }
-
-    /// Called by the [`SessionTracker`](super::tracker::SessionTracker) to forward packets from the network service to
-    /// the session corresponding to the client.
-    #[inline]
-    pub fn on_packet_received(self: &Arc<Self>, buffer: BytesMut) {
-        self.receive_queue.push(buffer);
     }
 }
