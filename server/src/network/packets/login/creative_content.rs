@@ -52,7 +52,7 @@ impl ItemStack {
                 buffer.put_i16(-1); // Length
                 buffer.put_u8(1); // Version
                 nbt::RefTag { name: "", value: &self.nbt_data }
-                    .write_le(buffer);
+                    .serialize_le(buffer);
             }
         } else {
             todo!()

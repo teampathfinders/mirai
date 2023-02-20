@@ -1,11 +1,9 @@
 use std::{any::TypeId, fmt};
 
 use bytes::{BytesMut, Bytes};
-use common::{Serialize, VResult, WriteExtensions, size_of_varint, bail};
+use common::{Serialize, VResult, WriteExtensions, size_of_varint, bail, VarString, VarInt};
 
-use crate::command::ParsedArgument;
-
-use super::ConnectedPacket;
+use crate::{command::ParsedArgument, network::packets::ConnectedPacket};
 
 pub const BOOLEAN_GAME_RULES: &[&str] = &[
     "commandblocksenabled",
@@ -155,6 +153,45 @@ impl GameRule {
             | Self::RandomTickSpeed(_)
             | Self::SpawnRadius(_) => {
                 false
+            }
+        }
+    }
+
+    pub fn serialized_size(&self) -> usize {
+        self.name().var_len() + match self {
+            Self::CommandBlocksEnabled(_)
+            | Self::CommandBlockOutput(_)
+            | Self::DaylightCycle(_)
+            | Self::EntityDrops(_)
+            | Self::FireTick(_)
+            | Self::Insomnia(_)
+            | Self::ImmediateRespawn(_)
+            | Self::MobLoot(_)
+            | Self::MobSpawning(_)
+            | Self::TileDrops(_)
+            | Self::WeatherCycle(_)
+            | Self::DrowningDamage(_)
+            | Self::FallDamage(_)
+            | Self::FireDamage(_)
+            | Self::FreezeDamage(_)
+            | Self::KeepInventory(_)
+            | Self::MobGriefing(_)
+            | Self::NaturalRegeneration(_)
+            | Self::Pvp(_)
+            | Self::RespawnBlocksExplode(_)
+            | Self::SendCommandFeedback(_)
+            | Self::ShowBorderEffect(_)
+            | Self::ShowCoordinates(_)
+            | Self::ShowDeathMessages(_)
+            | Self::ShowTags(_)
+            | Self::TntExplodes(_) => {
+                1 + 1
+            }
+            Self::FunctionCommandLimit(v)
+            | Self::MaxCommandChainLength(v)
+            | Self::RandomTickSpeed(v)
+            | Self::SpawnRadius(v) => {
+                1 + v.var_len()
             }
         }
     }

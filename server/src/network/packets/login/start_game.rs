@@ -101,10 +101,14 @@ pub struct BlockEntry {
 }
 
 impl BlockEntry {
+    pub fn serialized_size(&self) -> usize {
+        self.name.var_len() + self.properties.serialized_net_size()
+    }
+
     pub fn serialize(&self, buffer: &mut BytesMut) {
         buffer.put_string(&self.name);
 
-        nbt::RefTag { name: "", value: &self.properties }.write_net(buffer);
+        nbt::RefTag { name: "", value: &self.properties }.serialize_net(buffer);
     }
 }
 
@@ -120,6 +124,10 @@ pub struct ItemEntry {
 }
 
 impl ItemEntry {
+    pub fn serialized_size(&self) -> usize {
+        self.name.var_len() + 2 + 1
+    }
+
     pub fn serialize(&self, buffer: &mut BytesMut) {
         buffer.put_string(&self.name);
         buffer.put_u16(self.runtime_id);
@@ -346,7 +354,7 @@ impl ConnectedPacket for StartGame<'_> {
         MULTIPLAYER_CORRELATION_ID.var_len() +
         1 +
         CLIENT_VERSION_STRING.var_len() +
-        self.property_data.serialized_size() +
+        self.property_data.serialized_net_size() +
         4 +
         16 +
         1

@@ -69,7 +69,7 @@ impl StorageRecord {
 
         let mut palette = Vec::with_capacity(palette_size as usize);
         for _ in 0..palette_size {
-            let properties = nbt::read_le(buffer)?.value;
+            let properties = nbt::deserialize_le(buffer)?.value;
             palette.push(properties);
         }
 

@@ -15,7 +15,7 @@ impl ConnectedPacket for GenericLevelEvent {
 impl Deserialize for GenericLevelEvent {
     fn deserialize(mut buffer: Bytes) -> VResult<Self> {
         let event_id = buffer.get_var_i32()?;
-        let data = nbt::read_le(&mut buffer)?;
+        let data = nbt::deserialize_le(&mut buffer)?;
 
         Ok(Self {
             event_id,

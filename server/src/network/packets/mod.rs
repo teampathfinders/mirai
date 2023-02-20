@@ -20,7 +20,6 @@ glob_export!(container_close);
 glob_export!(container_open);
 glob_export!(death_info);
 glob_export!(event);
-glob_export!(game_rules_changed);
 glob_export!(generic_level_event);
 glob_export!(interact);
 glob_export!(level_chunk);

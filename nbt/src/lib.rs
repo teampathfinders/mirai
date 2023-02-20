@@ -13,6 +13,7 @@ mod write_be;
 mod write_le;
 mod write_net;
 
+use common::VarInt;
 pub use read_be::*;
 pub use read_le::*;
 pub use read_net::*;
@@ -54,6 +55,33 @@ pub enum Value {
 }
 
 impl Value {
+    pub fn serialized_net_size(&self) -> usize {
+        match self {
+            Self::End => 0,
+            Self::Byte(_) => 1,
+            Self::Short(_) => 2,
+            Self::Int(_) => 4,
+            Self::Long(_) => 8,
+            Self::Float(_) => 4,
+            Self::Double(_) => 4,
+            Self::String(s) => (s.len() as u32).var_len() + s.len(),
+            Self::List(v) => {
+                (v.len() as u32).var_len()
+                    + v.iter().fold(0, |acc, x| acc + x.serialized_net_size())
+            }
+            Self::Compound(c) => c.iter().fold(0, |acc, kv| {
+                acc + {
+                    (kv.0.len() as u32).var_len()
+                        + kv.0.len()
+                        + kv.1.serialized_net_size()
+                }
+            }),
+            Self::ByteArray(v) => (v.len() as u32).var_len() + v.len(),
+            Self::IntArray(v) => (v.len() as u32).var_len() + 4 * v.len(),
+            Self::LongArray(v) => (v.len() as u32).var_len() + 8 * v.len(),
+        }
+    }
+
     /// Converts the value type to a numeric ID.
     pub const fn as_numeric_id(&self) -> u8 {
         match self {
