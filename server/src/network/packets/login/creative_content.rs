@@ -81,17 +81,17 @@ pub struct CreativeContent<'a> {
 
 impl ConnectedPacket for CreativeContent<'_> {
     const ID: u32 = 0x91;
+
+    fn serialized_size(&self) -> usize {
+        0 // todo
+    }
 }
 
 impl Serialize for CreativeContent<'_> {
-    fn serialize(&self) -> VResult<Bytes> {
-        let mut buffer = BytesMut::new();
-
+    fn serialize(&self, buffer: &mut BytesMut) {
         buffer.put_var_u32(self.items.len() as u32);
         for item in self.items {
             item.encode(&mut buffer);
         }
-
-        Ok(buffer.freeze())
     }
 }

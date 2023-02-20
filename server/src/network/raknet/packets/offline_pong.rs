@@ -26,7 +26,7 @@ impl OfflinePong<'_> {
 }
 
 impl Serialize for OfflinePong<'_> {
-    fn serialize(&self) -> VResult<Bytes> {
+    fn serialize(&self, buffer: &mut BytesMut) {
         let mut buffer =
             BytesMut::with_capacity(1 + 8 + 8 + 16 + 2 + self.metadata.len());
 

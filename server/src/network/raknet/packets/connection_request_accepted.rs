@@ -25,7 +25,7 @@ impl ConnectionRequestAccepted {
 }
 
 impl Serialize for ConnectionRequestAccepted {
-    fn serialize(&self) -> VResult<Bytes> {
+    fn serialize(&self, buffer: &mut BytesMut) {
         let mut buffer = BytesMut::with_capacity(
             1 + IPV6_MEM_SIZE + 2 + 10 * IPV4_MEM_SIZE + 8 + 8,
         );

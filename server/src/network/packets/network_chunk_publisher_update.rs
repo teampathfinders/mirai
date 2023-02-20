@@ -13,24 +13,21 @@ pub struct NetworkChunkPublisherUpdate {
 
 impl ConnectedPacket for NetworkChunkPublisherUpdate {
     const ID: u32 = 0x79;
+
+    fn serialized_size(&self) -> usize {
+        size_of_var(self.position.x) +
+        size_of_var(self.position.y) +
+        size_of_var(self.position.z) +
+        size_of_var(self.radius) + 4
+    }
 }
 
 impl Serialize for NetworkChunkPublisherUpdate {
-    fn serialize(&self) -> VResult<Bytes> {
-        let packet_size =
-            size_of_var(self.position.x) +
-            size_of_var(self.position.y) +
-            size_of_var(self.position.z) +
-            size_of_var(self.radius) + 4;
-
-        let mut buffer = BytesMut::with_capacity(packet_size);
-
+    fn serialize(&self, buffer: &mut BytesMut) {
         buffer.put_block_pos(&self.position);
         buffer.put_var_u32(self.radius);
 
         // No saved chunks.
         buffer.put_u32(0);
-
-        Ok(buffer.freeze())
     }
 }

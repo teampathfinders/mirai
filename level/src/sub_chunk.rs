@@ -183,7 +183,7 @@ impl Deserialize for SubChunk {
 }
 
 impl Serialize for SubChunk {
-    fn serialize(&self) -> VResult<Bytes> {
+    fn serialize(&self, buffer: &mut BytesMut) {
         let mut buffer = BytesMut::new();
 
         buffer.put_u8(self.version);

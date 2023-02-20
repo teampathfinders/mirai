@@ -24,15 +24,15 @@ impl TryFrom<i16> for SimpleEvent {
 
 impl ConnectedPacket for SimpleEvent {
     const ID: u32 = 0x40;
+
+    fn serialized_size(&self) -> usize {
+        2
+    }
 }
 
 impl Serialize for SimpleEvent {
-    fn serialize(&self) -> VResult<Bytes> {
-        let mut buffer = BytesMut::with_capacity(2);
-
+    fn serialize(&self, buffer: &mut BytesMut) {
         buffer.put_i16_le(*self as i16);
-
-        Ok(buffer.freeze())
     }
 }
 

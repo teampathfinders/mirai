@@ -29,25 +29,22 @@ pub struct AddPainting<'a> {
 
 impl ConnectedPacket for AddPainting<'_> {
     const ID: u32 = 0x16;
+
+    fn serialized_size(&self) -> usize {
+        size_of_var(self.runtime_id as i64) +
+        size_of_var(self.runtime_id) + 3 * 4 +
+        size_of_var(self.direction as i32) +
+        size_of_var(self.name.len() as u32) + 
+        self.name.len()
+    }
 }
 
 impl Serialize for AddPainting<'_> {
-    fn serialize(&self) -> VResult<Bytes> {
-        let packet_size =
-            size_of_var(self.runtime_id as i64) +
-            size_of_var(self.runtime_id) + 3 * 4 +
-            size_of_var(self.direction as i32) +
-            size_of_var(self.name.len() as u32) + 
-            self.name.len();
-
-        let mut buffer = BytesMut::with_capacity(packet_size);
-
+    fn serialize(&self, buffer: &mut BytesMut) {
         buffer.put_var_i64(self.runtime_id as i64); // Unique entity ID.
         buffer.put_var_u64(self.runtime_id);
         buffer.put_vec3f(&self.position);
         buffer.put_var_i32(self.direction as i32);
         buffer.put_string(self.name);
-
-        Ok(buffer.freeze())
     }
 }

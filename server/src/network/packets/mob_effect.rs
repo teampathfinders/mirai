@@ -72,25 +72,22 @@ pub struct MobEffectUpdate {
 
 impl ConnectedPacket for MobEffectUpdate {
     const ID: u32 = 0x1c;
+    
+    fn serialized_size(&self) -> usize {
+        size_of_var(self.runtime_id) + 1 +
+        size_of_var(self.effect_kind as i32) +
+        size_of_var(self.amplifier) + 1 +
+        size_of_var(self.duration)
+    }
 }
 
 impl Serialize for MobEffectUpdate {
-    fn serialize(&self) -> VResult<Bytes> {
-        let packet_size = 
-            size_of_var(self.runtime_id) + 1 +
-            size_of_var(self.effect_kind as i32) +
-            size_of_var(self.amplifier) + 1 +
-            size_of_var(self.duration);
-
-        let mut buffer = BytesMut::with_capacity(packet_size);
-
+    fn serialize(&self, buffer: &mut BytesMut) {
         buffer.put_var_u64(self.runtime_id);
         buffer.put_u8(self.action as u8);
         buffer.put_var_i32(self.effect_kind as i32);
         buffer.put_var_i32(self.amplifier);
         buffer.put_bool(self.particles);
         buffer.put_var_i32(self.duration);
-
-        Ok(buffer.freeze())
     }
 }

@@ -26,16 +26,15 @@ pub struct Disconnect<'a> {
 
 impl ConnectedPacket for Disconnect<'_> {
     const ID: u32 = 0x05;
+
+    fn serialized_size(&self) -> usize {
+        1 + size_of_var(self.kick_message.len() as u32) + self.kick_message.len()
+    }
 }
 
 impl Serialize for Disconnect<'_> {
-    fn serialize(&self) -> VResult<Bytes> {
-        let mut buffer =
-            BytesMut::with_capacity(1 + 4 + self.kick_message.len());
-
+    fn serialize(&self, buffer: &mut BytesMut) {
         buffer.put_bool(self.hide_disconnect_screen);
         buffer.put_string(self.kick_message);
-
-        Ok(buffer.freeze())
     }
 }

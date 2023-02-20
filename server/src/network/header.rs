@@ -16,8 +16,29 @@ pub struct Header {
 }
 
 impl Header {
+    pub fn serialized_size(&self) -> usize {
+        let value = self.id
+            | ((self.sender_subclient as u32) << 10)
+            | ((self.target_subclient as u32) << 12);
+
+        size_of_var(value)
+    }
+}
+
+impl Serialize for Header {
+    /// Encodes the header.
+    fn serialize(&self, buffer: &mut BytesMut) {
+        let value = self.id
+            | ((self.sender_subclient as u32) << 10)
+            | ((self.target_subclient as u32) << 12);
+
+        buffer.put_var_u32(value);
+    }
+}
+
+impl Deserialize for Header {
     /// Decodes the header.
-    pub fn deserialize(buffer: &mut Bytes) -> VResult<Self> {
+    fn deserialize(buffer: &mut Bytes) -> VResult<Self> {
         let value = buffer.get_var_u32()?;
 
         let id = value & 0x3ff;
@@ -25,16 +46,5 @@ impl Header {
         let target_subclient = ((value >> 12) & 0x3) as u8;
 
         Ok(Self { id, sender_subclient, target_subclient })
-    }
-
-    /// Encodes the header.
-    pub fn serialize(&self) -> Bytes {
-        let value = self.id
-            | ((self.sender_subclient as u32) << 10)
-            | ((self.target_subclient as u32) << 12);
-
-        let mut buffer = BytesMut::with_capacity(size_of_var(value));
-        buffer.put_var_u32(value);
-        buffer.freeze()
     }
 }

@@ -15,7 +15,7 @@ impl ConnectedPacket for ConnectAutomationClient<'_> {
 }
 
 impl Serialize for ConnectAutomationClient<'_> {
-    fn serialize(&self) -> VResult<Bytes> {
+    fn serialize(&self, buffer: &mut BytesMut) {
         let packet_size =
             size_of_var(self.server_uri.len() as u32) +
             self.server_uri.len();

@@ -13,7 +13,7 @@ impl ConnectedPacket for CacheMissResponse<'_> {
 }
 
 impl Serialize for CacheMissResponse<'_> {
-    fn serialize(&self) -> VResult<Bytes> {
+    fn serialize(&self, buffer: &mut BytesMut) {
         let mut buffer = BytesMut::with_capacity(
             1 + self.blobs.iter().fold(0, |acc, blob| acc + blob.len())
         );

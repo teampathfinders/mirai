@@ -67,7 +67,7 @@ impl Deserialize for FrameBatch {
 }
 
 impl Serialize for FrameBatch {
-    fn serialize(&self) -> VResult<Bytes> {
+    fn serialize(&self, buffer: &mut BytesMut) {
         let mut buffer = BytesMut::new();
 
         buffer.put_u8(CONNECTED_PEER_BIT_FLAG);

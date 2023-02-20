@@ -23,7 +23,7 @@ impl IncompatibleProtocol {
 }
 
 impl Serialize for IncompatibleProtocol {
-    fn serialize(&self) -> VResult<Bytes> {
+    fn serialize(&self, buffer: &mut BytesMut) {
         let mut buffer = BytesMut::with_capacity(1 + 1 + 16 + 8);
 
         buffer.put_u8(Self::ID);

@@ -266,13 +266,15 @@ pub struct StartGame<'a> {
 }
 
 impl ConnectedPacket for StartGame<'_> {
-    const ID: u32 = 0x0B;
+    const ID: u32 = 0x0b;
+
+    fn serialized_size(&self) -> usize {
+        0 // todo
+    }
 }
 
 impl Serialize for StartGame<'_> {
-    fn serialize(&self) -> VResult<Bytes> {
-        let mut buffer = BytesMut::new();
-
+    fn serialize(&self, buffer: &mut BytesMut) {
         buffer.put_var_i64(self.entity_id);
         buffer.put_var_u64(self.runtime_id);
         buffer.put_var_i32(self.game_mode as i32);
@@ -366,7 +368,5 @@ impl Serialize for StartGame<'_> {
         buffer.put_u64(self.server_block_state_checksum);
         buffer.put_u128(self.world_template_id);
         buffer.put_bool(self.client_side_generation);
-
-        Ok(buffer.freeze())
     }
 }

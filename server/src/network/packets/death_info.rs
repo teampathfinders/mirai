@@ -16,25 +16,23 @@ pub struct DeathInfo<'a> {
 
 impl ConnectedPacket for DeathInfo<'_> {
     const ID: u32 = 0xbd;
+
+    fn serialized_size(&self) -> usize {
+        size_of_var(self.cause.len() as u32) + self.cause.len() +
+        size_of_var(self.messages.len() as u32) + 
+        self.messages.iter().fold(
+            0, |acc, m| acc + size_of_var(m.len() as u32) + m.len()
+        )
+    }
 }
 
 impl Serialize for DeathInfo<'_> {
-    fn serialize(&self) -> VResult<Bytes> {
-        let packet_size = size_of_var(self.cause.len() as u32) + self.cause.len() +
-        size_of_var(self.messages.len() as u32) + 
-        self.messages.iter().fold(0, |acc, m| acc + size_of_var(m.len() as u32) + m.len());
-
-        let mut buffer = BytesMut::with_capacity(
-            packet_size    
-        );
-
+    fn serialize(&self, buffer: &mut BytesMut) {
         buffer.put_string(self.cause);
 
         buffer.put_var_u32(self.messages.len() as u32);
         for message in self.messages {
             buffer.put_string(message);
         }
-
-        Ok(buffer.freeze())
     }
 }

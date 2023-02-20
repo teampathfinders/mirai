@@ -244,7 +244,7 @@ impl ConnectedPacket for LevelEvent {
 }
 
 impl Serialize for LevelEvent {
-    fn serialize(&self) -> VResult<Bytes> {
+    fn serialize(&self, buffer: &mut BytesMut) {
         let packet_size =
             size_of_var(self.event_type as i32) + 3 * 4 + 
             size_of_var(self.event_data);

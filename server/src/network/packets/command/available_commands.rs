@@ -26,7 +26,7 @@ impl ConnectedPacket for AvailableCommands<'_> {
 }
 
 impl Serialize for AvailableCommands<'_> {
-    fn serialize(&self) -> VResult<Bytes> {
+    fn serialize(&self, buffer: &mut BytesMut) {
         let mut buffer = BytesMut::new();
 
         let mut value_indices = HashMap::new();

@@ -1,5 +1,5 @@
 use bytes::{Buf, BufMut, Bytes, BytesMut};
-use common::{bail, ReadExtensions, VError, VResult, WriteExtensions};
+use common::{bail, ReadExtensions, VError, VResult, WriteExtensions, size_of_var};
 
 use common::{Deserialize, Serialize};
 
@@ -72,12 +72,38 @@ pub struct TextMessage {
 
 impl ConnectedPacket for TextMessage {
     const ID: u32 = 0x09;
+
+    fn serialized_size(&self) -> usize {
+        1 + 1 + match self.message_type {
+            MessageType::Chat
+            | MessageType::Whisper
+            | MessageType::Announcement => {
+                size_of_var(self.source_name.len() as u32) + self.source_name.len() +
+                size_of_var(self.message.len() as u32) + self.message.len()
+            }
+            MessageType::Raw
+            | MessageType::Tip
+            | MessageType::System
+            | MessageType::Object
+            | MessageType::ObjectWhisper
+            | MessageType::ObjectAnnouncement => {
+                size_of_var(self.message.len() as u32) + self.message.len()
+            }
+            MessageType::Translation
+            | MessageType::Popup
+            | MessageType::JukeboxPopup => {
+                size_of_var(self.message.len() as u32) + self.message.len() +
+                size_of_var(self.parameters.len() as u32) +
+                self.parameters.iter().fold(
+                    0, |acc, p| acc + size_of_var(p.len() as u32) + p.len()
+                )
+            }
+        }
+    }
 }
 
 impl Serialize for TextMessage {
-    fn serialize(&self) -> VResult<Bytes> {
-        let mut buffer = BytesMut::new();
-
+    fn serialize(&self, buffer: &mut BytesMut) {
         buffer.put_u8(self.message_type as u8);
         buffer.put_bool(self.needs_translation);
 
@@ -110,8 +136,6 @@ impl Serialize for TextMessage {
 
         buffer.put_string(&self.xuid);
         buffer.put_string(&self.platform_chat_id);
-
-        Ok(buffer.freeze())
     }
 }
 

@@ -1,5 +1,5 @@
 use bytes::{BytesMut, Bytes};
-use common::{bail, ReadExtensions, VError, VResult, WriteExtensions};
+use common::{bail, ReadExtensions, VError, VResult, WriteExtensions, size_of_var};
 
 use common::{Deserialize, Serialize};
 
@@ -40,15 +40,15 @@ pub struct SetPlayerGameMode {
 
 impl ConnectedPacket for SetPlayerGameMode {
     const ID: u32 = 0x3e;
+
+    fn serialized_size(&self) -> usize {
+        size_of_var(self.game_mode as i32)
+    }
 }
 
 impl Serialize for SetPlayerGameMode {
-    fn serialize(&self) -> VResult<Bytes> {
-        let mut buffer = BytesMut::with_capacity(1);
-
+    fn serialize(&self, buffer: &mut BytesMut) {
         buffer.put_var_i32(self.game_mode as i32);
-
-        Ok(buffer.freeze())
     }
 }
 

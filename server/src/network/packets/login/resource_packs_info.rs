@@ -76,12 +76,14 @@ pub struct ResourcePacksInfo<'a> {
 
 impl ConnectedPacket for ResourcePacksInfo<'_> {
     const ID: u32 = 0x06;
+
+    fn serialized_size(&self) -> usize {
+        0 // todo
+    }
 }
 
 impl Serialize for ResourcePacksInfo<'_> {
-    fn serialize(&self) -> VResult<Bytes> {
-        let mut buffer = BytesMut::new();
-
+    fn serialize(&self, buffer: &mut BytesMut) {
         buffer.put_bool(self.required);
         buffer.put_bool(self.scripting_enabled);
         buffer.put_bool(self.forcing_server_packs);
@@ -108,7 +110,5 @@ impl Serialize for ResourcePacksInfo<'_> {
             buffer.put_bool(pack.has_scripts);
             buffer.put_bool(pack.rtx_enabled);
         }
-
-        Ok(buffer.freeze())
     }
 }

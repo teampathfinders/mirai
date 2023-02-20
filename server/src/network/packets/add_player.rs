@@ -163,9 +163,7 @@ impl ConnectedPacket for AddPlayer<'_> {
 }
 
 impl Serialize for AddPlayer<'_> {
-    fn serialize(&self) -> VResult<Bytes> {
-        let mut buffer = BytesMut::new();
-
+    fn serialize(&self, buffer: &mut BytesMut) {
         buffer.put_uuid(&self.uuid);
         buffer.put_string(self.username);
         buffer.put_var_u64(self.runtime_id);
@@ -188,7 +186,5 @@ impl Serialize for AddPlayer<'_> {
 
         buffer.put_string(self.device_id);
         buffer.put_i32_le(self.device_os as i32);
-
-        Ok(buffer.freeze())
     }
 }

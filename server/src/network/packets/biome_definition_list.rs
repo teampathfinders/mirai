@@ -14,10 +14,14 @@ pub struct BiomeDefinitionList;
 
 impl ConnectedPacket for BiomeDefinitionList {
     const ID: u32 = 0x7a;
+
+    fn serialized_size(&self) -> usize {
+        DEFINITIONS.len()
+    }
 }
 
 impl Serialize for BiomeDefinitionList {
-    fn serialize(&self) -> VResult<Bytes> {
-        Ok(Bytes::from_static(DEFINITIONS))
+    fn serialize(&self, buffer: &mut BytesMut) {
+        buffer.put(DEFINITIONS);
     }
 }

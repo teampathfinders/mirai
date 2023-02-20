@@ -5,7 +5,7 @@ use crate::VResult;
 /// Trait that describes an object that can be serialised from raw bytes.
 pub trait Serialize {
     /// Serializes the object into binary format.
-    fn serialize(&self) -> VResult<Bytes>;
+    fn serialize(&self, buffer: &mut BytesMut);
 }
 
 /// Trait that describes an object that can be deserialised from raw bytes.

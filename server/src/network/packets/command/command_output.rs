@@ -35,7 +35,7 @@ impl ConnectedPacket for CommandOutput<'_> {
 }
 
 impl Serialize for CommandOutput<'_> {
-    fn serialize(&self) -> VResult<Bytes> {
+    fn serialize(&self, buffer: &mut BytesMut) {
         let mut buffer = BytesMut::new();
 
         buffer.put_var_u32(self.origin as u32);

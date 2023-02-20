@@ -69,7 +69,7 @@ impl Ack {
 }
 
 impl Serialize for Ack {
-    fn serialize(&self) -> VResult<Bytes> {
+    fn serialize(&self, buffer: &mut BytesMut) {
         let mut buffer = BytesMut::with_capacity(10);
         buffer.put_u8(Self::ID);
         Ok(encode_records(buffer, &self.records))
@@ -97,7 +97,7 @@ impl Nak {
 }
 
 impl Serialize for Nak {
-    fn serialize(&self) -> VResult<Bytes> {
+    fn serialize(&self, buffer: &mut BytesMut) {
         let mut buffer = BytesMut::with_capacity(10);
         buffer.put_u8(Self::ID);
         Ok(encode_records(buffer, &self.records))

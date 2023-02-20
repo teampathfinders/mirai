@@ -41,16 +41,13 @@ impl<T: ConnectedPacket> Packet<T> {
 }
 
 impl<T: ConnectedPacket + Serialize> Serialize for Packet<T> {
-    fn serialize(&self) -> VResult<Bytes> {
-        let mut buffer = BytesMut::new();
-        let header = self.header.serialize();
-        let body = self.content.serialize()?;
+    fn serialize(&self, buffer: &mut BytesMut) {
+        self.header.serialize(buffer);
+        self.content.serialize(buffer)?;
 
         buffer.put_var_u32(header.len() as u32 + body.len() as u32);
 
         buffer.put(header);
         buffer.put(body);
-
-        Ok(buffer.freeze())
     }
 }

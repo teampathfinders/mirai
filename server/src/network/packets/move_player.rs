@@ -68,23 +68,22 @@ pub struct MovePlayer {
 
 impl ConnectedPacket for MovePlayer {
     const ID: u32 = 0x13;
+    
+    fn serialized_size(&self) -> usize {
+        size_of_var(self.runtime_id) +
+        3 * 4 + 3 * 4 + 1 + 1 +
+        size_of_var(self.ridden_runtime_id) +
+        size_of_var(self.tick) +
+        if self.mode == MovementMode::Teleport {
+            4 + 4
+        } else {
+            0
+        }
+    }
 }
 
 impl Serialize for MovePlayer {
-    fn serialize(&self) -> VResult<Bytes> {
-        let packet_size = 
-            size_of_var(self.runtime_id) +
-            3 * 4 + 3 * 4 + 1 + 1 +
-            size_of_var(self.ridden_runtime_id) +
-            size_of_var(self.tick) +
-            if self.mode == MovementMode::Teleport {
-                4 + 4
-            } else {
-                0
-            };
-
-        let mut buffer = BytesMut::with_capacity(packet_size);
-
+    fn serialize(&self, buffer: &mut BytesMut) {
         buffer.put_var_u64(self.runtime_id);
         buffer.put_vec3f(&self.position);
         buffer.put_vec3f(&self.rotation);
@@ -98,8 +97,6 @@ impl Serialize for MovePlayer {
         }
 
         buffer.put_var_u64(self.tick);
-
-        Ok(buffer.freeze())
     }
 }
 

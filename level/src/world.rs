@@ -46,7 +46,7 @@ pub struct DatabaseKey {
 }
 
 impl Serialize for DatabaseKey {
-    fn serialize(&self) -> VResult<Bytes> {
+    fn serialize(&self, buffer: &mut BytesMut) {
         let mut buffer = BytesMut::with_capacity(
             4 + 4
                 + if self.dimension != Dimension::Overworld {

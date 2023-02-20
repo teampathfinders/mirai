@@ -16,19 +16,16 @@ pub struct ToastRequest<'a> {
 
 impl ConnectedPacket for ToastRequest<'_> {
     const ID: u32 = 0xba;
+    
+    fn serialized_size(&self) -> usize {
+        size_of_var(self.title.len() as u32) + self.title.len() +
+        size_of_var(self.message.len() as u32) + self.message.len()       
+    }
 }
 
 impl Serialize for ToastRequest<'_> {
-    fn serialize(&self) -> VResult<Bytes> {
-        let packet_size = 
-            size_of_var(self.title.len() as u32) + self.title.len() +
-            size_of_var(self.message.len() as u32) + self.message.len();
-
-        let mut buffer = BytesMut::with_capacity(packet_size);
-
+    fn serialize(&self, buffer: &mut BytesMut) {
         buffer.put_string(self.title);
         buffer.put_string(self.message);
-
-        Ok(buffer.freeze())
     }
 }

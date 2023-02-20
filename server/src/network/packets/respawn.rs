@@ -36,19 +36,17 @@ pub struct Respawn {
 
 impl ConnectedPacket for Respawn {
     const ID: u32 = 0x2d;
+
+    fn serialized_size(&self) -> usize {
+        3 * 4 + 1 + size_of_var(self.runtime_id)
+    }
 }
 
 impl Serialize for Respawn {
-    fn serialize(&self) -> VResult<Bytes> {
-        let mut buffer = BytesMut::with_capacity(
-            3 * 4 + 1 + size_of_var(self.runtime_id)
-        );
-
+    fn serialize(&self, buffer: &mut BytesMut) {
         buffer.put_vec3f(&self.position);
         buffer.put_u8(self.state as u8);
         buffer.put_var_u64(self.runtime_id);
-
-        Ok(buffer.freeze())
     }
 }
 

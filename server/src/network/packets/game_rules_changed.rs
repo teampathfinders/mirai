@@ -120,6 +120,45 @@ impl fmt::Display for GameRule {
 }
 
 impl GameRule {
+    pub fn is_bool(&self) -> bool {
+        match self {
+            Self::CommandBlocksEnabled(_)
+            | Self::CommandBlockOutput(_)
+            | Self::DaylightCycle(_)
+            | Self::EntityDrops(_)
+            | Self::FireTick(_)
+            | Self::Insomnia(_)
+            | Self::ImmediateRespawn(_)
+            | Self::MobLoot(_)
+            | Self::MobSpawning(_)
+            | Self::TileDrops(_)
+            | Self::WeatherCycle(_)
+            | Self::DrowningDamage(_)
+            | Self::FallDamage(_)
+            | Self::FireDamage(_)
+            | Self::FreezeDamage(_)
+            | Self::KeepInventory(_)
+            | Self::MobGriefing(_)
+            | Self::NaturalRegeneration(_)
+            | Self::Pvp(_)
+            | Self::RespawnBlocksExplode(_)
+            | Self::SendCommandFeedback(_)
+            | Self::ShowBorderEffect(_)
+            | Self::ShowCoordinates(_)
+            | Self::ShowDeathMessages(_)
+            | Self::ShowTags(_)
+            | Self::TntExplodes(_) => {
+                true
+            }
+            Self::FunctionCommandLimit(_)
+            | Self::MaxCommandChainLength(_)
+            | Self::RandomTickSpeed(_)
+            | Self::SpawnRadius(_) => {
+                false
+            }
+        }
+    }
+
     pub fn from_parsed(name: &str, value: &ParsedArgument) -> VResult<GameRule> {
         if let ParsedArgument::String(str_boolean) = value {
             let rule_value = match str_boolean.as_str() {
@@ -261,17 +300,20 @@ pub struct GameRulesChanged<'a> {
 
 impl ConnectedPacket for GameRulesChanged<'_> {
     const ID: u32 = 0x48;
+
+    fn serialized_size(&self) -> usize {
+        size_of_var(self.game_rules.len() as u32) + 
+        self.game_rules.iter().fold(
+            0, |acc, g| acc + 1 + if g.is_bool() { 1 } else { 4 }
+        )
+    }
 }
 
 impl Serialize for GameRulesChanged<'_> {
-    fn serialize(&self) -> VResult<Bytes> {
-        let mut buffer = BytesMut::new();
-
+    fn serialize(&self, buffer: &mut BytesMut) {
         buffer.put_var_u32(self.game_rules.len() as u32);
         for game_rule in self.game_rules {
             game_rule.serialize(&mut buffer);
         }
-
-        Ok(buffer.freeze())
     }
 }

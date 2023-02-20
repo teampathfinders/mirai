@@ -13,15 +13,14 @@ pub struct ChunkRadiusReply {
 
 impl ConnectedPacket for ChunkRadiusReply {
     const ID: u32 = 0x46;
+
+    fn serialized_size(&self) -> usize {
+        size_of_var(self.allowed_radius)
+    }
 }
 
 impl Serialize for ChunkRadiusReply {
-    fn serialize(&self) -> VResult<Bytes> {
-        let packet_size = size_of_var(self.allowed_radius);
-        let mut buffer = BytesMut::with_capacity(packet_size);
-
+    fn serialize(&self, buffer: &mut BytesMut) {
         buffer.put_var_i32(self.allowed_radius);
-
-        Ok(buffer.freeze())
     }
 }

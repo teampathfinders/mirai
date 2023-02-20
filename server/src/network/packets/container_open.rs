@@ -12,19 +12,17 @@ pub struct ContainerOpen {
 
 impl ConnectedPacket for ContainerOpen {
     const ID: u32 = 0x2e;
+
+    fn serialized_size(&self) -> usize {
+        1 + 1 + 3 * 4 + size_of_var(self.container_entity_unique_id)
+    }
 }
 
 impl Serialize for ContainerOpen {
-    fn serialize(&self) -> VResult<Bytes> {
-        let mut buffer = BytesMut::with_capacity(
-            1 + 1 + 3 * 4 + size_of_var(self.container_entity_unique_id)
-        );
-
+    fn serialize(&self, buffer: &mut BytesMut) {
         buffer.put_u8(self.window_id);
         buffer.put_u8(self.container_type);
         buffer.put_vec3i(&self.position);
         buffer.put_var_i64(self.container_entity_unique_id);
-
-        Ok(buffer.freeze())
     }
 }

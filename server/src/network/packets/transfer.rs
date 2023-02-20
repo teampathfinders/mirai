@@ -12,23 +12,20 @@ use super::ConnectedPacket;
 #[derive(Debug, Clone)]
 pub struct Transfer {
     /// Address of the server to transfer to.
-    pub address: SocketAddr,
+    pub addr: SocketAddr,
 }
 
 impl ConnectedPacket for Transfer {
     const ID: u32 = 0x55;
+
+    fn serialized_size(&self) -> usize {
+        size_of_var(self.addr.to_string().len() as u32) + addr_string.len() + 2
+    }
 }
 
 impl Serialize for Transfer {
-    fn serialize(&self) -> VResult<Bytes> {
-        let addr_string = self.address.ip().to_string();
-        let packet_size = size_of_var(addr_string.len() as u32) + addr_string.len() + 2;
-
-        let mut buffer = BytesMut::with_capacity(packet_size);
-
-        buffer.put_string(&addr_string);
-        buffer.put_u16_le(self.address.port());
-
-        Ok(buffer.freeze())
+    fn serialize(&self, buffer: &mut BytesMut) {
+        buffer.put_string(&self.addr.to_string());
+        buffer.put_u16_le(self.addr.port());
     }
 }

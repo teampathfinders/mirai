@@ -1,7 +1,7 @@
 use std::time::Duration;
 
 use bytes::{BytesMut, Bytes};
-use common::{VResult, WriteExtensions};
+use common::{VResult, WriteExtensions, size_of_var};
 
 use common::Serialize;
 
@@ -43,12 +43,20 @@ pub struct SetTitle<'a> {
 
 impl ConnectedPacket for SetTitle<'_> {
     const ID: u32 = 0x58;
+
+    fn serialized_size(&self) -> usize {
+        size_of_var(self.action as i32) +
+        size_of_var(self.text.len() as u32) + self.text.len() +
+        size_of_var(self.fade_in_duration) +
+        size_of_var(self.remain_duration) +
+        size_of_var(self.fade_out_duration) +
+        size_of_var(self.xuid.len() as u32) + self.xuid.len() +
+        size_of_var(self.platform_online_id.len() as u32) + self.platform_online_id.len()
+    }
 }
 
 impl Serialize for SetTitle<'_> {
-    fn serialize(&self) -> VResult<Bytes> {
-        let mut buffer = BytesMut::new();
-
+    fn serialize(&self, buffer: &mut BytesMut) {
         buffer.put_var_i32(self.action as i32);
         buffer.put_string(self.text);
         buffer.put_var_i32(self.fade_in_duration);
@@ -56,7 +64,5 @@ impl Serialize for SetTitle<'_> {
         buffer.put_var_i32(self.fade_out_duration);
         buffer.put_string(self.xuid);
         buffer.put_string(self.platform_online_id);
-
-        Ok(buffer.freeze())
     }
 }

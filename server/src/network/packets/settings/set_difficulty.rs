@@ -1,5 +1,5 @@
 use bytes::{Bytes, BytesMut};
-use common::{bail, ReadExtensions, VError, VResult, WriteExtensions};
+use common::{bail, ReadExtensions, VError, VResult, WriteExtensions, size_of_var};
 
 use common::{Deserialize, Serialize};
 
@@ -39,15 +39,15 @@ pub struct SetDifficulty {
 
 impl ConnectedPacket for SetDifficulty {
     const ID: u32 = 0x3c;
+
+    fn serialized_size(&self) -> usize {
+        size_of_var(self.difficulty as i32)
+    }
 }
 
 impl Serialize for SetDifficulty {
-    fn serialize(&self) -> VResult<Bytes> {
-        let mut buffer = BytesMut::with_capacity(1);
-
+    fn serialize(&self, buffer: &mut BytesMut) {
         buffer.put_var_i32(self.difficulty as i32);
-
-        Ok(buffer.freeze())
     }
 }
 

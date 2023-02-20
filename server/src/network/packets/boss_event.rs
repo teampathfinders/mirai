@@ -54,7 +54,7 @@ impl ConnectedPacket for BossEvent<'_> {
 }
 
 impl Serialize for BossEvent<'_> {
-    fn serialize(&self) -> VResult<Bytes> {
+    fn serialize(&self, buffer: &mut BytesMut) {
         let mut buffer = BytesMut::new();
 
         buffer.put_var_i64(self.boss_unique_id);

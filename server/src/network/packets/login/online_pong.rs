@@ -16,16 +16,16 @@ pub struct OnlinePong {
 impl OnlinePong {
     /// Unique ID of this packet.
     pub const ID: u8 = 0x03;
+
+    fn serialized_size(&self) -> usize {
+        1 + 8 + 8
+    }
 }
 
 impl Serialize for OnlinePong {
-    fn serialize(&self) -> VResult<Bytes> {
-        let mut buffer = BytesMut::with_capacity(1 + 8 + 8);
-
+    fn serialize(&self, buffer: &mut BytesMut) {
         buffer.put_u8(Self::ID);
         buffer.put_i64(self.ping_time);
         buffer.put_i64(self.pong_time);
-
-        Ok(buffer.freeze())
     }
 }

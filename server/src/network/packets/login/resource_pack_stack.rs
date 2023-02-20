@@ -53,12 +53,14 @@ pub struct ResourcePackStack<'a> {
 
 impl ConnectedPacket for ResourcePackStack<'_> {
     const ID: u32 = 0x07;
+
+    fn serialized_size(&self) -> usize {
+        0 // todo
+    }
 }
 
 impl Serialize for ResourcePackStack<'_> {
-    fn serialize(&self) -> VResult<Bytes> {
-        let mut buffer = BytesMut::new();
-
+    fn serialize(&self, buffer: &mut BytesMut) {
         buffer.put_bool(self.forced_to_accept);
 
         buffer.put_var_u32(self.resource_packs.len() as u32);
@@ -79,7 +81,5 @@ impl Serialize for ResourcePackStack<'_> {
         }
 
         buffer.put_bool(self.experiments_previously_toggled);
-
-        Ok(buffer.freeze())
     }
 }

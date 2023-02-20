@@ -22,7 +22,7 @@ impl OpenConnectionReply1 {
 }
 
 impl Serialize for OpenConnectionReply1 {
-    fn serialize(&self) -> VResult<Bytes> {
+    fn serialize(&self, buffer: &mut BytesMut) {
         let mut buffer = BytesMut::with_capacity(1 + 16 + 8 + 1 + 2);
 
         buffer.put_u8(Self::ID);
