@@ -2,7 +2,7 @@ use bytes::Bytes;
 use bytes::{BufMut, BytesMut};
 
 use crate::network::packets::ConnectedPacket;
-use common::Serialize;
+use common::{Serialize, size_of_var};
 use common::VResult;
 use common::WriteExtensions;
 
@@ -13,6 +13,10 @@ pub struct ExperimentData {
 }
 
 impl ExperimentData {
+    pub fn serialized_size(&self) -> usize {
+        size_of_var(self.name.len() as u32) + self.name.len() + 1
+    }
+
     pub fn serialize(&self, buffer: &mut BytesMut) {
         buffer.put_string(&self.name);
         buffer.put_bool(self.enabled);
@@ -20,13 +24,19 @@ impl ExperimentData {
 }
 
 #[derive(Debug, Clone)]
-pub struct ResourcePackStackEntry {
-    pub pack_id: String,
-    pub pack_version: String,
-    pub subpack_name: String,
+pub struct ResourcePackStackEntry<'a> {
+    pub pack_id: &'a str,
+    pub pack_version: &'a str,
+    pub subpack_name: &'a str,
 }
 
-impl ResourcePackStackEntry {
+impl ResourcePackStackEntry<'_> {
+    pub fn serialized_size(&self) -> usize {
+        size_of_var(self.pack_id.len() as u32) + self.pack_id.len() +
+        size_of_var(self.pack_version.len() as u32) + self.pack_version.len() +
+        size_of_var(self.subpack_name.len() as u32) + self.subpack_name.len()
+    }
+
     pub fn serialize(&self, buffer: &mut BytesMut) {
         buffer.put_string(&self.pack_id);
         buffer.put_string(&self.pack_version);
@@ -34,18 +44,11 @@ impl ResourcePackStackEntry {
     }
 }
 
-#[derive(Debug, Clone)]
-pub struct BehaviorPackEntry {
-    pub pack_id: String,
-    pub pack_version: String,
-    pub subpack_name: String,
-}
-
 #[derive(Debug)]
 pub struct ResourcePackStack<'a> {
     pub forced_to_accept: bool,
-    pub resource_packs: &'a [ResourcePackStackEntry],
-    pub behavior_packs: &'a [ResourcePackStackEntry],
+    pub resource_packs: &'a [ResourcePackStackEntry<'a>],
+    pub behavior_packs: &'a [ResourcePackStackEntry<'a>],
     pub game_version: &'a str,
     pub experiments: &'a [ExperimentData],
     pub experiments_previously_toggled: bool,
@@ -55,7 +58,16 @@ impl ConnectedPacket for ResourcePackStack<'_> {
     const ID: u32 = 0x07;
 
     fn serialized_size(&self) -> usize {
-        todo!();
+        1 + 
+        size_of_var(self.resource_packs.len() as u32) +
+        self.resource_packs.iter().fold(0, |acc, p| acc + p.serialized_size()) +
+
+        size_of_var(self.behavior_packs.len() as u32) +
+        self.behavior_packs.iter().fold(0, |acc, p| acc + p.serialized_size()) +
+
+        size_of_var(self.game_version.len() as u32) + self.game_version.len() +
+        4 + self.experiments.iter().fold(0, |acc, e| acc + e.serialized_size()) +
+        1
     }
 }
 

@@ -24,12 +24,12 @@ use crate::network::packets::{
     NETWORK_VERSION,
 };
 use crate::network::raknet::packets::IncompatibleProtocol;
-use crate::network::raknet::packets::UnconnectedPing;
-use crate::network::raknet::packets::UnconnectedPong;
 use crate::network::raknet::packets::OpenConnectionReply1;
 use crate::network::raknet::packets::OpenConnectionReply2;
 use crate::network::raknet::packets::OpenConnectionRequest1;
 use crate::network::raknet::packets::OpenConnectionRequest2;
+use crate::network::raknet::packets::UnconnectedPing;
+use crate::network::raknet::packets::UnconnectedPong;
 use crate::network::raknet::BufPacket;
 use crate::network::raknet::RAKNET_VERSION;
 use crate::network::session::SessionManager;
