@@ -36,8 +36,6 @@ impl ConnectedPacket for CommandOutput<'_> {
 
 impl Serialize for CommandOutput<'_> {
     fn serialize(&self, buffer: &mut BytesMut) {
-        let mut buffer = BytesMut::new();
-
         buffer.put_var_u32(self.origin as u32);
         buffer.put_uuid(&Uuid::nil());
         buffer.put_string(self.request_id);
@@ -66,7 +64,5 @@ impl Serialize for CommandOutput<'_> {
         if self.output_type == CommandOutputType::DataSet {
             unimplemented!();
         }
-
-        Ok(buffer.freeze())
     }
 }

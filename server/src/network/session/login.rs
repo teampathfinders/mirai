@@ -123,6 +123,8 @@ impl Session {
 
         // TODO: Implement resource packs.
 
+        tracing::debug!("test");
+
         let start_game = StartGame {
             entity_id: 1,
             runtime_id: 1,

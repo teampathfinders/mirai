@@ -1,6 +1,6 @@
 use bytes::{BufMut, Bytes, BytesMut};
 
-use common::{size_of_var, VResult};
+use common::{size_of_var, VResult, Deserialize, Serialize};
 use common::{ReadExtensions, WriteExtensions};
 
 /// Game packets are prefixed with a length and a header.
@@ -36,9 +36,9 @@ impl Serialize for Header {
     }
 }
 
-impl Deserialize for Header {
+impl Header {
     /// Decodes the header.
-    fn deserialize(buffer: &mut Bytes) -> VResult<Self> {
+    pub fn deserialize(buffer: &mut Bytes) -> VResult<Self> {
         let value = buffer.get_var_u32()?;
 
         let id = value & 0x3ff;

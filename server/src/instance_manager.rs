@@ -1,3 +1,4 @@
+use std::f32::consts::E;
 use std::net::{Ipv4Addr, Ipv6Addr, SocketAddrV4};
 use std::sync::Arc;
 use std::time::{Duration, SystemTime};
@@ -218,8 +219,12 @@ impl InstanceManager {
         metadata: &str,
     ) -> VResult<BufPacket> {
         let ping = OfflinePing::deserialize(pk.buf)?;
-        pk.buf = OfflinePong { time: ping.time, server_guid, metadata }
-            .serialize()?;
+        let pong = OfflinePong { time: ping.time, server_guid, metadata };
+
+        let mut serialized = BytesMut::with_capacity(pong.serialized_size());
+        pong.serialize(&mut serialized);
+
+        pk.buf = serialized.freeze();
 
         Ok(pk)
     }
@@ -232,13 +237,20 @@ impl InstanceManager {
     ) -> VResult<BufPacket> {
         let request = OpenConnectionRequest1::deserialize(pk.buf)?;
 
+        let mut serialized = BytesMut::new();
         if request.protocol_version != RAKNET_VERSION {
-            pk.buf = IncompatibleProtocol { server_guid }.serialize()?;
-            return Ok(pk);
+            let reply = IncompatibleProtocol { server_guid };
+
+            serialized.reserve(reply.serialized_size());
+            reply.serialize(&mut serialized);
+        } else {
+            let reply = OpenConnectionReply1 { mtu: request.mtu, server_guid };
+
+            serialized.reserve(reply.serialized_size());
+            reply.serialize(&mut serialized);
         }
 
-        pk.buf = OpenConnectionReply1 { mtu: request.mtu, server_guid }
-            .serialize()?;
+        pk.buf = serialized.freeze();
 
         Ok(pk)
     }
@@ -254,13 +266,16 @@ impl InstanceManager {
         server_guid: u64,
     ) -> VResult<BufPacket> {
         let request = OpenConnectionRequest2::deserialize(pk.buf)?;
-
-        pk.buf = OpenConnectionReply2 {
+        let reply = OpenConnectionReply2 {
             server_guid,
             mtu: request.mtu,
             client_address: pk.addr,
-        }
-        .serialize()?;
+        };
+
+        let mut serialized = BytesMut::with_capacity(reply.serialized_size());
+        reply.serialize(&mut serialized);
+
+        pk.buf = serialized.freeze();
 
         sess_manager.add_session(
             udp_socket,

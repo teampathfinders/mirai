@@ -45,23 +45,25 @@ pub struct DatabaseKey {
     pub tag: DatabaseTag,
 }
 
+impl DatabaseKey {
+    pub fn serialized_size(&self) -> usize {
+        4 + 4
+            + if self.dimension != Dimension::Overworld {
+                4
+            } else {
+                0
+            }
+            + 1
+            + if self.tag == DatabaseTag::SubChunk {
+                1
+            } else {
+                0
+            }
+    }
+}
+
 impl Serialize for DatabaseKey {
     fn serialize(&self, buffer: &mut BytesMut) {
-        let mut buffer = BytesMut::with_capacity(
-            4 + 4
-                + if self.dimension != Dimension::Overworld {
-                    4
-                } else {
-                    0
-                }
-                + 1
-                + if self.tag == DatabaseTag::SubChunk {
-                    1
-                } else {
-                    0
-                },
-        );
-
         buffer.put_i32_le(self.x);
         buffer.put_i32_le(self.z);
 
@@ -73,8 +75,6 @@ impl Serialize for DatabaseKey {
         if self.tag == DatabaseTag::SubChunk {
             buffer.put_i8(self.y);
         }
-
-        Ok(buffer.freeze())
     }
 }
 

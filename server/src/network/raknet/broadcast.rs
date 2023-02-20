@@ -1,6 +1,6 @@
 use std::num::NonZeroU64;
 
-use bytes::Bytes;
+use bytes::{Bytes, BytesMut};
 use common::{error, Serialize, VResult};
 
 use crate::network::{
@@ -31,11 +31,11 @@ impl BroadcastPacket {
         let packet = Packet::new(packet);
 
         let mut buffer = BytesMut::with_capacity(packet.serialized_size());
-        packet.serialize(&mut buffer)?;
+        packet.serialize(&mut buffer);
 
         Ok(Self {
             sender,
-            content: packet
+            content: buffer.freeze()
         })
     }
 }

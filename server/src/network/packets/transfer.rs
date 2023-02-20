@@ -19,7 +19,9 @@ impl ConnectedPacket for Transfer {
     const ID: u32 = 0x55;
 
     fn serialized_size(&self) -> usize {
-        size_of_var(self.addr.to_string().len() as u32) + addr_string.len() + 2
+        let addr_string = self.addr.to_string();
+
+        size_of_var(addr_string.len() as u32) + addr_string.len() + 2
     }
 }
 

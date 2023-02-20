@@ -78,7 +78,7 @@ impl ConnectedPacket for ResourcePacksInfo<'_> {
     const ID: u32 = 0x06;
 
     fn serialized_size(&self) -> usize {
-        0 // todo
+        100 // todo
     }
 }
 

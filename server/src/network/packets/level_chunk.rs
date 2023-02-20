@@ -64,7 +64,5 @@ impl Serialize for LevelChunk {
         }
 
         buffer.put(self.raw_payload.as_ref());
-
-        Ok(buffer.freeze())
     }
 }

@@ -19,7 +19,7 @@ pub enum WorldGenerator {
 }
 
 impl WorldGenerator {
-    pub fn encode(&self, buffer: &mut BytesMut) {
+    pub fn serialize(&self, buffer: &mut BytesMut) {
         buffer.put_var_i32(*self as i32);
     }
 }
@@ -33,7 +33,7 @@ pub enum PermissionLevel {
 }
 
 impl PermissionLevel {
-    pub fn encode(&self, buffer: &mut BytesMut) {
+    pub fn serialize(&self, buffer: &mut BytesMut) {
         buffer.put_var_i32(*self as i32);
     }
 }
@@ -59,7 +59,7 @@ pub enum ChatRestrictionLevel {
 }
 
 impl ChatRestrictionLevel {
-    pub fn encode(&self, buffer: &mut BytesMut) {
+    pub fn serialize(&self, buffer: &mut BytesMut) {
         buffer.put_u8(*self as u8);
     }
 }
@@ -79,7 +79,7 @@ pub struct PlayerMovementSettings {
 }
 
 impl PlayerMovementSettings {
-    pub fn encode(&self, buffer: &mut BytesMut) {
+    pub fn serialize(&self, buffer: &mut BytesMut) {
         buffer.put_var_i32(self.movement_type as i32);
         buffer.put_var_i32(self.rewind_history_size);
         buffer.put_bool(self.server_authoritative_breaking);
@@ -95,7 +95,7 @@ pub struct BlockEntry {
 }
 
 impl BlockEntry {
-    pub fn encode(&self, buffer: &mut BytesMut) {
+    pub fn serialize(&self, buffer: &mut BytesMut) {
         buffer.put_string(&self.name);
 
         nbt::RefTag { name: "", value: &self.properties }.write_net(buffer);
@@ -114,7 +114,7 @@ pub struct ItemEntry {
 }
 
 impl ItemEntry {
-    pub fn encode(&self, buffer: &mut BytesMut) {
+    pub fn serialize(&self, buffer: &mut BytesMut) {
         buffer.put_string(&self.name);
         buffer.put_u16(self.runtime_id);
         buffer.put_bool(self.component_based);
@@ -137,7 +137,7 @@ pub enum BroadcastIntent {
 }
 
 impl BroadcastIntent {
-    pub fn encode(&self, buffer: &mut BytesMut) {
+    pub fn serialize(&self, buffer: &mut BytesMut) {
         buffer.put_var_u32(*self as u32);
     }
 }
@@ -278,13 +278,13 @@ impl Serialize for StartGame<'_> {
         buffer.put_var_i64(self.entity_id);
         buffer.put_var_u64(self.runtime_id);
         buffer.put_var_i32(self.game_mode as i32);
-        self.position.encode(&mut buffer);
-        self.rotation.encode(&mut buffer);
+        self.position.serialize(buffer);
+        self.rotation.serialize(buffer);
         buffer.put_u64_le(self.world_seed);
         buffer.put_i16(self.spawn_biome_type as i16);
         buffer.put_string(self.custom_biome_name);
         buffer.put_var_u32(self.dimension as u32);
-        self.generator.encode(&mut buffer);
+        self.generator.serialize(buffer);
         buffer.put_var_i32(self.world_game_mode as i32);
         buffer.put_var_i32(self.difficulty as i32);
         buffer.put_block_pos(&self.world_spawn);
@@ -300,25 +300,25 @@ impl Serialize for StartGame<'_> {
         buffer.put_bool(self.confirmed_platform_locked_content);
         buffer.put_bool(true); // Whether the game is multiplayer. Must always be true.
         buffer.put_bool(self.broadcast_to_lan);
-        self.xbox_broadcast_intent.encode(&mut buffer);
-        self.platform_broadcast_intent.encode(&mut buffer);
+        self.xbox_broadcast_intent.serialize(buffer);
+        self.platform_broadcast_intent.serialize(buffer);
         buffer.put_bool(self.enable_commands);
         buffer.put_bool(self.texture_packs_required);
 
         buffer.put_var_u32(self.gamerules.len() as u32);
         for rule in self.gamerules {
-            rule.serialize(&mut buffer);
+            rule.serialize(buffer);
         }
 
         buffer.put_u32(self.experiments.len() as u32);
         for experiment in self.experiments {
-            experiment.encode(&mut buffer);
+            experiment.serialize(buffer);
         }
 
         buffer.put_bool(self.experiments_previously_enabled);
         buffer.put_bool(self.bonus_chest_enabled);
         buffer.put_bool(self.starter_map_enabled);
-        self.permission_level.encode(&mut buffer);
+        self.permission_level.serialize(buffer);
         buffer.put_i32(self.server_chunk_tick_range);
         buffer.put_bool(self.has_locked_behavior_pack);
         buffer.put_bool(self.has_locked_resource_pack);
@@ -337,24 +337,24 @@ impl Serialize for StartGame<'_> {
         buffer.put_string("");
         buffer.put_string("");
         buffer.put_bool(self.force_experimental_gameplay);
-        self.chat_restriction_level.encode(&mut buffer);
+        self.chat_restriction_level.serialize(buffer);
         buffer.put_bool(self.disable_player_interactions);
         buffer.put_string(self.level_id);
         buffer.put_string(self.level_name);
         buffer.put_string(self.template_content_identity);
         buffer.put_bool(false); // Game is not a trial.
-        self.movement_settings.encode(&mut buffer);
+        self.movement_settings.serialize(buffer);
         buffer.put_i64(self.time);
         buffer.put_var_i32(self.enchantment_seed);
 
         buffer.put_var_u32(self.block_properties.len() as u32);
         for block in self.block_properties {
-            block.encode(&mut buffer);
+            block.serialize(buffer);
         }
 
         buffer.put_var_u32(self.item_properties.len() as u32);
         for item in self.item_properties {
-            item.encode(&mut buffer);
+            item.serialize(buffer);
         }
 
         // Random multiplayer correlation UUID.
@@ -363,7 +363,7 @@ impl Serialize for StartGame<'_> {
         buffer.put_bool(self.server_authoritative_inventory);
         buffer.put_string(CLIENT_VERSION_STRING); // Game version
 
-        nbt::write_net("", &self.property_data, &mut buffer);
+        nbt::write_net("", &self.property_data, buffer);
 
         buffer.put_u64(self.server_block_state_checksum);
         buffer.put_u128(self.world_template_id);

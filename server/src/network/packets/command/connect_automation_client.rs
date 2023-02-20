@@ -12,18 +12,14 @@ pub struct ConnectAutomationClient<'a> {
 
 impl ConnectedPacket for ConnectAutomationClient<'_> {
     const ID: u32 = 0x5f;
+
+    fn serialized_size(&self) -> usize {
+        size_of_var(self.server_uri.len() as u32) + self.server_uri.len()
+    }
 }
 
 impl Serialize for ConnectAutomationClient<'_> {
     fn serialize(&self, buffer: &mut BytesMut) {
-        let packet_size =
-            size_of_var(self.server_uri.len() as u32) +
-            self.server_uri.len();
-
-        let mut buffer = BytesMut::with_capacity(packet_size);
-
         buffer.put_string(self.server_uri);
-
-        Ok(buffer.freeze())
     }
 }

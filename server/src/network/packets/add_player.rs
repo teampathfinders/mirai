@@ -171,17 +171,17 @@ impl Serialize for AddPlayer<'_> {
         buffer.put_vec3f(&self.position);
         buffer.put_vec3f(&self.velocity);
         buffer.put_vec3f(&self.rotation);
-        self.held_item.encode(&mut buffer);
+        self.held_item.serialize(buffer);
         buffer.put_var_i32(self.game_mode as i32);
         // buffer.put_metadata(&self.metadata);
         buffer.put_var_u32(0); // TODO: Entity metadata.
         buffer.put_var_u32(0); // Entity properties are unused.
         buffer.put_var_u32(0); // Entity properties are unused.
-        self.ability_data.encode(&mut buffer);
+        self.ability_data.encode(buffer);
 
         buffer.put_var_u32(self.links.len() as u32);
         for link in self.links {
-            link.encode(&mut buffer);
+            link.encode(buffer);
         }
 
         buffer.put_string(self.device_id);

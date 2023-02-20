@@ -36,7 +36,10 @@ impl Session {
     #[inline]
     pub fn send<T: ConnectedPacket + Serialize>(&self, pk: T) -> VResult<()> {
         let pk = Packet::new(pk);
-        self.send_serialized(pk.serialize()?, DEFAULT_SEND_CONFIG)
+        let mut serialized = BytesMut::with_capacity(pk.serialized_size());
+
+        pk.serialize(&mut serialized);
+        self.send_serialized(serialized.freeze(), DEFAULT_SEND_CONFIG)
     }
 
     /// Sends a game packet with custom reliability and priority
@@ -185,16 +188,19 @@ impl Session {
             }
         }
 
-        let ack = Ack { records }.serialize()?;
+        let ack = Ack { records };
+        let mut serialized = BytesMut::with_capacity(ack.serialized_size());
+        ack.serialize(&mut serialized);
+
         self.raknet
             .udp_socket
-            .send_to(&ack, self.raknet.address)
+            .send_to(serialized.as_ref(), self.raknet.address)
             .await?;
 
         Ok(())
     }
 
-    // #[async_recursion]
+    #[async_recursion]
     async fn send_raw_frames(&self, frames: Vec<Frame>) -> VResult<()> {
         let mut serialized = BytesMut::new();
 
@@ -250,14 +256,15 @@ impl Session {
                     self.raknet.recovery_queue.insert(batch.clone());
                 }
                 
-                
-                batch.serialize()?;
+                batch.serialize(&mut serialized);
 
                 // TODO: Add IPv6 support
                 self.raknet
                     .udp_socket
-                    .send_to(&encoded, self.raknet.address)
+                    .send_to(serialized.as_ref(), self.raknet.address)
                     .await?;
+
+                serialized.clear();
 
                 has_reliable_packet = false;
                 batch = FrameBatch {
@@ -275,13 +282,15 @@ impl Session {
             if has_reliable_packet {
                 self.raknet.recovery_queue.insert(batch.clone());
             }
-            let encoded = batch.serialize()?;
+            batch.serialize(&mut serialized);
 
             // TODO: Add IPv6 support
             self.raknet
                 .udp_socket
-                .send_to(&encoded, self.raknet.address)
+                .send_to(serialized.as_ref(), self.raknet.address)
                 .await?;
+
+            serialized.clear();
         } else {
             self.raknet
                 .batch_sequence_number

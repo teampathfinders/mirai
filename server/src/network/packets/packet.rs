@@ -38,16 +38,19 @@ impl<T: ConnectedPacket> Packet<T> {
         self.header.sender_subclient = sender;
         self
     }
+
+    pub fn serialized_size(&self) -> usize {
+        self.header.serialized_size() + self.content.serialized_size()
+    }
 }
 
 impl<T: ConnectedPacket + Serialize> Serialize for Packet<T> {
     fn serialize(&self, buffer: &mut BytesMut) {
+        buffer.put_var_u32(
+            (self.header.serialized_size() + self.content.serialized_size()) as u32
+        );
+
         self.header.serialize(buffer);
-        self.content.serialize(buffer)?;
-
-        buffer.put_var_u32(header.len() as u32 + body.len() as u32);
-
-        buffer.put(header);
-        buffer.put(body);
+        self.content.serialize(buffer);
     }
 }

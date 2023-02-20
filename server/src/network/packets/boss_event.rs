@@ -119,7 +119,5 @@ impl Serialize for BossEvent<'_> {
                 buffer.put_var_i64(player_unique_id);
             }
         }
-
-        Ok(buffer.freeze())
     }
 }

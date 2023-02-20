@@ -1,3 +1,4 @@
+use bytes::BytesMut;
 use common::{Deserialize, Serialize, Vector3b};
 
 use crate::{
@@ -7,6 +8,8 @@ use crate::{
 #[test]
 fn database_open() {
     let db = ChunkDatabase::new("test/db").unwrap();
+
+    let mut buffer = BytesMut::new();
     let key = DatabaseKey {
         x: 0,
         y: 3,
@@ -14,10 +17,9 @@ fn database_open() {
         dimension: Dimension::Overworld,
         tag: DatabaseTag::SubChunk,
     }
-    .serialize()
-    .unwrap();
+    .serialize(&mut buffer);
 
-    let data = db.get_raw_key(key).unwrap();
+    let data = db.get_raw_key(buffer.freeze()).unwrap();
     let sub_chunk = SubChunk::deserialize(data).unwrap();
 
     // let block = sub_chunk.get(Vector3b::from([]))

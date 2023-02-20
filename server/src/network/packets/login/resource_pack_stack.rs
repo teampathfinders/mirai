@@ -13,7 +13,7 @@ pub struct ExperimentData {
 }
 
 impl ExperimentData {
-    pub fn encode(&self, buffer: &mut BytesMut) {
+    pub fn serialize(&self, buffer: &mut BytesMut) {
         buffer.put_string(&self.name);
         buffer.put_bool(self.enabled);
     }
@@ -27,7 +27,7 @@ pub struct ResourcePackStackEntry {
 }
 
 impl ResourcePackStackEntry {
-    pub fn encode(&self, buffer: &mut BytesMut) {
+    pub fn serialize(&self, buffer: &mut BytesMut) {
         buffer.put_string(&self.pack_id);
         buffer.put_string(&self.pack_version);
         buffer.put_string(&self.subpack_name);
@@ -65,19 +65,19 @@ impl Serialize for ResourcePackStack<'_> {
 
         buffer.put_var_u32(self.resource_packs.len() as u32);
         for pack in self.resource_packs {
-            pack.encode(&mut buffer);
+            pack.serialize(buffer);
         }
 
         buffer.put_var_u32(self.behavior_packs.len() as u32);
         for pack in self.behavior_packs {
-            pack.encode(&mut buffer);
+            pack.serialize(buffer);
         }
 
         buffer.put_string(self.game_version);
 
         buffer.put_u32(self.experiments.len() as u32);
         for experiment in self.experiments {
-            experiment.encode(&mut buffer);
+            experiment.serialize(buffer);
         }
 
         buffer.put_bool(self.experiments_previously_toggled);

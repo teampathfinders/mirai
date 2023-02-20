@@ -50,7 +50,7 @@ impl Serialize for PlayerListAdd<'_> {
             buffer.put_string(&entry.xuid.to_string());
             buffer.put_string(""); // Platform chat ID.
             buffer.put_i32_le(entry.device_os as i32);
-            entry.skin.serialize(&mut buffer);
+            entry.skin.serialize(buffer);
             buffer.put_bool(false); // Player is not a teacher.
             buffer.put_bool(entry.host);
         }

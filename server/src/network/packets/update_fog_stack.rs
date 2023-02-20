@@ -25,7 +25,5 @@ impl Serialize for UpdateFogStack<'_> {
         for fog in self.stack {
             buffer.put_string(fog);
         }
-
-        Ok(buffer.freeze())
     }
 }

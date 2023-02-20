@@ -2,7 +2,7 @@ use bytes::Bytes;
 use bytes::{BufMut, BytesMut};
 
 use crate::network::packets::ConnectedPacket;
-use common::Serialize;
+use common::{Serialize, size_of_var};
 use common::VResult;
 use common::WriteExtensions;
 

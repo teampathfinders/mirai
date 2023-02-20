@@ -241,21 +241,18 @@ pub struct LevelEvent {
 
 impl ConnectedPacket for LevelEvent {
     const ID: u32 = 0x19;
+
+    fn serialized_size(&self) -> usize {
+        size_of_var(self.event_type as i32) + 3 * 4 + 
+        size_of_var(self.event_data)
+    }
 }
 
 impl Serialize for LevelEvent {
     fn serialize(&self, buffer: &mut BytesMut) {
-        let packet_size =
-            size_of_var(self.event_type as i32) + 3 * 4 + 
-            size_of_var(self.event_data);
-
-        let mut buffer = BytesMut::with_capacity(packet_size);
-
         buffer.put_var_i32(self.event_type as i32);
         buffer.put_vec3f(&self.position);
         buffer.put_var_i32(self.event_data);
-
-        Ok(buffer.freeze())
     }
 }
 

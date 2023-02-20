@@ -313,7 +313,7 @@ impl Serialize for GameRulesChanged<'_> {
     fn serialize(&self, buffer: &mut BytesMut) {
         buffer.put_var_u32(self.game_rules.len() as u32);
         for game_rule in self.game_rules {
-            game_rule.serialize(&mut buffer);
+            game_rule.serialize(buffer);
         }
     }
 }

@@ -21,10 +21,10 @@ impl Session {
             request_time: request.time,
         };
 
-        let mut buffer = BytesMut::with_capacity(reply.serialized_size());
-        reply.serialize(&mut buffer)?;
+        let mut serialized = BytesMut::with_capacity(reply.serialized_size());
+        reply.serialize(&mut serialized);
 
-        self.send_raw_buffer(reply);
+        self.send_raw_buffer(serialized.freeze());
         Ok(())
     }
 
@@ -43,7 +43,7 @@ impl Session {
         };
 
         let mut buffer = BytesMut::with_capacity(pong.serialized_size());
-        pong.serialize(&mut buffer)?;
+        pong.serialize(&mut buffer);
 
         self.send_raw_buffer_with_config(
             buffer.freeze(),

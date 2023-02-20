@@ -33,7 +33,7 @@ pub struct ItemStack {
 }
 
 impl ItemStack {
-    pub fn encode(&self, buffer: &mut BytesMut) {
+    pub fn serialize(&self, buffer: &mut BytesMut) {
         buffer.put_var_u32(self.item_type.network_id);
         if self.item_type.network_id == 0 {
             // Air has no data.
@@ -91,7 +91,7 @@ impl Serialize for CreativeContent<'_> {
     fn serialize(&self, buffer: &mut BytesMut) {
         buffer.put_var_u32(self.items.len() as u32);
         for item in self.items {
-            item.encode(&mut buffer);
+            item.serialize(buffer);
         }
     }
 }
