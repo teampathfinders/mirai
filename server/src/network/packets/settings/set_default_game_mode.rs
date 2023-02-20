@@ -1,7 +1,9 @@
 use bytes::{BytesMut, Bytes};
 use common::{Deserialize, Serialize, ReadExtensions, VResult, WriteExtensions};
 
-use super::{GameMode, ConnectedPacket};
+use crate::network::packets::ConnectedPacket;
+
+use super::{GameMode};
 
 /// Sets the default game mode of the world.
 #[derive(Debug, Clone)]

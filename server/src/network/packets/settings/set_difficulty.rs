@@ -3,7 +3,7 @@ use common::{bail, ReadExtensions, VError, VResult, WriteExtensions};
 
 use common::{Deserialize, Serialize};
 
-use super::ConnectedPacket;
+use crate::network::packets::ConnectedPacket;
 
 /// The Minecraft difficulties.
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]

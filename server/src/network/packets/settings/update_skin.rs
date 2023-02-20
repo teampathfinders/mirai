@@ -1,9 +1,7 @@
 use bytes::{BufMut, BytesMut, Buf, Bytes};
 use common::{Serialize, VResult, WriteExtensions, Deserialize};
 use uuid::Uuid;
-use crate::network::Skin;
-
-use super::ConnectedPacket;
+use crate::network::{Skin, packets::ConnectedPacket};
 
 #[derive(Debug, Clone)]
 pub struct UpdateSkin {

@@ -1,7 +1,7 @@
 use bytes::{BufMut, BytesMut, Bytes};
 use common::{Serialize, VResult, WriteExtensions};
 
-use super::ConnectedPacket;
+use crate::network::packets::ConnectedPacket;
 
 /// An action to perform on an identity entry.
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]

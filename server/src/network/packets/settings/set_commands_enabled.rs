@@ -3,7 +3,7 @@ use common::{VResult, WriteExtensions};
 
 use common::Serialize;
 
-use super::ConnectedPacket;
+use crate::network::packets::ConnectedPacket;
 
 /// Enables or disables the usage of commands.
 ///

@@ -34,14 +34,8 @@ glob_export!(play_status);
 glob_export!(player_list);
 glob_export!(request_ability);
 glob_export!(respawn);
-glob_export!(set_commands_enabled);
-glob_export!(set_default_game_mode);
-glob_export!(set_difficulty);
 glob_export!(set_local_player_as_initialized);
-glob_export!(set_player_gamemode);
-glob_export!(set_scoreboard_identity);
-glob_export!(set_time);
-glob_export!(set_title);
+glob_export!(settings);
 glob_export!(show_credits);
 glob_export!(show_profile);
 glob_export!(simple_event);
@@ -53,7 +47,6 @@ glob_export!(traits);
 glob_export!(transfer);
 glob_export!(update_dynamic_enum);
 glob_export!(update_fog_stack);
-glob_export!(update_skin);
 glob_export!(violation_warning);
 
 /// ID of Minecraft game packets.

@@ -5,7 +5,7 @@ use common::{VResult, WriteExtensions};
 
 use common::Serialize;
 
-use super::ConnectedPacket;
+use crate::network::packets::ConnectedPacket;
 
 /// Title action type.
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]

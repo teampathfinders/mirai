@@ -3,7 +3,7 @@ use common::{VResult, WriteExtensions, size_of_var};
 
 use common::Serialize;
 
-use super::ConnectedPacket;
+use crate::network::packets::ConnectedPacket;
 
 /// Sets the current time for the client.
 #[derive(Debug, Clone)]
