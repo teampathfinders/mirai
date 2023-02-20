@@ -10,7 +10,7 @@ use tokio_util::sync::CancellationToken;
 
 use crate::instance_manager::InstanceManager;
 use crate::level_manager::LevelManager;
-use crate::network::packets::login::Disconnect;
+use crate::network::packets::login::{Disconnect, DISCONNECTED_NO_REASON, DISCONNECTED_TIMEOUT};
 use crate::network::packets::{BroadcastPacket, Packet};
 use crate::network::raknet::BufPacket;
 use crate::network::session::session::Session;
@@ -116,16 +116,18 @@ impl SessionManager {
                         // Session incoming queue is full.
                         // If after a 20 ms timeout it is still full, destroy the session,
                         // it probably froze.
+                        let xuid = session.1.get_xuid().map(|x| x.to_string()).unwrap_or("unknown".to_string());
+
                         tracing::error!(
-                            "Session queue is full, it seems like the session is hanging. Closing it"
+                            "It seems like session (with XUID {xuid}) is hanging. Closing it"
                         );
+
+                        // Attempt to send a disconnect packet.
+                        let _ = session.1.kick(DISCONNECTED_TIMEOUT);
+                        // Then close the session.
                         session.1.flag_for_close();
                     }
                 }
-            } else {
-                tracing::error!(
-                    "Received online packet for unconnected client"
-                );
             }
         });
     }
