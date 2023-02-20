@@ -9,7 +9,7 @@ use flate2::Compression;
 use crate::config::SERVER_CONFIG;
 use crate::network::header::Header;
 use crate::network::packets::login::CompressionAlgorithm;
-use crate::network::packets::{ConnectedPacket, Packet, GAME_PACKET_ID};
+use crate::network::packets::{ConnectedPacket, Packet, CONNECTED_PACKET_ID};
 use crate::network::raknet::packets::{Ack, AckRecord};
 use crate::network::raknet::Reliability;
 use crate::network::raknet::{Frame, FrameBatch};
@@ -46,7 +46,7 @@ impl Session {
         config: PacketConfig,
     ) -> VResult<()> {
         let mut buffer = BytesMut::new();
-        buffer.put_u8(GAME_PACKET_ID);
+        buffer.put_u8(CONNECTED_PACKET_ID);
 
         if self.raknet.compression_enabled.load(Ordering::SeqCst) {
             let (algorithm, threshold) = {

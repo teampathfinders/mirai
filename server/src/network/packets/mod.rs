@@ -50,7 +50,7 @@ glob_export!(update_fog_stack);
 glob_export!(violation_warning);
 
 /// ID of Minecraft game packets.
-pub const GAME_PACKET_ID: u8 = 0xfe;
+pub const CONNECTED_PACKET_ID: u8 = 0xfe;
 /// Semver version that this server supports.
 pub const CLIENT_VERSION_STRING: &str = "1.19.60";
 /// Protocol version that this server supports.

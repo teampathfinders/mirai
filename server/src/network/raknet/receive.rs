@@ -16,7 +16,7 @@ use crate::network::packets::login::{
 use crate::network::packets::{
     Animate, ConnectedPacket, Interact, MovePlayer, RequestAbility,
     SetLocalPlayerAsInitialized, TextMessage, UpdateSkin, ViolationWarning,
-    GAME_PACKET_ID,
+    CONNECTED_PACKET_ID,
 };
 use crate::network::raknet::packets::{
     Ack, ConnectionRequest, DisconnectNotification, Nak, NewIncomingConnection,
@@ -137,7 +137,7 @@ impl Session {
 
         let packet_id = *pk.first().expect("Game packet buffer was empty");
         match packet_id {
-            GAME_PACKET_ID => self.handle_game_packet(pk).await?,
+            CONNECTED_PACKET_ID => self.handle_game_packet(pk).await?,
             DisconnectNotification::ID => self.flag_for_close(),
             ConnectionRequest::ID => self.handle_connection_request(pk)?,
             NewIncomingConnection::ID => {
