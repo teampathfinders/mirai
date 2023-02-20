@@ -1,5 +1,5 @@
 use bytes::{Buf, BufMut, Bytes, BytesMut};
-use common::{bail, ReadExtensions, VError, VResult, WriteExtensions, size_of_varint};
+use common::{bail, ReadExtensions, VError, VResult, WriteExtensions, size_of_varint, VarString, VarInt};
 
 use common::{Deserialize, Serialize};
 
@@ -78,8 +78,8 @@ impl ConnectedPacket for TextMessage {
             MessageType::Chat
             | MessageType::Whisper
             | MessageType::Announcement => {
-                size_of_varint(self.source_name.len() as u32) + self.source_name.len() +
-                size_of_varint(self.message.len() as u32) + self.message.len()
+                self.source_name.var_len() +
+                self.message.var_len()
             }
             MessageType::Raw
             | MessageType::Tip
@@ -87,18 +87,18 @@ impl ConnectedPacket for TextMessage {
             | MessageType::Object
             | MessageType::ObjectWhisper
             | MessageType::ObjectAnnouncement => {
-                size_of_varint(self.message.len() as u32) + self.message.len()
+                self.message.var_len()
             }
             MessageType::Translation
             | MessageType::Popup
             | MessageType::JukeboxPopup => {
-                size_of_varint(self.message.len() as u32) + self.message.len() +
-                size_of_varint(self.parameters.len() as u32) +
+                self.message.var_len() +
+                (self.parameters.len() as u32).var_len() +
                 self.parameters.iter().fold(
-                    0, |acc, p| acc + size_of_varint(p.len() as u32) + p.len()
+                    0, |acc, p| acc + p.var_len()
                 )
             }
-        }
+        } + self.xuid.var_len() + self.platform_chat_id.var_len()
     }
 }
 

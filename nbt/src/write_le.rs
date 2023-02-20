@@ -1,7 +1,7 @@
 use crate::{RefTag, Value, TAG_BYTE, TAG_END};
 use bytes::{BufMut, BytesMut};
 
-pub fn write_le(name: &str, value: &Value, stream: &mut BytesMut) {
+pub fn serialize_le(name: &str, value: &Value, stream: &mut BytesMut) {
     Value::serialize_tag_le(stream, (name, value))
 }
 

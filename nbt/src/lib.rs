@@ -13,7 +13,7 @@ mod write_be;
 mod write_le;
 mod write_net;
 
-use common::VarInt;
+use common::{VarInt, VarString};
 pub use read_be::*;
 pub use read_le::*;
 pub use read_net::*;
@@ -55,7 +55,7 @@ pub enum Value {
 }
 
 impl Value {
-    pub fn serialized_net_size(&self) -> usize {
+    fn serialized_value_net_size(&self) -> usize {
         match self {
             Self::End => 0,
             Self::Byte(_) => 1,
@@ -67,19 +67,19 @@ impl Value {
             Self::String(s) => (s.len() as u32).var_len() + s.len(),
             Self::List(v) => {
                 (v.len() as u32).var_len()
-                    + v.iter().fold(0, |acc, x| acc + x.serialized_net_size())
+                    + v.iter().fold(0, |acc, x| acc + x.serialized_value_net_size())
             }
             Self::Compound(c) => c.iter().fold(0, |acc, kv| {
-                acc + {
-                    (kv.0.len() as u32).var_len()
-                        + kv.0.len()
-                        + kv.1.serialized_net_size()
-                }
+                acc + kv.1.serialized_net_size(&kv.0)
             }),
             Self::ByteArray(v) => (v.len() as u32).var_len() + v.len(),
             Self::IntArray(v) => (v.len() as u32).var_len() + 4 * v.len(),
             Self::LongArray(v) => (v.len() as u32).var_len() + 8 * v.len(),
         }
+    }
+
+    pub fn serialized_net_size(&self, name: &str) -> usize {
+        name.var_len() + self.serialized_value_net_size()
     }
 
     /// Converts the value type to a numeric ID.

@@ -62,7 +62,6 @@ impl Session {
 
     pub fn handle_animation(&self, pk: Bytes) -> VResult<()> {
         let request = Animate::deserialize(pk)?;
-        tracing::info!("{request:?}");
 
         Ok(())
     }

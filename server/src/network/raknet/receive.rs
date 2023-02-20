@@ -139,7 +139,7 @@ impl Session {
         let packet_id = *pk.first().expect("Game packet buffer was empty");
         match packet_id {
             CONNECTED_PACKET_ID => self.handle_game_packet(pk).await?,
-            DisconnectNotification::ID => self.flag_for_close(),
+            DisconnectNotification::ID => self.on_disconnect(),
             ConnectionRequest::ID => self.handle_connection_request(pk)?,
             NewIncomingConnection::ID => {
                 self.handle_new_incoming_connection(pk)?

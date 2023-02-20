@@ -1,7 +1,7 @@
 use crate::{RefTag, Value, TAG_BYTE, TAG_END};
 use bytes::{BufMut, BytesMut};
 
-pub fn write_be(name: &str, value: &Value, stream: &mut BytesMut) {
+pub fn serialize_be(name: &str, value: &Value, stream: &mut BytesMut) {
     Value::serialize_tag_be(stream, (name, value))
 }
 

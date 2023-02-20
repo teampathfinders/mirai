@@ -2,7 +2,7 @@ use crate::{RefTag, Value, TAG_BYTE, TAG_END};
 use bytes::{BufMut, BytesMut};
 use common::WriteExtensions;
 
-pub fn write_net(name: &str, value: &Value, stream: &mut BytesMut) {
+pub fn serialize_net(name: &str, value: &Value, stream: &mut BytesMut) {
     Value::serialize_tag_net(stream, (name, value))
 }
 

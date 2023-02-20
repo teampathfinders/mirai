@@ -29,13 +29,10 @@ impl BroadcastPacket {
         sender: Option<NonZeroU64>,
     ) -> VResult<Self> {
         let packet = Packet::new(packet);
-
-        let mut buffer = BytesMut::with_capacity(packet.serialized_size());
-        packet.serialize(&mut buffer);
-
+        
         Ok(Self {
             sender,
-            content: buffer.freeze()
+            content: packet.serialize()
         })
     }
 }

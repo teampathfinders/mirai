@@ -102,7 +102,7 @@ pub struct BlockEntry {
 
 impl BlockEntry {
     pub fn serialized_size(&self) -> usize {
-        self.name.var_len() + self.properties.serialized_net_size()
+        self.name.var_len() + self.properties.serialized_net_size("")
     }
 
     pub fn serialize(&self, buffer: &mut BytesMut) {
@@ -300,9 +300,9 @@ impl ConnectedPacket for StartGame<'_> {
         1 +
         1 +
         self.day_cycle_lock_time.var_len() +
+        0.var_len() +
         1 +
-        1 +
-        1 +
+        "".var_len() +
         4 +
         4 +
         1 +
@@ -335,8 +335,8 @@ impl ConnectedPacket for StartGame<'_> {
         4 +
         4 +
         1 +
-        1 +
-        1 +
+        "".var_len() +
+        "".var_len() +
         1 +
         1 +
         1 +
@@ -354,8 +354,8 @@ impl ConnectedPacket for StartGame<'_> {
         MULTIPLAYER_CORRELATION_ID.var_len() +
         1 +
         CLIENT_VERSION_STRING.var_len() +
-        self.property_data.serialized_net_size() +
-        4 +
+        self.property_data.serialized_net_size("") +
+        8 +
         16 +
         1
     }
@@ -451,7 +451,7 @@ impl Serialize for StartGame<'_> {
         buffer.put_bool(self.server_authoritative_inventory);
         buffer.put_string(CLIENT_VERSION_STRING); // Game version
 
-        nbt::write_net("", &self.property_data, buffer);
+        nbt::serialize_net("", &self.property_data, buffer);
 
         buffer.put_u64(self.server_block_state_checksum);
         buffer.put_u128(self.world_template_id);

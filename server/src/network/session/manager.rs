@@ -131,7 +131,7 @@ impl SessionManager {
                         // Attempt to send a disconnect packet.
                         let _ = session.1.kick(DISCONNECTED_TIMEOUT);
                         // Then close the session.
-                        session.1.flag_for_close();
+                        session.1.on_disconnect();
                     }
                 }
             }

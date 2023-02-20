@@ -34,12 +34,13 @@ impl Session {
     /// Sends a game packet with default settings
     /// (reliable ordered and medium priority)
     #[inline]
-    pub fn send<T: ConnectedPacket + Serialize>(&self, pk: T) -> VResult<()> {
+    pub fn send<T: ConnectedPacket + Serialize + std::fmt::Debug>(&self, pk: T) -> VResult<()> {
         let pk = Packet::new(pk);
-        let mut serialized = BytesMut::with_capacity(pk.serialized_size());
+        let mut serialized = pk.serialize();
 
-        pk.serialize(&mut serialized);
-        self.send_serialized(serialized.freeze(), DEFAULT_SEND_CONFIG)
+        tracing::debug!("{pk:?}");
+
+        self.send_serialized(serialized, DEFAULT_SEND_CONFIG)
     }
 
     /// Sends a game packet with custom reliability and priority

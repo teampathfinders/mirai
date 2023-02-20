@@ -122,7 +122,7 @@ impl StorageRecord {
 
         buffer.put_u32_le(self.palette.len() as u32);
         for entry in &self.palette {
-            nbt::write_le("", entry, buffer);
+            nbt::serialize_le("", entry, buffer);
         }
     }
 }
