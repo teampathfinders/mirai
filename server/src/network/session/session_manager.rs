@@ -13,8 +13,8 @@ use crate::level_manager::LevelManager;
 use crate::network::packets::login::{
     Disconnect, DISCONNECTED_NO_REASON, DISCONNECTED_TIMEOUT,
 };
-use crate::network::packets::{BroadcastPacket, Packet};
-use crate::network::raknet::BufPacket;
+use crate::network::packets::Packet;
+use crate::network::raknet::{BroadcastPacket, BufPacket};
 use crate::network::session::session::Session;
 use crate::{config::SERVER_CONFIG, network::packets::ConnectedPacket};
 use common::{bail, error, Serialize, VResult};

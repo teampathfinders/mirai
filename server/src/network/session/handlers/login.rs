@@ -127,7 +127,7 @@ impl Session {
         let start_game = StartGame {
             entity_id: 1,
             runtime_id: 1,
-            game_mode: GameMode::Creative,
+            game_mode: self.get_game_mode(),
             position: Vector3f::from([0.0, 50.0, 0.0]),
             rotation: Vector2f::from([0.0, 0.0]),
             world_seed: 69420,

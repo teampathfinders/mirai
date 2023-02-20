@@ -10,21 +10,6 @@ use common::Serialize;
 use common::VResult;
 use common::{ReadExtensions, WriteExtensions};
 
-#[derive(Debug, Clone)]
-pub struct BroadcastPacket {
-    pub sender: Option<NonZeroU64>,
-    pub content: Bytes
-}
-
-impl BroadcastPacket {
-    pub fn new<T: ConnectedPacket + Serialize>(packet: T, sender: Option<NonZeroU64>) -> VResult<Self> {
-        Ok(Self {
-            sender,
-            content: Packet::new(packet).serialize()?
-        })
-    }
-}
-
 /// A game packet.
 #[derive(Debug, Clone)]
 pub struct Packet<T: ConnectedPacket> {
