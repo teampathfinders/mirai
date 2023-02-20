@@ -19,12 +19,14 @@ pub struct OpenConnectionReply1 {
 impl OpenConnectionReply1 {
     /// Unique identifier of this packet.
     pub const ID: u8 = 0x06;
+
+    pub fn serialized_size(&self) -> usize {
+        1 + 16 + 8 + 1 + 2
+    }
 }
 
 impl Serialize for OpenConnectionReply1 {
     fn serialize(&self, buffer: &mut BytesMut) {
-        let mut buffer = BytesMut::with_capacity(1 + 16 + 8 + 1 + 2);
-
         buffer.put_u8(Self::ID);
         buffer.put(OFFLINE_MESSAGE_DATA);
         buffer.put_u64(self.server_guid);
@@ -32,7 +34,5 @@ impl Serialize for OpenConnectionReply1 {
         // Encryption will be enabled later on.
         buffer.put_u8(0);
         buffer.put_u16(self.mtu);
-
-        Ok(buffer.freeze())
     }
 }

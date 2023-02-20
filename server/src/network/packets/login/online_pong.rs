@@ -17,7 +17,7 @@ impl OnlinePong {
     /// Unique ID of this packet.
     pub const ID: u8 = 0x03;
 
-    fn serialized_size(&self) -> usize {
+    pub fn serialized_size(&self) -> usize {
         1 + 8 + 8
     }
 }

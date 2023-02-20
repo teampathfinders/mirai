@@ -19,8 +19,10 @@ impl Session {
         let reply = ConnectionRequestAccepted {
             client_address: self.raknet.address,
             request_time: request.time,
-        }
-        .serialize()?;
+        };
+
+        let mut buffer = BytesMut::with_capacity(reply.serialized_size());
+        reply.serialize(&mut buffer)?;
 
         self.send_raw_buffer(reply);
         Ok(())
@@ -40,9 +42,11 @@ impl Session {
             pong_time: ping.time,
         };
 
-        let pong = pong.serialize()?;
+        let mut buffer = BytesMut::with_capacity(pong.serialized_size());
+        pong.serialize(&mut buffer)?;
+
         self.send_raw_buffer_with_config(
-            pong,
+            buffer.freeze(),
             PacketConfig {
                 reliability: Reliability::Unreliable,
                 priority: SendPriority::Low,

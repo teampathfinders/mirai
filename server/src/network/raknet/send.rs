@@ -194,8 +194,10 @@ impl Session {
         Ok(())
     }
 
-    #[async_recursion]
+    // #[async_recursion]
     async fn send_raw_frames(&self, frames: Vec<Frame>) -> VResult<()> {
+        let mut serialized = BytesMut::new();
+
         // Process fragments first to prevent sequence number duplication.
         for frame in &frames {
             let frame_size = frame.body.len() + std::mem::size_of::<Frame>();
@@ -247,8 +249,9 @@ impl Session {
                 if has_reliable_packet {
                     self.raknet.recovery_queue.insert(batch.clone());
                 }
-
-                let encoded = batch.serialize()?;
+                
+                
+                batch.serialize()?;
 
                 // TODO: Add IPv6 support
                 self.raknet

@@ -23,19 +23,18 @@ pub struct OfflinePong<'a> {
 impl OfflinePong<'_> {
     /// Unique identifier of this packet.
     pub const ID: u8 = 0x1c;
+
+    pub fn serialized_size(&self) -> usize {
+        1 + 8 + 8 + 16 + 2 + self.metadata.len()
+    }
 }
 
 impl Serialize for OfflinePong<'_> {
     fn serialize(&self, buffer: &mut BytesMut) {
-        let mut buffer =
-            BytesMut::with_capacity(1 + 8 + 8 + 16 + 2 + self.metadata.len());
-
         buffer.put_u8(Self::ID);
         buffer.put_u64(self.time);
         buffer.put_u64(self.server_guid);
         buffer.put(OFFLINE_MESSAGE_DATA);
         buffer.put_raknet_string(self.metadata);
-
-        Ok(buffer.freeze())
     }
 }
