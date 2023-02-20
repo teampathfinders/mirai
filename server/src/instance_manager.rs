@@ -77,8 +77,7 @@ impl InstanceManager {
                 .await?,
         );
 
-        let session_manager =
-            Arc::new(SessionManager::new(token.clone()));
+        let session_manager = Arc::new(SessionManager::new(token.clone()));
 
         let (level_manager, level_notifier) =
             LevelManager::new(session_manager.clone(), token.clone())?;
@@ -182,11 +181,9 @@ impl InstanceManager {
             let udp_socket = udp_socket.clone();
             let session_manager = session_manager.clone();
             let token = token.clone();
-        
-            tokio::spawn(async move { 
-                Self::udp_recv_job(
-                    token, udp_socket, session_manager
-                ).await 
+
+            tokio::spawn(async move {
+                Self::udp_recv_job(token, udp_socket, session_manager).await
             })
         };
 
@@ -197,7 +194,7 @@ impl InstanceManager {
             _ = token.cancelled() => (),
             _ = tokio::signal::ctrl_c() => ()
         };
-        
+
         // then shut down all services.
         tracing::info!("Disconnecting all clients");
         session_manager.kick_all("Server closed").await;
@@ -279,12 +276,14 @@ impl InstanceManager {
     async fn udp_recv_job(
         token: CancellationToken,
         udp_socket: Arc<UdpSocket>,
-        sess_manager: Arc<SessionManager>
+        sess_manager: Arc<SessionManager>,
     ) {
         let server_guid = rand::thread_rng().gen();
         let mut metadata = Self::refresh_metadata(
-            "description", server_guid,
-            sess_manager.session_count(), sess_manager.max_session_count()
+            "description",
+            server_guid,
+            sess_manager.session_count(),
+            sess_manager.max_session_count(),
         );
 
         let mut recv_buf = [0u8; RECV_BUF_SIZE];
@@ -312,7 +311,7 @@ impl InstanceManager {
                 let udp_socket = udp_socket.clone();
                 let session_manager = sess_manager.clone();
                 let metadata = metadata.clone();
-                
+
                 tokio::spawn(async move {
                     let id = if let Some(id) = pk.packet_id() {
                         id
@@ -376,8 +375,10 @@ impl InstanceManager {
 
     /// Generates a new metadata string using the given description and new player count.
     fn refresh_metadata(
-        description: &str, server_guid: u64,
-        session_count: usize, max_session_count: usize
+        description: &str,
+        server_guid: u64,
+        session_count: usize,
+        max_session_count: usize,
     ) -> String {
         format!(
             "MCPE;{};{};{};{};{};{};{};Survival;1;{};{};",

@@ -17,7 +17,7 @@ impl Session {
     pub fn handle_connection_request(&self, pk: Bytes) -> VResult<()> {
         let request = ConnectionRequest::deserialize(pk)?;
         let reply = ConnectionRequestAccepted {
-            client_address: self.address,
+            client_address: self.raknet.address,
             request_time: request.time,
         }
         .serialize()?;

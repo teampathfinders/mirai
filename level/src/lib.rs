@@ -11,9 +11,7 @@ use std::{sync::Arc, time::Duration};
 use common::VResult;
 use database::ChunkDatabase;
 pub use sub_chunk::*;
-use tokio::{
-    sync::oneshot::{Receiver, Sender}
-};
+use tokio::sync::oneshot::{Receiver, Sender};
 use tokio_util::sync::CancellationToken;
 pub use world::*;
 
@@ -22,20 +20,20 @@ pub use world::*;
 pub struct ChunkManager {
     /// Chunk database
     database: ChunkDatabase,
-    token: CancellationToken
+    token: CancellationToken,
 }
 
 impl ChunkManager {
     pub fn new<P: AsRef<str>>(
         path: P,
         autosave_interval: Duration,
-        token: CancellationToken
+        token: CancellationToken,
     ) -> VResult<(Arc<Self>, Receiver<()>)> {
         tracing::info!("Loading level {}...", path.as_ref());
 
-        let manager = Arc::new(Self { 
+        let manager = Arc::new(Self {
             database: ChunkDatabase::new(path)?,
-            token
+            token,
         });
 
         let clone = manager.clone();
@@ -55,11 +53,7 @@ impl ChunkManager {
     }
 
     /// Simple job that runs [`flush`](Self::flush) on a specified interval.
-    async fn autosave_job(
-        &self,
-        sender: Sender<()>,
-        interval: Duration,
-    ) {
+    async fn autosave_job(&self, sender: Sender<()>, interval: Duration) {
         let mut interval = tokio::time::interval(interval);
 
         // Run until there are no more references to the chunk manager.
@@ -73,7 +67,7 @@ impl ChunkManager {
                     tracing::error!("Failed to save level: {e}");
                 }
             }
-            
+
             tokio::select! {
                 _ = interval.tick() => (),
                 _ = self.token.cancelled() => break

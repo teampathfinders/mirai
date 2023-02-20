@@ -306,7 +306,9 @@ impl Session {
         };
 
         self.send(response)?;
-        self.compression_enabled.store(true, Ordering::SeqCst);
+        self.raknet
+            .compression_enabled
+            .store(true, Ordering::SeqCst);
 
         Ok(())
     }

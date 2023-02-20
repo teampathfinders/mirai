@@ -170,14 +170,17 @@ impl Encryptor {
         let mut decryption_output = BytesMut::with_capacity(buffer.len());
         decryption_output.resize(buffer.len(), 0x00);
 
-        self.cipher_decrypt.lock().apply_keystream_b2b(
-            buffer.as_ref(), decryption_output.as_mut()
-        )?;
+        self.cipher_decrypt
+            .lock()
+            .apply_keystream_b2b(buffer.as_ref(), decryption_output.as_mut())?;
         let counter = self.receive_counter.fetch_add(1, Ordering::SeqCst);
 
-        let checksum = &decryption_output.as_ref()[decryption_output.len() - 8..];
-        let computed_checksum = self
-            .compute_checksum(&decryption_output.as_ref()[..decryption_output.len() - 8], counter);
+        let checksum =
+            &decryption_output.as_ref()[decryption_output.len() - 8..];
+        let computed_checksum = self.compute_checksum(
+            &decryption_output.as_ref()[..decryption_output.len() - 8],
+            counter,
+        );
 
         if !checksum.eq(&computed_checksum) {
             bail!(BadPacket, "Encryption checksums do not match");
@@ -195,7 +198,6 @@ impl Encryptor {
         let checksum = self.compute_checksum(buffer.as_ref(), counter);
 
         let mut buffer = [buffer.as_ref(), &checksum].concat();
-
         self.cipher_encrypt.lock().apply_keystream(buffer.as_mut());
 
         Ok(Bytes::from(buffer))

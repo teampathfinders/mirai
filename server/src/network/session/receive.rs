@@ -14,9 +14,9 @@ use crate::network::packets::login::{
     OnlinePing, RequestNetworkSettings, ResourcePackClientResponse,
 };
 use crate::network::packets::{
-    Animate, ConnectedPacket, Interact, MovePlayer, RequestAbility,
-    SetLocalPlayerAsInitialized, TextMessage, UpdateSkin, ViolationWarning,
-    GAME_PACKET_ID, BroadcastPacket,
+    Animate, BroadcastPacket, ConnectedPacket, Interact, MovePlayer,
+    RequestAbility, SetLocalPlayerAsInitialized, TextMessage, UpdateSkin,
+    ViolationWarning, GAME_PACKET_ID,
 };
 use crate::network::raknet::packets::{
     Ack, ConnectionRequest, DisconnectNotification, Nak, NewIncomingConnection,
@@ -34,7 +34,7 @@ impl Session {
     /// If a packet is an ACK or NACK type, it will be responded to accordingly (using [`Session::handle_ack`] and [`Session::handle_nack`]).
     /// Frame batches are processed by [`Session::handle_frame_batch`].
     pub async fn process_raw_packet(&self, pk: Bytes) -> VResult<bool> {
-        *self.last_update.write() = Instant::now();
+        *self.raknet.last_update.write() = Instant::now();
 
         if pk.is_empty() {
             bail!(BadPacket, "Packet is empty");
@@ -54,7 +54,7 @@ impl Session {
         if let Ok(xuid) = self.get_xuid() {
             if let Some(sender) = pk.sender {
                 // Source is self, do not send.
-                return Ok(())
+                return Ok(());
             }
         }
 
@@ -70,7 +70,8 @@ impl Session {
     /// * Acknowledging reliable packets
     async fn handle_frame_batch(&self, pk: Bytes) -> VResult<()> {
         let batch = FrameBatch::deserialize(pk)?;
-        self.client_batch_number
+        self.raknet
+            .client_batch_number
             .fetch_max(batch.sequence_number, Ordering::SeqCst);
 
         for frame in &batch.frames {
@@ -88,7 +89,7 @@ impl Session {
     ) -> VResult<()> {
         if frame.reliability.is_sequenced()
             && frame.sequence_index
-                < self.client_batch_number.load(Ordering::SeqCst)
+                < self.raknet.client_batch_number.load(Ordering::SeqCst)
         {
             // Discard packet
             return Ok(());
@@ -96,12 +97,14 @@ impl Session {
 
         if frame.reliability.is_reliable() {
             // Confirm packet
-            let mut lock = self.confirmed_packets.lock();
+            let mut lock = self.raknet.confirmed_packets.lock();
             lock.push(batch_number);
         }
 
         if frame.is_compound {
-            if let Some(p) = self.compound_collector.insert(frame.clone()) {
+            if let Some(p) =
+                self.raknet.compound_collector.insert(frame.clone())
+            {
                 return self.handle_frame(&p, batch_number).await;
             }
 
@@ -113,7 +116,7 @@ impl Session {
         // Sequenced implies ordered
         if frame.reliability.is_ordered() || frame.reliability.is_sequenced() {
             // Add packet to order queue
-            if let Some(ready) = self.order_channels
+            if let Some(ready) = self.raknet.order_channels
                 [frame.order_channel as usize]
                 .insert(frame.clone())
             {
@@ -167,7 +170,7 @@ impl Session {
         }
 
         let compression_enabled =
-            self.compression_enabled.load(Ordering::SeqCst);
+            self.raknet.compression_enabled.load(Ordering::SeqCst);
         let compression_threshold = SERVER_CONFIG.read().compression_threshold;
 
         if compression_enabled

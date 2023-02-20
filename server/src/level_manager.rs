@@ -35,13 +35,13 @@ pub struct LevelManager {
     /// This is the standard Minecraft tick.
     /// The level is ticked 20 times every second.
     tick: AtomicU64,
-    token: CancellationToken
+    token: CancellationToken,
 }
 
 impl LevelManager {
     pub fn new(
         session_manager: Arc<SessionManager>,
-        token: CancellationToken
+        token: CancellationToken,
     ) -> VResult<(Arc<Self>, Receiver<()>)> {
         let (world_path, autosave_interval) = {
             let config = SERVER_CONFIG.read();
@@ -66,7 +66,7 @@ impl LevelManager {
             ]),
             session_manager,
             tick: AtomicU64::new(0),
-            token
+            token,
         });
 
         Ok((manager, chunk_notifier))

@@ -1,7 +1,7 @@
 use std::io::Write;
 
 use base64::Engine;
-use bytes::{Buf, BytesMut, Bytes};
+use bytes::{Buf, Bytes, BytesMut};
 use common::{bail, error, VResult};
 use jsonwebtoken::{Algorithm, DecodingKey, Validation};
 use p384::pkcs8::spki;

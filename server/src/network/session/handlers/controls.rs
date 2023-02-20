@@ -18,6 +18,7 @@ impl Session {
 
     pub fn handle_move_player(&self, packet: Bytes) -> VResult<()> {
         let request = MovePlayer::deserialize(packet)?;
+        self.broadcast_others(request)?;
 
         Ok(())
     }

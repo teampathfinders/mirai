@@ -15,7 +15,7 @@ use crate::network::packets::{BroadcastPacket, Packet};
 use crate::network::raknet::BufPacket;
 use crate::network::session::session::Session;
 use crate::{config::SERVER_CONFIG, network::packets::ConnectedPacket};
-use common::{error, Serialize, VResult, bail};
+use common::{bail, error, Serialize, VResult};
 
 const BROADCAST_CHANNEL_CAPACITY: usize = 16;
 const FORWARD_TIMEOUT: Duration = Duration::from_millis(20);
@@ -86,7 +86,7 @@ impl SessionManager {
 
             tokio::spawn(async move {
                 session.cancelled().await;
-                list.remove(&session.address);
+                list.remove(&session.raknet.address);
             });
         }
 
@@ -106,7 +106,7 @@ impl SessionManager {
     pub fn forward_packet(&self, pk: BufPacket) {
         // Spawn a new task so that the UDP receiver isn't interrupted
         // if forwarding takes a long amount time.
-        
+
         let list = self.list.clone();
         tokio::spawn(async move {
             if let Some(session) = list.get(&pk.addr) {
@@ -123,7 +123,9 @@ impl SessionManager {
                     }
                 }
             } else {
-                tracing::error!("Received online packet for unconnected client");
+                tracing::error!(
+                    "Received online packet for unconnected client"
+                );
             }
         });
     }
@@ -145,9 +147,9 @@ impl SessionManager {
                 hide_disconnect_screen: false,
                 kick_message: message.as_ref(),
             },
-            None
+            None,
         )?)?;
-        
+
         for session in self.list.iter() {
             session.value().1.cancelled().await;
         }
