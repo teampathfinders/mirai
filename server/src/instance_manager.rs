@@ -24,8 +24,8 @@ use crate::network::packets::{
     NETWORK_VERSION,
 };
 use crate::network::raknet::packets::IncompatibleProtocol;
-use crate::network::raknet::packets::OfflinePing;
-use crate::network::raknet::packets::OfflinePong;
+use crate::network::raknet::packets::UnconnectedPing;
+use crate::network::raknet::packets::UnconnectedPong;
 use crate::network::raknet::packets::OpenConnectionReply1;
 use crate::network::raknet::packets::OpenConnectionReply2;
 use crate::network::raknet::packets::OpenConnectionRequest1;
@@ -218,8 +218,8 @@ impl InstanceManager {
         server_guid: u64,
         metadata: &str,
     ) -> VResult<BufPacket> {
-        let ping = OfflinePing::deserialize(pk.buf)?;
-        let pong = OfflinePong { time: ping.time, server_guid, metadata };
+        let ping = UnconnectedPing::deserialize(pk.buf)?;
+        let pong = UnconnectedPong { time: ping.time, server_guid, metadata };
 
         let mut serialized = BytesMut::with_capacity(pong.serialized_size());
         pong.serialize(&mut serialized);
@@ -339,7 +339,7 @@ impl InstanceManager {
                     };
 
                     let pk_result = match id {
-                        OfflinePing::ID => Self::process_unconnected_ping(
+                        UnconnectedPing::ID => Self::process_unconnected_ping(
                             pk,
                             server_guid,
                             &metadata,

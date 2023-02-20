@@ -80,7 +80,7 @@ impl Session {
         if let Some(encryptor) = self.encryptor.get() {
             pk = encryptor.encrypt(pk)?;
         }
-
+        
         buffer.put(pk);
 
         self.send_raw_buffer_with_config(buffer.freeze(), config);
@@ -202,8 +202,6 @@ impl Session {
 
     #[async_recursion]
     async fn send_raw_frames(&self, frames: Vec<Frame>) -> VResult<()> {
-        let mut serialized = BytesMut::new();
-
         // Process fragments first to prevent sequence number duplication.
         for frame in &frames {
             let frame_size = frame.body.len() + std::mem::size_of::<Frame>();
@@ -223,6 +221,7 @@ impl Session {
                 .raknet
                 .batch_sequence_number
                 .fetch_add(1, Ordering::SeqCst),
+
             frames: vec![],
         };
 
@@ -255,7 +254,8 @@ impl Session {
                 if has_reliable_packet {
                     self.raknet.recovery_queue.insert(batch.clone());
                 }
-                
+
+                let mut serialized = BytesMut::new();
                 batch.serialize(&mut serialized);
 
                 // TODO: Add IPv6 support
@@ -272,7 +272,7 @@ impl Session {
                         .raknet
                         .batch_sequence_number
                         .fetch_add(1, Ordering::SeqCst),
-                    frames: vec![frame],
+                    frames: vec![],
                 };
             }
         }
@@ -282,6 +282,8 @@ impl Session {
             if has_reliable_packet {
                 self.raknet.recovery_queue.insert(batch.clone());
             }
+
+            let mut serialized = BytesMut::new();
             batch.serialize(&mut serialized);
 
             // TODO: Add IPv6 support

@@ -269,7 +269,7 @@ impl ConnectedPacket for StartGame<'_> {
     const ID: u32 = 0x0b;
 
     fn serialized_size(&self) -> usize {
-        0 // todo
+        todo!();
     }
 }
 

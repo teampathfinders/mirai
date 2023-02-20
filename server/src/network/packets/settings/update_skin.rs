@@ -13,7 +13,7 @@ impl ConnectedPacket for UpdateSkin {
     const ID: u32 = 0x5d;
 
     fn serialized_size(&self) -> usize {
-        0 // todo
+        todo!();
     }
 }
 

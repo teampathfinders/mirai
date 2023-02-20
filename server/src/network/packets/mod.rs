@@ -30,7 +30,6 @@ glob_export!(move_player);
 glob_export!(network_chunk_publisher_update);
 glob_export!(packet);
 glob_export!(play_sound);
-glob_export!(play_status);
 glob_export!(player_list);
 glob_export!(request_ability);
 glob_export!(respawn);

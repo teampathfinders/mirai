@@ -16,13 +16,13 @@ use crate::network::packets::login::{
     ItemType, Login, NetworkSettings, PermissionLevel, PlayerMovementSettings,
     PlayerMovementType, RequestNetworkSettings, ResourcePackClientResponse,
     ResourcePackStack, ResourcePacksInfo, ServerToClientHandshake,
-    SpawnBiomeType, StartGame, WorldGenerator, DISCONNECTED_LOGIN_FAILED,
+    SpawnBiomeType, StartGame, WorldGenerator, DISCONNECTED_LOGIN_FAILED, Status, PlayStatus,
 };
 use crate::network::packets::GameMode::Creative;
 use crate::network::packets::{
     AbilityData, AddPlayer, BiomeDefinitionList, Difficulty, GameMode,
-    GameRule, MessageType, PlayStatus, PlayerListAdd, PlayerListAddEntry,
-    SetLocalPlayerAsInitialized, Status, TextMessage, UpdateSkin,
+    GameRule, MessageType,  PlayerListAdd, PlayerListAddEntry,
+    SetLocalPlayerAsInitialized, TextMessage, UpdateSkin,
     ViolationWarning, CLIENT_VERSION_STRING, NETWORK_VERSION,
 };
 use crate::network::raknet::Reliability;

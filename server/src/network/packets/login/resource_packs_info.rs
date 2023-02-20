@@ -2,7 +2,7 @@ use bytes::Bytes;
 use bytes::{BufMut, BytesMut};
 
 use crate::network::packets::ConnectedPacket;
-use common::Serialize;
+use common::{Serialize, size_of_var};
 use common::VResult;
 use common::WriteExtensions;
 
@@ -27,6 +27,17 @@ pub struct BehaviorPack {
     /// Whether the pack contains script.
     /// If it does, the pack will only be downloaded if the client supports scripting.
     pub has_scripts: bool,
+}
+
+impl BehaviorPack {
+    fn serialized_size(&self) -> usize {
+        size_of_var(self.uuid.len() as u32) + self.uuid.len() +
+        size_of_var(self.version.len() as u32) + self.version.len() +
+        8 + 1 +
+        size_of_var(self.content_key.len() as u32) + self.content_key.len() +
+        size_of_var(self.subpack_name.len() as u32) + self.subpack_name.len() +
+        size_of_var(self.content_identity.len() as u32) + self.content_identity.len() 
+    }
 }
 
 /// Resource pack information
@@ -54,6 +65,17 @@ pub struct ResourcePack {
     pub rtx_enabled: bool,
 }
 
+impl ResourcePack {
+    fn serialized_size(&self) -> usize {
+        size_of_var(self.uuid.len() as u32) + self.uuid.len() +
+        size_of_var(self.version.len() as u32) + self.version.len() +
+        8 + 1 + 1 +
+        size_of_var(self.content_key.len() as u32) + self.content_key.len() +
+        size_of_var(self.subpack_name.len() as u32) + self.subpack_name.len() +
+        size_of_var(self.content_identity.len() as u32) + self.content_identity.len() 
+    }
+}
+
 /// Contains information about the addons used by the server.
 /// This should be sent after sending the [`PlayStatus`](super::PlayStatus) packet with a
 /// [`LoginSuccess`](super::Status::LoginSuccess) status.
@@ -78,7 +100,13 @@ impl ConnectedPacket for ResourcePacksInfo<'_> {
     const ID: u32 = 0x06;
 
     fn serialized_size(&self) -> usize {
-        100 // todo
+        1 + 1 + 1 + 2 + 2 +
+        self.behavior_info.iter().fold(
+            0, |acc, p| acc + p.serialized_size()
+        ) +
+        self.resource_info.iter().fold(
+            0, |acc, p| acc + p.serialized_size()
+        )
     }
 }
 

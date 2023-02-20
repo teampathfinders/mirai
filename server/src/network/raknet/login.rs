@@ -1,6 +1,5 @@
 use bytes::{Bytes, BytesMut};
 
-use crate::network::packets::login::{OnlinePing, OnlinePong};
 use crate::network::raknet::packets::ConnectionRequest;
 use crate::network::raknet::packets::ConnectionRequestAccepted;
 use crate::network::raknet::packets::NewIncomingConnection;
@@ -10,6 +9,8 @@ use crate::network::session::Session;
 use common::VResult;
 use common::{Deserialize, Serialize};
 
+use super::packets::ConnectedPing;
+use super::packets::ConnectedPong;
 use super::{PacketConfig, SendPriority};
 
 impl Session {
@@ -36,8 +37,8 @@ impl Session {
 
     /// Handles an [`OnlinePing`] packet.
     pub fn handle_online_ping(&self, pk: Bytes) -> VResult<()> {
-        let ping = OnlinePing::deserialize(pk)?;
-        let pong = OnlinePong {
+        let ping = ConnectedPing::deserialize(pk)?;
+        let pong = ConnectedPong {
             ping_time: ping.time,
             pong_time: ping.time,
         };

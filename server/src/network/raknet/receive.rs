@@ -11,7 +11,7 @@ use crate::network::packets::cache::CacheStatus;
 use crate::network::packets::command::{CommandRequest, SettingsCommand};
 use crate::network::packets::login::{
     ChunkRadiusRequest, ClientToServerHandshake, CompressionAlgorithm, Login,
-    OnlinePing, RequestNetworkSettings, ResourcePackClientResponse,
+    RequestNetworkSettings, ResourcePackClientResponse,
 };
 use crate::network::packets::{
     Animate, ConnectedPacket, Interact, MovePlayer, RequestAbility,
@@ -27,6 +27,7 @@ use common::{bail, nvassert, ReadExtensions, VResult};
 use common::{Deserialize, Serialize};
 
 use super::DEFAULT_SEND_CONFIG;
+use super::packets::ConnectedPing;
 
 impl Session {
     /// Processes the raw packet coming directly from the network.
@@ -143,7 +144,7 @@ impl Session {
             NewIncomingConnection::ID => {
                 self.handle_new_incoming_connection(pk)?
             }
-            OnlinePing::ID => self.handle_online_ping(pk)?,
+            ConnectedPing::ID => self.handle_online_ping(pk)?,
             id => bail!(BadPacket, "Invalid Raknet packet ID: {}", id),
         }
 
