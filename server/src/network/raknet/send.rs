@@ -38,7 +38,7 @@ impl Session {
         let pk = Packet::new(pk);
         let mut serialized = pk.serialize();
 
-        tracing::debug!("{pk:?}");
+        tracing::debug!("Sending {pk:?}");
 
         self.send_serialized(serialized, DEFAULT_SEND_CONFIG)
     }

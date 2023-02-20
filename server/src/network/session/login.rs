@@ -67,24 +67,24 @@ impl Session {
             let identity_data = self.get_identity_data()?;
             let user_data = self.get_user_data()?;
 
-            self.broadcast_others(PlayerListAdd {
-                entries: &[PlayerListAddEntry {
-                    uuid: identity_data.uuid,
-                    entity_id: self.player.read().runtime_id as i64,
-                    username: &identity_data.display_name,
-                    xuid: identity_data.xuid,
-                    device_os: user_data.build_platform,
-                    skin: self.player.read().skin.as_ref().ok_or_else(
-                        || {
-                            error!(
-                                NotInitialized,
-                                "Skin data has not been initialised"
-                            )
-                        },
-                    )?,
-                    host: false,
-                }],
-            })?;
+            // self.broadcast_others(PlayerListAdd {
+            //     entries: &[PlayerListAddEntry {
+            //         uuid: identity_data.uuid,
+            //         entity_id: self.player.read().runtime_id as i64,
+            //         username: &identity_data.display_name,
+            //         xuid: identity_data.xuid,
+            //         device_os: user_data.build_platform,
+            //         skin: self.player.read().skin.as_ref().ok_or_else(
+            //             || {
+            //                 error!(
+            //                     NotInitialized,
+            //                     "Skin data has not been initialised"
+            //                 )
+            //             },
+            //         )?,
+            //         host: false,
+            //     }],
+            // })?;
 
             self.broadcast_others(TextMessage {
                 message: format!(
@@ -123,8 +123,6 @@ impl Session {
 
         // TODO: Implement resource packs.
 
-        tracing::debug!("test");
-
         let start_game = StartGame {
             entity_id: 1,
             runtime_id: 1,
@@ -143,7 +141,7 @@ impl Session {
             editor_world: false,
             day_cycle_lock_time: 0,
             education_features_enabled: true,
-            rain_level: 1000.0,
+            rain_level: 0.0,
             lightning_level: 0.0,
             confirmed_platform_locked_content: false,
             broadcast_to_lan: true,
@@ -211,7 +209,8 @@ impl Session {
             .collect::<Vec<_>>();
 
         let available_commands =
-            AvailableCommands { commands: commands.as_slice() };
+            AvailableCommands { commands: commands.as_slice() };            
+
         self.send(available_commands)?;
 
         Ok(())

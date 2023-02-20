@@ -45,18 +45,21 @@ impl<T: ConnectedPacket + Serialize> Packet<T> {
 
     pub fn serialize(&self) -> Bytes {
         let expected_size = self.header.serialized_size() + self.content.serialized_size();
-        let capacity = (expected_size as u32).var_len() + expected_size;
+        let capacity = 5 + expected_size;
 
         let mut buffer = BytesMut::with_capacity(capacity);
 
-        let mut rest = buffer.split_off(capacity - expected_size);
+        let mut rest = BytesMut::with_capacity(expected_size);
         self.header.serialize(&mut rest);
         self.content.serialize(&mut rest);
 
         // debug_assert_eq!(rest.len(), expected_size, "While serializing {:x}", self.header.id);
 
         buffer.put_var_u32(rest.len() as u32);
-        buffer.unsplit(rest);
+        buffer.extend(rest);
+
+        tracing::info!("{:x?}", buffer.as_ref());
+
         buffer.freeze()
     }
 }
