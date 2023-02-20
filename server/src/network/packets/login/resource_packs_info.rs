@@ -2,7 +2,7 @@ use bytes::Bytes;
 use bytes::{BufMut, BytesMut};
 
 use crate::network::packets::ConnectedPacket;
-use common::{Serialize, size_of_var};
+use common::{Serialize, size_of_varint, VarString};
 use common::VResult;
 use common::WriteExtensions;
 
@@ -31,12 +31,12 @@ pub struct BehaviorPack {
 
 impl BehaviorPack {
     fn serialized_size(&self) -> usize {
-        size_of_var(self.uuid.len() as u32) + self.uuid.len() +
-        size_of_var(self.version.len() as u32) + self.version.len() +
         8 + 1 +
-        size_of_var(self.content_key.len() as u32) + self.content_key.len() +
-        size_of_var(self.subpack_name.len() as u32) + self.subpack_name.len() +
-        size_of_var(self.content_identity.len() as u32) + self.content_identity.len() 
+        self.uuid.var_len() +
+        self.version.var_len() +
+        self.content_key.var_len() +
+        self.subpack_name.var_len() +
+        self.content_identity.var_len()
     }
 }
 
@@ -67,12 +67,12 @@ pub struct ResourcePack {
 
 impl ResourcePack {
     fn serialized_size(&self) -> usize {
-        size_of_var(self.uuid.len() as u32) + self.uuid.len() +
-        size_of_var(self.version.len() as u32) + self.version.len() +
         8 + 1 + 1 +
-        size_of_var(self.content_key.len() as u32) + self.content_key.len() +
-        size_of_var(self.subpack_name.len() as u32) + self.subpack_name.len() +
-        size_of_var(self.content_identity.len() as u32) + self.content_identity.len() 
+        self.uuid.var_len() +
+        self.version.var_len() +
+        self.content_key.var_len() +
+        self.subpack_name.var_len() +
+        self.content_identity.var_len()
     }
 }
 

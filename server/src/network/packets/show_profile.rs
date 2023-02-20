@@ -1,5 +1,5 @@
 use bytes::{BytesMut, Bytes};
-use common::{VResult, WriteExtensions, size_of_var};
+use common::{VResult, WriteExtensions, size_of_varint};
 
 use common::Serialize;
 
@@ -16,7 +16,7 @@ impl ConnectedPacket for ShowProfile<'_> {
     const ID: u32 = 0x68;
 
     fn serialized_size(&self) -> usize {
-        size_of_var(self.xuid.len() as u32) + self.xuid.len()
+        size_of_varint(self.xuid.len() as u32) + self.xuid.len()
     }
 }
 

@@ -1,7 +1,7 @@
 use std::{any::TypeId, fmt};
 
 use bytes::{BytesMut, Bytes};
-use common::{Serialize, VResult, WriteExtensions, size_of_var, bail};
+use common::{Serialize, VResult, WriteExtensions, size_of_varint, bail};
 
 use crate::command::ParsedArgument;
 
@@ -302,7 +302,7 @@ impl ConnectedPacket for GameRulesChanged<'_> {
     const ID: u32 = 0x48;
 
     fn serialized_size(&self) -> usize {
-        size_of_var(self.game_rules.len() as u32) + 
+        size_of_varint(self.game_rules.len() as u32) + 
         self.game_rules.iter().fold(
             0, |acc, g| acc + 1 + if g.is_bool() { 1 } else { 4 }
         )

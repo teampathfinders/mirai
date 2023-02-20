@@ -1,5 +1,5 @@
 use bytes::{BufMut, BytesMut, Bytes};
-use common::{BlockPosition, VResult, WriteExtensions, size_of_var};
+use common::{BlockPosition, VResult, WriteExtensions, size_of_varint};
 
 use common::Serialize;
 
@@ -15,10 +15,10 @@ impl ConnectedPacket for NetworkChunkPublisherUpdate {
     const ID: u32 = 0x79;
 
     fn serialized_size(&self) -> usize {
-        size_of_var(self.position.x) +
-        size_of_var(self.position.y) +
-        size_of_var(self.position.z) +
-        size_of_var(self.radius) + 4
+        size_of_varint(self.position.x) +
+        size_of_varint(self.position.y) +
+        size_of_varint(self.position.z) +
+        size_of_varint(self.radius) + 4
     }
 }
 

@@ -1,6 +1,6 @@
 use bytes::{Buf, BufMut, BytesMut, Bytes};
 use common::{
-    bail, ReadExtensions, VError, VResult, Vector3f, WriteExtensions, size_of_var,
+    bail, ReadExtensions, VError, VResult, Vector3f, WriteExtensions, size_of_varint,
 };
 
 use common::{Deserialize, Serialize};
@@ -70,10 +70,10 @@ impl ConnectedPacket for MovePlayer {
     const ID: u32 = 0x13;
     
     fn serialized_size(&self) -> usize {
-        size_of_var(self.runtime_id) +
+        size_of_varint(self.runtime_id) +
         3 * 4 + 3 * 4 + 1 + 1 +
-        size_of_var(self.ridden_runtime_id) +
-        size_of_var(self.tick) +
+        size_of_varint(self.ridden_runtime_id) +
+        size_of_varint(self.tick) +
         if self.mode == MovementMode::Teleport {
             4 + 4
         } else {

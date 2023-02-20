@@ -1,5 +1,5 @@
 use bytes::{BufMut, BytesMut, Bytes};
-use common::{Serialize, VResult, Vector3f, Vector4f, WriteExtensions, size_of_var};
+use common::{Serialize, VResult, Vector3f, Vector4f, WriteExtensions, size_of_varint};
 
 use super::ConnectedPacket;
 
@@ -29,7 +29,7 @@ impl ConnectedPacket for ClientBoundDebugRenderer<'_> {
 
     fn serialized_size(&self) -> usize {
         4 + if self.action == DebugRendererAction::AddCube {
-            size_of_var(self.text.len() as u32) + self.text.len() +
+            size_of_varint(self.text.len() as u32) + self.text.len() +
             3 * 4 + 4 * 4 + 8
         } else {
             0

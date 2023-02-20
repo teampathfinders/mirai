@@ -3,13 +3,16 @@ use std::collections::HashMap;
 use bytes::{BufMut, BytesMut, Bytes};
 use level::Dimension;
 
-use common::Serialize;
+use common::{Serialize, VarInt, VarString};
 use common::{bail, VError, VResult};
 use common::{BlockPosition, Vector2f, Vector3f, WriteExtensions};
 use crate::network::packets::{CLIENT_VERSION_STRING, Difficulty, GameMode, ConnectedPacket, GameRule};
 use crate::network::packets::login::ExperimentData;
 
+const MULTIPLAYER_CORRELATION_ID: &str = "5b39a9d6-f1a1-411a-b749-b30742f81771";
+
 #[derive(Debug, Copy, Clone)]
+#[repr(i32)]
 pub enum WorldGenerator {
     OldLimited,
     Infinite,
@@ -25,17 +28,12 @@ impl WorldGenerator {
 }
 
 #[derive(Debug, Copy, Clone)]
+#[repr(i32)]
 pub enum PermissionLevel {
     Visitor,
     Member,
     Operator,
     Custom,
-}
-
-impl PermissionLevel {
-    pub fn serialize(&self, buffer: &mut BytesMut) {
-        buffer.put_var_i32(*self as i32);
-    }
 }
 
 #[derive(Debug, Clone)]
@@ -52,6 +50,7 @@ impl EducationResourceURI {
 }
 
 #[derive(Debug, Copy, Clone)]
+#[repr(u8)]
 pub enum ChatRestrictionLevel {
     None,
     Dropped,
@@ -65,6 +64,7 @@ impl ChatRestrictionLevel {
 }
 
 #[derive(Debug, Copy, Clone)]
+#[repr(i32)]
 pub enum PlayerMovementType {
     ClientAuthoritative,
     ServerAuthoritative,
@@ -79,6 +79,12 @@ pub struct PlayerMovementSettings {
 }
 
 impl PlayerMovementSettings {
+    pub fn serialized_size(&self) -> usize {
+        (self.movement_type as i32).var_len() +
+        self.rewind_history_size.var_len() +
+        1
+    }
+
     pub fn serialize(&self, buffer: &mut BytesMut) {
         buffer.put_var_i32(self.movement_type as i32);
         buffer.put_var_i32(self.rewind_history_size);
@@ -128,6 +134,7 @@ pub enum SpawnBiomeType {
 }
 
 #[derive(Debug, Copy, Clone)]
+#[repr(u32)]
 pub enum BroadcastIntent {
     NoMultiplayer,
     InviteOnly,
@@ -207,10 +214,10 @@ pub struct StartGame<'a> {
     /// List of game rules.
     /// Only modified game rules have to be sent.
     /// Game rules that are not sent in the start game packet, will be set to their default values.
-    pub gamerules: &'a [GameRule],
+    pub game_rules: &'a [GameRule],
     /// Experiments used by the server.
     /// This is a visual option, since the experiments have already been specified in a resource pack packet.
-    pub experiments: &'a [ExperimentData],
+    pub experiments: &'a [ExperimentData<'a>],
     /// Whether experiments have previously been enabled.
     pub experiments_previously_enabled: bool,
     /// Whether the bonus chest is enabled.
@@ -269,7 +276,80 @@ impl ConnectedPacket for StartGame<'_> {
     const ID: u32 = 0x0b;
 
     fn serialized_size(&self) -> usize {
-        todo!();
+        self.entity_id.var_len() +
+        self.runtime_id.var_len() +
+        (self.game_mode as i32).var_len() +
+        3 * 4 + 
+        3 * 4 +
+        8 +
+        2 +
+        self.custom_biome_name.var_len() +
+        (self.dimension as u32).var_len() +
+        (self.generator as i32).var_len() +
+        (self.world_game_mode as i32).var_len() +
+        (self.difficulty as i32).var_len() +
+        self.world_spawn.serialized_size() +
+        1 +
+        1 +
+        self.day_cycle_lock_time.var_len() +
+        1 +
+        1 +
+        1 +
+        4 +
+        4 +
+        1 +
+        1 +
+        1 +
+        (self.xbox_broadcast_intent as u32).var_len() +
+        (self.platform_broadcast_intent as u32).var_len() +
+        1 +
+        1 +
+        (self.game_rules.len() as u32).var_len() +
+        self.game_rules.iter().fold(0, |acc, r| acc + r.serialized_size()) +
+        4 +
+        self.experiments.iter().fold(0, |acc, e| acc + e.serialized_size()) +
+        1 +
+        1 +
+        1 +
+        (self.permission_level as i32).var_len() +
+        4 +
+        1 +
+        1 +
+        1 +
+        1 +
+        1 +
+        1 +
+        1 +
+        1 +
+        1 +
+        1 +
+        CLIENT_VERSION_STRING.var_len() +
+        4 +
+        4 +
+        1 +
+        1 +
+        1 +
+        1 +
+        1 +
+        1 +
+        self.level_id.var_len() +
+        self.level_name.var_len() +
+        self.template_content_identity.var_len() +
+        1 +
+        self.movement_settings.serialized_size() +
+        8 +
+        self.enchantment_seed.var_len() +
+        (self.block_properties.len() as u32).var_len() +
+        self.block_properties.iter().fold(0, |acc, p| acc + p.serialized_size()) +
+        (self.item_properties.len() as u32).var_len() +
+        self.item_properties.iter().fold(0, |acc, p| acc + p.serialized_size()) +
+        MULTIPLAYER_CORRELATION_ID.var_len() +
+        1 +
+        CLIENT_VERSION_STRING.var_len() +
+        self.property_data.serialized_size() +
+        4 +
+        16 +
+        1
     }
 }
 
@@ -284,7 +364,7 @@ impl Serialize for StartGame<'_> {
         buffer.put_i16(self.spawn_biome_type as i16);
         buffer.put_string(self.custom_biome_name);
         buffer.put_var_u32(self.dimension as u32);
-        self.generator.serialize(buffer);
+        buffer.put_var_i32(self.generator as i32);
         buffer.put_var_i32(self.world_game_mode as i32);
         buffer.put_var_i32(self.difficulty as i32);
         buffer.put_block_pos(&self.world_spawn);
@@ -305,8 +385,8 @@ impl Serialize for StartGame<'_> {
         buffer.put_bool(self.enable_commands);
         buffer.put_bool(self.texture_packs_required);
 
-        buffer.put_var_u32(self.gamerules.len() as u32);
-        for rule in self.gamerules {
+        buffer.put_var_u32(self.game_rules.len() as u32);
+        for rule in self.game_rules {
             rule.serialize(buffer);
         }
 
@@ -318,7 +398,7 @@ impl Serialize for StartGame<'_> {
         buffer.put_bool(self.experiments_previously_enabled);
         buffer.put_bool(self.bonus_chest_enabled);
         buffer.put_bool(self.starter_map_enabled);
-        self.permission_level.serialize(buffer);
+        buffer.put_var_i32(self.permission_level as i32);
         buffer.put_i32(self.server_chunk_tick_range);
         buffer.put_bool(self.has_locked_behavior_pack);
         buffer.put_bool(self.has_locked_resource_pack);
@@ -358,7 +438,7 @@ impl Serialize for StartGame<'_> {
         }
 
         // Random multiplayer correlation UUID.
-        buffer.put_string("5b39a9d6-f1a1-411a-b749-b30742f81771");
+        buffer.put_string(MULTIPLAYER_CORRELATION_ID);
 
         buffer.put_bool(self.server_authoritative_inventory);
         buffer.put_string(CLIENT_VERSION_STRING); // Game version

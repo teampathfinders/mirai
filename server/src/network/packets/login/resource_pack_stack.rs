@@ -2,19 +2,19 @@ use bytes::Bytes;
 use bytes::{BufMut, BytesMut};
 
 use crate::network::packets::ConnectedPacket;
-use common::{Serialize, size_of_var};
+use common::{Serialize, size_of_varint, size_of_string, VarString};
 use common::VResult;
 use common::WriteExtensions;
 
 #[derive(Debug, Clone)]
-pub struct ExperimentData {
-    pub name: String,
+pub struct ExperimentData<'a> {
+    pub name: &'a str,
     pub enabled: bool,
 }
 
-impl ExperimentData {
+impl ExperimentData<'_> {
     pub fn serialized_size(&self) -> usize {
-        size_of_var(self.name.len() as u32) + self.name.len() + 1
+        self.name.var_len() + 1
     }
 
     pub fn serialize(&self, buffer: &mut BytesMut) {
@@ -32,9 +32,9 @@ pub struct ResourcePackStackEntry<'a> {
 
 impl ResourcePackStackEntry<'_> {
     pub fn serialized_size(&self) -> usize {
-        size_of_var(self.pack_id.len() as u32) + self.pack_id.len() +
-        size_of_var(self.pack_version.len() as u32) + self.pack_version.len() +
-        size_of_var(self.subpack_name.len() as u32) + self.subpack_name.len()
+        self.pack_id.var_len() +
+        self.pack_version.var_len() +
+        self.subpack_name.var_len()
     }
 
     pub fn serialize(&self, buffer: &mut BytesMut) {
@@ -50,7 +50,7 @@ pub struct ResourcePackStack<'a> {
     pub resource_packs: &'a [ResourcePackStackEntry<'a>],
     pub behavior_packs: &'a [ResourcePackStackEntry<'a>],
     pub game_version: &'a str,
-    pub experiments: &'a [ExperimentData],
+    pub experiments: &'a [ExperimentData<'a>],
     pub experiments_previously_toggled: bool,
 }
 
@@ -59,13 +59,13 @@ impl ConnectedPacket for ResourcePackStack<'_> {
 
     fn serialized_size(&self) -> usize {
         1 + 
-        size_of_var(self.resource_packs.len() as u32) +
+        size_of_varint(self.resource_packs.len() as u32) +
         self.resource_packs.iter().fold(0, |acc, p| acc + p.serialized_size()) +
 
-        size_of_var(self.behavior_packs.len() as u32) +
+        size_of_varint(self.behavior_packs.len() as u32) +
         self.behavior_packs.iter().fold(0, |acc, p| acc + p.serialized_size()) +
 
-        size_of_var(self.game_version.len() as u32) + self.game_version.len() +
+        size_of_varint(self.game_version.len() as u32) + self.game_version.len() +
         4 + self.experiments.iter().fold(0, |acc, e| acc + e.serialized_size()) +
         1
     }

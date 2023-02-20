@@ -1,6 +1,6 @@
 use bytes::Bytes;
 use bytes::{BufMut, BytesMut};
-use common::size_of_var;
+use common::{size_of_varint, VarString};
 
 use crate::network::packets::ConnectedPacket;
 use common::Serialize;
@@ -20,7 +20,7 @@ impl ConnectedPacket for ServerToClientHandshake<'_> {
     const ID: u32 = 0x03;
 
     fn serialized_size(&self) -> usize {
-        size_of_var(self.jwt.len() as u32) + self.jwt.len()
+        self.jwt.var_len()
     }
 }
 

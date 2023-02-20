@@ -1,5 +1,5 @@
 use bytes::{BytesMut, Bytes};
-use common::{VResult, WriteExtensions, size_of_var};
+use common::{VResult, WriteExtensions, size_of_varint};
 
 use common::Serialize;
 
@@ -16,7 +16,7 @@ impl ConnectedPacket for SetTime {
     const ID: u32 = 0x0a;
 
     fn serialized_size(&self) -> usize {
-        size_of_var(self.time)
+        size_of_varint(self.time)
     }
 }
 

@@ -1,5 +1,5 @@
 use bytes::{BytesMut, BufMut, Bytes};
-use common::{Serialize, VResult, WriteExtensions, size_of_var};
+use common::{Serialize, VResult, WriteExtensions, size_of_varint};
 use uuid::Uuid;
 use crate::network::packets::login::DeviceOS;
 use crate::network::Skin;
@@ -71,7 +71,7 @@ impl ConnectedPacket for PlayerListRemove<'_> {
     const ID: u32 = 0x3f;
 
     fn serialized_size(&self) -> usize {
-        1 + size_of_var(self.entries.len() as u32) + 16 * self.entries.len()
+        1 + size_of_varint(self.entries.len() as u32) + 16 * self.entries.len()
     }
 }
 

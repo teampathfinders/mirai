@@ -1,5 +1,5 @@
 use bytes::{BytesMut, Bytes};
-use common::{VResult, WriteExtensions, size_of_var};
+use common::{VResult, WriteExtensions, size_of_varint, VarInt};
 
 use common::Serialize;
 use crate::network::packets::ConnectedPacket;
@@ -15,7 +15,7 @@ impl ConnectedPacket for ChunkRadiusReply {
     const ID: u32 = 0x46;
 
     fn serialized_size(&self) -> usize {
-        size_of_var(self.allowed_radius)
+        self.allowed_radius.var_len()
     }
 }
 

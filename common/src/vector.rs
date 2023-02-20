@@ -1,6 +1,8 @@
 use bytes::{BufMut, BytesMut};
 use std::ops::{Deref, DerefMut};
 
+use crate::VarInt;
+
 /// Type and size independent vector type
 #[derive(Debug, Clone)]
 #[repr(C)]
@@ -142,5 +144,9 @@ pub struct BlockPosition {
 impl BlockPosition {
     pub const fn new(x: i32, y: u32, z: i32) -> Self {
         Self { x, y, z }
+    }
+
+    pub fn serialized_size(&self) -> usize {
+        self.x.var_len() + self.y.var_len() + self.z.var_len()
     }
 }

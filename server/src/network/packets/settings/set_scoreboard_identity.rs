@@ -1,5 +1,5 @@
 use bytes::{BufMut, BytesMut, Bytes};
-use common::{Serialize, VResult, WriteExtensions, size_of_var};
+use common::{Serialize, VResult, WriteExtensions, size_of_varint};
 
 use crate::network::packets::ConnectedPacket;
 
@@ -30,16 +30,16 @@ impl ConnectedPacket for SetScoreboardIdentity {
     const ID: u32 = 0x70;
 
     fn serialized_size(&self) -> usize {
-        1 + size_of_var(self.entries.len() as u32) +
+        1 + size_of_varint(self.entries.len() as u32) +
         match self.action {
             ScoreboardIdentityAction::Add => {
                 self.entries.iter().fold(
-                    0, |acc, e| acc + size_of_var(e.entry_id) + size_of_var(e.entity_unique_id)
+                    0, |acc, e| acc + size_of_varint(e.entry_id) + size_of_varint(e.entity_unique_id)
                 )
             }
             ScoreboardIdentityAction::Clear => {
                 self.entries.iter().fold(
-                    0, |acc, e| acc + size_of_var(e.entry_id)
+                    0, |acc, e| acc + size_of_varint(e.entry_id)
                 )
             }
         }

@@ -1,5 +1,5 @@
 use bytes::{BufMut, BytesMut, Bytes};
-use common::{BlockPosition, Serialize, Vector3i, VResult, WriteExtensions, size_of_var};
+use common::{BlockPosition, Serialize, Vector3i, VResult, WriteExtensions, size_of_varint};
 use crate::network::packets::ConnectedPacket;
 
 #[derive(Debug, Clone)]
@@ -14,7 +14,7 @@ impl ConnectedPacket for ContainerOpen {
     const ID: u32 = 0x2e;
 
     fn serialized_size(&self) -> usize {
-        1 + 1 + 3 * 4 + size_of_var(self.container_entity_unique_id)
+        1 + 1 + 3 * 4 + size_of_varint(self.container_entity_unique_id)
     }
 }
 

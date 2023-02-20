@@ -151,7 +151,7 @@ impl Session {
             platform_broadcast_intent: BroadcastIntent::Public,
             enable_commands: true,
             texture_packs_required: true,
-            gamerules: &self.level_manager.get_game_rules(),
+            game_rules: &self.level_manager.get_game_rules(),
             experiments: &[],
             experiments_previously_enabled: false,
             bonus_chest_enabled: false,

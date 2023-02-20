@@ -1,7 +1,7 @@
 use std::time::Duration;
 
 use bytes::{BytesMut, Bytes};
-use common::{VResult, WriteExtensions, size_of_var};
+use common::{VResult, WriteExtensions, size_of_varint};
 
 use common::Serialize;
 
@@ -45,13 +45,13 @@ impl ConnectedPacket for SetTitle<'_> {
     const ID: u32 = 0x58;
 
     fn serialized_size(&self) -> usize {
-        size_of_var(self.action as i32) +
-        size_of_var(self.text.len() as u32) + self.text.len() +
-        size_of_var(self.fade_in_duration) +
-        size_of_var(self.remain_duration) +
-        size_of_var(self.fade_out_duration) +
-        size_of_var(self.xuid.len() as u32) + self.xuid.len() +
-        size_of_var(self.platform_online_id.len() as u32) + self.platform_online_id.len()
+        size_of_varint(self.action as i32) +
+        size_of_varint(self.text.len() as u32) + self.text.len() +
+        size_of_varint(self.fade_in_duration) +
+        size_of_varint(self.remain_duration) +
+        size_of_varint(self.fade_out_duration) +
+        size_of_varint(self.xuid.len() as u32) + self.xuid.len() +
+        size_of_varint(self.platform_online_id.len() as u32) + self.platform_online_id.len()
     }
 }
 

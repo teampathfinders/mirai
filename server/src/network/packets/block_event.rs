@@ -1,5 +1,5 @@
 use bytes::{BytesMut, Bytes};
-use common::{bail, BlockPosition, Deserialize, Serialize, ReadExtensions, VError, VResult, WriteExtensions, size_of_var};
+use common::{bail, BlockPosition, Deserialize, Serialize, ReadExtensions, VError, VResult, WriteExtensions, size_of_varint};
 use crate::network::packets::ConnectedPacket;
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
@@ -29,11 +29,11 @@ impl ConnectedPacket for BlockEvent {
     const ID: u32 = 0x1a;
 
     fn serialized_size(&self) -> usize {
-        size_of_var(self.position.x) +
-        size_of_var(self.position.y) +
-        size_of_var(self.position.z) +
-        size_of_var(self.event_type as i32) +
-        size_of_var(self.event_data)
+        size_of_varint(self.position.x) +
+        size_of_varint(self.position.y) +
+        size_of_varint(self.position.z) +
+        size_of_varint(self.event_type as i32) +
+        size_of_varint(self.event_data)
     }
 }
 

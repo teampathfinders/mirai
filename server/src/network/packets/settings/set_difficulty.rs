@@ -1,5 +1,5 @@
 use bytes::{Bytes, BytesMut};
-use common::{bail, ReadExtensions, VError, VResult, WriteExtensions, size_of_var};
+use common::{bail, ReadExtensions, VError, VResult, WriteExtensions, size_of_varint};
 
 use common::{Deserialize, Serialize};
 
@@ -41,7 +41,7 @@ impl ConnectedPacket for SetDifficulty {
     const ID: u32 = 0x3c;
 
     fn serialized_size(&self) -> usize {
-        size_of_var(self.difficulty as i32)
+        size_of_varint(self.difficulty as i32)
     }
 }
 

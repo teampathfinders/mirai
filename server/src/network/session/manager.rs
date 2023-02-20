@@ -152,8 +152,8 @@ impl SessionManager {
     pub async fn kick_all<S: AsRef<str>>(&self, message: S) -> VResult<()> {
         self.broadcast.send(BroadcastPacket::new(
             Disconnect {
-                hide_disconnect_screen: false,
-                kick_message: message.as_ref(),
+                hide_message: false,
+                message: message.as_ref(),
             },
             None,
         )?)?;

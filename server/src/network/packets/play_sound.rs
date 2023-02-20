@@ -1,5 +1,5 @@
 use bytes::{BufMut, BytesMut, Bytes};
-use common::{VResult, Vector, Vector3f, Vector3i, WriteExtensions, size_of_var};
+use common::{VResult, Vector, Vector3f, Vector3i, WriteExtensions, size_of_varint};
 
 use common::Serialize;
 
@@ -22,7 +22,7 @@ impl ConnectedPacket for PlaySound<'_> {
     const ID: u32 = 0x56;
 
     fn serialized_size(&self) -> usize {
-        size_of_var(self.name.len() as u32) + self.name.len() +
+        size_of_varint(self.name.len() as u32) + self.name.len() +
             3 * 4 + 4 + 4
     }
 }

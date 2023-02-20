@@ -1,6 +1,6 @@
 use bytes::{BufMut, Bytes, BytesMut};
 
-use common::{size_of_var, VResult, Deserialize, Serialize};
+use common::{size_of_varint, VResult, Deserialize, Serialize};
 use common::{ReadExtensions, WriteExtensions};
 
 /// Game packets are prefixed with a length and a header.
@@ -21,7 +21,7 @@ impl Header {
             | ((self.sender_subclient as u32) << 10)
             | ((self.target_subclient as u32) << 12);
 
-        size_of_var(value)
+        size_of_varint(value)
     }
 }
 

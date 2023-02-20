@@ -1,5 +1,5 @@
 use bytes::{BytesMut, Bytes};
-use common::{bail, Deserialize, Serialize, ReadExtensions, Vector3f, VError, VResult, WriteExtensions, size_of_var};
+use common::{bail, Deserialize, Serialize, ReadExtensions, Vector3f, VError, VResult, WriteExtensions, size_of_varint};
 use crate::network::packets::ConnectedPacket;
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
@@ -243,8 +243,8 @@ impl ConnectedPacket for LevelEvent {
     const ID: u32 = 0x19;
 
     fn serialized_size(&self) -> usize {
-        size_of_var(self.event_type as i32) + 3 * 4 + 
-        size_of_var(self.event_data)
+        size_of_varint(self.event_type as i32) + 3 * 4 + 
+        size_of_varint(self.event_data)
     }
 }
 

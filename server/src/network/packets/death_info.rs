@@ -1,5 +1,5 @@
 use bytes::{BytesMut, Bytes};
-use common::{VResult, WriteExtensions, size_of_var};
+use common::{VResult, WriteExtensions, size_of_varint};
 
 use common::Serialize;
 
@@ -18,10 +18,10 @@ impl ConnectedPacket for DeathInfo<'_> {
     const ID: u32 = 0xbd;
 
     fn serialized_size(&self) -> usize {
-        size_of_var(self.cause.len() as u32) + self.cause.len() +
-        size_of_var(self.messages.len() as u32) + 
+        size_of_varint(self.cause.len() as u32) + self.cause.len() +
+        size_of_varint(self.messages.len() as u32) + 
         self.messages.iter().fold(
-            0, |acc, m| acc + size_of_var(m.len() as u32) + m.len()
+            0, |acc, m| acc + size_of_varint(m.len() as u32) + m.len()
         )
     }
 }

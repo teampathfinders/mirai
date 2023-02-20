@@ -1,7 +1,7 @@
 use std::net::SocketAddr;
 
 use bytes::{BufMut, BytesMut, Bytes};
-use common::{VResult, WriteExtensions, size_of_var};
+use common::{VResult, WriteExtensions, size_of_varint};
 
 use common::Serialize;
 
@@ -21,7 +21,7 @@ impl ConnectedPacket for Transfer {
     fn serialized_size(&self) -> usize {
         let addr_string = self.addr.to_string();
 
-        size_of_var(addr_string.len() as u32) + addr_string.len() + 2
+        size_of_varint(addr_string.len() as u32) + addr_string.len() + 2
     }
 }
 

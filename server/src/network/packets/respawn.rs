@@ -1,6 +1,6 @@
 use bytes::{Buf, BufMut, BytesMut, Bytes};
 use common::{
-    bail, ReadExtensions, VError, VResult, Vector3f, WriteExtensions, size_of_var,
+    bail, ReadExtensions, VError, VResult, Vector3f, WriteExtensions, size_of_varint,
 };
 
 use common::{Deserialize, Serialize};
@@ -38,7 +38,7 @@ impl ConnectedPacket for Respawn {
     const ID: u32 = 0x2d;
 
     fn serialized_size(&self) -> usize {
-        3 * 4 + 1 + size_of_var(self.runtime_id)
+        3 * 4 + 1 + size_of_varint(self.runtime_id)
     }
 }
 

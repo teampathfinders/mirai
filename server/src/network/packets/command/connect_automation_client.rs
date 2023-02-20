@@ -1,5 +1,5 @@
 use bytes::{BytesMut, Bytes};
-use common::{Serialize, VResult, WriteExtensions, size_of_var};
+use common::{Serialize, VResult, WriteExtensions, size_of_varint};
 
 use crate::network::packets::ConnectedPacket;
 
@@ -14,7 +14,7 @@ impl ConnectedPacket for ConnectAutomationClient<'_> {
     const ID: u32 = 0x5f;
 
     fn serialized_size(&self) -> usize {
-        size_of_var(self.server_uri.len() as u32) + self.server_uri.len()
+        size_of_varint(self.server_uri.len() as u32) + self.server_uri.len()
     }
 }
 

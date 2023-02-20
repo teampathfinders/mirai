@@ -1,5 +1,5 @@
 use bytes::{BufMut, BytesMut, Bytes};
-use common::{VResult, WriteExtensions, size_of_var};
+use common::{VResult, WriteExtensions, size_of_varint};
 
 use common::Serialize;
 
@@ -28,10 +28,10 @@ impl ConnectedPacket for UpdateDynamicEnum<'_> {
     const ID: u32 = 0x72;
 
     fn serialized_size(&self) -> usize {
-        size_of_var(self.enum_id.len() as u32) + self.enum_id.len() +
-        size_of_var(self.options.len() as u32) +
+        size_of_varint(self.enum_id.len() as u32) + self.enum_id.len() +
+        size_of_varint(self.options.len() as u32) +
         self.options.iter().fold(
-            0, |acc, o| acc + size_of_var(o.len() as u32) + o.len()
+            0, |acc, o| acc + size_of_varint(o.len() as u32) + o.len()
         ) + 1
     }
 }

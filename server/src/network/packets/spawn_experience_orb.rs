@@ -1,5 +1,5 @@
 use bytes::{BytesMut, Bytes};
-use common::{VResult, Vector3f, WriteExtensions, size_of_var};
+use common::{VResult, Vector3f, WriteExtensions, size_of_varint};
 
 use common::Serialize;
 
@@ -15,7 +15,7 @@ impl ConnectedPacket for SpawnExperienceOrb {
     const ID: u32 = 0x42;
 
     fn serialized_size(&self) -> usize {
-        3 * 4 + size_of_var(self.amount)
+        3 * 4 + size_of_varint(self.amount)
     }
 }
 

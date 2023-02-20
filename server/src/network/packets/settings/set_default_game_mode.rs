@@ -1,5 +1,5 @@
 use bytes::{BytesMut, Bytes};
-use common::{Deserialize, Serialize, ReadExtensions, VResult, WriteExtensions, size_of_var};
+use common::{Deserialize, Serialize, ReadExtensions, VResult, WriteExtensions, size_of_varint};
 
 use crate::network::packets::ConnectedPacket;
 
@@ -16,7 +16,7 @@ impl ConnectedPacket for SetDefaultGameMode {
     const ID: u32 = 0x69;
 
     fn serialized_size(&self) -> usize {
-        size_of_var(self.game_mode as i32)
+        size_of_varint(self.game_mode as i32)
     }
 }
 

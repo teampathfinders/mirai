@@ -1,5 +1,5 @@
 use bytes::{BufMut, BytesMut, Bytes};
-use common::{VResult, WriteExtensions, size_of_var};
+use common::{VResult, WriteExtensions, size_of_varint};
 
 use common::Serialize;
 
@@ -74,10 +74,10 @@ impl ConnectedPacket for MobEffectUpdate {
     const ID: u32 = 0x1c;
     
     fn serialized_size(&self) -> usize {
-        size_of_var(self.runtime_id) + 1 +
-        size_of_var(self.effect_kind as i32) +
-        size_of_var(self.amplifier) + 1 +
-        size_of_var(self.duration)
+        size_of_varint(self.runtime_id) + 1 +
+        size_of_varint(self.effect_kind as i32) +
+        size_of_varint(self.amplifier) + 1 +
+        size_of_varint(self.duration)
     }
 }
 
