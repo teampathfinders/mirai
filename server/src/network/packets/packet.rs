@@ -3,8 +3,8 @@ use std::num::NonZeroU64;
 use bytes::Bytes;
 use bytes::{Buf, BufMut, BytesMut};
 
+use crate::network::header::Header;
 use crate::network::packets::ConnectedPacket;
-use crate::network::raknet::Header;
 use common::nvassert;
 use common::Serialize;
 use common::VResult;

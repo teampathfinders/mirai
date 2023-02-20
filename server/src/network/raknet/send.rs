@@ -13,11 +13,12 @@ use crate::network::packets::{ConnectedPacket, Packet, GAME_PACKET_ID};
 use crate::network::raknet::packets::{Ack, AckRecord};
 use crate::network::raknet::Reliability;
 use crate::network::raknet::{Frame, FrameBatch};
-use crate::network::session::send_queue::SendPriority;
-use crate::network::session::session::Session;
+use crate::network::session::Session;
 use common::ReadExtensions;
 use common::VResult;
 use common::{Deserialize, Serialize};
+
+use super::SendPriority;
 
 pub struct PacketConfig {
     pub reliability: Reliability,

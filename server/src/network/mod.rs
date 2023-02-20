@@ -5,6 +5,6 @@ pub mod raknet;
 pub mod session;
 
 mod cache_blob;
-mod header;
 
+glob_export!(header);
 glob_export!(skin);

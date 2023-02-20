@@ -27,7 +27,6 @@ use crate::network::packets::{
 };
 use crate::network::raknet::Reliability;
 use crate::network::raknet::{Frame, FrameBatch};
-use crate::network::session::send_queue::SendPriority;
 use crate::network::session::session::Session;
 use common::{
     bail, error, BlockPosition, Deserialize, VResult, Vector2f, Vector3f,

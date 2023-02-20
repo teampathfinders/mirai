@@ -1,11 +1,5 @@
-pub use acknowledge::*;
-pub use controls::*;
-pub use login::*;
-pub use raknet::*;
-pub use util::*;
+use common::glob_export;
 
-mod acknowledge;
-mod controls;
-mod login;
-mod raknet;
-mod util;
+glob_export!(controls);
+glob_export!(login);
+glob_export!(util);

@@ -6,11 +6,11 @@ use crate::network::raknet::packets::ConnectionRequestAccepted;
 use crate::network::raknet::packets::NewIncomingConnection;
 use crate::network::raknet::Frame;
 use crate::network::raknet::Reliability;
-use crate::network::session::send::PacketConfig;
-use crate::network::session::send_queue::SendPriority;
-use crate::network::session::session::Session;
+use crate::network::session::Session;
 use common::VResult;
 use common::{Deserialize, Serialize};
+
+use super::{PacketConfig, SendPriority};
 
 impl Session {
     /// Handles a [`ConnectionRequest`] packet.

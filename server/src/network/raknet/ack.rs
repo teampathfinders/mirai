@@ -1,7 +1,7 @@
 use bytes::{Bytes, BytesMut};
 
 use crate::network::raknet::packets::{Ack, Nak};
-use crate::network::session::session::Session;
+use crate::network::session::Session;
 use common::VResult;
 use common::{Deserialize, Serialize};
 

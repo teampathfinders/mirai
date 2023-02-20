@@ -22,7 +22,7 @@ use crate::network::raknet::packets::{
     Ack, ConnectionRequest, DisconnectNotification, Nak, NewIncomingConnection,
 };
 use crate::network::raknet::{BroadcastPacket, Frame, FrameBatch};
-use crate::network::session::session::Session;
+use crate::network::session::Session;
 use common::{bail, nvassert, ReadExtensions, VResult};
 use common::{Deserialize, Serialize};
 
