@@ -88,6 +88,18 @@ pub struct RaknetData {
     pub compression_enabled: AtomicBool,
 }
 
+#[derive(Debug)]
+pub struct PlayerData {
+    /// Game mode.
+    pub game_mode: GameMode,
+    /// General permission level.
+    pub permission_level: PermissionLevel,
+    /// The client's skin.
+    pub skin: Option<Skin>,
+    /// Runtime ID.
+    pub runtime_id: u64,
+}
+
 /// Sessions directly correspond to clients connected to the server.
 ///
 /// Anything that has to do with specific clients must be communicated with their associated sessions.
@@ -98,8 +110,6 @@ pub struct Session {
     pub identity: OnceCell<IdentityData>,
     /// Extra user data, such as device OS and language.
     pub user_data: OnceCell<UserData>,
-    /// The client's skin.
-    pub skin: RwLock<Option<Skin>>,
     /// Used to encrypt and decrypt packets.
     pub encryptor: OnceCell<Encryptor>,
     /// Whether the client supports the chunk cache.
@@ -107,8 +117,6 @@ pub struct Session {
     /// Whether the client has fully been initialised.
     /// This is set to true after receiving the [`SetLocalPlayerAsInitialized`](crate::network::packets::SetLocalPlayerAsInitialized) packet
     pub initialized: AtomicBool,
-    /// Runtime ID.
-    pub runtime_id: u64,
     /// Manages entire world.
     pub level_manager: Arc<LevelManager>,
     /// Sends packets into the broadcasting channel.
@@ -119,6 +127,8 @@ pub struct Session {
 
     /// Current tick of this session, this is increased every [`TICK_INTERVAL`].
     pub current_tick: AtomicU64,
+    /// Minecraft-specific data.
+    pub player: RwLock<PlayerData>,
     /// Raknet-specific data.
     pub raknet: RaknetData,
 }
@@ -137,17 +147,21 @@ impl Session {
         let session = Arc::new(Self {
             identity: OnceCell::new(),
             user_data: OnceCell::new(),
-            skin: RwLock::new(None),
             encryptor: OnceCell::new(),
             cache_support: OnceCell::new(),
             initialized: AtomicBool::new(false),
-            runtime_id: RUNTIME_ID_COUNTER.fetch_add(1, Ordering::SeqCst),
             broadcast,
             level_manager,
 
             active: CancellationToken::new(),
 
             current_tick: AtomicU64::new(0),
+            player: RwLock::new(PlayerData {
+                runtime_id: RUNTIME_ID_COUNTER.fetch_add(1, Ordering::SeqCst),
+                game_mode: GameMode::Survival,
+                permission_level: PermissionLevel::Member,
+                skin: None,
+            }),
             raknet: RaknetData {
                 udp_socket: ipv4_socket,
                 mtu,

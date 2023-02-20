@@ -71,16 +71,18 @@ impl Session {
             self.broadcast_others(PlayerListAdd {
                 entries: &[PlayerListAddEntry {
                     uuid: identity_data.uuid,
-                    entity_id: self.runtime_id as i64,
+                    entity_id: self.player.read().runtime_id as i64,
                     username: &identity_data.display_name,
                     xuid: identity_data.xuid,
                     device_os: user_data.build_platform,
-                    skin: self.skin.read().as_ref().ok_or_else(|| {
-                        error!(
-                            NotInitialized,
-                            "Skin data has not been initialised"
-                        )
-                    })?,
+                    skin: self.player.read().skin.as_ref().ok_or_else(
+                        || {
+                            error!(
+                                NotInitialized,
+                                "Skin data has not been initialised"
+                            )
+                        },
+                    )?,
                     host: false,
                 }],
             })?;
@@ -258,7 +260,7 @@ impl Session {
 
         self.identity.set(request.identity)?;
         self.user_data.set(request.user_data)?;
-        *self.skin.write() = Some(request.skin);
+        self.player.write().skin = Some(request.skin);
 
         // Flush packets before enabling encryption
         self.flush().await?;
