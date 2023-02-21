@@ -18,7 +18,7 @@ pub enum AckRecord {
 }
 
 /// Encodes a list of acknowledgement records.
-fn encode_records(mut buffer: BytesMut, records: &[AckRecord]) -> Bytes {
+fn encode_records(buffer: &mut BytesMut, records: &[AckRecord]) {
     buffer.put_i16(records.len() as i16);
     for record in records {
         match record {
@@ -33,8 +33,6 @@ fn encode_records(mut buffer: BytesMut, records: &[AckRecord]) -> Bytes {
             }
         }
     }
-
-    buffer.freeze()
 }
 
 /// Decodes a list of acknowledgement records.
@@ -66,20 +64,31 @@ pub struct Ack {
 impl Ack {
     /// Unique identifier for this packet.
     pub const ID: u8 = 0xc0;
+
+    pub fn serialized_size(&self) -> usize {
+        1 + self.records.iter().fold(0, |acc, r| {
+            acc + match r {
+                AckRecord::Single(_) => 1 + 3,
+                AckRecord::Range(_) => 1 + 3 + 3,
+            }
+        })
+    }
 }
 
 impl Serialize for Ack {
-    fn serialize(&self) -> VResult<Bytes> {
-        let mut buffer = BytesMut::with_capacity(10);
+    fn serialize(&self, buffer: &mut BytesMut) {
         buffer.put_u8(Self::ID);
-        Ok(encode_records(buffer, &self.records))
+
+        encode_records(buffer, &self.records)
     }
 }
 
 impl Deserialize for Ack {
     fn deserialize(mut buffer: Bytes) -> VResult<Self> {
         nvassert!(buffer.get_u8() == Self::ID);
+
         let records = decode_records(buffer);
+
         Ok(Self { records })
     }
 }
@@ -94,20 +103,31 @@ pub struct Nak {
 impl Nak {
     /// Unique identifier of this packet.
     pub const ID: u8 = 0xa0;
+
+    pub fn serialized_size(&self) -> usize {
+        1 + self.records.iter().fold(0, |acc, r| {
+            acc + match r {
+                AckRecord::Single(_) => 1 + 3,
+                AckRecord::Range(_) => 1 + 3 + 3,
+            }
+        })
+    }
 }
 
 impl Serialize for Nak {
-    fn serialize(&self) -> VResult<Bytes> {
-        let mut buffer = BytesMut::with_capacity(10);
+    fn serialize(&self, buffer: &mut BytesMut) {
         buffer.put_u8(Self::ID);
-        Ok(encode_records(buffer, &self.records))
+
+        encode_records(buffer, &self.records)
     }
 }
 
 impl Deserialize for Nak {
     fn deserialize(mut buffer: Bytes) -> VResult<Self> {
         nvassert!(buffer.get_u8() == Self::ID);
+
         let records = decode_records(buffer);
+
         Ok(Self { records })
     }
 }

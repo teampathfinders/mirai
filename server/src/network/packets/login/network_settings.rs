@@ -51,18 +51,18 @@ pub struct NetworkSettings {
 impl ConnectedPacket for NetworkSettings {
     /// Unique ID of this packet.
     const ID: u32 = 0x8f;
+
+    fn serialized_size(&self) -> usize {
+        2 + 2 + 1 + 1 + 4
+    }
 }
 
 impl Serialize for NetworkSettings {
-    fn serialize(&self) -> VResult<Bytes> {
-        let mut buffer = BytesMut::with_capacity(2 + 2 + 1 + 1 + 4);
-
+    fn serialize(&self, buffer: &mut BytesMut) {
         buffer.put_u16(self.compression_threshold);
         buffer.put_u16(self.compression_algorithm as u16);
         buffer.put_bool(self.client_throttle.enabled);
         buffer.put_u8(self.client_throttle.threshold);
         buffer.put_f32(self.client_throttle.scalar);
-
-        Ok(buffer.freeze())
     }
 }

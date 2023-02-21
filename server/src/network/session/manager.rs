@@ -131,7 +131,7 @@ impl SessionManager {
                         // Attempt to send a disconnect packet.
                         let _ = session.1.kick(DISCONNECTED_TIMEOUT);
                         // Then close the session.
-                        session.1.flag_for_close();
+                        session.1.on_disconnect();
                     }
                 }
             }
@@ -152,8 +152,8 @@ impl SessionManager {
     pub async fn kick_all<S: AsRef<str>>(&self, message: S) -> VResult<()> {
         self.broadcast.send(BroadcastPacket::new(
             Disconnect {
-                hide_disconnect_screen: false,
-                kick_message: message.as_ref(),
+                hide_message: false,
+                message: message.as_ref(),
             },
             None,
         )?)?;

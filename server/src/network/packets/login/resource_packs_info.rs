@@ -2,7 +2,7 @@ use bytes::Bytes;
 use bytes::{BufMut, BytesMut};
 
 use crate::network::packets::ConnectedPacket;
-use common::Serialize;
+use common::{Serialize, size_of_varint, VarString};
 use common::VResult;
 use common::WriteExtensions;
 
@@ -27,6 +27,17 @@ pub struct BehaviorPack {
     /// Whether the pack contains script.
     /// If it does, the pack will only be downloaded if the client supports scripting.
     pub has_scripts: bool,
+}
+
+impl BehaviorPack {
+    fn serialized_size(&self) -> usize {
+        8 + 1 +
+        self.uuid.var_len() +
+        self.version.var_len() +
+        self.content_key.var_len() +
+        self.subpack_name.var_len() +
+        self.content_identity.var_len()
+    }
 }
 
 /// Resource pack information
@@ -54,6 +65,17 @@ pub struct ResourcePack {
     pub rtx_enabled: bool,
 }
 
+impl ResourcePack {
+    fn serialized_size(&self) -> usize {
+        8 + 1 + 1 +
+        self.uuid.var_len() +
+        self.version.var_len() +
+        self.content_key.var_len() +
+        self.subpack_name.var_len() +
+        self.content_identity.var_len()
+    }
+}
+
 /// Contains information about the addons used by the server.
 /// This should be sent after sending the [`PlayStatus`](super::PlayStatus) packet with a
 /// [`LoginSuccess`](super::Status::LoginSuccess) status.
@@ -76,12 +98,20 @@ pub struct ResourcePacksInfo<'a> {
 
 impl ConnectedPacket for ResourcePacksInfo<'_> {
     const ID: u32 = 0x06;
+
+    fn serialized_size(&self) -> usize {
+        1 + 1 + 1 + 2 + 2 +
+        self.behavior_info.iter().fold(
+            0, |acc, p| acc + p.serialized_size()
+        ) +
+        self.resource_info.iter().fold(
+            0, |acc, p| acc + p.serialized_size()
+        )
+    }
 }
 
 impl Serialize for ResourcePacksInfo<'_> {
-    fn serialize(&self) -> VResult<Bytes> {
-        let mut buffer = BytesMut::new();
-
+    fn serialize(&self, buffer: &mut BytesMut) {
         buffer.put_bool(self.required);
         buffer.put_bool(self.scripting_enabled);
         buffer.put_bool(self.forcing_server_packs);
@@ -108,7 +138,5 @@ impl Serialize for ResourcePacksInfo<'_> {
             buffer.put_bool(pack.has_scripts);
             buffer.put_bool(pack.rtx_enabled);
         }
-
-        Ok(buffer.freeze())
     }
 }

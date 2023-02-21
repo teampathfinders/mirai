@@ -239,8 +239,8 @@ impl Session {
     /// Kicks the session from the server, displaying the given menu.
     pub fn kick<S: AsRef<str>>(&self, message: S) -> VResult<()> {
         let disconnect_packet = Disconnect {
-            kick_message: message.as_ref(),
-            hide_disconnect_screen: false,
+            message: message.as_ref(),
+            hide_message: false,
         };
         self.send(disconnect_packet)?;
         // self.flag_for_close();

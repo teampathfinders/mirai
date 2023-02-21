@@ -1,6 +1,8 @@
 use bytes::{BufMut, BytesMut};
 use std::ops::{Deref, DerefMut};
 
+use crate::VarInt;
+
 /// Type and size independent vector type
 #[derive(Debug, Clone)]
 #[repr(C)]
@@ -31,7 +33,7 @@ impl<T, const N: usize> From<[T; N]> for Vector<T, N> {
 }
 
 impl<const N: usize> Vector<f32, N> {
-    pub fn encode(&self, buffer: &mut BytesMut) {
+    pub fn serialize(&self, buffer: &mut BytesMut) {
         for i in 0..N {
             buffer.put_f32(self.components[i]);
         }
@@ -142,5 +144,9 @@ pub struct BlockPosition {
 impl BlockPosition {
     pub const fn new(x: i32, y: u32, z: i32) -> Self {
         Self { x, y, z }
+    }
+
+    pub fn serialized_size(&self) -> usize {
+        self.x.var_len() + self.y.var_len() + self.z.var_len()
     }
 }

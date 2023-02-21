@@ -1,5 +1,5 @@
 use bytes::{BytesMut, Bytes};
-use common::{VResult, WriteExtensions, size_of_var};
+use common::{VResult, WriteExtensions, size_of_varint};
 
 use common::Serialize;
 
@@ -14,15 +14,14 @@ pub struct ShowProfile<'s> {
 
 impl ConnectedPacket for ShowProfile<'_> {
     const ID: u32 = 0x68;
+
+    fn serialized_size(&self) -> usize {
+        size_of_varint(self.xuid.len() as u32) + self.xuid.len()
+    }
 }
 
 impl Serialize for ShowProfile<'_> {
-    fn serialize(&self) -> VResult<Bytes> {
-        let packet_size = size_of_var(self.xuid.len() as u32) + self.xuid.len();
-        let mut buffer = BytesMut::with_capacity(packet_size);
-
+    fn serialize(&self, buffer: &mut BytesMut) {
         buffer.put_string(self.xuid);
-
-        Ok(buffer.freeze())
     }
 }

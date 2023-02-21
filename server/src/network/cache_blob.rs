@@ -10,7 +10,7 @@ pub struct CacheBlob {
 }
 
 impl CacheBlob {
-    pub fn encode(&self, buffer: &mut BytesMut) {
+    pub fn serialize(&self, buffer: &mut BytesMut) {
         buffer.put_u64_le(self.hash);
         buffer.extend(&self.payload);
     }

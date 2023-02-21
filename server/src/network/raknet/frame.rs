@@ -58,7 +58,7 @@ impl Deserialize for FrameBatch {
         let mut frames = Vec::new();
 
         while buffer.has_remaining() {
-            frames.push(Frame::decode(&mut buffer)?);
+            frames.push(Frame::deserialize(&mut buffer)?);
         }
         assert_eq!(buffer.remaining(), 0);
 
@@ -67,17 +67,13 @@ impl Deserialize for FrameBatch {
 }
 
 impl Serialize for FrameBatch {
-    fn serialize(&self) -> VResult<Bytes> {
-        let mut buffer = BytesMut::new();
-
+    fn serialize(&self, buffer: &mut BytesMut) {
         buffer.put_u8(CONNECTED_PEER_BIT_FLAG);
         buffer.put_u24_le(self.sequence_number);
 
         for frame in &self.frames {
-            frame.encode(&mut buffer);
+            frame.serialize(buffer);
         }
-
-        Ok(buffer.freeze())
     }
 }
 
@@ -115,7 +111,7 @@ impl Frame {
 
     /// Decodes the frame.
     #[allow(clippy::useless_let_if_seq)]
-    fn decode(buffer: &mut Bytes) -> VResult<Self> {
+    fn deserialize(buffer: &mut Bytes) -> VResult<Self> {
         let flags = buffer.get_u8();
 
         let reliability = Reliability::try_from(flags >> 5)?;
@@ -171,7 +167,7 @@ impl Frame {
     }
 
     /// Encodes the frame.
-    fn encode(&self, buffer: &mut BytesMut) {
+    fn serialize(&self, buffer: &mut BytesMut) {
         let mut flags = (self.reliability as u8) << 5;
         if self.is_compound {
             flags |= COMPOUND_BIT_FLAG;

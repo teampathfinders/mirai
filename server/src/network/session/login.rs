@@ -16,13 +16,13 @@ use crate::network::packets::login::{
     ItemType, Login, NetworkSettings, PermissionLevel, PlayerMovementSettings,
     PlayerMovementType, RequestNetworkSettings, ResourcePackClientResponse,
     ResourcePackStack, ResourcePacksInfo, ServerToClientHandshake,
-    SpawnBiomeType, StartGame, WorldGenerator, DISCONNECTED_LOGIN_FAILED,
+    SpawnBiomeType, StartGame, WorldGenerator, DISCONNECTED_LOGIN_FAILED, Status, PlayStatus,
 };
 use crate::network::packets::GameMode::Creative;
 use crate::network::packets::{
     AbilityData, AddPlayer, BiomeDefinitionList, Difficulty, GameMode,
-    GameRule, MessageType, PlayStatus, PlayerListAdd, PlayerListAddEntry,
-    SetLocalPlayerAsInitialized, Status, TextMessage, UpdateSkin,
+    GameRule, MessageType,  PlayerListAdd, PlayerListAddEntry,
+    SetLocalPlayerAsInitialized, TextMessage, UpdateSkin,
     ViolationWarning, CLIENT_VERSION_STRING, NETWORK_VERSION,
 };
 use crate::network::raknet::Reliability;
@@ -67,24 +67,24 @@ impl Session {
             let identity_data = self.get_identity_data()?;
             let user_data = self.get_user_data()?;
 
-            self.broadcast_others(PlayerListAdd {
-                entries: &[PlayerListAddEntry {
-                    uuid: identity_data.uuid,
-                    entity_id: self.player.read().runtime_id as i64,
-                    username: &identity_data.display_name,
-                    xuid: identity_data.xuid,
-                    device_os: user_data.build_platform,
-                    skin: self.player.read().skin.as_ref().ok_or_else(
-                        || {
-                            error!(
-                                NotInitialized,
-                                "Skin data has not been initialised"
-                            )
-                        },
-                    )?,
-                    host: false,
-                }],
-            })?;
+            // self.broadcast_others(PlayerListAdd {
+            //     entries: &[PlayerListAddEntry {
+            //         uuid: identity_data.uuid,
+            //         entity_id: self.player.read().runtime_id as i64,
+            //         username: &identity_data.display_name,
+            //         xuid: identity_data.xuid,
+            //         device_os: user_data.build_platform,
+            //         skin: self.player.read().skin.as_ref().ok_or_else(
+            //             || {
+            //                 error!(
+            //                     NotInitialized,
+            //                     "Skin data has not been initialised"
+            //                 )
+            //             },
+            //         )?,
+            //         host: false,
+            //     }],
+            // })?;
 
             self.broadcast_others(TextMessage {
                 message: format!(
@@ -141,7 +141,7 @@ impl Session {
             editor_world: false,
             day_cycle_lock_time: 0,
             education_features_enabled: true,
-            rain_level: 1000.0,
+            rain_level: 0.0,
             lightning_level: 0.0,
             confirmed_platform_locked_content: false,
             broadcast_to_lan: true,
@@ -149,7 +149,7 @@ impl Session {
             platform_broadcast_intent: BroadcastIntent::Public,
             enable_commands: true,
             texture_packs_required: true,
-            gamerules: &self.level_manager.get_game_rules(),
+            game_rules: &self.level_manager.get_game_rules(),
             experiments: &[],
             experiments_previously_enabled: false,
             bonus_chest_enabled: false,
@@ -209,7 +209,8 @@ impl Session {
             .collect::<Vec<_>>();
 
         let available_commands =
-            AvailableCommands { commands: commands.as_slice() };
+            AvailableCommands { commands: commands.as_slice() };            
+
         self.send(available_commands)?;
 
         Ok(())

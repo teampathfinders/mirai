@@ -19,18 +19,19 @@ fn hello_world_write_nbt() {
     };
 
     let mut encoded = BytesMut::new();
-    tag.write_be(&mut encoded);
+    tag.serialize_be(&mut encoded);
     assert_eq!(encoded, HELLO_WORLD_NBT);
 }
 
 #[test]
 fn bigtest_nbt() {
-    crate::read_be(&mut Bytes::from(BIGTEST_NBT)).unwrap();
+    crate::deserialize_be(&mut Bytes::from(BIGTEST_NBT)).unwrap();
 }
 
 #[test]
 fn hello_world_nbt() {
-    let decoded = crate::read_be(&mut Bytes::from(HELLO_WORLD_NBT)).unwrap();
+    let decoded =
+        crate::deserialize_be(&mut Bytes::from(HELLO_WORLD_NBT)).unwrap();
     println!("{decoded:?}");
 
     assert_eq!(
@@ -47,5 +48,5 @@ fn hello_world_nbt() {
 
 #[test]
 fn player_nan_value_nbt() {
-    crate::read_be(&mut Bytes::from(PLAYER_NAN_VALUE_NBT)).unwrap();
+    crate::deserialize_be(&mut Bytes::from(PLAYER_NAN_VALUE_NBT)).unwrap();
 }

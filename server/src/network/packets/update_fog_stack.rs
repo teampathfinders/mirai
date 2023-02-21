@@ -1,5 +1,5 @@
 use bytes::{BytesMut, Bytes};
-use common::{Serialize, VResult, WriteExtensions, size_of_var};
+use common::{Serialize, VResult, WriteExtensions, size_of_varint};
 
 use super::ConnectedPacket;
 
@@ -12,21 +12,18 @@ pub struct UpdateFogStack<'s> {
 
 impl ConnectedPacket for UpdateFogStack<'_> {
     const ID: u32 = 0xa0;
+
+    fn serialized_size(&self) -> usize {
+        size_of_varint(self.stack.len() as u32) +
+        self.stack.iter().fold(0, |acc, f| acc + size_of_varint(f.len() as u32) + f.len())
+    }
 }
 
 impl Serialize for UpdateFogStack<'_> {
-    fn serialize(&self) -> VResult<Bytes> {
-        let packet_size =
-            size_of_var(self.stack.len() as u32) +
-            self.stack.iter().fold(0, |acc, f| acc + size_of_var(f.len() as u32) + f.len());
-
-        let mut buffer = BytesMut::with_capacity(packet_size);
-
+    fn serialize(&self, buffer: &mut BytesMut) {
         buffer.put_var_u32(self.stack.len() as u32);
         for fog in self.stack {
             buffer.put_string(fog);
         }
-
-        Ok(buffer.freeze())
     }
 }

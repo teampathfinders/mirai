@@ -23,12 +23,14 @@ pub struct AvailableCommands<'a> {
 
 impl ConnectedPacket for AvailableCommands<'_> {
     const ID: u32 = 0x4c;
+
+    fn serialized_size(&self) -> usize {
+        0
+    }
 }
 
 impl Serialize for AvailableCommands<'_> {
-    fn serialize(&self) -> VResult<Bytes> {
-        let mut buffer = BytesMut::new();
-
+    fn serialize(&self, buffer: &mut BytesMut) {
         let mut value_indices = HashMap::new();
         let mut values = Vec::new();
         for command in self.commands {
@@ -204,7 +206,5 @@ impl Serialize for AvailableCommands<'_> {
         }
 
         buffer.put_var_u32(0); // No constraints, they are useless.
-
-        Ok(buffer.freeze())
     }
 }

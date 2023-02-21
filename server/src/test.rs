@@ -9,8 +9,8 @@ use tokio::net::windows::named_pipe::PipeMode::Byte;
 use crate::instance_manager::{IPV4_LOCAL_ADDR, IPV6_LOCAL_ADDR};
 use crate::network::raknet::{Frame, OrderChannel};
 use crate::network::Header;
-use common::VResult;
 use common::{ReadExtensions, WriteExtensions};
+use common::{Serialize, VResult};
 
 #[test]
 fn read_write_header() {
@@ -20,8 +20,10 @@ fn read_write_header() {
         target_subclient: 2,
     };
 
-    let mut buffer = header.serialize();
-    assert_eq!(Header::deserialize(&mut buffer).unwrap(), header);
+    let mut buffer = BytesMut::new();
+    header.serialize(&mut buffer);
+
+    assert_eq!(Header::deserialize(&mut buffer.freeze()).unwrap(), header);
 }
 
 #[test]

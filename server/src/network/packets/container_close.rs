@@ -12,15 +12,15 @@ pub struct ContainerClose {
 
 impl ConnectedPacket for ContainerClose {
     const ID: u32 = 0x2f;
+
+    fn serialized_size(&self) -> usize {
+        2
+    }
 }
 
 impl Serialize for ContainerClose {
-    fn serialize(&self) -> VResult<Bytes> {
-        let mut buffer = BytesMut::with_capacity(2);
-
+    fn serialize(&self, buffer: &mut BytesMut) {
         buffer.put_u8(self.window_id);
         buffer.put_bool(self.server_initiated);
-
-        Ok(buffer.freeze())
     }
 }

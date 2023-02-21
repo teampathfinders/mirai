@@ -1,6 +1,6 @@
 use bytes::Bytes;
 use bytes::{BufMut, BytesMut};
-use common::size_of_var;
+use common::{size_of_varint, VarString};
 
 use crate::network::packets::ConnectedPacket;
 use common::Serialize;
@@ -18,15 +18,14 @@ pub struct ServerToClientHandshake<'a> {
 
 impl ConnectedPacket for ServerToClientHandshake<'_> {
     const ID: u32 = 0x03;
+
+    fn serialized_size(&self) -> usize {
+        self.jwt.var_len()
+    }
 }
 
 impl Serialize for ServerToClientHandshake<'_> {
-    fn serialize(&self) -> VResult<Bytes> {
-        let packet_size = size_of_var(self.jwt.len() as u32) + self.jwt.len();
-        let mut buffer = BytesMut::with_capacity(packet_size);
-
+    fn serialize(&self, buffer: &mut BytesMut) {
         buffer.put_string(self.jwt);
-
-        Ok(buffer.freeze())
     }
 }

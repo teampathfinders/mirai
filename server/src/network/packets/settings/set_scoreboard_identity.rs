@@ -1,5 +1,5 @@
 use bytes::{BufMut, BytesMut, Bytes};
-use common::{Serialize, VResult, WriteExtensions};
+use common::{Serialize, VResult, WriteExtensions, size_of_varint};
 
 use crate::network::packets::ConnectedPacket;
 
@@ -28,12 +28,26 @@ pub struct SetScoreboardIdentity {
 
 impl ConnectedPacket for SetScoreboardIdentity {
     const ID: u32 = 0x70;
+
+    fn serialized_size(&self) -> usize {
+        1 + size_of_varint(self.entries.len() as u32) +
+        match self.action {
+            ScoreboardIdentityAction::Add => {
+                self.entries.iter().fold(
+                    0, |acc, e| acc + size_of_varint(e.entry_id) + size_of_varint(e.entity_unique_id)
+                )
+            }
+            ScoreboardIdentityAction::Clear => {
+                self.entries.iter().fold(
+                    0, |acc, e| acc + size_of_varint(e.entry_id)
+                )
+            }
+        }
+    }
 }
 
 impl Serialize for SetScoreboardIdentity {
-    fn serialize(&self) -> VResult<Bytes> {
-        let mut buffer = BytesMut::new();
-
+    fn serialize(&self, buffer: &mut BytesMut) {
         buffer.put_u8(self.action as u8);
         match self.action {
             ScoreboardIdentityAction::Add => {
@@ -50,7 +64,5 @@ impl Serialize for SetScoreboardIdentity {
                 }
             }
         }
-
-        Ok(buffer.freeze())
     }
 }

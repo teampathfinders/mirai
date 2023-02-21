@@ -1,6 +1,6 @@
 use std::num::NonZeroU64;
 
-use bytes::Bytes;
+use bytes::{Bytes, BytesMut};
 use common::{error, Serialize, VResult};
 
 use crate::network::{
@@ -28,9 +28,11 @@ impl BroadcastPacket {
         packet: T,
         sender: Option<NonZeroU64>,
     ) -> VResult<Self> {
+        let packet = Packet::new(packet);
+        
         Ok(Self {
             sender,
-            content: Packet::new(packet).serialize()?,
+            content: packet.serialize()
         })
     }
 }

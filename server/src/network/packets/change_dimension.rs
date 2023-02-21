@@ -20,16 +20,16 @@ pub struct ChangeDimension {
 
 impl ConnectedPacket for ChangeDimension {
     const ID: u32 = 0x3d;
+
+    fn serialized_size(&self) -> usize {
+        1 + 3 * 4 + 1
+    }
 }
 
 impl Serialize for ChangeDimension {
-    fn serialize(&self) -> VResult<Bytes> {
-        let mut buffer = BytesMut::with_capacity(1 + 3 * 4 + 1);
-
+    fn serialize(&self, buffer: &mut BytesMut) {
         buffer.put_var_i32(self.dimension as i32);
         buffer.put_vec3f(&self.position);
         buffer.put_bool(self.respawn);
-
-        Ok(buffer.freeze())
     }
 }

@@ -1,5 +1,5 @@
 use bytes::{BytesMut, Bytes};
-use common::{bail, ReadExtensions, VError, VResult, WriteExtensions, size_of_var};
+use common::{bail, ReadExtensions, VError, VResult, WriteExtensions, size_of_varint};
 
 use common::{Deserialize, Serialize};
 
@@ -36,18 +36,16 @@ pub struct CreditsUpdate {
 
 impl ConnectedPacket for CreditsUpdate {
     const ID: u32 = 0x4b;
+
+    fn serialized_size(&self) -> usize {
+        size_of_varint(self.runtime_id) + size_of_varint(self.status as i32)
+    }
 }
 
 impl Serialize for CreditsUpdate {
-    fn serialize(&self) -> VResult<Bytes> {
-        let mut buffer = BytesMut::with_capacity(
-            size_of_var(self.runtime_id) + size_of_var(self.status as i32)
-        );
-
+    fn serialize(&self, buffer: &mut BytesMut) {
         buffer.put_var_u64(self.runtime_id);
         buffer.put_var_i32(self.status as i32);
-
-        Ok(buffer.freeze())
     }
 }
 

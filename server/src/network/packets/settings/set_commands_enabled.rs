@@ -16,14 +16,14 @@ pub struct SetCommandsEnabled {
 
 impl ConnectedPacket for SetCommandsEnabled {
     const ID: u32 = 0x3b;
+
+    fn serialized_size(&self) -> usize {
+        1
+    }
 }
 
 impl Serialize for SetCommandsEnabled {
-    fn serialize(&self) -> VResult<Bytes> {
-        let mut buffer = BytesMut::with_capacity(1);
-
+    fn serialize(&self, buffer: &mut BytesMut) {
         buffer.put_bool(self.enabled);
-
-        Ok(buffer.freeze())
     }
 }

@@ -2,7 +2,7 @@ use bytes::Bytes;
 use bytes::{BufMut, BytesMut};
 
 use crate::network::packets::ConnectedPacket;
-use common::Serialize;
+use common::{Serialize, size_of_varint, VarString};
 use common::VResult;
 use common::WriteExtensions;
 
@@ -19,23 +19,22 @@ pub const DISCONNECTED_BAD_PACKET: &str = "Client sent bad packet.";
 #[derive(Debug, Clone)]
 pub struct Disconnect<'a> {
     /// Whether to immediately send the client to the main menu.
-    pub hide_disconnect_screen: bool,
+    pub hide_message: bool,
     /// Message to display to the client
-    pub kick_message: &'a str,
+    pub message: &'a str,
 }
 
 impl ConnectedPacket for Disconnect<'_> {
     const ID: u32 = 0x05;
+
+    fn serialized_size(&self) -> usize {
+        1 + self.message.var_len()
+    }
 }
 
 impl Serialize for Disconnect<'_> {
-    fn serialize(&self) -> VResult<Bytes> {
-        let mut buffer =
-            BytesMut::with_capacity(1 + 4 + self.kick_message.len());
-
-        buffer.put_bool(self.hide_disconnect_screen);
-        buffer.put_string(self.kick_message);
-
-        Ok(buffer.freeze())
+    fn serialize(&self, buffer: &mut BytesMut) {
+        buffer.put_bool(self.hide_message);
+        buffer.put_string(self.message);
     }
 }

@@ -1,6 +1,5 @@
 use bytes::{Bytes, BytesMut};
 
-use crate::network::packets::login::{OnlinePing, OnlinePong};
 use crate::network::raknet::packets::ConnectionRequest;
 use crate::network::raknet::packets::ConnectionRequestAccepted;
 use crate::network::raknet::packets::NewIncomingConnection;
@@ -10,6 +9,8 @@ use crate::network::session::Session;
 use common::VResult;
 use common::{Deserialize, Serialize};
 
+use super::packets::ConnectedPing;
+use super::packets::ConnectedPong;
 use super::{PacketConfig, SendPriority};
 
 impl Session {
@@ -19,10 +20,12 @@ impl Session {
         let reply = ConnectionRequestAccepted {
             client_address: self.raknet.address,
             request_time: request.time,
-        }
-        .serialize()?;
+        };
 
-        self.send_raw_buffer(reply);
+        let mut serialized = BytesMut::with_capacity(reply.serialized_size());
+        reply.serialize(&mut serialized);
+
+        self.send_raw_buffer(serialized.freeze());
         Ok(())
     }
 
@@ -34,15 +37,17 @@ impl Session {
 
     /// Handles an [`OnlinePing`] packet.
     pub fn handle_online_ping(&self, pk: Bytes) -> VResult<()> {
-        let ping = OnlinePing::deserialize(pk)?;
-        let pong = OnlinePong {
+        let ping = ConnectedPing::deserialize(pk)?;
+        let pong = ConnectedPong {
             ping_time: ping.time,
             pong_time: ping.time,
         };
 
-        let pong = pong.serialize()?;
+        let mut buffer = BytesMut::with_capacity(pong.serialized_size());
+        pong.serialize(&mut buffer);
+
         self.send_raw_buffer_with_config(
-            pong,
+            buffer.freeze(),
             PacketConfig {
                 reliability: Reliability::Unreliable,
                 priority: SendPriority::Low,

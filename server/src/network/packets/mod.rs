@@ -20,7 +20,6 @@ glob_export!(container_close);
 glob_export!(container_open);
 glob_export!(death_info);
 glob_export!(event);
-glob_export!(game_rules_changed);
 glob_export!(generic_level_event);
 glob_export!(interact);
 glob_export!(level_chunk);
@@ -30,7 +29,6 @@ glob_export!(move_player);
 glob_export!(network_chunk_publisher_update);
 glob_export!(packet);
 glob_export!(play_sound);
-glob_export!(play_status);
 glob_export!(player_list);
 glob_export!(request_ability);
 glob_export!(respawn);
@@ -50,7 +48,7 @@ glob_export!(update_fog_stack);
 glob_export!(violation_warning);
 
 /// ID of Minecraft game packets.
-pub const GAME_PACKET_ID: u8 = 0xfe;
+pub const CONNECTED_PACKET_ID: u8 = 0xfe;
 /// Semver version that this server supports.
 pub const CLIENT_VERSION_STRING: &str = "1.19.60";
 /// Protocol version that this server supports.

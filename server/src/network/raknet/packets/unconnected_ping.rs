@@ -9,7 +9,7 @@ use common::VResult;
 /// while the user is in Minecraft's server tab.
 /// An [`OfflinePong`](super::offline_pong::OfflinePong) packet should be sent in response.
 #[derive(Debug)]
-pub struct OfflinePing {
+pub struct UnconnectedPing {
     /// Time when this ping was sent.
     /// Used to measure server latency.
     pub time: u64,
@@ -20,12 +20,12 @@ pub struct OfflinePing {
     pub client_guid: u64,
 }
 
-impl OfflinePing {
+impl UnconnectedPing {
     /// Unique identifier of this packet.
     pub const ID: u8 = 0x01;
 }
 
-impl Deserialize for OfflinePing {
+impl Deserialize for UnconnectedPing {
     fn deserialize(mut buffer: Bytes) -> VResult<Self> {
         nvassert!(buffer.get_u8() == Self::ID);
 

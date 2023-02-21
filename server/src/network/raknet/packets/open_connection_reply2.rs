@@ -24,20 +24,26 @@ pub struct OpenConnectionReply2 {
 impl OpenConnectionReply2 {
     /// Unique identifier of the packet.
     pub const ID: u8 = 0x08;
+
+    pub fn serialized_size(&self) -> usize {
+        1 + 16
+            + if self.client_address.is_ipv4() {
+                1 + 4 + 2
+            } else {
+                1 + 2 + 2 + 4 + 16 + 4
+            }
+            + 2
+            + 1
+    }
 }
 
 impl Serialize for OpenConnectionReply2 {
-    fn serialize(&self) -> VResult<Bytes> {
-        let mut buffer =
-            BytesMut::with_capacity(1 + 16 + 8 + 1 + 16 + 2 + 2 + 1);
-
+    fn serialize(&self, buffer: &mut BytesMut) {
         buffer.put_u8(Self::ID);
         buffer.put(OFFLINE_MESSAGE_DATA);
         buffer.put_u64(self.server_guid);
         buffer.put_addr(self.client_address);
         buffer.put_u16(self.mtu);
         buffer.put_bool(false); // Encryption not enabled, must be false to continue login sequence
-
-        Ok(buffer.freeze())
     }
 }

@@ -34,17 +34,17 @@ pub struct CameraShake {
 
 impl ConnectedPacket for CameraShake {
     const ID: u32 = 0x9f;
+
+    fn serialized_size(&self) -> usize {
+        4 + 4 + 1 + 1
+    }
 }
 
 impl Serialize for CameraShake {
-    fn serialize(&self) -> VResult<Bytes> {
-        let mut buffer = BytesMut::with_capacity(4 + 4 + 1 + 1);
-
+    fn serialize(&self, buffer: &mut BytesMut) {
         buffer.put_f32_le(self.intensity);
         buffer.put_f32_le(self.duration);
         buffer.put_u8(self.shake_type as u8);
         buffer.put_u8(self.action as u8);
-
-        Ok(buffer.freeze())
     }
 }

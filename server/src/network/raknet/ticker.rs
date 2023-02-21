@@ -90,7 +90,11 @@ impl Session {
     }
 
     /// Signals to the session that it needs to close.
-    pub fn flag_for_close(&self) {
+    pub fn on_disconnect(&self) {
+        if !self.is_active() {
+            return
+        }
+
         self.initialized.store(false, Ordering::SeqCst);
 
         if let Ok(display_name) = self.get_display_name() {
@@ -121,7 +125,7 @@ impl Session {
         if Instant::now().duration_since(*self.raknet.last_update.read())
             > SESSION_TIMEOUT
         {
-            self.flag_for_close();
+            self.on_disconnect();
         }
 
         self.flush().await?;

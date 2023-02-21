@@ -7,26 +7,26 @@ use bytes::{Buf, Bytes};
 use common::{bail, ReadExtensions, VResult};
 use std::collections::HashMap;
 
-pub fn read_net(stream: &mut Bytes) -> VResult<Tag> {
-    let (name, value) = Value::decode_tag_net(stream)?;
+pub fn deserialize_net(stream: &mut Bytes) -> VResult<Tag> {
+    let (name, value) = Value::deserialize_tag_net(stream)?;
 
     Ok(Tag { name, value })
 }
 
 impl Value {
-    fn decode_tag_net(stream: &mut Bytes) -> VResult<(String, Self)> {
+    fn deserialize_tag_net(stream: &mut Bytes) -> VResult<(String, Self)> {
         let tag_type = stream.get_u8();
         if tag_type == TAG_END {
             return Ok((String::new(), Self::End));
         }
 
-        let name = Self::decode_tag_name_net(stream)?;
-        let value = Self::decode_tag_value_net(stream, tag_type)?;
+        let name = Self::deserialize_name_net(stream)?;
+        let value = Self::deserialize_value_net(stream, tag_type)?;
 
         Ok((name, value))
     }
 
-    fn decode_tag_name_net(stream: &mut Bytes) -> VResult<String> {
+    fn deserialize_name_net(stream: &mut Bytes) -> VResult<String> {
         let length = stream.get_var_u32()?;
         let cursor = stream.len() - stream.remaining();
 
@@ -40,7 +40,10 @@ impl Value {
         Ok(name)
     }
 
-    fn decode_tag_value_net(stream: &mut Bytes, tag_type: u8) -> VResult<Self> {
+    fn deserialize_value_net(
+        stream: &mut Bytes,
+        tag_type: u8,
+    ) -> VResult<Self> {
         Ok(match tag_type {
             TAG_END => Self::End,
             TAG_BYTE => {
@@ -86,7 +89,7 @@ impl Value {
 
                 let mut list = Vec::with_capacity(length as usize);
                 for _ in 0..length {
-                    list.push(Self::decode_tag_value_net(stream, list_type)?);
+                    list.push(Self::deserialize_value_net(stream, list_type)?);
                 }
 
                 Self::List(list)
@@ -96,7 +99,7 @@ impl Value {
                 let mut tag;
 
                 loop {
-                    tag = Self::decode_tag_net(stream)?;
+                    tag = Self::deserialize_tag_net(stream)?;
                     if tag.1 == Self::End {
                         break;
                     }

@@ -1,5 +1,6 @@
 use common::glob_export;
 
+glob_export!(game_rules_changed);
 glob_export!(set_commands_enabled);
 glob_export!(set_default_game_mode);
 glob_export!(set_difficulty);

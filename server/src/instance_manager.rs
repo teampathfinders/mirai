@@ -1,3 +1,4 @@
+use std::f32::consts::E;
 use std::net::{Ipv4Addr, Ipv6Addr, SocketAddrV4};
 use std::sync::Arc;
 use std::time::{Duration, SystemTime};
@@ -23,12 +24,12 @@ use crate::network::packets::{
     NETWORK_VERSION,
 };
 use crate::network::raknet::packets::IncompatibleProtocol;
-use crate::network::raknet::packets::OfflinePing;
-use crate::network::raknet::packets::OfflinePong;
 use crate::network::raknet::packets::OpenConnectionReply1;
 use crate::network::raknet::packets::OpenConnectionReply2;
 use crate::network::raknet::packets::OpenConnectionRequest1;
 use crate::network::raknet::packets::OpenConnectionRequest2;
+use crate::network::raknet::packets::UnconnectedPing;
+use crate::network::raknet::packets::UnconnectedPong;
 use crate::network::raknet::BufPacket;
 use crate::network::raknet::RAKNET_VERSION;
 use crate::network::session::SessionManager;
@@ -217,9 +218,13 @@ impl InstanceManager {
         server_guid: u64,
         metadata: &str,
     ) -> VResult<BufPacket> {
-        let ping = OfflinePing::deserialize(pk.buf)?;
-        pk.buf = OfflinePong { time: ping.time, server_guid, metadata }
-            .serialize()?;
+        let ping = UnconnectedPing::deserialize(pk.buf)?;
+        let pong = UnconnectedPong { time: ping.time, server_guid, metadata };
+
+        let mut serialized = BytesMut::with_capacity(pong.serialized_size());
+        pong.serialize(&mut serialized);
+
+        pk.buf = serialized.freeze();
 
         Ok(pk)
     }
@@ -232,13 +237,20 @@ impl InstanceManager {
     ) -> VResult<BufPacket> {
         let request = OpenConnectionRequest1::deserialize(pk.buf)?;
 
+        let mut serialized = BytesMut::new();
         if request.protocol_version != RAKNET_VERSION {
-            pk.buf = IncompatibleProtocol { server_guid }.serialize()?;
-            return Ok(pk);
+            let reply = IncompatibleProtocol { server_guid };
+
+            serialized.reserve(reply.serialized_size());
+            reply.serialize(&mut serialized);
+        } else {
+            let reply = OpenConnectionReply1 { mtu: request.mtu, server_guid };
+
+            serialized.reserve(reply.serialized_size());
+            reply.serialize(&mut serialized);
         }
 
-        pk.buf = OpenConnectionReply1 { mtu: request.mtu, server_guid }
-            .serialize()?;
+        pk.buf = serialized.freeze();
 
         Ok(pk)
     }
@@ -254,13 +266,16 @@ impl InstanceManager {
         server_guid: u64,
     ) -> VResult<BufPacket> {
         let request = OpenConnectionRequest2::deserialize(pk.buf)?;
-
-        pk.buf = OpenConnectionReply2 {
+        let reply = OpenConnectionReply2 {
             server_guid,
             mtu: request.mtu,
             client_address: pk.addr,
-        }
-        .serialize()?;
+        };
+
+        let mut serialized = BytesMut::with_capacity(reply.serialized_size());
+        reply.serialize(&mut serialized);
+
+        pk.buf = serialized.freeze();
 
         sess_manager.add_session(
             udp_socket,
@@ -324,7 +339,7 @@ impl InstanceManager {
                     };
 
                     let pk_result = match id {
-                        OfflinePing::ID => Self::process_unconnected_ping(
+                        UnconnectedPing::ID => Self::process_unconnected_ping(
                             pk,
                             server_guid,
                             &metadata,

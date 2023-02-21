@@ -5,7 +5,7 @@ use bytes::{BufMut, BytesMut};
 use nbt::Value;
 
 use crate::network::packets::ConnectedPacket;
-use common::Serialize;
+use common::{Serialize, VarInt};
 use common::VResult;
 use common::WriteExtensions;
 
@@ -33,7 +33,28 @@ pub struct ItemStack {
 }
 
 impl ItemStack {
-    pub fn encode(&self, buffer: &mut BytesMut) {
+    pub fn serialized_size(&self) -> usize {
+        self.item_type.network_id.var_len() +
+        if self.item_type.network_id != 0 {
+            2 +
+            self.item_type.metadata.var_len() +
+            self.runtime_id.var_len() +
+            2 +
+            if let Value::Compound(ref map) = self.nbt_data {
+                if !map.is_empty() {
+                    1 + self.nbt_data.serialized_net_size("")
+                } else {
+                    0
+                }
+            } else {
+                0
+            }
+        } else {
+            0
+        }
+    }
+
+    pub fn serialize(&self, buffer: &mut BytesMut) {
         buffer.put_var_u32(self.item_type.network_id);
         if self.item_type.network_id == 0 {
             // Air has no data.
@@ -51,8 +72,8 @@ impl ItemStack {
             } else {
                 buffer.put_i16(-1); // Length
                 buffer.put_u8(1); // Version
-                nbt::RefTag { name: "", value: &self.nbt_data }
-                    .write_le(buffer);
+
+                nbt::serialize_net("", &self.nbt_data, buffer);
             }
         } else {
             todo!()
@@ -81,17 +102,18 @@ pub struct CreativeContent<'a> {
 
 impl ConnectedPacket for CreativeContent<'_> {
     const ID: u32 = 0x91;
+
+    fn serialized_size(&self) -> usize {
+        (self.items.len() as u32).var_len() +
+        self.items.iter().fold(0, |acc, s| acc + s.serialized_size())
+    }
 }
 
 impl Serialize for CreativeContent<'_> {
-    fn serialize(&self) -> VResult<Bytes> {
-        let mut buffer = BytesMut::new();
-
+    fn serialize(&self, buffer: &mut BytesMut) {
         buffer.put_var_u32(self.items.len() as u32);
         for item in self.items {
-            item.encode(&mut buffer);
+            item.serialize(buffer);
         }
-
-        Ok(buffer.freeze())
     }
 }

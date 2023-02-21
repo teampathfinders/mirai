@@ -1,5 +1,5 @@
 use bytes::{BytesMut, BufMut, Bytes};
-use common::{Serialize, VResult, WriteExtensions};
+use common::{Serialize, VResult, WriteExtensions, size_of_varint};
 use uuid::Uuid;
 use crate::network::packets::login::DeviceOS;
 use crate::network::Skin;
@@ -39,9 +39,7 @@ impl ConnectedPacket for PlayerListAdd<'_> {
 }
 
 impl Serialize for PlayerListAdd<'_> {
-    fn serialize(&self) -> VResult<Bytes> {
-        let mut buffer = BytesMut::new();
-
+    fn serialize(&self, buffer: &mut BytesMut) {
         buffer.put_u8(0); // Add player.
         buffer.put_var_u32(self.entries.len() as u32);
         for entry in self.entries {
@@ -52,7 +50,7 @@ impl Serialize for PlayerListAdd<'_> {
             buffer.put_string(&entry.xuid.to_string());
             buffer.put_string(""); // Platform chat ID.
             buffer.put_i32_le(entry.device_os as i32);
-            entry.skin.serialize(&mut buffer);
+            entry.skin.serialize(buffer);
             buffer.put_bool(false); // Player is not a teacher.
             buffer.put_bool(entry.host);
         }
@@ -60,8 +58,6 @@ impl Serialize for PlayerListAdd<'_> {
         for entry in self.entries {
             buffer.put_bool(entry.skin.is_trusted);
         }
-
-        Ok(buffer.freeze())
     }
 }
 
@@ -73,18 +69,18 @@ pub struct PlayerListRemove<'a> {
 
 impl ConnectedPacket for PlayerListRemove<'_> {
     const ID: u32 = 0x3f;
+
+    fn serialized_size(&self) -> usize {
+        1 + size_of_varint(self.entries.len() as u32) + 16 * self.entries.len()
+    }
 }
 
 impl Serialize for PlayerListRemove<'_> {
-    fn serialize(&self) -> VResult<Bytes> {
-        let mut buffer = BytesMut::with_capacity(2 + self.entries.len() * 16);
-
+    fn serialize(&self, buffer: &mut BytesMut) {
         buffer.put_u8(1); // Remove player.
         buffer.put_var_u32(self.entries.len() as u32);
         for entry in self.entries {
             buffer.put_uuid(entry);
         }
-
-        Ok(buffer.freeze())
     }
 }

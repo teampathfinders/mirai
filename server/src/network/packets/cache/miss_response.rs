@@ -10,19 +10,17 @@ pub struct CacheMissResponse<'a> {
 
 impl ConnectedPacket for CacheMissResponse<'_> {
     const ID: u32 = 0x88;
+
+    fn serialized_size(&self) -> usize {
+        1 + self.blobs.iter().fold(0, |acc, blob| acc + blob.len())
+    }
 }
 
 impl Serialize for CacheMissResponse<'_> {
-    fn serialize(&self) -> VResult<Bytes> {
-        let mut buffer = BytesMut::with_capacity(
-            1 + self.blobs.iter().fold(0, |acc, blob| acc + blob.len())
-        );
-
+    fn serialize(&self, buffer: &mut BytesMut) {
         buffer.put_var_u32(self.blobs.len() as u32);
         for blob in self.blobs {
-            blob.encode(&mut buffer);
+            blob.serialize(buffer);
         }
-
-        Ok(buffer.freeze())
     }
 }

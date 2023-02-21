@@ -38,7 +38,7 @@ impl ConnectedPacket for LevelChunk {
 }
 
 impl Serialize for LevelChunk {
-    fn serialize(&self) -> VResult<Bytes> {
+    fn serialize(&self, buffer: &mut BytesMut) {
         let mut buffer = BytesMut::new();
 
         buffer.put_vec2i(&self.position);
@@ -64,7 +64,5 @@ impl Serialize for LevelChunk {
         }
 
         buffer.put(self.raw_payload.as_ref());
-
-        Ok(buffer.freeze())
     }
 }

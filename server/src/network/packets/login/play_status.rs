@@ -39,14 +39,14 @@ pub struct PlayStatus {
 
 impl ConnectedPacket for PlayStatus {
     const ID: u32 = 0x02;
+
+    fn serialized_size(&self) -> usize {
+        4
+    }
 }
 
 impl Serialize for PlayStatus {
-    fn serialize(&self) -> VResult<Bytes> {
-        let mut buffer = BytesMut::with_capacity(4);
-
+    fn serialize(&self, buffer: &mut BytesMut) {
         buffer.put_u32(self.status as u32);
-
-        Ok(buffer.freeze())
     }
 }

@@ -3,6 +3,13 @@ use common::{bail, BlockPosition, Deserialize, Serialize, VResult, Vector3b};
 
 const CHUNK_SIZE: usize = 4096;
 
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+pub enum SubChunkVersion {
+    Legacy = 1,
+    Limited = 8,
+    Limitless = 9,
+}
+
 #[inline]
 fn u32_ceil_div(lhs: u32, rhs: u32) -> u32 {
     (lhs + rhs - 1) / rhs
@@ -62,7 +69,7 @@ impl StorageRecord {
 
         let mut palette = Vec::with_capacity(palette_size as usize);
         for _ in 0..palette_size {
-            let properties = nbt::read_le(buffer)?.value;
+            let properties = nbt::deserialize_le(buffer)?.value;
             palette.push(properties);
         }
 
@@ -115,7 +122,7 @@ impl StorageRecord {
 
         buffer.put_u32_le(self.palette.len() as u32);
         for entry in &self.palette {
-            nbt::write_le("", entry, buffer);
+            nbt::serialize_le("", entry, buffer);
         }
     }
 }
@@ -139,7 +146,7 @@ fn offset_to_pos(offset: usize) -> Vector3b {
 pub struct SubChunk {
     /// Version of the chunk.
     /// This version affects the format of the chunk.
-    version: u8,
+    version: SubChunkVersion,
     /// Chunk index.
     index: u8,
     /// Layers of this chunk.
@@ -175,6 +182,12 @@ impl Deserialize for SubChunk {
                         .push(StorageRecord::deserialize(&mut buffer)?);
                 }
 
+                let version = if version == 8 {
+                    SubChunkVersion::Limited
+                } else {
+                    SubChunkVersion::Limitless
+                };
+
                 Ok(Self { version, index, storage_records })
             }
             _ => bail!(InvalidChunk, "Invalid chunk version {version}"),
@@ -183,26 +196,21 @@ impl Deserialize for SubChunk {
 }
 
 impl Serialize for SubChunk {
-    fn serialize(&self) -> VResult<Bytes> {
-        let mut buffer = BytesMut::new();
-
-        buffer.put_u8(self.version);
+    fn serialize(&self, buffer: &mut BytesMut) {
+        buffer.put_u8(self.version as u8);
         match self.version {
-            1 => todo!(),
-            8 | 9 => {
+            SubChunkVersion::Legacy => todo!(),
+            _ => {
                 buffer.put_u8(self.storage_records.len() as u8);
 
-                if self.version == 9 {
+                if self.version == SubChunkVersion::Limitless {
                     buffer.put_u8(self.index);
                 }
 
                 for storage_record in &self.storage_records {
-                    storage_record.serialize(&mut buffer);
+                    storage_record.serialize(buffer);
                 }
             }
-            _ => bail!(InvalidChunk, "Invalid chunk version {}", self.version),
         }
-
-        Ok(buffer.freeze())
     }
 }

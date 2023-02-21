@@ -9,7 +9,7 @@ use flate2::Compression;
 use crate::config::SERVER_CONFIG;
 use crate::network::header::Header;
 use crate::network::packets::login::CompressionAlgorithm;
-use crate::network::packets::{ConnectedPacket, Packet, GAME_PACKET_ID};
+use crate::network::packets::{ConnectedPacket, Packet, CONNECTED_PACKET_ID};
 use crate::network::raknet::packets::{Ack, AckRecord};
 use crate::network::raknet::Reliability;
 use crate::network::raknet::{Frame, FrameBatch};
@@ -36,7 +36,9 @@ impl Session {
     #[inline]
     pub fn send<T: ConnectedPacket + Serialize>(&self, pk: T) -> VResult<()> {
         let pk = Packet::new(pk);
-        self.send_serialized(pk.serialize()?, DEFAULT_SEND_CONFIG)
+        let mut serialized = pk.serialize();
+
+        self.send_serialized(serialized, DEFAULT_SEND_CONFIG)
     }
 
     /// Sends a game packet with custom reliability and priority
@@ -46,7 +48,7 @@ impl Session {
         config: PacketConfig,
     ) -> VResult<()> {
         let mut buffer = BytesMut::new();
-        buffer.put_u8(GAME_PACKET_ID);
+        buffer.put_u8(CONNECTED_PACKET_ID);
 
         if self.raknet.compression_enabled.load(Ordering::SeqCst) {
             let (algorithm, threshold) = {
@@ -77,7 +79,7 @@ impl Session {
         if let Some(encryptor) = self.encryptor.get() {
             pk = encryptor.encrypt(pk)?;
         }
-
+        
         buffer.put(pk);
 
         self.send_raw_buffer_with_config(buffer.freeze(), config);
@@ -185,10 +187,13 @@ impl Session {
             }
         }
 
-        let ack = Ack { records }.serialize()?;
+        let ack = Ack { records };
+        let mut serialized = BytesMut::with_capacity(ack.serialized_size());
+        ack.serialize(&mut serialized);
+
         self.raknet
             .udp_socket
-            .send_to(&ack, self.raknet.address)
+            .send_to(serialized.as_ref(), self.raknet.address)
             .await?;
 
         Ok(())
@@ -196,6 +201,8 @@ impl Session {
 
     #[async_recursion]
     async fn send_raw_frames(&self, frames: Vec<Frame>) -> VResult<()> {
+        let mut serialized = BytesMut::new();
+
         // Process fragments first to prevent sequence number duplication.
         for frame in &frames {
             let frame_size = frame.body.len() + std::mem::size_of::<Frame>();
@@ -215,6 +222,7 @@ impl Session {
                 .raknet
                 .batch_sequence_number
                 .fetch_add(1, Ordering::SeqCst),
+
             frames: vec![],
         };
 
@@ -248,12 +256,13 @@ impl Session {
                     self.raknet.recovery_queue.insert(batch.clone());
                 }
 
-                let encoded = batch.serialize()?;
+                serialized.clear();
+                batch.serialize(&mut serialized);
 
                 // TODO: Add IPv6 support
                 self.raknet
                     .udp_socket
-                    .send_to(&encoded, self.raknet.address)
+                    .send_to(serialized.as_ref(), self.raknet.address)
                     .await?;
 
                 has_reliable_packet = false;
@@ -272,12 +281,14 @@ impl Session {
             if has_reliable_packet {
                 self.raknet.recovery_queue.insert(batch.clone());
             }
-            let encoded = batch.serialize()?;
+
+            serialized.clear();
+            batch.serialize(&mut serialized);
 
             // TODO: Add IPv6 support
             self.raknet
                 .udp_socket
-                .send_to(&encoded, self.raknet.address)
+                .send_to(serialized.as_ref(), self.raknet.address)
                 .await?;
         } else {
             self.raknet
@@ -307,6 +318,7 @@ impl Session {
 
         let compound_id =
             self.raknet.compound_id.fetch_add(1, Ordering::SeqCst);
+
         for (i, chunk) in chunks.enumerate() {
             let mut fragment = Frame {
                 reliability: frame.reliability,

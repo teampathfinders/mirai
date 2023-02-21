@@ -22,14 +22,14 @@ pub struct ConnectionRequestAccepted {
 impl ConnectionRequestAccepted {
     /// Unique ID of this packet.
     pub const ID: u8 = 0x10;
+
+    pub fn serialized_size(&self) -> usize {
+        1 + IPV6_MEM_SIZE + 2 + 10 * IPV4_MEM_SIZE + 8 + 8
+    }
 }
 
 impl Serialize for ConnectionRequestAccepted {
-    fn serialize(&self) -> VResult<Bytes> {
-        let mut buffer = BytesMut::with_capacity(
-            1 + IPV6_MEM_SIZE + 2 + 10 * IPV4_MEM_SIZE + 8 + 8,
-        );
-
+    fn serialize(&self, buffer: &mut BytesMut) {
         buffer.put_u8(Self::ID);
         buffer.put_addr(self.client_address);
         buffer.put_i16(0); // System index
@@ -39,7 +39,5 @@ impl Serialize for ConnectionRequestAccepted {
         }
         buffer.put_i64(self.request_time);
         buffer.put_i64(self.request_time); // Response time
-
-        Ok(buffer.freeze())
     }
 }

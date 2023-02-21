@@ -8,7 +8,7 @@ use common::WriteExtensions;
 
 /// Response to [`OfflinePing`](super::offline_ping::OfflinePing).
 #[derive(Debug)]
-pub struct OfflinePong<'a> {
+pub struct UnconnectedPong<'a> {
     /// Timestamp of when the ping was sent.
     /// This should be given the same value as [`OfflinePing::time`](super::offline_ping::OfflinePing::time).
     pub time: u64,
@@ -20,22 +20,21 @@ pub struct OfflinePong<'a> {
     pub metadata: &'a str,
 }
 
-impl OfflinePong<'_> {
+impl UnconnectedPong<'_> {
     /// Unique identifier of this packet.
     pub const ID: u8 = 0x1c;
+
+    pub fn serialized_size(&self) -> usize {
+        1 + 8 + 8 + 16 + 2 + self.metadata.len()
+    }
 }
 
-impl Serialize for OfflinePong<'_> {
-    fn serialize(&self) -> VResult<Bytes> {
-        let mut buffer =
-            BytesMut::with_capacity(1 + 8 + 8 + 16 + 2 + self.metadata.len());
-
+impl Serialize for UnconnectedPong<'_> {
+    fn serialize(&self, buffer: &mut BytesMut) {
         buffer.put_u8(Self::ID);
         buffer.put_u64(self.time);
         buffer.put_u64(self.server_guid);
         buffer.put(OFFLINE_MESSAGE_DATA);
         buffer.put_raknet_string(self.metadata);
-
-        Ok(buffer.freeze())
     }
 }

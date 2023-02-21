@@ -18,24 +18,24 @@ pub struct TickSync {
 
 impl ConnectedPacket for TickSync {
     const ID: u32 = 0x17;
+
+    fn serialized_size(&self) -> usize {
+        8
+    }
 }
 
 impl Deserialize for TickSync {
     fn deserialize(mut buffer: Bytes) -> VResult<Self> {
-        let request = buffer.get_u64();
-        let response = buffer.get_u64();
+        let request = buffer.get_u64_le();
+        let response = buffer.get_u64_le();
 
         Ok(Self { request, response })
     }
 }
 
 impl Serialize for TickSync {
-    fn serialize(&self) -> VResult<Bytes> {
-        let mut buffer = BytesMut::with_capacity(16);
-
-        buffer.put_u64(self.request);
-        buffer.put_u64(self.response);
-
-        Ok(buffer.freeze())
+    fn serialize(&self, buffer: &mut BytesMut) {
+        buffer.put_u64_le(self.request);
+        buffer.put_u64_le(self.response);
     }
 }

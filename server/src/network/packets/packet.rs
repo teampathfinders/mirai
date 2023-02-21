@@ -5,7 +5,7 @@ use bytes::{Buf, BufMut, BytesMut};
 
 use crate::network::header::Header;
 use crate::network::packets::ConnectedPacket;
-use common::nvassert;
+use common::{nvassert, VarInt};
 use common::Serialize;
 use common::VResult;
 use common::{ReadExtensions, WriteExtensions};
@@ -19,7 +19,7 @@ pub struct Packet<T: ConnectedPacket> {
     content: T,
 }
 
-impl<T: ConnectedPacket> Packet<T> {
+impl<T: ConnectedPacket + Serialize> Packet<T> {
     /// Creates a new packet.
     pub const fn new(pk: T) -> Self {
         Self {
@@ -38,19 +38,26 @@ impl<T: ConnectedPacket> Packet<T> {
         self.header.sender_subclient = sender;
         self
     }
-}
 
-impl<T: ConnectedPacket + Serialize> Serialize for Packet<T> {
-    fn serialize(&self) -> VResult<Bytes> {
-        let mut buffer = BytesMut::new();
-        let header = self.header.serialize();
-        let body = self.content.serialize()?;
+    pub fn serialized_size(&self) -> usize {
+        self.header.serialized_size() + self.content.serialized_size()
+    }
 
-        buffer.put_var_u32(header.len() as u32 + body.len() as u32);
+    pub fn serialize(&self) -> Bytes {
+        let expected_size = self.header.serialized_size() + self.content.serialized_size();
+        let capacity = 5 + expected_size;
 
-        buffer.put(header);
-        buffer.put(body);
+        let mut buffer = BytesMut::with_capacity(capacity);
 
-        Ok(buffer.freeze())
+        let mut rest = BytesMut::with_capacity(expected_size);
+        self.header.serialize(&mut rest);
+        self.content.serialize(&mut rest);
+
+        // debug_assert_eq!(rest.len(), expected_size, "While serializing {:x}", self.header.id);
+
+        buffer.put_var_u32(rest.len() as u32);
+        buffer.extend(rest);
+
+        buffer.freeze()
     }
 }

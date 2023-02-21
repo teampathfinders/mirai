@@ -11,19 +11,19 @@ pub struct UpdateSkin {
 
 impl ConnectedPacket for UpdateSkin {
     const ID: u32 = 0x5d;
+
+    fn serialized_size(&self) -> usize {
+        todo!();
+    }
 }
 
 impl Serialize for UpdateSkin {
-    fn serialize(&self) -> VResult<Bytes> {
-        let mut buffer = BytesMut::new();
-
+    fn serialize(&self, buffer: &mut BytesMut) {
         buffer.put_u128_le(self.uuid.as_u128());
-        self.skin.serialize(&mut buffer);
+        self.skin.serialize(buffer);
         buffer.put_string(""); // Old skin name. Unused
         buffer.put_string(""); // New skin name. Unused
         buffer.put_bool(self.skin.is_trusted);
-
-        Ok(buffer.freeze())
     }
 }
 

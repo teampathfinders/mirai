@@ -1,5 +1,5 @@
 use bytes::{BufMut, BytesMut, Bytes};
-use common::{Serialize, VResult, Vector3f, Vector4f, WriteExtensions};
+use common::{Serialize, VResult, Vector3f, Vector4f, WriteExtensions, size_of_varint};
 
 use super::ConnectedPacket;
 
@@ -26,12 +26,19 @@ pub struct ClientBoundDebugRenderer<'a> {
 
 impl ConnectedPacket for ClientBoundDebugRenderer<'_> {
     const ID: u32 = 0xa4;
+
+    fn serialized_size(&self) -> usize {
+        4 + if self.action == DebugRendererAction::AddCube {
+            size_of_varint(self.text.len() as u32) + self.text.len() +
+            3 * 4 + 4 * 4 + 8
+        } else {
+            0
+        }
+    }
 }
 
 impl Serialize for ClientBoundDebugRenderer<'_> {
-    fn serialize(&self) -> VResult<Bytes> {
-        let mut buffer = BytesMut::new();
-
+    fn serialize(&self, buffer: &mut BytesMut) {
         buffer.put_i32_le(self.action as i32);
         if self.action == DebugRendererAction::AddCube {
             buffer.put_string(self.text);
@@ -39,7 +46,5 @@ impl Serialize for ClientBoundDebugRenderer<'_> {
             buffer.put_vec4f(&self.color);
             buffer.put_i64_le(self.duration);
         }
-
-        Ok(buffer.freeze())
     }
 }

@@ -25,11 +25,18 @@ impl Session {
         let frame_batches = self.raknet.recovery_queue.recover(&nack.records);
         tracing::info!("Recovered packets: {:?}", nack.records);
 
+        let mut serialized = BytesMut::new();
         for frame_batch in frame_batches {
+            frame_batch.serialize(&mut serialized);            
+
             self.raknet
                 .udp_socket
-                .send_to(frame_batch.serialize()?.as_ref(), self.raknet.address)
+                .send_to(
+                    serialized.as_ref(), self.raknet.address
+                )
                 .await?;
+
+            serialized.clear();
         }
 
         Ok(())

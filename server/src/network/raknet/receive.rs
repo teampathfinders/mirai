@@ -11,12 +11,12 @@ use crate::network::packets::cache::CacheStatus;
 use crate::network::packets::command::{CommandRequest, SettingsCommand};
 use crate::network::packets::login::{
     ChunkRadiusRequest, ClientToServerHandshake, CompressionAlgorithm, Login,
-    OnlinePing, RequestNetworkSettings, ResourcePackClientResponse,
+    RequestNetworkSettings, ResourcePackClientResponse,
 };
 use crate::network::packets::{
     Animate, ConnectedPacket, Interact, MovePlayer, RequestAbility,
     SetLocalPlayerAsInitialized, TextMessage, UpdateSkin, ViolationWarning,
-    GAME_PACKET_ID,
+    CONNECTED_PACKET_ID,
 };
 use crate::network::raknet::packets::{
     Ack, ConnectionRequest, DisconnectNotification, Nak, NewIncomingConnection,
@@ -27,6 +27,7 @@ use common::{bail, nvassert, ReadExtensions, VResult};
 use common::{Deserialize, Serialize};
 
 use super::DEFAULT_SEND_CONFIG;
+use super::packets::ConnectedPing;
 
 impl Session {
     /// Processes the raw packet coming directly from the network.
@@ -139,13 +140,13 @@ impl Session {
 
         let packet_id = *pk.first().expect("Game packet buffer was empty");
         match packet_id {
-            GAME_PACKET_ID => self.handle_game_packet(pk).await?,
-            DisconnectNotification::ID => self.flag_for_close(),
+            CONNECTED_PACKET_ID => self.handle_game_packet(pk).await?,
+            DisconnectNotification::ID => self.on_disconnect(),
             ConnectionRequest::ID => self.handle_connection_request(pk)?,
             NewIncomingConnection::ID => {
                 self.handle_new_incoming_connection(pk)?
             }
-            OnlinePing::ID => self.handle_online_ping(pk)?,
+            ConnectedPing::ID => self.handle_online_ping(pk)?,
             id => bail!(BadPacket, "Invalid Raknet packet ID: {}", id),
         }
 
