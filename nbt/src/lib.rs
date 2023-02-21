@@ -67,11 +67,12 @@ impl Value {
             Self::String(s) => (s.len() as u32).var_len() + s.len(),
             Self::List(v) => {
                 (v.len() as u32).var_len()
-                    + v.iter().fold(0, |acc, x| acc + x.serialized_value_net_size())
+                    + v.iter()
+                        .fold(0, |acc, x| acc + x.serialized_value_net_size())
             }
-            Self::Compound(c) => c.iter().fold(0, |acc, kv| {
-                acc + kv.1.serialized_net_size(&kv.0)
-            }),
+            Self::Compound(c) => c
+                .iter()
+                .fold(0, |acc, kv| acc + kv.1.serialized_net_size(&kv.0)),
             Self::ByteArray(v) => (v.len() as u32).var_len() + v.len(),
             Self::IntArray(v) => (v.len() as u32).var_len() + 4 * v.len(),
             Self::LongArray(v) => (v.len() as u32).var_len() + 8 * v.len(),

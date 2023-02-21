@@ -25,14 +25,12 @@ impl ConnectedPacket for AvailableCommands<'_> {
     const ID: u32 = 0x4c;
 
     fn serialized_size(&self) -> usize {
-        727
+        0
     }
 }
 
 impl Serialize for AvailableCommands<'_> {
     fn serialize(&self, buffer: &mut BytesMut) {
-        tracing::info!("buf: {:x?}", buffer.as_ref());
-
         let mut value_indices = HashMap::new();
         let mut values = Vec::new();
         for command in self.commands {

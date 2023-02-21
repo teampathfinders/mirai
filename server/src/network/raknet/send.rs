@@ -34,11 +34,9 @@ impl Session {
     /// Sends a game packet with default settings
     /// (reliable ordered and medium priority)
     #[inline]
-    pub fn send<T: ConnectedPacket + Serialize + std::fmt::Debug>(&self, pk: T) -> VResult<()> {
+    pub fn send<T: ConnectedPacket + Serialize>(&self, pk: T) -> VResult<()> {
         let pk = Packet::new(pk);
         let mut serialized = pk.serialize();
-
-        tracing::debug!("Sending {pk:?}");
 
         self.send_serialized(serialized, DEFAULT_SEND_CONFIG)
     }
@@ -203,6 +201,8 @@ impl Session {
 
     #[async_recursion]
     async fn send_raw_frames(&self, frames: Vec<Frame>) -> VResult<()> {
+        let mut serialized = BytesMut::new();
+
         // Process fragments first to prevent sequence number duplication.
         for frame in &frames {
             let frame_size = frame.body.len() + std::mem::size_of::<Frame>();
@@ -256,7 +256,7 @@ impl Session {
                     self.raknet.recovery_queue.insert(batch.clone());
                 }
 
-                let mut serialized = BytesMut::new();
+                serialized.clear();
                 batch.serialize(&mut serialized);
 
                 // TODO: Add IPv6 support
@@ -265,15 +265,13 @@ impl Session {
                     .send_to(serialized.as_ref(), self.raknet.address)
                     .await?;
 
-                serialized.clear();
-
                 has_reliable_packet = false;
                 batch = FrameBatch {
                     sequence_number: self
                         .raknet
                         .batch_sequence_number
                         .fetch_add(1, Ordering::SeqCst),
-                    frames: vec![],
+                    frames: vec![frame],
                 };
             }
         }
@@ -284,7 +282,7 @@ impl Session {
                 self.raknet.recovery_queue.insert(batch.clone());
             }
 
-            let mut serialized = BytesMut::new();
+            serialized.clear();
             batch.serialize(&mut serialized);
 
             // TODO: Add IPv6 support
@@ -292,8 +290,6 @@ impl Session {
                 .udp_socket
                 .send_to(serialized.as_ref(), self.raknet.address)
                 .await?;
-
-            serialized.clear();
         } else {
             self.raknet
                 .batch_sequence_number
@@ -322,6 +318,7 @@ impl Session {
 
         let compound_id =
             self.raknet.compound_id.fetch_add(1, Ordering::SeqCst);
+
         for (i, chunk) in chunks.enumerate() {
             let mut fragment = Frame {
                 reliability: frame.reliability,

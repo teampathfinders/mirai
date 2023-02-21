@@ -58,8 +58,6 @@ impl<T: ConnectedPacket + Serialize> Packet<T> {
         buffer.put_var_u32(rest.len() as u32);
         buffer.extend(rest);
 
-        tracing::info!("{:x?}", buffer.as_ref());
-
         buffer.freeze()
     }
 }
