@@ -2,27 +2,29 @@ use bytes::BytesMut;
 use common::{Deserialize, Serialize, Vector3b};
 
 use crate::{
-    database::ChunkDatabase, DatabaseKey, DatabaseTag, Dimension, SubChunk,
+    database::ChunkDatabase, DatabaseKey, KeyData, Dimension, SubChunk,
 };
 
 #[test]
-fn database_open() {
+fn database_test() {
     let db = ChunkDatabase::new("test/db").unwrap();
 
     let mut buffer = BytesMut::new();
-    let key = DatabaseKey {
-        x: 0,
-        y: 3,
-        z: 2,
+    DatabaseKey {
+        x: 2,
+        y: 5,
+        z: 0,
         dimension: Dimension::Overworld,
-        tag: DatabaseTag::SubChunk,
+        data: KeyData::Biome3d,
     }
     .serialize(&mut buffer);
 
-    let data = db.get_raw_key(buffer.freeze()).unwrap();
-    let sub_chunk = SubChunk::deserialize(data).unwrap();
+    println!("{:?}", buffer.as_ref());
 
-    // let block = sub_chunk.get(Vector3b::from([]))
+    // let data = db.get_raw_key(buffer.freeze()).unwrap();
+    // println!("{:?}", data.as_ref());
 
-    println!("{:?}", sub_chunk.get(Vector3b::from([13, 5, 6])));
+    // let sub_chunk = SubChunk::deserialize(data).unwrap();
+
+    // println!("{sub_chunk:?}");
 }

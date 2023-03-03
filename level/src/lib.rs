@@ -5,6 +5,7 @@ mod database;
 mod ffi;
 mod sub_chunk;
 mod world;
+mod biome;
 
 use std::{sync::Arc, time::Duration};
 

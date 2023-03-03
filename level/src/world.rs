@@ -5,13 +5,16 @@ use common::{Serialize, VResult};
 ///
 /// Data from [`Minecraft fandom`](https://minecraft.fandom.com/wiki/Bedrock_Edition_level_format#Chunk_key_format).
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
-pub enum DatabaseTag {
+#[repr(u8)]
+pub enum KeyData {
     /// 3D biome map.
     Biome3d = 0x2b,
     /// Version of the specified chunk.
     ChunkVersion = 0x2c,
     /// Sub chunk data.
-    SubChunk = 0x2f,
+    SubChunk {
+        index: i8
+    } = 0x2f,
     /// A block entity.
     BlockEntity = 0x31,
     /// An entity.
@@ -30,6 +33,15 @@ pub enum DatabaseTag {
     RandomTicks = 0x3a,
 }
 
+impl KeyData {
+    pub fn discriminant(&self) -> u8 {
+        // SAFETY: KeyData is marked as `repr(u8)` and therefore its layout is a
+        // `repr(C)` union of `repr(C)` structs, each of which has the `u8` discriminant as its first
+        // field. Hence, we can read the discriminant without offsetting the pointer.
+        unsafe { *<*const _>::from(self).cast::<u8>() }
+    }
+}
+
 #[derive(Debug, Clone)]
 pub struct DatabaseKey {
     /// X coordinate of the chunk.
@@ -42,7 +54,7 @@ pub struct DatabaseKey {
     /// Dimension of the chunk.
     pub dimension: Dimension,
     /// The tag of the data to load.
-    pub tag: DatabaseTag,
+    pub data: KeyData,
 }
 
 impl DatabaseKey {
@@ -54,7 +66,7 @@ impl DatabaseKey {
                 0
             }
             + 1
-            + if self.tag == DatabaseTag::SubChunk {
+            + if let KeyData::SubChunk { .. } = self.data {
                 1
             } else {
                 0
@@ -71,9 +83,9 @@ impl Serialize for DatabaseKey {
             buffer.put_i32_le(self.dimension as i32);
         }
 
-        buffer.put_u8(self.tag as u8);
-        if self.tag == DatabaseTag::SubChunk {
-            buffer.put_i8(self.y);
+        buffer.put_u8(self.data.discriminant());
+        if let KeyData::SubChunk { index } = self.data {
+            buffer.put_i8(index);
         }
     }
 }
