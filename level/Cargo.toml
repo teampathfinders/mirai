@@ -10,7 +10,7 @@ build = "build.rs"
 bytes = "1.4.0"
 common = { path = "../common" }
 nbt = { path = "../nbt" }
-tokio = { version = "1.25.0", features = ["rt", "time"] }
+tokio = { version = "1.26.0", features = ["rt", "time"] }
 tokio-util = "0.7.7"
 tracing = "0.1.37"
 
