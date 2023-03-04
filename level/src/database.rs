@@ -169,15 +169,17 @@ impl RawDatabase {
         };
 
         if result.is_success == 1 {
+            dbg!(result.size); 
+
             let data = unsafe {
                 std::slice::from_raw_parts(
                     result.data as *mut u8,
                     result.size as usize,
                 )
             };
-
-            let buffer = Bytes::from(data);
-
+            // println!("data = {:?}", &data[..15]);
+            
+            let buffer = Bytes::copy_from_slice(data);
             unsafe {
                 // SAFETY: Data is safe to deallocate because BytesMut copies the data.
                 // and it is not used anywhere else.
