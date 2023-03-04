@@ -136,3 +136,20 @@ LevelResult level_get_key(void* database_ptr, const char* key, int key_size) {
 void level_deallocate_array(char* array) {
     delete[] array;
 }
+
+LevelResult level_iter(void* database) {
+    auto db = reinterpret_cast<Database*>(database);
+    leveldb::Iterator* iter = db->database->NewIterator(db->read_options);
+
+    LevelResult result{};
+    result.is_success = true;
+    result.size = static_cast<int>(sizeof(leveldb::Iterator));
+    result.data = iter;
+
+    return result;
+}
+
+void level_destroy_iter(void* iter_raw) {
+    auto iter = reinterpret_cast<leveldb::Iterator*>(iter_raw);
+    delete iter;
+}

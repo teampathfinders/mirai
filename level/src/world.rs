@@ -48,9 +48,6 @@ pub struct DatabaseKey {
     pub x: i32,
     /// Z coordinate of the chunk.
     pub z: i32,
-    /// Y coordinate of the chunk.
-    /// Only used if the tag is a sub chunk tag.
-    pub y: i8,
     /// Dimension of the chunk.
     pub dimension: Dimension,
     /// The tag of the data to load.

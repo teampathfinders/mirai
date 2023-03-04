@@ -19,6 +19,10 @@ extern "C" {
     struct LevelResult level_get_key(void* database, const char* key, int key_size);
     // Deallocates a string previously allocated by another function.
     void level_deallocate_array(char* array);
+    // Creates an iterator that iterates of all the keys.
+    struct LevelResult level_iter(void* database);
+    // Destroys an iterator previously created with level_iter.
+    void level_destroy_iter(void* iter);
 
 #ifdef __cplusplus
 }
