@@ -139,7 +139,9 @@ void level_deallocate_array(char* array) {
 
 LevelResult level_iter(void* database) {
     auto db = reinterpret_cast<Database*>(database);
+
     leveldb::Iterator* iter = db->database->NewIterator(db->read_options);
+    iter->SeekToFirst();
 
     LevelResult result{};
     result.is_success = true;
@@ -152,4 +154,40 @@ LevelResult level_iter(void* database) {
 void level_destroy_iter(void* iter_raw) {
     auto iter = reinterpret_cast<leveldb::Iterator*>(iter_raw);
     delete iter;
+}
+
+LevelResult level_iter_key(const void* iter_raw) {
+    auto iter = reinterpret_cast<const leveldb::Iterator*>(iter_raw);
+    leveldb::Slice key = iter->key();
+
+    LevelResult result{};
+    result.is_success = 1;
+    result.size = key.size();
+    result.data = new char[result.size];
+    memcpy(result.data, key.data(), result.size);
+
+    return result;
+}
+
+LevelResult level_iter_value(const void* iter_raw) {
+    auto iter = reinterpret_cast<const leveldb::Iterator*>(iter_raw);
+    leveldb::Slice value = iter->value();
+
+    LevelResult result{};
+    result.is_success = 1;
+    result.size = value.size();
+    result.data = new char[result.size];
+    memcpy(result.data, value.data(), result.size);
+
+    return result;
+}
+
+void level_iter_next(void* iter_raw) {
+    auto iter = reinterpret_cast<leveldb::Iterator*>(iter_raw);
+    iter->Next();
+}
+
+bool level_iter_valid(const void* iter_raw) {
+    auto iter = reinterpret_cast<const leveldb::Iterator*>(iter_raw);
+    return iter->Valid();
 }

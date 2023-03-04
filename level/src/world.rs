@@ -1,6 +1,17 @@
 use bytes::{BufMut, Bytes, BytesMut};
 use common::{Serialize, VResult};
 
+// Special keys
+
+pub const AUTONOMOUS_ENTITIES: &[u8] = "AutonomousEntities".as_bytes();
+pub const BIOME_DATA: &[u8] = "BiomeData".as_bytes();
+pub const CHUNK_METADATA: &[u8] = "LevelChunkMetaDataDictionary".as_bytes();
+pub const OVERWORLD: &[u8] = "Overworld".as_bytes();
+pub const MOB_EVENTS: &[u8] = "mobevents".as_bytes();
+pub const SCOREBOARD: &[u8] = "scoreboard".as_bytes();
+pub const SCHEDULER: &[u8] = "schedulerWT".as_bytes();
+pub const LOCAL_PLAYER: &[u8] = "~local_player".as_bytes();
+
 /// Database key prefixes.
 ///
 /// Data from [`Minecraft fandom`](https://minecraft.fandom.com/wiki/Bedrock_Edition_level_format#Chunk_key_format).
@@ -11,6 +22,7 @@ pub enum KeyData {
     Biome3d = 0x2b,
     /// Version of the specified chunk.
     ChunkVersion = 0x2c,
+    HeightMap = 0x2d,
     /// Sub chunk data.
     SubChunk {
         index: i8

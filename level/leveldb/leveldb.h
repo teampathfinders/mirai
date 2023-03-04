@@ -23,7 +23,16 @@ extern "C" {
     struct LevelResult level_iter(void* database);
     // Destroys an iterator previously created with level_iter.
     void level_destroy_iter(void* iter);
-
+    // Returns the current key from the iterator.
+    // SAFETY: The caller must ensure the iterator is still valid before calling this.
+    LevelResult level_iter_key(const void* iter);
+    // SAFETY: The caller must ensure the iterator is still valid before calling this.
+    LevelResult level_iter_value(const void* iter);
+    // Returns whether the iterator is still valid.
+    bool level_iter_valid(const void* iter);
+    // Moves the iterator to the next position.
+    // This position could be invalid.
+    void level_iter_next(void* iter);
 #ifdef __cplusplus
 }
 #endif __cplusplus

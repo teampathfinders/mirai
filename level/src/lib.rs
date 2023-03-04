@@ -10,7 +10,7 @@ mod biome;
 use std::{sync::Arc, time::Duration};
 
 use common::VResult;
-use database::ChunkDatabase;
+use database::RawDatabase;
 pub use sub_chunk::*;
 use tokio::sync::oneshot::{Receiver, Sender};
 use tokio_util::sync::CancellationToken;
@@ -20,7 +20,7 @@ pub use world::*;
 #[derive(Debug)]
 pub struct ChunkManager {
     /// Chunk database
-    database: ChunkDatabase,
+    database: RawDatabase,
     token: CancellationToken,
 }
 
@@ -33,7 +33,7 @@ impl ChunkManager {
         tracing::info!("Loading level {}...", path.as_ref());
 
         let manager = Arc::new(Self {
-            database: ChunkDatabase::new(path)?,
+            database: RawDatabase::new(path)?,
             token,
         });
 
