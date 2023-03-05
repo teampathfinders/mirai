@@ -1,6 +1,6 @@
+use serde::{de, ser};
 use std::fmt;
 use std::fmt::Display;
-use serde::{de, ser};
 
 pub type Result<T> = std::result::Result<T, Error>;
 
@@ -8,7 +8,7 @@ pub type Result<T> = std::result::Result<T, Error>;
 #[non_exhaustive]
 pub enum Error {
     TrailingBytes,
-    Custom(String)
+    Custom(String),
 }
 
 impl ser::Error for Error {
@@ -27,7 +27,7 @@ impl Display for Error {
     fn fmt(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
         match self {
             Error::Custom(msg) => formatter.write_str(msg),
-            _ => todo!()
+            _ => todo!(),
         }
     }
 }
