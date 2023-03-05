@@ -2,12 +2,24 @@ use serde::{de, ser};
 use std::fmt;
 use std::fmt::Display;
 
+#[macro_export]
+macro_rules! bail {
+    ($x: expr) => {
+        return Err($crate::error::Error::$x)
+    }
+}
+
 pub type Result<T> = std::result::Result<T, Error>;
 
 #[derive(Debug)]
 #[non_exhaustive]
 pub enum Error {
+    UnexpectedEof,
+    /// An invalid tag type was encountered.
+    InvalidType,
+    /// There are unread bytes remaining in the given buffer.
     TrailingBytes,
+    /// A custom error message.
     Custom(String),
 }
 

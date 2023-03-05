@@ -1,30 +1,42 @@
+use crate::{Buffer, Buf, bail};
 use crate::error::{Error, Result};
 use serde::de::Visitor;
 use serde::{de, Deserialize};
 
+pub enum Mode {
+    Network,
+    LittleEndian,
+    BigEndian
+}
+
 pub struct Deserializer<'de> {
-    input: &'de [u8],
+    mode: Mode,
+    input: Buffer<'de>,
 }
 
 impl<'de> Deserializer<'de> {
-    pub fn from_bytes(input: &'de [u8]) -> Self {
-        Deserializer { input }
+    pub fn from_bytes(input: &'de [u8], mode: Mode) -> Self {
+        Deserializer { input: Buffer::from(input), mode }
+    }
+
+    pub fn from_le_bytes(input: &'de [u8]) -> Self {
+        Self::from_bytes(input, Mode::LittleEndian)
+    }
+
+    pub fn from_be_bytes(input: &'de [u8]) -> Self {
+        Self::from_bytes(input, Mode::BigEndian)
+    }
+
+    pub fn from_network_bytes(input: &'de [u8]) -> Self {
+        Self::from_bytes(input, Mode::Network)
     }
 }
 
-/// Parsing
-impl<'de> Deserializer<'de> {
-    #[inline]
-    fn advance(&mut self, n: usize) {
-        self.input = &self.input[n..];
-    }
-}
-
-pub fn from_bytes<'a, T>(b: &'a [u8]) -> Result<T>
+pub fn from_bytes<'a, T>(b: &'a [u8], mode: Mode) -> Result<T>
 where
     T: Deserialize<'a>,
 {
-    let mut deserializer = Deserializer::from_bytes(b);
+    let mut deserializer = Deserializer::from_bytes(b, mode);
     let t = T::deserialize(&mut deserializer)?;
 
     if deserializer.input.is_empty() {
@@ -32,6 +44,27 @@ where
     } else {
         Err(Error::TrailingBytes)
     }
+}
+
+pub fn from_le_bytes<'a, T>(b: &'a [u8]) -> Result<T>
+where
+    T: Deserialize<'a>,
+{
+    from_bytes(b, Mode::LittleEndian)
+}
+
+pub fn from_be_bytes<'a, T>(b: &'a [u8]) -> Result<T>
+where
+    T: Deserialize<'a>,
+{
+    from_bytes(b, Mode::BigEndian)
+}
+
+pub fn from_network_bytes<'a, T>(b: &'a [u8]) -> Result<T>
+where
+    T: Deserialize<'a>,
+{
+    from_bytes(b, Mode::Network)
 }
 
 impl<'de, 'a> de::Deserializer<'de> for &'a mut Deserializer<'de> {
@@ -48,14 +81,22 @@ impl<'de, 'a> de::Deserializer<'de> for &'a mut Deserializer<'de> {
     where
         V: Visitor<'de>,
     {
-        todo!();
+        if let Some(x) = self.input.read_bool() {
+            visitor.visit_bool(x)
+        } else {
+            bail!(UnexpectedEof)
+        }
     }
 
     fn deserialize_i8<V>(self, visitor: V) -> Result<V::Value>
     where
         V: Visitor<'de>,
     {
-        todo!();
+        if let Some(x) = self.input.read_i8() {
+            visitor.visit_i8(x)
+        } else {
+            bail!(UnexpectedEof)
+        }
     }
 
     fn deserialize_i16<V>(self, visitor: V) -> Result<V::Value>
@@ -83,7 +124,11 @@ impl<'de, 'a> de::Deserializer<'de> for &'a mut Deserializer<'de> {
     where
         V: Visitor<'de>,
     {
-        todo!();
+        if let Some(x) = self.input.read_u8() {
+            visitor.visit_u8(x)
+        } else {
+            bail!(UnexpectedEof)
+        }
     }
 
     fn deserialize_u16<V>(self, visitor: V) -> Result<V::Value>

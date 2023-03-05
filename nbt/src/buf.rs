@@ -1,4 +1,6 @@
 pub trait Buf {
+    fn read_bool(&mut self) -> Option<bool>;
+
     fn read_u8(&mut self) -> Option<u8>;
     fn read_u16(&mut self) -> Option<u16>;
     fn read_u32(&mut self) -> Option<u32>;

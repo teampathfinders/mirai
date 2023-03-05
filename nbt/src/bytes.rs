@@ -101,6 +101,12 @@ impl<'a> Read for Buffer<'a> {
 
 impl<'a> Buf for Buffer<'a> {
     #[inline]
+    fn read_bool(&mut self) -> Option<bool> {
+        let x = self.read_u8()?;
+        Some(x != 0)
+    }
+
+    #[inline]
     fn read_u8(&mut self) -> Option<u8> {
         let x = self.first().copied()?;
         self.advance(1);
