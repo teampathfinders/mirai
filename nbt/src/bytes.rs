@@ -2,6 +2,7 @@ use std::{cmp, fmt, io};
 use std::fmt::Debug;
 use std::io::Read;
 use std::ops::{Deref, Index};
+use crate::Buf;
 
 pub struct Buffer<'a>(&'a [u8]);
 
@@ -61,5 +62,89 @@ impl<'a> Read for Buffer<'a> {
 
         *self = Buffer::from(b);
         Ok(amt)
+    }
+}
+
+impl<'a> Buf for Buffer<'a> {
+    type Error = io::Error;
+
+    fn read_u8(&mut self) -> io::Result<u8> {
+        todo!()
+    }
+
+    fn read_u16(&mut self) -> io::Result<u16> {
+        todo!()
+    }
+
+    fn read_u32(&mut self) -> io::Result<u32> {
+        todo!()
+    }
+
+    fn read_u64(&mut self) -> io::Result<u64> {
+        todo!()
+    }
+
+    fn read_u128(&mut self) -> io::Result<u128> {
+        todo!()
+    }
+
+    fn read_i8(&mut self) -> io::Result<i8> {
+        todo!()
+    }
+
+    fn read_i16(&mut self) -> io::Result<i16> {
+        todo!()
+    }
+
+    fn read_i32(&mut self) -> io::Result<i32> {
+        todo!()
+    }
+
+    fn read_i64(&mut self) -> io::Result<i64> {
+        todo!()
+    }
+
+    fn read_i128(&mut self) -> io::Result<i128> {
+        todo!()
+    }
+
+    fn read_u8_le(&mut self) -> io::Result<u8> {
+        todo!()
+    }
+
+    fn read_u16_le(&mut self) -> io::Result<u16> {
+        todo!()
+    }
+
+    fn read_u32_le(&mut self) -> io::Result<u32> {
+        todo!()
+    }
+
+    fn read_u64_le(&mut self) -> io::Result<u64> {
+        todo!()
+    }
+
+    fn read_u128_le(&mut self) -> io::Result<u128> {
+        todo!()
+    }
+
+    fn read_i8_le(&mut self) -> io::Result<i8> {
+        todo!()
+    }
+
+    fn read_i16_le(&mut self) -> io::Result<i16> {
+        todo!()
+    }
+
+    fn read_i32_le(&mut self) -> io::Result<i32> {
+        todo!()
+    }
+
+    fn read_i64_le(&mut self) -> io::Result<i64> {
+        todo!()
+    }
+
+    fn read_i128_le(&mut self) -> io::Result<i128> {
+        todo!()
     }
 }
