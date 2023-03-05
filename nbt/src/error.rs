@@ -4,7 +4,7 @@ use std::fmt::Display;
 
 #[macro_export]
 macro_rules! bail {
-    ($x: expr) => {
+    ($x: ident) => {
         return Err($crate::error::Error::$x)
     }
 }

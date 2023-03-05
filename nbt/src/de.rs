@@ -1,8 +1,9 @@
-use crate::{Buffer, Buf, bail};
+use crate::{ReadBuffer, Buf, bail};
 use crate::error::{Error, Result};
 use serde::de::Visitor;
 use serde::{de, Deserialize};
 
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum Mode {
     Network,
     LittleEndian,
@@ -11,22 +12,26 @@ pub enum Mode {
 
 pub struct Deserializer<'de> {
     mode: Mode,
-    input: Buffer<'de>,
+    input: ReadBuffer<'de>,
 }
 
 impl<'de> Deserializer<'de> {
+    #[inline]
     pub fn from_bytes(input: &'de [u8], mode: Mode) -> Self {
-        Deserializer { input: Buffer::from(input), mode }
+        Deserializer { input: ReadBuffer::from(input), mode }
     }
 
+    #[inline]
     pub fn from_le_bytes(input: &'de [u8]) -> Self {
         Self::from_bytes(input, Mode::LittleEndian)
     }
 
+    #[inline]
     pub fn from_be_bytes(input: &'de [u8]) -> Self {
         Self::from_bytes(input, Mode::BigEndian)
     }
 
+    #[inline]
     pub fn from_network_bytes(input: &'de [u8]) -> Self {
         Self::from_bytes(input, Mode::Network)
     }
@@ -46,6 +51,7 @@ where
     }
 }
 
+#[inline]
 pub fn from_le_bytes<'a, T>(b: &'a [u8]) -> Result<T>
 where
     T: Deserialize<'a>,
@@ -53,6 +59,7 @@ where
     from_bytes(b, Mode::LittleEndian)
 }
 
+#[inline]
 pub fn from_be_bytes<'a, T>(b: &'a [u8]) -> Result<T>
 where
     T: Deserialize<'a>,
@@ -60,6 +67,7 @@ where
     from_bytes(b, Mode::BigEndian)
 }
 
+#[inline]
 pub fn from_network_bytes<'a, T>(b: &'a [u8]) -> Result<T>
 where
     T: Deserialize<'a>,
