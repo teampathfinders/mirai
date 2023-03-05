@@ -1,5 +1,6 @@
 #![warn(clippy::nursery)]
 
+mod bytes;
 mod de;
 mod error;
 mod ser;

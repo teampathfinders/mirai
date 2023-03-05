@@ -12,6 +12,14 @@ impl<'de> Deserializer<'de> {
     }
 }
 
+/// Parsing
+impl<'de> Deserializer<'de> {
+    #[inline]
+    fn advance(&mut self, n: usize) {
+        self.input = &self.input[n..];
+    }
+}
+
 pub fn from_bytes<'a, T>(b: &'a [u8]) -> Result<T>
 where
     T: Deserialize<'a>
@@ -238,4 +246,6 @@ impl<'de, 'a> de::Deserializer<'de> for &'a mut Deserializer<'de> {
         todo!();
     }
 }
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
 
