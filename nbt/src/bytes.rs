@@ -209,6 +209,30 @@ impl<'a> Buf for Buffer<'a> {
         let b = self.take()?;
         Some(i128::from_le_bytes(b))
     }
+
+    #[inline]
+    fn read_f32(&mut self) -> Option<f32> {
+        let b = self.take()?;
+        Some(f32::from_be_bytes(b))
+    }
+
+    #[inline]
+    fn read_f32_le(&mut self) -> Option<f32> {
+        let b = self.take()?;
+        Some(f32::from_le_bytes(b))
+    }
+
+    #[inline]
+    fn read_f64(&mut self) -> Option<f64> {
+        let b = self.take()?;
+        Some(f64::from_be_bytes(b))
+    }
+
+    #[inline]
+    fn read_f64_le(&mut self) -> Option<f64> {
+        let b = self.take()?;
+        Some(f64::from_le_bytes(b))
+    }
 }
 
 #[cfg(test)]

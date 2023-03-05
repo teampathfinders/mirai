@@ -20,4 +20,9 @@ pub trait Buf {
     fn read_i32_le(&mut self) -> Option<i32>;
     fn read_i64_le(&mut self) -> Option<i64>;
     fn read_i128_le(&mut self) -> Option<i128>;
+
+    fn read_f32(&mut self) -> Option<f32>;
+    fn read_f32_le(&mut self) -> Option<f32>;
+    fn read_f64(&mut self) -> Option<f64>;
+    fn read_f64_le(&mut self) -> Option<f64>;
 }
