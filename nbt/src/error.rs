@@ -1,5 +1,5 @@
 use serde::{de, ser};
-use std::fmt;
+use std::{fmt, io};
 use std::fmt::Display;
 
 #[macro_export]
@@ -45,3 +45,12 @@ impl Display for Error {
 }
 
 impl std::error::Error for Error {}
+
+impl From<io::Error> for Error {
+    fn from(v: io::Error) -> Self {
+        match v.kind() {
+            io::ErrorKind::UnexpectedEof => Self::UnexpectedEof,
+            _ => Self::Custom(v.to_string())
+        }
+    }
+}
