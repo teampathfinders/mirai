@@ -14,6 +14,7 @@ pub type Result<T> = std::result::Result<T, Error>;
 #[derive(Debug)]
 #[non_exhaustive]
 pub enum Error {
+    Unsupported(String),
     UnexpectedEof,
     /// An invalid tag type was encountered.
     InvalidType,

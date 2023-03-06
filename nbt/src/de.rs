@@ -4,40 +4,40 @@ use serde::de::Visitor;
 use serde::{de, Deserialize};
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
-pub enum Mode {
+pub enum Flavor {
     Network,
     LittleEndian,
     BigEndian
 }
 
 pub struct Deserializer<'de> {
-    mode: Mode,
+    mode: Flavor,
     input: ReadBuffer<'de>,
 }
 
 impl<'de> Deserializer<'de> {
     #[inline]
-    pub fn from_bytes(input: &'de [u8], mode: Mode) -> Self {
+    pub fn from_bytes(input: &'de [u8], mode: Flavor) -> Self {
         Deserializer { input: ReadBuffer::from(input), mode }
     }
 
     #[inline]
     pub fn from_le_bytes(input: &'de [u8]) -> Self {
-        Self::from_bytes(input, Mode::LittleEndian)
+        Self::from_bytes(input, Flavor::LittleEndian)
     }
 
     #[inline]
     pub fn from_be_bytes(input: &'de [u8]) -> Self {
-        Self::from_bytes(input, Mode::BigEndian)
+        Self::from_bytes(input, Flavor::BigEndian)
     }
 
     #[inline]
     pub fn from_network_bytes(input: &'de [u8]) -> Self {
-        Self::from_bytes(input, Mode::Network)
+        Self::from_bytes(input, Flavor::Network)
     }
 }
 
-pub fn from_bytes<'a, T>(b: &'a [u8], mode: Mode) -> Result<T>
+pub fn from_bytes<'a, T>(b: &'a [u8], mode: Flavor) -> Result<T>
 where
     T: Deserialize<'a>,
 {
@@ -56,7 +56,7 @@ pub fn from_le_bytes<'a, T>(b: &'a [u8]) -> Result<T>
 where
     T: Deserialize<'a>,
 {
-    from_bytes(b, Mode::LittleEndian)
+    from_bytes(b, Flavor::LittleEndian)
 }
 
 #[inline]
@@ -64,7 +64,7 @@ pub fn from_be_bytes<'a, T>(b: &'a [u8]) -> Result<T>
 where
     T: Deserialize<'a>,
 {
-    from_bytes(b, Mode::BigEndian)
+    from_bytes(b, Flavor::BigEndian)
 }
 
 #[inline]
@@ -72,7 +72,7 @@ pub fn from_network_bytes<'a, T>(b: &'a [u8]) -> Result<T>
 where
     T: Deserialize<'a>,
 {
-    from_bytes(b, Mode::Network)
+    from_bytes(b, Flavor::Network)
 }
 
 impl<'de, 'a> de::Deserializer<'de> for &'a mut Deserializer<'de> {
