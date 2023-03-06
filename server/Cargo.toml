@@ -37,7 +37,7 @@ aes = "0.8.2"
 nbt = { path = "../nbt" }
 common = { path = "../common" }
 level = { path = "../level" }
-serde_repr = "0.1.10"
+serde_repr = "0.1.11"
 uuid = { version = "1.3.0", features = ["serde"], default-features = false }
 clap = { version = "4.1.8", features = ["cargo", "std"], default-features = false }
 
