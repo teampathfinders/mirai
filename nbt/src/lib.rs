@@ -1,4 +1,5 @@
 #![feature(min_specialization)]
+#![feature(generic_const_exprs)]
 #![warn(clippy::nursery)]
 
 mod buf_mut;

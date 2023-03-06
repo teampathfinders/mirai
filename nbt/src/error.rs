@@ -14,7 +14,8 @@ pub type Result<T> = std::result::Result<T, Error>;
 #[derive(Debug)]
 #[non_exhaustive]
 pub enum Error {
-    Unsupported(String),
+    InvalidUtf8,
+    Unsupported,
     UnexpectedEof,
     /// An invalid tag type was encountered.
     InvalidType,
@@ -53,5 +54,17 @@ impl From<io::Error> for Error {
             io::ErrorKind::UnexpectedEof => Self::UnexpectedEof,
             _ => Self::Custom(v.to_string())
         }
+    }
+}
+
+impl From<std::str::Utf8Error> for Error {
+    fn from(_v: std::str::Utf8Error) -> Self {
+        Error::InvalidUtf8
+    }
+}
+
+impl From<std::string::FromUtf8Error> for Error {
+    fn from(_v: std::string::FromUtf8Error) -> Self {
+        Error::InvalidUtf8
     }
 }

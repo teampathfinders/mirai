@@ -2,7 +2,7 @@ use std::{io::Write, any::{TypeId, Any}, fmt::format};
 
 use serde::{Serialize, ser};
 
-use crate::{de::Flavor, bytes_mut::WriteBuffer, error::Result, Error, buf_mut::BufMut, TAG_COMPOUND, TAG_END, TAG_BYTE, TAG_SHORT, TAG_INT, TAG_LONG, TAG_FLOAT, TAG_DOUBLE, TAG_STRING};
+use crate::{de::Flavor, bytes_mut::WriteBuffer, error::Result, Error, buf_mut::BufMut, TAG_COMPOUND, TAG_END, TAG_BYTE, TAG_SHORT, TAG_INT, TAG_LONG, TAG_FLOAT, TAG_DOUBLE, TAG_STRING, bail};
 
 pub struct Serializer {
     flavor: Flavor,
@@ -85,22 +85,22 @@ impl<'a> ser::Serializer for &'a mut Serializer {
 
     // NBT does not support unsigned types.
     fn serialize_u8(self, v: u8) -> Result<()> {
-        Err(Error::Unsupported("u8 serialization is not supported".into()))
+        bail!(Unsupported)
     }
 
     // NBT does not support unsigned types.
     fn serialize_u16(self, v: u16) -> Result<()> {
-        Err(Error::Unsupported("u16 serialization is not supported".into()))
+        bail!(Unsupported)
     }
 
     // NBT does not support unsigned types.
     fn serialize_u32(self, v: u32) -> Result<()> {
-        Err(Error::Unsupported("u32 serialization is not supported".into()))
+        bail!(Unsupported)
     }
 
     // NBT does not support unsigned types.
     fn serialize_u64(self, v: u64) -> Result<()> {
-        Err(Error::Unsupported("u64 serialization is not supported".into()))
+        bail!(Unsupported)
     }
 
     fn serialize_f32(self, v: f32) -> Result<()> {

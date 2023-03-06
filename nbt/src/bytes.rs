@@ -1,4 +1,5 @@
 use crate::Buf;
+use crate::buf::FromBytes;
 use std::fmt::Debug;
 use std::io::Read;
 use std::ops::{Deref, Index};
@@ -14,6 +15,11 @@ impl<'a> ReadBuffer<'a> {
     }
 
     #[inline]
+    pub fn peek<T: FromBytes>(&self) -> Option<T> {
+        todo!();
+    }
+
+    #[inline]
     pub const fn len(&self) -> usize {
         self.0.len()
     }
@@ -21,6 +27,17 @@ impl<'a> ReadBuffer<'a> {
     #[inline]
     pub const fn is_empty(&self) -> bool {
         self.len() == 0
+    }
+
+    #[inline]
+    pub fn take_n(&mut self, n: usize) -> Option<&[u8]> {
+        if self.len() < n {
+            None
+        } else {
+            let (a, b) = self.0.split_at(n);
+            *self = ReadBuffer::from(b);
+            Some(a)
+        }
     }
 
     #[inline]

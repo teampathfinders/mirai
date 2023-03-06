@@ -1,3 +1,10 @@
+pub trait FromBytes: Sized {
+    const SIZE: usize;
+
+    fn from_le_bytes(bits: [u8; Self::SIZE]) -> Self;
+    fn from_be_bytes(bits: [u8; Self::SIZE]) -> Self;
+}
+
 pub trait Buf {
     fn read_bool(&mut self) -> Option<bool>;
 

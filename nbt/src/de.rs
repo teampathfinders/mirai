@@ -1,6 +1,6 @@
-use crate::{ReadBuffer, Buf, bail};
+use crate::{ReadBuffer, Buf, bail, TAG_COMPOUND};
 use crate::error::{Error, Result};
-use serde::de::Visitor;
+use serde::de::{Visitor, MapAccess, DeserializeSeed};
 use serde::{de, Deserialize};
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
@@ -11,14 +11,14 @@ pub enum Flavor {
 }
 
 pub struct Deserializer<'de> {
-    mode: Flavor,
+    flavor: Flavor,
     input: ReadBuffer<'de>,
 }
 
 impl<'de> Deserializer<'de> {
     #[inline]
-    pub fn from_bytes(input: &'de [u8], mode: Flavor) -> Self {
-        Deserializer { input: ReadBuffer::from(input), mode }
+    pub fn from_bytes(input: &'de [u8], flavor: Flavor) -> Self {
+        Deserializer { input: ReadBuffer::from(input), flavor: flavor }
     }
 
     #[inline]
@@ -35,13 +35,26 @@ impl<'de> Deserializer<'de> {
     pub fn from_network_bytes(input: &'de [u8]) -> Self {
         Self::from_bytes(input, Flavor::Network)
     }
+
+    fn deserialize_raw_str(&mut self) -> Result<&str> {
+        let len = match self.flavor {
+            Flavor::BigEndian => self.input.read_u16(),
+            Flavor::LittleEndian => self.input.read_u16_le(),
+            Flavor::Network => todo!()
+        }.ok_or(Error::UnexpectedEof)?;
+
+        let data = self.input.take_n(len as usize).ok_or(Error::UnexpectedEof)?;
+        let str = std::str::from_utf8(data)?;
+
+        Ok(str)
+    }
 }
 
-pub fn from_bytes<'a, T>(b: &'a [u8], mode: Flavor) -> Result<T>
+pub fn from_bytes<'a, T>(b: &'a [u8], flavor: Flavor) -> Result<T>
 where
     T: Deserialize<'a>,
 {
-    let mut deserializer = Deserializer::from_bytes(b, mode);
+    let mut deserializer = Deserializer::from_bytes(b, flavor);
     let t = T::deserialize(&mut deserializer)?;
 
     if deserializer.input.is_empty() {
@@ -111,67 +124,138 @@ impl<'de, 'a> de::Deserializer<'de> for &'a mut Deserializer<'de> {
     where
         V: Visitor<'de>,
     {
-        todo!();
+        match self.flavor {
+            Flavor::BigEndian => {
+                if let Some(x) = self.input.read_i16() {
+                    visitor.visit_i16(x)
+                } else {
+                    bail!(UnexpectedEof)
+                }
+            },
+            _ => {
+                if let Some(x) = self.input.read_i16_le() {
+                    visitor.visit_i16(x)
+                } else {
+                    bail!(UnexpectedEof)
+                }       
+            }
+        }
     }
 
     fn deserialize_i32<V>(self, visitor: V) -> Result<V::Value>
     where
         V: Visitor<'de>,
     {
-        todo!();
+        match self.flavor {
+            Flavor::BigEndian => {
+                if let Some(x) = self.input.read_i32() {
+                    visitor.visit_i32(x)
+                } else {
+                    bail!(UnexpectedEof)
+                }
+            },
+            _ => {
+                if let Some(x) = self.input.read_i32_le() {
+                    visitor.visit_i32(x)
+                } else {
+                    bail!(UnexpectedEof)
+                }       
+            }
+        }
     }
 
     fn deserialize_i64<V>(self, visitor: V) -> Result<V::Value>
     where
         V: Visitor<'de>,
     {
-        todo!();
+        match self.flavor {
+            Flavor::BigEndian => {
+                if let Some(x) = self.input.read_i64() {
+                    visitor.visit_i64(x)
+                } else {
+                    bail!(UnexpectedEof)
+                }
+            },
+            _ => {
+                if let Some(x) = self.input.read_i64_le() {
+                    visitor.visit_i64(x)
+                } else {
+                    bail!(UnexpectedEof)
+                }       
+            }
+        }
     }
 
     fn deserialize_u8<V>(self, visitor: V) -> Result<V::Value>
     where
         V: Visitor<'de>,
     {
-        if let Some(x) = self.input.read_u8() {
-            visitor.visit_u8(x)
-        } else {
-            bail!(UnexpectedEof)
-        }
+        bail!(Unsupported)
     }
 
     fn deserialize_u16<V>(self, visitor: V) -> Result<V::Value>
     where
         V: Visitor<'de>,
     {
-        todo!();
+        bail!(Unsupported)
     }
 
     fn deserialize_u32<V>(self, visitor: V) -> Result<V::Value>
     where
         V: Visitor<'de>,
     {
-        todo!();
+        bail!(Unsupported)
     }
 
     fn deserialize_u64<V>(self, visitor: V) -> Result<V::Value>
     where
         V: Visitor<'de>,
     {
-        todo!();
+        bail!(Unsupported)
     }
 
     fn deserialize_f32<V>(self, visitor: V) -> Result<V::Value>
     where
         V: Visitor<'de>,
     {
-        todo!();
+        match self.flavor {
+            Flavor::BigEndian => {
+                if let Some(x) = self.input.read_f32() {
+                    visitor.visit_f32(x)
+                } else {
+                    bail!(UnexpectedEof)
+                }
+            },
+            _ => {
+                if let Some(x) = self.input.read_f32_le() {
+                    visitor.visit_f32(x)
+                } else {
+                    bail!(UnexpectedEof)
+                }       
+            }
+        }
     }
 
     fn deserialize_f64<V>(self, visitor: V) -> Result<V::Value>
     where
         V: Visitor<'de>,
     {
-        todo!();
+        match self.flavor {
+            Flavor::BigEndian => {
+                if let Some(x) = self.input.read_f64() {
+                    visitor.visit_f64(x)
+                } else {
+                    bail!(UnexpectedEof)
+                }
+            },
+            _ => {
+                if let Some(x) = self.input.read_f64_le() {
+                    visitor.visit_f64(x)
+                } else {
+                    bail!(UnexpectedEof)
+                }       
+            }
+        }
     }
 
     fn deserialize_char<V>(self, visitor: V) -> Result<V::Value>
@@ -185,14 +269,52 @@ impl<'de, 'a> de::Deserializer<'de> for &'a mut Deserializer<'de> {
     where
         V: Visitor<'de>,
     {
-        todo!();
+        let opt_len = match self.flavor {
+            Flavor::BigEndian => {
+                self.input.read_u16()
+            },
+            Flavor::LittleEndian => {
+                self.input.read_u16_le()
+            },
+            Flavor::Network => {
+                todo!();
+            }
+        };
+
+        if let Some(len) = opt_len {
+            if let Some(data) = self.input.take_n(len as usize) {
+                let str = std::str::from_utf8(data)?;
+                return visitor.visit_str(str)
+            }
+        }
+        
+        Err(Error::UnexpectedEof)
     }
 
     fn deserialize_string<V>(self, visitor: V) -> Result<V::Value>
     where
         V: Visitor<'de>,
     {
-        todo!();
+        let opt_len = match self.flavor {
+            Flavor::BigEndian => {
+                self.input.read_u16()
+            },
+            Flavor::LittleEndian => {
+                self.input.read_u16_le()
+            },
+            Flavor::Network => {
+                todo!();
+            }
+        };
+
+        if let Some(len) = opt_len {
+            if let Some(data) = self.input.take_n(len as usize) {
+                let str = String::from_utf8(data.to_vec())?;
+                return visitor.visit_string(str)
+            }
+        }
+        
+        Err(Error::UnexpectedEof)
     }
 
     fn deserialize_bytes<V>(self, visitor: V) -> Result<V::Value>
@@ -274,8 +396,8 @@ impl<'de, 'a> de::Deserializer<'de> for &'a mut Deserializer<'de> {
     fn deserialize_map<V>(self, visitor: V) -> Result<V::Value>
     where
         V: Visitor<'de>,
-    {
-        todo!();
+    {   
+        visitor.visit_map(self)
     }
 
     fn deserialize_struct<V>(
@@ -287,7 +409,7 @@ impl<'de, 'a> de::Deserializer<'de> for &'a mut Deserializer<'de> {
     where
         V: Visitor<'de>,
     {
-        todo!();
+        self.deserialize_map(visitor)
     }
 
     fn deserialize_enum<V>(
@@ -317,4 +439,53 @@ impl<'de, 'a> de::Deserializer<'de> for &'a mut Deserializer<'de> {
     }
 }
 
+impl<'de, 'a> MapAccess<'de> for Deserializer<'a> {
+    type Error = Error;
+
+    fn next_key_seed<K>(&mut self, seed: K) -> Result<Option<K::Value>>
+    where
+        K: DeserializeSeed<'de>,
+    {
+        todo!();
+    }
+}
+
 ////////////////////////////////////////////////////////////////////////////////////////////////////
+
+#[cfg(test)]
+mod test {
+    use serde::Deserialize;
+
+    use super::{Deserializer, from_be_bytes};
+
+    const BIGTEST_NBT: &[u8] = include_bytes!("../test/bigtest.nbt");
+    const HELLO_WORLD_NBT: &[u8] = include_bytes!("../test/hello_world.nbt");
+    const PLAYER_NAN_VALUE_NBT: &[u8] =
+        include_bytes!("../test/player_nan_value.nbt");
+
+    #[test]
+    fn read_bigtest_nbt() {
+        // let decoded = from_be_bytes(BIGTEST_NBT).unwrap();
+
+    }
+
+    
+    #[test]
+    fn read_hello_world_nbt() {
+        #[derive(Deserialize, Debug, PartialEq)]
+        struct HelloWorld {
+            name: &'static str
+        }
+
+        let decoded: HelloWorld = from_be_bytes(HELLO_WORLD_NBT).unwrap();
+        assert_eq!(decoded, HelloWorld {
+            name: "Bananrama"
+        });
+    }
+
+    
+    #[test]
+    fn read_player_nan_value_nbt() {
+
+    }
+}
