@@ -105,13 +105,13 @@ fn parse_initial_token(token: &str) -> VResult<String> {
     let bytes = BASE64_ENGINE.decode(base64)?;
 
     // Public key that can be used to verify the token.
-    let public_key = match spki::SubjectPublicKeyInfo::try_from(bytes.as_ref())
+    let public_key = match spki::SubjectPublicKeyInfoRef::try_from(bytes.as_ref())
     {
         Ok(p) => p,
         Err(e) => bail!(InvalidIdentity, "Invalid client public key: {e}"),
     };
 
-    let decoding_key = DecodingKey::from_ec_der(public_key.subject_public_key);
+    let decoding_key = DecodingKey::from_ec_der(public_key.subject_public_key.raw_bytes());
     let mut validation = Validation::new(Algorithm::ES384);
     validation.validate_exp = true;
     validation.validate_nbf = true;
@@ -129,13 +129,13 @@ fn parse_initial_token(token: &str) -> VResult<String> {
 /// This token contains another identityPublicKey which is the public key for the third token.
 fn parse_mojang_token(token: &str, key: &str) -> VResult<String> {
     let bytes = BASE64_ENGINE.decode(key)?;
-    let public_key = match spki::SubjectPublicKeyInfo::try_from(bytes.as_ref())
+    let public_key = match spki::SubjectPublicKeyInfoRef::try_from(bytes.as_ref())
     {
         Ok(p) => p,
         Err(e) => bail!(InvalidIdentity, "Invalid client public key: {e}"),
     };
 
-    let decoding_key = DecodingKey::from_ec_der(public_key.subject_public_key);
+    let decoding_key = DecodingKey::from_ec_der(public_key.subject_public_key.raw_bytes());
     let mut validation = Validation::new(Algorithm::ES384);
     validation.set_issuer(&["Mojang"]);
     validation.validate_nbf = true;
@@ -159,13 +159,15 @@ fn parse_identity_token(
     key: &str,
 ) -> VResult<IdentityTokenPayload> {
     let bytes = BASE64_ENGINE.decode(key)?;
-    let public_key = match spki::SubjectPublicKeyInfo::try_from(bytes.as_ref())
+    let public_key = match spki::SubjectPublicKeyInfoRef::try_from(
+        bytes.as_ref()
+    )
     {
         Ok(p) => p,
         Err(e) => bail!(InvalidIdentity, "Invalid client public key: {e}"),
     };
 
-    let decoding_key = DecodingKey::from_ec_der(public_key.subject_public_key);
+    let decoding_key = DecodingKey::from_ec_der(public_key.subject_public_key.raw_bytes());
     let mut validation = Validation::new(Algorithm::ES384);
     validation.set_issuer(&["Mojang"]);
     validation.validate_nbf = true;
@@ -186,13 +188,13 @@ fn parse_user_data_token(
     key: &str,
 ) -> VResult<UserDataTokenPayload> {
     let bytes = BASE64_ENGINE.decode(key)?;
-    let public_key = match spki::SubjectPublicKeyInfo::try_from(bytes.as_ref())
+    let public_key = match spki::SubjectPublicKeyInfoRef::try_from(bytes.as_ref())
     {
         Ok(p) => p,
         Err(e) => bail!(InvalidIdentity, "Invalid client public key: {e}"),
     };
 
-    let decoding_key = DecodingKey::from_ec_der(public_key.subject_public_key);
+    let decoding_key = DecodingKey::from_ec_der(public_key.subject_public_key.raw_bytes());
     let mut validation = Validation::new(Algorithm::ES384);
 
     // No special header data included in this token, don't verify anything.
