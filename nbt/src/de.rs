@@ -446,6 +446,8 @@ impl<'de, 'a> MapAccess<'de> for Deserializer<'a> {
     where
         K: DeserializeSeed<'de>,
     {
+        let num = buffer.read_le::<u16>();
+
         todo!();
     }
 }
