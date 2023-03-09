@@ -1,5 +1,8 @@
 use crate::error::{Error, Result};
-use crate::{bail, ReadBuffer, TAG_COMPOUND, TAG_END};
+use crate::{
+    bail, ReadBuffer, TAG_BYTE, TAG_COMPOUND, TAG_DOUBLE, TAG_END, TAG_FLOAT,
+    TAG_INT, TAG_LONG, TAG_SHORT,
+};
 use serde::de::{DeserializeSeed, MapAccess, Visitor};
 use serde::{de, Deserialize};
 
@@ -100,7 +103,15 @@ impl<'de, 'a> de::Deserializer<'de> for &'a mut Deserializer<'de> {
     where
         V: Visitor<'de>,
     {
-        todo!();
+        match self.latest_tag {
+            TAG_BYTE => self.deserialize_i8(visitor),
+            TAG_SHORT => self.deserialize_i16(visitor),
+            TAG_INT => self.deserialize_i32(visitor),
+            TAG_LONG => self.deserialize_i64(visitor),
+            TAG_FLOAT => self.deserialize_f32(visitor),
+            TAG_DOUBLE => self.deserialize_f64(visitor),
+            t => todo!("{t} not implemented"),
+        }
     }
 
     fn deserialize_bool<V>(self, visitor: V) -> Result<V::Value>
@@ -274,44 +285,38 @@ impl<'de, 'a> de::Deserializer<'de> for &'a mut Deserializer<'de> {
     where
         V: Visitor<'de>,
     {
-        let opt_len = match self.flavor {
-            Flavor::BigEndian => self.input.read_be::<u16>(),
-            Flavor::LittleEndian => self.input.read_le::<u16>(),
+        let len = match self.flavor {
+            Flavor::BigEndian => self.input.read_be::<u16>()?,
+            Flavor::LittleEndian => self.input.read_le::<u16>()?,
             Flavor::Network => {
                 todo!();
             }
         };
 
-        if let Ok(len) = opt_len {
-            if let Ok(data) = self.input.take(len as usize) {
-                let str = std::str::from_utf8(data)?;
-                return visitor.visit_str(str);
-            }
-        }
+        let data = self.input.take(len as usize)?;
+        let str = std::str::from_utf8(data)?;
+        dbg!(str);
 
-        Err(Error::UnexpectedEof)
+        visitor.visit_str(str)
     }
 
     fn deserialize_string<V>(self, visitor: V) -> Result<V::Value>
     where
         V: Visitor<'de>,
     {
-        let opt_len = match self.flavor {
-            Flavor::BigEndian => self.input.read_be::<u16>(),
-            Flavor::LittleEndian => self.input.read_le::<u16>(),
+        let len = match self.flavor {
+            Flavor::BigEndian => self.input.read_be::<u16>()?,
+            Flavor::LittleEndian => self.input.read_le::<u16>()?,
             Flavor::Network => {
                 todo!();
             }
         };
 
-        if let Ok(len) = opt_len {
-            if let Ok(data) = self.input.take(len as usize) {
-                let str = String::from_utf8(data.to_vec())?;
-                return visitor.visit_string(str);
-            }
-        }
+        let data = self.input.take(len as usize)?;
+        let string = String::from_utf8(data.to_vec())?;
+        dbg!(&string);
 
-        Err(Error::UnexpectedEof)
+        visitor.visit_string(string)
     }
 
     fn deserialize_bytes<V>(self, visitor: V) -> Result<V::Value>
@@ -406,6 +411,9 @@ impl<'de, 'a> de::Deserializer<'de> for &'a mut Deserializer<'de> {
     where
         V: Visitor<'de>,
     {
+        debug_assert_eq!(self.input.read_be::<u8>()?, TAG_COMPOUND);
+        let name = self.deserialize_raw_str()?;
+        dbg!(name);
         self.deserialize_map(visitor)
     }
 
@@ -491,11 +499,11 @@ mod test {
     fn read_hello_world_nbt() {
         #[derive(Deserialize, Debug, PartialEq)]
         struct HelloWorld {
-            name: &'static str,
+            name: String,
         }
 
         let decoded: HelloWorld = from_be_bytes(HELLO_WORLD_NBT).unwrap();
-        assert_eq!(decoded, HelloWorld { name: "Bananrama" });
+        assert_eq!(decoded, HelloWorld { name: String::from("Bananrama") });
     }
 
     #[test]
