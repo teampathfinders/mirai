@@ -1,36 +1,58 @@
-use crate::{Buf, Error};
 use crate::buf::FromBytes;
+use crate::{Error};
+// use crate::buf::FromBytes;
 use std::fmt::Debug;
 use std::io::Read;
+use std::mem::MaybeUninit;
 use std::ops::{Deref, Index};
 use std::{cmp, fmt, io};
 
 use crate::Result;
 
+/// Buffer that can be used to read binary data.
+/// 
+/// See [`WriteBuffer`](crate::WriteBuffer) for a writable buffer.
 pub struct ReadBuffer<'a>(&'a [u8]);
 
 impl<'a> ReadBuffer<'a> {
+    /// Advances the cursor, skipping `n` bytes.
     #[inline]
     pub fn advance(&mut self, n: usize) {
         let (_, b) = self.0.split_at(n);
         *self = ReadBuffer::from(b);
     }
 
+    /// Reads the specified big-endian encoded type from the buffer without advancing the cursor.
     #[inline]
-    pub fn peek<T: FromBytes>(&self) -> Result<T> {
-        todo!();
+    pub fn peek_be<T: FromBytes>(&self) -> Result<T> where [(); T::SIZE]: {
+        Ok(T::from_be_bytes(self.peek::<{T::SIZE}>()?))
+    }
+
+    /// Reads the specified little-endian encoded type from the buffer without advancing the cursor.
+    #[inline]
+    pub fn peek_le<T: FromBytes>(&self) -> Result<T> where [(); T::SIZE]: {
+        Ok(T::from_le_bytes(self.peek::<{T::SIZE}>()?))
     }
 
     #[inline]
-    pub const fn len(&self) -> usize {
-        self.0.len()
+    pub fn peek<const N: usize>(&self) -> Result<[u8; N]> {
+        if self.len() < N {
+            Err(Error::UnexpectedEof)
+        } else {
+            let dst = &self.0[..N];
+            unsafe {
+                Ok(dst.try_into().unwrap())
+            }
+        }
     }
 
-    #[inline]
-    pub const fn is_empty(&self) -> bool {
-        self.len() == 0
-    }
-
+    /// Takes a specified amount of bytes from the buffer.
+    /// 
+    /// If the amount of bytes to take from the buffer is known at compile-time,
+    /// [`take`](Self::take) can be used instead.
+    /// 
+    /// # Errors
+    /// Returns [`UnexpectedEof`](Error::UnexpectedEof) if the read exceeds the buffer length.
     #[inline]
     pub fn take_n(&mut self, n: usize) -> Result<&[u8]> {
         if self.len() < n {
@@ -42,6 +64,16 @@ impl<'a> ReadBuffer<'a> {
         }
     }
 
+    /// Takes a specified amount of bytes from the buffer.
+    /// 
+    /// This method is generic over the amount of bytes to take.
+    /// In case the amount is known at compile time, this function can be used to
+    /// take a sized array from the buffer.
+    /// 
+    /// See [`take_n`](Self::take_n) for a runtime alternative.
+    /// 
+    /// # Errors
+    /// Returns [`UnexpectedEof`](Error::UnexpectedEof) if the read exceeds the buffer length.
     #[inline]
     pub fn take<const N: usize>(&mut self) -> Result<[u8; N]> {
         if self.len() < N {
@@ -49,13 +81,29 @@ impl<'a> ReadBuffer<'a> {
         } else {
             let (a, b) = self.0.split_at(N);
             *self = ReadBuffer::from(b);
-            Ok(a.try_into().unwrap())
+            // SAFETY: We can unwrap because the array is guaranteed to be the required size.
+            unsafe {
+                Ok(a.try_into().unwrap_unchecked())
+            }
         }
     }
 
+    /// Reads a big-endian encoded type from the buffer.
+    /// 
+    /// See [`FromBytes`] for a list of types that can be read from the buffer with this method.
     #[inline]
-    pub fn first(&self) -> Result<&u8> {
-        self.0.first().ok_or(Error::UnexpectedEof)
+    pub fn read_be<T: FromBytes>(&mut self) -> Result<T> where [(); T::SIZE]: {
+        let bytes = self.take::<{T::SIZE}>()?;
+        Ok(T::from_be_bytes(bytes))
+    }
+
+    /// Reads a little-endian encoded type from the buffer.
+    /// 
+    /// See [`FromBytes`] for a list of types that can be read from the buffer with this method.
+    #[inline]
+    pub fn read_le<T: FromBytes>(&mut self) -> Result<T> where [(); T::SIZE]: {
+        let bytes = self.take::<{T::SIZE}>()?;
+        Ok(T::from_le_bytes(bytes))
     }
 }
 
@@ -84,15 +132,15 @@ impl<'a> Index<usize> for ReadBuffer<'a> {
     }
 }
 
-impl<'a> IntoIterator for ReadBuffer<'a> {
-    type Item = &'a u8;
-    type IntoIter = std::slice::Iter<'a, u8>;
+// impl<'a> IntoIterator for ReadBuffer<'a> {
+//     type Item = &'a u8;
+//     type IntoIter = std::slice::Iter<'a, u8>;
 
-    #[inline]
-    fn into_iter(self) -> Self::IntoIter {
-        self.0.iter()
-    }
-}
+//     #[inline]
+//     fn into_iter(self) -> Self::IntoIter {
+//         self.0.iter()
+//     }
+// }
 
 impl<'a> Debug for ReadBuffer<'a> {
     #[inline]
@@ -118,151 +166,9 @@ impl<'a> Read for ReadBuffer<'a> {
     }
 }
 
-impl<'a> Buf for ReadBuffer<'a> {
-    #[inline]
-    fn read_bool(&mut self) -> Result<bool> {
-        let x = self.read_u8()?;
-        Ok(x != 0)
-    }
-
-    #[inline]
-    fn read_u8(&mut self) -> Result<u8> {
-        let x = self.first().copied()?;
-        self.advance(1);
-        Ok(x)
-    }
-
-    #[inline]
-    fn read_u16(&mut self) -> Result<u16> {
-        let b = self.take()?;
-        Ok(u16::from_be_bytes(b))
-    }
-
-    #[inline]
-    fn read_u32(&mut self) -> Result<u32> {
-        let b = self.take()?;
-        Ok(u32::from_be_bytes(b))
-    }
-
-    #[inline]
-    fn read_u64(&mut self) -> Result<u64> {
-        let b = self.take()?;
-        Ok(u64::from_be_bytes(b))
-    }
-
-    #[inline]
-    fn read_u128(&mut self) -> Result<u128> {
-        let b = self.take()?;
-        Ok(u128::from_be_bytes(b))
-    }
-
-    #[inline]
-    fn read_i8(&mut self) -> Result<i8> {
-        let x = self.first().copied()? as i8;
-        self.advance(1);
-        Ok(x)
-    }
-
-    #[inline]
-    fn read_i16(&mut self) -> Result<i16> {
-        let b = self.take()?;
-        Ok(i16::from_be_bytes(b))
-    }
-
-    #[inline]
-    fn read_i32(&mut self) -> Result<i32> {
-        let b = self.take()?;
-        Ok(i32::from_be_bytes(b))
-    }
-
-    #[inline]
-    fn read_i64(&mut self) -> Result<i64> {
-        let b = self.take()?;
-        Ok(i64::from_be_bytes(b))
-    }
-
-    #[inline]
-    fn read_i128(&mut self) -> Result<i128> {
-        let b = self.take()?;
-        Ok(i128::from_be_bytes(b))
-    }
-
-    #[inline]
-    fn read_u16_le(&mut self) -> Result<u16> {
-        let b = self.take()?;
-        Ok(u16::from_le_bytes(b))
-    }
-
-    #[inline]
-    fn read_u32_le(&mut self) -> Result<u32> {
-        let b = self.take()?;
-        Ok(u32::from_le_bytes(b))
-    }
-
-    #[inline]
-    fn read_u64_le(&mut self) -> Result<u64> {
-        let b = self.take()?;
-        Ok(u64::from_le_bytes(b))
-    }
-
-    #[inline]
-    fn read_u128_le(&mut self) -> Result<u128> {
-        let b = self.take()?;
-        Ok(u128::from_le_bytes(b))
-    }
-
-    #[inline]
-    fn read_i16_le(&mut self) -> Result<i16> {
-        let b = self.take()?;
-        Ok(i16::from_le_bytes(b))
-    }
-
-    #[inline]
-    fn read_i32_le(&mut self) -> Result<i32> {
-        let b = self.take()?;
-        Ok(i32::from_le_bytes(b))
-    }
-
-    #[inline]
-    fn read_i64_le(&mut self) -> Result<i64> {
-        let b = self.take()?;
-        Ok(i64::from_le_bytes(b))
-    }
-
-    #[inline]
-    fn read_i128_le(&mut self) -> Result<i128> {
-        let b = self.take()?;
-        Ok(i128::from_le_bytes(b))
-    }
-
-    #[inline]
-    fn read_f32(&mut self) -> Result<f32> {
-        let b = self.take()?;
-        Ok(f32::from_be_bytes(b))
-    }
-
-    #[inline]
-    fn read_f32_le(&mut self) -> Result<f32> {
-        let b = self.take()?;
-        Ok(f32::from_le_bytes(b))
-    }
-
-    #[inline]
-    fn read_f64(&mut self) -> Result<f64> {
-        let b = self.take()?;
-        Ok(f64::from_be_bytes(b))
-    }
-
-    #[inline]
-    fn read_f64_le(&mut self) -> Result<f64> {
-        let b = self.take()?;
-        Ok(f64::from_le_bytes(b))
-    }
-}
-
 #[cfg(test)]
 mod test {
-    use super::{Buf, ReadBuffer};
+    use super::{ReadBuffer};
 
     #[test]
     fn test_read_u8() {
@@ -270,7 +176,8 @@ mod test {
         let mut buf = ReadBuffer::from(s);
 
         for x in s {
-            assert_eq!(buf.read_u8().unwrap(), *x);
+            assert_eq!(buf.peek_be::<u8>().unwrap(), *x);
+            assert_eq!(buf.read_be::<u8>().unwrap(), *x);
         }
     }
 
@@ -281,7 +188,8 @@ mod test {
             ReadBuffer::from(unsafe { std::mem::transmute::<&[i8], &[u8]>(s) });
 
         for x in s {
-            assert_eq!(buf.read_i8().unwrap(), *x);
+            assert_eq!(buf.peek_be::<i8>().unwrap(), *x);
+            assert_eq!(buf.read_be::<i8>().unwrap(), *x);
         }
     }
 
@@ -292,7 +200,8 @@ mod test {
         let mut buf = ReadBuffer::from(s);
 
         for x in o {
-            assert_eq!(buf.read_u16().unwrap(), x);
+            assert_eq!(buf.peek_be::<u16>().unwrap(), x);
+            assert_eq!(buf.read_be::<u16>().unwrap(), x);
         }
     }
 
@@ -303,7 +212,8 @@ mod test {
         let mut buf = ReadBuffer::from(s);
 
         for x in o {
-            assert_eq!(buf.read_i16().unwrap(), x);
+            assert_eq!(buf.peek_be::<i16>().unwrap(), x);
+            assert_eq!(buf.read_be::<i16>().unwrap(), x);
         }
     }
 }

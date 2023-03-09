@@ -1,4 +1,4 @@
-use crate::{ReadBuffer, Buf, bail, TAG_COMPOUND, TAG_END};
+use crate::{ReadBuffer, bail, TAG_COMPOUND, TAG_END};
 use crate::error::{Error, Result};
 use serde::de::{Visitor, MapAccess, DeserializeSeed};
 use serde::{de, Deserialize};
@@ -38,8 +38,8 @@ impl<'de> Deserializer<'de> {
 
     fn deserialize_raw_str(&mut self) -> Result<&str> {
         let len = match self.flavor {
-            Flavor::BigEndian => self.input.read_u16(),
-            Flavor::LittleEndian => self.input.read_u16_le(),
+            Flavor::BigEndian => self.input.read_be::<u16>(),
+            Flavor::LittleEndian => self.input.read_le::<u16>(),
             Flavor::Network => todo!()
         }?;
 
@@ -102,7 +102,7 @@ impl<'de, 'a> de::Deserializer<'de> for &'a mut Deserializer<'de> {
     where
         V: Visitor<'de>,
     {
-        if let Ok(x) = self.input.read_bool() {
+        if let Ok(x) = self.input.read_be::<bool>() {
             visitor.visit_bool(x)
         } else {
             bail!(UnexpectedEof)
@@ -113,7 +113,7 @@ impl<'de, 'a> de::Deserializer<'de> for &'a mut Deserializer<'de> {
     where
         V: Visitor<'de>,
     {
-        if let Ok(x) = self.input.read_i8() {
+        if let Ok(x) = self.input.read_be::<i8>() {
             visitor.visit_i8(x)
         } else {
             bail!(UnexpectedEof)
@@ -126,14 +126,14 @@ impl<'de, 'a> de::Deserializer<'de> for &'a mut Deserializer<'de> {
     {
         match self.flavor {
             Flavor::BigEndian => {
-                if let Ok(x) = self.input.read_i16() {
+                if let Ok(x) = self.input.read_be::<i16>() {
                     visitor.visit_i16(x)
                 } else {
                     bail!(UnexpectedEof)
                 }
             },
             _ => {
-                if let Ok(x) = self.input.read_i16_le() {
+                if let Ok(x) = self.input.read_le::<i16>() {
                     visitor.visit_i16(x)
                 } else {
                     bail!(UnexpectedEof)
@@ -148,14 +148,14 @@ impl<'de, 'a> de::Deserializer<'de> for &'a mut Deserializer<'de> {
     {
         match self.flavor {
             Flavor::BigEndian => {
-                if let Ok(x) = self.input.read_i32() {
+                if let Ok(x) = self.input.read_be::<i32>() {
                     visitor.visit_i32(x)
                 } else {
                     bail!(UnexpectedEof)
                 }
             },
             _ => {
-                if let Ok(x) = self.input.read_i32_le() {
+                if let Ok(x) = self.input.read_le::<i32>() {
                     visitor.visit_i32(x)
                 } else {
                     bail!(UnexpectedEof)
@@ -170,14 +170,14 @@ impl<'de, 'a> de::Deserializer<'de> for &'a mut Deserializer<'de> {
     {
         match self.flavor {
             Flavor::BigEndian => {
-                if let Ok(x) = self.input.read_i64() {
+                if let Ok(x) = self.input.read_be::<i64>() {
                     visitor.visit_i64(x)
                 } else {
                     bail!(UnexpectedEof)
                 }
             },
             _ => {
-                if let Ok(x) = self.input.read_i64_le() {
+                if let Ok(x) = self.input.read_le::<i64>() {
                     visitor.visit_i64(x)
                 } else {
                     bail!(UnexpectedEof)
@@ -220,14 +220,14 @@ impl<'de, 'a> de::Deserializer<'de> for &'a mut Deserializer<'de> {
     {
         match self.flavor {
             Flavor::BigEndian => {
-                if let Ok(x) = self.input.read_f32() {
+                if let Ok(x) = self.input.read_be::<f32>() {
                     visitor.visit_f32(x)
                 } else {
                     bail!(UnexpectedEof)
                 }
             },
             _ => {
-                if let Ok(x) = self.input.read_f32_le() {
+                if let Ok(x) = self.input.read_le::<f32>() {
                     visitor.visit_f32(x)
                 } else {
                     bail!(UnexpectedEof)
@@ -242,14 +242,14 @@ impl<'de, 'a> de::Deserializer<'de> for &'a mut Deserializer<'de> {
     {
         match self.flavor {
             Flavor::BigEndian => {
-                if let Ok(x) = self.input.read_f64() {
+                if let Ok(x) = self.input.read_be::<f64>() {
                     visitor.visit_f64(x)
                 } else {
                     bail!(UnexpectedEof)
                 }
             },
             _ => {
-                if let Ok(x) = self.input.read_f64_le() {
+                if let Ok(x) = self.input.read_le::<f64>() {
                     visitor.visit_f64(x)
                 } else {
                     bail!(UnexpectedEof)
@@ -271,10 +271,10 @@ impl<'de, 'a> de::Deserializer<'de> for &'a mut Deserializer<'de> {
     {
         let opt_len = match self.flavor {
             Flavor::BigEndian => {
-                self.input.read_u16()
+                self.input.read_be::<u16>()
             },
             Flavor::LittleEndian => {
-                self.input.read_u16_le()
+                self.input.read_le::<u16>()
             },
             Flavor::Network => {
                 todo!();
@@ -297,10 +297,10 @@ impl<'de, 'a> de::Deserializer<'de> for &'a mut Deserializer<'de> {
     {
         let opt_len = match self.flavor {
             Flavor::BigEndian => {
-                self.input.read_u16()
+                self.input.read_be::<u16>()
             },
             Flavor::LittleEndian => {
-                self.input.read_u16_le()
+                self.input.read_le::<u16>()
             },
             Flavor::Network => {
                 todo!();
@@ -453,7 +453,7 @@ impl<'de, 'a> MapAccess<'de> for Deserializer<'a> {
     where
         V: DeserializeSeed<'de>,
     {
-        if self.input.peek::<u8>()? == TAG_END {
+        if self.input.peek_be::<u8>()? == TAG_END {
             
         }
 
