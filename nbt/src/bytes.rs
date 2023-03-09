@@ -1,9 +1,11 @@
-use crate::Buf;
+use crate::{Buf, Error};
 use crate::buf::FromBytes;
 use std::fmt::Debug;
 use std::io::Read;
 use std::ops::{Deref, Index};
 use std::{cmp, fmt, io};
+
+use crate::Result;
 
 pub struct ReadBuffer<'a>(&'a [u8]);
 
@@ -15,7 +17,7 @@ impl<'a> ReadBuffer<'a> {
     }
 
     #[inline]
-    pub fn peek<T: FromBytes>(&self) -> Option<T> {
+    pub fn peek<T: FromBytes>(&self) -> Result<T> {
         todo!();
     }
 
@@ -30,30 +32,30 @@ impl<'a> ReadBuffer<'a> {
     }
 
     #[inline]
-    pub fn take_n(&mut self, n: usize) -> Option<&[u8]> {
+    pub fn take_n(&mut self, n: usize) -> Result<&[u8]> {
         if self.len() < n {
-            None
+            Err(Error::UnexpectedEof)
         } else {
             let (a, b) = self.0.split_at(n);
             *self = ReadBuffer::from(b);
-            Some(a)
+            Ok(a)
         }
     }
 
     #[inline]
-    pub fn take<const N: usize>(&mut self) -> Option<[u8; N]> {
+    pub fn take<const N: usize>(&mut self) -> Result<[u8; N]> {
         if self.len() < N {
-            None
+            Err(Error::UnexpectedEof)
         } else {
             let (a, b) = self.0.split_at(N);
             *self = ReadBuffer::from(b);
-            Some(a.try_into().unwrap())
+            Ok(a.try_into().unwrap())
         }
     }
 
     #[inline]
-    pub const fn first(&self) -> Option<&u8> {
-        self.0.first()
+    pub fn first(&self) -> Result<&u8> {
+        self.0.first().ok_or(Error::UnexpectedEof)
     }
 }
 
@@ -118,143 +120,143 @@ impl<'a> Read for ReadBuffer<'a> {
 
 impl<'a> Buf for ReadBuffer<'a> {
     #[inline]
-    fn read_bool(&mut self) -> Option<bool> {
+    fn read_bool(&mut self) -> Result<bool> {
         let x = self.read_u8()?;
-        Some(x != 0)
+        Ok(x != 0)
     }
 
     #[inline]
-    fn read_u8(&mut self) -> Option<u8> {
+    fn read_u8(&mut self) -> Result<u8> {
         let x = self.first().copied()?;
         self.advance(1);
-        Some(x)
+        Ok(x)
     }
 
     #[inline]
-    fn read_u16(&mut self) -> Option<u16> {
+    fn read_u16(&mut self) -> Result<u16> {
         let b = self.take()?;
-        Some(u16::from_be_bytes(b))
+        Ok(u16::from_be_bytes(b))
     }
 
     #[inline]
-    fn read_u32(&mut self) -> Option<u32> {
+    fn read_u32(&mut self) -> Result<u32> {
         let b = self.take()?;
-        Some(u32::from_be_bytes(b))
+        Ok(u32::from_be_bytes(b))
     }
 
     #[inline]
-    fn read_u64(&mut self) -> Option<u64> {
+    fn read_u64(&mut self) -> Result<u64> {
         let b = self.take()?;
-        Some(u64::from_be_bytes(b))
+        Ok(u64::from_be_bytes(b))
     }
 
     #[inline]
-    fn read_u128(&mut self) -> Option<u128> {
+    fn read_u128(&mut self) -> Result<u128> {
         let b = self.take()?;
-        Some(u128::from_be_bytes(b))
+        Ok(u128::from_be_bytes(b))
     }
 
     #[inline]
-    fn read_i8(&mut self) -> Option<i8> {
+    fn read_i8(&mut self) -> Result<i8> {
         let x = self.first().copied()? as i8;
         self.advance(1);
-        Some(x)
+        Ok(x)
     }
 
     #[inline]
-    fn read_i16(&mut self) -> Option<i16> {
+    fn read_i16(&mut self) -> Result<i16> {
         let b = self.take()?;
-        Some(i16::from_be_bytes(b))
+        Ok(i16::from_be_bytes(b))
     }
 
     #[inline]
-    fn read_i32(&mut self) -> Option<i32> {
+    fn read_i32(&mut self) -> Result<i32> {
         let b = self.take()?;
-        Some(i32::from_be_bytes(b))
+        Ok(i32::from_be_bytes(b))
     }
 
     #[inline]
-    fn read_i64(&mut self) -> Option<i64> {
+    fn read_i64(&mut self) -> Result<i64> {
         let b = self.take()?;
-        Some(i64::from_be_bytes(b))
+        Ok(i64::from_be_bytes(b))
     }
 
     #[inline]
-    fn read_i128(&mut self) -> Option<i128> {
+    fn read_i128(&mut self) -> Result<i128> {
         let b = self.take()?;
-        Some(i128::from_be_bytes(b))
+        Ok(i128::from_be_bytes(b))
     }
 
     #[inline]
-    fn read_u16_le(&mut self) -> Option<u16> {
+    fn read_u16_le(&mut self) -> Result<u16> {
         let b = self.take()?;
-        Some(u16::from_le_bytes(b))
+        Ok(u16::from_le_bytes(b))
     }
 
     #[inline]
-    fn read_u32_le(&mut self) -> Option<u32> {
+    fn read_u32_le(&mut self) -> Result<u32> {
         let b = self.take()?;
-        Some(u32::from_le_bytes(b))
+        Ok(u32::from_le_bytes(b))
     }
 
     #[inline]
-    fn read_u64_le(&mut self) -> Option<u64> {
+    fn read_u64_le(&mut self) -> Result<u64> {
         let b = self.take()?;
-        Some(u64::from_le_bytes(b))
+        Ok(u64::from_le_bytes(b))
     }
 
     #[inline]
-    fn read_u128_le(&mut self) -> Option<u128> {
+    fn read_u128_le(&mut self) -> Result<u128> {
         let b = self.take()?;
-        Some(u128::from_le_bytes(b))
+        Ok(u128::from_le_bytes(b))
     }
 
     #[inline]
-    fn read_i16_le(&mut self) -> Option<i16> {
+    fn read_i16_le(&mut self) -> Result<i16> {
         let b = self.take()?;
-        Some(i16::from_le_bytes(b))
+        Ok(i16::from_le_bytes(b))
     }
 
     #[inline]
-    fn read_i32_le(&mut self) -> Option<i32> {
+    fn read_i32_le(&mut self) -> Result<i32> {
         let b = self.take()?;
-        Some(i32::from_le_bytes(b))
+        Ok(i32::from_le_bytes(b))
     }
 
     #[inline]
-    fn read_i64_le(&mut self) -> Option<i64> {
+    fn read_i64_le(&mut self) -> Result<i64> {
         let b = self.take()?;
-        Some(i64::from_le_bytes(b))
+        Ok(i64::from_le_bytes(b))
     }
 
     #[inline]
-    fn read_i128_le(&mut self) -> Option<i128> {
+    fn read_i128_le(&mut self) -> Result<i128> {
         let b = self.take()?;
-        Some(i128::from_le_bytes(b))
+        Ok(i128::from_le_bytes(b))
     }
 
     #[inline]
-    fn read_f32(&mut self) -> Option<f32> {
+    fn read_f32(&mut self) -> Result<f32> {
         let b = self.take()?;
-        Some(f32::from_be_bytes(b))
+        Ok(f32::from_be_bytes(b))
     }
 
     #[inline]
-    fn read_f32_le(&mut self) -> Option<f32> {
+    fn read_f32_le(&mut self) -> Result<f32> {
         let b = self.take()?;
-        Some(f32::from_le_bytes(b))
+        Ok(f32::from_le_bytes(b))
     }
 
     #[inline]
-    fn read_f64(&mut self) -> Option<f64> {
+    fn read_f64(&mut self) -> Result<f64> {
         let b = self.take()?;
-        Some(f64::from_be_bytes(b))
+        Ok(f64::from_be_bytes(b))
     }
 
     #[inline]
-    fn read_f64_le(&mut self) -> Option<f64> {
+    fn read_f64_le(&mut self) -> Result<f64> {
         let b = self.take()?;
-        Some(f64::from_le_bytes(b))
+        Ok(f64::from_le_bytes(b))
     }
 }
 
