@@ -1,9 +1,10 @@
 use crate::error::{Error, Result};
 use crate::{
-    bail, ReadBuffer, TAG_BYTE, TAG_COMPOUND, TAG_DOUBLE, TAG_END, TAG_FLOAT,
-    TAG_INT, TAG_LONG, TAG_SHORT,
+    bail, ReadBuffer, TAG_BYTE, TAG_BYTE_ARRAY, TAG_COMPOUND, TAG_DOUBLE,
+    TAG_END, TAG_FLOAT, TAG_INT, TAG_INT_ARRAY, TAG_LIST, TAG_LONG,
+    TAG_LONG_ARRAY, TAG_SHORT, TAG_STRING,
 };
-use serde::de::{DeserializeSeed, MapAccess, Visitor};
+use serde::de::{DeserializeSeed, MapAccess, SeqAccess, Visitor};
 use serde::{de, Deserialize};
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
@@ -16,7 +17,10 @@ pub enum Flavor {
 pub struct Deserializer<'de> {
     flavor: Flavor,
     input: ReadBuffer<'de>,
+
+    // State
     latest_tag: u8,
+    remaining: u32,
 }
 
 impl<'de> Deserializer<'de> {
@@ -26,6 +30,7 @@ impl<'de> Deserializer<'de> {
             input: ReadBuffer::from(input),
             flavor,
             latest_tag: TAG_END,
+            remaining: 0,
         }
     }
 
@@ -110,6 +115,12 @@ impl<'de, 'a> de::Deserializer<'de> for &'a mut Deserializer<'de> {
             TAG_LONG => self.deserialize_i64(visitor),
             TAG_FLOAT => self.deserialize_f32(visitor),
             TAG_DOUBLE => self.deserialize_f64(visitor),
+            TAG_BYTE_ARRAY => self.deserialize_byte_buf(visitor),
+            TAG_STRING => self.deserialize_string(visitor),
+            TAG_LIST => self.deserialize_seq(visitor),
+            TAG_COMPOUND => self.deserialize_map(visitor),
+            TAG_INT_ARRAY => self.deserialize_seq(visitor),
+            TAG_LONG_ARRAY => self.deserialize_seq(visitor),
             t => todo!("{t} not implemented"),
         }
     }
@@ -373,14 +384,22 @@ impl<'de, 'a> de::Deserializer<'de> for &'a mut Deserializer<'de> {
     where
         V: Visitor<'de>,
     {
-        todo!();
+        let list_type = self.input.read_be::<u8>()?;
+        self.remaining = match self.flavor {
+            Flavor::BigEndian => self.input.read_be::<u32>()?,
+            Flavor::LittleEndian => self.input.read_le::<u32>()?,
+            Flavor::Network => todo!(),
+        };
+
+        let de = SeqDeserializer::<V::Value>::from(self);
+        visitor.visit_seq(de)
     }
 
     fn deserialize_tuple<V>(self, _len: usize, visitor: V) -> Result<V::Value>
     where
         V: Visitor<'de>,
     {
-        todo!();
+        self.deserialize_seq(visitor)
     }
 
     fn deserialize_tuple_struct<V>(
@@ -441,6 +460,38 @@ impl<'de, 'a> de::Deserializer<'de> for &'a mut Deserializer<'de> {
         V: Visitor<'de>,
     {
         self.deserialize_any(visitor)
+    }
+}
+
+struct SeqDeserializer<'a, 'de: 'a, V> {
+    de: &'a mut Deserializer<'de>,
+    seq: Vec<V>,
+}
+
+impl<'de, 'a, V> From<&'a mut Deserializer<'de>>
+    for SeqDeserializer<'a, 'de, V>
+{
+    fn from(v: &'a mut Deserializer<'de>) -> Self {
+        Self {
+            seq: Vec::with_capacity(v.remaining as usize),
+            de: v,
+        }
+    }
+}
+
+impl<'de, 'a, V> SeqAccess<'de> for SeqDeserializer<'a, 'de, V> {
+    type Error = Error;
+
+    fn next_element_seed<E>(&mut self, seed: E) -> Result<Option<E::Value>>
+    where
+        E: DeserializeSeed<'de>,
+    {
+        if self.de.remaining > 0 {
+            self.de.remaining -= 1;
+            seed.deserialize(&mut *self.de).map(Some)
+        } else {
+            Ok(None)
+        }
     }
 }
 
@@ -507,5 +558,35 @@ mod test {
     }
 
     #[test]
-    fn read_player_nan_value_nbt() {}
+    fn read_player_nan_value_nbt() {
+        #[derive(Deserialize, Debug, PartialEq)]
+        struct Player {
+            #[serde(rename = "Pos")]
+            pos: (f64, f64, f64),
+            #[serde(rename = "Motion")]
+            motion: (f64, f64, f64),
+            #[serde(rename = "OnGround")]
+            on_ground: bool,
+            #[serde(rename = "DeathTime")]
+            death_time: i16,
+            #[serde(rename = "Air")]
+            air: i16,
+            #[serde(rename = "Health")]
+            health: i16,
+            #[serde(rename = "FallDistance")]
+            fall_distance: f32,
+            #[serde(rename = "AttackTime")]
+            attack_time: i16,
+            #[serde(rename = "HurtTime")]
+            hurt_time: i16,
+            #[serde(rename = "Fire")]
+            fire: i16,
+            #[serde(rename = "Rotation")]
+            rotation: (f32, f32),
+        }
+
+        println!("{PLAYER_NAN_VALUE_NBT:?}");
+        let decoded: Player = from_be_bytes(PLAYER_NAN_VALUE_NBT).unwrap();
+        dbg!(decoded);
+    }
 }
