@@ -43,7 +43,7 @@ impl<'de> Deserializer<'de> {
             Flavor::Network => todo!()
         }?;
 
-        let data = self.input.take_n(len as usize)?;
+        let data = self.input.take(len as usize)?;
         let str = std::str::from_utf8(data)?;
 
         Ok(str)
@@ -282,7 +282,7 @@ impl<'de, 'a> de::Deserializer<'de> for &'a mut Deserializer<'de> {
         };
 
         if let Ok(len) = opt_len {
-            if let Ok(data) = self.input.take_n(len as usize) {
+            if let Ok(data) = self.input.take(len as usize) {
                 let str = std::str::from_utf8(data)?;
                 return visitor.visit_str(str)
             }
@@ -308,7 +308,7 @@ impl<'de, 'a> de::Deserializer<'de> for &'a mut Deserializer<'de> {
         };
 
         if let Ok(len) = opt_len {
-            if let Ok(data) = self.input.take_n(len as usize) {
+            if let Ok(data) = self.input.take(len as usize) {
                 let str = String::from_utf8(data.to_vec())?;
                 return visitor.visit_string(str)
             }
