@@ -1,21 +1,27 @@
-use std::{io::Write, any::{TypeId, Any}, fmt::format};
+use std::{
+    any::{Any, TypeId},
+    fmt::format,
+    io::Write,
+};
 
-use serde::{Serialize, ser};
+use serde::{ser, Serialize};
 
-use crate::{de::Flavor, bytes_mut::WriteBuffer, error::Result, Error, buf_mut::BufMut, TAG_COMPOUND, TAG_END, TAG_BYTE, TAG_SHORT, TAG_INT, TAG_LONG, TAG_FLOAT, TAG_DOUBLE, TAG_STRING, bail};
+use crate::{
+    bail, buf_mut::BufMut, bytes_mut::WriteBuffer, de::Flavor, error::Result,
+    Error, TAG_BYTE, TAG_COMPOUND, TAG_DOUBLE, TAG_END, TAG_FLOAT, TAG_INT,
+    TAG_LONG, TAG_SHORT, TAG_STRING,
+};
 
 pub struct Serializer {
     flavor: Flavor,
-    output: WriteBuffer
+    output: WriteBuffer,
 }
 
-pub fn to_bytes<T>(value: &T, flavor: Flavor) -> Result<WriteBuffer> 
+pub fn to_bytes<T>(value: &T, flavor: Flavor) -> Result<WriteBuffer>
 where
-    T: Serialize
+    T: Serialize,
 {
-    let mut serializer = Serializer {
-        flavor, output: WriteBuffer::new()
-    };
+    let mut serializer = Serializer { flavor, output: WriteBuffer::new() };
 
     value.serialize(&mut serializer)?;
 
@@ -48,7 +54,7 @@ impl<'a> ser::Serializer for &'a mut Serializer {
         match self.flavor {
             Flavor::LittleEndian | Flavor::Network => {
                 self.output.write_i16_le(v);
-            },
+            }
             Flavor::BigEndian => {
                 self.output.write_i16(v);
             }
@@ -61,7 +67,7 @@ impl<'a> ser::Serializer for &'a mut Serializer {
         match self.flavor {
             Flavor::LittleEndian | Flavor::Network => {
                 self.output.write_i32_le(v);
-            },
+            }
             Flavor::BigEndian => {
                 self.output.write_i32(v);
             }
@@ -74,7 +80,7 @@ impl<'a> ser::Serializer for &'a mut Serializer {
         match self.flavor {
             Flavor::LittleEndian | Flavor::Network => {
                 self.output.write_i64_le(v);
-            },
+            }
             Flavor::BigEndian => {
                 self.output.write_i64(v);
             }
@@ -107,7 +113,7 @@ impl<'a> ser::Serializer for &'a mut Serializer {
         match self.flavor {
             Flavor::LittleEndian | Flavor::Network => {
                 self.output.write_f32_le(v);
-            },
+            }
             Flavor::BigEndian => {
                 self.output.write_f32(v);
             }
@@ -120,7 +126,7 @@ impl<'a> ser::Serializer for &'a mut Serializer {
         match self.flavor {
             Flavor::LittleEndian | Flavor::Network => {
                 self.output.write_f64_le(v);
-            },
+            }
             Flavor::BigEndian => {
                 self.output.write_f64(v);
             }
@@ -132,7 +138,7 @@ impl<'a> ser::Serializer for &'a mut Serializer {
     fn serialize_char(self, v: char) -> Result<()> {
         let mut utf8_buf = [0u8; 4];
         v.encode_utf8(&mut utf8_buf);
-        
+
         self.output.write_all(&utf8_buf[..v.len_utf8()])?;
         Ok(())
     }
@@ -141,10 +147,10 @@ impl<'a> ser::Serializer for &'a mut Serializer {
         match self.flavor {
             Flavor::LittleEndian => {
                 self.output.write_u16_le(v.len() as u16);
-            },
+            }
             Flavor::BigEndian => {
                 self.output.write_u16(v.len() as u16);
-            },
+            }
             Flavor::Network => {
                 todo!();
             }
@@ -164,7 +170,8 @@ impl<'a> ser::Serializer for &'a mut Serializer {
 
     fn serialize_some<T: ?Sized>(self, value: &T) -> Result<()>
     where
-        T: Serialize {
+        T: Serialize,
+    {
         todo!()
     }
 
@@ -191,7 +198,8 @@ impl<'a> ser::Serializer for &'a mut Serializer {
         value: &T,
     ) -> Result<()>
     where
-        T: Serialize {
+        T: Serialize,
+    {
         todo!()
     }
 
@@ -203,11 +211,15 @@ impl<'a> ser::Serializer for &'a mut Serializer {
         value: &T,
     ) -> Result<()>
     where
-        T: Serialize {
+        T: Serialize,
+    {
         todo!()
     }
 
-    fn serialize_seq(self, len: Option<usize>) -> std::result::Result<Self, Error> {
+    fn serialize_seq(
+        self,
+        len: Option<usize>,
+    ) -> std::result::Result<Self, Error> {
         todo!()
     }
 
@@ -216,7 +228,9 @@ impl<'a> ser::Serializer for &'a mut Serializer {
     }
 
     fn serialize_tuple_struct(
-        self, name: &'static str, len: usize,
+        self,
+        name: &'static str,
+        len: usize,
     ) -> std::result::Result<Self, Error> {
         todo!()
     }
@@ -231,8 +245,10 @@ impl<'a> ser::Serializer for &'a mut Serializer {
         todo!()
     }
 
-    fn serialize_map(self, len: Option<usize>) -> std::result::Result<Self, Error> {
-        
+    fn serialize_map(
+        self,
+        len: Option<usize>,
+    ) -> std::result::Result<Self, Error> {
         Ok(self)
     }
 
@@ -265,7 +281,7 @@ impl<'a> ser::SerializeSeq for &'a mut Serializer {
 
     fn serialize_element<T>(&mut self, value: &T) -> Result<()>
     where
-        T: ?Sized + Serialize 
+        T: ?Sized + Serialize,
     {
         todo!();
     }
@@ -403,7 +419,7 @@ impl<'a> ser::SerializeStructVariant for &'a mut Serializer {
 
 // impl<T: ?Sized + Serialize> ValidTag for T {
 //     // default fn ty() -> Option<DataType> { None }
-//     default fn id() -> Result<u8> { 
+//     default fn id() -> Result<u8> {
 //         Err(Error::Unsupported(format!("{} serialization is not supported", std::any::type_name::<T>())))
 //     }
 //     default fn is_primitive() -> bool { false }
@@ -448,14 +464,12 @@ impl<'a> ser::SerializeStructVariant for &'a mut Serializer {
 struct HeaderSerializer<'a> {
     key: Option<&'static str>,
     // serializer: &'a mut Serializer
-    buffer: &'a mut WriteBuffer
+    buffer: &'a mut WriteBuffer,
 }
 
 impl<'a> HeaderSerializer<'a> {
     pub fn new(buffer: &'a mut WriteBuffer, key: Option<&'static str>) -> Self {
-        Self {
-            key, buffer
-        }
+        Self { key, buffer }
     }
 }
 
@@ -538,7 +552,8 @@ impl<'a> ser::Serializer for HeaderSerializer<'a> {
 
     fn serialize_some<T: ?Sized>(self, value: &T) -> Result<()>
     where
-        T: Serialize {
+        T: Serialize,
+    {
         todo!()
     }
 
@@ -565,7 +580,8 @@ impl<'a> ser::Serializer for HeaderSerializer<'a> {
         value: &T,
     ) -> Result<()>
     where
-        T: Serialize {
+        T: Serialize,
+    {
         todo!()
     }
 
@@ -577,15 +593,22 @@ impl<'a> ser::Serializer for HeaderSerializer<'a> {
         value: &T,
     ) -> Result<()>
     where
-        T: Serialize {
+        T: Serialize,
+    {
         todo!()
     }
 
-    fn serialize_seq(self, len: Option<usize>) -> std::result::Result<Self::SerializeSeq, Self::Error> {
+    fn serialize_seq(
+        self,
+        len: Option<usize>,
+    ) -> std::result::Result<Self::SerializeSeq, Self::Error> {
         todo!()
     }
 
-    fn serialize_tuple(self, len: usize) -> std::result::Result<Self::SerializeTuple, Self::Error> {
+    fn serialize_tuple(
+        self,
+        len: usize,
+    ) -> std::result::Result<Self::SerializeTuple, Self::Error> {
         todo!()
     }
 
@@ -607,7 +630,10 @@ impl<'a> ser::Serializer for HeaderSerializer<'a> {
         todo!()
     }
 
-    fn serialize_map(self, len: Option<usize>) -> std::result::Result<Self::SerializeMap, Self::Error> {
+    fn serialize_map(
+        self,
+        len: Option<usize>,
+    ) -> std::result::Result<Self::SerializeMap, Self::Error> {
         todo!()
     }
 
@@ -636,7 +662,7 @@ impl<'a> ser::SerializeSeq for HeaderSerializer<'a> {
 
     fn serialize_element<T>(&mut self, value: &T) -> Result<()>
     where
-        T: ?Sized + Serialize 
+        T: ?Sized + Serialize,
     {
         todo!();
     }
@@ -940,7 +966,7 @@ impl<'a> ser::SerializeStructVariant for HeaderSerializer<'a> {
 
 //     fn serialize_element<T>(&mut self, value: &T) -> Result<()>
 //     where
-//         T: ?Sized + Serialize 
+//         T: ?Sized + Serialize
 //     {
 //         todo!();
 //     }
@@ -1053,18 +1079,17 @@ impl<'a> ser::SerializeStructVariant for HeaderSerializer<'a> {
 //     }
 // }
 
-
 #[cfg(test)]
 mod test {
     use serde::Serialize;
 
-    use crate::{ser::to_bytes, de::Flavor};
+    use crate::{de::Flavor, ser::to_bytes};
 
     #[test]
     fn write_compound() {
         #[derive(Serialize)]
         pub struct Inner {
-            string: &'static str
+            string: &'static str,
         }
 
         #[derive(Serialize)]
@@ -1072,14 +1097,14 @@ mod test {
             byte: i8,
             short: i16,
             float: f64,
-            inner: &'static str
+            inner: &'static str,
         }
 
         let compound = OuterStruct {
             byte: 5,
             short: 3974,
             float: 2.5,
-            inner: "Hello, World"
+            inner: "Hello, World",
         };
 
         let buffer = to_bytes(&compound, Flavor::LittleEndian).unwrap();

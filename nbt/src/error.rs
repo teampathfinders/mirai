@@ -1,12 +1,12 @@
 use serde::{de, ser};
-use std::{fmt, io};
 use std::fmt::Display;
+use std::{fmt, io};
 
 #[macro_export]
 macro_rules! bail {
     ($x: ident) => {
         return Err($crate::error::Error::$x)
-    }
+    };
 }
 
 pub type Result<T> = std::result::Result<T, Error>;
@@ -52,7 +52,7 @@ impl From<io::Error> for Error {
     fn from(v: io::Error) -> Self {
         match v.kind() {
             io::ErrorKind::UnexpectedEof => Self::UnexpectedEof,
-            _ => Self::Custom(v.to_string())
+            _ => Self::Custom(v.to_string()),
         }
     }
 }

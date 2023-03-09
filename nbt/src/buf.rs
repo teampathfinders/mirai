@@ -15,12 +15,16 @@ macro_rules! from_bytes {
             const SIZE: usize = $b as usize / 8;
 
             #[inline]
-            fn from_le_bytes(bytes: [u8; Self::SIZE]) -> Self { <$t>::from_le_bytes(bytes) }
+            fn from_le_bytes(bytes: [u8; Self::SIZE]) -> Self {
+                <$t>::from_le_bytes(bytes)
+            }
 
             #[inline]
-            fn from_be_bytes(bytes: [u8; Self::SIZE]) -> Self { <$t>::from_be_bytes(bytes) }
+            fn from_be_bytes(bytes: [u8; Self::SIZE]) -> Self {
+                <$t>::from_be_bytes(bytes)
+            }
         }
-    }
+    };
 }
 
 from_bytes!(u8);

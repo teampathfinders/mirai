@@ -3,10 +3,10 @@
 #![allow(incomplete_features)]
 #![warn(clippy::nursery)]
 
-mod buf_mut;
 mod buf;
-mod bytes_mut;
+mod buf_mut;
 mod bytes;
+mod bytes_mut;
 mod de;
 mod error;
 mod ser;

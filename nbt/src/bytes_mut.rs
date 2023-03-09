@@ -1,7 +1,7 @@
-use std::{fmt, io};
 use std::fmt::Debug;
 use std::io::Write;
 use std::ops::Deref;
+use std::{fmt, io};
 
 use crate::buf_mut::BufMut;
 

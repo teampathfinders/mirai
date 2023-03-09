@@ -1,6 +1,5 @@
 use crate::buf::FromBytes;
-use crate::{Error};
-// use crate::buf::FromBytes;
+use crate::Error;
 use std::fmt::Debug;
 use std::io::Read;
 use std::ops::{Deref, Index};
@@ -9,7 +8,7 @@ use std::{cmp, fmt, io};
 use crate::Result;
 
 /// Buffer that can be used to read binary data.
-/// 
+///
 /// See [`WriteBuffer`](crate::WriteBuffer) for a writable buffer.
 pub struct ReadBuffer<'a>(&'a [u8]);
 
@@ -23,24 +22,30 @@ impl<'a> ReadBuffer<'a> {
 
     /// Reads the specified big-endian encoded type from the buffer without advancing the cursor.
     #[inline]
-    pub fn peek_be<T: FromBytes>(&self) -> Result<T> where [(); T::SIZE]: {
-        Ok(T::from_be_bytes(self.peek_const::<{T::SIZE}>()?))
+    pub fn peek_be<T: FromBytes>(&self) -> Result<T>
+    where
+        [(); T::SIZE]:,
+    {
+        Ok(T::from_be_bytes(self.peek_const::<{ T::SIZE }>()?))
     }
 
     /// Reads the specified little-endian encoded type from the buffer without advancing the cursor.
     #[inline]
-    pub fn peek_le<T: FromBytes>(&self) -> Result<T> where [(); T::SIZE]: {
-        Ok(T::from_le_bytes(self.peek_const::<{T::SIZE}>()?))
+    pub fn peek_le<T: FromBytes>(&self) -> Result<T>
+    where
+        [(); T::SIZE]:,
+    {
+        Ok(T::from_le_bytes(self.peek_const::<{ T::SIZE }>()?))
     }
 
     /// Takes a specified amount of bytes from the buffer.
-    /// 
+    ///
     /// This method is generic over the amount of bytes to take.
     /// In case the amount is known at compile time, this function can be used to
     /// take a sized array from the buffer.
-    /// 
+    ///
     /// See [`peek`](Self::peek) for a runtime-sized alternative.
-    /// 
+    ///
     /// # Errors
     /// Returns [`UnexpectedEof`](Error::UnexpectedEof) if the read exceeds the buffer length.
     #[inline]
@@ -51,17 +56,15 @@ impl<'a> ReadBuffer<'a> {
             let dst = &self.0[..N];
             // SAFETY: dst is guaranteed to be of length N
             // due to the slicing above which already implements bounds checks.
-            unsafe {
-                Ok(dst.try_into().unwrap_unchecked())
-            }
+            unsafe { Ok(dst.try_into().unwrap_unchecked()) }
         }
     }
 
     /// Takes a specified amount of bytes from the buffer without advancing the cursor.
-    /// 
+    ///
     /// If the amount of bytes to take from the buffer is known at compile-time,
     /// [`peek_const`](Self::peek_const) can be used instead.
-    /// 
+    ///
     /// # Errors
     /// Returns [`UnexpectedEof`](Error::UnexpectedEof) if the read exceeds the buffer length.
     #[inline]
@@ -74,10 +77,10 @@ impl<'a> ReadBuffer<'a> {
     }
 
     /// Takes a specified amount of bytes from the buffer.
-    /// 
+    ///
     /// If the amount of bytes to take from the buffer is known at compile-time,
     /// [`take_const`](Self::take_const) can be used instead.
-    /// 
+    ///
     /// # Errors
     /// Returns [`UnexpectedEof`](Error::UnexpectedEof) if the read exceeds the buffer length.
     #[inline]
@@ -92,13 +95,13 @@ impl<'a> ReadBuffer<'a> {
     }
 
     /// Takes a specified amount of bytes from the buffer.
-    /// 
+    ///
     /// This method is generic over the amount of bytes to take.
     /// In case the amount is known at compile time, this function can be used to
     /// take a sized array from the buffer.
-    /// 
+    ///
     /// See [`take`](Self::take) for a runtime-sized alternative.
-    /// 
+    ///
     /// # Errors
     /// Returns [`UnexpectedEof`](Error::UnexpectedEof) if the read exceeds the buffer length.
     #[inline]
@@ -109,27 +112,31 @@ impl<'a> ReadBuffer<'a> {
             let (a, b) = self.0.split_at(N);
             *self = ReadBuffer::from(b);
             // SAFETY: We can unwrap because the array is guaranteed to be the required size.
-            unsafe {
-                Ok(a.try_into().unwrap_unchecked())
-            }
+            unsafe { Ok(a.try_into().unwrap_unchecked()) }
         }
     }
 
     /// Reads a big-endian encoded type from the buffer.
-    /// 
+    ///
     /// See [`FromBytes`] for a list of types that can be read from the buffer with this method.
     #[inline]
-    pub fn read_be<T: FromBytes>(&mut self) -> Result<T> where [(); T::SIZE]: {
-        let bytes = self.take_const::<{T::SIZE}>()?;
+    pub fn read_be<T: FromBytes>(&mut self) -> Result<T>
+    where
+        [(); T::SIZE]:,
+    {
+        let bytes = self.take_const::<{ T::SIZE }>()?;
         Ok(T::from_be_bytes(bytes))
     }
 
     /// Reads a little-endian encoded type from the buffer.
-    /// 
+    ///
     /// See [`FromBytes`] for a list of types that can be read from the buffer with this method.
     #[inline]
-    pub fn read_le<T: FromBytes>(&mut self) -> Result<T> where [(); T::SIZE]: {
-        let bytes = self.take_const::<{T::SIZE}>()?;
+    pub fn read_le<T: FromBytes>(&mut self) -> Result<T>
+    where
+        [(); T::SIZE]:,
+    {
+        let bytes = self.take_const::<{ T::SIZE }>()?;
         Ok(T::from_le_bytes(bytes))
     }
 }
@@ -195,7 +202,7 @@ impl<'a> Read for ReadBuffer<'a> {
 
 #[cfg(test)]
 mod test {
-    use super::{ReadBuffer};
+    use super::ReadBuffer;
 
     #[test]
     fn test_read_u8() {
