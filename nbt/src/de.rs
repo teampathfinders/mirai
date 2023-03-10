@@ -72,13 +72,13 @@ where
     T: Deserialize<'a>,
 {
     let mut deserializer = Deserializer::from_bytes(b, flavor);
-    let t = T::deserialize(&mut deserializer)?;
+    T::deserialize(&mut deserializer)
 
-    if deserializer.input.is_empty() {
-        Ok(t)
-    } else {
-        bail!(TrailingBytes, "there are unread bytes left in the buffer")
-    }
+    // if deserializer.input.is_empty() {
+    //     Ok(t)
+    // } else {
+    //     bail!(TrailingBytes, "there are unread bytes left in the buffer")
+    // }
 }
 
 #[inline]
