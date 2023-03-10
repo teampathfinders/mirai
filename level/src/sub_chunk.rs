@@ -1,5 +1,6 @@
 use bytes::{Buf, BufMut, Bytes, BytesMut};
-use common::{bail, BlockPosition, Deserialize, Serialize, VResult, Vector3b};
+use common::{bail, BlockPosition, Serialize, VResult, Vector3b, VError};
+use serde::Deserialize;
 
 const CHUNK_SIZE: usize = 4096;
 
@@ -15,10 +16,15 @@ fn u32_ceil_div(lhs: u32, rhs: u32) -> u32 {
     (lhs + rhs - 1) / rhs
 }
 
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
+pub struct BlockProperties {
+    name: String
+}
+
 #[derive(Debug, Clone)]
 pub struct StorageRecord {
     indices: [u16; CHUNK_SIZE],
-    palette: Vec<nbt::Value>,
+    palette: Vec<BlockProperties>,
 }
 
 impl StorageRecord {
@@ -69,7 +75,12 @@ impl StorageRecord {
 
         let mut palette = Vec::with_capacity(palette_size as usize);
         for _ in 0..palette_size {
-            let properties = nbt::deserialize_le(buffer)?.value;
+            let properties: BlockProperties = match nbt::from_le_bytes(buffer) {
+                Ok(p) => p,
+                Err(e) => {
+                    bail!(InvalidNbt, "{}", e.to_string())
+                }
+            };
             palette.push(properties);
         }
 
@@ -122,7 +133,8 @@ impl StorageRecord {
 
         buffer.put_u32_le(self.palette.len() as u32);
         for entry in &self.palette {
-            nbt::serialize_le("", entry, buffer);
+            todo!("serialize BlockProperties nbt");
+            // nbt::serialize_le("", entry, buffer);
         }
     }
 }
@@ -156,7 +168,7 @@ pub struct SubChunk {
 }
 
 impl SubChunk {
-    pub fn get(&self, position: Vector3b) -> Option<&nbt::Value> {
+    pub fn get(&self, position: Vector3b) -> Option<&BlockProperties> {
         let offset = pos_to_offset(position);
         let index = self.storage_records[0].indices[offset];
 
@@ -164,7 +176,7 @@ impl SubChunk {
     }
 }
 
-impl Deserialize for SubChunk {
+impl common::Deserialize for SubChunk {
     fn deserialize(mut buffer: Bytes) -> VResult<Self> {
         let version = buffer.get_u8();
         match version {
