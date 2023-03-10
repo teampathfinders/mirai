@@ -1,5 +1,5 @@
 use crate::buf::FromBytes;
-use crate::Error;
+use crate::{Error, bail};
 use std::fmt::Debug;
 use std::io::Read;
 use std::ops::{Deref, Index};
@@ -51,7 +51,7 @@ impl<'a> ReadBuffer<'a> {
     #[inline]
     pub fn peek_const<const N: usize>(&self) -> Result<[u8; N]> {
         if self.len() < N {
-            Err(Error::UnexpectedEof)
+            bail!(UnexpectedEof, "expected {N} remaining bytes, got {}", self.len())
         } else {
             let dst = &self.0[..N];
             // SAFETY: dst is guaranteed to be of length N
@@ -70,7 +70,7 @@ impl<'a> ReadBuffer<'a> {
     #[inline]
     pub fn peek(&self, n: usize) -> Result<&[u8]> {
         if self.len() < n {
-            Err(Error::UnexpectedEof)
+            bail!(UnexpectedEof, "expected {n} remaining bytes, got {}", self.len())
         } else {
             Ok(&self.0[..n])
         }
@@ -86,7 +86,7 @@ impl<'a> ReadBuffer<'a> {
     #[inline]
     pub fn take(&mut self, n: usize) -> Result<&[u8]> {
         if self.len() < n {
-            Err(Error::UnexpectedEof)
+            bail!(UnexpectedEof, "expected {n} remaining bytes, got {}", self.len())
         } else {
             let (a, b) = self.0.split_at(n);
             *self = ReadBuffer::from(b);
@@ -107,7 +107,7 @@ impl<'a> ReadBuffer<'a> {
     #[inline]
     pub fn take_const<const N: usize>(&mut self) -> Result<[u8; N]> {
         if self.len() < N {
-            Err(Error::UnexpectedEof)
+            bail!(UnexpectedEof, "expected {N} remaining bytes, got {}", self.len())
         } else {
             let (a, b) = self.0.split_at(N);
             *self = ReadBuffer::from(b);
