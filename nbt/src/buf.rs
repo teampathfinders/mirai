@@ -1,28 +1,55 @@
-pub trait Buf {
-    fn read_u8(&mut self) -> Option<u8>;
-    fn read_u16(&mut self) -> Option<u16>;
-    fn read_u32(&mut self) -> Option<u32>;
-    fn read_u64(&mut self) -> Option<u64>;
-    fn read_u128(&mut self) -> Option<u128>;
+pub trait FromBytes: Sized {
+    const SIZE: usize;
 
-    fn read_i8(&mut self) -> Option<i8>;
-    fn read_i16(&mut self) -> Option<i16>;
-    fn read_i32(&mut self) -> Option<i32>;
-    fn read_i64(&mut self) -> Option<i64>;
-    fn read_i128(&mut self) -> Option<i128>;
+    fn from_le_bytes(bytes: [u8; Self::SIZE]) -> Self;
+    fn from_be_bytes(bytes: [u8; Self::SIZE]) -> Self;
+}
 
-    fn read_u16_le(&mut self) -> Option<u16>;
-    fn read_u32_le(&mut self) -> Option<u32>;
-    fn read_u64_le(&mut self) -> Option<u64>;
-    fn read_u128_le(&mut self) -> Option<u128>;
+macro_rules! from_bytes {
+    ($t: ty) => {
+        from_bytes!($t, <$t>::BITS);
+    };
 
-    fn read_i16_le(&mut self) -> Option<i16>;
-    fn read_i32_le(&mut self) -> Option<i32>;
-    fn read_i64_le(&mut self) -> Option<i64>;
-    fn read_i128_le(&mut self) -> Option<i128>;
+    ($t: ty, $b: expr) => {
+        impl FromBytes for $t {
+            const SIZE: usize = $b as usize / 8;
 
-    fn read_f32(&mut self) -> Option<f32>;
-    fn read_f32_le(&mut self) -> Option<f32>;
-    fn read_f64(&mut self) -> Option<f64>;
-    fn read_f64_le(&mut self) -> Option<f64>;
+            #[inline]
+            fn from_le_bytes(bytes: [u8; Self::SIZE]) -> Self {
+                <$t>::from_le_bytes(bytes)
+            }
+
+            #[inline]
+            fn from_be_bytes(bytes: [u8; Self::SIZE]) -> Self {
+                <$t>::from_be_bytes(bytes)
+            }
+        }
+    };
+}
+
+from_bytes!(u8);
+from_bytes!(u16);
+from_bytes!(u32);
+from_bytes!(u64);
+from_bytes!(u128);
+from_bytes!(i8);
+from_bytes!(i16);
+from_bytes!(i32);
+from_bytes!(i64);
+from_bytes!(i128);
+from_bytes!(f32, 32); // f32 does not have a BITS associated constant
+from_bytes!(f64, 64); // f64 does not have a BITS associated constant
+
+impl FromBytes for bool {
+    const SIZE: usize = 1;
+
+    #[inline]
+    fn from_le_bytes(bytes: [u8; Self::SIZE]) -> Self {
+        bytes[0] != 0
+    }
+
+    #[inline]
+    fn from_be_bytes(bytes: [u8; Self::SIZE]) -> Self {
+        bytes[0] != 0
+    }
 }
