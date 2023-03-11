@@ -73,12 +73,6 @@ where
 {
     let mut deserializer = Deserializer::from_bytes(b, flavor);
     T::deserialize(&mut deserializer)
-
-    // if deserializer.input.is_empty() {
-    //     Ok(t)
-    // } else {
-    //     bail!(TrailingBytes, "there are unread bytes left in the buffer")
-    // }
 }
 
 #[inline]
@@ -98,7 +92,7 @@ where
 }
 
 #[inline]
-pub fn from_network_bytes<'a, T>(b: &'a [u8]) -> Result<T>
+pub fn from_net_bytes<'a, T>(b: &'a [u8]) -> Result<T>
 where
     T: Deserialize<'a>,
 {

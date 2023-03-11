@@ -851,6 +851,7 @@ dependencies = [
  "cmake",
  "common",
  "nbt",
+ "serde",
  "tokio",
  "tokio-util",
  "tracing",
