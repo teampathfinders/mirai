@@ -18,7 +18,8 @@ fn u32_ceil_div(lhs: u32, rhs: u32) -> u32 {
 
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
 pub struct BlockProperties {
-    name: String
+    name: String,
+    version: i32
 }
 
 #[derive(Debug, Clone)]
