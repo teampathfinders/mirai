@@ -16,10 +16,31 @@ fn u32_ceil_div(lhs: u32, rhs: u32) -> u32 {
     (lhs + rhs - 1) / rhs
 }
 
+mod block_version {
+    use serde::{Deserialize, Serialize};
+
+    pub fn deserialize<'de, D>(d: D) -> Result<[u8; 4], D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        let int = i32::deserialize(d)?;
+        Ok(int.to_be_bytes())
+    }
+
+    pub fn serialize<S>(v: [u8; 4], s: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer
+    {
+        let int = i32::from_be_bytes(v);
+        int.serialize(s)
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
 pub struct BlockProperties {
-    name: String,
-    version: i32
+    pub name: String,
+    #[serde(with = "block_version")]
+    pub version: [u8; 4]
 }
 
 #[derive(Debug, Clone)]
