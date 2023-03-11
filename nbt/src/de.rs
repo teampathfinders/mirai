@@ -67,16 +67,21 @@ impl<'de> Deserializer<'de> {
     }
 }
 
-pub fn from_bytes<'a, T>(b: &'a [u8], flavor: Flavor) -> Result<T>
+#[inline]
+pub fn from_bytes<'a, T>(b: &'a [u8], flavor: Flavor) -> Result<(T, usize)>
 where
     T: Deserialize<'a>,
 {
     let mut deserializer = Deserializer::from_bytes(b, flavor);
-    T::deserialize(&mut deserializer)
+    let start = deserializer.input.len();
+    let output = T::deserialize(&mut deserializer)?;
+    let end = deserializer.input.len();
+
+    Ok((output, start - end))
 }
 
 #[inline]
-pub fn from_le_bytes<'a, T>(b: &'a [u8]) -> Result<T>
+pub fn from_le_bytes<'a, T>(b: &'a [u8]) -> Result<(T, usize)>
 where
     T: Deserialize<'a>,
 {
@@ -84,7 +89,7 @@ where
 }
 
 #[inline]
-pub fn from_be_bytes<'a, T>(b: &'a [u8]) -> Result<T>
+pub fn from_be_bytes<'a, T>(b: &'a [u8]) -> Result<(T, usize)>
 where
     T: Deserialize<'a>,
 {
@@ -92,7 +97,7 @@ where
 }
 
 #[inline]
-pub fn from_net_bytes<'a, T>(b: &'a [u8]) -> Result<T>
+pub fn from_net_bytes<'a, T>(b: &'a [u8]) -> Result<(T, usize)>
 where
     T: Deserialize<'a>,
 {

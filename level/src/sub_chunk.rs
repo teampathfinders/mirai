@@ -97,13 +97,14 @@ impl StorageRecord {
 
         let mut palette = Vec::with_capacity(palette_size as usize);
         for _ in 0..palette_size {
-            let properties: BlockProperties = match nbt::from_le_bytes(buffer) {
+            let (properties, n) = match nbt::from_le_bytes(buffer) {
                 Ok(p) => p,
                 Err(e) => {
                     bail!(InvalidNbt, "{}", e.to_string())
                 }
             };
             palette.push(properties);
+            buffer.advance(n);
         }
 
         Ok(Self { indices, palette })
