@@ -2,7 +2,7 @@ use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr};
 
 use bytes::BytesMut;
 
-use crate::{ReadExtensions, VResult, Vector, WriteExtensions};
+use crate::{ReadExtensions, Result, Vector, WriteExtensions};
 
 #[test]
 fn vector_types() {
@@ -139,7 +139,7 @@ fn read_write_u24_le() {
 }
 
 #[test]
-fn read_write_addr() -> VResult<()> {
+fn read_write_addr() -> Result<()> {
     let ipv4_test = SocketAddr::new(IpAddr::V4(Ipv4Addr::BROADCAST), 19132);
     let ipv6_test = SocketAddr::new(IpAddr::V6(Ipv6Addr::LOCALHOST), 19133);
 

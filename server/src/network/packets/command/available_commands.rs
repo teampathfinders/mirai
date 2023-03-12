@@ -1,7 +1,7 @@
 use std::collections::{HashMap, HashSet};
 
 use bytes::{BufMut, BytesMut, Bytes};
-use common::{bail, VResult, WriteExtensions};
+use common::{bail, Result, WriteExtensions};
 
 use common::Serialize;
 

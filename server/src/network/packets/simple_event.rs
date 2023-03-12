@@ -1,5 +1,5 @@
 use bytes::{Buf, BufMut, BytesMut, Bytes};
-use common::{bail, Deserialize, Serialize, VError, VResult};
+use common::{bail, Deserialize, Serialize, Error, Result};
 use crate::network::packets::ConnectedPacket;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -10,14 +10,14 @@ pub enum SimpleEvent {
 }
 
 impl TryFrom<i16> for SimpleEvent {
-    type Error = VError;
+    type Error = Error;
 
-    fn try_from(value: i16) -> VResult<Self> {
+    fn try_from(value: i16) -> Result<Self> {
         Ok(match value {
             1 => Self::CommandsEnabled,
             2 => Self::CommandsDisabled,
             3 => Self::UnlockWorldTemplateSettings,
-            _ => bail!(BadPacket, "Invalid simple event type {value}")
+            _ => bail!(Malformed, "Invalid simple event type {value}")
         })
     }
 }
@@ -37,7 +37,7 @@ impl Serialize for SimpleEvent {
 }
 
 impl Deserialize for SimpleEvent {
-    fn deserialize(mut buffer: Bytes) -> VResult<Self> {
+    fn deserialize(mut buffer: Bytes) -> Result<Self> {
         Self::try_from(buffer.get_i16_le())
     }
 }

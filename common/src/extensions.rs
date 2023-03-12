@@ -1,13 +1,13 @@
 use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr, SocketAddrV4};
 use std::ops::ShrAssign;
 
-use bytes::{Buf, BufMut};
+// use bytes::{Buf, BufMut};
 use lazy_static::lazy_static;
 use num_traits::FromPrimitive;
 
 use crate::bail;
 use crate::BlockPosition;
-use crate::VResult;
+use crate::Result;
 use crate::Vector2i;
 use crate::Vector3f;
 use crate::Vector3i;
@@ -83,7 +83,7 @@ pub trait ReadExtensions: Buf {
     /// * Unsigned short for port.
     ///
     /// This method fails if the IP type is a value other than 4 or 6.
-    fn get_addr(&mut self) -> VResult<SocketAddr> {
+    fn get_addr(&mut self) -> Result<SocketAddr> {
         let ip_type = self.get_u8();
         Ok(match ip_type {
             4 => {
@@ -121,7 +121,7 @@ pub trait ReadExtensions: Buf {
     /// It can fail if the varint could not be read correctly.
     ///
     /// See [`get_raknet_string`](ReadExtensions::get_raknet_string) for an alternative for Raknet.
-    fn get_string(&mut self) -> VResult<String> {
+    fn get_string(&mut self) -> Result<String> {
         let length = self.get_var_u32()? as usize;
         let buffer = &self.chunk()[..length];
         let string = String::from_utf8_lossy(buffer).to_string();
@@ -144,7 +144,7 @@ pub trait ReadExtensions: Buf {
     }
 
     /// Reads a variable size unsigned 32-bit integer from the stream.
-    fn get_var_u32(&mut self) -> VResult<u32> {
+    fn get_var_u32(&mut self) -> Result<u32> {
         let mut v = 0;
         let mut i = 0;
         while i < 35 {
@@ -163,7 +163,7 @@ pub trait ReadExtensions: Buf {
     }
 
     /// Reads a variable size signed 32-bit integer from the stream.
-    fn get_var_i32(&mut self) -> VResult<i32> {
+    fn get_var_i32(&mut self) -> Result<i32> {
         let vx = self.get_var_u32()?;
         let mut v = (vx >> 1) as i32; // TODO: Maybe this will panic. Use a transmute instead?
 
@@ -175,7 +175,7 @@ pub trait ReadExtensions: Buf {
     }
 
     /// Reads a variable size unsigned 64-bit integer from the stream.
-    fn get_var_u64(&mut self) -> VResult<u64> {
+    fn get_var_u64(&mut self) -> Result<u64> {
         let mut v = 0;
         let mut i = 0;
         while i < 70 {
@@ -196,7 +196,7 @@ pub trait ReadExtensions: Buf {
     }
 
     /// Reads a variable size signed 64-bit integer from the stream.
-    fn get_var_i64(&mut self) -> VResult<i64> {
+    fn get_var_i64(&mut self) -> Result<i64> {
         let vx = self.get_var_u64()?;
         let mut v = (vx >> 1) as i64; // TODO: Maybe this will panic. Use a transmute instead?
 
@@ -233,7 +233,7 @@ pub trait ReadExtensions: Buf {
         Vector3i::from([a, b, c])
     }
 
-    fn get_block_pos(&mut self) -> VResult<BlockPosition> {
+    fn get_block_pos(&mut self) -> Result<BlockPosition> {
         let x = self.get_var_i32()?;
         let y = self.get_var_u32()?;
         let z = self.get_var_i32()?;

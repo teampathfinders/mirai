@@ -6,7 +6,7 @@ use nbt::Value;
 
 use crate::network::packets::ConnectedPacket;
 use common::{Serialize, VarInt};
-use common::VResult;
+use common::Result;
 use common::WriteExtensions;
 
 pub const ITEM_ID_SHIELD: u32 = 513;

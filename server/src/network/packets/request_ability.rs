@@ -1,5 +1,5 @@
 use bytes::{Buf, BytesMut, Bytes};
-use common::{bail, ReadExtensions, VError, VResult};
+use common::{bail, ReadExtensions, Error, Result};
 
 use common::Deserialize;
 
@@ -39,7 +39,7 @@ impl ConnectedPacket for RequestAbility {
 }
 
 impl Deserialize for RequestAbility {
-    fn deserialize(mut buffer: Bytes) -> VResult<Self> {
+    fn deserialize(mut buffer: Bytes) -> Result<Self> {
         let ability_type = buffer.get_var_i32()?;
         let value_type = buffer.get_u8();
 
@@ -51,7 +51,7 @@ impl Deserialize for RequestAbility {
         } else if value_type == 2 {
             float_value = buffer.get_f32();
         } else {
-            bail!(BadPacket, "Invalid ability value type {value_type}")
+            bail!(Malformed, "Invalid ability value type {value_type}")
         }
 
         Ok(Self {
@@ -75,7 +75,7 @@ impl Deserialize for RequestAbility {
                 16 => Ability::WorldBuilder(bool_value),
                 17 => Ability::NoClip(bool_value),
                 18 => Ability::Count(float_value),
-                _ => bail!(BadPacket, "Invalid ability type {ability_type}"),
+                _ => bail!(Malformed, "Invalid ability type {ability_type}"),
             },
         })
     }

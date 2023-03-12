@@ -25,7 +25,7 @@ use crate::network::packets::{
 use crate::network::raknet::{BroadcastPacket, RaknetData};
 use crate::network::Skin;
 use common::{bail, Serialize, Vector3f};
-use common::{error, VResult};
+use common::{error, Result};
 
 use super::SessionManager;
 
@@ -146,14 +146,14 @@ impl Session {
     }
 
     #[inline]
-    pub fn get_identity_data(&self) -> VResult<&IdentityData> {
+    pub fn get_identity_data(&self) -> Result<&IdentityData> {
         self.identity.get().ok_or_else(|| {
             error!(NotInitialized, "Identity data has not been initialised yet")
         })
     }
 
     #[inline]
-    pub fn get_user_data(&self) -> VResult<&UserData> {
+    pub fn get_user_data(&self) -> Result<&UserData> {
         self.user_data.get().ok_or_else(|| {
             error!(NotInitialized, "User data has not been initialised yet")
         })
@@ -181,7 +181,7 @@ impl Session {
 
     /// Retrieves the identity of the client.
     #[inline]
-    pub fn get_uuid(&self) -> VResult<&Uuid> {
+    pub fn get_uuid(&self) -> Result<&Uuid> {
         let identity = self.identity.get().ok_or_else(|| {
             error!(
                 NotInitialized,
@@ -193,7 +193,7 @@ impl Session {
 
     /// Retrieves the XUID of the client.
     #[inline]
-    pub fn get_xuid(&self) -> VResult<u64> {
+    pub fn get_xuid(&self) -> Result<u64> {
         let identity = self.identity.get().ok_or_else(|| {
             error!(NotInitialized, "XUID data has not been initialised yet")
         })?;
@@ -202,7 +202,7 @@ impl Session {
 
     /// Retrieves the display name of the client.
     #[inline]
-    pub fn get_display_name(&self) -> VResult<&str> {
+    pub fn get_display_name(&self) -> Result<&str> {
         let identity = self.identity.get().ok_or_else(|| {
             error!(
                 NotInitialized,
@@ -213,14 +213,14 @@ impl Session {
     }
 
     #[inline]
-    pub fn get_encryptor(&self) -> VResult<&Encryptor> {
+    pub fn get_encryptor(&self) -> Result<&Encryptor> {
         self.encryptor.get().ok_or_else(|| {
             error!(NotInitialized, "Encryption has not been initialised yet")
         })
     }
 
     #[inline]
-    pub fn get_device_os(&self) -> VResult<DeviceOS> {
+    pub fn get_device_os(&self) -> Result<DeviceOS> {
         let data = self.user_data.get().ok_or_else(|| {
             error!(
                 NotInitialized,
@@ -237,7 +237,7 @@ impl Session {
     }
 
     /// Kicks the session from the server, displaying the given menu.
-    pub fn kick<S: AsRef<str>>(&self, message: S) -> VResult<()> {
+    pub fn kick<S: AsRef<str>>(&self, message: S) -> Result<()> {
         let disconnect_packet = Disconnect {
             message: message.as_ref(),
             hide_message: false,

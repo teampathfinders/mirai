@@ -5,7 +5,7 @@ use bytes::{Buf, BytesMut};
 
 use common::nvassert;
 use common::Deserialize;
-use common::VResult;
+use common::Result;
 use common::{ReadExtensions, EMPTY_IPV4_ADDRESS};
 
 /// Confirms that the connection was successfully initiated.
@@ -18,7 +18,7 @@ impl NewIncomingConnection {
 }
 
 impl Deserialize for NewIncomingConnection {
-    fn deserialize(mut buffer: Bytes) -> VResult<Self> {
+    fn deserialize(mut buffer: Bytes) -> Result<Self> {
         nvassert!(buffer.get_u8() == Self::ID);
 
         // No data in this packet is used, there is no point in decoding it

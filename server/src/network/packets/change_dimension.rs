@@ -1,5 +1,5 @@
 use bytes::{BytesMut, Bytes};
-use common::{VResult, Vector3f, WriteExtensions};
+use common::{Result, Vector3f, WriteExtensions};
 
 use common::Serialize;
 use level::Dimension;

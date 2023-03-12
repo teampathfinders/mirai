@@ -1,5 +1,5 @@
 use bytes::{BytesMut, BufMut, Bytes};
-use common::{Serialize, VResult, WriteExtensions, size_of_varint};
+use common::{Serialize, Result, WriteExtensions, size_of_varint};
 use uuid::Uuid;
 use crate::network::packets::login::DeviceOS;
 use crate::network::Skin;

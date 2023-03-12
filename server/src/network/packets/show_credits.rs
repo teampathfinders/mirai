@@ -1,5 +1,5 @@
 use bytes::{BytesMut, Bytes};
-use common::{bail, ReadExtensions, VError, VResult, WriteExtensions, size_of_varint};
+use common::{bail, ReadExtensions, Error, Result, WriteExtensions, size_of_varint};
 
 use common::{Deserialize, Serialize};
 
@@ -15,13 +15,13 @@ pub enum CreditsStatus {
 }
 
 impl TryFrom<i32> for CreditsStatus {
-    type Error = VError;
+    type Error = Error;
 
-    fn try_from(value: i32) -> VResult<Self> {
+    fn try_from(value: i32) -> Result<Self> {
         Ok(match value {
             0 => Self::Start,
             1 => Self::End,
-            _ => bail!(BadPacket, "Invalid credits status {value}"),
+            _ => bail!(Malformed, "Invalid credits status {value}"),
         })
     }
 }
@@ -50,7 +50,7 @@ impl Serialize for CreditsUpdate {
 }
 
 impl Deserialize for CreditsUpdate {
-    fn deserialize(mut buffer: Bytes) -> VResult<Self> {
+    fn deserialize(mut buffer: Bytes) -> Result<Self> {
         let runtime_id = buffer.get_var_u64()?;
         let status = CreditsStatus::try_from(buffer.get_var_i32()?)?;
 

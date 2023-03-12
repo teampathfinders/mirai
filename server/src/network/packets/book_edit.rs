@@ -1,5 +1,5 @@
 use bytes::{Buf, BufMut, BytesMut, Bytes};
-use common::{bail, Deserialize, Serialize, ReadExtensions, VError, VResult};
+use common::{bail, Deserialize, Serialize, ReadExtensions, Error, Result};
 use crate::network::packets::ConnectedPacket;
 
 /// Sent when the client makes changes to a book.
@@ -54,7 +54,7 @@ impl ConnectedPacket for BookEdit {
 }
 
 impl Deserialize for BookEdit {
-    fn deserialize(mut buffer: Bytes) -> VResult<Self>{
+    fn deserialize(mut buffer: Bytes) -> Result<Self>{
         let action = buffer.get_u8();;
         let inventory_slot = buffer.get_u8();
 
@@ -81,7 +81,7 @@ impl Deserialize for BookEdit {
                     author: buffer.get_string()?,
                     xuid: buffer.get_string()?
                 },
-                _ => bail!(BadPacket, "Invalid book edit action {action}")
+                _ => bail!(Malformed, "Invalid book edit action {action}")
             }
         })
     }

@@ -1,7 +1,7 @@
 use bytes::BufMut;
 use bytes::Bytes;
 use bytes::BytesMut;
-use common::VResult;
+use common::Result;
 
 use common::Serialize;
 

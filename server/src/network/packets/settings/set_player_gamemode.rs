@@ -1,5 +1,5 @@
 use bytes::{BytesMut, Bytes};
-use common::{bail, ReadExtensions, VError, VResult, WriteExtensions, size_of_varint};
+use common::{bail, ReadExtensions, Error, Result, WriteExtensions, size_of_varint};
 
 use common::{Deserialize, Serialize};
 
@@ -17,16 +17,16 @@ pub enum GameMode {
 }
 
 impl TryFrom<i32> for GameMode {
-    type Error = VError;
+    type Error = Error;
 
-    fn try_from(value: i32) -> VResult<Self> {
+    fn try_from(value: i32) -> Result<Self> {
         Ok(match value {
             0 => Self::Survival,
             1 => Self::Creative,
             2 => Self::Adventure,
             3 => Self::Spectator,
             5 => Self::WorldDefault,
-            _ => bail!(BadPacket, "Invalid game mode"),
+            _ => bail!(Malformed, "Invalid game mode"),
         })
     }
 }
@@ -53,7 +53,7 @@ impl Serialize for SetPlayerGameMode {
 }
 
 impl Deserialize for SetPlayerGameMode {
-    fn deserialize(mut buffer: Bytes) -> VResult<Self> {
+    fn deserialize(mut buffer: Bytes) -> Result<Self> {
         let game_mode = GameMode::try_from(buffer.get_var_i32()?)?;
         Ok(Self { game_mode })
     }

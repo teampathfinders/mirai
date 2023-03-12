@@ -1,5 +1,5 @@
 use bytes::{Bytes, BytesMut};
-use common::{Deserialize, VResult, Vector3i};
+use common::{Deserialize, Result, Vector3i};
 
 use crate::network::{
     packets::{
@@ -10,13 +10,13 @@ use crate::network::{
 };
 
 impl Session {
-    pub fn handle_interaction(&self, pk: Bytes) -> VResult<()> {
+    pub fn handle_interaction(&self, pk: Bytes) -> Result<()> {
         let request = Interact::deserialize(pk)?;
 
         Ok(())
     }
 
-    pub fn handle_move_player(&self, packet: Bytes) -> VResult<()> {
+    pub fn handle_move_player(&self, packet: Bytes) -> Result<()> {
         let request = MovePlayer::deserialize(packet)?;
         self.broadcast_others(request)?;
 

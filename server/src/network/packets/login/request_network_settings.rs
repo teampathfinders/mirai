@@ -3,7 +3,7 @@ use bytes::{Buf, BytesMut};
 
 use common::nvassert;
 use common::Deserialize;
-use common::VResult;
+use common::Result;
 
 /// Sent by the client to request a [`NetworkSettings`](super::NetworkSettings) packet.
 #[derive(Debug)]
@@ -18,7 +18,7 @@ impl RequestNetworkSettings {
 }
 
 impl Deserialize for RequestNetworkSettings {
-    fn deserialize(mut buffer: Bytes) -> VResult<Self> {
+    fn deserialize(mut buffer: Bytes) -> Result<Self> {
         let protocol_version = buffer.get_u32();
 
         Ok(Self { protocol_version })

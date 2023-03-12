@@ -1,5 +1,5 @@
 use bytes::{BytesMut, Bytes};
-use common::{bail, BlockPosition, Deserialize, Serialize, ReadExtensions, VError, VResult, WriteExtensions, size_of_varint};
+use common::{bail, BlockPosition, Deserialize, Serialize, ReadExtensions, Error, Result, WriteExtensions, size_of_varint};
 use crate::network::packets::ConnectedPacket;
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
@@ -8,12 +8,12 @@ pub enum BlockEventType {
 }
 
 impl TryFrom<i32> for BlockEventType {
-    type Error = VError;
+    type Error = Error;
 
-    fn try_from(value: i32) -> VResult<Self> {
+    fn try_from(value: i32) -> Result<Self> {
         Ok(match value {
             0 => Self::ChangeChestState,
-            _ => bail!(BadPacket, "Invalid block event type {value}")
+            _ => bail!(Malformed, "Invalid block event type {value}")
         })
     }
 }
@@ -46,7 +46,7 @@ impl Serialize for BlockEvent {
 }
 
 impl Deserialize for BlockEvent {
-    fn deserialize(mut buffer: Bytes) -> VResult<Self> {
+    fn deserialize(mut buffer: Bytes) -> Result<Self> {
         let position = buffer.get_block_pos()?;
         let event_type = BlockEventType::try_from(buffer.get_var_i32()?)?;
         let event_data = buffer.get_var_i32()?;

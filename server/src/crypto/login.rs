@@ -2,7 +2,7 @@ use std::io::Write;
 
 use base64::Engine;
 use bytes::{Buf, Bytes, BytesMut};
-use common::{bail, error, VResult};
+use common::{bail, error, Result};
 use jsonwebtoken::{Algorithm, DecodingKey, Validation};
 use p384::pkcs8::spki;
 use uuid::Uuid;
@@ -95,11 +95,11 @@ pub struct UserDataTokenPayload {
 /// First token in the chain holds the client's self-signed public key in the X5U.
 /// It is extracted from the header of the token and used to verify its signature.
 /// The payload of the token contains a new key which is used to verify the next token.
-fn parse_initial_token(token: &str) -> VResult<String> {
+fn parse_initial_token(token: &str) -> Result<String> {
     // Decode JWT header to get X5U.
     let header = jsonwebtoken::decode_header(token)?;
     let base64 = header.x5u.ok_or_else(|| {
-        error!(BadPacket, "Missing X.509 certificate URL (x5u)")
+        error!(Malformed, "Missing X.509 certificate URL (x5u)")
     })?;
 
     let bytes = BASE64_ENGINE.decode(base64)?;
@@ -128,7 +128,7 @@ fn parse_initial_token(token: &str) -> VResult<String> {
 /// The second token in the chain can be verified using Mojang's public key
 /// (or the identityPublicKey from the previous token).
 /// This token contains another identityPublicKey which is the public key for the third token.
-fn parse_mojang_token(token: &str, key: &str) -> VResult<String> {
+fn parse_mojang_token(token: &str, key: &str) -> Result<String> {
     let bytes = BASE64_ENGINE.decode(key)?;
     let public_key =
         match spki::SubjectPublicKeyInfoRef::try_from(bytes.as_ref()) {
@@ -159,7 +159,7 @@ fn parse_mojang_token(token: &str, key: &str) -> VResult<String> {
 fn parse_identity_token(
     token: &str,
     key: &str,
-) -> VResult<IdentityTokenPayload> {
+) -> Result<IdentityTokenPayload> {
     let bytes = BASE64_ENGINE.decode(key)?;
     let public_key =
         match spki::SubjectPublicKeyInfoRef::try_from(bytes.as_ref()) {
@@ -187,7 +187,7 @@ fn parse_identity_token(
 fn parse_user_data_token(
     token: &str,
     key: &str,
-) -> VResult<UserDataTokenPayload> {
+) -> Result<UserDataTokenPayload> {
     let bytes = BASE64_ENGINE.decode(key)?;
     let public_key =
         match spki::SubjectPublicKeyInfoRef::try_from(bytes.as_ref()) {
@@ -214,9 +214,7 @@ fn parse_user_data_token(
 /// Parses the identification data contained in the first token chain.
 ///
 /// This contains such as the XUID, display name and public key.
-pub fn parse_identity_data(
-    buffer: &mut Bytes,
-) -> VResult<IdentityTokenPayload> {
+pub fn parse_identity_data(buffer: &mut Bytes) -> Result<IdentityTokenPayload> {
     let token_length = buffer.get_u32_le();
     let position = buffer.len() - buffer.remaining();
     let token_chain =
@@ -249,7 +247,7 @@ pub fn parse_identity_data(
             parse_identity_token(&tokens.chain[2], &key)?
         }
         _ => bail!(
-            BadPacket,
+            Malformed,
             "Unexpected token count {}, expected 3",
             tokens.chain.len()
         ),
@@ -263,7 +261,7 @@ pub fn parse_identity_data(
 pub fn parse_user_data(
     buffer: &mut Bytes,
     public_key: &str,
-) -> VResult<UserDataTokenPayload> {
+) -> Result<UserDataTokenPayload> {
     let token_length = buffer.get_u32_le();
     let position = buffer.len() - buffer.remaining();
     let token = &buffer.as_ref()[position..(position + token_length as usize)];

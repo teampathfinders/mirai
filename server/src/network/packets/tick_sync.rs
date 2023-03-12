@@ -1,5 +1,5 @@
 use bytes::{Buf, BufMut, BytesMut, Bytes};
-use common::VResult;
+use common::Result;
 
 use common::{Deserialize, Serialize};
 
@@ -25,7 +25,7 @@ impl ConnectedPacket for TickSync {
 }
 
 impl Deserialize for TickSync {
-    fn deserialize(mut buffer: Bytes) -> VResult<Self> {
+    fn deserialize(mut buffer: Bytes) -> Result<Self> {
         let request = buffer.get_u64_le();
         let response = buffer.get_u64_le();
 

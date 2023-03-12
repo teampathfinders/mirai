@@ -3,7 +3,7 @@ use bytes::{Buf, BytesMut};
 
 use common::nvassert;
 use common::Deserialize;
-use common::VResult;
+use common::Result;
 
 /// Sent to retrieve information about the server
 /// while the user is in Minecraft's server tab.
@@ -26,7 +26,7 @@ impl UnconnectedPing {
 }
 
 impl Deserialize for UnconnectedPing {
-    fn deserialize(mut buffer: Bytes) -> VResult<Self> {
+    fn deserialize(mut buffer: Bytes) -> Result<Self> {
         nvassert!(buffer.get_u8() == Self::ID);
 
         let time = buffer.get_u64();

@@ -1,5 +1,5 @@
 use bytes::{BufMut, BytesMut, Buf, Bytes};
-use common::{Serialize, VResult, WriteExtensions, Deserialize};
+use common::{Serialize, Result, WriteExtensions, Deserialize};
 use uuid::Uuid;
 use crate::network::{Skin, packets::ConnectedPacket};
 
@@ -28,7 +28,7 @@ impl Serialize for UpdateSkin {
 }
 
 impl Deserialize for UpdateSkin {
-    fn deserialize(mut buffer: Bytes) -> VResult<Self> {
+    fn deserialize(mut buffer: Bytes) -> Result<Self> {
         let uuid = Uuid::from_u128(buffer.get_u128_le());
         let skin = Skin::deserialize(&mut buffer)?;
         

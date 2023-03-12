@@ -6,7 +6,7 @@ use crate::network::raknet::packets::NewIncomingConnection;
 use crate::network::raknet::Frame;
 use crate::network::raknet::Reliability;
 use crate::network::session::Session;
-use common::VResult;
+use common::Result;
 use common::{Deserialize, Serialize};
 
 use super::packets::ConnectedPing;
@@ -15,7 +15,7 @@ use super::{PacketConfig, SendPriority};
 
 impl Session {
     /// Handles a [`ConnectionRequest`] packet.
-    pub fn handle_connection_request(&self, pk: Bytes) -> VResult<()> {
+    pub fn handle_connection_request(&self, pk: Bytes) -> Result<()> {
         let request = ConnectionRequest::deserialize(pk)?;
         let reply = ConnectionRequestAccepted {
             client_address: self.raknet.address,
@@ -30,13 +30,13 @@ impl Session {
     }
 
     /// Handles a [`NewIncomingConnection`] packet.
-    pub fn handle_new_incoming_connection(&self, pk: Bytes) -> VResult<()> {
+    pub fn handle_new_incoming_connection(&self, pk: Bytes) -> Result<()> {
         let request = NewIncomingConnection::deserialize(pk)?;
         Ok(())
     }
 
     /// Handles an [`OnlinePing`] packet.
-    pub fn handle_online_ping(&self, pk: Bytes) -> VResult<()> {
+    pub fn handle_online_ping(&self, pk: Bytes) -> Result<()> {
         let ping = ConnectedPing::deserialize(pk)?;
         let pong = ConnectedPong {
             ping_time: ping.time,

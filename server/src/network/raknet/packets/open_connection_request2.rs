@@ -4,7 +4,7 @@ use bytes::{Buf, BytesMut};
 use common::nvassert;
 use common::Deserialize;
 use common::ReadExtensions;
-use common::VResult;
+use common::Result;
 
 /// Sent by the client, in response to [`OpenConnectionReply2`](super::open_connection_reply2::OpenConnectionReply2).
 #[derive(Debug)]
@@ -21,7 +21,7 @@ impl OpenConnectionRequest2 {
 }
 
 impl Deserialize for OpenConnectionRequest2 {
-    fn deserialize(mut buffer: Bytes) -> VResult<Self> {
+    fn deserialize(mut buffer: Bytes) -> Result<Self> {
         nvassert!(buffer.get_u8() == Self::ID);
 
         buffer.advance(16); // Skip magic

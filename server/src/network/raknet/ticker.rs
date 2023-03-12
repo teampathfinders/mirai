@@ -5,7 +5,7 @@ use std::{
 use tokio::sync::mpsc;
 
 use bytes::Bytes;
-use common::VResult;
+use common::Result;
 
 use crate::network::{
     packets::{MessageType, PlayerListRemove, TextMessage},
@@ -118,7 +118,7 @@ impl Session {
     }
 
     /// Performs tasks not related to packet processing
-    pub async fn tick(&self) -> VResult<()> {
+    pub async fn tick(&self) -> Result<()> {
         let current_tick = self.current_tick.fetch_add(1, Ordering::SeqCst);
 
         // Session has timed out

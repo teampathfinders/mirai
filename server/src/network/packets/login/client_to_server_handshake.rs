@@ -4,7 +4,7 @@ use bytes::{Buf, BytesMut};
 use crate::network::packets::ConnectedPacket;
 use common::nvassert;
 use common::Deserialize;
-use common::VResult;
+use common::Result;
 
 /// Sent by the client in response to a [`ServerToClientHandshake`](super::ServerToClientHandshake)
 /// to confirm that encryption is working.
@@ -19,7 +19,7 @@ impl ConnectedPacket for ClientToServerHandshake {
 }
 
 impl Deserialize for ClientToServerHandshake {
-    fn deserialize(mut buffer: Bytes) -> VResult<Self> {
+    fn deserialize(mut buffer: Bytes) -> Result<Self> {
         Ok(Self)
     }
 }

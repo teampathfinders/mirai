@@ -1,5 +1,5 @@
 use bytes::{BytesMut, Bytes};
-use common::{Deserialize, ReadExtensions, VResult};
+use common::{Deserialize, ReadExtensions, Result};
 use crate::network::packets::ConnectedPacket;
 
 /// Sent by the client when changing settings that require the execution of commands.
@@ -17,7 +17,7 @@ impl ConnectedPacket for SettingsCommand {
 }
 
 impl Deserialize for SettingsCommand {
-    fn deserialize(mut buffer: Bytes) -> VResult<Self> {
+    fn deserialize(mut buffer: Bytes) -> Result<Self> {
         let command = buffer.get_string()?;
         let suppress_output = buffer.get_bool();
 

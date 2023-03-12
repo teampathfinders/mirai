@@ -1,5 +1,5 @@
 use bytes::{BufMut, Bytes, BytesMut};
-use common::{Serialize, VResult};
+use common::{Result, Serialize};
 
 // Special keys
 

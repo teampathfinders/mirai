@@ -7,9 +7,8 @@ use std::{
 use serde::{ser, Serialize};
 
 use crate::{
-    bail, buf_mut::BufMut, bytes_mut::WriteBuffer, de::Flavor, error::Result,
-    Error, TAG_BYTE, TAG_COMPOUND, TAG_DOUBLE, TAG_END, TAG_FLOAT, TAG_INT,
-    TAG_LONG, TAG_SHORT, TAG_STRING,
+    bail, de::Flavor, error::Result, Error, TAG_BYTE, TAG_COMPOUND, TAG_DOUBLE,
+    TAG_END, TAG_FLOAT, TAG_INT, TAG_LONG, TAG_SHORT, TAG_STRING,
 };
 
 pub struct Serializer {

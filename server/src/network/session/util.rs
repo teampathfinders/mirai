@@ -4,7 +4,7 @@ use std::time::Duration;
 
 use bytes::{Bytes, BytesMut};
 use common::{
-    bail, BlockPosition, Deserialize, VResult, Vector3f, Vector3i, Vector4f,
+    bail, BlockPosition, Deserialize, Result, Vector3f, Vector3i, Vector4f,
 };
 
 use crate::command::ParsedCommand;
@@ -30,17 +30,17 @@ use crate::network::{
 };
 
 impl Session {
-    pub fn handle_settings_command(&self, pk: Bytes) -> VResult<()> {
+    pub fn handle_settings_command(&self, pk: Bytes) -> Result<()> {
         let request = SettingsCommand::deserialize(pk)?;
         tracing::info!("{request:?}");
 
         Ok(())
     }
 
-    pub fn handle_text_message(&self, pk: Bytes) -> VResult<()> {
+    pub fn handle_text_message(&self, pk: Bytes) -> Result<()> {
         let request = TextMessage::deserialize(pk)?;
         if request.message_type != MessageType::Chat {
-            bail!(BadPacket, "Client is only allowed to send chat messages, received {:?} instead", request.message_type)
+            bail!(Malformed, "Client is only allowed to send chat messages, received {:?} instead", request.message_type)
         }
 
         // We must also return the packet to the client that sent it.
@@ -48,25 +48,25 @@ impl Session {
         self.broadcast(request)
     }
 
-    pub fn handle_skin_update(&self, pk: Bytes) -> VResult<()> {
+    pub fn handle_skin_update(&self, pk: Bytes) -> Result<()> {
         let request = UpdateSkin::deserialize(pk)?;
         self.broadcast(request)
     }
 
-    pub fn handle_ability_request(&self, pk: Bytes) -> VResult<()> {
+    pub fn handle_ability_request(&self, pk: Bytes) -> Result<()> {
         let request = RequestAbility::deserialize(pk)?;
         tracing::info!("{request:?}");
 
         Ok(())
     }
 
-    pub fn handle_animation(&self, pk: Bytes) -> VResult<()> {
+    pub fn handle_animation(&self, pk: Bytes) -> Result<()> {
         let request = Animate::deserialize(pk)?;
 
         Ok(())
     }
 
-    pub fn handle_command_request(&self, pk: Bytes) -> VResult<()> {
+    pub fn handle_command_request(&self, pk: Bytes) -> Result<()> {
         let request = CommandRequest::deserialize(pk)?;
 
         let command_list = self.level_manager.get_commands();

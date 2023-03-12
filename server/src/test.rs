@@ -10,7 +10,7 @@ use crate::instance_manager::{IPV4_LOCAL_ADDR, IPV6_LOCAL_ADDR};
 use crate::network::raknet::{Frame, OrderChannel};
 use crate::network::Header;
 use common::{ReadExtensions, WriteExtensions};
-use common::{Serialize, VResult};
+use common::{Result, Serialize};
 
 #[test]
 fn read_write_header() {

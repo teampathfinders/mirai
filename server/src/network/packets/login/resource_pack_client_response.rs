@@ -5,7 +5,7 @@ use crate::network::packets::ConnectedPacket;
 use common::bail;
 use common::Deserialize;
 use common::ReadExtensions;
-use common::{VError, VResult};
+use common::{Error, Result};
 
 /// Status contained in [`ResourcePackClientResponse`].
 #[derive(Debug, Copy, Clone)]
@@ -24,16 +24,16 @@ pub enum ResourcePackStatus {
 }
 
 impl TryFrom<u8> for ResourcePackStatus {
-    type Error = VError;
+    type Error = Error;
 
-    fn try_from(value: u8) -> VResult<Self> {
+    fn try_from(value: u8) -> Result<Self> {
         Ok(match value {
             0 => Self::None,
             1 => Self::Refused,
             2 => Self::SendPacks,
             3 => Self::HaveAllPacks,
             4 => Self::Completed,
-            _ => bail!(BadPacket, "Invalid resource pack status: {value}"),
+            _ => bail!(Malformed, "Invalid resource pack status: {value}"),
         })
     }
 }
@@ -54,7 +54,7 @@ impl ConnectedPacket for ResourcePackClientResponse {
 }
 
 impl Deserialize for ResourcePackClientResponse {
-    fn deserialize(mut buffer: Bytes) -> VResult<Self> {
+    fn deserialize(mut buffer: Bytes) -> Result<Self> {
         let status = ResourcePackStatus::try_from(buffer.get_u8())?;
         let length = buffer.get_u16();
 

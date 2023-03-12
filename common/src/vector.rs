@@ -1,4 +1,3 @@
-use bytes::{BufMut, BytesMut};
 use std::ops::{Deref, DerefMut};
 
 use crate::VarInt;

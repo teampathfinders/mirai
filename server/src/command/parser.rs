@@ -2,7 +2,7 @@ use std::cmp::Ordering;
 use std::collections::HashMap;
 
 use std::str::Split;
-use common::{VResult, bail, error};
+use common::{Result, bail, error};
 use dashmap::DashMap;
 
 use super::{Command, CommandDataType, CommandOverload};
@@ -28,7 +28,7 @@ pub enum ParsedArgument {
 }
 
 impl ParsedArgument {
-    pub fn get_string(&self) -> VResult<&str> {
+    pub fn get_string(&self) -> Result<&str> {
         if let Self::String(ref value) = self {
             Ok(value)
         } else {

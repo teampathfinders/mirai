@@ -1,5 +1,5 @@
 use bytes::{Bytes, BytesMut};
-use common::{bail, ReadExtensions, VError, VResult, WriteExtensions, size_of_varint};
+use common::{bail, ReadExtensions, Error, Result, WriteExtensions, size_of_varint};
 
 use common::{Deserialize, Serialize};
 
@@ -15,15 +15,15 @@ pub enum Difficulty {
 }
 
 impl TryFrom<i32> for Difficulty {
-    type Error = VError;
+    type Error = Error;
 
-    fn try_from(value: i32) -> VResult<Self> {
+    fn try_from(value: i32) -> Result<Self> {
         Ok(match value {
             0 => Self::Peaceful,
             1 => Self::Easy,
             2 => Self::Normal,
             3 => Self::Hard,
-            _ => bail!(BadPacket, "Invalid difficulty type {value}"),
+            _ => bail!(Malformed, "Invalid difficulty type {value}"),
         })
     }
 }
@@ -52,7 +52,7 @@ impl Serialize for SetDifficulty {
 }
 
 impl Deserialize for SetDifficulty {
-    fn deserialize(mut buffer: Bytes) -> VResult<Self> {
+    fn deserialize(mut buffer: Bytes) -> Result<Self> {
         let difficulty = Difficulty::try_from(buffer.get_var_i32()?)?;
         Ok(Self { difficulty })
     }

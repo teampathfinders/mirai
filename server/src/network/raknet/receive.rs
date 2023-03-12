@@ -23,7 +23,7 @@ use crate::network::raknet::packets::{
 };
 use crate::network::raknet::{BroadcastPacket, Frame, FrameBatch};
 use crate::network::session::Session;
-use common::{bail, nvassert, ReadExtensions, VResult};
+use common::{bail, nvassert, ReadExtensions, Result};
 use common::{Deserialize, Serialize};
 
 use super::DEFAULT_SEND_CONFIG;
@@ -34,11 +34,11 @@ impl Session {
     ///
     /// If a packet is an ACK or NACK type, it will be responded to accordingly (using [`Session::handle_ack`] and [`Session::handle_nack`]).
     /// Frame batches are processed by [`Session::handle_frame_batch`].
-    pub async fn process_raw_packet(&self, pk: Bytes) -> VResult<bool> {
+    pub async fn process_raw_packet(&self, pk: Bytes) -> Result<bool> {
         *self.raknet.last_update.write() = Instant::now();
 
         if pk.is_empty() {
-            bail!(BadPacket, "Packet is empty");
+            bail!(Malformed, "Packet is empty");
         }
 
         let pk_id = *pk.first().unwrap();
@@ -51,7 +51,7 @@ impl Session {
         return Ok(true);
     }
 
-    pub fn process_broadcast(&self, pk: BroadcastPacket) -> VResult<()> {
+    pub fn process_broadcast(&self, pk: BroadcastPacket) -> Result<()> {
         if let Ok(xuid) = self.get_xuid() {
             if let Some(sender) = pk.sender {
                 if sender.get() == xuid {
@@ -71,7 +71,7 @@ impl Session {
     /// * Inserting packets into the compound collector
     /// * Discarding old sequenced frames
     /// * Acknowledging reliable packets
-    async fn handle_frame_batch(&self, pk: Bytes) -> VResult<()> {
+    async fn handle_frame_batch(&self, pk: Bytes) -> Result<()> {
         let batch = FrameBatch::deserialize(pk)?;
         self.raknet
             .client_batch_number
@@ -89,7 +89,7 @@ impl Session {
         &self,
         frame: &Frame,
         batch_number: u32,
-    ) -> VResult<()> {
+    ) -> Result<()> {
         if frame.reliability.is_sequenced()
             && frame.sequence_index
                 < self.raknet.client_batch_number.load(Ordering::SeqCst)
@@ -135,7 +135,7 @@ impl Session {
     }
 
     /// Processes an unencapsulated game packet.
-    async fn handle_unframed_packet(&self, mut pk: Bytes) -> VResult<()> {
+    async fn handle_unframed_packet(&self, mut pk: Bytes) -> Result<()> {
         let bytes = pk.as_ref();
 
         let packet_id = *pk.first().expect("Game packet buffer was empty");
@@ -147,13 +147,13 @@ impl Session {
                 self.handle_new_incoming_connection(pk)?
             }
             ConnectedPing::ID => self.handle_online_ping(pk)?,
-            id => bail!(BadPacket, "Invalid Raknet packet ID: {}", id),
+            id => bail!(Malformed, "Invalid Raknet packet ID: {}", id),
         }
 
         Ok(())
     }
 
-    async fn handle_game_packet(&self, mut pk: Bytes) -> VResult<()> {
+    async fn handle_game_packet(&self, mut pk: Bytes) -> Result<()> {
         nvassert!(pk.get_u8() == 0xfe);
 
         // Decrypt packet
@@ -207,7 +207,7 @@ impl Session {
     async fn handle_decompressed_game_packet(
         &self,
         mut pk: Bytes,
-    ) -> VResult<()> {
+    ) -> Result<()> {
         let length = pk.get_var_u32()?;
         let header = Header::deserialize(&mut pk)?;
 
@@ -236,7 +236,7 @@ impl Session {
             CommandRequest::ID => self.handle_command_request(pk),
             UpdateSkin::ID => self.handle_skin_update(pk),
             SettingsCommand::ID => self.handle_settings_command(pk),
-            id => bail!(BadPacket, "Invalid game packet: {id:#04x}"),
+            id => bail!(Malformed, "Invalid game packet: {id:#04x}"),
         }
     }
 }

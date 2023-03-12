@@ -3,7 +3,7 @@ use bytes::{Buf, BytesMut};
 
 use common::nvassert;
 use common::Deserialize;
-use common::VResult;
+use common::Result;
 
 /// Sent by the client when the users joins the server.
 #[derive(Debug)]
@@ -25,7 +25,7 @@ impl OpenConnectionRequest1 {
 }
 
 impl Deserialize for OpenConnectionRequest1 {
-    fn deserialize(mut buffer: Bytes) -> VResult<Self> {
+    fn deserialize(mut buffer: Bytes) -> Result<Self> {
         let mtu = buffer.len() as u16 + 28;
 
         nvassert!(buffer.get_u8() == Self::ID);

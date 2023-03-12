@@ -1,7 +1,7 @@
 use std::{any::TypeId, fmt};
 
 use bytes::{BytesMut, Bytes};
-use common::{Serialize, VResult, WriteExtensions, size_of_varint, bail, VarString, VarInt};
+use common::{Serialize, Result, WriteExtensions, size_of_varint, bail, VarString, VarInt};
 
 use crate::{command::ParsedArgument, network::packets::ConnectedPacket};
 
@@ -196,7 +196,7 @@ impl GameRule {
         }
     }
 
-    pub fn from_parsed(name: &str, value: &ParsedArgument) -> VResult<GameRule> {
+    pub fn from_parsed(name: &str, value: &ParsedArgument) -> Result<GameRule> {
         if let ParsedArgument::String(str_boolean) = value {
             let rule_value = match str_boolean.as_str() {
                 "true" => true,

@@ -3,7 +3,7 @@ use bytes::{BufMut, BytesMut};
 
 use crate::network::packets::ConnectedPacket;
 use common::{Serialize, size_of_varint, VarString};
-use common::VResult;
+use common::Result;
 use common::WriteExtensions;
 
 /// Behavior pack information.

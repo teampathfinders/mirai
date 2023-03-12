@@ -1,11 +1,11 @@
 use std::fmt::format;
 
-use common::{nvassert, VResult, error};
+use common::{nvassert, Result, error};
 
 use crate::{command::ParsedCommand, level_manager::LevelManager, network::packets::GameRule};
 
 impl LevelManager {
-    pub fn handle_gamerule_command(&self, command: ParsedCommand) -> VResult<String> {
+    pub fn handle_gamerule_command(&self, command: ParsedCommand) -> Result<String> {
         nvassert!(command.name == "gamerule");
         
         let rule_name = command.parameters.get("rule")

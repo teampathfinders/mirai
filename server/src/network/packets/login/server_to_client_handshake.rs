@@ -4,7 +4,7 @@ use common::{size_of_varint, VarString};
 
 use crate::network::packets::ConnectedPacket;
 use common::Serialize;
-use common::VResult;
+use common::Result;
 use common::WriteExtensions;
 
 /// Sent by the server to initiate encryption.

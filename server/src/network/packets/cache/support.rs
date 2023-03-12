@@ -4,7 +4,7 @@ use bytes::{Buf, BytesMut};
 use crate::network::packets::ConnectedPacket;
 use common::Deserialize;
 use common::ReadExtensions;
-use common::VResult;
+use common::Result;
 
 /// Sent during login to let the server know whether the client supports caching.
 #[derive(Debug, Clone)]
@@ -18,7 +18,7 @@ impl ConnectedPacket for CacheStatus {
 }
 
 impl Deserialize for CacheStatus {
-    fn deserialize(mut buffer: Bytes) -> VResult<Self> {
+    fn deserialize(mut buffer: Bytes) -> Result<Self> {
         let support = buffer.get_bool();
 
         Ok(Self { supports_cache: support })

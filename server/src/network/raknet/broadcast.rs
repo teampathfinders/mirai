@@ -1,7 +1,7 @@
 use std::num::NonZeroU64;
 
 use bytes::{Bytes, BytesMut};
-use common::{error, Serialize, VResult};
+use common::{error, Serialize, Result};
 
 use crate::network::{
     packets::{ConnectedPacket, Packet},
@@ -27,7 +27,7 @@ impl BroadcastPacket {
     pub fn new<T: ConnectedPacket + Serialize>(
         packet: T,
         sender: Option<NonZeroU64>,
-    ) -> VResult<Self> {
+    ) -> Result<Self> {
         let packet = Packet::new(packet);
         
         Ok(Self {
@@ -42,7 +42,7 @@ impl Session {
     pub fn broadcast<P: ConnectedPacket + Serialize + Clone>(
         &self,
         pk: P,
-    ) -> VResult<()> {
+    ) -> Result<()> {
         self.broadcast.send(BroadcastPacket::new(pk, None)?)?;
         Ok(())
     }
@@ -51,7 +51,7 @@ impl Session {
     pub fn broadcast_others<P: ConnectedPacket + Serialize + Clone>(
         &self,
         pk: P,
-    ) -> VResult<()> {
+    ) -> Result<()> {
         self.broadcast.send(BroadcastPacket::new(
             pk,
             Some(

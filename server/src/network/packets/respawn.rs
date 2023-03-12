@@ -1,6 +1,6 @@
 use bytes::{Buf, BufMut, BytesMut, Bytes};
 use common::{
-    bail, ReadExtensions, VError, VResult, Vector3f, WriteExtensions, size_of_varint,
+    bail, ReadExtensions, Error, Result, Vector3f, WriteExtensions, size_of_varint,
 };
 
 use common::{Deserialize, Serialize};
@@ -15,14 +15,14 @@ pub enum RespawnState {
 }
 
 impl TryFrom<u8> for RespawnState {
-    type Error = VError;
+    type Error = Error;
 
-    fn try_from(value: u8) -> VResult<Self> {
+    fn try_from(value: u8) -> Result<Self> {
         Ok(match value {
             0 => Self::Searching,
             1 => Self::ServerReady,
             2 => Self::ClientReady,
-            _ => bail!(BadPacket, "Invalid respawn state {value}"),
+            _ => bail!(Malformed, "Invalid respawn state {value}"),
         })
     }
 }
@@ -51,7 +51,7 @@ impl Serialize for Respawn {
 }
 
 impl Deserialize for Respawn {
-    fn deserialize(mut buffer: Bytes) -> VResult<Self> {
+    fn deserialize(mut buffer: Bytes) -> Result<Self> {
         let position = buffer.get_vec3f();
         let state = RespawnState::try_from(buffer.get_u8())?;
         let runtime_id = buffer.get_var_u64()?;

@@ -1,5 +1,5 @@
 use bytes::{Buf, BufMut, Bytes, BytesMut};
-use common::{bail, ReadExtensions, VError, VResult, WriteExtensions, size_of_varint, VarString, VarInt};
+use common::{bail, ReadExtensions, Error, Result, WriteExtensions, size_of_varint, VarString, VarInt};
 
 use common::{Deserialize, Serialize};
 
@@ -26,7 +26,7 @@ pub enum MessageType {
 }
 
 impl TryFrom<u8> for MessageType {
-    type Error = VError;
+    type Error = Error;
 
     fn try_from(value: u8) -> Result<Self, Self::Error> {
         Ok(match value {
@@ -42,7 +42,7 @@ impl TryFrom<u8> for MessageType {
             9 => Self::ObjectWhisper,
             10 => Self::Object,
             11 => Self::ObjectAnnouncement,
-            _ => bail!(BadPacket, "Invalid text message type"),
+            _ => bail!(Malformed, "Invalid text message type"),
         })
     }
 }
@@ -140,7 +140,7 @@ impl Serialize for TextMessage {
 }
 
 impl Deserialize for TextMessage {
-    fn deserialize(mut buffer: Bytes) -> VResult<Self> {
+    fn deserialize(mut buffer: Bytes) -> Result<Self> {
         let message_type = MessageType::try_from(buffer.get_u8())?;
         let needs_translation = buffer.get_bool();
         let message;

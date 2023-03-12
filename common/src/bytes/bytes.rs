@@ -1,9 +1,9 @@
-use crate::buf::FromBytes;
 use crate::{bail, Error};
 use std::fmt::Debug;
 use std::io::Read;
 use std::ops::{Deref, Index};
 use std::{cmp, fmt, io};
+use crate::bytes::FromBytes;
 
 use crate::Result;
 

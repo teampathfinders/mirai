@@ -7,7 +7,7 @@ use crate::network::header::Header;
 use crate::network::packets::ConnectedPacket;
 use common::{nvassert, VarInt};
 use common::Serialize;
-use common::VResult;
+use common::Result;
 use common::{ReadExtensions, WriteExtensions};
 
 /// A game packet.

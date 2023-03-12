@@ -1,6 +1,6 @@
 use bytes::Bytes;
 use bytes::{BufMut, BytesMut};
-use common::VResult;
+use common::Result;
 
 use common::Serialize;
 

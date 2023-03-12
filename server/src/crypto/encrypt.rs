@@ -4,7 +4,7 @@ use std::sync::atomic::{AtomicU16, AtomicU32, AtomicU64, Ordering};
 
 use base64::Engine;
 use bytes::{BufMut, Bytes, BytesMut};
-use common::{bail, VResult};
+use common::{bail, Result};
 use ctr::cipher::KeyIvInit;
 use ctr::cipher::{StreamCipher, StreamCipherSeekCore};
 use flate2::read::DeflateDecoder;
@@ -68,7 +68,7 @@ impl Encryptor {
     ///
     /// This shared secret is hashed using with SHA-256 and the salt contained in the JWT.
     /// The produced hash can then be used to encrypt packets.
-    pub fn new(client_public_key_der: &str) -> VResult<(Self, String)> {
+    pub fn new(client_public_key_der: &str) -> Result<(Self, String)> {
         // Generate a random salt using a cryptographically secure generator.
         let salt = (0..16)
             .map(|_| OsRng.sample(Alphanumeric) as char)
@@ -80,7 +80,7 @@ impl Encryptor {
         let private_key_der = match private_key.to_pkcs8_der() {
             Ok(k) => k,
             Err(e) => bail!(
-                BadPacket,
+                Malformed,
                 "Failed to convert private to PKCS#8 DER format: {e}"
             ),
         };
@@ -91,7 +91,7 @@ impl Encryptor {
             let binary_der = match public_key.to_public_key_der() {
                 Ok(d) => d,
                 Err(e) => bail!(
-                    BadPacket,
+                    Malformed,
                     "Failed to convert public key to DER format: {e}"
                 ),
             };
@@ -116,7 +116,7 @@ impl Encryptor {
             match PublicKey::from_public_key_der(&bytes) {
                 Ok(k) => k,
                 Err(e) => bail!(
-                    BadPacket,
+                    Malformed,
                     "Failed to read DER-encoded client public key: {e}"
                 ),
             }
@@ -156,12 +156,12 @@ impl Encryptor {
 
     /// Decrypts a packet and verifies its checksum.
     ///
-    /// If the checksum does not match, a [`BadPacket`](common::VErrorKind::BadPacket) error is returned.
+    /// If the checksum does not match, a [`BadPacket`](common::ErrorKind::Malformed) error is returned.
     /// The client must be disconnected if this fails, because the data has probably been tampered with.
-    pub fn decrypt(&self, mut buffer: Bytes) -> VResult<Bytes> {
+    pub fn decrypt(&self, mut buffer: Bytes) -> Result<Bytes> {
         if buffer.len() < 9 {
             bail!(
-                BadPacket,
+                Malformed,
                 "Encrypted buffer must be at least 9 bytes, received {}",
                 buffer.len()
             );
@@ -183,7 +183,7 @@ impl Encryptor {
         );
 
         if !checksum.eq(&computed_checksum) {
-            bail!(BadPacket, "Encryption checksums do not match");
+            bail!(Malformed, "Encryption checksums do not match");
         }
 
         // Remove checksum from data.
@@ -193,7 +193,7 @@ impl Encryptor {
     }
 
     /// Encrypts a packet and appends the computed checksum.
-    pub fn encrypt(&self, mut buffer: Bytes) -> VResult<Bytes> {
+    pub fn encrypt(&self, mut buffer: Bytes) -> Result<Bytes> {
         let counter = self.send_counter.fetch_add(1, Ordering::SeqCst);
         let checksum = self.compute_checksum(buffer.as_ref(), counter);
 

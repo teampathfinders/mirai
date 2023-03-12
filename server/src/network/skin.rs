@@ -1,6 +1,6 @@
 use bytes::{Buf, BufMut, BytesMut, Bytes};
 use common::{
-    bail, Serialize, ReadExtensions, VError, VResult, WriteExtensions,
+    bail, Serialize, ReadExtensions, Error, Result, WriteExtensions,
 };
 use serde::Deserialize;
 use serde_repr::Deserialize_repr;
@@ -27,13 +27,13 @@ impl ArmSize {
 }
 
 impl TryFrom<&str> for ArmSize {
-    type Error = VError;
+    type Error = Error;
 
-    fn try_from(value: &str) -> VResult<Self> {
+    fn try_from(value: &str) -> Result<Self> {
         Ok(match value {
             "slim" => Self::Slim,
             "wide" => Self::Wide,
-            _ => bail!(BadPacket, "Invalid arm size {value}")
+            _ => bail!(Malformed, "Invalid arm size {value}")
         })
     }
 }
@@ -85,9 +85,9 @@ impl PersonaPieceType {
 }
 
 impl TryFrom<&str> for PersonaPieceType {
-    type Error = VError;
+    type Error = Error;
 
-    fn try_from(value: &str) -> VResult<Self> {
+    fn try_from(value: &str) -> Result<Self> {
         Ok(match value {
             "persona_skeleton" => Self::Skeleton,
             "persona_body" => Self::Body,
@@ -100,7 +100,7 @@ impl TryFrom<&str> for PersonaPieceType {
             "persona_eyes" => Self::Eyes,
             "persona_facial_hair" => Self::FacialHair,
             "persona_dress" => Self::Dress,
-            _ => bail!(BadPacket, "Invalid persona piece type '{value}'")
+            _ => bail!(Malformed, "Invalid persona piece type '{value}'")
         })
     }
 }
@@ -135,7 +135,7 @@ impl PersonaPiece {
         buffer.put_string(&self.product_id);
     }
 
-    fn deserialize(buffer: &mut Bytes) -> VResult<Self> {
+    fn deserialize(buffer: &mut Bytes) -> Result<Self> {
         let piece_id = buffer.get_string()?;
         let piece_type = PersonaPieceType::try_from(buffer.get_string()?.as_str())?;
         let pack_id = buffer.get_string()?;
@@ -173,12 +173,12 @@ impl PersonaPieceTint {
         }
     }
 
-    fn deserialize(buffer: &mut Bytes) -> VResult<Self> {
+    fn deserialize(buffer: &mut Bytes) -> Result<Self> {
         let piece_type = PersonaPieceType::try_from(buffer.get_string()?.as_str())?;
 
         let color_count = buffer.get_u32_le();
         if color_count > 4 {
-            bail!(BadPacket, "Persona piece tint cannot have more than 4 colours, received {color_count}");
+            bail!(Malformed, "Persona piece tint cannot have more than 4 colours, received {color_count}");
         }
 
         // Not sure why Rust can't infer this type...
@@ -205,15 +205,15 @@ pub enum SkinAnimationType {
 }
 
 impl TryFrom<u32> for SkinAnimationType {
-    type Error = VError;
+    type Error = Error;
 
-    fn try_from(value: u32) -> VResult<Self> {
+    fn try_from(value: u32) -> Result<Self> {
         Ok(match value {
             0 => Self::None,
             1 => Self::Head,
             2 => Self::Body32x32,
             3 => Self::Body128x128,
-            _ => bail!(BadPacket, "Invalid skin animation type {value}")
+            _ => bail!(Malformed, "Invalid skin animation type {value}")
         })
     }
 }
@@ -227,13 +227,13 @@ pub enum SkinExpressionType {
 }
 
 impl TryFrom<u32> for SkinExpressionType {
-    type Error = VError;
+    type Error = Error;
 
-    fn try_from(value: u32) -> VResult<Self> {
+    fn try_from(value: u32) -> Result<Self> {
         Ok(match value {
             0 => Self::Linear,
             1 => Self::Blinking,
-            _ => bail!(BadPacket, "Invalid skin expression type {value}")
+            _ => bail!(Malformed, "Invalid skin expression type {value}")
         })
     }
 }
@@ -275,7 +275,7 @@ impl SkinAnimation {
         buffer.put_u32_le(self.expression_type as u32);
     }
 
-    pub fn deserialize(buffer: &mut Bytes) -> VResult<Self> {
+    pub fn deserialize(buffer: &mut Bytes) -> Result<Self> {
         let image_width = buffer.get_u32_le();
         let image_height = buffer.get_u32_le();
         let image_size = buffer.get_var_u32()?;
@@ -400,7 +400,7 @@ mod base64_string {
 
 impl Skin {
     /// Validates skin dimensions.
-    pub fn validate(&self) -> VResult<()> {
+    pub fn validate(&self) -> Result<()> {
         if self.image_width * self.image_height * 4
             != self.image_data.len() as u32
         {
@@ -478,7 +478,7 @@ impl Skin {
         buffer.put_bool(self.is_primary_user);
     }
 
-    pub fn deserialize(buffer: &mut Bytes) -> VResult<Self> {
+    pub fn deserialize(buffer: &mut Bytes) -> Result<Self> {
         let skin_id = buffer.get_string()?;
         let playfab_id = buffer.get_string()?;
         let resource_patch = buffer.get_string()?;

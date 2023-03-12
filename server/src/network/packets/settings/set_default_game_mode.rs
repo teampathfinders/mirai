@@ -1,5 +1,5 @@
 use bytes::{BytesMut, Bytes};
-use common::{Deserialize, Serialize, ReadExtensions, VResult, WriteExtensions, size_of_varint};
+use common::{Deserialize, Serialize, ReadExtensions, Result, WriteExtensions, size_of_varint};
 
 use crate::network::packets::ConnectedPacket;
 
@@ -21,7 +21,7 @@ impl ConnectedPacket for SetDefaultGameMode {
 }
 
 impl Deserialize for SetDefaultGameMode {
-    fn deserialize(mut buffer: Bytes) -> VResult<Self> {
+    fn deserialize(mut buffer: Bytes) -> Result<Self> {
         let game_mode = GameMode::try_from(buffer.get_var_i32()?)?;
 
         Ok(Self { game_mode })

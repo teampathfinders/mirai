@@ -1,5 +1,5 @@
 use bytes::{Buf, BytesMut, Bytes};
-use common::{bail, ReadExtensions, VError, VResult, WriteExtensions};
+use common::{bail, ReadExtensions, Error, Result, WriteExtensions};
 
 use common::Deserialize;
 
@@ -17,9 +17,9 @@ pub enum AnimateAction {
 }
 
 impl TryFrom<i32> for AnimateAction {
-    type Error = VError;
+    type Error = Error;
 
-    fn try_from(value: i32) -> VResult<Self> {
+    fn try_from(value: i32) -> Result<Self> {
         Ok(match value {
             1 => Self::SwingArm,
             3 => Self::StopSleep,
@@ -27,7 +27,7 @@ impl TryFrom<i32> for AnimateAction {
             5 => Self::MagicCriticalHit,
             128 => Self::RowRight,
             129 => Self::RowLeft,
-            _ => bail!(BadPacket, "Invalid animation action {value}"),
+            _ => bail!(Malformed, "Invalid animation action {value}"),
         })
     }
 }
@@ -53,7 +53,7 @@ impl ConnectedPacket for Animate {
 }
 
 impl Deserialize for Animate {
-    fn deserialize(mut buffer: Bytes) -> VResult<Self> {
+    fn deserialize(mut buffer: Bytes) -> Result<Self> {
         let action_type = AnimateAction::try_from(buffer.get_var_i32()?)?;
         let runtime_id = buffer.get_var_u64()?;
 

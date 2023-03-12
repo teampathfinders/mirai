@@ -2,7 +2,7 @@ use std::sync::atomic::AtomicU64;
 use std::sync::Arc;
 use std::time::Duration;
 
-use common::VResult;
+use common::Result;
 use dashmap::mapref::one::Ref;
 use dashmap::DashMap;
 use level::ChunkManager;
@@ -42,7 +42,7 @@ impl LevelManager {
     pub fn new(
         session_manager: Arc<SessionManager>,
         token: CancellationToken,
-    ) -> VResult<(Arc<Self>, Receiver<()>)> {
+    ) -> Result<(Arc<Self>, Receiver<()>)> {
         let (world_path, autosave_interval) = {
             let config = SERVER_CONFIG.read();
             (config.level_path.clone(), config.autosave_interval)

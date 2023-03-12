@@ -1,5 +1,5 @@
 use bytes::{Buf, BufMut, Bytes, BytesMut};
-use common::{bail, BlockPosition, VError, VResult, Vector3b};
+use common::{bail, BlockPosition, Error, Result, Vector3b};
 use nbt::ReadBuffer;
 use serde::Deserialize;
 use std::collections::HashMap;
@@ -72,7 +72,7 @@ impl SubLayer {
         LayerIter::from(self)
     }
 
-    fn deserialize(buffer: &mut ReadBuffer) -> VResult<Self> {
+    fn deserialize(buffer: &mut ReadBuffer) -> Result<Self> {
         // Size of each index in bits.
         let index_size = buffer.read_le::<u8>()? >> 1;
         if index_size == 0x7f {
@@ -227,7 +227,7 @@ impl SubChunk {
 }
 
 impl common::Deserialize for SubChunk {
-    fn deserialize(mut buffer: ReadBuffer) -> VResult<Self> {
+    fn deserialize(mut buffer: ReadBuffer) -> Result<Self> {
         let version = buffer.read_le::<u8>()?;
         match version {
             1 => todo!(),

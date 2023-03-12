@@ -6,7 +6,7 @@ use std::{
 };
 
 use bytes::{Bytes, BytesMut};
-use common::{error, VError, VResult};
+use common::{error, Error, Result};
 
 use crate::ffi;
 
@@ -128,7 +128,7 @@ pub struct RawDatabase {
 
 impl RawDatabase {
     /// Opens the database at the specified path.
-    pub fn new<P: AsRef<str>>(path: P) -> VResult<Self> {
+    pub fn new<P: AsRef<str>>(path: P) -> Result<Self> {
         let ffi_path = CString::new(path.as_ref())?;
         let result = unsafe {
             // SAFETY: This function is guaranteed to not return exceptions.
@@ -149,7 +149,7 @@ impl RawDatabase {
 
     /// Loads the value of the given key.
     /// This function requires a raw key, i.e. the key must have been serialised already.
-    pub fn get_raw_key<K: AsRef<[u8]>>(&self, key: K) -> VResult<Bytes> {
+    pub fn get_raw_key<K: AsRef<[u8]>>(&self, key: K) -> Result<Bytes> {
         let key = key.as_ref();
         let result = unsafe {
             // SAFETY: This function is guaranteed to not modify any arguments.
@@ -203,8 +203,8 @@ unsafe impl Send for RawDatabase {}
 /// SAFETY: The LevelDB authors explicitly state their database is thread-safe.
 unsafe impl Sync for RawDatabase {}
 
-/// Translates an error received from the FFI, into a [`VError`].
-fn translate_ffi_error(result: ffi::LevelResult) -> VError {
+/// Translates an error received from the FFI, into a [`Error`].
+fn translate_ffi_error(result: ffi::LevelResult) -> Error {
     let ffi_err = unsafe {
         // SAFETY: This string is guaranteed to have a null termination character.
         CStr::from_ptr(result.data as *const c_char)

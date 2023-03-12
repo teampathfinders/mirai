@@ -5,7 +5,7 @@ use bytes::{Buf, BufMut, BytesMut};
 
 use crate::network::raknet::Reliability;
 use common::nvassert;
-use common::VResult;
+use common::Result;
 use common::{Deserialize, Serialize};
 use common::{ReadExtensions, WriteExtensions};
 
@@ -51,7 +51,7 @@ impl FrameBatch {
 }
 
 impl Deserialize for FrameBatch {
-    fn deserialize(mut buffer: Bytes) -> VResult<Self> {
+    fn deserialize(mut buffer: Bytes) -> Result<Self> {
         nvassert!(buffer.get_u8() & 0x80 != 0);
 
         let batch_number = buffer.get_u24_le();
@@ -111,7 +111,7 @@ impl Frame {
 
     /// Decodes the frame.
     #[allow(clippy::useless_let_if_seq)]
-    fn deserialize(buffer: &mut Bytes) -> VResult<Self> {
+    fn deserialize(buffer: &mut Bytes) -> Result<Self> {
         let flags = buffer.get_u8();
 
         let reliability = Reliability::try_from(flags >> 5)?;

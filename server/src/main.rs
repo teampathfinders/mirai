@@ -11,7 +11,7 @@ use clap::{crate_authors, crate_description, Command};
 use tokio::runtime;
 
 use crate::instance_manager::InstanceManager;
-use common::VResult;
+use common::Result;
 
 mod command;
 mod config;
@@ -23,7 +23,7 @@ mod network;
 #[cfg(test)]
 mod test;
 
-fn main() -> VResult<()> {
+fn main() -> Result<()> {
     let matches = Command::new("nova")
         .version(concat!(
             env!("VERGEN_GIT_SHA_SHORT"),
@@ -38,7 +38,7 @@ fn main() -> VResult<()> {
     init_runtime()
 }
 
-fn init_runtime() -> VResult<()> {
+fn init_runtime() -> Result<()> {
     let runtime = runtime::Builder::new_multi_thread()
         .enable_io()
         .enable_time()

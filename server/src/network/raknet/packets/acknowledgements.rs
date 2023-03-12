@@ -4,7 +4,7 @@ use bytes::Bytes;
 use bytes::{Buf, BufMut, BytesMut};
 
 use common::nvassert;
-use common::VResult;
+use common::Result;
 use common::{Deserialize, Serialize};
 use common::{ReadExtensions, WriteExtensions};
 
@@ -84,7 +84,7 @@ impl Serialize for Ack {
 }
 
 impl Deserialize for Ack {
-    fn deserialize(mut buffer: Bytes) -> VResult<Self> {
+    fn deserialize(mut buffer: Bytes) -> Result<Self> {
         nvassert!(buffer.get_u8() == Self::ID);
 
         let records = decode_records(buffer);
@@ -123,7 +123,7 @@ impl Serialize for Nak {
 }
 
 impl Deserialize for Nak {
-    fn deserialize(mut buffer: Bytes) -> VResult<Self> {
+    fn deserialize(mut buffer: Bytes) -> Result<Self> {
         nvassert!(buffer.get_u8() == Self::ID);
 
         let records = decode_records(buffer);

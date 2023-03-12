@@ -1,5 +1,5 @@
 use bytes::{BytesMut, Bytes};
-use common::{VResult, WriteExtensions, size_of_varint};
+use common::{Result, WriteExtensions, size_of_varint};
 
 use common::Serialize;
 

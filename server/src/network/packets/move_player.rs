@@ -1,6 +1,6 @@
 use bytes::{Buf, BufMut, BytesMut, Bytes};
 use common::{
-    bail, ReadExtensions, VError, VResult, Vector3f, WriteExtensions, size_of_varint,
+    bail, ReadExtensions, Error, Result, Vector3f, WriteExtensions, size_of_varint,
 };
 
 use common::{Deserialize, Serialize};
@@ -16,15 +16,15 @@ pub enum MovementMode {
 }
 
 impl TryFrom<u8> for MovementMode {
-    type Error = VError;
+    type Error = Error;
 
-    fn try_from(value: u8) -> VResult<Self> {
+    fn try_from(value: u8) -> Result<Self> {
         Ok(match value {
             0 => Self::Normal,
             1 => Self::Reset,
             2 => Self::Teleport,
             3 => Self::Rotation,
-            _ => bail!(BadPacket, "Invalid movement mode {value}"),
+            _ => bail!(Malformed, "Invalid movement mode {value}"),
         })
     }
 }
@@ -39,16 +39,16 @@ pub enum TeleportCause {
 }
 
 impl TryFrom<i32> for TeleportCause {
-    type Error = VError;
+    type Error = Error;
 
-    fn try_from(value: i32) -> VResult<Self> {
+    fn try_from(value: i32) -> Result<Self> {
         Ok(match value {
             0 => Self::Unknown,
             1 => Self::Projectile,
             2 => Self::ChorusFruit,
             3 => Self::Command,
             4 => Self::Behavior,
-            _ => bail!(BadPacket, "Invalid teleport cause {value}"),
+            _ => bail!(Malformed, "Invalid teleport cause {value}"),
         })
     }
 }
@@ -101,7 +101,7 @@ impl Serialize for MovePlayer {
 }
 
 impl Deserialize for MovePlayer {
-    fn deserialize(mut buffer: Bytes) -> VResult<Self> {
+    fn deserialize(mut buffer: Bytes) -> Result<Self> {
         let runtime_id = buffer.get_var_u64()?;
         let position = buffer.get_vec3f();
         let rotation = buffer.get_vec3f();

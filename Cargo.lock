@@ -237,7 +237,6 @@ name = "common"
 version = "0.1.0"
 dependencies = [
  "base64 0.21.0",
- "bytes",
  "cipher",
  "dashmap",
  "jsonwebtoken",
@@ -965,6 +964,7 @@ name = "nbt"
 version = "0.1.0"
 dependencies = [
  "bytes",
+ "common",
  "serde",
 ]
 

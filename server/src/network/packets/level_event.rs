@@ -1,5 +1,5 @@
 use bytes::{BytesMut, Bytes};
-use common::{bail, Deserialize, Serialize, ReadExtensions, Vector3f, VError, VResult, WriteExtensions, size_of_varint};
+use common::{bail, Deserialize, Serialize, ReadExtensions, Vector3f, Error, Result, WriteExtensions, size_of_varint};
 use crate::network::packets::ConnectedPacket;
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
@@ -115,9 +115,9 @@ pub enum LevelEventType {
 }
 
 impl TryFrom<i32> for LevelEventType {
-    type Error = VError;
+    type Error = Error;
 
-    fn try_from(value: i32) -> VResult<Self> {
+    fn try_from(value: i32) -> Result<Self> {
         Ok(match value {
             1000 => Self::SoundClick,
             1001 => Self::SoundClickFail,
@@ -227,7 +227,7 @@ impl TryFrom<i32> for LevelEventType {
             9801 => Self::SleepingPlayers,
             9810 => Self::JumpPrevented,
             0x4000 => Self::ParticlesLegacyEvent,
-            _ => bail!(BadPacket, "Invalid level event type {value}")
+            _ => bail!(Malformed, "Invalid level event type {value}")
         })
     }
 }
@@ -257,7 +257,7 @@ impl Serialize for LevelEvent {
 }
 
 impl Deserialize for LevelEvent {
-    fn deserialize(mut buffer: Bytes) -> VResult<Self> {
+    fn deserialize(mut buffer: Bytes) -> Result<Self> {
         let event_type = LevelEventType::try_from(buffer.get_var_i32()?)?;
         let position = buffer.get_vec3f();
         let event_data = buffer.get_var_i32()?;

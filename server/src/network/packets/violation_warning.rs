@@ -5,7 +5,7 @@ use crate::network::packets::ConnectedPacket;
 use common::bail;
 use common::Deserialize;
 use common::ReadExtensions;
-use common::{VError, VResult};
+use common::{Error, Result};
 
 #[derive(Debug, Copy, Clone)]
 pub enum ViolationType {
@@ -13,12 +13,12 @@ pub enum ViolationType {
 }
 
 impl TryFrom<i32> for ViolationType {
-    type Error = VError;
+    type Error = Error;
 
     fn try_from(value: i32) -> Result<Self, Self::Error> {
         Ok(match value {
             0 => Self::Malformed,
-            _ => bail!(BadPacket, "Invalid violation type {}", value),
+            _ => bail!(Malformed, "Invalid violation type {}", value),
         })
     }
 }
@@ -31,14 +31,14 @@ pub enum ViolationSeverity {
 }
 
 impl TryFrom<i32> for ViolationSeverity {
-    type Error = VError;
+    type Error = Error;
 
     fn try_from(value: i32) -> Result<Self, Self::Error> {
         Ok(match value {
             0 => Self::Warning,
             1 => Self::FinalWarning,
             2 => Self::TerminatingConnection,
-            _ => bail!(BadPacket, "Invalid violation severity {}", value),
+            _ => bail!(Malformed, "Invalid violation severity {}", value),
         })
     }
 }
@@ -60,7 +60,7 @@ impl ConnectedPacket for ViolationWarning {
 }
 
 impl Deserialize for ViolationWarning {
-    fn deserialize(mut buffer: Bytes) -> VResult<Self> {
+    fn deserialize(mut buffer: Bytes) -> Result<Self> {
         tracing::debug!("{:x?}", buffer.as_ref());
 
         let warning_type = ViolationType::try_from(buffer.get_var_i32()?)?;

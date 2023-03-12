@@ -34,7 +34,7 @@ use crate::network::raknet::BufPacket;
 use crate::network::raknet::RAKNET_VERSION;
 use crate::network::session::SessionManager;
 use common::bail;
-use common::{error, VResult};
+use common::{error, Result};
 use common::{Deserialize, Serialize};
 
 /// Local IPv4 address
@@ -66,7 +66,7 @@ pub struct InstanceManager {
 
 impl InstanceManager {
     /// Creates a new server.
-    pub async fn run() -> VResult<()> {
+    pub async fn run() -> Result<()> {
         let (ipv4_port, _ipv6_port) = {
             let lock = SERVER_CONFIG.read();
             (lock.ipv4_port, lock.ipv6_port)
@@ -217,7 +217,7 @@ impl InstanceManager {
         mut pk: BufPacket,
         server_guid: u64,
         metadata: &str,
-    ) -> VResult<BufPacket> {
+    ) -> Result<BufPacket> {
         let ping = UnconnectedPing::deserialize(pk.buf)?;
         let pong = UnconnectedPong { time: ping.time, server_guid, metadata };
 
@@ -234,7 +234,7 @@ impl InstanceManager {
     fn process_open_connection_request1(
         mut pk: BufPacket,
         server_guid: u64,
-    ) -> VResult<BufPacket> {
+    ) -> Result<BufPacket> {
         let request = OpenConnectionRequest1::deserialize(pk.buf)?;
 
         let mut serialized = BytesMut::new();
@@ -264,7 +264,7 @@ impl InstanceManager {
         udp_socket: Arc<UdpSocket>,
         sess_manager: Arc<SessionManager>,
         server_guid: u64,
-    ) -> VResult<BufPacket> {
+    ) -> Result<BufPacket> {
         let request = OpenConnectionRequest2::deserialize(pk.buf)?;
         let reply = OpenConnectionReply2 {
             server_guid,

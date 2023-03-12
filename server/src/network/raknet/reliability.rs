@@ -1,4 +1,4 @@
-use common::{bail, VError};
+use common::{bail, Error};
 
 /// Describes how reliable transport of this packet should be.
 /// Higher reliability takes more resources, but also has more reliability guarantees.
@@ -28,7 +28,7 @@ pub enum Reliability {
 
 /// Converts a byte to reliability.
 impl TryFrom<u8> for Reliability {
-    type Error = VError;
+    type Error = Error;
 
     fn try_from(value: u8) -> Result<Self, Self::Error> {
         Ok(match value {
@@ -39,7 +39,7 @@ impl TryFrom<u8> for Reliability {
             4 => Self::ReliableSequenced,
             _ => {
                 bail!(
-                    BadPacket,
+                    Malformed,
                     "Invalid reliability ID {value}, expected 0-4"
                 );
             }

@@ -17,7 +17,7 @@ use crate::network::packets::Packet;
 use crate::network::raknet::{BroadcastPacket, BufPacket};
 use crate::network::session::session::Session;
 use crate::{config::SERVER_CONFIG, network::packets::ConnectedPacket};
-use common::{bail, error, Serialize, VResult};
+use common::{bail, error, Serialize, Result};
 
 const BROADCAST_CHANNEL_CAPACITY: usize = 16;
 const FORWARD_TIMEOUT: Duration = Duration::from_millis(20);
@@ -99,7 +99,7 @@ impl SessionManager {
     pub fn set_level_manager(
         &self,
         level_manager: Weak<LevelManager>,
-    ) -> VResult<()> {
+    ) -> Result<()> {
         self.level_manager.set(level_manager)?;
         Ok(())
     }
@@ -142,14 +142,14 @@ impl SessionManager {
     pub fn broadcast<P: ConnectedPacket + Serialize + Clone>(
         &self,
         pk: P,
-    ) -> VResult<()> {
+    ) -> Result<()> {
         self.broadcast.send(BroadcastPacket::new(pk, None)?)?;
         Ok(())
     }
 
     /// Kicks all sessions from the server, displaying the given message.
     /// This function also waits for all sessions to be destroyed.
-    pub async fn kick_all<S: AsRef<str>>(&self, message: S) -> VResult<()> {
+    pub async fn kick_all<S: AsRef<str>>(&self, message: S) -> Result<()> {
         self.broadcast.send(BroadcastPacket::new(
             Disconnect {
                 hide_message: false,

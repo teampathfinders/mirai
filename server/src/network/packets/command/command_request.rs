@@ -1,6 +1,6 @@
 use bytes::{Buf, BytesMut, Bytes};
 use uuid::Uuid;
-use common::{bail, ReadExtensions, VError, VResult, WriteExtensions};
+use common::{bail, ReadExtensions, Error, Result, WriteExtensions};
 
 use common::Deserialize;
 
@@ -28,9 +28,9 @@ pub enum CommandOriginType {
 }
 
 impl TryFrom<u32> for CommandOriginType {
-    type Error = VError;
+    type Error = Error;
 
-    fn try_from(value: u32) -> VResult<Self> {
+    fn try_from(value: u32) -> Result<Self> {
         Ok(match value {
             0 => Self::Player,
             1 => Self::Block,
@@ -48,7 +48,7 @@ impl TryFrom<u32> for CommandOriginType {
             13 => Self::GameDirectorEntityServer,
             14 => Self::Script,
             15 => Self::Executor,
-            _ => bail!(BadPacket, "Invalid command origin {value}"),
+            _ => bail!(Malformed, "Invalid command origin {value}"),
         })
     }
 }
@@ -74,7 +74,7 @@ impl ConnectedPacket for CommandRequest {
 }
 
 impl Deserialize for CommandRequest {
-    fn deserialize(mut buffer: Bytes) -> VResult<Self> {
+    fn deserialize(mut buffer: Bytes) -> Result<Self> {
         let command = buffer.get_string()?;
         let origin = CommandOriginType::try_from(buffer.get_var_u32()?)?;
         buffer.advance(16);

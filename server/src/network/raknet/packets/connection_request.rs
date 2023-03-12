@@ -3,7 +3,7 @@ use bytes::{Buf, BytesMut};
 
 use common::nvassert;
 use common::Deserialize;
-use common::VResult;
+use common::Result;
 
 /// Sent by the client to initiate a full connection.
 /// [`ConnectionRequestAccepted`](super::connection_request_accepted::ConnectionRequestAccepted) should be sent in response.
@@ -21,7 +21,7 @@ impl ConnectionRequest {
 }
 
 impl Deserialize for ConnectionRequest {
-    fn deserialize(mut buffer: Bytes) -> VResult<Self> {
+    fn deserialize(mut buffer: Bytes) -> Result<Self> {
         nvassert!(buffer.get_u8() == Self::ID);
 
         let guid = buffer.get_i64();

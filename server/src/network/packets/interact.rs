@@ -1,5 +1,5 @@
 use bytes::{Buf, BytesMut, Bytes};
-use common::{bail, ReadExtensions, VError, VResult, Vector3f};
+use common::{bail, ReadExtensions, Error, Result, Vector3f};
 
 use common::Deserialize;
 
@@ -15,15 +15,15 @@ pub enum InteractAction {
 }
 
 impl TryFrom<u8> for InteractAction {
-    type Error = VError;
+    type Error = Error;
 
-    fn try_from(value: u8) -> VResult<Self> {
+    fn try_from(value: u8) -> Result<Self> {
         Ok(match value {
             3 => Self::LeaveVehicle,
             4 => Self::MouseOverEntity,
             5 => Self::NpcOpen,
             6 => Self::OpenInventory,
-            _ => bail!(BadPacket, "Invalid interact action type"),
+            _ => bail!(Malformed, "Invalid interact action type"),
         })
     }
 }
@@ -43,7 +43,7 @@ impl ConnectedPacket for Interact {
 }
 
 impl Deserialize for Interact {
-    fn deserialize(mut buffer: Bytes) -> VResult<Self> {
+    fn deserialize(mut buffer: Bytes) -> Result<Self> {
         let action = InteractAction::try_from(buffer.get_u8())?;
         let target_runtime_id = buffer.get_var_u64()?;
 

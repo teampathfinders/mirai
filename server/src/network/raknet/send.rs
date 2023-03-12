@@ -15,7 +15,7 @@ use crate::network::raknet::Reliability;
 use crate::network::raknet::{Frame, FrameBatch};
 use crate::network::session::Session;
 use common::ReadExtensions;
-use common::VResult;
+use common::Result;
 use common::{Deserialize, Serialize};
 
 use super::SendPriority;
@@ -34,7 +34,7 @@ impl Session {
     /// Sends a game packet with default settings
     /// (reliable ordered and medium priority)
     #[inline]
-    pub fn send<T: ConnectedPacket + Serialize>(&self, pk: T) -> VResult<()> {
+    pub fn send<T: ConnectedPacket + Serialize>(&self, pk: T) -> Result<()> {
         let pk = Packet::new(pk);
         let mut serialized = pk.serialize();
 
@@ -46,7 +46,7 @@ impl Session {
         &self,
         mut pk: Bytes,
         config: PacketConfig,
-    ) -> VResult<()> {
+    ) -> Result<()> {
         let mut buffer = BytesMut::new();
         buffer.put_u8(CONNECTED_PACKET_ID);
 
@@ -106,7 +106,7 @@ impl Session {
     }
 
     /// Flushes the send queue.
-    pub async fn flush(&self) -> VResult<()> {
+    pub async fn flush(&self) -> Result<()> {
         let tick = self.current_tick.load(Ordering::SeqCst);
 
         if let Some(frames) = self.raknet.send_queue.flush(SendPriority::High) {
@@ -138,7 +138,7 @@ impl Session {
         Ok(())
     }
 
-    pub async fn flush_all(&self) -> VResult<()> {
+    pub async fn flush_all(&self) -> Result<()> {
         if let Some(frames) = self.raknet.send_queue.flush(SendPriority::High) {
             self.send_raw_frames(frames).await?;
         }
@@ -156,7 +156,7 @@ impl Session {
         Ok(())
     }
 
-    pub async fn flush_acknowledgements(&self) -> VResult<()> {
+    pub async fn flush_acknowledgements(&self) -> Result<()> {
         let mut confirmed = {
             let mut lock = self.raknet.confirmed_packets.lock();
             if lock.is_empty() {
@@ -200,7 +200,7 @@ impl Session {
     }
 
     #[async_recursion]
-    async fn send_raw_frames(&self, frames: Vec<Frame>) -> VResult<()> {
+    async fn send_raw_frames(&self, frames: Vec<Frame>) -> Result<()> {
         let mut serialized = BytesMut::new();
 
         // Process fragments first to prevent sequence number duplication.
