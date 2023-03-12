@@ -30,8 +30,12 @@ fn database_test() {
 
             let data = Bytes::copy_from_slice(raw_ref.value().as_ref());
             let subchunk = SubChunk::deserialize(data).unwrap();
+            let layer = subchunk.layer(0).unwrap();
+            let mut layer_iter = layer.iter();
 
-
+            for block in layer_iter {
+                println!("block {block:?}");
+            }
         }
     }
 

@@ -242,12 +242,8 @@ impl<'de, 'a> de::Deserializer<'de> for &'a mut Deserializer<'de> {
         V: Visitor<'de>,
     {
         let n = match self.flavor {
-            Flavor::BigEndian => {
-                self.input.read_be::<f32>()
-            }
-            _ => {
-                self.input.read_le::<f32>()
-            }
+            Flavor::BigEndian => self.input.read_be::<f32>(),
+            _ => self.input.read_le::<f32>(),
         }?;
 
         visitor.visit_f32(n)
@@ -258,12 +254,8 @@ impl<'de, 'a> de::Deserializer<'de> for &'a mut Deserializer<'de> {
         V: Visitor<'de>,
     {
         let n = match self.flavor {
-            Flavor::BigEndian => {
-                self.input.read_be::<f64>()
-            }
-            _ => {
-                self.input.read_le::<f64>()
-            }
+            Flavor::BigEndian => self.input.read_be::<f64>(),
+            _ => self.input.read_le::<f64>(),
         }?;
 
         visitor.visit_f64(n)

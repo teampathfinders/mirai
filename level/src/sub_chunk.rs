@@ -1,7 +1,8 @@
-use std::collections::HashMap;
 use bytes::{Buf, BufMut, Bytes, BytesMut};
-use common::{bail, BlockPosition, Serialize, VError, VResult, Vector3b};
+use common::{bail, BlockPosition, VError, VResult, Vector3b};
 use serde::Deserialize;
+use std::collections::HashMap;
+use std::iter::Enumerate;
 
 const CHUNK_SIZE: usize = 4096;
 
@@ -47,8 +48,7 @@ pub struct BlockStates {
     pub upper_block_bit: bool,
     pub dripstone_thickness: Option<String>,
     #[serde(default)]
-    pub hanging: bool
-    // pub liquid_depth: Option<i8>,
+    pub hanging: bool, // pub liquid_depth: Option<i8>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
@@ -60,12 +60,17 @@ pub struct BlockProperties {
 }
 
 #[derive(Debug, Clone)]
-pub struct StorageRecord {
+pub struct SubLayer {
     indices: [u16; CHUNK_SIZE],
     palette: Vec<BlockProperties>,
 }
 
-impl StorageRecord {
+impl SubLayer {
+    #[inline]
+    pub fn iter(&self) -> LayerIter {
+        LayerIter::from(self)
+    }
+
     fn deserialize(buffer: &mut Bytes) -> VResult<Self> {
         // Size of each index in bits.
         let index_size = buffer.get_u8() >> 1;
@@ -199,19 +204,24 @@ pub struct SubChunk {
     /// This version affects the format of the chunk.
     version: SubChunkVersion,
     /// Chunk index.
-    index: u8,
+    index: i8,
     /// Layers of this chunk.
     /// The first layer contains blocks,
     /// the second layer contains waterlog data if it exists.
-    storage_records: Vec<StorageRecord>,
+    layers: Vec<SubLayer>,
 }
 
 impl SubChunk {
     pub fn get(&self, position: Vector3b) -> Option<&BlockProperties> {
         let offset = pos_to_offset(position);
-        let index = self.storage_records[0].indices[offset];
+        let index = self.layers[0].indices[offset];
 
-        self.storage_records[0].palette.get(index as usize)
+        self.layers[0].palette.get(index as usize)
+    }
+
+    #[inline]
+    pub fn layer(&self, index: usize) -> Option<&SubLayer> {
+        self.layers.get(index)
     }
 }
 
@@ -222,15 +232,14 @@ impl common::Deserialize for SubChunk {
             1 => todo!(),
             8 | 9 => {
                 let storage_count = buffer.get_u8();
-                let index = if version == 9 { buffer.get_u8() } else { 0 };
+                let index = if version == 9 { buffer.get_i8() } else { 0 };
 
                 let mut storage_records =
                     Vec::with_capacity(storage_count as usize);
 
                 println!("Decoding {storage_count} records");
                 for _ in 0..storage_count {
-                    storage_records
-                        .push(StorageRecord::deserialize(&mut buffer)?);
+                    storage_records.push(SubLayer::deserialize(&mut buffer)?);
                 }
 
                 let version = if version == 8 {
@@ -239,29 +248,67 @@ impl common::Deserialize for SubChunk {
                     SubChunkVersion::Limitless
                 };
 
-                Ok(Self { version, index, storage_records })
+                Ok(Self { version, index, layers: storage_records })
             }
             _ => bail!(InvalidChunk, "Invalid chunk version {version}"),
         }
     }
 }
 
-impl Serialize for SubChunk {
+impl common::Serialize for SubChunk {
     fn serialize(&self, buffer: &mut BytesMut) {
         buffer.put_u8(self.version as u8);
         match self.version {
             SubChunkVersion::Legacy => todo!(),
             _ => {
-                buffer.put_u8(self.storage_records.len() as u8);
+                buffer.put_u8(self.layers.len() as u8);
 
                 if self.version == SubChunkVersion::Limitless {
-                    buffer.put_u8(self.index);
+                    buffer.put_i8(self.index);
                 }
 
-                for storage_record in &self.storage_records {
+                for storage_record in &self.layers {
                     storage_record.serialize(buffer);
                 }
             }
         }
+    }
+}
+
+pub struct LayerIter<'a> {
+    indices: &'a [u16],
+    palette: &'a [BlockProperties],
+}
+
+impl<'a> From<&'a SubLayer> for LayerIter<'a> {
+    #[inline]
+    fn from(value: &'a SubLayer) -> Self {
+        Self {
+            indices: &value.indices,
+            palette: value.palette.as_ref(),
+        }
+    }
+}
+
+impl<'a> Iterator for LayerIter<'a> {
+    type Item = &'a BlockProperties;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.len() == 0 {
+            // ExactSizeIterator::is_empty is unstable
+            return None;
+        }
+
+        let (a, b) = self.indices.split_at(1);
+        self.indices = b;
+
+        self.palette.get(a[0] as usize)
+    }
+}
+
+impl<'a> ExactSizeIterator for LayerIter<'a> {
+    #[inline]
+    fn len(&self) -> usize {
+        self.indices.len()
     }
 }
