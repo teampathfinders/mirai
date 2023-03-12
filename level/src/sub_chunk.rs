@@ -1,5 +1,5 @@
 use bytes::{Buf, BufMut, Bytes, BytesMut};
-use common::{bail, BlockPosition, Serialize, VResult, Vector3b, VError};
+use common::{bail, BlockPosition, Serialize, VError, VResult, Vector3b};
 use serde::Deserialize;
 
 const CHUNK_SIZE: usize = 4096;
@@ -29,7 +29,7 @@ mod block_version {
 
     pub fn serialize<S>(v: [u8; 4], s: S) -> Result<S::Ok, S::Error>
     where
-        S: serde::Serializer
+        S: serde::Serializer,
     {
         let int = i32::from_be_bytes(v);
         int.serialize(s)
@@ -37,10 +37,18 @@ mod block_version {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
+pub struct BlockStates {
+    pub pillar_axis: Option<String>,
+    // pub dirt_type: Option<String>,
+    // pub stone_type: Option<String>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
 pub struct BlockProperties {
     pub name: String,
     #[serde(with = "block_version")]
-    pub version: [u8; 4]
+    pub version: [u8; 4],
+    pub states: BlockStates,
 }
 
 #[derive(Debug, Clone)]
@@ -95,6 +103,7 @@ impl StorageRecord {
         // Size of the block palette.
         let palette_size = buffer.get_u32_le();
 
+        println!("{:?}", buffer.as_ref());
         let mut palette = Vec::with_capacity(palette_size as usize);
         for _ in 0..palette_size {
             let (properties, n) = match nbt::from_le_bytes(buffer) {
@@ -103,7 +112,10 @@ impl StorageRecord {
                     bail!(InvalidNbt, "{}", e.to_string())
                 }
             };
+            dbg!(&properties);
             palette.push(properties);
+
+            break;
             buffer.advance(n);
         }
 

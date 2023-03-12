@@ -16,6 +16,7 @@ pub enum Flavor {
     BigEndian,
 }
 
+#[derive(Debug)]
 pub struct Deserializer<'de> {
     flavor: Flavor,
     input: ReadBuffer<'de>,
@@ -23,33 +24,40 @@ pub struct Deserializer<'de> {
     // State
     latest_tag: u8,
     remaining: u32,
-    is_key: bool
+    is_key: bool,
 }
 
 impl<'de> Deserializer<'de> {
     #[inline]
-    pub fn from_bytes(input: &'de [u8], flavor: Flavor) -> Self {
-        Deserializer {
-            input: ReadBuffer::from(input),
+    pub(crate) fn from_bytes(input: &'de [u8], flavor: Flavor) -> Self {
+        let mut input = ReadBuffer::from(input);
+
+        assert_eq!(input.read_be::<u8>().unwrap(), TAG_COMPOUND);
+
+        let mut de = Deserializer {
+            input,
             flavor,
-            latest_tag: TAG_END,
+            latest_tag: TAG_COMPOUND,
             remaining: 0,
-            is_key: false
-        }
+            is_key: false,
+        };
+
+        let _ = de.deserialize_raw_str().unwrap();
+        de
     }
 
     #[inline]
-    pub fn from_le_bytes(input: &'de [u8]) -> Self {
+    pub(crate) fn from_le_bytes(input: &'de [u8]) -> Self {
         Self::from_bytes(input, Flavor::LittleEndian)
     }
 
     #[inline]
-    pub fn from_be_bytes(input: &'de [u8]) -> Self {
+    pub(crate) fn from_be_bytes(input: &'de [u8]) -> Self {
         Self::from_bytes(input, Flavor::BigEndian)
     }
 
     #[inline]
-    pub fn from_network_bytes(input: &'de [u8]) -> Self {
+    pub(crate) fn from_network_bytes(input: &'de [u8]) -> Self {
         Self::from_bytes(input, Flavor::Network)
     }
 
@@ -62,6 +70,7 @@ impl<'de> Deserializer<'de> {
 
         let data = self.input.take(len as usize)?;
         let str = std::str::from_utf8(data)?;
+        dbg!(str);
 
         Ok(str)
     }
@@ -111,6 +120,8 @@ impl<'de, 'a> de::Deserializer<'de> for &'a mut Deserializer<'de> {
     where
         V: Visitor<'de>,
     {
+        dbg!(self.latest_tag);
+
         if self.is_key {
             self.deserialize_str(visitor)
         } else {
@@ -124,13 +135,19 @@ impl<'de, 'a> de::Deserializer<'de> for &'a mut Deserializer<'de> {
                 TAG_BYTE_ARRAY => self.deserialize_byte_buf(visitor),
                 TAG_STRING => self.deserialize_string(visitor),
                 TAG_LIST => self.deserialize_seq(visitor),
-                TAG_COMPOUND => self.deserialize_map(visitor),
+                TAG_COMPOUND => {
+                    let m = self.deserialize_map(visitor);
+                    self.latest_tag = u8::MAX;
+
+                    m
+                }
                 TAG_INT_ARRAY => self.deserialize_seq(visitor),
                 TAG_LONG_ARRAY => self.deserialize_seq(visitor),
                 _ => bail!(
-                    InvalidType, 
-                    "deserializer encountered an invalid NBT tag type: {}", self.latest_tag
-                )
+                    InvalidType,
+                    "deserializer encountered an invalid NBT tag type: {}",
+                    self.latest_tag
+                ),
             }
         }
     }
@@ -156,9 +173,7 @@ impl<'de, 'a> de::Deserializer<'de> for &'a mut Deserializer<'de> {
         V: Visitor<'de>,
     {
         let n = match self.flavor {
-            Flavor::BigEndian => {
-                self.input.read_be::<i16>()
-            }
+            Flavor::BigEndian => self.input.read_be::<i16>(),
             Flavor::LittleEndian | Flavor::Network => {
                 self.input.read_le::<i16>()
             }
@@ -172,9 +187,7 @@ impl<'de, 'a> de::Deserializer<'de> for &'a mut Deserializer<'de> {
         V: Visitor<'de>,
     {
         let n = match self.flavor {
-            Flavor::BigEndian => {
-                self.input.read_be::<i32>()
-            }
+            Flavor::BigEndian => self.input.read_be::<i32>(),
             Flavor::LittleEndian | Flavor::Network => {
                 self.input.read_le::<i32>()
             }
@@ -188,9 +201,7 @@ impl<'de, 'a> de::Deserializer<'de> for &'a mut Deserializer<'de> {
         V: Visitor<'de>,
     {
         let n = match self.flavor {
-            Flavor::BigEndian => {
-                self.input.read_be::<i64>()
-            }
+            Flavor::BigEndian => self.input.read_be::<i64>(),
             Flavor::LittleEndian | Flavor::Network => {
                 self.input.read_le::<i64>()
             }
@@ -292,7 +303,10 @@ impl<'de, 'a> de::Deserializer<'de> for &'a mut Deserializer<'de> {
 
         let data = self.input.take(len as usize)?;
         let str = std::str::from_utf8(data)?;
-        dbg!(str);
+
+        if self.is_key {
+            println!("key = {str}");
+        }
 
         visitor.visit_str(str)
     }
@@ -334,7 +348,7 @@ impl<'de, 'a> de::Deserializer<'de> for &'a mut Deserializer<'de> {
     where
         V: Visitor<'de>,
     {
-        todo!();
+        unimplemented!()
     }
 
     fn deserialize_unit<V>(self, visitor: V) -> Result<V::Value>
@@ -370,6 +384,8 @@ impl<'de, 'a> de::Deserializer<'de> for &'a mut Deserializer<'de> {
     where
         V: Visitor<'de>,
     {
+        dbg!(&self);
+
         let _list_type = self.input.read_be::<u8>()?;
         self.remaining = match self.flavor {
             Flavor::BigEndian => self.input.read_be::<u32>()?,
@@ -409,17 +425,28 @@ impl<'de, 'a> de::Deserializer<'de> for &'a mut Deserializer<'de> {
 
     fn deserialize_struct<V>(
         self,
-        _name: &'static str,
+        name: &'static str,
         _fields: &'static [&'static str],
         visitor: V,
     ) -> Result<V::Value>
     where
         V: Visitor<'de>,
     {
-        debug_assert_eq!(self.input.read_be::<u8>()?, TAG_COMPOUND);
-        let name = self.deserialize_raw_str()?;
-        dbg!(name);
-        self.deserialize_map(visitor)
+        // dbg!(&self.input);
+        // debug_assert_eq!(self.input.read_be::<u8>()?, TAG_COMPOUND);
+        // let name = self.deserialize_raw_str()?;
+        // dbg!(name);
+
+        // self.latest_tag = self.input.read_be::<u8>()?;
+        // let _ = self.deserialize_raw_str()?;
+        // let tag = self.input.read_be::<u8>()?;
+        // if tag != TAG_COMPOUND {
+        //     bail!(InvalidType, "expected compound, found tag of type {tag}");
+        // }
+        //
+        // let _name = self.deserialize_raw_str()?;
+        self.deserialize_any(visitor)
+        // visitor.visit_map(MapDeserializer::from(self))
     }
 
     fn deserialize_enum<V>(
@@ -449,17 +476,14 @@ impl<'de, 'a> de::Deserializer<'de> for &'a mut Deserializer<'de> {
     }
 }
 
+#[derive(Debug)]
 struct SeqDeserializer<'a, 'de: 'a> {
-    de: &'a mut Deserializer<'de>
+    de: &'a mut Deserializer<'de>,
 }
 
-impl<'de, 'a> From<&'a mut Deserializer<'de>>
-    for SeqDeserializer<'a, 'de>
-{
+impl<'de, 'a> From<&'a mut Deserializer<'de>> for SeqDeserializer<'a, 'de> {
     fn from(v: &'a mut Deserializer<'de>) -> Self {
-        Self {
-            de: v,
-        }
+        Self { de: v }
     }
 }
 
@@ -480,38 +504,7 @@ impl<'de, 'a> SeqAccess<'de> for SeqDeserializer<'a, 'de> {
     }
 }
 
-struct StringKeySeed<'a>(&'a str);
-
-impl<'de, 'a> DeserializeSeed<'de> for StringKeySeed<'a> {
-    type Value = ();
-
-    fn deserialize<D>(self, deserializer: D) -> std::result::Result<Self::Value, D::Error> 
-    where
-        D: de::Deserializer<'de>
-    {
-        struct StringKeyVisitor<'de>(Option<&'de str>);
-
-        impl<'de> Visitor<'de> for StringKeyVisitor<'de> {
-            type Value = ();
-
-            fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
-                write!(formatter, "a u16")
-            }
-
-            fn visit_borrowed_str<E>(mut self, v: &'de str) -> std::result::Result<Self::Value, E>
-            where
-                E: de::Error, 
-            {   
-                self.0 = Some(v);
-
-                Ok(())    
-            }
-        }
-
-        deserializer.deserialize_str(StringKeyVisitor(None))
-    }
-}
-
+#[derive(Debug)]
 struct MapDeserializer<'a, 'de: 'a> {
     de: &'a mut Deserializer<'de>,
 }
@@ -528,7 +521,7 @@ impl<'de, 'a> MapAccess<'de> for MapDeserializer<'a, 'de> {
     fn next_key_seed<K>(&mut self, seed: K) -> Result<Option<K::Value>>
     where
         K: DeserializeSeed<'de>,
-    {   
+    {
         self.de.is_key = true;
         self.de.latest_tag = self.de.input.read_be::<u8>()?;
 
@@ -583,16 +576,10 @@ mod test {
             #[serde(rename = "floatTest")]
             float_test: f32,
             #[serde(rename = "doubleTest")]
-            double_test: f64
+            double_test: f64,
         }
 
-        let decoded: super::Result<AllTypes> = from_be_bytes(BIGTEST_NBT);
-        if let Err(err) = decoded {
-            println!("{err}");
-            panic!("failed")
-        }
-
-        let decoded = decoded.unwrap();
+        let decoded: AllTypes = from_be_bytes(BIGTEST_NBT).unwrap().0;
     }
 
     #[test]
@@ -602,13 +589,7 @@ mod test {
             name: String,
         }
 
-        let decoded: super::Result<HelloWorld> = from_be_bytes(HELLO_WORLD_NBT);
-        if let Err(err) = decoded {
-            println!("{err}");
-            panic!("failed")
-        }
-
-        let decoded = decoded.unwrap();
+        let decoded: HelloWorld = from_be_bytes(HELLO_WORLD_NBT).unwrap().0;
         assert_eq!(decoded, HelloWorld { name: String::from("Bananrama") });
     }
 
@@ -641,7 +622,8 @@ mod test {
         }
 
         println!("{PLAYER_NAN_VALUE_NBT:?}");
-        let decoded: Player = from_be_bytes(PLAYER_NAN_VALUE_NBT).unwrap();
+        let decoded: (Player, usize) =
+            from_be_bytes(PLAYER_NAN_VALUE_NBT).unwrap();
         dbg!(decoded);
     }
 }

@@ -1,6 +1,8 @@
 use std::{
     ffi::{c_void, CStr, CString},
-    os::raw::{c_char, c_int}, marker::PhantomData, ops::Deref,
+    marker::PhantomData,
+    ops::Deref,
+    os::raw::{c_char, c_int},
 };
 
 use bytes::{Bytes, BytesMut};
@@ -9,14 +11,12 @@ use common::{error, VError, VResult};
 use crate::ffi;
 
 pub struct BufferGuard<'a> {
-    buf: &'a [u8]
+    buf: &'a [u8],
 }
 
 impl<'a> From<&'a [u8]> for BufferGuard<'a> {
     fn from(value: &'a [u8]) -> Self {
-        Self {
-            buf: value
-        }
+        Self { buf: value }
     }
 }
 
@@ -38,7 +38,7 @@ impl<'a> Drop for BufferGuard<'a> {
 
 pub struct RawRef<'a> {
     iter: *mut c_void,
-    phantom: PhantomData<&'a ()>
+    phantom: PhantomData<&'a ()>,
 }
 
 impl<'a> RawRef<'a> {
@@ -48,7 +48,11 @@ impl<'a> RawRef<'a> {
             let result = ffi::level_iter_key(self.iter);
             debug_assert_eq!(result.is_success, 1);
 
-            std::slice::from_raw_parts(result.data as *const u8, result.size as usize).into()
+            std::slice::from_raw_parts(
+                result.data as *const u8,
+                result.size as usize,
+            )
+            .into()
         }
     }
 
@@ -58,7 +62,11 @@ impl<'a> RawRef<'a> {
             let result = ffi::level_iter_value(self.iter);
             debug_assert_eq!(result.is_success, 1);
 
-            std::slice::from_raw_parts(result.data as *const u8, result.size as usize).into()
+            std::slice::from_raw_parts(
+                result.data as *const u8,
+                result.size as usize,
+            )
+            .into()
         }
     }
 }
@@ -66,24 +74,18 @@ impl<'a> RawRef<'a> {
 pub struct RawKeyIter<'a> {
     index: usize,
     db: &'a RawDatabase,
-    iter: *mut c_void
+    iter: *mut c_void,
 }
 
 impl<'a> RawKeyIter<'a> {
     fn new(db: &'a RawDatabase) -> Self {
         // SAFETY: level_iter is guaranteed to not return an error.
         // The iterator position has also been initialized by FFI and is not in an invalid state.
-        let result = unsafe {
-            ffi::level_iter(db.pointer)
-        };
-        
+        let result = unsafe { ffi::level_iter(db.pointer) };
+
         debug_assert_eq!(result.is_success, 1);
 
-        Self {
-            index: 0,
-            db,
-            iter: result.data
-        }
+        Self { index: 0, db, iter: result.data }
     }
 }
 
@@ -92,22 +94,15 @@ impl<'a> Iterator for RawKeyIter<'a> {
 
     fn next(&mut self) -> Option<Self::Item> {
         if self.index != 0 {
-            unsafe {
-                ffi::level_iter_next(self.iter)
-            };
+            unsafe { ffi::level_iter_next(self.iter) };
         }
         self.index += 1;
 
-        let valid = unsafe {
-            ffi::level_iter_valid(self.iter)
-        };
+        let valid = unsafe { ffi::level_iter_valid(self.iter) };
 
         if valid {
-            let raw_ref = RawRef {
-                iter: self.iter,
-                phantom: PhantomData
-            };
-            
+            let raw_ref = RawRef { iter: self.iter, phantom: PhantomData };
+
             Some(raw_ref)
         } else {
             None
@@ -169,7 +164,7 @@ impl RawDatabase {
         };
 
         if result.is_success == 1 {
-            dbg!(result.size); 
+            dbg!(result.size);
 
             let data = unsafe {
                 std::slice::from_raw_parts(
@@ -178,7 +173,7 @@ impl RawDatabase {
                 )
             };
             // println!("data = {:?}", &data[..15]);
-            
+
             let buffer = Bytes::copy_from_slice(data);
             unsafe {
                 // SAFETY: Data is safe to deallocate because BytesMut copies the data.

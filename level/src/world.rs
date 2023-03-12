@@ -25,7 +25,7 @@ pub enum KeyData {
     HeightMap = 0x2d,
     /// Sub chunk data.
     SubChunk {
-        index: i8
+        index: i8,
     } = 0x2f,
     /// A block entity.
     BlockEntity = 0x31,

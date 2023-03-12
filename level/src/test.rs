@@ -1,8 +1,10 @@
-use bytes::{BytesMut, Bytes, BufMut};
+use bytes::{BufMut, Bytes, BytesMut};
 use common::{Deserialize, Serialize, Vector, Vector3b};
 
 use crate::{
-    database::RawDatabase, DatabaseKey, KeyData, Dimension, SubChunk, biome::Biome3d, LOCAL_PLAYER, BIOME_DATA, OVERWORLD, SCHEDULER, MOB_EVENTS, SCOREBOARD,
+    biome::Biome3d, database::RawDatabase, DatabaseKey, Dimension, KeyData,
+    SubChunk, BIOME_DATA, LOCAL_PLAYER, MOB_EVENTS, OVERWORLD, SCHEDULER,
+    SCOREBOARD,
 };
 
 // digp [x] [z] [?dimension]
@@ -24,7 +26,7 @@ fn database_test() {
             let subchunk = SubChunk::deserialize(data).unwrap();
             println!("{subchunk:?}");
 
-            break
+            break;
         }
     }
 

@@ -1,11 +1,11 @@
 #[cfg(test)]
 mod test;
 
+mod biome;
 mod database;
 mod ffi;
 mod sub_chunk;
 mod world;
-mod biome;
 
 use std::{sync::Arc, time::Duration};
 
@@ -32,10 +32,8 @@ impl ChunkManager {
     ) -> VResult<(Arc<Self>, Receiver<()>)> {
         tracing::info!("Loading level {}...", path.as_ref());
 
-        let manager = Arc::new(Self {
-            database: RawDatabase::new(path)?,
-            token,
-        });
+        let manager =
+            Arc::new(Self { database: RawDatabase::new(path)?, token });
 
         let clone = manager.clone();
         let (sender, receiver) = tokio::sync::oneshot::channel();

@@ -1,20 +1,20 @@
 use serde::{de, ser};
 use std::backtrace::Backtrace;
-use std::fmt::Display;
+use std::fmt::{Debug, Display};
 use std::{fmt, io};
 
 #[macro_export]
 macro_rules! bail {
     ($k: ident, $s: expr, $($arg: tt)*) => {
         return Err($crate::error::Error::new(
-            $crate::error::ErrorKind::$k, 
+            $crate::error::ErrorKind::$k,
             format!($s, $($arg)*)
         ))
     };
 
     ($k: ident, $s: expr) => {
         return Err($crate::error::Error::new(
-            $crate::error::ErrorKind::$k, 
+            $crate::error::ErrorKind::$k,
             format!($s)
         ))
     };
@@ -26,18 +26,18 @@ macro_rules! bail {
 
 pub type Result<T> = std::result::Result<T, Error>;
 
-#[derive(Debug)]
 pub struct Error {
     backtrace: Backtrace,
     kind: ErrorKind,
-    msg: String
-}   
+    msg: String,
+}
 
 impl Error {
     pub fn new<S: Into<String>>(kind: ErrorKind, msg: S) -> Self {
         Self {
             backtrace: Backtrace::capture(),
-            kind, msg: msg.into()
+            kind,
+            msg: msg.into(),
         }
     }
 }
@@ -68,9 +68,23 @@ impl de::Error for Error {
     }
 }
 
-impl Display for Error {
+impl fmt::Debug for Error {
     fn fmt(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
-        write!(formatter, "{} ({:?})\nbacktrace:\n{}", self.msg, self.kind, self.backtrace)
+        formatter
+            .debug_struct("Error")
+            .field("kind", &self.kind)
+            .field("msg", &self.msg)
+            .finish()
+    }
+}
+
+impl fmt::Display for Error {
+    fn fmt(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+        write!(
+            formatter,
+            "{} ({:?})\nbacktrace:\n{}",
+            self.msg, self.kind, self.backtrace
+        )
     }
 }
 
@@ -79,8 +93,10 @@ impl std::error::Error for Error {}
 impl From<io::Error> for Error {
     fn from(v: io::Error) -> Self {
         match v.kind() {
-            io::ErrorKind::UnexpectedEof => Self::new(ErrorKind::UnexpectedEof, v.to_string()),
-            _ => Self::new(ErrorKind::Other, v.to_string())
+            io::ErrorKind::UnexpectedEof => {
+                Self::new(ErrorKind::UnexpectedEof, v.to_string())
+            }
+            _ => Self::new(ErrorKind::Other, v.to_string()),
         }
     }
 }
