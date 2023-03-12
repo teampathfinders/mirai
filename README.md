@@ -1,9 +1,9 @@
-# Nova
+# Pyro
 Lightweight dedicated server software for Minecraft: Bedrock Edition.
 
 ### Building
 The tools required the build the server are
-- Rust 1.64.0+
+- Rust nightly 1.64.0+ (Pyro uses 2023-03-11 8a73f50d8)
 - CMake 3.0+
 
 After cloning the repository, make sure to run `git submodule update --init` to download the required dependencies. After this, run `cargo build --release` to produce an optimised executable in the `target/release` folder. Alternatively, you can execute `cargo run --release` to immediately run the server as well.
