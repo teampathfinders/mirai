@@ -1,3 +1,0 @@
-[submodule "level/leveldb/vendor"]
-	path = level/leveldb/vendor
-	url = https://github.com/teampathfinders/leveldb-cmake
