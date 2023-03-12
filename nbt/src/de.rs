@@ -24,6 +24,7 @@ pub struct Deserializer<'de> {
     // State
     latest_tag: u8,
     remaining: u32,
+    is_option: bool,
     is_key: bool,
 }
 
@@ -39,6 +40,7 @@ impl<'de> Deserializer<'de> {
             flavor,
             latest_tag: TAG_COMPOUND,
             remaining: 0,
+            is_option: false,
             is_key: false,
         };
 
@@ -70,7 +72,6 @@ impl<'de> Deserializer<'de> {
 
         let data = self.input.take(len as usize)?;
         let str = std::str::from_utf8(data)?;
-        dbg!(str);
 
         Ok(str)
     }
@@ -120,8 +121,6 @@ impl<'de, 'a> de::Deserializer<'de> for &'a mut Deserializer<'de> {
     where
         V: Visitor<'de>,
     {
-        dbg!(self.latest_tag);
-
         if self.is_key {
             self.deserialize_str(visitor)
         } else {
@@ -242,44 +241,32 @@ impl<'de, 'a> de::Deserializer<'de> for &'a mut Deserializer<'de> {
     where
         V: Visitor<'de>,
     {
-        match self.flavor {
+        let n = match self.flavor {
             Flavor::BigEndian => {
-                if let Ok(x) = self.input.read_be::<f32>() {
-                    visitor.visit_f32(x)
-                } else {
-                    bail!(UnexpectedEof)
-                }
+                self.input.read_be::<f32>()
             }
             _ => {
-                if let Ok(x) = self.input.read_le::<f32>() {
-                    visitor.visit_f32(x)
-                } else {
-                    bail!(UnexpectedEof)
-                }
+                self.input.read_le::<f32>()
             }
-        }
+        }?;
+
+        visitor.visit_f32(n)
     }
 
     fn deserialize_f64<V>(self, visitor: V) -> Result<V::Value>
     where
         V: Visitor<'de>,
     {
-        match self.flavor {
+        let n = match self.flavor {
             Flavor::BigEndian => {
-                if let Ok(x) = self.input.read_be::<f64>() {
-                    visitor.visit_f64(x)
-                } else {
-                    bail!(UnexpectedEof)
-                }
+                self.input.read_be::<f64>()
             }
             _ => {
-                if let Ok(x) = self.input.read_le::<f64>() {
-                    visitor.visit_f64(x)
-                } else {
-                    bail!(UnexpectedEof)
-                }
+                self.input.read_le::<f64>()
             }
-        }
+        }?;
+
+        visitor.visit_f64(n)
     }
 
     fn deserialize_char<V>(self, visitor: V) -> Result<V::Value>
@@ -304,10 +291,6 @@ impl<'de, 'a> de::Deserializer<'de> for &'a mut Deserializer<'de> {
         let data = self.input.take(len as usize)?;
         let str = std::str::from_utf8(data)?;
 
-        if self.is_key {
-            println!("key = {str}");
-        }
-
         visitor.visit_str(str)
     }
 
@@ -325,7 +308,6 @@ impl<'de, 'a> de::Deserializer<'de> for &'a mut Deserializer<'de> {
 
         let data = self.input.take(len as usize)?;
         let string = String::from_utf8(data.to_vec())?;
-        dbg!(&string);
 
         visitor.visit_string(string)
     }
@@ -348,10 +330,13 @@ impl<'de, 'a> de::Deserializer<'de> for &'a mut Deserializer<'de> {
     where
         V: Visitor<'de>,
     {
-        unimplemented!()
+        // This is only used to represent possibly missing fields.
+        // If this code is reached, it means the key was found and the field exists.
+        // Therefore this is always some.
+        visitor.visit_some(self)
     }
 
-    fn deserialize_unit<V>(self, visitor: V) -> Result<V::Value>
+    fn deserialize_unit<V>(self, _visitor: V) -> Result<V::Value>
     where
         V: Visitor<'de>,
     {
@@ -361,7 +346,7 @@ impl<'de, 'a> de::Deserializer<'de> for &'a mut Deserializer<'de> {
     fn deserialize_unit_struct<V>(
         self,
         _name: &'static str,
-        visitor: V,
+        _visitor: V,
     ) -> Result<V::Value>
     where
         V: Visitor<'de>,
@@ -372,7 +357,7 @@ impl<'de, 'a> de::Deserializer<'de> for &'a mut Deserializer<'de> {
     fn deserialize_newtype_struct<V>(
         self,
         _name: &'static str,
-        visitor: V,
+        _visitor: V,
     ) -> Result<V::Value>
     where
         V: Visitor<'de>,
@@ -393,8 +378,12 @@ impl<'de, 'a> de::Deserializer<'de> for &'a mut Deserializer<'de> {
             Flavor::Network => todo!(),
         };
 
-        let de = SeqDeserializer::from(self);
-        visitor.visit_seq(de)
+        if self.is_option {
+            visitor.visit_some(self)
+        } else {
+            let de = SeqDeserializer::from(self);
+            visitor.visit_seq(de)
+        }
     }
 
     fn deserialize_tuple<V>(self, _len: usize, visitor: V) -> Result<V::Value>
@@ -408,7 +397,7 @@ impl<'de, 'a> de::Deserializer<'de> for &'a mut Deserializer<'de> {
         self,
         _name: &'static str,
         _len: usize,
-        visitor: V,
+        _visitor: V,
     ) -> Result<V::Value>
     where
         V: Visitor<'de>,
@@ -420,7 +409,12 @@ impl<'de, 'a> de::Deserializer<'de> for &'a mut Deserializer<'de> {
     where
         V: Visitor<'de>,
     {
-        visitor.visit_map(MapDeserializer::from(self))
+        if self.is_option {
+            visitor.visit_some(self)
+        } else {
+            let de = MapDeserializer::from(self);
+            visitor.visit_map(de)
+        }
     }
 
     fn deserialize_struct<V>(

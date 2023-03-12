@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use bytes::{Buf, BufMut, Bytes, BytesMut};
 use common::{bail, BlockPosition, Serialize, VError, VResult, Vector3b};
 use serde::Deserialize;
@@ -39,8 +40,15 @@ mod block_version {
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
 pub struct BlockStates {
     pub pillar_axis: Option<String>,
-    // pub dirt_type: Option<String>,
-    // pub stone_type: Option<String>,
+    pub dirt_type: Option<String>,
+    pub stone_type: Option<String>,
+    pub double_plant_type: Option<String>,
+    #[serde(default)]
+    pub upper_block_bit: bool,
+    pub dripstone_thickness: Option<String>,
+    #[serde(default)]
+    pub hanging: bool
+    // pub liquid_depth: Option<i8>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
@@ -102,8 +110,6 @@ impl StorageRecord {
 
         // Size of the block palette.
         let palette_size = buffer.get_u32_le();
-
-        println!("{:?}", buffer.as_ref());
         let mut palette = Vec::with_capacity(palette_size as usize);
         for _ in 0..palette_size {
             let (properties, n) = match nbt::from_le_bytes(buffer) {
@@ -112,11 +118,9 @@ impl StorageRecord {
                     bail!(InvalidNbt, "{}", e.to_string())
                 }
             };
-            dbg!(&properties);
-            palette.push(properties);
 
-            break;
-            buffer.advance(n);
+            palette.push(properties);
+            buffer.advance(n + 3);
         }
 
         Ok(Self { indices, palette })
