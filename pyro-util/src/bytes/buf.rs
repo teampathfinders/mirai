@@ -1,12 +1,12 @@
-use std::mem;
+use std::{fmt, mem};
 use std::mem::MaybeUninit;
-use crate::Vector;
+use crate::{Vector, u24::u24};
 
 pub trait FromBytes: Sized {
     const SIZE: usize;
 
-    fn from_le_bytes(bytes: [u8; Self::SIZE]) -> Self;
-    fn from_be_bytes(bytes: [u8; Self::SIZE]) -> Self;
+    fn from_bytes_le(bytes: [u8; Self::SIZE]) -> Self;
+    fn from_bytes_be(bytes: [u8; Self::SIZE]) -> Self;
 }
 
 macro_rules! from_bytes {
@@ -19,12 +19,12 @@ macro_rules! from_bytes {
             const SIZE: usize = $b as usize / 8;
 
             #[inline]
-            fn from_le_bytes(bytes: [u8; Self::SIZE]) -> Self {
+            fn from_bytes_le(bytes: [u8; Self::SIZE]) -> Self {
                 <$t>::from_le_bytes(bytes)
             }
 
             #[inline]
-            fn from_be_bytes(bytes: [u8; Self::SIZE]) -> Self {
+            fn from_bytes_be(bytes: [u8; Self::SIZE]) -> Self {
                 <$t>::from_be_bytes(bytes)
             }
         }
@@ -33,6 +33,7 @@ macro_rules! from_bytes {
 
 from_bytes!(u8);
 from_bytes!(u16);
+from_bytes!(u24);
 from_bytes!(u32);
 from_bytes!(u64);
 from_bytes!(u128);
@@ -48,12 +49,12 @@ impl FromBytes for bool {
     const SIZE: usize = 1;
 
     #[inline]
-    fn from_le_bytes(bytes: [u8; Self::SIZE]) -> Self {
+    fn from_bytes_le(bytes: [u8; Self::SIZE]) -> Self {
         bytes[0] != 0
     }
 
     #[inline]
-    fn from_be_bytes(bytes: [u8; Self::SIZE]) -> Self {
+    fn from_bytes_be(bytes: [u8; Self::SIZE]) -> Self {
         bytes[0] != 0
     }
 }
@@ -62,7 +63,7 @@ impl<T: FromBytes, const N: usize> FromBytes for [T; N] {
     const SIZE: usize = N * T::SIZE;
 
     #[inline]
-    fn from_le_bytes(mut bytes: [u8; Self::SIZE]) -> Self {
+    fn from_bytes_le(mut bytes: [u8; Self::SIZE]) -> Self {
         // Reverse bytes if the current machine is big endian.
         if cfg!(target_endian = "big") {
             for i in 0..N {
@@ -82,7 +83,7 @@ impl<T: FromBytes, const N: usize> FromBytes for [T; N] {
     }
     
     #[inline]
-    fn from_be_bytes(bytes: [u8; Self::SIZE]) -> Self {
+    fn from_bytes_be(bytes: [u8; Self::SIZE]) -> Self {
         // Reverse bytes if the current machine is little endian.
         if cfg!(target_endian = "little") {
             for i in 0..N {
@@ -106,7 +107,7 @@ impl<T: FromBytes, const N: usize> FromBytes for Vector<T, N> {
     const SIZE: usize = N * std::mem::size_of::<T>();
 
     #[inline]
-    fn from_le_bytes(bytes: [u8; Self::SIZE]) -> Self {
+    fn from_bytes_le(bytes: [u8; Self::SIZE]) -> Self {
         // Reverse bytes if the current machine is little endian.
         if cfg!(target_endian = "big") {
             for i in 0..N {
@@ -126,7 +127,7 @@ impl<T: FromBytes, const N: usize> FromBytes for Vector<T, N> {
     }
 
     #[inline]
-    fn from_be_bytes(bytes: [u8; Self::SIZE]) -> Self {
+    fn from_bytes_be(bytes: [u8; Self::SIZE]) -> Self {
         // Reverse bytes if the current machine is little endian.
         if cfg!(target_endian = "little") {
             for i in 0..N {

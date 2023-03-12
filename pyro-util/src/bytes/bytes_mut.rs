@@ -27,7 +27,7 @@ impl WriteBuffer {
     where
         [(); T::SIZE]:
     {
-        self.0.extend_from_slice(&v.to_be_bytes());
+        self.0.extend_from_slice(&v.to_bytes_be());
     }
 
     #[inline]
@@ -35,7 +35,7 @@ impl WriteBuffer {
     where
         [(); T::SIZE]:
     {
-        self.0.extend_from_slice(&v.to_le_bytes());
+        self.0.extend_from_slice(&v.to_bytes_le());
     }
 }
 

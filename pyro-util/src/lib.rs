@@ -19,7 +19,9 @@ mod varint;
 mod extensions;
 mod traits;
 mod vector;
+mod u24;
 
+pub use u24::*;
 pub use error::*;
 pub use varint::*;
 pub use extensions::*;

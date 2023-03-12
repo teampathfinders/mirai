@@ -1,8 +1,10 @@
+use crate::u24::u24;
+
 pub trait ToBytes: Sized {
     const SIZE: usize;
 
-    fn to_le_bytes(self) -> [u8; Self::SIZE];
-    fn to_be_bytes(self) -> [u8; Self::SIZE];
+    fn to_bytes_le(self) -> [u8; Self::SIZE];
+    fn to_bytes_be(self) -> [u8; Self::SIZE];
 }
 
 macro_rules! to_bytes {
@@ -15,12 +17,12 @@ macro_rules! to_bytes {
             const SIZE: usize = $b as usize / 8;
 
             #[inline]
-            fn to_le_bytes(self) -> [u8; Self::SIZE] {
+            fn to_bytes_le(self) -> [u8; Self::SIZE] {
                 self.to_le_bytes()
             }
 
             #[inline]
-            fn to_be_bytes(self) -> [u8; Self::SIZE] {
+            fn to_bytes_be(self) -> [u8; Self::SIZE] {
                 self.to_be_bytes()
             }
         }
@@ -29,6 +31,7 @@ macro_rules! to_bytes {
 
 to_bytes!(u8);
 to_bytes!(u16);
+to_bytes!(u24);
 to_bytes!(u32);
 to_bytes!(u64);
 to_bytes!(u128);
@@ -44,12 +47,12 @@ impl ToBytes for bool {
     const SIZE: usize = 1;
 
     #[inline]
-    fn to_le_bytes(self) -> [u8; Self::SIZE] {
+    fn to_bytes_le(self) -> [u8; Self::SIZE] {
         [self as u8]
     }
 
     #[inline]
-    fn to_be_bytes(self) -> [u8; Self::SIZE] {
+    fn to_bytes_be(self) -> [u8; Self::SIZE] {
         [self as u8]
     }
 }
