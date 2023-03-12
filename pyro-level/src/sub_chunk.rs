@@ -1,10 +1,9 @@
 use bytes::{Buf, BufMut, Bytes, BytesMut};
 use util::{bail, BlockPosition, Error, Result, Vector3b};
-use nbt::ReadBuffer;
 use serde::Deserialize;
 use std::collections::HashMap;
 use std::iter::Enumerate;
-use util::bytes::ReadBuffer;
+use util::bytes::{ReadBuffer, WriteBuffer};
 
 const CHUNK_SIZE: usize = 4096;
 
@@ -22,7 +21,7 @@ fn u32_ceil_div(lhs: u32, rhs: u32) -> u32 {
 
 mod block_version {
     use serde::{Deserialize, Serialize};
-    use util::bytes::FromBytes;
+    use util::bytes::{FromBytes, ToBytes};
 
     pub fn deserialize<'de, D>(d: D) -> Result<[u8; 4], D::Error>
     where
@@ -151,11 +150,12 @@ impl SubLayer {
             bits_per_block as u8
         };
 
-        buffer.put_u8(index_size << 1);
+        buffer.write_le::<u8>(index_size << 1);
 
         // Amount of indices that fit in a single 32-bit integer.
         let indices_per_word =
             u32_ceil_div(u32::BITS, index_size as u32) as usize;
+
         // Amount of words needed to encode 4096 block indices.
         let word_count = {
             let padding = match index_size {
@@ -175,10 +175,10 @@ impl SubLayer {
                 word <<= indices_per_word;
             }
 
-            buffer.put_u32_le(word);
+            buffer.write_le::<u32>(word);
         }
 
-        buffer.put_u32_le(self.palette.len() as u32);
+        buffer.write_le::<u32>(self.palette.len() as u32);
         for entry in &self.palette {
             todo!("serialize BlockProperties nbt");
             // nbt::serialize_le("", entry, buffer);
@@ -263,14 +263,14 @@ impl util::Deserialize for SubChunk {
 
 impl util::Serialize for SubChunk {
     fn serialize(&self, buffer: &mut WriteBuffer) {
-        buffer.put_u8(self.version as u8);
+        buffer.write_le::<u8>(self.version as u8);
         match self.version {
             SubChunkVersion::Legacy => todo!(),
             _ => {
-                buffer.put_u8(self.layers.len() as u8);
+                buffer.write_le::<u8>(self.layers.len() as u8);
 
                 if self.version == SubChunkVersion::Limitless {
-                    buffer.put_i8(self.index);
+                    buffer.write_le::<i8>(self.index);
                 }
 
                 for storage_record in &self.layers {

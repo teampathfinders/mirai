@@ -86,16 +86,16 @@ impl DatabaseKey {
 
 impl Serialize for DatabaseKey {
     fn serialize(&self, buffer: &mut WriteBuffer) {
-        buffer.put_i32_le(self.x);
-        buffer.put_i32_le(self.z);
+        buffer.write_le::<i32>(self.x);
+        buffer.write_le::<i32>(self.z);
 
         if self.dimension != Dimension::Overworld {
-            buffer.put_i32_le(self.dimension as i32);
+            buffer.write_le::<i32>(self.dimension as i32);
         }
 
-        buffer.put_u8(self.data.discriminant());
+        buffer.write_le::<u8>(self.data.discriminant());
         if let KeyData::SubChunk { index } = self.data {
-            buffer.put_i8(index);
+            buffer.write_le::<i8>(index);
         }
     }
 }
