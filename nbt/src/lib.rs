@@ -25,6 +25,7 @@ const TAG_COMPOUND: u8 = 0x0a;
 const TAG_INT_ARRAY: u8 = 0x0b;
 const TAG_LONG_ARRAY: u8 = 0x0c;
 
+pub use crate::buf::FromBytes;
 pub use crate::bytes::ReadBuffer;
 pub use crate::de::{from_be_bytes, from_le_bytes, from_net_bytes};
 pub use crate::error::{Error, Result};

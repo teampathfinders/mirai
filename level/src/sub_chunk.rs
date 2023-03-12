@@ -1,5 +1,6 @@
 use bytes::{Buf, BufMut, Bytes, BytesMut};
 use common::{bail, BlockPosition, VError, VResult, Vector3b};
+use nbt::ReadBuffer;
 use serde::Deserialize;
 use std::collections::HashMap;
 use std::iter::Enumerate;
@@ -71,9 +72,9 @@ impl SubLayer {
         LayerIter::from(self)
     }
 
-    fn deserialize(buffer: &mut Bytes) -> VResult<Self> {
+    fn deserialize(buffer: &mut ReadBuffer) -> VResult<Self> {
         // Size of each index in bits.
-        let index_size = buffer.get_u8() >> 1;
+        let index_size = buffer.read_le::<u8>()? >> 1;
         if index_size == 0x7f {
             bail!(InvalidChunk, "Invalid block bit size {index_size}");
         }
@@ -87,7 +88,7 @@ impl SubLayer {
         let mut indices = [0u16; CHUNK_SIZE];
         for i in 0..word_count {
             // println!("{i} {}", i * indices_per_word);
-            let mut word = buffer.get_u32_le();
+            let mut word = buffer.read_le::<u32>()?;
 
             for j in 0..indices_per_word {
                 let index = word & mask;
@@ -100,7 +101,7 @@ impl SubLayer {
         // Padded sizes have an extra word.
         match index_size {
             3 | 5 | 6 => {
-                let mut word = buffer.get_u32_le();
+                let mut word = buffer.read_le::<u32>()?;
                 let last_index =
                     (word_count - 1) * indices_per_word + indices_per_word - 1;
 
@@ -114,7 +115,7 @@ impl SubLayer {
         }
 
         // Size of the block palette.
-        let palette_size = buffer.get_u32_le();
+        let palette_size = buffer.read_le::<u32>()?;
         let mut palette = Vec::with_capacity(palette_size as usize);
         for _ in 0..palette_size {
             let (properties, n) = match nbt::from_le_bytes(buffer) {
@@ -226,13 +227,17 @@ impl SubChunk {
 }
 
 impl common::Deserialize for SubChunk {
-    fn deserialize(mut buffer: Bytes) -> VResult<Self> {
-        let version = buffer.get_u8();
+    fn deserialize(mut buffer: ReadBuffer) -> VResult<Self> {
+        let version = buffer.read_le::<u8>()?;
         match version {
             1 => todo!(),
             8 | 9 => {
-                let storage_count = buffer.get_u8();
-                let index = if version == 9 { buffer.get_i8() } else { 0 };
+                let storage_count = buffer.read_le::<u8>()?;
+                let index = if version == 9 {
+                    buffer.read_le::<i8>()?
+                } else {
+                    0
+                };
 
                 let mut storage_records =
                     Vec::with_capacity(storage_count as usize);
@@ -294,14 +299,13 @@ impl<'a> Iterator for LayerIter<'a> {
     type Item = &'a BlockProperties;
 
     fn next(&mut self) -> Option<Self::Item> {
+        // ExactSizeIterator::is_empty is unstable
         if self.len() == 0 {
-            // ExactSizeIterator::is_empty is unstable
             return None;
         }
 
         let (a, b) = self.indices.split_at(1);
         self.indices = b;
-
         self.palette.get(a[0] as usize)
     }
 }
