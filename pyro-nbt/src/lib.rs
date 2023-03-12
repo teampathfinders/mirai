@@ -2,8 +2,7 @@
 #![warn(clippy::nursery)]
 
 mod de;
-mod error;
-mod ser;
+// mod ser;
 
 const TAG_END: u8 = 0x00;
 const TAG_BYTE: u8 = 0x01;
@@ -20,4 +19,3 @@ const TAG_INT_ARRAY: u8 = 0x0b;
 const TAG_LONG_ARRAY: u8 = 0x0c;
 
 pub use crate::de::{from_be_bytes, from_le_bytes, from_net_bytes};
-pub use crate::error::{Error, Result};

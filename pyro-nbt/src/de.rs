@@ -1,13 +1,14 @@
 use std::fmt;
 
-use crate::error::{Error, Result};
 use crate::{
-    bail, ReadBuffer, TAG_BYTE, TAG_BYTE_ARRAY, TAG_COMPOUND, TAG_DOUBLE,
+    TAG_BYTE, TAG_BYTE_ARRAY, TAG_COMPOUND, TAG_DOUBLE,
     TAG_END, TAG_FLOAT, TAG_INT, TAG_INT_ARRAY, TAG_LIST, TAG_LONG,
     TAG_LONG_ARRAY, TAG_SHORT, TAG_STRING,
 };
 use serde::de::{DeserializeSeed, MapAccess, SeqAccess, Visitor};
 use serde::{de, Deserialize};
+use util::bytes::ReadBuffer;
+use util::{bail, Error, Result};
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum Flavor {
@@ -143,7 +144,7 @@ impl<'de, 'a> de::Deserializer<'de> for &'a mut Deserializer<'de> {
                 TAG_INT_ARRAY => self.deserialize_seq(visitor),
                 TAG_LONG_ARRAY => self.deserialize_seq(visitor),
                 _ => bail!(
-                    InvalidType,
+                    Malformed,
                     "deserializer encountered an invalid NBT tag type: {}",
                     self.latest_tag
                 ),
@@ -418,21 +419,7 @@ impl<'de, 'a> de::Deserializer<'de> for &'a mut Deserializer<'de> {
     where
         V: Visitor<'de>,
     {
-        // dbg!(&self.input);
-        // debug_assert_eq!(self.input.read_be::<u8>()?, TAG_COMPOUND);
-        // let name = self.deserialize_raw_str()?;
-        // dbg!(name);
-
-        // self.latest_tag = self.input.read_be::<u8>()?;
-        // let _ = self.deserialize_raw_str()?;
-        // let tag = self.input.read_be::<u8>()?;
-        // if tag != TAG_COMPOUND {
-        //     bail!(InvalidType, "expected compound, found tag of type {tag}");
-        // }
-        //
-        // let _name = self.deserialize_raw_str()?;
         self.deserialize_any(visitor)
-        // visitor.visit_map(MapDeserializer::from(self))
     }
 
     fn deserialize_enum<V>(

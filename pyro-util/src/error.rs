@@ -1,3 +1,5 @@
+use std::fmt;
+
 /// Verifies that the given expression evaluates to true,
 /// or returns an error
 #[macro_export]
@@ -65,20 +67,20 @@ pub enum ErrorKind {
     NotInitialized,
     /// An operation on the database has failed.
     DatabaseFailure,
+    Unsupported,
     /// An unknown error
     Other,
 }
 
-#[derive(Debug)]
 pub struct Error {
     kind: ErrorKind,
-    message: String,
+    msg: String,
 }
 
 impl Error {
     #[inline]
-    pub fn new(kind: ErrorKind, message: String) -> Self {
-        Self { kind, message }
+    pub fn new(kind: ErrorKind, msg: String) -> Self {
+        Self { kind, msg }
     }
 
     #[inline]
@@ -89,9 +91,31 @@ impl Error {
 
 impl std::error::Error for Error {}
 
-impl std::fmt::Display for Error {
-    fn fmt(&self, fmt: &mut std::fmt::Formatter) -> std::fmt::Result {
-        write!(fmt, "{:?} | {}", self.kind, self.message)
+impl serde::de::Error for Error {
+    fn custom<T>(v: T) -> Self
+    where
+        T: fmt::Display
+    {
+        Self {
+            kind: ErrorKind::Malformed,
+            msg: v.to_string()
+        }
+    }
+}
+
+impl fmt::Debug for Error {
+    fn fmt(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+        formatter
+            .debug_struct("Error")
+            .field("kind", &self.kind)
+            .field("msg", &self.msg)
+            .finish()
+    }
+}
+
+impl fmt::Display for Error {
+    fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
+        write!(fmt, "{:?} | {}", self.kind, self.msg)
     }
 }
 
@@ -112,6 +136,9 @@ impl From<std::io::Error> for Error {
             }
             std::io::ErrorKind::NotConnected => {
                 Self::new(ErrorKind::NotAuthenticated, value.to_string())
+            }
+            std::io::ErrorKind::UnexpectedEof => {
+                Self::new(ErrorKind::UnexpectedEof, value.to_string())
             }
             _ => Self::new(ErrorKind::Other, value.to_string()),
         }
@@ -188,5 +215,17 @@ impl<T> From<tokio::sync::broadcast::error::SendError<T>> for Error {
 impl From<cipher::StreamCipherError> for Error {
     fn from(value: cipher::StreamCipherError) -> Self {
         Self::new(ErrorKind::Malformed, value.to_string())
+    }
+}
+
+impl From<std::str::Utf8Error> for Error {
+    fn from(v: std::str::Utf8Error) -> Self {
+        Error::new(ErrorKind::Malformed, v.to_string())
+    }
+}
+
+impl From<std::string::FromUtf8Error> for Error {
+    fn from(v: std::string::FromUtf8Error) -> Self {
+        Error::new(ErrorKind::Malformed, v.to_string())
     }
 }

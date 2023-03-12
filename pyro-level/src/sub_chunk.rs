@@ -1,9 +1,10 @@
 use bytes::{Buf, BufMut, Bytes, BytesMut};
-use common::{bail, BlockPosition, Error, Result, Vector3b};
+use util::{bail, BlockPosition, Error, Result, Vector3b};
 use nbt::ReadBuffer;
 use serde::Deserialize;
 use std::collections::HashMap;
 use std::iter::Enumerate;
+use util::bytes::ReadBuffer;
 
 const CHUNK_SIZE: usize = 4096;
 
@@ -21,6 +22,7 @@ fn u32_ceil_div(lhs: u32, rhs: u32) -> u32 {
 
 mod block_version {
     use serde::{Deserialize, Serialize};
+    use util::bytes::FromBytes;
 
     pub fn deserialize<'de, D>(d: D) -> Result<[u8; 4], D::Error>
     where
@@ -76,7 +78,7 @@ impl SubLayer {
         // Size of each index in bits.
         let index_size = buffer.read_le::<u8>()? >> 1;
         if index_size == 0x7f {
-            bail!(InvalidChunk, "Invalid block bit size {index_size}");
+            bail!(Malformed, "Invalid block bit size {index_size}");
         }
 
         // Amount of indices that fit in a single 32-bit integer.
@@ -121,7 +123,7 @@ impl SubLayer {
             let (properties, n) = match nbt::from_le_bytes(buffer) {
                 Ok(p) => p,
                 Err(e) => {
-                    bail!(InvalidNbt, "{}", e.to_string())
+                    bail!(Malformed, "{}", e.to_string())
                 }
             };
 
@@ -132,7 +134,7 @@ impl SubLayer {
         Ok(Self { indices, palette })
     }
 
-    fn serialize(&self, buffer: &mut BytesMut) {
+    fn serialize(&self, buffer: &mut WriteBuffer) {
         // Determine the required bits per index
         let index_size = {
             let palette_size = self.palette.len();
@@ -226,7 +228,7 @@ impl SubChunk {
     }
 }
 
-impl common::Deserialize for SubChunk {
+impl util::Deserialize for SubChunk {
     fn deserialize(mut buffer: ReadBuffer) -> Result<Self> {
         let version = buffer.read_le::<u8>()?;
         match version {
@@ -242,7 +244,6 @@ impl common::Deserialize for SubChunk {
                 let mut storage_records =
                     Vec::with_capacity(storage_count as usize);
 
-                println!("Decoding {storage_count} records");
                 for _ in 0..storage_count {
                     storage_records.push(SubLayer::deserialize(&mut buffer)?);
                 }
@@ -255,13 +256,13 @@ impl common::Deserialize for SubChunk {
 
                 Ok(Self { version, index, layers: storage_records })
             }
-            _ => bail!(InvalidChunk, "Invalid chunk version {version}"),
+            _ => bail!(Malformed, "Invalid chunk version {version}"),
         }
     }
 }
 
-impl common::Serialize for SubChunk {
-    fn serialize(&self, buffer: &mut BytesMut) {
+impl util::Serialize for SubChunk {
+    fn serialize(&self, buffer: &mut WriteBuffer) {
         buffer.put_u8(self.version as u8);
         match self.version {
             SubChunkVersion::Legacy => todo!(),

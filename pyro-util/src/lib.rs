@@ -16,12 +16,12 @@ mod test;
 pub mod bytes;
 mod error;
 mod varint;
-// mod extensions;
+mod extensions;
 mod traits;
 mod vector;
 
 pub use error::*;
 pub use varint::*;
-// pub use extensions::*;
+pub use extensions::*;
 pub use traits::*;
 pub use vector::*;

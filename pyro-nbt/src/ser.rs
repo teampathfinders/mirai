@@ -5,6 +5,8 @@ use std::{
 };
 
 use serde::{ser, Serialize};
+use util::{bail, Error, Result};
+use util::bytes::WriteBuffer;
 
 use crate::{
     bail, de::Flavor, error::Result, Error, TAG_BYTE, TAG_COMPOUND, TAG_DOUBLE,
@@ -40,22 +42,22 @@ impl<'a> ser::Serializer for &'a mut Serializer {
     type SerializeStructVariant = Self;
 
     fn serialize_bool(self, v: bool) -> Result<()> {
-        self.output.write_bool(v);
+        self.output.write_be::<bool>(v);
         Ok(())
     }
 
     fn serialize_i8(self, v: i8) -> Result<()> {
-        self.output.write_i8(v);
+        self.output.write_be::<i8>(v);
         Ok(())
     }
 
     fn serialize_i16(self, v: i16) -> Result<()> {
         match self.flavor {
             Flavor::LittleEndian | Flavor::Network => {
-                self.output.write_i16_le(v);
+                self.output.write_le::<i16>(v);
             }
             Flavor::BigEndian => {
-                self.output.write_i16(v);
+                self.output.write_be::<i16>(v);
             }
         }
 
@@ -65,10 +67,10 @@ impl<'a> ser::Serializer for &'a mut Serializer {
     fn serialize_i32(self, v: i32) -> Result<()> {
         match self.flavor {
             Flavor::LittleEndian | Flavor::Network => {
-                self.output.write_i32_le(v);
+                self.output.write_le::<i32>(v);
             }
             Flavor::BigEndian => {
-                self.output.write_i32(v);
+                self.output.write_be::<i32>(v);
             }
         }
 
@@ -78,10 +80,10 @@ impl<'a> ser::Serializer for &'a mut Serializer {
     fn serialize_i64(self, v: i64) -> Result<()> {
         match self.flavor {
             Flavor::LittleEndian | Flavor::Network => {
-                self.output.write_i64_le(v);
+                self.output.write_le::<i64>(v);
             }
             Flavor::BigEndian => {
-                self.output.write_i64(v);
+                self.output.write_be::<i64>(v);
             }
         }
 
@@ -89,32 +91,32 @@ impl<'a> ser::Serializer for &'a mut Serializer {
     }
 
     // NBT does not support unsigned types.
-    fn serialize_u8(self, v: u8) -> Result<()> {
+    fn serialize_u8(self, _v: u8) -> Result<()> {
         bail!(Unsupported)
     }
 
     // NBT does not support unsigned types.
-    fn serialize_u16(self, v: u16) -> Result<()> {
+    fn serialize_u16(self, _v: u16) -> Result<()> {
         bail!(Unsupported)
     }
 
     // NBT does not support unsigned types.
-    fn serialize_u32(self, v: u32) -> Result<()> {
+    fn serialize_u32(self, _v: u32) -> Result<()> {
         bail!(Unsupported)
     }
 
     // NBT does not support unsigned types.
-    fn serialize_u64(self, v: u64) -> Result<()> {
+    fn serialize_u64(self, _v: u64) -> Result<()> {
         bail!(Unsupported)
     }
 
     fn serialize_f32(self, v: f32) -> Result<()> {
         match self.flavor {
             Flavor::LittleEndian | Flavor::Network => {
-                self.output.write_f32_le(v);
+                self.output.write_le::<f32>(v);
             }
             Flavor::BigEndian => {
-                self.output.write_f32(v);
+                self.output.write_be::<f32>(v);
             }
         }
 
@@ -124,10 +126,10 @@ impl<'a> ser::Serializer for &'a mut Serializer {
     fn serialize_f64(self, v: f64) -> Result<()> {
         match self.flavor {
             Flavor::LittleEndian | Flavor::Network => {
-                self.output.write_f64_le(v);
+                self.output.write_le::<f64>(v);
             }
             Flavor::BigEndian => {
-                self.output.write_f64(v);
+                self.output.write_be::<f64>(v);
             }
         }
 
@@ -145,10 +147,10 @@ impl<'a> ser::Serializer for &'a mut Serializer {
     fn serialize_str(self, v: &str) -> Result<()> {
         match self.flavor {
             Flavor::LittleEndian => {
-                self.output.write_u16_le(v.len() as u16);
+                self.output.write_le::<u16>(v.len() as u16);
             }
             Flavor::BigEndian => {
-                self.output.write_u16(v.len() as u16);
+                self.output.write_be::<u16>(v.len() as u16);
             }
             Flavor::Network => {
                 todo!();
@@ -159,7 +161,7 @@ impl<'a> ser::Serializer for &'a mut Serializer {
         Ok(())
     }
 
-    fn serialize_bytes(self, v: &[u8]) -> Result<()> {
+    fn serialize_bytes(self, _v: &[u8]) -> Result<()> {
         todo!()
     }
 
@@ -167,7 +169,7 @@ impl<'a> ser::Serializer for &'a mut Serializer {
         todo!()
     }
 
-    fn serialize_some<T: ?Sized>(self, value: &T) -> Result<()>
+    fn serialize_some<T: ?Sized>(self, _v: &T) -> Result<()>
     where
         T: Serialize,
     {
@@ -178,23 +180,23 @@ impl<'a> ser::Serializer for &'a mut Serializer {
         todo!()
     }
 
-    fn serialize_unit_struct(self, name: &'static str) -> Result<()> {
+    fn serialize_unit_struct(self, _name: &'static str) -> Result<()> {
         todo!()
     }
 
     fn serialize_unit_variant(
         self,
-        name: &'static str,
-        variant_index: u32,
-        variant: &'static str,
+        _name: &'static str,
+        _variant_index: u32,
+        _variant: &'static str,
     ) -> Result<()> {
         todo!()
     }
 
     fn serialize_newtype_struct<T: ?Sized>(
         self,
-        name: &'static str,
-        value: &T,
+        _name: &'static str,
+        _value: &T,
     ) -> Result<()>
     where
         T: Serialize,
@@ -204,10 +206,10 @@ impl<'a> ser::Serializer for &'a mut Serializer {
 
     fn serialize_newtype_variant<T: ?Sized>(
         self,
-        name: &'static str,
-        variant_index: u32,
-        variant: &'static str,
-        value: &T,
+        _name: &'static str,
+        _variant_index: u32,
+        _variant: &'static str,
+        _value: &T,
     ) -> Result<()>
     where
         T: Serialize,
@@ -217,7 +219,7 @@ impl<'a> ser::Serializer for &'a mut Serializer {
 
     fn serialize_seq(
         self,
-        len: Option<usize>,
+        _len: Option<usize>,
     ) -> std::result::Result<Self, Error> {
         todo!()
     }
@@ -228,8 +230,8 @@ impl<'a> ser::Serializer for &'a mut Serializer {
 
     fn serialize_tuple_struct(
         self,
-        name: &'static str,
-        len: usize,
+        _name: &'static str,
+        _len: usize,
     ) -> std::result::Result<Self, Error> {
         todo!()
     }
@@ -256,9 +258,9 @@ impl<'a> ser::Serializer for &'a mut Serializer {
         name: &'static str,
         len: usize,
     ) -> std::result::Result<Self, Error> {
-        self.output.write_u8(TAG_COMPOUND);
-        self.output.write_u16_le(name.len() as u16);
-        self.output.write_all(name.as_bytes())?;
+        self.output.write_be::<u8>(TAG_COMPOUND);
+        // self.output.write_u16_le(name.len() as u16);
+        // self.output.write_all(name.as_bytes())?;
         Ok(self)
         // self.serialize_map(Some(len))
     }

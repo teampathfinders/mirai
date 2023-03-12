@@ -6,7 +6,7 @@ use std::{
 };
 
 use bytes::{Bytes, BytesMut};
-use common::{error, Error, Result};
+use util::{error, Error, Result};
 
 use crate::ffi;
 

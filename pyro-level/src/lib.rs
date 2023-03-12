@@ -9,7 +9,7 @@ mod world;
 
 use std::{sync::Arc, time::Duration};
 
-use common::Result;
+use util::Result;
 use database::RawDatabase;
 pub use sub_chunk::*;
 use tokio::sync::oneshot::{Receiver, Sender};

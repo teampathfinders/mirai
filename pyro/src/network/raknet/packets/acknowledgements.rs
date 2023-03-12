@@ -44,10 +44,10 @@ fn decode_records(mut buffer: Bytes) -> Vec<AckRecord> {
         let is_range = buffer.get_u8() == 0;
         if is_range {
             records.push(AckRecord::Range(
-                buffer.get_u24_le()..buffer.get_u24_le(),
+                buffer.read_le_u24()..buffer.read_le_u24(),
             ));
         } else {
-            records.push(AckRecord::Single(buffer.get_u24_le()));
+            records.push(AckRecord::Single(buffer.read_le_u24()));
         }
     }
 

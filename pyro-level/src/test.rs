@@ -1,5 +1,5 @@
 use bytes::{BufMut, Bytes, BytesMut};
-use common::{Deserialize, Serialize, Vector, Vector3b};
+use util::{Deserialize, Serialize, Vector, Vector3b};
 
 use crate::{
     biome::Biome3d, database::RawDatabase, DatabaseKey, Dimension, KeyData,
