@@ -1,0 +1,3 @@
+[submodule "pyro-level/leveldb/vendor"]
+	path = pyro-level/leveldb/vendor
+	url = https://github.com/teampathfinders/leveldb
