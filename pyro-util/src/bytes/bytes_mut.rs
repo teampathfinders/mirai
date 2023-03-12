@@ -17,10 +17,10 @@ impl WriteBuffer {
         Self(Vec::with_capacity(capacity))
     }
 
-    // #[inline]
-    // pub fn reserve(&mut self, additional: usize) {
-    //     self.0.reserve(additional);
-    // }
+    #[inline]
+    pub fn reserve(&mut self, additional: usize) {
+        self.0.reserve(additional);
+    }
 
     #[inline]
     pub fn write_be<T: ToBytes>(&mut self, v: T)

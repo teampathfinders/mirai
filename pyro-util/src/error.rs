@@ -94,11 +94,11 @@ impl std::error::Error for Error {}
 impl serde::de::Error for Error {
     fn custom<T>(v: T) -> Self
     where
-        T: fmt::Display
+        T: fmt::Display,
     {
         Self {
             kind: ErrorKind::Malformed,
-            msg: v.to_string()
+            msg: v.to_string(),
         }
     }
 }

@@ -15,15 +15,13 @@ mod test;
 
 pub mod bytes;
 mod error;
-mod varint;
 mod extensions;
 mod traits;
-mod vector;
 mod u24;
+mod vector;
 
-pub use u24::*;
 pub use error::*;
-pub use varint::*;
 pub use extensions::*;
 pub use traits::*;
+pub use u24::*;
 pub use vector::*;

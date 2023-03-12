@@ -1,9 +1,9 @@
-use crate::bail;
+use crate::{bail};
 use std::fmt::Debug;
 use std::io::Read;
 use std::ops::{Deref, Index};
 use std::{cmp, fmt, io};
-use crate::bytes::FromBytes;
+use crate::bytes::{FromBytes, VarInt};
 
 use crate::Result;
 
@@ -154,6 +154,13 @@ impl<'a> ReadBuffer<'a> {
     {
         let bytes = self.take_const::<{ T::SIZE }>()?;
         Ok(T::from_bytes_le(bytes))
+    }
+
+    /// Reads a variable size integer from the buffer.
+    /// See [`VarInt`] for a list of available types.
+    #[inline]
+    pub fn read_var<T: VarInt>(&mut self) -> Result<T> {
+        T::read(self)
     }
 }
 

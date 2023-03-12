@@ -1,7 +1,7 @@
 use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr};
 
-use crate::{Result, Vector};
 use crate::bytes::WriteBuffer;
+use crate::{Result, Vector};
 
 #[test]
 fn vector_types() {
