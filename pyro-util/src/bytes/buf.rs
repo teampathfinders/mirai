@@ -1,3 +1,7 @@
+use std::mem;
+use std::mem::MaybeUninit;
+use crate::Vector;
+
 pub trait FromBytes: Sized {
     const SIZE: usize;
 
@@ -51,5 +55,93 @@ impl FromBytes for bool {
     #[inline]
     fn from_be_bytes(bytes: [u8; Self::SIZE]) -> Self {
         bytes[0] != 0
+    }
+}
+
+impl<T: FromBytes, const N: usize> FromBytes for [T; N] {
+    const SIZE: usize = N * T::SIZE;
+
+    #[inline]
+    fn from_le_bytes(mut bytes: [u8; Self::SIZE]) -> Self {
+        // Reverse bytes if the current machine is big endian.
+        if cfg!(target_endian = "big") {
+            for i in 0..N {
+                (&mut [(i * T::SIZE)..((i + 1) * T::SIZE)]).reverse();
+            }
+        }
+
+        // SAFETY: This is safe because Self::SIZE is guaranteed to be equal to T::SIZE * N.
+        // A transmute_copy is required because the compiler
+        // can't prove that both types are of the same size.
+        let cast = unsafe {
+            mem::transmute_copy::<[u8; Self::SIZE], [T; N]>(&bytes)
+        };
+
+        mem::forget(bytes);
+        cast
+    }
+    
+    #[inline]
+    fn from_be_bytes(bytes: [u8; Self::SIZE]) -> Self {
+        // Reverse bytes if the current machine is little endian.
+        if cfg!(target_endian = "little") {
+            for i in 0..N {
+                (&mut [(i * T::SIZE)..((i + 1) * T::SIZE)]).reverse();
+            }
+        }
+
+        // SAFETY: This is safe because Self::SIZE is guaranteed to be equal to T::SIZE * N.
+        // A transmute_copy is required because the compiler
+        // can't prove that both types are of the same size.
+        let cast = unsafe {
+            mem::transmute_copy::<[u8; Self::SIZE], [T; N]>(&bytes)
+        };
+
+        mem::forget(bytes);
+        cast
+    }
+}
+
+impl<T: FromBytes, const N: usize> FromBytes for Vector<T, N> {
+    const SIZE: usize = N * std::mem::size_of::<T>();
+
+    #[inline]
+    fn from_le_bytes(bytes: [u8; Self::SIZE]) -> Self {
+        // Reverse bytes if the current machine is little endian.
+        if cfg!(target_endian = "big") {
+            for i in 0..N {
+                (&mut [(i * T::SIZE)..((i + 1) * T::SIZE)]).reverse();
+            }
+        }
+
+        // SAFETY: This is safe because Self::SIZE is guaranteed to be equal to T::SIZE * N.
+        // A transmute_copy is required because the compiler
+        // can't prove that both types are of the same size.
+        let cast = unsafe {
+            mem::transmute_copy::<[u8; Self::SIZE], [T; N]>(&bytes)
+        };
+
+        mem::forget(bytes);
+        Vector::from(cast)
+    }
+
+    #[inline]
+    fn from_be_bytes(bytes: [u8; Self::SIZE]) -> Self {
+        // Reverse bytes if the current machine is little endian.
+        if cfg!(target_endian = "little") {
+            for i in 0..N {
+                (&mut [(i * T::SIZE)..((i + 1) * T::SIZE)]).reverse();
+            }
+        }
+
+        // SAFETY: This is safe because Self::SIZE is guaranteed to be equal to T::SIZE * N.
+        // A transmute_copy is required because the compiler
+        // can't prove that both types are of the same size.
+        let cast = unsafe {
+            mem::transmute_copy::<[u8; Self::SIZE], [T; N]>(&bytes)
+        };
+
+        mem::forget(bytes);
+        Vector::from(cast)
     }
 }
