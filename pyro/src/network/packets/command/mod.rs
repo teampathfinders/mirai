@@ -1,4 +1,4 @@
-use common::glob_export;
+use util::glob_export;
 
 glob_export!(available_commands);
 glob_export!(command_output);

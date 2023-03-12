@@ -1,9 +1,9 @@
 use bytes::{Buf, BufMut, Bytes, BytesMut};
-use util::{bail, BlockPosition, Error, Result, Vector3b};
 use serde::Deserialize;
 use std::collections::HashMap;
 use std::iter::Enumerate;
 use util::bytes::{ReadBuffer, WriteBuffer};
+use util::{bail, BlockPosition, Error, Result, Vector3b};
 
 const CHUNK_SIZE: usize = 4096;
 
@@ -228,8 +228,13 @@ impl SubChunk {
     }
 }
 
-impl util::Deserialize for SubChunk {
-    fn deserialize(mut buffer: ReadBuffer) -> Result<Self> {
+impl SubChunk {
+    pub fn deserialize<'a, R>(buffer: R) -> Result<Self>
+    where
+        R: Into<ReadBuffer<'a>>
+    {
+        let mut buffer = buffer.into();
+
         let version = buffer.read_le::<u8>()?;
         match version {
             1 => todo!(),
@@ -259,10 +264,8 @@ impl util::Deserialize for SubChunk {
             _ => bail!(Malformed, "Invalid chunk version {version}"),
         }
     }
-}
 
-impl util::Serialize for SubChunk {
-    fn serialize(&self, buffer: &mut WriteBuffer) {
+    pub fn serialize(&self, buffer: &mut WriteBuffer) {
         buffer.write_le::<u8>(self.version as u8);
         match self.version {
             SubChunkVersion::Legacy => todo!(),

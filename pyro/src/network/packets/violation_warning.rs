@@ -2,10 +2,10 @@ use bytes::Bytes;
 use bytes::BytesMut;
 
 use crate::network::packets::ConnectedPacket;
-use common::bail;
-use common::Deserialize;
-use common::ReadExtensions;
-use common::{Error, Result};
+use util::bail;
+use util::Deserialize;
+use util::ReadExtensions;
+use util::{Error, Result};
 
 #[derive(Debug, Copy, Clone)]
 pub enum ViolationType {
@@ -15,7 +15,7 @@ pub enum ViolationType {
 impl TryFrom<i32> for ViolationType {
     type Error = Error;
 
-    fn try_from(value: i32) -> Result<Self, Self::Error> {
+    fn try_from(value: i32) -> std::result::Result<Self, Self::Error> {
         Ok(match value {
             0 => Self::Malformed,
             _ => bail!(Malformed, "Invalid violation type {}", value),
@@ -33,7 +33,7 @@ pub enum ViolationSeverity {
 impl TryFrom<i32> for ViolationSeverity {
     type Error = Error;
 
-    fn try_from(value: i32) -> Result<Self, Self::Error> {
+    fn try_from(value: i32) -> std::result::Result<Self, Self::Error> {
         Ok(match value {
             0 => Self::Warning,
             1 => Self::FinalWarning,

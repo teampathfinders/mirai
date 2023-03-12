@@ -2,9 +2,9 @@ use bytes::Bytes;
 use bytes::{Buf, BytesMut};
 
 use crate::network::packets::ConnectedPacket;
-use common::Deserialize;
-use common::ReadExtensions;
-use common::Result;
+use util::Deserialize;
+use util::ReadExtensions;
+use util::Result;
 
 /// Sent during login to let the server know whether the client supports caching.
 #[derive(Debug, Clone)]

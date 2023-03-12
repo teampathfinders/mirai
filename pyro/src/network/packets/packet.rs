@@ -5,10 +5,10 @@ use bytes::{Buf, BufMut, BytesMut};
 
 use crate::network::header::Header;
 use crate::network::packets::ConnectedPacket;
-use common::{nvassert, VarInt};
-use common::Serialize;
-use common::Result;
-use common::{ReadExtensions, WriteExtensions};
+use util::{nvassert, VarInt};
+use util::Serialize;
+use util::Result;
+use util::{ReadExtensions, WriteExtensions};
 
 /// A game packet.
 #[derive(Debug, Clone)]

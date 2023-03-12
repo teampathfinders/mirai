@@ -2,9 +2,9 @@ use std::io::Write;
 
 use base64::Engine;
 use bytes::{Buf, Bytes, BytesMut};
-use common::{bail, error, Result};
 use jsonwebtoken::{Algorithm, DecodingKey, Validation};
 use p384::pkcs8::spki;
+use util::{bail, error, Result};
 use uuid::Uuid;
 
 use crate::network::packets::login::{DeviceOS, UiProfile};

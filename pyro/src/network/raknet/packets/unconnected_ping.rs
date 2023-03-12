@@ -1,9 +1,9 @@
 use bytes::Bytes;
 use bytes::{Buf, BytesMut};
 
-use common::nvassert;
-use common::Deserialize;
-use common::Result;
+use util::nvassert;
+use util::Deserialize;
+use util::Result;
 
 /// Sent to retrieve information about the server
 /// while the user is in Minecraft's server tab.

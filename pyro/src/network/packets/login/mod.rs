@@ -1,4 +1,4 @@
-use common::glob_export;
+use util::glob_export;
 
 glob_export!(chunk_radius_reply);
 glob_export!(chunk_radius_request);

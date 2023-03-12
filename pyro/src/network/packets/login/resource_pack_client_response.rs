@@ -2,10 +2,10 @@ use bytes::Bytes;
 use bytes::{Buf, BytesMut};
 
 use crate::network::packets::ConnectedPacket;
-use common::bail;
-use common::Deserialize;
-use common::ReadExtensions;
-use common::{Error, Result};
+use util::bail;
+use util::Deserialize;
+use util::ReadExtensions;
+use util::{Error, Result};
 
 /// Status contained in [`ResourcePackClientResponse`].
 #[derive(Debug, Copy, Clone)]

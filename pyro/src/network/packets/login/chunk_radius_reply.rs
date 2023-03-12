@@ -1,7 +1,7 @@
 use bytes::{BytesMut, Bytes};
-use common::{Result, WriteExtensions, size_of_varint, VarInt};
+use util::{Result, WriteExtensions, size_of_varint, VarInt};
 
-use common::Serialize;
+use util::Serialize;
 use crate::network::packets::ConnectedPacket;
 
 /// Sent in response to [`ChunkRadiusRequest`](super::ChunkRadiusRequest), to notify the client of the allowed render distance.

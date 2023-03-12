@@ -1,7 +1,7 @@
 use bytes::{BytesMut, Bytes};
-use common::{Result, WriteExtensions};
+use util::{Result, WriteExtensions};
 
-use common::Serialize;
+use util::Serialize;
 
 use crate::network::packets::ConnectedPacket;
 

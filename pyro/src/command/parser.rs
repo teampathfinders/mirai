@@ -2,7 +2,7 @@ use std::cmp::Ordering;
 use std::collections::HashMap;
 
 use std::str::Split;
-use common::{Result, bail, error};
+use util::{Result, bail, error};
 use dashmap::DashMap;
 
 use super::{Command, CommandDataType, CommandOverload};
@@ -46,7 +46,7 @@ pub struct ParsedCommand {
 impl ParsedCommand {
     /// Parses the command and verifies the arguments.
     pub fn parse(command_list: &DashMap<String, Command>, raw: &str)
-        -> Result<Self, String>
+        -> std::result::Result<Self, String>
     {
         let mut parts = raw.split(' ');
         
@@ -98,7 +98,7 @@ impl ParsedCommand {
 }
 
 fn parse_overload(overload: &CommandOverload, mut parts: Split<char>) 
-    -> Result<HashMap<String, ParsedArgument>, (String, usize)> 
+    -> std::result::Result<HashMap<String, ParsedArgument>, (String, usize)>
 {
     let mut parsed = HashMap::new();
     for (i, parameter) in overload.parameters.iter().enumerate() {

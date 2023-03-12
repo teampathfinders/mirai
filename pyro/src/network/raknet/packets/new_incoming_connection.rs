@@ -3,10 +3,10 @@ use std::net::SocketAddr;
 use bytes::Bytes;
 use bytes::{Buf, BytesMut};
 
-use common::nvassert;
-use common::Deserialize;
-use common::Result;
-use common::{ReadExtensions, EMPTY_IPV4_ADDRESS};
+use util::nvassert;
+use util::Deserialize;
+use util::Result;
+use util::{ReadExtensions, EMPTY_IPV4_ADDRESS};
 
 /// Confirms that the connection was successfully initiated.
 #[derive(Debug)]

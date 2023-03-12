@@ -1,7 +1,7 @@
 use bytes::{BufMut, Bytes, BytesMut};
 
-use common::{size_of_varint, Result, Deserialize, Serialize};
-use common::{ReadExtensions, WriteExtensions};
+use util::{size_of_varint, Result, Deserialize, Serialize};
+use util::{ReadExtensions, WriteExtensions};
 
 /// Game packets are prefixed with a length and a header.
 /// The header contains the packet ID and target/subclient IDs in case of split screen multiplayer.

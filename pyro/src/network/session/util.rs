@@ -3,7 +3,7 @@ use std::net::{Ipv4Addr, SocketAddr, SocketAddrV4};
 use std::time::Duration;
 
 use bytes::{Bytes, BytesMut};
-use common::{
+use util::{
     bail, BlockPosition, Deserialize, Result, Vector3f, Vector3i, Vector4f,
 };
 

@@ -1,6 +1,6 @@
 use bytes::{BufMut, Bytes, BytesMut};
-use util::{Result, Serialize};
 use util::bytes::WriteBuffer;
+use util::{Result, Serialize};
 
 // Special keys
 

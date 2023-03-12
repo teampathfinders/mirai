@@ -17,7 +17,7 @@ use crate::network::packets::Packet;
 use crate::network::raknet::{BroadcastPacket, BufPacket};
 use crate::network::session::session::Session;
 use crate::{config::SERVER_CONFIG, network::packets::ConnectedPacket};
-use common::{bail, error, Serialize, Result};
+use util::{bail, error, Serialize, Result};
 
 const BROADCAST_CHANNEL_CAPACITY: usize = 16;
 const FORWARD_TIMEOUT: Duration = Duration::from_millis(20);

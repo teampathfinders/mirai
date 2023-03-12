@@ -23,8 +23,8 @@ use crate::network::raknet::packets::{
 };
 use crate::network::raknet::{BroadcastPacket, Frame, FrameBatch};
 use crate::network::session::Session;
-use common::{bail, nvassert, ReadExtensions, Result};
-use common::{Deserialize, Serialize};
+use util::{bail, nvassert, ReadExtensions, Result};
+use util::{Deserialize, Serialize};
 
 use super::DEFAULT_SEND_CONFIG;
 use super::packets::ConnectedPing;

@@ -2,9 +2,9 @@ use bytes::Bytes;
 use bytes::{BufMut, BytesMut};
 
 use crate::network::packets::ConnectedPacket;
-use common::Serialize;
-use common::Result;
-use common::WriteExtensions;
+use util::Serialize;
+use util::Result;
+use util::WriteExtensions;
 
 /// Status of the [`PlayStatus`] packet.
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]

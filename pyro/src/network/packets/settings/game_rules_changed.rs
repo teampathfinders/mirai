@@ -1,7 +1,7 @@
 use std::{any::TypeId, fmt};
 
 use bytes::{BytesMut, Bytes};
-use common::{Serialize, Result, WriteExtensions, size_of_varint, bail, VarString, VarInt};
+use util::{Serialize, Result, WriteExtensions, size_of_varint, bail, VarString, VarInt};
 
 use crate::{command::ParsedArgument, network::packets::ConnectedPacket};
 

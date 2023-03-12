@@ -2,9 +2,9 @@ use bytes::Bytes;
 use bytes::{Buf, BytesMut};
 
 use crate::network::packets::ConnectedPacket;
-use common::nvassert;
-use common::Deserialize;
-use common::Result;
+use util::nvassert;
+use util::Deserialize;
+use util::Result;
 
 /// Sent by the client in response to a [`ServerToClientHandshake`](super::ServerToClientHandshake)
 /// to confirm that encryption is working.

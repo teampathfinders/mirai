@@ -1,5 +1,5 @@
 use bytes::{BytesMut, Bytes};
-use common::{Serialize, Result, WriteExtensions};
+use util::{Serialize, Result, WriteExtensions};
 use crate::network::cache_blob::CacheBlob;
 use crate::network::packets::ConnectedPacket;
 

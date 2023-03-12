@@ -1,7 +1,7 @@
 use std::num::NonZeroU64;
 
 use bytes::{Bytes, BytesMut};
-use common::{error, Serialize, Result};
+use util::{error, Serialize, Result};
 
 use crate::network::{
     packets::{ConnectedPacket, Packet},

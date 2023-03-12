@@ -1,5 +1,5 @@
 use bytes::{Buf, BytesMut, Bytes};
-use common::{BlockPosition, Deserialize, ReadExtensions, Vector3i, Result};
+use util::{BlockPosition, Deserialize, ReadExtensions, Vector3i, Result};
 use crate::network::packets::ConnectedPacket;
 
 /// Sent by the client when the user requests a block using the block pick key.

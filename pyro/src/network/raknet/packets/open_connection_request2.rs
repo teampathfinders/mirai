@@ -1,10 +1,10 @@
 use bytes::Bytes;
 use bytes::{Buf, BytesMut};
 
-use common::nvassert;
-use common::Deserialize;
-use common::ReadExtensions;
-use common::Result;
+use util::nvassert;
+use util::Deserialize;
+use util::ReadExtensions;
+use util::Result;
 
 /// Sent by the client, in response to [`OpenConnectionReply2`](super::open_connection_reply2::OpenConnectionReply2).
 #[derive(Debug)]

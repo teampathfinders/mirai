@@ -4,10 +4,10 @@ use bytes::Bytes;
 use bytes::{Buf, BufMut, BytesMut};
 
 use crate::network::raknet::Reliability;
-use common::nvassert;
-use common::Result;
-use common::{Deserialize, Serialize};
-use common::{ReadExtensions, WriteExtensions};
+use util::nvassert;
+use util::Result;
+use util::{Deserialize, Serialize};
+use util::{ReadExtensions, WriteExtensions};
 
 /// Bit flag indicating that the packet is encapsulated in a frame.
 pub const CONNECTED_PEER_BIT_FLAG: u8 = 0x80;

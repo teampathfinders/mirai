@@ -1,4 +1,4 @@
-use common::{bail, Error};
+use util::{bail, Error};
 
 /// Describes how reliable transport of this packet should be.
 /// Higher reliability takes more resources, but also has more reliability guarantees.
@@ -30,7 +30,7 @@ pub enum Reliability {
 impl TryFrom<u8> for Reliability {
     type Error = Error;
 
-    fn try_from(value: u8) -> Result<Self, Self::Error> {
+    fn try_from(value: u8) -> std::result::Result<Self, Self::Error> {
         Ok(match value {
             0 => Self::Unreliable,
             1 => Self::UnreliableSequenced,

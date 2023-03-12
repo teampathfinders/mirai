@@ -3,10 +3,9 @@ use std::ops::Range;
 use bytes::Bytes;
 use bytes::{Buf, BufMut, BytesMut};
 
-use common::nvassert;
-use common::Result;
-use common::{Deserialize, Serialize};
-use common::{ReadExtensions, WriteExtensions};
+use util::nvassert;
+use util::Result;
+use util::{Deserialize, Serialize};
 
 /// Record containing IDs of confirmed packets.
 #[derive(Debug, Clone)]

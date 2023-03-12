@@ -1,5 +1,4 @@
 pub use acknowledgements::*;
-use common::glob_export;
 pub use connection_request::*;
 pub use connection_request_accepted::*;
 pub use disconnect::*;
@@ -11,6 +10,7 @@ pub use open_connection_request1::*;
 pub use open_connection_request2::*;
 pub use unconnected_ping::*;
 pub use unconnected_pong::*;
+use util::glob_export;
 
 mod acknowledgements;
 mod connection_request;

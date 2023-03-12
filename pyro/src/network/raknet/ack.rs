@@ -2,8 +2,8 @@ use bytes::{Bytes, BytesMut};
 
 use crate::network::raknet::packets::{Ack, Nak};
 use crate::network::session::Session;
-use common::Result;
-use common::{Deserialize, Serialize};
+use util::Result;
+use util::{Deserialize, Serialize};
 
 impl Session {
     /// Processes an acknowledgement received from the client.

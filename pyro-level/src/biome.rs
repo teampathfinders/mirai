@@ -1,6 +1,6 @@
 use bytes::{Buf, Bytes};
-use util::{Deserialize, Result};
 use util::bytes::ReadBuffer;
+use util::{Deserialize, Result};
 
 #[derive(Debug)]
 pub struct Biome3d {}

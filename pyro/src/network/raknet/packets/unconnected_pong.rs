@@ -2,9 +2,9 @@ use bytes::Bytes;
 use bytes::{BufMut, BytesMut};
 
 use crate::network::raknet::OFFLINE_MESSAGE_DATA;
-use common::Result;
-use common::Serialize;
-use common::WriteExtensions;
+use util::Result;
+use util::Serialize;
+use util::WriteExtensions;
 
 /// Response to [`OfflinePing`](super::offline_ping::OfflinePing).
 #[derive(Debug)]

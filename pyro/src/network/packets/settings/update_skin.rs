@@ -1,5 +1,5 @@
 use bytes::{BufMut, BytesMut, Buf, Bytes};
-use common::{Serialize, Result, WriteExtensions, Deserialize};
+use util::{Serialize, Result, WriteExtensions, Deserialize};
 use uuid::Uuid;
 use crate::network::{Skin, packets::ConnectedPacket};
 

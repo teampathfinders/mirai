@@ -1,5 +1,5 @@
 use bytes::{Buf, BufMut, BytesMut, Bytes};
-use common::{
+use util::{
     bail, Serialize, ReadExtensions, Error, Result, WriteExtensions,
 };
 use serde::Deserialize;

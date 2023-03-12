@@ -1,7 +1,7 @@
 use bytes::{BytesMut, Bytes};
-use common::{Result, Vector3f, WriteExtensions};
+use util::{Result, Vector3f, WriteExtensions};
 
-use common::Serialize;
+use util::Serialize;
 use level::Dimension;
 
 use super::ConnectedPacket;

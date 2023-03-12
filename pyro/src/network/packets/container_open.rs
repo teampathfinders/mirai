@@ -1,5 +1,5 @@
 use bytes::{BufMut, BytesMut, Bytes};
-use common::{BlockPosition, Serialize, Vector3i, Result, WriteExtensions, size_of_varint};
+use util::{BlockPosition, Serialize, Vector3i, Result, WriteExtensions, size_of_varint};
 use crate::network::packets::ConnectedPacket;
 
 #[derive(Debug, Clone)]

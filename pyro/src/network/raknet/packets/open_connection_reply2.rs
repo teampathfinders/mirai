@@ -4,9 +4,9 @@ use bytes::Bytes;
 use bytes::{BufMut, BytesMut};
 
 use crate::network::raknet::OFFLINE_MESSAGE_DATA;
-use common::Result;
-use common::Serialize;
-use common::WriteExtensions;
+use util::Result;
+use util::Serialize;
+use util::WriteExtensions;
 
 /// Sent in response to [`OpenConnectionRequest2`](super::open_connection_request2::OpenConnectionRequest2).
 #[derive(Debug)]

@@ -1,7 +1,7 @@
 use bytes::{Buf, BufMut, BytesMut, Bytes};
-use common::Result;
+use util::Result;
 
-use common::{Deserialize, Serialize};
+use util::{Deserialize, Serialize};
 
 use super::ConnectedPacket;
 

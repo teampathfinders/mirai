@@ -1,8 +1,8 @@
 use bytes::Bytes;
 use bytes::{BufMut, BytesMut};
 
-use common::Serialize;
-use common::Result;
+use util::Serialize;
+use util::Result;
 
 /// Sent by the server or client in response to an [`OnlinePing`](super::OnlinePing) packet.
 #[derive(Debug)]

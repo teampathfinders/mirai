@@ -2,8 +2,8 @@ use bytes::Bytes;
 use bytes::{BufMut, BytesMut};
 
 use crate::network::raknet::{OFFLINE_MESSAGE_DATA, RAKNET_VERSION};
-use common::Result;
-use common::Serialize;
+use util::Result;
+use util::Serialize;
 
 /// Notifies the client that they're using a version of the Raknet protocol that is incompatible
 /// with the version used by the server ([`RAKNET_VERSION`]).

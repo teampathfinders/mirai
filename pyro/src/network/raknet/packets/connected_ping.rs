@@ -1,9 +1,9 @@
 use bytes::Bytes;
 use bytes::{Buf, BytesMut};
 
-use common::nvassert;
-use common::Deserialize;
-use common::Result;
+use util::nvassert;
+use util::Deserialize;
+use util::Result;
 
 /// Sent by the client or server to ping the other side.
 /// An [`OnlinePong`](super::OnlinePong) packet should be sent in response.

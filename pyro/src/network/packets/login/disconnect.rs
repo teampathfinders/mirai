@@ -2,9 +2,9 @@ use bytes::Bytes;
 use bytes::{BufMut, BytesMut};
 
 use crate::network::packets::ConnectedPacket;
-use common::{Serialize, size_of_varint, VarString};
-use common::Result;
-use common::WriteExtensions;
+use util::{Serialize, size_of_varint, VarString};
+use util::Result;
+use util::WriteExtensions;
 
 pub const DISCONNECTED_NOT_AUTHENTICATED: &str =
     "disconnectionScreen.notAuthenticated";

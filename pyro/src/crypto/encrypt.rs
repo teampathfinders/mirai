@@ -4,7 +4,6 @@ use std::sync::atomic::{AtomicU16, AtomicU32, AtomicU64, Ordering};
 
 use base64::Engine;
 use bytes::{BufMut, Bytes, BytesMut};
-use common::{bail, Result};
 use ctr::cipher::KeyIvInit;
 use ctr::cipher::{StreamCipher, StreamCipherSeekCore};
 use flate2::read::DeflateDecoder;
@@ -19,6 +18,7 @@ use rand::distributions::Alphanumeric;
 use rand::rngs::OsRng;
 use rand::Rng;
 use sha2::{Digest, Sha256};
+use util::{bail, Result};
 
 type Aes256CtrBE = ctr::Ctr64BE<aes::Aes256>;
 
@@ -156,7 +156,7 @@ impl Encryptor {
 
     /// Decrypts a packet and verifies its checksum.
     ///
-    /// If the checksum does not match, a [`BadPacket`](common::ErrorKind::Malformed) error is returned.
+    /// If the checksum does not match, a [`BadPacket`](util::ErrorKind::Malformed) error is returned.
     /// The client must be disconnected if this fails, because the data has probably been tampered with.
     pub fn decrypt(&self, mut buffer: Bytes) -> Result<Bytes> {
         if buffer.len() < 9 {

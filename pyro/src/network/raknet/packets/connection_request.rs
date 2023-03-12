@@ -1,9 +1,9 @@
 use bytes::Bytes;
 use bytes::{Buf, BytesMut};
 
-use common::nvassert;
-use common::Deserialize;
-use common::Result;
+use util::nvassert;
+use util::Deserialize;
+use util::Result;
 
 /// Sent by the client to initiate a full connection.
 /// [`ConnectionRequestAccepted`](super::connection_request_accepted::ConnectionRequestAccepted) should be sent in response.

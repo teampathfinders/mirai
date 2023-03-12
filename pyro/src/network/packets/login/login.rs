@@ -7,10 +7,10 @@ use crate::crypto::{
     parse_identity_data, parse_user_data, IdentityData, UserData,
 };
 use crate::network::packets::ConnectedPacket;
-use common::Deserialize;
-use common::ReadExtensions;
-use common::{bail, nvassert};
-use common::{Error, Result};
+use util::Deserialize;
+use util::ReadExtensions;
+use util::{bail, nvassert};
+use util::{Error, Result};
 use crate::network::Skin;
 
 /// Device operating system

@@ -3,9 +3,9 @@ use std::collections::HashMap;
 use bytes::{BufMut, BytesMut, Bytes};
 use level::Dimension;
 
-use common::{Serialize, VarInt, VarString};
-use common::{bail, Error, Result};
-use common::{BlockPosition, Vector2f, Vector3f, WriteExtensions};
+use util::{Serialize, VarInt, VarString};
+use util::{bail, Error, Result};
+use util::{BlockPosition, Vector2f, Vector3f, WriteExtensions};
 use crate::network::packets::{CLIENT_VERSION_STRING, Difficulty, GameMode, ConnectedPacket, GameRule};
 use crate::network::packets::login::ExperimentData;
 

@@ -1,5 +1,5 @@
 use bytes::{Buf, BufMut, BytesMut, Bytes};
-use common::{bail, Deserialize, Serialize, ReadExtensions, Error, Result};
+use util::{bail, Deserialize, Serialize, ReadExtensions, Error, Result};
 use crate::network::packets::ConnectedPacket;
 
 /// Sent when the client makes changes to a book.

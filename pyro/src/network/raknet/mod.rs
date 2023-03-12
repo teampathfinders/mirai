@@ -1,4 +1,4 @@
-use common::glob_export;
+use util::glob_export;
 
 pub mod packets;
 

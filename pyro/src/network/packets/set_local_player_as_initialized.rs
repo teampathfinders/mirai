@@ -1,7 +1,7 @@
 use bytes::{BytesMut, Bytes};
-use common::{ReadExtensions, Result};
+use util::{ReadExtensions, Result};
 
-use common::Deserialize;
+use util::Deserialize;
 
 use super::ConnectedPacket;
 

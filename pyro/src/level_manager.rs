@@ -2,7 +2,6 @@ use std::sync::atomic::AtomicU64;
 use std::sync::Arc;
 use std::time::Duration;
 
-use common::Result;
 use dashmap::mapref::one::Ref;
 use dashmap::DashMap;
 use level::ChunkManager;
@@ -10,6 +9,7 @@ use parking_lot::{RwLock, RwLockReadGuard};
 use tokio::sync::oneshot::Receiver;
 use tokio::task::JoinHandle;
 use tokio_util::sync::CancellationToken;
+use util::Result;
 
 use crate::command::Command;
 use crate::config::SERVER_CONFIG;

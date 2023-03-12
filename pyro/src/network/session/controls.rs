@@ -1,5 +1,5 @@
 use bytes::{Bytes, BytesMut};
-use common::{Deserialize, Result, Vector3i};
+use util::{Deserialize, Result, Vector3i};
 
 use crate::network::{
     packets::{

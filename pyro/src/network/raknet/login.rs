@@ -6,8 +6,8 @@ use crate::network::raknet::packets::NewIncomingConnection;
 use crate::network::raknet::Frame;
 use crate::network::raknet::Reliability;
 use crate::network::session::Session;
-use common::Result;
-use common::{Deserialize, Serialize};
+use util::Result;
+use util::{Deserialize, Serialize};
 
 use super::packets::ConnectedPing;
 use super::packets::ConnectedPong;

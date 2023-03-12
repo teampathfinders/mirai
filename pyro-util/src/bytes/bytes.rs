@@ -26,7 +26,7 @@ impl<'a> ReadBuffer<'a> {
     where
         [(); T::SIZE]:,
     {
-        Ok(T::from_bytes_be(self.peek_const::<{ T::SIZE }>()?))
+        Ok(T::from_be(self.peek_const::<{ T::SIZE }>()?))
     }
 
     /// Reads the specified little-endian encoded type from the buffer without advancing the cursor.
@@ -35,7 +35,7 @@ impl<'a> ReadBuffer<'a> {
     where
         [(); T::SIZE]:,
     {
-        Ok(T::from_bytes_le(self.peek_const::<{ T::SIZE }>()?))
+        Ok(T::from_le(self.peek_const::<{ T::SIZE }>()?))
     }
 
     /// Takes a specified amount of bytes from the buffer.
@@ -141,7 +141,7 @@ impl<'a> ReadBuffer<'a> {
         [(); T::SIZE]:,
     {
         let bytes = self.take_const::<{ T::SIZE }>()?;
-        Ok(T::from_bytes_be(bytes))
+        Ok(T::from_be(bytes))
     }
 
     /// Reads a little-endian encoded type from the buffer.
@@ -153,7 +153,7 @@ impl<'a> ReadBuffer<'a> {
         [(); T::SIZE]:,
     {
         let bytes = self.take_const::<{ T::SIZE }>()?;
-        Ok(T::from_bytes_le(bytes))
+        Ok(T::from_le(bytes))
     }
 
     /// Reads a variable size integer from the buffer.

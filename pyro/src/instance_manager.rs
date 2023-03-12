@@ -33,9 +33,9 @@ use crate::network::raknet::packets::UnconnectedPong;
 use crate::network::raknet::BufPacket;
 use crate::network::raknet::RAKNET_VERSION;
 use crate::network::session::SessionManager;
-use common::bail;
-use common::{error, Result};
-use common::{Deserialize, Serialize};
+use util::bail;
+use util::{error, Result};
+use util::{Deserialize, Serialize};
 
 /// Local IPv4 address
 pub const IPV4_LOCAL_ADDR: Ipv4Addr = Ipv4Addr::UNSPECIFIED;

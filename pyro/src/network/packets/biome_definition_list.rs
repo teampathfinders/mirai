@@ -1,9 +1,9 @@
 use bytes::BufMut;
 use bytes::Bytes;
 use bytes::BytesMut;
-use common::Result;
+use util::Result;
 
-use common::Serialize;
+use util::Serialize;
 
 use super::ConnectedPacket;
 

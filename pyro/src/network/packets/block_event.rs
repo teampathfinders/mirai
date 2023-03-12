@@ -1,5 +1,5 @@
 use bytes::{BytesMut, Bytes};
-use common::{bail, BlockPosition, Deserialize, Serialize, ReadExtensions, Error, Result, WriteExtensions, size_of_varint};
+use util::{bail, BlockPosition, Deserialize, Serialize, ReadExtensions, Error, Result, WriteExtensions, size_of_varint};
 use crate::network::packets::ConnectedPacket;
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]

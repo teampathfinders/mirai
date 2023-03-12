@@ -1,9 +1,9 @@
 use std::collections::{HashMap, HashSet};
 
 use bytes::{BufMut, BytesMut, Bytes};
-use common::{bail, Result, WriteExtensions};
+use util::{bail, Result, WriteExtensions};
 
-use common::Serialize;
+use util::Serialize;
 
 use crate::network::packets::ConnectedPacket;
 use crate::command::CommandEnum;

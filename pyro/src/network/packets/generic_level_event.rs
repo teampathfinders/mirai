@@ -1,5 +1,5 @@
 use bytes::{BytesMut, Bytes};
-use common::{Deserialize, ReadExtensions, Result};
+use util::{Deserialize, ReadExtensions, Result};
 use crate::network::packets::ConnectedPacket;
 
 #[derive(Debug, Clone)]

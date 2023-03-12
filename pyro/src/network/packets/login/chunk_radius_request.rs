@@ -1,7 +1,7 @@
 use bytes::Bytes;
-use common::{ReadExtensions, Result};
+use util::{ReadExtensions, Result};
 
-use common::Deserialize;
+use util::Deserialize;
 use crate::network::packets::ConnectedPacket;
 
 /// Sent by the client to request the maximum render distance.

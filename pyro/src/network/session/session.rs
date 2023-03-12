@@ -24,8 +24,8 @@ use crate::network::packets::{
 };
 use crate::network::raknet::{BroadcastPacket, RaknetData};
 use crate::network::Skin;
-use common::{bail, Serialize, Vector3f};
-use common::{error, Result};
+use util::{bail, Serialize, Vector3f};
+use util::{error, Result};
 
 use super::SessionManager;
 

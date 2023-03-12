@@ -1,6 +1,6 @@
 use bytes::{BufMut, BytesMut, Bytes};
 use uuid::Uuid;
-use common::{Deserialize, Serialize, ReadExtensions, Result, WriteExtensions};
+use util::{Deserialize, Serialize, ReadExtensions, Result, WriteExtensions};
 use crate::network::packets::{ConnectedPacket};
 
 use super::CommandOriginType;

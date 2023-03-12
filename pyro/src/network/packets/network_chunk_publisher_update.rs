@@ -1,7 +1,7 @@
 use bytes::{BufMut, BytesMut, Bytes};
-use common::{BlockPosition, Result, WriteExtensions, size_of_varint};
+use util::{BlockPosition, Result, WriteExtensions, size_of_varint};
 
-use common::Serialize;
+use util::Serialize;
 
 use super::ConnectedPacket;
 

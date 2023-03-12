@@ -9,8 +9,8 @@ use tokio::net::windows::named_pipe::PipeMode::Byte;
 use crate::instance_manager::{IPV4_LOCAL_ADDR, IPV6_LOCAL_ADDR};
 use crate::network::raknet::{Frame, OrderChannel};
 use crate::network::Header;
-use common::{ReadExtensions, WriteExtensions};
-use common::{Result, Serialize};
+use util::{ReadExtensions, WriteExtensions};
+use util::{Result, Serialize};
 
 #[test]
 fn read_write_header() {

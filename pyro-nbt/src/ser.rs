@@ -220,11 +220,11 @@ impl<'a> ser::Serializer for &'a mut Serializer {
     fn serialize_seq(
         self,
         _len: Option<usize>,
-    ) -> std::result::Result<Self, Error> {
+    ) -> std::result::std::result::Result<Self, Error> {
         todo!()
     }
 
-    fn serialize_tuple(self, len: usize) -> std::result::Result<Self, Error> {
+    fn serialize_tuple(self, len: usize) -> std::result::std::result::Result<Self, Error> {
         todo!()
     }
 
@@ -232,7 +232,7 @@ impl<'a> ser::Serializer for &'a mut Serializer {
         self,
         _name: &'static str,
         _len: usize,
-    ) -> std::result::Result<Self, Error> {
+    ) -> std::result::std::result::Result<Self, Error> {
         todo!()
     }
 
@@ -242,14 +242,14 @@ impl<'a> ser::Serializer for &'a mut Serializer {
         variant_index: u32,
         variant: &'static str,
         len: usize,
-    ) -> std::result::Result<Self, Error> {
+    ) -> std::result::std::result::Result<Self, Error> {
         todo!()
     }
 
     fn serialize_map(
         self,
         len: Option<usize>,
-    ) -> std::result::Result<Self, Error> {
+    ) -> std::result::std::result::Result<Self, Error> {
         Ok(self)
     }
 
@@ -257,7 +257,7 @@ impl<'a> ser::Serializer for &'a mut Serializer {
         self,
         name: &'static str,
         len: usize,
-    ) -> std::result::Result<Self, Error> {
+    ) -> std::result::std::result::Result<Self, Error> {
         self.output.write_be::<u8>(TAG_COMPOUND);
         // self.output.write_u16_le(name.len() as u16);
         // self.output.write_all(name.as_bytes())?;

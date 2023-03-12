@@ -28,8 +28,7 @@ fn database_test() {
             //
             // println!("{x} {y} {z}");
 
-            let data = Bytes::copy_from_slice(raw_ref.value().as_ref());
-            let subchunk = SubChunk::deserialize(data).unwrap();
+            let subchunk = SubChunk::deserialize(raw_ref.value().as_ref()).unwrap();
             let layer = subchunk.layer(0).unwrap();
             let mut layer_iter = layer.iter();
 

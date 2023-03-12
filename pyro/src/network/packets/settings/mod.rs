@@ -1,4 +1,4 @@
-use common::glob_export;
+use util::glob_export;
 
 glob_export!(game_rules_changed);
 glob_export!(set_commands_enabled);

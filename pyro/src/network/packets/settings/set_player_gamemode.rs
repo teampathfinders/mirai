@@ -1,7 +1,7 @@
 use bytes::{BytesMut, Bytes};
-use common::{bail, ReadExtensions, Error, Result, WriteExtensions, size_of_varint};
+use util::{bail, ReadExtensions, Error, Result, WriteExtensions, size_of_varint};
 
-use common::{Deserialize, Serialize};
+use util::{Deserialize, Serialize};
 
 use crate::network::packets::ConnectedPacket;
 

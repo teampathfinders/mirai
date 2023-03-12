@@ -1,6 +1,6 @@
 use std::fmt::format;
 
-use common::{nvassert, Result, error};
+use util::{nvassert, Result, error};
 
 use crate::{command::ParsedCommand, level_manager::LevelManager, network::packets::GameRule};
 

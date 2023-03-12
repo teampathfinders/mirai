@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 use bytes::{BytesMut, BufMut, Bytes};
-use common::{Vector3f, Serialize, Result, WriteExtensions};
+use util::{Vector3f, Serialize, Result, WriteExtensions};
 use uuid::Uuid;
 use crate::command::CommandPermissionLevel;
 use crate::network::packets::login::{DeviceOS, ItemStack, PermissionLevel};

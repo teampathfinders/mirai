@@ -4,11 +4,9 @@ use std::time::{SystemTime, UNIX_EPOCH};
 use bytes::{BufMut, Bytes, BytesMut};
 
 use crate::instance_manager::IPV4_LOCAL_ADDR;
-use common::Result;
-use common::Serialize;
-use common::{
-    WriteExtensions, EMPTY_IPV4_ADDRESS, IPV4_MEM_SIZE, IPV6_MEM_SIZE,
-};
+use util::Result;
+use util::Serialize;
+use util::{WriteExtensions, EMPTY_IPV4_ADDRESS, IPV4_MEM_SIZE, IPV6_MEM_SIZE};
 
 /// Sent in response to [`ConnectionRequest`](super::connection_request::ConnectionRequest).
 #[derive(Debug)]

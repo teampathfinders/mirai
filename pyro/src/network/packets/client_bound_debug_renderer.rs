@@ -1,5 +1,5 @@
 use bytes::{BufMut, BytesMut, Bytes};
-use common::{Serialize, Result, Vector3f, Vector4f, WriteExtensions, size_of_varint};
+use util::{Serialize, Result, Vector3f, Vector4f, WriteExtensions, size_of_varint};
 
 use super::ConnectedPacket;
 

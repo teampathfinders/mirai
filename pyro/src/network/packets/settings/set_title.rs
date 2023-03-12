@@ -1,9 +1,9 @@
 use std::time::Duration;
 
 use bytes::{BytesMut, Bytes};
-use common::{Result, WriteExtensions, size_of_varint};
+use util::{Result, WriteExtensions, size_of_varint};
 
-use common::Serialize;
+use util::Serialize;
 
 use crate::network::packets::ConnectedPacket;
 

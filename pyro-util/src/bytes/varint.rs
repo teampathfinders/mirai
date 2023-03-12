@@ -11,11 +11,7 @@ pub trait VarInt: Sized + FromPrimitive + ShrAssign<Self> + PartialOrd<Self>
         size_of_varint(self)
     }
 
-    fn read(buf: &mut ReadBuffer) -> Result<Self> {
-
-
-        todo!();
-    }
+    fn read(buf: &mut ReadBuffer) -> Result<Self>;
 }
 
 impl VarInt for u32 {

@@ -1,5 +1,5 @@
 use bytes::Bytes;
-use common::Serialize;
+use util::Serialize;
 use crate::network::packets::ConnectedPacket;
 
 /// Lets the client know about the entities available on the server.

@@ -1,11 +1,11 @@
 use bytes::Bytes;
 use bytes::{BufMut, BytesMut};
-use common::{size_of_varint, VarString};
+use util::{size_of_varint, VarString};
 
 use crate::network::packets::ConnectedPacket;
-use common::Serialize;
-use common::Result;
-use common::WriteExtensions;
+use util::Serialize;
+use util::Result;
+use util::WriteExtensions;
 
 /// Sent by the server to initiate encryption.
 /// The client responds with a [`ClientToServerHandshake`](super::ClientToServerHandshake) to

@@ -1,7 +1,7 @@
 use bytes::{Buf, BufMut, Bytes, BytesMut};
-use common::{bail, ReadExtensions, Error, Result, WriteExtensions, size_of_varint, VarString, VarInt};
+use util::{bail, ReadExtensions, Error, Result, WriteExtensions, size_of_varint, VarString, VarInt};
 
-use common::{Deserialize, Serialize};
+use util::{Deserialize, Serialize};
 
 use super::ConnectedPacket;
 
@@ -28,7 +28,7 @@ pub enum MessageType {
 impl TryFrom<u8> for MessageType {
     type Error = Error;
 
-    fn try_from(value: u8) -> Result<Self, Self::Error> {
+    fn try_from(value: u8) -> std::result::Result<Self, Self::Error> {
         Ok(match value {
             0 => Self::Raw,
             1 => Self::Chat,

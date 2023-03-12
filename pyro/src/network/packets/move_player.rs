@@ -1,9 +1,9 @@
 use bytes::{Buf, BufMut, BytesMut, Bytes};
-use common::{
+use util::{
     bail, ReadExtensions, Error, Result, Vector3f, WriteExtensions, size_of_varint,
 };
 
-use common::{Deserialize, Serialize};
+use util::{Deserialize, Serialize};
 
 use super::ConnectedPacket;
 

@@ -1,9 +1,9 @@
 use std::net::SocketAddr;
 
 use bytes::{BufMut, BytesMut, Bytes};
-use common::{Result, WriteExtensions, size_of_varint};
+use util::{Result, WriteExtensions, size_of_varint};
 
-use common::Serialize;
+use util::Serialize;
 
 use super::ConnectedPacket;
 
