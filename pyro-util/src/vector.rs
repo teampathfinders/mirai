@@ -1,4 +1,5 @@
 use std::ops::{Deref, DerefMut};
+use crate::bytes::WriteBuffer;
 
 use crate::VarInt;
 
@@ -32,9 +33,9 @@ impl<T, const N: usize> From<[T; N]> for Vector<T, N> {
 }
 
 impl<const N: usize> Vector<f32, N> {
-    pub fn serialize(&self, buffer: &mut BytesMut) {
+    pub fn serialize(&self, buffer: &mut WriteBuffer) {
         for i in 0..N {
-            buffer.put_f32(self.components[i]);
+            buffer.write_le::<f32>(self.components[i]);
         }
     }
 }

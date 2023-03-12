@@ -1,8 +1,8 @@
 use std::fmt::Debug;
 use std::io::Write;
-use std::ops::Deref;
+use std::ops::{Deref, DerefMut};
 use std::{fmt, io};
-use crate::bytes::BufMut;
+use crate::bytes::ToBytes;
 
 pub struct WriteBuffer(Vec<u8>);
 
@@ -17,9 +17,25 @@ impl WriteBuffer {
         Self(Vec::with_capacity(capacity))
     }
 
+    // #[inline]
+    // pub fn reserve(&mut self, additional: usize) {
+    //     self.0.reserve(additional);
+    // }
+
     #[inline]
-    pub fn reserve(&mut self, additional: usize) {
-        self.0.reserve(additional);
+    pub fn write_be<T: ToBytes>(&mut self, v: T)
+    where
+        [(); T::SIZE]:
+    {
+        self.0.extend_from_slice(&v.to_be_bytes());
+    }
+
+    #[inline]
+    pub fn write_le<T: ToBytes>(&mut self, v: T)
+    where
+        [(); T::SIZE]:
+    {
+        self.0.extend_from_slice(&v.to_le_bytes());
     }
 }
 
@@ -46,6 +62,13 @@ impl Deref for WriteBuffer {
     }
 }
 
+impl DerefMut for WriteBuffer {
+    #[inline]
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.0
+    }
+}
+
 impl Write for WriteBuffer {
     #[inline]
     fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
@@ -56,122 +79,5 @@ impl Write for WriteBuffer {
     #[inline]
     fn flush(&mut self) -> io::Result<()> {
         Ok(())
-    }
-}
-
-impl BufMut for WriteBuffer {
-    #[inline]
-    fn write_bool(&mut self, value: bool) {
-        self.write_u8(value as u8);
-    }
-
-    #[inline]
-    fn write_u8(&mut self, value: u8) {
-        self.0.push(value);
-    }
-
-    #[inline]
-    fn write_u16(&mut self, value: u16) {
-        self.0.extend(value.to_be_bytes());
-    }
-
-    #[inline]
-    fn write_u32(&mut self, value: u32) {
-        self.0.extend(value.to_be_bytes());
-    }
-
-    #[inline]
-    fn write_u64(&mut self, value: u64) {
-        self.0.extend(value.to_be_bytes());
-    }
-
-    #[inline]
-    fn write_u128(&mut self, value: u128) {
-        self.0.extend(value.to_be_bytes());
-    }
-
-    #[inline]
-    fn write_i8(&mut self, value: i8) {
-        self.0.push(value as u8);
-    }
-
-    #[inline]
-    fn write_i16(&mut self, value: i16) {
-        self.0.extend(value.to_be_bytes());
-    }
-
-    #[inline]
-    fn write_i32(&mut self, value: i32) {
-        self.0.extend(value.to_be_bytes());
-    }
-
-    #[inline]
-    fn write_i64(&mut self, value: i64) {
-        self.0.extend(value.to_be_bytes());
-    }
-
-    #[inline]
-    fn write_i128(&mut self, value: i128) {
-        self.0.extend(value.to_be_bytes());
-    }
-
-    #[inline]
-    fn write_u16_le(&mut self, value: u16) {
-        self.0.extend(value.to_le_bytes());
-    }
-
-    #[inline]
-    fn write_u32_le(&mut self, value: u32) {
-        self.0.extend(value.to_le_bytes());
-    }
-
-    #[inline]
-    fn write_u64_le(&mut self, value: u64) {
-        self.0.extend(value.to_le_bytes());
-    }
-
-    #[inline]
-    fn write_u128_le(&mut self, value: u128) {
-        self.0.extend(value.to_le_bytes());
-    }
-
-    #[inline]
-    fn write_i16_le(&mut self, value: i16) {
-        self.0.extend(value.to_le_bytes());
-    }
-
-    #[inline]
-    fn write_i32_le(&mut self, value: i32) {
-        self.0.extend(value.to_le_bytes());
-    }
-
-    #[inline]
-    fn write_i64_le(&mut self, value: i64) {
-        self.0.extend(value.to_le_bytes());
-    }
-
-    #[inline]
-    fn write_i128_le(&mut self, value: i128) {
-        self.0.extend(value.to_le_bytes());
-    }
-
-    #[inline]
-    fn write_f32(&mut self, value: f32) {
-        self.0.extend(value.to_be_bytes());
-    }
-
-    #[inline]
-    fn write_f32_le(&mut self, value: f32) {
-        self.0.extend(value.to_le_bytes());
-    }
-
-    #[inline]
-    fn write_f64(&mut self, value: f64) {
-        self.0.extend(value.to_be_bytes());
-    }
-
-    #[inline]
-    fn write_f64_le(&mut self, value: f64) {
-        self.0.extend(value.to_le_bytes());
     }
 }

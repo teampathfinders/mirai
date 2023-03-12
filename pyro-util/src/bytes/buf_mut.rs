@@ -1,30 +1,56 @@
-pub trait BufMut {
-    fn write_bool(&mut self, value: bool);
+pub trait ToBytes: Sized {
+    const SIZE: usize;
 
-    fn write_u8(&mut self, value: u8);
-    fn write_u16(&mut self, value: u16);
-    fn write_u32(&mut self, value: u32);
-    fn write_u64(&mut self, value: u64);
-    fn write_u128(&mut self, value: u128);
-
-    fn write_i8(&mut self, value: i8);
-    fn write_i16(&mut self, value: i16);
-    fn write_i32(&mut self, value: i32);
-    fn write_i64(&mut self, value: i64);
-    fn write_i128(&mut self, value: i128);
-
-    fn write_u16_le(&mut self, value: u16);
-    fn write_u32_le(&mut self, value: u32);
-    fn write_u64_le(&mut self, value: u64);
-    fn write_u128_le(&mut self, value: u128);
-
-    fn write_i16_le(&mut self, value: i16);
-    fn write_i32_le(&mut self, value: i32);
-    fn write_i64_le(&mut self, value: i64);
-    fn write_i128_le(&mut self, value: i128);
-
-    fn write_f32(&mut self, value: f32);
-    fn write_f32_le(&mut self, value: f32);
-    fn write_f64(&mut self, value: f64);
-    fn write_f64_le(&mut self, value: f64);
+    fn to_le_bytes(self) -> [u8; Self::SIZE];
+    fn to_be_bytes(self) -> [u8; Self::SIZE];
 }
+
+macro_rules! to_bytes {
+    ($t: ty) => {
+        to_bytes!($t, <$t>::BITS);
+    };
+
+    ($t: ty, $b: expr) => {
+        impl ToBytes for $t {
+            const SIZE: usize = $b as usize / 8;
+
+            #[inline]
+            fn to_le_bytes(self) -> [u8; Self::SIZE] {
+                self.to_le_bytes()
+            }
+
+            #[inline]
+            fn to_be_bytes(self) -> [u8; Self::SIZE] {
+                self.to_be_bytes()
+            }
+        }
+    };
+}
+
+to_bytes!(u8);
+to_bytes!(u16);
+to_bytes!(u32);
+to_bytes!(u64);
+to_bytes!(u128);
+to_bytes!(i8);
+to_bytes!(i16);
+to_bytes!(i32);
+to_bytes!(i64);
+to_bytes!(i128);
+to_bytes!(f32, 32); // f32 does not have a BITS associated constant
+to_bytes!(f64, 64); // f64 does not have a BITS associated constant
+
+impl ToBytes for bool {
+    const SIZE: usize = 1;
+
+    #[inline]
+    fn to_le_bytes(self) -> [u8; Self::SIZE] {
+        [self as u8]
+    }
+
+    #[inline]
+    fn to_be_bytes(self) -> [u8; Self::SIZE] {
+        [self as u8]
+    }
+}
+

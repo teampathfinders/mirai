@@ -1,4 +1,4 @@
-use crate::{bail, Error};
+use crate::bail;
 use std::fmt::Debug;
 use std::io::Read;
 use std::ops::{Deref, Index};

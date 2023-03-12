@@ -11,7 +11,7 @@ use clap::{crate_authors, crate_description, Command};
 use tokio::runtime;
 
 use crate::instance_manager::InstanceManager;
-use common::Result;
+use util::Result;
 
 mod command;
 mod config;
@@ -24,7 +24,7 @@ mod network;
 mod test;
 
 fn main() -> Result<()> {
-    let matches = Command::new("nova")
+    let matches = Command::new("pyro")
         .version(concat!(
             env!("VERGEN_GIT_SHA_SHORT"),
             " ",
