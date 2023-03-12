@@ -1,13 +1,13 @@
 [package]
-name = "level"
+name = "pyro-level"
 version = "0.1.0"
 edition = "2021"
 build = "build.rs"
 
 [dependencies]
 bytes = "1.4.0"
-common = { path = "../common" }
-nbt = { path = "../nbt" }
+util = { package = "pyro-util", path = "../pyro-util" }
+nbt = { package = "pyro-nbt", path = "../pyro-nbt" }
 serde = { version = "1.0.154", features = ["derive"] }
 tokio = { version = "1.26.0", features = ["rt", "time", "macros"] }
 tokio-util = "0.7.7"

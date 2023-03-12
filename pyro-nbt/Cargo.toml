@@ -1,10 +1,10 @@
 [package]
-name = "nbt"
+name = "pyro-nbt"
 version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-common = { path = "../common" }
+util = { package = "pyro-util", path = "../pyro-util" }
 
 bytes = "1.4.0"
 serde = { version = "1.0.152", features = ["derive"] }

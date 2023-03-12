@@ -1,9 +1,9 @@
 [workspace]
 members = [
-    "nbt",
-    "common",
-    "server",
-    "level"
+    "pyro",
+    "pyro-nbt",
+    "pyro-util",
+    "pyro-level"
 ]
 
 [profile.release]
