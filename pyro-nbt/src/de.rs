@@ -23,7 +23,7 @@ pub struct Deserializer<'de> {
     input: ReadBuffer<'de>,
 
     // State
-    latest_tag: u8,
+    next_ty: u8,
     is_key: bool,
 }
 
@@ -37,7 +37,7 @@ impl<'de> Deserializer<'de> {
         let mut de = Deserializer {
             input,
             flavor,
-            latest_tag: TAG_COMPOUND,
+            next_ty: TAG_COMPOUND,
             is_key: false,
         };
 
@@ -121,7 +121,7 @@ impl<'de, 'a> de::Deserializer<'de> for &'a mut Deserializer<'de> {
         if self.is_key {
             self.deserialize_str(visitor)
         } else {
-            match self.latest_tag {
+            match self.next_ty {
                 TAG_BYTE => self.deserialize_i8(visitor),
                 TAG_SHORT => self.deserialize_i16(visitor),
                 TAG_INT => self.deserialize_i32(visitor),
@@ -142,7 +142,7 @@ impl<'de, 'a> de::Deserializer<'de> for &'a mut Deserializer<'de> {
                     bail!(
                         Malformed,
                         "deserializer encountered an invalid NBT tag type: {}",
-                        self.latest_tag
+                        self.next_ty
                     )
                 },
             }
@@ -263,7 +263,7 @@ impl<'de, 'a> de::Deserializer<'de> for &'a mut Deserializer<'de> {
     where
         V: Visitor<'de>,
     {
-        todo!();
+        bail!(Unsupported)
     }
 
     fn deserialize_str<V>(self, visitor: V) -> Result<V::Value>
@@ -281,7 +281,7 @@ impl<'de, 'a> de::Deserializer<'de> for &'a mut Deserializer<'de> {
         let data = self.input.take(len as usize)?;
         let str = std::str::from_utf8(data)?;
         if self.is_key {
-            println!("key = {str}");
+            println!("key = {str}, ty = {}", self.next_ty);
         }
 
         visitor.visit_str(str)
@@ -309,14 +309,14 @@ impl<'de, 'a> de::Deserializer<'de> for &'a mut Deserializer<'de> {
     where
         V: Visitor<'de>,
     {
-        todo!();
+        bail!(Unsupported)
     }
 
     fn deserialize_byte_buf<V>(self, visitor: V) -> Result<V::Value>
     where
         V: Visitor<'de>,
     {
-        todo!();
+        bail!(Unsupported)
     }
 
     fn deserialize_option<V>(self, visitor: V) -> Result<V::Value>
@@ -333,7 +333,7 @@ impl<'de, 'a> de::Deserializer<'de> for &'a mut Deserializer<'de> {
     where
         V: Visitor<'de>,
     {
-        todo!();
+        bail!(Unsupported)
     }
 
     fn deserialize_unit_struct<V>(
@@ -344,7 +344,7 @@ impl<'de, 'a> de::Deserializer<'de> for &'a mut Deserializer<'de> {
     where
         V: Visitor<'de>,
     {
-        todo!();
+        bail!(Unsupported)
     }
 
     fn deserialize_newtype_struct<V>(
@@ -355,14 +355,21 @@ impl<'de, 'a> de::Deserializer<'de> for &'a mut Deserializer<'de> {
     where
         V: Visitor<'de>,
     {
-        todo!();
+        bail!(Unsupported)
     }
 
     fn deserialize_seq<V>(self, visitor: V) -> Result<V::Value>
     where
         V: Visitor<'de>,
     {
-        let de = SeqDeserializer::new(self)?;
+        let ty = if self.next_ty == TAG_BYTE_ARRAY || self.next_ty == TAG_INT_ARRAY || self.next_ty == TAG_LONG_ARRAY {
+            self.next_ty
+        } else {
+            self.input.read_le()?
+        };
+
+        dbg!(ty, self.next_ty);
+        let de = SeqDeserializer::new(self, ty)?;
         visitor.visit_seq(de)
     }
 
@@ -382,7 +389,7 @@ impl<'de, 'a> de::Deserializer<'de> for &'a mut Deserializer<'de> {
     where
         V: Visitor<'de>,
     {
-        todo!();
+        bail!(Unsupported)
     }
 
     fn deserialize_map<V>(self, visitor: V) -> Result<V::Value>
@@ -414,7 +421,7 @@ impl<'de, 'a> de::Deserializer<'de> for &'a mut Deserializer<'de> {
     where
         V: Visitor<'de>,
     {
-        todo!();
+        bail!(Unsupported)
     }
 
     fn deserialize_identifier<V>(self, visitor: V) -> Result<V::Value>
@@ -436,17 +443,19 @@ impl<'de, 'a> de::Deserializer<'de> for &'a mut Deserializer<'de> {
 struct SeqDeserializer<'a, 'de: 'a> {
     de: &'a mut Deserializer<'de>,
     ty: u8,
-    remaining: u32
+    remaining: i32
 }
 
 impl<'de, 'a> SeqDeserializer<'a, 'de> {
-    pub fn new(de: &'a mut Deserializer<'de>) -> Result<Self> {
-        let ty = de.input.read_be::<u8>()?;
-        de.latest_tag = ty;
+    pub fn new(de: &'a mut Deserializer<'de>, ty: u8) -> Result<Self> {
+        debug_assert_ne!(ty, TAG_END);
 
+        // ty is not read in here because the x_array types don't have a type prefix.
+
+        de.next_ty = ty;
         let remaining = match de.flavor {
-            Flavor::BigEndian => de.input.read_be::<u32>()?,
-            Flavor::LittleEndian => de.input.read_le::<u32>()?,
+            Flavor::BigEndian => de.input.read_be::<i32>()?,
+            Flavor::LittleEndian => de.input.read_le::<i32>()?,
             Flavor::Network => todo!(),
         };
 
@@ -469,7 +478,7 @@ impl<'de, 'a> SeqAccess<'de> for SeqDeserializer<'a, 'de> {
             dbg!(self.remaining);
             self.remaining -= 1;
             let output = seed.deserialize(&mut *self.de).map(Some);
-            self.de.latest_tag = self.ty;
+            self.de.next_ty = self.ty;
             output
         } else {
             Ok(None)
@@ -496,9 +505,9 @@ impl<'de, 'a> MapAccess<'de> for MapDeserializer<'a, 'de> {
         K: DeserializeSeed<'de>,
     {
         self.de.is_key = true;
-        self.de.latest_tag = self.de.input.read_be::<u8>()?;
+        self.de.next_ty = self.de.input.read_be::<u8>()?;
 
-        let r = if self.de.latest_tag == TAG_END {
+        let r = if self.de.next_ty == TAG_END {
             println!("compound end");
             Ok(None)
         } else {
@@ -514,7 +523,7 @@ impl<'de, 'a> MapAccess<'de> for MapDeserializer<'a, 'de> {
     where
         V: DeserializeSeed<'de>,
     {
-        debug_assert_ne!(self.de.latest_tag, TAG_END);
+        debug_assert_ne!(self.de.next_ty, TAG_END);
         seed.deserialize(&mut *self.de)
     }
 }
@@ -532,7 +541,6 @@ mod test {
     const PLAYER_NAN_VALUE_NBT: &[u8] =
         include_bytes!("../test/player_nan_value.nbt");
 
-    // #[ignore]
     #[test]
     fn read_bigtest_nbt() {
         #[derive(Deserialize, Debug, PartialEq)]
@@ -557,27 +565,34 @@ mod test {
         #[derive(Deserialize, Debug, PartialEq)]
         #[allow(non_snake_case)]
         struct AllTypes {
-            stringTest: String
-
-            // byteArrayTest: Vec<i8>,
-            // #[serde(rename = "nested compound test")]
-            // nested: Nested,
-            // // #[serde(rename = "listTest (compound)")]
-            // // compoundList: (ListCompound, ListCompound),
-            // // #[serde(rename = "listTest (long)")]
-            // // longListTest: [i64; 5],
-            // // shortTest: i16,
-            // // intTest: i32,
-            // // longTest: i64,
-            // // floatTest: f32,
-            // // // doubleTest: f64,
+            #[serde(rename = "nested compound test")]
+            nested: Nested,
+            #[serde(rename = "intTest")]
+            int_test: i32,
+            #[serde(rename = "byteTest")]
+            byte_test: i8,
+            #[serde(rename = "stringTest")]
+            string_test: String,
+            #[serde(rename = "listTest (long)")]
+            long_list_test: [i64; 5],
+            #[serde(rename = "doubleTest")]
+            double_test: f64,
+            #[serde(rename = "floatTest")]
+            float_test: f32,
+            #[serde(rename = "longTest")]
+            long_test: i64,
+            #[serde(rename = "listTest (compound)")]
+            compound_list_test: (ListCompound, ListCompound),
+            #[serde(rename = "byteArrayTest (the first 1000 values of (n*n*255+n*7)%100, starting with n=0 (0, 62, 34, 16, 8, ...))")]
+            byteArrayTest: Vec<i8>,
+            #[serde(rename = "shortTest")]
+            short_test: i16
         }
 
         let decoded: AllTypes = from_be_bytes(BIGTEST_NBT).unwrap().0;
-        dbg!(decoded);
+        println!("{decoded:?}");
     }
 
-    #[ignore]
     #[test]
     fn read_hello_world_nbt() {
         #[derive(Deserialize, Debug, PartialEq)]
@@ -590,8 +605,7 @@ mod test {
 
         dbg!(decoded);
     }
-
-    #[ignore]
+    
     #[test]
     fn read_player_nan_value_nbt() {
         #[derive(Deserialize, Debug, PartialEq)]
