@@ -133,17 +133,18 @@ impl<'de, 'a> de::Deserializer<'de> for &'a mut Deserializer<'de> {
                 TAG_LIST => self.deserialize_seq(visitor),
                 TAG_COMPOUND => {
                     let m = self.deserialize_map(visitor);
-                    self.latest_tag = u8::MAX;
-
                     m
                 }
                 TAG_INT_ARRAY => self.deserialize_seq(visitor),
                 TAG_LONG_ARRAY => self.deserialize_seq(visitor),
-                _ => bail!(
-                    Malformed,
-                    "deserializer encountered an invalid NBT tag type: {}",
-                    self.latest_tag
-                ),
+                _ => {
+                    dbg!(&self);
+                    bail!(
+                        Malformed,
+                        "deserializer encountered an invalid NBT tag type: {}",
+                        self.latest_tag
+                    )
+                },
             }
         }
     }
@@ -361,12 +362,8 @@ impl<'de, 'a> de::Deserializer<'de> for &'a mut Deserializer<'de> {
     where
         V: Visitor<'de>,
     {
-        // if self.is_option {
-        //     visitor.visit_some(self)
-        // } else {
-            let de = SeqDeserializer::new(self)?;
-            visitor.visit_seq(de)
-        // }
+        let de = SeqDeserializer::new(self)?;
+        visitor.visit_seq(de)
     }
 
     fn deserialize_tuple<V>(self, _len: usize, visitor: V) -> Result<V::Value>
@@ -392,12 +389,8 @@ impl<'de, 'a> de::Deserializer<'de> for &'a mut Deserializer<'de> {
     where
         V: Visitor<'de>,
     {
-        // if self.is_option {
-        //     visitor.visit_some(self)
-        // } else {
-            let de = MapDeserializer::from(self);
-            visitor.visit_map(de)
-        // }
+        let de = MapDeserializer::from(self);
+        visitor.visit_map(de)
     }
 
     fn deserialize_struct<V>(
@@ -449,6 +442,8 @@ struct SeqDeserializer<'a, 'de: 'a> {
 impl<'de, 'a> SeqDeserializer<'a, 'de> {
     pub fn new(de: &'a mut Deserializer<'de>) -> Result<Self> {
         let ty = de.input.read_be::<u8>()?;
+        de.latest_tag = ty;
+
         let remaining = match de.flavor {
             Flavor::BigEndian => de.input.read_be::<u32>()?,
             Flavor::LittleEndian => de.input.read_le::<u32>()?,
@@ -471,8 +466,11 @@ impl<'de, 'a> SeqAccess<'de> for SeqDeserializer<'a, 'de> {
     {
         // FIXME: remaining might have to be moved to SeqDeserializer to support nested sequences.
         if self.remaining > 0 {
+            dbg!(self.remaining);
             self.remaining -= 1;
-            seed.deserialize(&mut *self.de).map(Some)
+            let output = seed.deserialize(&mut *self.de).map(Some);
+            self.de.latest_tag = self.ty;
+            output
         } else {
             Ok(None)
         }
@@ -516,6 +514,7 @@ impl<'de, 'a> MapAccess<'de> for MapDeserializer<'a, 'de> {
     where
         V: DeserializeSeed<'de>,
     {
+        debug_assert_ne!(self.de.latest_tag, TAG_END);
         seed.deserialize(&mut *self.de)
     }
 }
@@ -533,7 +532,7 @@ mod test {
     const PLAYER_NAN_VALUE_NBT: &[u8] =
         include_bytes!("../test/player_nan_value.nbt");
 
-    #[ignore]
+    // #[ignore]
     #[test]
     fn read_bigtest_nbt() {
         #[derive(Deserialize, Debug, PartialEq)]
@@ -572,14 +571,13 @@ mod test {
             // // longTest: i64,
             // // floatTest: f32,
             // // // doubleTest: f64,
-            // // stringTest: String,
         }
 
         let decoded: AllTypes = from_be_bytes(BIGTEST_NBT).unwrap().0;
         dbg!(decoded);
     }
 
-    // #[ignore]
+    #[ignore]
     #[test]
     fn read_hello_world_nbt() {
         #[derive(Deserialize, Debug, PartialEq)]
@@ -593,7 +591,7 @@ mod test {
         dbg!(decoded);
     }
 
-    // #[ignore]
+    #[ignore]
     #[test]
     fn read_player_nan_value_nbt() {
         #[derive(Deserialize, Debug, PartialEq)]
