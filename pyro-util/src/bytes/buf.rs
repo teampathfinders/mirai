@@ -104,7 +104,7 @@ impl<T: FromBytes, const N: usize> FromBytes for [T; N] {
 }
 
 impl<T: FromBytes, const N: usize> FromBytes for Vector<T, N> {
-    const SIZE: usize = N * std::mem::size_of::<T>();
+    const SIZE: usize = N * mem::size_of::<T>();
 
     #[inline]
     fn from_le(bytes: [u8; Self::SIZE]) -> Self {
