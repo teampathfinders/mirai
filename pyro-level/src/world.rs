@@ -68,7 +68,7 @@ pub struct DatabaseKey {
 }
 
 impl DatabaseKey {
-    pub fn serialized_size(&self) -> usize {
+    pub(crate) fn serialized_size(&self) -> usize {
         4 + 4
             + if self.dimension != Dimension::Overworld {
                 4
@@ -82,10 +82,8 @@ impl DatabaseKey {
                 0
             }
     }
-}
 
-impl Serialize for DatabaseKey {
-    fn serialize(&self, buffer: &mut WriteBuffer) {
+    pub(crate) fn serialize(&self, buffer: &mut WriteBuffer) {
         buffer.write_le::<i32>(self.x);
         buffer.write_le::<i32>(self.z);
 
