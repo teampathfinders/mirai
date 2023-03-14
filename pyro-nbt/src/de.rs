@@ -489,7 +489,6 @@ impl<'de, 'a> SeqDeserializer<'a, 'de> {
             Flavor::Network => todo!(),
         };
 
-        println!("selected ty {ty:?}, {remaining}, {expected_len}");
         if expected_len != 0 && expected_len != remaining {
             bail!(Malformed, "expected sequence of length {expected_len}, got length {remaining}");
         }

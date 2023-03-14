@@ -47,11 +47,19 @@ pub struct Experiments {
 }
 
 #[derive(serde::Deserialize, Debug, PartialEq)]
+#[serde(deny_unknown_fields)]
+pub struct Policies {
+    // Not sure what is supposed to be in here
+}
+
+#[derive(serde::Deserialize, Debug, PartialEq)]
 #[serde(rename_all = "camelCase")]
 #[serde(deny_unknown_fields)]
 pub struct LevelData {
     pub lightning_level: f32,
     pub lightning_time: i32,
+    pub rain_level: f32,
+    pub rain_time: i32,
     #[serde(rename = "Difficulty")]
     pub difficulty: i32,
     #[serde(rename = "GameType")]
@@ -64,6 +72,8 @@ pub struct LevelData {
     pub limited_world_origin_y: i32,
     #[serde(rename = "LimitedWorldOriginZ")]
     pub limited_world_origin_z: i32,
+    pub limited_world_depth: i32,
+    pub limited_world_width: i32,
     #[serde(rename = "MinimumCompatibleClientVersion")]
     pub minimum_compatible_client_version: [i32; 5],
     // pub minimum_compatible_client_version: f32,
@@ -139,11 +149,33 @@ pub struct LevelData {
     pub freeze_damage: bool,
     #[serde(rename = "keepinventory")]
     pub keep_inventory: bool,
-    // #[serde(rename = "naturalregeneration")]
-    // pub natural_regeneration: bool,
+    #[serde(rename = "maxcommandchainlength")]
+    pub max_command_chain_length: i32,
+    #[serde(rename = "mobgriefing")]
+    pub mob_griefing: bool,
+    #[serde(rename = "naturalregeneration")]
+    pub natural_regeneration: bool,
     #[serde(rename = "functioncommandlimit")]
     pub function_command_limit: i32,
-    // pub pvp: bool,
+    pub pvp: bool,
+    #[serde(rename = "randomtickspeed")]
+    pub random_tick_speed: i32,
+    #[serde(rename = "respawnblocksexplode")]
+    pub respawn_blocks_explode: bool,
+    #[serde(rename = "sendcommandfeedback")]
+    pub send_command_feedback: bool,
+    #[serde(rename = "showbordereffect")]
+    pub show_border_effect: bool,
+    #[serde(rename = "showcoordinates")]
+    pub show_coordinates: bool,
+    #[serde(rename = "showdeathmessages")]
+    pub show_death_messages: bool,
+    #[serde(rename = "showtags")]
+    pub show_tags: bool,
+    #[serde(rename = "spawnradius")]
+    pub spawn_radius: i32,
+    #[serde(rename = "tntexplodes")]
+    pub tnt_explodes: bool,
     #[serde(rename = "ForceGameType")]
     pub force_game_mode: bool,
     pub has_been_loaded_in_creative: bool,
@@ -154,6 +186,8 @@ pub struct LevelData {
     pub is_from_world_template: bool,
     pub is_single_use_world: bool,
     pub is_world_template_option_locked: bool,
+    pub requires_copied_pack_removal_check: bool,
+    pub texture_packs_required: bool,
     #[serde(rename = "LANBroadcast")]
     pub lan_broadcast: bool,
     #[serde(rename = "LANBroadcastIntent")]
@@ -173,6 +207,16 @@ pub struct LevelData {
     pub inventory_version: String,
     #[serde(rename = "LevelName")]
     pub level_name: String,
+    pub use_msa_gamertags_only: bool,
+    pub world_start_count: i64,
+    pub start_with_map_enabled: bool,
+    pub spawn_mobs: bool,
+    pub server_chunk_tick_range: i32,
+    pub permissions_level: i32,
+    pub player_permissions_level: i32,
+    pub prid: String,
+    #[serde(rename = "world_policies")]
+    pub world_policies: Policies
 }
 
 /// Database key prefixes.
