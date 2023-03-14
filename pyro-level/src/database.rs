@@ -4,6 +4,7 @@ use std::{
     ops::Deref,
     os::raw::{c_char, c_int},
 };
+use std::ptr::NonNull;
 
 use bytes::{Bytes, BytesMut};
 use util::{error, Error, Result};
@@ -37,7 +38,9 @@ impl<'a> Drop for BufferGuard<'a> {
 }
 
 pub struct RawRef<'a> {
-    iter: *mut c_void,
+    iter: NonNull<c_void>,
+    /// The 'a lifetime isn't used in the struct.
+    /// It is only used to make sure that RawRef does not outlive RawDatabase and RawIter.
     phantom: PhantomData<&'a ()>,
 }
 
@@ -45,7 +48,7 @@ impl<'a> RawRef<'a> {
     pub fn key(&self) -> BufferGuard<'a> {
         // SAFETY: A RawRef should only exist while the iterator is valid.
         unsafe {
-            let result = ffi::level_iter_key(self.iter);
+            let result = ffi::level_iter_key(self.iter.as_ptr());
             debug_assert_eq!(result.is_success, 1);
 
             std::slice::from_raw_parts(
@@ -59,7 +62,7 @@ impl<'a> RawRef<'a> {
     pub fn value(&self) -> BufferGuard<'a> {
         // SAFETY: A RawRef should only exist while the iterator is valid.
         unsafe {
-            let result = ffi::level_iter_value(self.iter);
+            let result = ffi::level_iter_value(self.iter.as_ptr());
             debug_assert_eq!(result.is_success, 1);
 
             std::slice::from_raw_parts(
@@ -74,18 +77,26 @@ impl<'a> RawRef<'a> {
 pub struct RawKeyIter<'a> {
     index: usize,
     db: &'a RawDatabase,
-    iter: *mut c_void,
+    iter: NonNull<c_void>,
 }
 
 impl<'a> RawKeyIter<'a> {
     fn new(db: &'a RawDatabase) -> Self {
         // SAFETY: level_iter is guaranteed to not return an error.
         // The iterator position has also been initialized by FFI and is not in an invalid state.
-        let result = unsafe { ffi::level_iter(db.pointer) };
+        let result = unsafe { ffi::level_iter(db.pointer.as_ptr()) };
 
         debug_assert_eq!(result.is_success, 1);
+        debug_assert_ne!(result.data, std::ptr::null_mut());
 
-        Self { index: 0, db, iter: result.data }
+        Self {
+            index: 0,
+            db,
+            // SAFETY: level_iter is guaranteed to not return an error.
+            iter: unsafe {
+                NonNull::new_unchecked(result.data)
+            }
+        }
     }
 }
 
@@ -94,11 +105,11 @@ impl<'a> Iterator for RawKeyIter<'a> {
 
     fn next(&mut self) -> Option<Self::Item> {
         if self.index != 0 {
-            unsafe { ffi::level_iter_next(self.iter) };
+            unsafe { ffi::level_iter_next(self.iter.as_ptr()) };
         }
         self.index += 1;
 
-        let valid = unsafe { ffi::level_iter_valid(self.iter) };
+        let valid = unsafe { ffi::level_iter_valid(self.iter.as_ptr()) };
 
         if valid {
             let raw_ref = RawRef { iter: self.iter, phantom: PhantomData };
@@ -113,7 +124,7 @@ impl<'a> Iterator for RawKeyIter<'a> {
 impl<'a> Drop for RawKeyIter<'a> {
     fn drop(&mut self) {
         unsafe {
-            ffi::level_destroy_iter(self.iter);
+            ffi::level_destroy_iter(self.iter.as_ptr());
         }
     }
 }
@@ -123,7 +134,7 @@ impl<'a> Drop for RawKeyIter<'a> {
 pub struct RawDatabase {
     /// Pointer to the C++ Database struct, containing the database and corresponding options.
     /// This data is heap-allocated and must therefore also be deallocated by C++ when it is no longer needed.
-    pointer: *mut c_void,
+    pointer: NonNull<c_void>
 }
 
 impl RawDatabase {
@@ -137,7 +148,11 @@ impl RawDatabase {
         };
 
         if result.is_success == 1 {
-            Ok(Self { pointer: result.data })
+            debug_assert_ne!(result.data, std::ptr::null_mut());
+            // SAFETY: If result.is_success is true, then the caller has set data to a valid pointer.
+            Ok(Self { pointer: unsafe {
+                NonNull::new_unchecked(result.data)
+            }})
         } else {
             Err(translate_ffi_error(result))
         }
@@ -157,7 +172,7 @@ impl RawDatabase {
             //
             // LevelDB is thread-safe, this function can be used on multiple threads.
             ffi::level_get_key(
-                self.pointer,
+                self.pointer.as_ptr(),
                 key.as_ptr() as *mut c_char,
                 key.len() as c_int,
             )
@@ -193,7 +208,7 @@ impl Drop for RawDatabase {
         // Make sure to clean up the LevelDB resources when the database is dropped.
         // This can only be done by C++.
         unsafe {
-            ffi::level_close_database(self.pointer);
+            ffi::level_close_database(self.pointer.as_ptr());
         }
     }
 }

@@ -118,6 +118,7 @@ impl SubLayer {
         // Size of the block palette.
         let palette_size = buffer.read_le::<u32>()?;
         let mut palette = Vec::with_capacity(palette_size as usize);
+        // let mut palette = Vec::new();
         for _ in 0..palette_size {
             let (properties, n) = match nbt::from_le_bytes(buffer) {
                 Ok(p) => p,
@@ -302,6 +303,7 @@ impl<'a> From<&'a SubLayer> for LayerIter<'a> {
 impl<'a> Iterator for LayerIter<'a> {
     type Item = &'a BlockProperties;
 
+    #[inline]
     fn next(&mut self) -> Option<Self::Item> {
         // ExactSizeIterator::is_empty is unstable
         if self.len() == 0 {
@@ -311,6 +313,11 @@ impl<'a> Iterator for LayerIter<'a> {
         let (a, b) = self.indices.split_at(1);
         self.indices = b;
         self.palette.get(a[0] as usize)
+    }
+
+    #[inline]
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        (0, Some(self.len()))
     }
 }
 
