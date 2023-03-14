@@ -216,28 +216,28 @@ impl<'de, 'a> de::Deserializer<'de> for &'a mut Deserializer<'de> {
     where
         V: Visitor<'de>,
     {
-        bail!(Unsupported)
+        bail!(Unsupported, "NBT does not support `u8`, use `i8` instead")
     }
 
     fn deserialize_u16<V>(self, visitor: V) -> Result<V::Value>
     where
         V: Visitor<'de>,
     {
-        bail!(Unsupported)
+        bail!(Unsupported, "NBT does not support `u16`, use `i16` instead")
     }
 
     fn deserialize_u32<V>(self, visitor: V) -> Result<V::Value>
     where
         V: Visitor<'de>,
     {
-        bail!(Unsupported)
+        bail!(Unsupported, "NBT does not support `u32`, use `i32` instead")
     }
 
     fn deserialize_u64<V>(self, visitor: V) -> Result<V::Value>
     where
         V: Visitor<'de>,
     {
-        bail!(Unsupported)
+        bail!(Unsupported, "NBT does not support `u64`, use `i64` instead")
     }
 
     fn deserialize_f32<V>(self, visitor: V) -> Result<V::Value>
@@ -272,15 +272,13 @@ impl<'de, 'a> de::Deserializer<'de> for &'a mut Deserializer<'de> {
     where
         V: Visitor<'de>,
     {
-        bail!(Unsupported)
+        bail!(Unsupported, "NBT does not support unicode characters, use String instead")
     }
 
     fn deserialize_str<V>(self, visitor: V) -> Result<V::Value>
     where
         V: Visitor<'de>,
     {
-        // is_ty!(String, self.next_ty);
-
         let len = match self.flavor {
             Flavor::BigEndian => self.input.read_be::<u16>()?,
             Flavor::LittleEndian => self.input.read_le::<u16>()?,
@@ -291,10 +289,6 @@ impl<'de, 'a> de::Deserializer<'de> for &'a mut Deserializer<'de> {
 
         let data = self.input.take(len as usize)?;
         let str = std::str::from_utf8(data)?;
-
-        if self.is_key {
-            println!("key = {str}, ty = {:?}", self.next_ty);
-        }
 
         visitor.visit_str(str)
     }
@@ -323,14 +317,14 @@ impl<'de, 'a> de::Deserializer<'de> for &'a mut Deserializer<'de> {
     where
         V: Visitor<'de>,
     {
-        bail!(Unsupported)
+        bail!(Unsupported, "NBT does not support borrowed byte arrays")
     }
 
     fn deserialize_byte_buf<V>(self, visitor: V) -> Result<V::Value>
     where
         V: Visitor<'de>,
     {
-        bail!(Unsupported)
+        bail!(Unsupported, "NBT does not support byte buffers")
     }
 
     fn deserialize_option<V>(self, visitor: V) -> Result<V::Value>
@@ -358,7 +352,7 @@ impl<'de, 'a> de::Deserializer<'de> for &'a mut Deserializer<'de> {
     where
         V: Visitor<'de>,
     {
-        bail!(Unsupported)
+        bail!(Unsupported, "NBT does not support unit structs")
     }
 
     fn deserialize_newtype_struct<V>(
@@ -369,37 +363,25 @@ impl<'de, 'a> de::Deserializer<'de> for &'a mut Deserializer<'de> {
     where
         V: Visitor<'de>,
     {
-        bail!(Unsupported)
+        bail!(Unsupported, "NBT does not support newtype structs")
     }
 
     fn deserialize_seq<V>(self, visitor: V) -> Result<V::Value>
     where
         V: Visitor<'de>,
     {
-        let ty = if self.next_ty == FieldType::ByteArray
-            || self.next_ty == FieldType::IntArray
-            || self.next_ty == FieldType::LongArray
-        {
-            self.next_ty
-        } else {
-            FieldType::try_from(self.input.read_le::<u8>()?)?
-        };
-
-        let de = SeqDeserializer::new(self, ty, 0)?;
-        visitor.visit_seq(de)
+        self.deserialize_tuple(0, visitor)
     }
 
     fn deserialize_tuple<V>(self, len: usize, visitor: V) -> Result<V::Value>
     where
         V: Visitor<'de>,
     {
-        let ty = if self.next_ty == FieldType::ByteArray
-            || self.next_ty == FieldType::IntArray
-            || self.next_ty == FieldType::LongArray
-        {
-            self.next_ty
-        } else {
-            FieldType::try_from(self.input.read_le::<u8>()?)?
+        let ty = match self.next_ty {
+            FieldType::ByteArray => FieldType::Byte,
+            FieldType::IntArray => FieldType::Int,
+            FieldType::LongArray => FieldType::Long,
+            _ => FieldType::try_from(self.input.read_le::<u8>()?)?
         };
 
         let de = SeqDeserializer::new(self, ty, len as i32)?;
@@ -415,7 +397,7 @@ impl<'de, 'a> de::Deserializer<'de> for &'a mut Deserializer<'de> {
     where
         V: Visitor<'de>,
     {
-        bail!(Unsupported)
+        bail!(Unsupported, "NBT does not support tuple structs")
     }
 
     fn deserialize_map<V>(self, visitor: V) -> Result<V::Value>
@@ -449,7 +431,7 @@ impl<'de, 'a> de::Deserializer<'de> for &'a mut Deserializer<'de> {
     where
         V: Visitor<'de>,
     {
-        bail!(Unsupported)
+        bail!(Unsupported, "NBT does not support enums")
     }
 
     fn deserialize_identifier<V>(self, visitor: V) -> Result<V::Value>
@@ -660,7 +642,7 @@ mod test {
             #[serde(rename = "Fire")]
             fire: i16,
             #[serde(rename = "Rotation")]
-            rotation: [f64; 2],
+            rotation: [f32; 2],
         }
 
         let decoded: (Player, usize) =
