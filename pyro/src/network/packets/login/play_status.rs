@@ -1,6 +1,6 @@
 use bytes::Bytes;
 use bytes::{BufMut, BytesMut};
-use util::bytes::OwnedBuffer;
+use util::bytes::LazyBuffer;
 
 use crate::network::packets::ConnectedPacket;
 use util::Serialize;
@@ -47,7 +47,7 @@ impl ConnectedPacket for PlayStatus {
 }
 
 impl Serialize for PlayStatus {
-    fn serialize(&self, buffer: &mut OwnedBuffer) {
+    fn serialize(&self, buffer: &mut LazyBuffer) {
         buffer.write_be(self.status as u32);
     }
 }

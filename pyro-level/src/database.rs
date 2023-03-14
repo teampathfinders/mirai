@@ -7,7 +7,7 @@ use std::{
 use std::ptr::NonNull;
 
 use util::{error, Error, Result};
-use util::bytes::OwnedBuffer;
+use util::bytes::{LazyBuffer, SharedBuf};
 
 use crate::ffi;
 
@@ -164,7 +164,7 @@ impl RawDatabase {
 
     /// Loads the value of the given key.
     /// This function requires a raw key, i.e. the key must have been serialised already.
-    pub fn get_raw_key<K: AsRef<[u8]>>(&self, key: K) -> Result<OwnedBuffer> {
+    pub fn get_raw_key<K: AsRef<[u8]>>(&self, key: K) -> Result<SharedBuf> {
         let key = key.as_ref();
         let result = unsafe {
             // SAFETY: This function is guaranteed to not modify any arguments.
@@ -190,14 +190,7 @@ impl RawDatabase {
                 )
             };
 
-            let buffer = OwnedBuffer::copy_from_slice(data);
-            unsafe {
-                // SAFETY: Data is safe to deallocate because BytesMut copies the data.
-                // and it is not used anywhere else.
-                ffi::level_deallocate_array(result.data as *mut c_char)
-            };
-
-            Ok(buffer)
+            Ok(SharedBuf::from(data))
         } else {
             Err(translate_ffi_error(result))
         }

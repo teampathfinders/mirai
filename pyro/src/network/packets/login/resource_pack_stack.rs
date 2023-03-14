@@ -3,7 +3,7 @@ use bytes::{BufMut, BytesMut};
 
 use crate::network::packets::ConnectedPacket;
 use util::{Serialize, size_of_varint, size_of_string, VarString};
-use util::bytes::OwnedBuffer;
+use util::bytes::LazyBuffer;
 use util::Result;
 use util::WriteExtensions;
 
@@ -18,7 +18,7 @@ impl ExperimentData<'_> {
         self.name.var_len() + 1
     }
 
-    pub fn serialize(&self, buffer: &mut OwnedBuffer) {
+    pub fn serialize(&self, buffer: &mut LazyBuffer) {
         buffer.put_string(&self.name);
         buffer.write_le::<bool>(self.enabled);
     }
@@ -38,7 +38,7 @@ impl ResourcePackStackEntry<'_> {
         self.subpack_name.var_len()
     }
 
-    pub fn serialize(&self, buffer: &mut OwnedBuffer) {
+    pub fn serialize(&self, buffer: &mut LazyBuffer) {
         buffer.put_string(&self.pack_id);
         buffer.put_string(&self.pack_version);
         buffer.put_string(&self.subpack_name);
@@ -73,7 +73,7 @@ impl ConnectedPacket for ResourcePackStack<'_> {
 }
 
 impl Serialize for ResourcePackStack<'_> {
-    fn serialize(&self, buffer: &mut OwnedBuffer) {
+    fn serialize(&self, buffer: &mut LazyBuffer) {
         buffer.write_le::<bool>(self.forced_to_accept);
 
         buffer.put_var_u32(self.resource_packs.len() as u32);

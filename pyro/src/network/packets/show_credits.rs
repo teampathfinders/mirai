@@ -2,7 +2,7 @@ use bytes::{BytesMut, Bytes};
 use util::{bail, Error, Result, size_of_varint};
 
 use util::{Deserialize, Serialize};
-use util::bytes::SharedBuffer;
+use util::bytes::SharedBuf;
 
 use super::ConnectedPacket;
 
@@ -51,7 +51,7 @@ impl Serialize for CreditsUpdate {
 }
 
 impl Deserialize for CreditsUpdate {
-    fn deserialize(mut buffer: SharedBuffer) -> Result<Self> {
+    fn deserialize(mut buffer: SharedBuf) -> Result<Self> {
         let runtime_id = buffer.read_var::<u64>()?;
         let status = CreditsStatus::try_from(buffer.get_var_i32()?)?;
 

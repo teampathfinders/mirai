@@ -3,13 +3,13 @@ use crate::Result;
 mod from_bytes;
 mod to_bytes;
 mod shared;
-mod owned;
+mod lazy;
 mod varint;
 
 pub use from_bytes::*;
 pub use to_bytes::*;
 pub use shared::*;
-pub use owned::*;
+pub use lazy::*;
 pub use varint::*;
 
 pub trait BinaryBuffer {

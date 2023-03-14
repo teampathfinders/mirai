@@ -1,7 +1,7 @@
 use serde::Deserialize;
 use std::collections::HashMap;
 use std::iter::Enumerate;
-use util::bytes::{SharedBuffer, OwnedBuffer, BinaryBuffer};
+use util::bytes::{SharedBuf, LazyBuffer, BinaryBuffer};
 use util::{bail, BlockPosition, Error, Result, Vector3b};
 
 const CHUNK_SIZE: usize = 4096;
@@ -42,6 +42,7 @@ mod block_version {
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
 pub struct BlockStates {
     // states, this should probably be a HashMap<String, nbt::Value>
+    pillar_axis: Option<String>
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
@@ -64,7 +65,7 @@ impl SubLayer {
         LayerIter::from(self)
     }
 
-    fn deserialize(buffer: &mut SharedBuffer) -> Result<Self> {
+    fn deserialize(buffer: &mut SharedBuf) -> Result<Self> {
         // Size of each index in bits.
         let index_size = buffer.read_le::<u8>()? >> 1;
         if index_size == 0x7f {
@@ -125,7 +126,7 @@ impl SubLayer {
         Ok(Self { indices, palette })
     }
 
-    fn serialize(&self, buffer: &mut OwnedBuffer) {
+    fn serialize(&self, buffer: &mut LazyBuffer) {
         // Determine the required bits per index
         let index_size = {
             let palette_size = self.palette.len();
@@ -223,7 +224,7 @@ impl SubChunk {
 impl SubChunk {
     pub fn deserialize<'a, R>(buffer: R) -> Result<Self>
     where
-        R: Into<SharedBuffer<'a>>
+        R: Into<SharedBuf<'a>>
     {
         let mut buffer = buffer.into();
 
@@ -257,7 +258,7 @@ impl SubChunk {
         }
     }
 
-    pub fn serialize(&self, buffer: &mut OwnedBuffer) {
+    pub fn serialize(&self, buffer: &mut LazyBuffer) {
         buffer.write_le::<u8>(self.version as u8);
         match self.version {
             SubChunkVersion::Legacy => todo!(),

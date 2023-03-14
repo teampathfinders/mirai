@@ -2,7 +2,7 @@ use bytes::{Buf, BufMut, Bytes, BytesMut};
 use util::{bail,  Error, Result, VarString, VarInt};
 
 use util::{Deserialize, Serialize};
-use util::bytes::{SharedBuffer};
+use util::bytes::{SharedBuf};
 
 use super::ConnectedPacket;
 
@@ -141,7 +141,7 @@ impl Serialize for TextMessage {
 }
 
 impl Deserialize for TextMessage {
-    fn deserialize(mut buffer: SharedBuffer) -> Result<Self> {
+    fn deserialize(mut buffer: SharedBuf) -> Result<Self> {
         let message_type = MessageType::try_from(buffer.read_le::<u8>()?)?;
         let needs_translation = buffer.get_bool();
         let message;

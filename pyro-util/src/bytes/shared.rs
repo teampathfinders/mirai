@@ -10,14 +10,14 @@ use crate::Result;
 /// Buffer that can be used to read binary data.
 ///
 /// See [`OwnedBuffer`](crate::OwnedBuffer) for an owned and writable buffer.
-pub struct SharedBuffer<'a>(&'a [u8]);
+pub struct SharedBuf<'a>(&'a [u8]);
 
-impl<'a> SharedBuffer<'a> {
+impl<'a> SharedBuf<'a> {
     /// Advances the cursor, skipping `n` bytes.
     #[inline]
     pub fn advance(&mut self, n: usize) {
         let (_, b) = self.0.split_at(n);
-        *self = SharedBuffer::from(b);
+        *self = SharedBuf::from(b);
     }
 
     /// Reads the specified big-endian encoded type from the buffer without advancing the cursor.
@@ -39,7 +39,7 @@ impl<'a> SharedBuffer<'a> {
     }
 }
 
-impl<'a> BinaryBuffer for SharedBuffer<'a> {
+impl<'a> BinaryBuffer for SharedBuf<'a> {
     // /// Reads the specified big-endian encoded type from the buffer without advancing the cursor.
     // #[inline]
     // fn peek_be<T: FromBytes>(&self) -> Result<T>
@@ -75,7 +75,7 @@ impl<'a> BinaryBuffer for SharedBuffer<'a> {
             )
         } else {
             let (a, b) = self.0.split_at(n);
-            *self = SharedBuffer::from(b);
+            *self = SharedBuf::from(b);
             Ok(a)
         }
     }
@@ -100,7 +100,7 @@ impl<'a> BinaryBuffer for SharedBuffer<'a> {
             )
         } else {
             let (a, b) = self.0.split_at(N);
-            *self = SharedBuffer::from(b);
+            *self = SharedBuf::from(b);
             // SAFETY: We can unwrap because the array is guaranteed to be the required size.
             unsafe { Ok(a.try_into().unwrap_unchecked()) }
         }
@@ -187,14 +187,14 @@ impl<'a> BinaryBuffer for SharedBuffer<'a> {
     }
 }
 
-impl<'a> From<&'a [u8]> for SharedBuffer<'a> {
+impl<'a> From<&'a [u8]> for SharedBuf<'a> {
     #[inline]
     fn from(b: &'a [u8]) -> Self {
         Self(b)
     }
 }
 
-impl<'a> Deref for SharedBuffer<'a> {
+impl<'a> Deref for SharedBuf<'a> {
     type Target = [u8];
 
     #[inline]
@@ -203,7 +203,7 @@ impl<'a> Deref for SharedBuffer<'a> {
     }
 }
 
-impl<'a> Index<usize> for SharedBuffer<'a> {
+impl<'a> Index<usize> for SharedBuf<'a> {
     type Output = u8;
 
     #[inline]
@@ -222,14 +222,14 @@ impl<'a> Index<usize> for SharedBuffer<'a> {
 //     }
 // }
 
-impl<'a> Debug for SharedBuffer<'a> {
+impl<'a> Debug for SharedBuf<'a> {
     #[inline]
     fn fmt(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
         write!(formatter, "{:?}", self.0)
     }
 }
 
-impl<'a> Read for SharedBuffer<'a> {
+impl<'a> Read for SharedBuf<'a> {
     #[inline]
     fn read(&mut self, buf: &mut [u8]) -> io::Result<usize> {
         let amt = cmp::min(self.len(), buf.len());
@@ -241,19 +241,19 @@ impl<'a> Read for SharedBuffer<'a> {
             buf[..amt].copy_from_slice(a);
         }
 
-        *self = SharedBuffer::from(b);
+        *self = SharedBuf::from(b);
         Ok(amt)
     }
 }
 
 #[cfg(test)]
 mod test {
-    use super::SharedBuffer;
+    use super::SharedBuf;
 
     #[test]
     fn test_read_u8() {
         let s: &[u8] = &[42, 12, 1, 2, 3];
-        let mut buf = SharedBuffer::from(s);
+        let mut buf = SharedBuf::from(s);
 
         for x in s {
             assert_eq!(buf.peek_be::<u8>().unwrap(), *x);
@@ -265,7 +265,7 @@ mod test {
     fn test_read_i8() {
         let s: &[i8] = &[-10, 5, -42, 120];
         let mut buf =
-            SharedBuffer::from(unsafe { std::mem::transmute::<&[i8], &[u8]>(s) });
+            SharedBuf::from(unsafe { std::mem::transmute::<&[i8], &[u8]>(s) });
 
         for x in s {
             assert_eq!(buf.peek_be::<i8>().unwrap(), *x);
@@ -277,7 +277,7 @@ mod test {
     fn test_read_u16() {
         let o = [42, 24083];
         let s: &[u8] = &[0, 42, 94, 19];
-        let mut buf = SharedBuffer::from(s);
+        let mut buf = SharedBuf::from(s);
 
         for x in o {
             assert_eq!(buf.peek_be::<u16>().unwrap(), x);
@@ -289,7 +289,7 @@ mod test {
     fn test_read_i16() {
         let o = [-2397, 24083];
         let s: &[u8] = &[246, 163, 94, 19];
-        let mut buf = SharedBuffer::from(s);
+        let mut buf = SharedBuf::from(s);
 
         for x in o {
             assert_eq!(buf.peek_be::<i16>().unwrap(), x);

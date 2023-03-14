@@ -22,19 +22,19 @@ fn database_test() {
         if key[key.len() - 2] == 0x2f {
             count += 1;
 
-            let instant = std::time::Instant::now();
+            let start = std::time::Instant::now();
             let subchunk = SubChunk::deserialize(raw_ref.value().as_ref()).unwrap();
-            let elapsed = instant.elapsed();
-            //
-            sum += elapsed.as_micros();
-            //
-            std::hint::black_box(subchunk);
-            // println!("elapsed: {elapsed:?}");
+            let end = start.elapsed();
+
+            sum += end.as_micros();
+
+            println!("{subchunk:?}");
+            break
         }
     }
 
     let avg = sum as f64 / count as f64;
-    println!("average: {avg}µs");
+    println!("average: {avg}μs");
 
     // let mut buffer = BytesMut::new();
     // DatabaseKey {
@@ -52,6 +52,7 @@ fn database_test() {
     // dbg!(block);
 }
 
+#[ignore]
 #[test]
 fn load_level_dat() {
     const LEVEL_DAT: &[u8] = include_bytes!("../test/level.dat");
