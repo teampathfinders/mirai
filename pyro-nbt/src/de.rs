@@ -7,6 +7,14 @@ use serde::de::Unexpected::Seq;
 use util::bytes::ReadBuffer;
 use util::{bail, Error, Result};
 
+macro_rules! is_ty {
+    ($expected: ident, $actual: expr) => {
+        if $actual != FieldType::$expected {
+            bail!(Malformed, "expected type {:?}, but found {:?}", FieldType::$expected, $actual)
+        }
+    }
+}
+
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum Flavor {
     Network,
@@ -140,6 +148,8 @@ impl<'de, 'a> de::Deserializer<'de> for &'a mut Deserializer<'de> {
     where
         V: Visitor<'de>,
     {
+        is_ty!(Byte, self.next_ty);
+
         let n = self.input.read_be::<bool>()?;
         visitor.visit_bool(n)
     }
@@ -148,9 +158,7 @@ impl<'de, 'a> de::Deserializer<'de> for &'a mut Deserializer<'de> {
     where
         V: Visitor<'de>,
     {
-        if self.next_ty != FieldType::Byte {
-            bail!(Malformed, "expected Byte, but found {:?}", self.next_ty);
-        }
+        is_ty!(Byte, self.next_ty);
 
         let n = self.input.read_be::<i8>()?;
         visitor.visit_i8(n)
@@ -160,6 +168,8 @@ impl<'de, 'a> de::Deserializer<'de> for &'a mut Deserializer<'de> {
     where
         V: Visitor<'de>,
     {
+        is_ty!(Short, self.next_ty);
+
         let n = match self.flavor {
             Flavor::BigEndian => self.input.read_be::<i16>(),
             Flavor::LittleEndian | Flavor::Network => {
@@ -174,6 +184,8 @@ impl<'de, 'a> de::Deserializer<'de> for &'a mut Deserializer<'de> {
     where
         V: Visitor<'de>,
     {
+        is_ty!(Int, self.next_ty);
+
         let n = match self.flavor {
             Flavor::BigEndian => self.input.read_be::<i32>(),
             Flavor::LittleEndian | Flavor::Network => {
@@ -188,6 +200,8 @@ impl<'de, 'a> de::Deserializer<'de> for &'a mut Deserializer<'de> {
     where
         V: Visitor<'de>,
     {
+        is_ty!(Long, self.next_ty);
+
         let n = match self.flavor {
             Flavor::BigEndian => self.input.read_be::<i64>(),
             Flavor::LittleEndian | Flavor::Network => {
@@ -230,6 +244,8 @@ impl<'de, 'a> de::Deserializer<'de> for &'a mut Deserializer<'de> {
     where
         V: Visitor<'de>,
     {
+        is_ty!(Float, self.next_ty);
+
         let n = match self.flavor {
             Flavor::BigEndian => self.input.read_be::<f32>(),
             _ => self.input.read_le::<f32>(),
@@ -242,6 +258,8 @@ impl<'de, 'a> de::Deserializer<'de> for &'a mut Deserializer<'de> {
     where
         V: Visitor<'de>,
     {
+        is_ty!(Double, self.next_ty);
+
         let n = match self.flavor {
             Flavor::BigEndian => self.input.read_be::<f64>(),
             _ => self.input.read_le::<f64>(),
@@ -261,6 +279,8 @@ impl<'de, 'a> de::Deserializer<'de> for &'a mut Deserializer<'de> {
     where
         V: Visitor<'de>,
     {
+        // is_ty!(String, self.next_ty);
+
         let len = match self.flavor {
             Flavor::BigEndian => self.input.read_be::<u16>()?,
             Flavor::LittleEndian => self.input.read_le::<u16>()?,
@@ -283,6 +303,8 @@ impl<'de, 'a> de::Deserializer<'de> for &'a mut Deserializer<'de> {
     where
         V: Visitor<'de>,
     {
+        is_ty!(String, self.next_ty);
+
         let len = match self.flavor {
             Flavor::BigEndian => self.input.read_be::<u16>()?,
             Flavor::LittleEndian => self.input.read_le::<u16>()?,
@@ -382,8 +404,6 @@ impl<'de, 'a> de::Deserializer<'de> for &'a mut Deserializer<'de> {
 
         let de = SeqDeserializer::new(self, ty, len as i32)?;
         visitor.visit_seq(de)
-
-        // bail!(Unsupported, "Tuple deserialisation is not supported")
     }
 
     fn deserialize_tuple_struct<V>(
@@ -402,6 +422,8 @@ impl<'de, 'a> de::Deserializer<'de> for &'a mut Deserializer<'de> {
     where
         V: Visitor<'de>,
     {
+        is_ty!(Compound, self.next_ty);
+
         let de = MapDeserializer::from(self);
         visitor.visit_map(de)
     }
