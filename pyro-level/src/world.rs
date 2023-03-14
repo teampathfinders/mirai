@@ -96,7 +96,7 @@ pub struct LevelData {
     pub edu_offer: i32,
     pub education_features_enabled: bool,
     #[serde(rename = "lastOpenedWithVersion")]
-    pub last_opened_with_version: [i8; 5],
+    pub last_opened_with_version: [i8; 6],
     pub bonus_chest_enabled: bool,
     pub bonus_chest_spawned: bool,
     #[serde(rename = "commandblockoutput")]
