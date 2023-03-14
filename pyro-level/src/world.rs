@@ -13,6 +13,165 @@ pub const SCOREBOARD: &[u8] = "scoreboard".as_bytes();
 pub const SCHEDULER: &[u8] = "schedulerWT".as_bytes();
 pub const LOCAL_PLAYER: &[u8] = "~local_player".as_bytes();
 
+#[derive(serde::Deserialize, Debug, PartialEq)]
+pub struct Abilities {
+    #[serde(rename = "attackmobs")]
+    pub attack_mobs: bool,
+    #[serde(rename = "attackplayers")]
+    pub attack_players: bool,
+    pub build: bool,
+    #[serde(rename = "doorsandswitches")]
+    pub doors_and_switches: bool,
+    pub flying: bool,
+    #[serde(rename = "instabuild")]
+    pub instant_build: bool,
+    pub invulnerable: bool,
+    pub lightning: bool,
+    pub mayfly: bool,
+    pub mine: bool,
+    pub op: bool,
+    #[serde(rename = "opencontainers")]
+    pub open_containers: bool,
+    pub teleport: bool,
+    #[serde(rename = "flySpeed")]
+    pub fly_speed: f32,
+    #[serde(rename = "walkSpeed")]
+    pub walk_speed: f32
+}
+
+#[derive(serde::Deserialize, Debug, PartialEq)]
+#[serde(deny_unknown_fields)]
+pub struct Experiments {
+    pub experiments_ever_used: bool,
+    pub saved_with_toggled_experiments: bool
+}
+
+#[derive(serde::Deserialize, Debug, PartialEq)]
+#[serde(rename_all = "camelCase")]
+#[serde(deny_unknown_fields)]
+pub struct LevelData {
+    #[serde(rename = "Difficulty")]
+    pub difficulty: i32,
+    #[serde(rename = "GameType")]
+    pub game_mode: i32,
+    #[serde(rename = "Generator")]
+    pub generator: i32,
+    #[serde(rename = "LimitedWorldOriginX")]
+    pub limited_world_origin_x: i32,
+    #[serde(rename = "LimitedWorldOriginY")]
+    pub limited_world_origin_y: i32,
+    #[serde(rename = "LimitedWorldOriginZ")]
+    pub limited_world_origin_z: i32,
+    #[serde(rename = "MinimumCompatibleClientVersion")]
+    pub minimum_compatible_client_version: [i32; 5],
+    #[serde(rename = "NetherScale")]
+    pub nether_scale: i32,
+    #[serde(rename = "NetworkVersion")]
+    pub network_version: i32,
+    #[serde(rename = "Platform")]
+    pub platform: i32,
+    #[serde(rename = "PlatformBroadcastIntent")]
+    pub platform_broadcast_intent: i32,
+    #[serde(rename = "RandomSeed")]
+    pub random_seed: i64,
+    #[serde(rename = "SpawnV1Villagers")]
+    pub spawn_v1_villagers: bool,
+    #[serde(rename = "SpawnX")]
+    pub spawn_x: i32,
+    #[serde(rename = "SpawnY")]
+    pub spawn_y: i32,
+    #[serde(rename = "SpawnZ")]
+    pub spawn_z: i32,
+    #[serde(rename = "StorageVersion")]
+    pub storage_version: i32,
+    #[serde(rename = "Time")]
+    pub time: i64,
+    #[serde(rename = "WorldVersion")]
+    pub world_version: i32,
+    #[serde(rename = "XBLBroadcastIntent")]
+    pub xbox_broadcast_intent: i32,
+    pub current_tick: i64,
+    pub experiments: Experiments,
+    pub abilities: Abilities,
+    pub edu_offer: i32,
+    pub education_features_enabled: bool,
+    #[serde(rename = "lastOpenedWithVersion")]
+    pub last_opened_with_version: [i8; 5],
+    pub bonus_chest_enabled: bool,
+    pub bonus_chest_spawned: bool,
+    #[serde(rename = "commandblockoutput")]
+    pub command_block_output: bool,
+    #[serde(rename = "CenterMapsToOrigin")]
+    pub center_maps_to_origin: bool,
+    #[serde(rename = "commandblocksenabled")]
+    pub command_blocks_enabled: bool,
+    pub commands_enabled: bool,
+    #[serde(rename = "ConfirmedPlatformLockedContent")]
+    pub confirmed_platform_locked_content: bool,
+    #[serde(rename = "dodaylightcycle")]
+    pub daylight_cycle: bool,
+    #[serde(rename = "doentitydrops")]
+    pub entity_drops: bool,
+    #[serde(rename = "dofiretick")]
+    pub fire_tick: bool,
+    #[serde(rename = "doimmediaterespawn")]
+    pub immediate_respawn: bool,
+    #[serde(rename = "doinsomnia")]
+    pub insomnia: bool,
+    #[serde(rename = "domobloot")]
+    pub mob_loot: bool,
+    #[serde(rename = "domobspawning")]
+    pub mob_spawning: bool,
+    #[serde(rename = "dotiledrops")]
+    pub tile_drops: bool,
+    #[serde(rename = "doweathercycle")]
+    pub weather_cycle: bool,
+    #[serde(rename = "drowningdamage")]
+    pub drowning_damage: bool,
+    #[serde(rename = "falldamage")]
+    pub fall_damage: bool,
+    #[serde(rename = "firedamage")]
+    pub fire_damage: bool,
+    #[serde(rename = "freezedamage")]
+    pub freeze_damage: bool,
+    #[serde(rename = "keepinventory")]
+    pub keep_inventory: bool,
+    // #[serde(rename = "naturalregeneration")]
+    // pub natural_regeneration: bool,
+    #[serde(rename = "functioncommandlimit")]
+    pub function_command_limit: i32,
+    // pub pvp: bool,
+    #[serde(rename = "ForceGameType")]
+    pub force_game_mode: bool,
+    pub has_been_loaded_in_creative: bool,
+    pub has_locked_behavior_pack: bool,
+    pub has_locked_resource_pack: bool,
+    pub immutable_world: bool,
+    pub is_from_locked_template: bool,
+    pub is_from_world_template: bool,
+    pub is_single_use_world: bool,
+    pub is_world_template_option_locked: bool,
+    #[serde(rename = "LANBroadcast")]
+    pub lan_broadcast: bool,
+    #[serde(rename = "LANBroadcastIntent")]
+    pub lan_broadcast_intent: i8,
+    #[serde(rename = "MultiplayerGame")]
+    pub multiplayer_game: bool,
+    #[serde(rename = "MultiplayerGameIntent")]
+    pub multiplayer_game_intent: i8,
+    #[serde(rename = "LastPlayed")]
+    pub last_played: i64,
+    pub base_game_version: String,
+    #[serde(rename = "BiomeOverride")]
+    pub biome_override: String,
+    #[serde(rename = "FlatWorldLayers")]
+    pub flat_world_layers: String,
+    #[serde(rename = "InventoryVersion")]
+    pub inventory_version: String,
+    #[serde(rename = "LevelName")]
+    pub level_name: String,
+}
+
 /// Database key prefixes.
 ///
 /// Data from [`Minecraft fandom`](https://minecraft.fandom.com/wiki/Bedrock_Edition_level_format#Chunk_key_format).

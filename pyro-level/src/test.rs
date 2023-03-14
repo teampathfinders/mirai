@@ -1,11 +1,7 @@
 use bytes::{BufMut, Bytes, BytesMut};
 use util::{Deserialize, Serialize, Vector, Vector3b};
 
-use crate::{
-    biome::Biome3d, database::RawDatabase, DatabaseKey, Dimension, KeyData,
-    SubChunk, BIOME_DATA, LOCAL_PLAYER, MOB_EVENTS, OVERWORLD, SCHEDULER,
-    SCOREBOARD,
-};
+use crate::{biome::Biome3d, database::RawDatabase, DatabaseKey, Dimension, KeyData, SubChunk, BIOME_DATA, LOCAL_PLAYER, MOB_EVENTS, OVERWORLD, SCHEDULER, SCOREBOARD, LevelData};
 
 // digp [x] [z] [?dimension]
 // contains two int32
@@ -61,55 +57,6 @@ fn database_test() {
 fn load_level_dat() {
     const LEVEL_DAT: &[u8] = include_bytes!("../test/level.dat");
 
-    #[derive(serde::Deserialize, Debug, PartialEq)]
-    struct Abilities {
-        #[serde(rename = "attackmobs")]
-        pub attack_mobs: bool,
-        #[serde(rename = "attackplayers")]
-        pub attack_players: bool,
-        pub build: bool,
-        #[serde(rename = "doorsandswitches")]
-        pub doors_and_switches: bool,
-        pub flying: bool,
-        #[serde(rename = "instabuild")]
-        pub instant_build: bool,
-        pub invulnerable: bool,
-        pub lightning: bool,
-        pub mayfly: bool,
-        pub mine: bool,
-        pub op: bool,
-        #[serde(rename = "opencontainers")]
-        pub open_containers: bool,
-        pub teleport: bool,
-        #[serde(rename = "flySpeed")]
-        pub fly_speed: f32,
-        #[serde(rename = "walkSpeed")]
-        pub walk_speed: f32
-    }
-
-    #[derive(serde::Deserialize, Debug, PartialEq)]
-    #[serde(rename_all = "camelCase")]
-    struct LevelDat {
-        pub abilities: Abilities,
-        #[serde(rename = "lastOpenedWithVersion")]
-        pub last_opened_with_version: Vec<i8>,
-
-        #[serde(rename = "LastPlayed")]
-        pub last_played: i64,
-        pub lightning_level: f32,
-        pub rain_level: f32,
-        pub base_game_version: String,
-        #[serde(rename = "BiomeOverride")]
-        pub biome_override: String,
-        #[serde(rename = "FlatWorldLayers")]
-        pub flat_world_layers: String,
-        #[serde(rename = "InventoryVersion")]
-        pub inventory_version: String,
-        #[serde(rename = "LevelName")]
-        pub level_name: String,
-        pub prid: String
-    }
-
-    let decoded: LevelDat = nbt::from_le_bytes(&LEVEL_DAT[8..]).unwrap().0;
+    let decoded: LevelData = nbt::from_le_bytes(&LEVEL_DAT[8..]).unwrap().0;
     dbg!(decoded);
 }
