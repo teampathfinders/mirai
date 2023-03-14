@@ -30,6 +30,6 @@ impl Serialize for ChangeDimension {
     fn serialize(&self, buffer: &mut BytesMut) {
         buffer.put_var_i32(self.dimension as i32);
         buffer.put_vec3f(&self.position);
-        buffer.put_bool(self.respawn);
+        buffer.write_le::<bool>(self.respawn);
     }
 }

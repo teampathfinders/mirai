@@ -40,7 +40,7 @@ impl ConnectedPacket for PlayerListAdd<'_> {
 
 impl Serialize for PlayerListAdd<'_> {
     fn serialize(&self, buffer: &mut BytesMut) {
-        buffer.put_u8(0); // Add player.
+        buffer.write_le::<u8>(0); // Add player.
         buffer.put_var_u32(self.entries.len() as u32);
         for entry in self.entries {
             buffer.put_uuid(&entry.uuid);
@@ -49,14 +49,14 @@ impl Serialize for PlayerListAdd<'_> {
             buffer.put_string(entry.username);
             buffer.put_string(&entry.xuid.to_string());
             buffer.put_string(""); // Platform chat ID.
-            buffer.put_i32_le(entry.device_os as i32);
+            buffer.write_le::<i32>()(entry.device_os as i32);
             entry.skin.serialize(buffer);
-            buffer.put_bool(false); // Player is not a teacher.
-            buffer.put_bool(entry.host);
+            buffer.write_le::<bool>(false); // Player is not a teacher.
+            buffer.write_le::<bool>(entry.host);
         }
 
         for entry in self.entries {
-            buffer.put_bool(entry.skin.is_trusted);
+            buffer.write_le::<bool>(entry.skin.is_trusted);
         }
     }
 }
@@ -77,7 +77,7 @@ impl ConnectedPacket for PlayerListRemove<'_> {
 
 impl Serialize for PlayerListRemove<'_> {
     fn serialize(&self, buffer: &mut BytesMut) {
-        buffer.put_u8(1); // Remove player.
+        buffer.write_le::<u8>(1); // Remove player.
         buffer.put_var_u32(self.entries.len() as u32);
         for entry in self.entries {
             buffer.put_uuid(entry);

@@ -1,5 +1,5 @@
 use bytes::{Buf, BytesMut};
-use util::{bail, Deserialize, ReadExtensions, Result};
+use util::{bail, Deserialize, Result};
 use level::Dimension;
 use crate::network::packets::ConnectedPacket;
 

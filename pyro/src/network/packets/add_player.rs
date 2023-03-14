@@ -2,6 +2,7 @@ use std::collections::HashMap;
 use bytes::{BytesMut, BufMut, Bytes};
 use util::{Vector3f, Serialize, Result, WriteExtensions};
 use uuid::Uuid;
+use util::bytes::WriteBuffer;
 use crate::command::CommandPermissionLevel;
 use crate::network::packets::login::{DeviceOS, ItemStack, PermissionLevel};
 
@@ -35,12 +36,12 @@ pub struct EntityLink {
 }
 
 impl EntityLink {
-    pub fn encode(&self, buffer: &mut BytesMut) {
+    pub fn encode(&self, buffer: &mut WriteBuffer) {
         buffer.put_var_i64(self.ridden_entity_id);
         buffer.put_var_i64(self.rider_entity_id);
-        buffer.put_u8(self.link_type as u8);
-        buffer.put_bool(self.is_immediate);
-        buffer.put_bool(self.is_rider_initiated);
+        buffer.write_le::<u8>(self.link_type as u8);
+        buffer.write_le::<bool>(self.is_immediate);
+        buffer.write_le::<bool>(self.is_rider_initiated);
     }
 }
 
@@ -89,10 +90,10 @@ pub struct AbilityLayer {
 }
 
 impl AbilityLayer {
-    pub fn encode(&self, buffer: &mut BytesMut) {
-        buffer.put_u16_le(self.ability_type as u16);
-        buffer.put_u32_le(self.abilities);
-        buffer.put_u32_le(self.values);
+    pub fn encode(&self, buffer: &mut WriteBuffer) {
+        buffer.write_le::<u16>()(self.ability_type as u16);
+        buffer.write_le::<u32>()(self.abilities);
+        buffer.write_le::<u32>()(self.values);
         buffer.put_f32_le(self.fly_speed);
         buffer.put_f32_le(self.walk_speed);
     }
@@ -112,12 +113,12 @@ pub struct AbilityData<'a> {
 }
 
 impl AbilityData<'_> {
-    pub fn encode(&self, buffer: &mut BytesMut) {
-        buffer.put_i64_le(self.entity_id); // For some reason this isn't a varint64.
-        buffer.put_u8(self.permission_level as u8);
-        buffer.put_u8(self.command_permission_level as u8);
+    pub fn encode(&self, buffer: &mut WriteBuffer) {
+        buffer.write_le(self.entity_id); // For some reason this isn't a varint64.
+        buffer.write_le(self.permission_level as u8);
+        buffer.write_le(self.command_permission_level as u8);
 
-        buffer.put_u8(self.layers.len() as u8);
+        buffer.write_le(self.layers.len() as u8);
         for layer in self.layers {
             layer.encode(buffer);
         }
@@ -163,14 +164,14 @@ impl ConnectedPacket for AddPlayer<'_> {
 }
 
 impl Serialize for AddPlayer<'_> {
-    fn serialize(&self, buffer: &mut BytesMut) {
+    fn serialize(&self, buffer: &mut WriteBuffer) {
         buffer.put_uuid(&self.uuid);
         buffer.put_string(self.username);
         buffer.put_var_u64(self.runtime_id);
         buffer.put_string(""); // Platform chat ID
-        buffer.put_vec3f(&self.position);
-        buffer.put_vec3f(&self.velocity);
-        buffer.put_vec3f(&self.rotation);
+        buffer.write_le(&self.position);
+        buffer.write_le(&self.velocity);
+        buffer.write_le(&self.rotation);
         self.held_item.serialize(buffer);
         buffer.put_var_i32(self.game_mode as i32);
         // buffer.put_metadata(&self.metadata);
@@ -185,6 +186,6 @@ impl Serialize for AddPlayer<'_> {
         }
 
         buffer.put_string(self.device_id);
-        buffer.put_i32_le(self.device_os as i32);
+        buffer.write_le(self.device_os as i32);
     }
 }

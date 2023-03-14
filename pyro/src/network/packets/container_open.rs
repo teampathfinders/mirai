@@ -20,8 +20,8 @@ impl ConnectedPacket for ContainerOpen {
 
 impl Serialize for ContainerOpen {
     fn serialize(&self, buffer: &mut BytesMut) {
-        buffer.put_u8(self.window_id);
-        buffer.put_u8(self.container_type);
+        buffer.write_le::<u8>(self.window_id);
+        buffer.write_le::<u8>(self.container_type);
         buffer.put_vec3i(&self.position);
         buffer.put_var_i64(self.container_entity_unique_id);
     }

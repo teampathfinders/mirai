@@ -1,12 +1,9 @@
 use std::fmt;
 
-use crate::{
-    TAG_BYTE, TAG_BYTE_ARRAY, TAG_COMPOUND, TAG_DOUBLE, TAG_END, TAG_FLOAT,
-    TAG_INT, TAG_INT_ARRAY, TAG_LIST, TAG_LONG, TAG_LONG_ARRAY, TAG_SHORT,
-    TAG_STRING,
-};
+use crate::FieldType;
 use serde::de::{DeserializeSeed, MapAccess, SeqAccess, Visitor};
 use serde::{de, Deserialize};
+use serde::de::Unexpected::Seq;
 use util::bytes::ReadBuffer;
 use util::{bail, Error, Result};
 
@@ -21,9 +18,7 @@ pub enum Flavor {
 pub struct Deserializer<'de> {
     flavor: Flavor,
     input: ReadBuffer<'de>,
-
-    // State
-    next_ty: u8,
+    next_ty: FieldType,
     is_key: bool,
 }
 
@@ -31,13 +26,12 @@ impl<'de> Deserializer<'de> {
     #[inline]
     pub(crate) fn from_bytes(input: &'de [u8], flavor: Flavor) -> Self {
         let mut input = ReadBuffer::from(input);
-
-        assert_eq!(input.read_be::<u8>().unwrap(), TAG_COMPOUND);
+        assert_eq!(input.read_be::<u8>().unwrap(), FieldType::Compound as u8);
 
         let mut de = Deserializer {
             input,
             flavor,
-            next_ty: TAG_COMPOUND,
+            next_ty: FieldType::Compound,
             is_key: false,
         };
 
@@ -122,29 +116,22 @@ impl<'de, 'a> de::Deserializer<'de> for &'a mut Deserializer<'de> {
             self.deserialize_str(visitor)
         } else {
             match self.next_ty {
-                TAG_BYTE => self.deserialize_i8(visitor),
-                TAG_SHORT => self.deserialize_i16(visitor),
-                TAG_INT => self.deserialize_i32(visitor),
-                TAG_LONG => self.deserialize_i64(visitor),
-                TAG_FLOAT => self.deserialize_f32(visitor),
-                TAG_DOUBLE => self.deserialize_f64(visitor),
-                TAG_BYTE_ARRAY => self.deserialize_byte_buf(visitor),
-                TAG_STRING => self.deserialize_string(visitor),
-                TAG_LIST => self.deserialize_seq(visitor),
-                TAG_COMPOUND => {
+                FieldType::End => bail!(Malformed, "found unexpected end tag"),
+                FieldType::Byte => self.deserialize_i8(visitor),
+                FieldType::Short => self.deserialize_i16(visitor),
+                FieldType::Int => self.deserialize_i32(visitor),
+                FieldType::Long => self.deserialize_i64(visitor),
+                FieldType::Float => self.deserialize_f32(visitor),
+                FieldType::Double => self.deserialize_f64(visitor),
+                FieldType::ByteArray => self.deserialize_byte_buf(visitor),
+                FieldType::String => self.deserialize_string(visitor),
+                FieldType::List => self.deserialize_seq(visitor),
+                FieldType::Compound => {
                     let m = self.deserialize_map(visitor);
                     m
                 }
-                TAG_INT_ARRAY => self.deserialize_seq(visitor),
-                TAG_LONG_ARRAY => self.deserialize_seq(visitor),
-                _ => {
-                    dbg!(&self);
-                    bail!(
-                        Malformed,
-                        "deserializer encountered an invalid NBT tag type: {}",
-                        self.next_ty
-                    )
-                },
+                FieldType::IntArray => self.deserialize_seq(visitor),
+                FieldType::LongArray => self.deserialize_seq(visitor)
             }
         }
     }
@@ -161,6 +148,10 @@ impl<'de, 'a> de::Deserializer<'de> for &'a mut Deserializer<'de> {
     where
         V: Visitor<'de>,
     {
+        if self.next_ty != FieldType::Byte {
+            bail!(Malformed, "expected Byte, but found {:?}", self.next_ty);
+        }
+
         let n = self.input.read_be::<i8>()?;
         visitor.visit_i8(n)
     }
@@ -280,8 +271,9 @@ impl<'de, 'a> de::Deserializer<'de> for &'a mut Deserializer<'de> {
 
         let data = self.input.take(len as usize)?;
         let str = std::str::from_utf8(data)?;
+
         if self.is_key {
-            println!("key = {str}, ty = {}", self.next_ty);
+            println!("key = {str}, ty = {:?}", self.next_ty);
         }
 
         visitor.visit_str(str)
@@ -362,22 +354,36 @@ impl<'de, 'a> de::Deserializer<'de> for &'a mut Deserializer<'de> {
     where
         V: Visitor<'de>,
     {
-        let ty = if self.next_ty == TAG_BYTE_ARRAY || self.next_ty == TAG_INT_ARRAY || self.next_ty == TAG_LONG_ARRAY {
+        let ty = if self.next_ty == FieldType::ByteArray
+            || self.next_ty == FieldType::IntArray
+            || self.next_ty == FieldType::LongArray
+        {
             self.next_ty
         } else {
-            self.input.read_le()?
+            FieldType::try_from(self.input.read_le::<u8>()?)?
         };
 
-        dbg!(ty, self.next_ty);
-        let de = SeqDeserializer::new(self, ty)?;
+        let de = SeqDeserializer::new(self, ty, 0)?;
         visitor.visit_seq(de)
     }
 
-    fn deserialize_tuple<V>(self, _len: usize, visitor: V) -> Result<V::Value>
+    fn deserialize_tuple<V>(self, len: usize, visitor: V) -> Result<V::Value>
     where
         V: Visitor<'de>,
     {
-        self.deserialize_seq(visitor)
+        let ty = if self.next_ty == FieldType::ByteArray
+            || self.next_ty == FieldType::IntArray
+            || self.next_ty == FieldType::LongArray
+        {
+            self.next_ty
+        } else {
+            FieldType::try_from(self.input.read_le::<u8>()?)?
+        };
+
+        let de = SeqDeserializer::new(self, ty, len as i32)?;
+        visitor.visit_seq(de)
+
+        // bail!(Unsupported, "Tuple deserialisation is not supported")
     }
 
     fn deserialize_tuple_struct<V>(
@@ -442,13 +448,15 @@ impl<'de, 'a> de::Deserializer<'de> for &'a mut Deserializer<'de> {
 #[derive(Debug)]
 struct SeqDeserializer<'a, 'de: 'a> {
     de: &'a mut Deserializer<'de>,
-    ty: u8,
+    ty: FieldType,
     remaining: i32
 }
 
 impl<'de, 'a> SeqDeserializer<'a, 'de> {
-    pub fn new(de: &'a mut Deserializer<'de>, ty: u8) -> Result<Self> {
-        debug_assert_ne!(ty, TAG_END);
+    pub fn new(
+        de: &'a mut Deserializer<'de>, ty: FieldType, expected_len: i32
+    ) -> Result<Self> {
+        debug_assert_ne!(ty, FieldType::End);
 
         // ty is not read in here because the x_array types don't have a type prefix.
 
@@ -459,7 +467,11 @@ impl<'de, 'a> SeqDeserializer<'a, 'de> {
             Flavor::Network => todo!(),
         };
 
-        println!("remaining {remaining}\tlist type {ty}");
+        println!("selected ty {ty:?}, {remaining}, {expected_len}");
+        if expected_len != 0 && expected_len != remaining {
+            bail!(Malformed, "expected sequence of length {expected_len}, got length {remaining}");
+        }
+
         Ok(Self {
             de, ty, remaining
         })
@@ -473,9 +485,7 @@ impl<'de, 'a> SeqAccess<'de> for SeqDeserializer<'a, 'de> {
     where
         E: DeserializeSeed<'de>,
     {
-        // FIXME: remaining might have to be moved to SeqDeserializer to support nested sequences.
         if self.remaining > 0 {
-            dbg!(self.remaining);
             self.remaining -= 1;
             let output = seed.deserialize(&mut *self.de).map(Some);
             self.de.next_ty = self.ty;
@@ -505,10 +515,9 @@ impl<'de, 'a> MapAccess<'de> for MapDeserializer<'a, 'de> {
         K: DeserializeSeed<'de>,
     {
         self.de.is_key = true;
-        self.de.next_ty = self.de.input.read_be::<u8>()?;
+        self.de.next_ty = FieldType::try_from(self.de.input.read_be::<u8>()?)?;
 
-        let r = if self.de.next_ty == TAG_END {
-            println!("compound end");
+        let r = if self.de.next_ty == FieldType::End {
             Ok(None)
         } else {
             // Reads 0 tag instead of string, because string length starts with 0
@@ -523,7 +532,7 @@ impl<'de, 'a> MapAccess<'de> for MapDeserializer<'a, 'de> {
     where
         V: DeserializeSeed<'de>,
     {
-        debug_assert_ne!(self.de.next_ty, TAG_END);
+        debug_assert_ne!(self.de.next_ty, FieldType::End);
         seed.deserialize(&mut *self.de)
     }
 }
@@ -563,7 +572,6 @@ mod test {
         }
 
         #[derive(Deserialize, Debug, PartialEq)]
-        #[allow(non_snake_case)]
         struct AllTypes {
             #[serde(rename = "nested compound test")]
             nested: Nested,
@@ -584,7 +592,7 @@ mod test {
             #[serde(rename = "listTest (compound)")]
             compound_list_test: (ListCompound, ListCompound),
             #[serde(rename = "byteArrayTest (the first 1000 values of (n*n*255+n*7)%100, starting with n=0 (0, 62, 34, 16, 8, ...))")]
-            byteArrayTest: Vec<i8>,
+            byte_array_test: Vec<i8>,
             #[serde(rename = "shortTest")]
             short_test: i16
         }
@@ -605,15 +613,15 @@ mod test {
 
         dbg!(decoded);
     }
-    
+
     #[test]
     fn read_player_nan_value_nbt() {
         #[derive(Deserialize, Debug, PartialEq)]
         struct Player {
             #[serde(rename = "Pos")]
-            pos: (f64, f64, f64),
+            pos: [f64; 3],
             #[serde(rename = "Motion")]
-            motion: (f64, f64, f64),
+            motion: [f64; 3],
             #[serde(rename = "OnGround")]
             on_ground: bool,
             #[serde(rename = "DeathTime")]
@@ -631,7 +639,7 @@ mod test {
             #[serde(rename = "Fire")]
             fire: i16,
             #[serde(rename = "Rotation")]
-            rotation: (f32, f32),
+            rotation: [f64; 2],
         }
 
         let decoded: (Player, usize) =

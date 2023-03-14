@@ -3,7 +3,6 @@ use bytes::{Buf, BytesMut};
 
 use util::nvassert;
 use util::Deserialize;
-use util::ReadExtensions;
 use util::Result;
 
 /// Sent by the client, in response to [`OpenConnectionReply2`](super::open_connection_reply2::OpenConnectionReply2).

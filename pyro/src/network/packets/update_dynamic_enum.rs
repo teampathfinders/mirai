@@ -43,6 +43,6 @@ impl Serialize for UpdateDynamicEnum<'_> {
         for option in self.options {
             buffer.put_string(option);
         }
-        buffer.put_u8(self.action as u8);
+        buffer.write_le::<u8>(self.action as u8);
     }
 }

@@ -6,7 +6,6 @@ use bytes::{Buf, BytesMut};
 use util::nvassert;
 use util::Deserialize;
 use util::Result;
-use util::{ReadExtensions, EMPTY_IPV4_ADDRESS};
 
 /// Confirms that the connection was successfully initiated.
 #[derive(Debug)]

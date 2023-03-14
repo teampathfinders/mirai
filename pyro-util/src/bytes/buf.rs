@@ -108,7 +108,10 @@ impl<T: FromBytes, const N: usize> FromBytes for Vector<T, N> {
 
     #[inline]
     fn from_le(bytes: [u8; Self::SIZE]) -> Self {
-        // Reverse bytes if the current machine is little endian.
+        // This code was copied from the [T; N] implementation because it's easier than having
+        // to work with the incomplete generic_const_exprs API
+
+        // Reverse bytes if the current machine is big endian.
         if cfg!(target_endian = "big") {
             for i in 0..N {
                 (&mut [(i * T::SIZE)..((i + 1) * T::SIZE)]).reverse();
@@ -128,6 +131,9 @@ impl<T: FromBytes, const N: usize> FromBytes for Vector<T, N> {
 
     #[inline]
     fn from_be(bytes: [u8; Self::SIZE]) -> Self {
+        // This code was copied from the [T; N] implementation because it's easier than having
+        // to work with the incomplete generic_const_exprs API
+
         // Reverse bytes if the current machine is little endian.
         if cfg!(target_endian = "little") {
             for i in 0..N {

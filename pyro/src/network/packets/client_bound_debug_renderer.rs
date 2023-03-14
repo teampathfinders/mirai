@@ -39,7 +39,7 @@ impl ConnectedPacket for ClientBoundDebugRenderer<'_> {
 
 impl Serialize for ClientBoundDebugRenderer<'_> {
     fn serialize(&self, buffer: &mut BytesMut) {
-        buffer.put_i32_le(self.action as i32);
+        buffer.write_le::<i32>()(self.action as i32);
         if self.action == DebugRendererAction::AddCube {
             buffer.put_string(self.text);
             buffer.put_vec3f(&self.position);

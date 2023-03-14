@@ -6,6 +6,7 @@ use level::Dimension;
 use util::{Serialize, VarInt, VarString};
 use util::{bail, Error, Result};
 use util::{BlockPosition, Vector2f, Vector3f, WriteExtensions};
+use util::bytes::WriteBuffer;
 use crate::network::packets::{CLIENT_VERSION_STRING, Difficulty, GameMode, ConnectedPacket, GameRule};
 use crate::network::packets::login::ExperimentData;
 
@@ -59,7 +60,7 @@ pub enum ChatRestrictionLevel {
 
 impl ChatRestrictionLevel {
     pub fn serialize(&self, buffer: &mut BytesMut) {
-        buffer.put_u8(*self as u8);
+        buffer.write_le::<u8>(*self as u8);
     }
 }
 
@@ -88,7 +89,7 @@ impl PlayerMovementSettings {
     pub fn serialize(&self, buffer: &mut BytesMut) {
         buffer.put_var_i32(self.movement_type as i32);
         buffer.put_var_i32(self.rewind_history_size);
-        buffer.put_bool(self.server_authoritative_breaking);
+        buffer.write_le(self.server_authoritative_breaking);
     }
 }
 
@@ -96,8 +97,8 @@ impl PlayerMovementSettings {
 pub struct BlockEntry {
     /// Name of the block.
     pub name: String,
-    /// NBT compound containing properties.
-    pub properties: nbt::Value,
+    // NBT compound containing properties.
+    // pub properties: nbt::Value,
 }
 
 impl BlockEntry {
@@ -108,7 +109,8 @@ impl BlockEntry {
     pub fn serialize(&self, buffer: &mut BytesMut) {
         buffer.put_string(&self.name);
 
-        nbt::RefTag { name: "", value: &self.properties }.serialize_net(buffer);
+        todo!();
+        // nbt::RefTag { name: "", value: &self.properties }.serialize_net(buffer);
     }
 }
 
@@ -130,8 +132,8 @@ impl ItemEntry {
 
     pub fn serialize(&self, buffer: &mut BytesMut) {
         buffer.put_string(&self.name);
-        buffer.put_u16(self.runtime_id);
-        buffer.put_bool(self.component_based);
+        buffer.write_le::<u16>(self.runtime_id);
+        buffer.write_le(self.component_based);
     }
 }
 
@@ -273,7 +275,7 @@ pub struct StartGame<'a> {
     pub server_authoritative_inventory: bool,
     /// Version of the game that the server is running.
     pub game_version: &'a str,
-    pub property_data: nbt::Value,
+    // pub property_data: nbt::Value,
     pub server_block_state_checksum: u64,
     pub world_template_id: u128,
     /// Client side generation allows the client to generate its own chunks without the server having to send them over.
@@ -362,14 +364,14 @@ impl ConnectedPacket for StartGame<'_> {
 }
 
 impl Serialize for StartGame<'_> {
-    fn serialize(&self, buffer: &mut BytesMut) {
+    fn serialize(&self, buffer: &mut WriteBuffer) {
         buffer.put_var_i64(self.entity_id);
         buffer.put_var_u64(self.runtime_id);
         buffer.put_var_i32(self.game_mode as i32);
         self.position.serialize(buffer);
         self.rotation.serialize(buffer);
         buffer.put_u64_le(self.world_seed);
-        buffer.put_i16(self.spawn_biome_type as i16);
+        buffer.write_le::<i16>(self.spawn_biome_type as i16);
         buffer.put_string(self.custom_biome_name);
         buffer.put_var_u32(self.dimension as u32);
         buffer.put_var_i32(self.generator as i32);
@@ -377,62 +379,62 @@ impl Serialize for StartGame<'_> {
         buffer.put_var_i32(self.difficulty as i32);
         buffer.put_block_pos(&self.world_spawn);
 
-        buffer.put_bool(self.achievements_disabled);
-        buffer.put_bool(self.editor_world);
+        buffer.write_le::<bool>(self.achievements_disabled);
+        buffer.write_le::<bool>(self.editor_world);
         buffer.put_var_i32(self.day_cycle_lock_time);
         buffer.put_var_i32(0); // Education offer.
-        buffer.put_bool(self.education_features_enabled);
+        buffer.write_le::<bool>(self.education_features_enabled);
         buffer.put_string(""); // Education product ID.
-        buffer.put_f32_le(self.rain_level);
-        buffer.put_f32_le(self.lightning_level);
-        buffer.put_bool(self.confirmed_platform_locked_content);
-        buffer.put_bool(true); // Whether the game is multiplayer. Must always be true.
-        buffer.put_bool(self.broadcast_to_lan);
+        buffer.write_le::<f32>(self.rain_level);
+        buffer.write_le::<f32>(self.lightning_level);
+        buffer.write_le::<bool>(self.confirmed_platform_locked_content);
+        buffer.write_le::<bool>(true); // Whether the game is multiplayer, must always be true for servers.
+        buffer.write_le::<bool>(self.broadcast_to_lan);
         self.xbox_broadcast_intent.serialize(buffer);
         self.platform_broadcast_intent.serialize(buffer);
-        buffer.put_bool(self.enable_commands);
-        buffer.put_bool(self.texture_packs_required);
+        buffer.write_le::<bool>(self.enable_commands);
+        buffer.write_le::<bool>(self.texture_packs_required);
 
         buffer.put_var_u32(self.game_rules.len() as u32);
         for rule in self.game_rules {
             rule.serialize(buffer);
         }
 
-        buffer.put_u32(self.experiments.len() as u32);
+        buffer.write_le::<u32>(self.experiments.len() as u32);
         for experiment in self.experiments {
             experiment.serialize(buffer);
         }
 
-        buffer.put_bool(self.experiments_previously_enabled);
-        buffer.put_bool(self.bonus_chest_enabled);
-        buffer.put_bool(self.starter_map_enabled);
+        buffer.write_le::<bool>(self.experiments_previously_enabled);
+        buffer.write_le::<bool>(self.bonus_chest_enabled);
+        buffer.write_le::<bool>(self.starter_map_enabled);
         buffer.put_var_i32(self.permission_level as i32);
-        buffer.put_i32(self.server_chunk_tick_range);
-        buffer.put_bool(self.has_locked_behavior_pack);
-        buffer.put_bool(self.has_locked_resource_pack);
-        buffer.put_bool(self.is_from_locked_world_template);
-        buffer.put_bool(self.use_msa_gamertags_only);
-        buffer.put_bool(self.is_from_world_template);
-        buffer.put_bool(self.is_world_template_option_locked);
-        buffer.put_bool(self.only_spawn_v1_villagers);
-        buffer.put_bool(self.persona_disabled);
-        buffer.put_bool(self.custom_skins_disabled);
-        buffer.put_bool(self.emote_chat_muted);
+        buffer.write_le::<i32>(self.server_chunk_tick_range);
+        buffer.write_le::<bool>(self.has_locked_behavior_pack);
+        buffer.write_le::<bool>(self.has_locked_resource_pack);
+        buffer.write_le::<bool>(self.is_from_locked_world_template);
+        buffer.write_le::<bool>(self.use_msa_gamertags_only);
+        buffer.write_le::<bool>(self.is_from_world_template);
+        buffer.write_le::<bool>(self.is_world_template_option_locked);
+        buffer.write_le::<bool>(self.only_spawn_v1_villagers);
+        buffer.write_le::<bool>(self.persona_disabled);
+        buffer.write_le::<bool>(self.custom_skins_disabled);
+        buffer.write_le::<bool>(self.emote_chat_muted);
         buffer.put_string(CLIENT_VERSION_STRING); // Base game version
-        buffer.put_i32(self.limited_world_width);
-        buffer.put_i32(self.limited_world_height);
-        buffer.put_bool(true); // Use new nether
+        buffer.write_le::<i32>(self.limited_world_width);
+        buffer.write_le::<i32>(self.limited_world_height);
+        buffer.write_le::<bool>(true); // Use new nether
         buffer.put_string("");
         buffer.put_string("");
-        buffer.put_bool(self.force_experimental_gameplay);
+        buffer.write_le::<bool>(self.force_experimental_gameplay);
         self.chat_restriction_level.serialize(buffer);
-        buffer.put_bool(self.disable_player_interactions);
+        buffer.write_le::<bool>(self.disable_player_interactions);
         buffer.put_string(self.level_id);
         buffer.put_string(self.level_name);
         buffer.put_string(self.template_content_identity);
-        buffer.put_bool(false); // Game is not a trial.
+        buffer.write_le::<bool>(false); // Game is not a trial.
         self.movement_settings.serialize(buffer);
-        buffer.put_i64(self.time);
+        buffer.write_le::<i64>(self.time);
         buffer.put_var_i32(self.enchantment_seed);
 
         buffer.put_var_u32(self.block_properties.len() as u32);
@@ -448,13 +450,14 @@ impl Serialize for StartGame<'_> {
         // Random multiplayer correlation UUID.
         buffer.put_string(MULTIPLAYER_CORRELATION_ID);
 
-        buffer.put_bool(self.server_authoritative_inventory);
+        buffer.write_le::<bool>(self.server_authoritative_inventory);
         buffer.put_string(CLIENT_VERSION_STRING); // Game version
 
-        nbt::serialize_net("", &self.property_data, buffer);
+        todo!();
+        // nbt::serialize_net("", &self.property_data, buffer);
 
-        buffer.put_u64(self.server_block_state_checksum);
-        buffer.put_u128(self.world_template_id);
-        buffer.put_bool(self.client_side_generation);
+        buffer.write_le::<u64>(self.server_block_state_checksum);
+        buffer.write_le::<u128>(self.world_template_id);
+        buffer.write_le::<bool>(self.client_side_generation);
     }
 }

@@ -3,6 +3,7 @@ use bytes::{BufMut, BytesMut};
 
 use crate::network::packets::ConnectedPacket;
 use util::{Serialize, size_of_varint, size_of_string, VarString};
+use util::bytes::WriteBuffer;
 use util::Result;
 use util::WriteExtensions;
 
@@ -17,9 +18,9 @@ impl ExperimentData<'_> {
         self.name.var_len() + 1
     }
 
-    pub fn serialize(&self, buffer: &mut BytesMut) {
+    pub fn serialize(&self, buffer: &mut WriteBuffer) {
         buffer.put_string(&self.name);
-        buffer.put_bool(self.enabled);
+        buffer.write_le::<bool>(self.enabled);
     }
 }
 
@@ -37,7 +38,7 @@ impl ResourcePackStackEntry<'_> {
         self.subpack_name.var_len()
     }
 
-    pub fn serialize(&self, buffer: &mut BytesMut) {
+    pub fn serialize(&self, buffer: &mut WriteBuffer) {
         buffer.put_string(&self.pack_id);
         buffer.put_string(&self.pack_version);
         buffer.put_string(&self.subpack_name);
@@ -72,8 +73,8 @@ impl ConnectedPacket for ResourcePackStack<'_> {
 }
 
 impl Serialize for ResourcePackStack<'_> {
-    fn serialize(&self, buffer: &mut BytesMut) {
-        buffer.put_bool(self.forced_to_accept);
+    fn serialize(&self, buffer: &mut WriteBuffer) {
+        buffer.write_le::<bool>(self.forced_to_accept);
 
         buffer.put_var_u32(self.resource_packs.len() as u32);
         for pack in self.resource_packs {
@@ -87,11 +88,11 @@ impl Serialize for ResourcePackStack<'_> {
 
         buffer.put_string(self.game_version);
 
-        buffer.put_u32(self.experiments.len() as u32);
+        buffer.write_be::<u32>()(self.experiments.len() as u32);
         for experiment in self.experiments {
             experiment.serialize(buffer);
         }
 
-        buffer.put_bool(self.experiments_previously_toggled);
+        buffer.write_le::<bool>(self.experiments_previously_toggled);
     }
 }

@@ -48,7 +48,7 @@ impl Session {
         config: PacketConfig,
     ) -> Result<()> {
         let mut buffer = BytesMut::new();
-        buffer.put_u8(CONNECTED_PACKET_ID);
+        buffer.write_le::<u8>(CONNECTED_PACKET_ID);
 
         if self.raknet.compression_enabled.load(Ordering::SeqCst) {
             let (algorithm, threshold) = {

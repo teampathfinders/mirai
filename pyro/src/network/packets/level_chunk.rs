@@ -51,15 +51,15 @@ impl Serialize for LevelChunk {
             }
             SubChunkRequestMode::Limited => {
                 buffer.put_var_u32(u32::MAX - 1);
-                buffer.put_u16(self.highest_sub_chunk);
+                buffer.write_be::<u16>()(self.highest_sub_chunk);
             }
         }
 
-        buffer.put_bool(self.blob_hashes.is_some());
+        buffer.write_le::<bool>(self.blob_hashes.is_some());
         if let Some(hashes) = &self.blob_hashes {
             buffer.put_var_u32(hashes.len() as u32);
             for hash in hashes {
-                buffer.put_u64(*hash);
+                buffer.write_be::<u64>()(*hash);
             }
         }
 

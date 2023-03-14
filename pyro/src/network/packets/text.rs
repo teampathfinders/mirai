@@ -1,7 +1,8 @@
 use bytes::{Buf, BufMut, Bytes, BytesMut};
-use util::{bail, ReadExtensions, Error, Result, WriteExtensions, size_of_varint, VarString, VarInt};
+use util::{bail,  Error, Result, VarString, VarInt};
 
 use util::{Deserialize, Serialize};
+use util::bytes::{ReadBuffer};
 
 use super::ConnectedPacket;
 
@@ -104,8 +105,8 @@ impl ConnectedPacket for TextMessage {
 
 impl Serialize for TextMessage {
     fn serialize(&self, buffer: &mut BytesMut) {
-        buffer.put_u8(self.message_type as u8);
-        buffer.put_bool(self.needs_translation);
+        buffer.write_le::<u8>(self.message_type as u8);
+        buffer.write_le::<bool>(self.needs_translation);
 
         match self.message_type {
             MessageType::Chat
@@ -140,8 +141,8 @@ impl Serialize for TextMessage {
 }
 
 impl Deserialize for TextMessage {
-    fn deserialize(mut buffer: Bytes) -> Result<Self> {
-        let message_type = MessageType::try_from(buffer.get_u8())?;
+    fn deserialize(mut buffer: ReadBuffer) -> Result<Self> {
+        let message_type = MessageType::try_from(buffer.read_le::<u8>()?)?;
         let needs_translation = buffer.get_bool();
         let message;
         let mut source_name = String::new();
@@ -167,7 +168,7 @@ impl Deserialize for TextMessage {
             | MessageType::JukeboxPopup => {
                 message = buffer.get_string()?;
 
-                let count = buffer.get_var_u32()?;
+                let count = buffer.read_var::<u32>()?;
                 parameters.reserve(count as usize);
 
                 for _ in 0..count {

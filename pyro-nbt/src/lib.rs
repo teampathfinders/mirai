@@ -4,18 +4,42 @@
 mod de;
 // mod ser;
 
-const TAG_END: u8 = 0x00;
-const TAG_BYTE: u8 = 0x01;
-const TAG_SHORT: u8 = 0x02;
-const TAG_INT: u8 = 0x03;
-const TAG_LONG: u8 = 0x04;
-const TAG_FLOAT: u8 = 0x05;
-const TAG_DOUBLE: u8 = 0x06;
-const TAG_BYTE_ARRAY: u8 = 0x07;
-const TAG_STRING: u8 = 0x08;
-const TAG_LIST: u8 = 0x09;
-const TAG_COMPOUND: u8 = 0x0a;
-const TAG_INT_ARRAY: u8 = 0x0b;
-const TAG_LONG_ARRAY: u8 = 0x0c;
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+#[repr(u8)]
+enum FieldType {
+    End,
+    Byte,
+    Short,
+    Int,
+    Long,
+    Float,
+    Double,
+    ByteArray,
+    String,
+    List,
+    Compound,
+    IntArray,
+    LongArray
+}
 
+impl TryFrom<u8> for FieldType {
+    type Error = Error;
+
+    fn try_from(v: u8) -> Result<Self> {
+        const LAST_DISC: u8 = FieldType::LongArray as u8;
+        if v > LAST_DISC {
+            bail!(Other, "NBT field type discriminant out of range");
+        }
+
+        // SAFETY: Because `Self` is marked as `repr(u8)`, its layout is guaranteed to start
+        // with a `u8` discriminant as its first field. Additionally, the raw discriminant is verified
+        // to be in the enum's range.
+        Ok(unsafe {
+            mem::transmute::<u8, FieldType>(v)
+        })
+    }
+}
+
+use std::mem;
+use util::{bail, Error, Result};
 pub use crate::de::{from_be_bytes, from_le_bytes, from_net_bytes};

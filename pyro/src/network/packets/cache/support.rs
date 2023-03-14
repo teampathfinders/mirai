@@ -1,9 +1,10 @@
 use bytes::Bytes;
 use bytes::{Buf, BytesMut};
+use tokio::io::ReadBuf;
+use util::bytes::ReadBuffer;
 
 use crate::network::packets::ConnectedPacket;
 use util::Deserialize;
-use util::ReadExtensions;
 use util::Result;
 
 /// Sent during login to let the server know whether the client supports caching.
@@ -18,8 +19,8 @@ impl ConnectedPacket for CacheStatus {
 }
 
 impl Deserialize for CacheStatus {
-    fn deserialize(mut buffer: Bytes) -> Result<Self> {
-        let support = buffer.get_bool();
+    fn deserialize(mut buffer: ReadBuffer) -> Result<Self> {
+        let support = buffer.read_le::<bool>()?;
 
         Ok(Self { supports_cache: support })
     }

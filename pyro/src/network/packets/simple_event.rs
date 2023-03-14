@@ -32,7 +32,7 @@ impl ConnectedPacket for SimpleEvent {
 
 impl Serialize for SimpleEvent {
     fn serialize(&self, buffer: &mut BytesMut) {
-        buffer.put_i16_le(*self as i16);
+        buffer.write_le::<i16>()(*self as i16);
     }
 }
 

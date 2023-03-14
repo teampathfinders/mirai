@@ -1,10 +1,11 @@
+use std::io::Write;
 use bytes::Bytes;
 use bytes::{BufMut, BytesMut};
+use util::bytes::WriteBuffer;
 
 use crate::network::raknet::OFFLINE_MESSAGE_DATA;
 use util::Result;
 use util::Serialize;
-use util::WriteExtensions;
 
 /// Response to [`OfflinePing`](super::offline_ping::OfflinePing).
 #[derive(Debug)]
@@ -30,11 +31,11 @@ impl UnconnectedPong<'_> {
 }
 
 impl Serialize for UnconnectedPong<'_> {
-    fn serialize(&self, buffer: &mut BytesMut) {
-        buffer.put_u8(Self::ID);
-        buffer.put_u64(self.time);
-        buffer.put_u64(self.server_guid);
-        buffer.put(OFFLINE_MESSAGE_DATA);
+    fn serialize(&self, buffer: &mut WriteBuffer) {
+        buffer.write_le::<u8>(Self::ID);
+        buffer.write_be::<u64>(self.time);
+        buffer.write_be::<u64>(self.server_guid);
+        buffer.write(OFFLINE_MESSAGE_DATA);
         buffer.put_raknet_string(self.metadata);
     }
 }

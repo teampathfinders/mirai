@@ -7,14 +7,13 @@ members = [
 ]
 
 [profile.release]
-# debug = true
 opt-level = 3
 debug = false
 strip = "symbols"
 debug-assertions = false
 overflow-checks = false
-lto = "thin"
+lto = "fat"
 panic = "unwind"
 incremental = false
-codegen-units = 16
+codegen-units = 1
 rpath = false

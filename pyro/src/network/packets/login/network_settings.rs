@@ -1,10 +1,10 @@
 use bytes::Bytes;
 use bytes::{BufMut, BytesMut};
+use util::bytes::WriteBuffer;
 
 use crate::network::packets::ConnectedPacket;
 use util::Serialize;
 use util::Result;
-use util::WriteExtensions;
 
 /// Supported compression algorithms.
 ///
@@ -58,11 +58,11 @@ impl ConnectedPacket for NetworkSettings {
 }
 
 impl Serialize for NetworkSettings {
-    fn serialize(&self, buffer: &mut BytesMut) {
-        buffer.put_u16(self.compression_threshold);
-        buffer.put_u16(self.compression_algorithm as u16);
-        buffer.put_bool(self.client_throttle.enabled);
-        buffer.put_u8(self.client_throttle.threshold);
-        buffer.put_f32(self.client_throttle.scalar);
+    fn serialize(&self, buffer: &mut WriteBuffer) {
+        buffer.write_be::<u16>(self.compression_threshold);
+        buffer.write_be::<u16>(self.compression_algorithm as u16);
+        buffer.write_be::<bool>(self.client_throttle.enabled);
+        buffer.write_be::<u8>(self.client_throttle.threshold);
+        buffer.write_be::<f32>(self.client_throttle.scalar);
     }
 }

@@ -1,6 +1,7 @@
 use bytes::{Buf, BytesMut, Bytes};
 use uuid::Uuid;
-use util::{bail, ReadExtensions, Error, Result, WriteExtensions};
+use util::{bail, Error, Result};
+use util::bytes::ReadBuffer;
 
 use util::Deserialize;
 
@@ -74,9 +75,9 @@ impl ConnectedPacket for CommandRequest {
 }
 
 impl Deserialize for CommandRequest {
-    fn deserialize(mut buffer: Bytes) -> Result<Self> {
+    fn deserialize(mut buffer: ReadBuffer) -> Result<Self> {
         let command = buffer.get_string()?;
-        let origin = CommandOriginType::try_from(buffer.get_var_u32()?)?;
+        let origin = CommandOriginType::try_from(buffer.read_var::<u32>()?)?;
         buffer.advance(16);
         let request_id = buffer.get_string()?;
 

@@ -84,10 +84,10 @@ impl ConnectedPacket for MobEffectUpdate {
 impl Serialize for MobEffectUpdate {
     fn serialize(&self, buffer: &mut BytesMut) {
         buffer.put_var_u64(self.runtime_id);
-        buffer.put_u8(self.action as u8);
+        buffer.write_le::<u8>(self.action as u8);
         buffer.put_var_i32(self.effect_kind as i32);
         buffer.put_var_i32(self.amplifier);
-        buffer.put_bool(self.particles);
+        buffer.write_le::<bool>(self.particles);
         buffer.put_var_i32(self.duration);
     }
 }

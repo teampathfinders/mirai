@@ -1,5 +1,5 @@
 use bytes::{Buf, BufMut, BytesMut, Bytes};
-use util::{bail, Deserialize, Serialize, ReadExtensions, Error, Result};
+use util::{bail, Deserialize, Serialize, Error, Result};
 use crate::network::packets::ConnectedPacket;
 
 /// Sent when the client makes changes to a book.
@@ -62,19 +62,19 @@ impl Deserialize for BookEdit {
             inventory_slot,
             action: match action {
                 0 => BookEditAction::ReplacePage {
-                    page_number: buffer.get_u8(),
+                    page_number: buffer.read_le::<u8>()?,
                     text: buffer.get_string()?
                 },
                 1 => BookEditAction::AddPage {
-                    page_number: buffer.get_u8(),
+                    page_number: buffer.read_le::<u8>()?,
                     text: buffer.get_string()?
                 },
                 2 => BookEditAction::DeletePage {
-                    page_number: buffer.get_u8()
+                    page_number: buffer.read_le::<u8>()?
                 },
                 3 => BookEditAction::SwapPages {
-                    first_page: buffer.get_u8(),
-                    second_page: buffer.get_u8()
+                    first_page: buffer.read_le::<u8>()?,
+                    second_page: buffer.read_le::<u8>()?
                 },
                 4 => BookEditAction::Sign {
                     title: buffer.get_string()?,

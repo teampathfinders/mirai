@@ -45,7 +45,7 @@ impl ConnectedPacket for Respawn {
 impl Serialize for Respawn {
     fn serialize(&self, buffer: &mut BytesMut) {
         buffer.put_vec3f(&self.position);
-        buffer.put_u8(self.state as u8);
+        buffer.write_le::<u8>(self.state as u8);
         buffer.put_var_u64(self.runtime_id);
     }
 }

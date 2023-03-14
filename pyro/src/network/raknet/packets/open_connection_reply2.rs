@@ -6,7 +6,6 @@ use bytes::{BufMut, BytesMut};
 use crate::network::raknet::OFFLINE_MESSAGE_DATA;
 use util::Result;
 use util::Serialize;
-use util::WriteExtensions;
 
 /// Sent in response to [`OpenConnectionRequest2`](super::open_connection_request2::OpenConnectionRequest2).
 #[derive(Debug)]
@@ -39,11 +38,11 @@ impl OpenConnectionReply2 {
 
 impl Serialize for OpenConnectionReply2 {
     fn serialize(&self, buffer: &mut BytesMut) {
-        buffer.put_u8(Self::ID);
+        buffer.write_le::<u8>(Self::ID);
         buffer.put(OFFLINE_MESSAGE_DATA);
-        buffer.put_u64(self.server_guid);
+        buffer.write_be::<u64>()(self.server_guid);
         buffer.put_addr(self.client_address);
-        buffer.put_u16(self.mtu);
-        buffer.put_bool(false); // Encryption not enabled, must be false to continue login sequence
+        buffer.write_be::<u16>()(self.mtu);
+        buffer.write_le::<bool>(false); // Encryption not enabled, must be false to continue login sequence
     }
 }

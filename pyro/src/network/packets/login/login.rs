@@ -8,9 +8,9 @@ use crate::crypto::{
 };
 use crate::network::packets::ConnectedPacket;
 use util::Deserialize;
-use util::ReadExtensions;
 use util::{bail, nvassert};
 use util::{Error, Result};
+use util::bytes::ReadBuffer;
 use crate::network::Skin;
 
 /// Device operating system
@@ -61,9 +61,9 @@ impl ConnectedPacket for Login {
 }
 
 impl Deserialize for Login {
-    fn deserialize(mut buffer: Bytes) -> Result<Self> {
+    fn deserialize(mut buffer: ReadBuffer) -> Result<Self> {
         buffer.advance(4); // Skip protocol version, use the one in RequestNetworkSettings instead.
-        buffer.get_var_u32()?;
+        buffer.read_var::<u32>()?;
 
         let identity_data = parse_identity_data(&mut buffer)?;
         let data =

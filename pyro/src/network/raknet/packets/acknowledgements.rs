@@ -18,15 +18,15 @@ pub enum AckRecord {
 
 /// Encodes a list of acknowledgement records.
 fn encode_records(buffer: &mut BytesMut, records: &[AckRecord]) {
-    buffer.put_i16(records.len() as i16);
+    buffer.put_i16()(records.len() as i16);
     for record in records {
         match record {
             AckRecord::Single(id) => {
-                buffer.put_u8(1); // Is single
+                buffer.write_le::<u8>(1); // Is single
                 buffer.put_u24_le(*id);
             }
             AckRecord::Range(range) => {
-                buffer.put_u8(0); // Is range
+                buffer.write_le::<u8>(0); // Is range
                 buffer.put_u24_le(range.start);
                 buffer.put_u24_le(range.end);
             }
@@ -76,7 +76,7 @@ impl Ack {
 
 impl Serialize for Ack {
     fn serialize(&self, buffer: &mut BytesMut) {
-        buffer.put_u8(Self::ID);
+        buffer.write_le::<u8>(Self::ID);
 
         encode_records(buffer, &self.records)
     }
@@ -115,7 +115,7 @@ impl Nak {
 
 impl Serialize for Nak {
     fn serialize(&self, buffer: &mut BytesMut) {
-        buffer.put_u8(Self::ID);
+        buffer.write_le::<u8>(Self::ID);
 
         encode_records(buffer, &self.records)
     }

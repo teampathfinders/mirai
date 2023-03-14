@@ -23,7 +23,7 @@ impl Serialize for UpdateSkin {
         self.skin.serialize(buffer);
         buffer.put_string(""); // Old skin name. Unused
         buffer.put_string(""); // New skin name. Unused
-        buffer.put_bool(self.skin.is_trusted);
+        buffer.write_le::<bool>(self.skin.is_trusted);
     }
 }
 

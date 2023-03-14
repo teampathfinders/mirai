@@ -1,5 +1,5 @@
 use bytes::{BytesMut, Bytes};
-use util::{Deserialize, ReadExtensions, Result};
+use util::{Deserialize, Result};
 use crate::network::packets::ConnectedPacket;
 
 /// Sent by the client when changing settings that require the execution of commands.

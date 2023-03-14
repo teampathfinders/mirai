@@ -28,6 +28,6 @@ impl ConnectedPacket for Transfer {
 impl Serialize for Transfer {
     fn serialize(&self, buffer: &mut BytesMut) {
         buffer.put_string(&self.addr.to_string());
-        buffer.put_u16_le(self.addr.port());
+        buffer.write_le::<u16>()(self.addr.port());
     }
 }

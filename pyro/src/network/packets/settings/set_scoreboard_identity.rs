@@ -48,7 +48,7 @@ impl ConnectedPacket for SetScoreboardIdentity {
 
 impl Serialize for SetScoreboardIdentity {
     fn serialize(&self, buffer: &mut BytesMut) {
-        buffer.put_u8(self.action as u8);
+        buffer.write_le::<u8>(self.action as u8);
         match self.action {
             ScoreboardIdentityAction::Add => {
                 buffer.put_var_u32(self.entries.len() as u32);

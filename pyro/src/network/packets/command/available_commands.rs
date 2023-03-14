@@ -1,7 +1,7 @@
 use std::collections::{HashMap, HashSet};
 
 use bytes::{BufMut, BytesMut, Bytes};
-use util::{bail, Result, WriteExtensions};
+use util::{bail, Result};
 
 use util::Serialize;
 
@@ -141,11 +141,11 @@ impl Serialize for AvailableCommands<'_> {
             let index_count = value_indices.len() as u32;
             for option in &command_enum.options {
                 if index_count <= u8::MAX as u32 {
-                    buffer.put_u8(value_indices[option] as u8);
+                    buffer.write_le::<u8>(value_indices[option] as u8);
                 } else if index_count <= u16::MAX as u32 {
-                    buffer.put_u16_le(value_indices[option] as u16);
+                    buffer.write_le::<u16>()(value_indices[option] as u16);
                 } else {
-                    buffer.put_u32_le(value_indices[option]);
+                    buffer.write_le::<u32>()(value_indices[option]);
                 }
             }
         }
@@ -160,9 +160,9 @@ impl Serialize for AvailableCommands<'_> {
 
             buffer.put_string(&command.name);
             buffer.put_string(&command.description);
-            buffer.put_u16_le(0); // Command flags. Unknown.
-            buffer.put_u8(command.permission_level as u8);
-            buffer.put_i32_le(alias);
+            buffer.write_le::<u16>()(0); // Command flags. Unknown.
+            buffer.write_le::<u8>(command.permission_level as u8);
+            buffer.write_le::<i32>()(alias);
 
             buffer.put_var_u32(command.overloads.len() as u32);
             for overload in &command.overloads {
@@ -188,9 +188,9 @@ impl Serialize for AvailableCommands<'_> {
                     }
 
                     buffer.put_string(&parameter.name);
-                    buffer.put_i32_le(command_type as i32);
-                    buffer.put_bool(parameter.optional);
-                    buffer.put_u8(parameter.options);
+                    buffer.write_le::<i32>()(command_type as i32);
+                    buffer.write_le::<bool>(parameter.optional);
+                    buffer.write_le::<u8>(parameter.options);
                 }
             }
         }

@@ -6,6 +6,7 @@ use util::bail;
 use util::Deserialize;
 use util::ReadExtensions;
 use util::{Error, Result};
+use util::bytes::ReadBuffer;
 
 /// Status contained in [`ResourcePackClientResponse`].
 #[derive(Debug, Copy, Clone)]
@@ -54,9 +55,9 @@ impl ConnectedPacket for ResourcePackClientResponse {
 }
 
 impl Deserialize for ResourcePackClientResponse {
-    fn deserialize(mut buffer: Bytes) -> Result<Self> {
-        let status = ResourcePackStatus::try_from(buffer.get_u8())?;
-        let length = buffer.get_u16();
+    fn deserialize(mut buffer: ReadBuffer) -> Result<Self> {
+        let status = ResourcePackStatus::try_from(buffer.read_be::<u8>()?)?;
+        let length = buffer.read_be::<u16>()?;
 
         let mut pack_ids = Vec::with_capacity(length as usize);
         for _ in 0..length {

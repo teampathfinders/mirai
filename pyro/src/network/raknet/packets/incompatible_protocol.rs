@@ -28,9 +28,9 @@ impl IncompatibleProtocol {
 
 impl Serialize for IncompatibleProtocol {
     fn serialize(&self, buffer: &mut BytesMut) {
-        buffer.put_u8(Self::ID);
-        buffer.put_u8(RAKNET_VERSION);
+        buffer.write_le::<u8>(Self::ID);
+        buffer.write_le::<u8>(RAKNET_VERSION);
         buffer.put(OFFLINE_MESSAGE_DATA);
-        buffer.put_u64(self.server_guid);
+        buffer.write_be::<u64>()(self.server_guid);
     }
 }

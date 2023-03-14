@@ -68,7 +68,7 @@ impl Deserialize for FrameBatch {
 
 impl Serialize for FrameBatch {
     fn serialize(&self, buffer: &mut BytesMut) {
-        buffer.put_u8(CONNECTED_PEER_BIT_FLAG);
+        buffer.write_le::<u8>(CONNECTED_PEER_BIT_FLAG);
         buffer.put_u24_le(self.sequence_number);
 
         for frame in &self.frames {
@@ -173,8 +173,8 @@ impl Frame {
             flags |= COMPOUND_BIT_FLAG;
         }
 
-        buffer.put_u8(flags);
-        buffer.put_u16(self.body.len() as u16 * 8);
+        buffer.write_le::<u8>(flags);
+        buffer.write_be::<u16>()(self.body.len() as u16 * 8);
         if self.reliability.is_reliable() {
             buffer.put_u24_le(self.reliable_index);
         }
@@ -183,12 +183,12 @@ impl Frame {
         }
         if self.reliability.is_ordered() {
             buffer.put_u24_le(self.order_index);
-            buffer.put_u8(self.order_channel);
+            buffer.write_le::<u8>(self.order_channel);
         }
         if self.is_compound {
-            buffer.put_u32(self.compound_size);
-            buffer.put_u16(self.compound_id);
-            buffer.put_u32(self.compound_index);
+            buffer.write_be::<u32>()(self.compound_size);
+            buffer.write_be::<u16>()(self.compound_id);
+            buffer.write_be::<u32>()(self.compound_index);
         }
 
         buffer.put(self.body.as_ref());

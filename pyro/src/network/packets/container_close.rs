@@ -20,7 +20,7 @@ impl ConnectedPacket for ContainerClose {
 
 impl Serialize for ContainerClose {
     fn serialize(&self, buffer: &mut BytesMut) {
-        buffer.put_u8(self.window_id);
-        buffer.put_bool(self.server_initiated);
+        buffer.write_le::<u8>(self.window_id);
+        buffer.write_le::<bool>(self.server_initiated);
     }
 }

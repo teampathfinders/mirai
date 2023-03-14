@@ -1,5 +1,6 @@
 use bytes::{BytesMut, Bytes};
-use util::{Serialize, Result, WriteExtensions, size_of_varint};
+use util::{Serialize, Result};
+use util::bytes::size_of_varint;
 
 use crate::network::packets::ConnectedPacket;
 

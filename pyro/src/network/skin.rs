@@ -131,7 +131,7 @@ impl PersonaPiece {
         buffer.put_string(&self.piece_id);
         buffer.put_string(self.piece_type.name());
         buffer.put_string(&self.pack_id);
-        buffer.put_bool(self.default);
+        buffer.write_le::<bool>(self.default);
         buffer.put_string(&self.product_id);
     }
 
@@ -167,7 +167,7 @@ impl PersonaPieceTint {
     fn serialize(&self, buffer: &mut BytesMut) {
         buffer.put_string(self.piece_type.name());
 
-        buffer.put_u32_le(self.colors.len() as u32);
+        buffer.write_le::<u32>()(self.colors.len() as u32);
         for color in &self.colors {
             buffer.put_string(color);
         }
@@ -264,15 +264,15 @@ pub struct SkinAnimation {
 
 impl SkinAnimation {
     pub fn serialize(&self, buffer: &mut BytesMut) {
-        buffer.put_u32_le(self.image_width);
-        buffer.put_u32_le(self.image_height);
+        buffer.write_le::<u32>()(self.image_width);
+        buffer.write_le::<u32>()(self.image_height);
         
         buffer.put_var_u32(self.image_data.len() as u32);
         buffer.extend(&self.image_data);
 
-        buffer.put_u32_le(self.animation_type as u32);
+        buffer.write_le::<u32>()(self.animation_type as u32);
         buffer.put_f32_le(self.frame_count);
-        buffer.put_u32_le(self.expression_type as u32);
+        buffer.write_le::<u32>()(self.expression_type as u32);
     }
 
     pub fn deserialize(buffer: &mut Bytes) -> Result<Self> {
@@ -438,18 +438,18 @@ impl Skin {
         buffer.put_string(&self.playfab_id);
         buffer.put_string(&self.resource_patch);
 
-        buffer.put_u32_le(self.image_width);
-        buffer.put_u32_le(self.image_height);
+        buffer.write_le::<u32>()(self.image_width);
+        buffer.write_le::<u32>()(self.image_height);
         buffer.put_var_u32(self.image_data.len() as u32);
         buffer.put(self.image_data.as_ref());
 
-        buffer.put_u32_le(self.animations.len() as u32);
+        buffer.write_le::<u32>()(self.animations.len() as u32);
         for animation in &self.animations {
             animation.serialize(buffer);
         }
 
-        buffer.put_u32_le(self.cape_image_width);
-        buffer.put_u32_le(self.cape_image_height);
+        buffer.write_le::<u32>()(self.cape_image_width);
+        buffer.write_le::<u32>()(self.cape_image_height);
         buffer.put_var_u32(self.cape_image_data.len() as u32);
         buffer.put(self.cape_image_data.as_ref());
 
@@ -462,20 +462,20 @@ impl Skin {
         buffer.put_string(self.arm_size.name());
         buffer.put_string(&self.color);
 
-        buffer.put_u32_le(self.persona_pieces.len() as u32);
+        buffer.write_le::<u32>()(self.persona_pieces.len() as u32);
         for piece in &self.persona_pieces {
             piece.serialize(buffer);
         }
 
-        buffer.put_u32_le(self.persona_piece_tints.len() as u32);
+        buffer.write_le::<u32>()(self.persona_piece_tints.len() as u32);
         for tint in &self.persona_piece_tints {
             tint.serialize(buffer);
         }
 
-        buffer.put_bool(self.is_premium);
-        buffer.put_bool(self.is_persona);
-        buffer.put_bool(self.cape_on_classic_skin);
-        buffer.put_bool(self.is_primary_user);
+        buffer.write_le::<bool>(self.is_premium);
+        buffer.write_le::<bool>(self.is_persona);
+        buffer.write_le::<bool>(self.cape_on_classic_skin);
+        buffer.write_le::<bool>(self.is_primary_user);
     }
 
     pub fn deserialize(buffer: &mut Bytes) -> Result<Self> {

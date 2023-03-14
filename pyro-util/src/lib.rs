@@ -13,12 +13,14 @@ macro_rules! glob_export {
 #[cfg(test)]
 mod test;
 
+mod extensions;
 pub mod bytes;
 mod error;
 mod traits;
 mod u24;
 mod vector;
 
+pub use extensions::*;
 pub use error::*;
 pub use traits::*;
 pub use u24::*;

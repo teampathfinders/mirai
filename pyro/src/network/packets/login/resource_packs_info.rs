@@ -112,31 +112,31 @@ impl ConnectedPacket for ResourcePacksInfo<'_> {
 
 impl Serialize for ResourcePacksInfo<'_> {
     fn serialize(&self, buffer: &mut BytesMut) {
-        buffer.put_bool(self.required);
-        buffer.put_bool(self.scripting_enabled);
-        buffer.put_bool(self.forcing_server_packs);
+        buffer.write_le::<bool>(self.required);
+        buffer.write_le::<bool>(self.scripting_enabled);
+        buffer.write_le::<bool>(self.forcing_server_packs);
 
-        buffer.put_u16(self.behavior_info.len() as u16);
+        buffer.write_be::<u16>()(self.behavior_info.len() as u16);
         for pack in self.behavior_info {
             buffer.put_string(&pack.uuid);
             buffer.put_string(&pack.version);
-            buffer.put_u64(pack.size);
+            buffer.write_be::<u64>()(pack.size);
             buffer.put_string(&pack.content_key);
             buffer.put_string(&pack.subpack_name);
             buffer.put_string(&pack.content_identity);
-            buffer.put_bool(pack.has_scripts);
+            buffer.write_le::<bool>(pack.has_scripts);
         }
 
-        buffer.put_u16(self.resource_info.len() as u16);
+        buffer.write_be::<u16>()(self.resource_info.len() as u16);
         for pack in self.resource_info {
             buffer.put_string(&pack.uuid);
             buffer.put_string(&pack.version);
-            buffer.put_u64(pack.size);
+            buffer.write_be::<u64>()(pack.size);
             buffer.put_string(&pack.content_key);
             buffer.put_string(&pack.subpack_name);
             buffer.put_string(&pack.content_identity);
-            buffer.put_bool(pack.has_scripts);
-            buffer.put_bool(pack.rtx_enabled);
+            buffer.write_le::<bool>(pack.has_scripts);
+            buffer.write_le::<bool>(pack.rtx_enabled);
         }
     }
 }

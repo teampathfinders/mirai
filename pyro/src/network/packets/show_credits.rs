@@ -1,7 +1,8 @@
 use bytes::{BytesMut, Bytes};
-use util::{bail, ReadExtensions, Error, Result, WriteExtensions, size_of_varint};
+use util::{bail, Error, Result, size_of_varint};
 
 use util::{Deserialize, Serialize};
+use util::bytes::ReadBuffer;
 
 use super::ConnectedPacket;
 
@@ -50,8 +51,8 @@ impl Serialize for CreditsUpdate {
 }
 
 impl Deserialize for CreditsUpdate {
-    fn deserialize(mut buffer: Bytes) -> Result<Self> {
-        let runtime_id = buffer.get_var_u64()?;
+    fn deserialize(mut buffer: ReadBuffer) -> Result<Self> {
+        let runtime_id = buffer.read_var::<u64>()?;
         let status = CreditsStatus::try_from(buffer.get_var_i32()?)?;
 
         Ok(Self { runtime_id, status })

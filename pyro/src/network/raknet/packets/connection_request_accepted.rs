@@ -4,9 +4,8 @@ use std::time::{SystemTime, UNIX_EPOCH};
 use bytes::{BufMut, Bytes, BytesMut};
 
 use crate::instance_manager::IPV4_LOCAL_ADDR;
-use util::Result;
+use util::{IPV4_MEM_SIZE, IPV6_MEM_SIZE, Result};
 use util::Serialize;
-use util::{WriteExtensions, EMPTY_IPV4_ADDRESS, IPV4_MEM_SIZE, IPV6_MEM_SIZE};
 
 /// Sent in response to [`ConnectionRequest`](super::connection_request::ConnectionRequest).
 #[derive(Debug)]
@@ -28,14 +27,14 @@ impl ConnectionRequestAccepted {
 
 impl Serialize for ConnectionRequestAccepted {
     fn serialize(&self, buffer: &mut BytesMut) {
-        buffer.put_u8(Self::ID);
+        buffer.write_le::<u8>(Self::ID);
         buffer.put_addr(self.client_address);
-        buffer.put_i16(0); // System index
+        buffer.write_be::<u16>(0); // System index
         for _ in 0..20 {
             // 20 internal IDs
             buffer.put_addr(*EMPTY_IPV4_ADDRESS);
         }
-        buffer.put_i64(self.request_time);
-        buffer.put_i64(self.request_time); // Response time
+        buffer.write_be::<i64>()(self.request_time);
+        buffer.write_be::<i64>()(self.request_time); // Response time
     }
 }

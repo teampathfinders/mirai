@@ -50,6 +50,8 @@ pub struct Experiments {
 #[serde(rename_all = "camelCase")]
 #[serde(deny_unknown_fields)]
 pub struct LevelData {
+    pub lightning_level: f32,
+    pub lightning_time: i32,
     #[serde(rename = "Difficulty")]
     pub difficulty: i32,
     #[serde(rename = "GameType")]
@@ -64,6 +66,7 @@ pub struct LevelData {
     pub limited_world_origin_z: i32,
     #[serde(rename = "MinimumCompatibleClientVersion")]
     pub minimum_compatible_client_version: [i32; 5],
+    // pub minimum_compatible_client_version: f32,
     #[serde(rename = "NetherScale")]
     pub nether_scale: i32,
     #[serde(rename = "NetworkVersion")]
@@ -96,7 +99,7 @@ pub struct LevelData {
     pub edu_offer: i32,
     pub education_features_enabled: bool,
     #[serde(rename = "lastOpenedWithVersion")]
-    pub last_opened_with_version: [i8; 6],
+    pub last_opened_with_version: [i32; 5],
     pub bonus_chest_enabled: bool,
     pub bonus_chest_spawned: bool,
     #[serde(rename = "commandblockoutput")]

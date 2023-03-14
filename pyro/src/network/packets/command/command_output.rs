@@ -1,6 +1,6 @@
 use bytes::{BufMut, BytesMut, Bytes};
 use uuid::Uuid;
-use util::{Deserialize, Serialize, ReadExtensions, Result, WriteExtensions};
+use util::{Deserialize, Serialize, Result};
 use crate::network::packets::{ConnectedPacket};
 
 use super::CommandOriginType;
@@ -47,12 +47,12 @@ impl Serialize for CommandOutput<'_> {
             _ => ()
         }
 
-        buffer.put_u8(self.output_type as u8);
+        buffer.write_le::<u8>(self.output_type as u8);
         buffer.put_var_u32(self.success_count);
 
         buffer.put_var_u32(self.output.len() as u32);
         for output in self.output {
-            buffer.put_bool(output.is_success);
+            buffer.write_le::<bool>(output.is_success);
             buffer.put_string(output.message);
 
             buffer.put_var_u32(output.parameters.len() as u32);
