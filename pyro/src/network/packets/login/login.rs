@@ -10,7 +10,7 @@ use crate::network::packets::ConnectedPacket;
 use util::Deserialize;
 use util::{bail, nvassert};
 use util::{Error, Result};
-use util::bytes::ReadBuffer;
+use util::bytes::SharedBuffer;
 use crate::network::Skin;
 
 /// Device operating system
@@ -61,7 +61,7 @@ impl ConnectedPacket for Login {
 }
 
 impl Deserialize for Login {
-    fn deserialize(mut buffer: ReadBuffer) -> Result<Self> {
+    fn deserialize(mut buffer: SharedBuffer) -> Result<Self> {
         buffer.advance(4); // Skip protocol version, use the one in RequestNetworkSettings instead.
         buffer.read_var::<u32>()?;
 

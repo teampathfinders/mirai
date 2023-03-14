@@ -1,8 +1,7 @@
-use bytes::{Buf, BufMut, Bytes, BytesMut};
 use serde::Deserialize;
 use std::collections::HashMap;
 use std::iter::Enumerate;
-use util::bytes::{ReadBuffer, WriteBuffer};
+use util::bytes::{SharedBuffer, OwnedBuffer, BinaryBuffer};
 use util::{bail, BlockPosition, Error, Result, Vector3b};
 
 const CHUNK_SIZE: usize = 4096;
@@ -42,15 +41,7 @@ mod block_version {
 
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
 pub struct BlockStates {
-    pub pillar_axis: Option<String>,
-    pub dirt_type: Option<String>,
-    pub stone_type: Option<String>,
-    pub double_plant_type: Option<String>,
-    #[serde(default)]
-    pub upper_block_bit: bool,
-    pub dripstone_thickness: Option<String>,
-    #[serde(default)]
-    pub hanging: bool, // pub liquid_depth: Option<i8>,
+    // states, this should probably be a HashMap<String, nbt::Value>
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
@@ -73,7 +64,7 @@ impl SubLayer {
         LayerIter::from(self)
     }
 
-    fn deserialize(buffer: &mut ReadBuffer) -> Result<Self> {
+    fn deserialize(buffer: &mut SharedBuffer) -> Result<Self> {
         // Size of each index in bits.
         let index_size = buffer.read_le::<u8>()? >> 1;
         if index_size == 0x7f {
@@ -134,7 +125,7 @@ impl SubLayer {
         Ok(Self { indices, palette })
     }
 
-    fn serialize(&self, buffer: &mut WriteBuffer) {
+    fn serialize(&self, buffer: &mut OwnedBuffer) {
         // Determine the required bits per index
         let index_size = {
             let palette_size = self.palette.len();
@@ -232,7 +223,7 @@ impl SubChunk {
 impl SubChunk {
     pub fn deserialize<'a, R>(buffer: R) -> Result<Self>
     where
-        R: Into<ReadBuffer<'a>>
+        R: Into<SharedBuffer<'a>>
     {
         let mut buffer = buffer.into();
 
@@ -266,7 +257,7 @@ impl SubChunk {
         }
     }
 
-    pub fn serialize(&self, buffer: &mut WriteBuffer) {
+    pub fn serialize(&self, buffer: &mut OwnedBuffer) {
         buffer.write_le::<u8>(self.version as u8);
         match self.version {
             SubChunkVersion::Legacy => todo!(),

@@ -2,7 +2,7 @@ use std::collections::HashMap;
 use bytes::{BytesMut, BufMut, Bytes};
 use util::{Vector3f, Serialize, Result, WriteExtensions};
 use uuid::Uuid;
-use util::bytes::WriteBuffer;
+use util::bytes::OwnedBuffer;
 use crate::command::CommandPermissionLevel;
 use crate::network::packets::login::{DeviceOS, ItemStack, PermissionLevel};
 
@@ -36,7 +36,7 @@ pub struct EntityLink {
 }
 
 impl EntityLink {
-    pub fn encode(&self, buffer: &mut WriteBuffer) {
+    pub fn encode(&self, buffer: &mut OwnedBuffer) {
         buffer.put_var_i64(self.ridden_entity_id);
         buffer.put_var_i64(self.rider_entity_id);
         buffer.write_le::<u8>(self.link_type as u8);
@@ -90,7 +90,7 @@ pub struct AbilityLayer {
 }
 
 impl AbilityLayer {
-    pub fn encode(&self, buffer: &mut WriteBuffer) {
+    pub fn encode(&self, buffer: &mut OwnedBuffer) {
         buffer.write_le::<u16>()(self.ability_type as u16);
         buffer.write_le::<u32>()(self.abilities);
         buffer.write_le::<u32>()(self.values);
@@ -113,7 +113,7 @@ pub struct AbilityData<'a> {
 }
 
 impl AbilityData<'_> {
-    pub fn encode(&self, buffer: &mut WriteBuffer) {
+    pub fn encode(&self, buffer: &mut OwnedBuffer) {
         buffer.write_le(self.entity_id); // For some reason this isn't a varint64.
         buffer.write_le(self.permission_level as u8);
         buffer.write_le(self.command_permission_level as u8);
@@ -164,7 +164,7 @@ impl ConnectedPacket for AddPlayer<'_> {
 }
 
 impl Serialize for AddPlayer<'_> {
-    fn serialize(&self, buffer: &mut WriteBuffer) {
+    fn serialize(&self, buffer: &mut OwnedBuffer) {
         buffer.put_uuid(&self.uuid);
         buffer.put_string(self.username);
         buffer.put_var_u64(self.runtime_id);

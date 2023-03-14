@@ -1,6 +1,6 @@
 use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr};
 
-use crate::bytes::WriteBuffer;
+use crate::bytes::OwnedBuffer;
 use crate::{Result, Vector};
 
 #[test]
@@ -46,7 +46,7 @@ fn vector_types() {
 
 #[test]
 fn read_write_string() {
-    let mut buffer = WriteBuffer::new();
+    let mut buffer = OwnedBuffer::new();
     buffer.put_string("Hello World!");
 
     let mut buffer = buffer.freeze();
@@ -55,7 +55,7 @@ fn read_write_string() {
 
 #[test]
 fn read_write_raknet_string() {
-    let mut buffer = WriteBuffer::new();
+    let mut buffer = OwnedBuffer::new();
     buffer.put_raknet_string("Hello World!");
 
     let mut buffer = buffer.freeze();
@@ -64,7 +64,7 @@ fn read_write_raknet_string() {
 
 #[test]
 fn read_write_var_u32() {
-    let mut buffer = WriteBuffer::new();
+    let mut buffer = OwnedBuffer::new();
     buffer.put_var_u32(45);
     buffer.put_var_u32(2769);
     buffer.put_var_u32(105356);
@@ -79,7 +79,7 @@ fn read_write_var_u32() {
 
 #[test]
 fn read_write_var_i32() {
-    let mut buffer = WriteBuffer::new();
+    let mut buffer = OwnedBuffer::new();
     buffer.put_var_i32(45);
     buffer.put_var_i32(-2769);
     buffer.put_var_i32(105356);
@@ -94,7 +94,7 @@ fn read_write_var_i32() {
 
 #[test]
 fn read_write_var_u64() {
-    let mut buffer = WriteBuffer::new();
+    let mut buffer = OwnedBuffer::new();
     buffer.put_var_u64(45);
     buffer.put_var_u64(2769);
     buffer.put_var_u64(105356);
@@ -111,7 +111,7 @@ fn read_write_var_u64() {
 
 #[test]
 fn read_write_var_i64() {
-    let mut buffer = WriteBuffer::new();
+    let mut buffer = OwnedBuffer::new();
     buffer.put_var_i32(45);
     buffer.put_var_i32(-2769);
     buffer.put_var_i32(105356);
@@ -126,7 +126,7 @@ fn read_write_var_i64() {
 
 #[test]
 fn read_write_u24_le() {
-    let mut buffer = WriteBuffer::new();
+    let mut buffer = OwnedBuffer::new();
     buffer.put_u24_le(125); // Test first byte only
     buffer.put_u24_le(50250); // Test first two bytes
     buffer.put_u24_le(1097359); // Test all bytes
@@ -142,7 +142,7 @@ fn read_write_addr() -> Result<()> {
     let ipv4_test = SocketAddr::new(IpAddr::V4(Ipv4Addr::BROADCAST), 19132);
     let ipv6_test = SocketAddr::new(IpAddr::V6(Ipv6Addr::LOCALHOST), 19133);
 
-    let mut buffer = WriteBuffer::new();
+    let mut buffer = OwnedBuffer::new();
     buffer.put_addr(ipv4_test); // Test IPv4
     buffer.put_addr(ipv6_test); // Test IPv6
 

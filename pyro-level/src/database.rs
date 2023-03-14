@@ -6,8 +6,8 @@ use std::{
 };
 use std::ptr::NonNull;
 
-use bytes::{Bytes, BytesMut};
 use util::{error, Error, Result};
+use util::bytes::OwnedBuffer;
 
 use crate::ffi;
 
@@ -164,7 +164,7 @@ impl RawDatabase {
 
     /// Loads the value of the given key.
     /// This function requires a raw key, i.e. the key must have been serialised already.
-    pub fn get_raw_key<K: AsRef<[u8]>>(&self, key: K) -> Result<Bytes> {
+    pub fn get_raw_key<K: AsRef<[u8]>>(&self, key: K) -> Result<OwnedBuffer> {
         let key = key.as_ref();
         let result = unsafe {
             // SAFETY: This function is guaranteed to not modify any arguments.
@@ -179,17 +179,18 @@ impl RawDatabase {
         };
 
         if result.is_success == 1 {
-            dbg!(result.size);
+            debug_assert_ne!(result.data, std::ptr::null_mut());
 
+            // SAFETY: result.data is guaranteed by the caller to be a valid pointer.
+            // result.size is also guaranteed to be the size of the actual array.
             let data = unsafe {
                 std::slice::from_raw_parts(
                     result.data as *mut u8,
                     result.size as usize,
                 )
             };
-            // println!("data = {:?}", &data[..15]);
 
-            let buffer = Bytes::copy_from_slice(data);
+            let buffer = OwnedBuffer::copy_from_slice(data);
             unsafe {
                 // SAFETY: Data is safe to deallocate because BytesMut copies the data.
                 // and it is not used anywhere else.

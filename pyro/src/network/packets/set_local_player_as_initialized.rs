@@ -1,6 +1,6 @@
 use bytes::{BytesMut, Bytes};
 use util::{Result};
-use util::bytes::ReadBuffer;
+use util::bytes::SharedBuffer;
 
 use util::Deserialize;
 
@@ -18,7 +18,7 @@ impl ConnectedPacket for SetLocalPlayerAsInitialized {
 }
 
 impl Deserialize for SetLocalPlayerAsInitialized {
-    fn deserialize(mut buffer: ReadBuffer) -> Result<Self> {
+    fn deserialize(mut buffer: SharedBuffer) -> Result<Self> {
         Ok(Self { runtime_id: buffer.read_var::<u64>()? })
     }
 }

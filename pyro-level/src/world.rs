@@ -1,5 +1,4 @@
-use bytes::{BufMut, Bytes, BytesMut};
-use util::bytes::WriteBuffer;
+use util::bytes::OwnedBuffer;
 use util::{Result, Serialize};
 
 // Special keys
@@ -289,7 +288,7 @@ impl DatabaseKey {
             }
     }
 
-    pub(crate) fn serialize(&self, buffer: &mut WriteBuffer) {
+    pub(crate) fn serialize(&self, buffer: &mut OwnedBuffer) {
         buffer.write_le::<i32>(self.x);
         buffer.write_le::<i32>(self.z);
 

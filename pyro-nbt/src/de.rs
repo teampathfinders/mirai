@@ -4,7 +4,7 @@ use crate::FieldType;
 use serde::de::{DeserializeSeed, MapAccess, SeqAccess, Visitor};
 use serde::{de, Deserialize};
 use serde::de::Unexpected::Seq;
-use util::bytes::ReadBuffer;
+use util::bytes::{BinaryBuffer, SharedBuffer};
 use util::{bail, Error, Result};
 
 macro_rules! is_ty {
@@ -25,7 +25,7 @@ pub enum Flavor {
 #[derive(Debug)]
 pub struct Deserializer<'de> {
     flavor: Flavor,
-    input: ReadBuffer<'de>,
+    input: SharedBuffer<'de>,
     next_ty: FieldType,
     is_key: bool,
 }
@@ -33,7 +33,7 @@ pub struct Deserializer<'de> {
 impl<'de> Deserializer<'de> {
     #[inline]
     pub(crate) fn from_bytes(input: &'de [u8], flavor: Flavor) -> Self {
-        let mut input = ReadBuffer::from(input);
+        let mut input = SharedBuffer::from(input);
         assert_eq!(input.read_be::<u8>().unwrap(), FieldType::Compound as u8);
 
         let mut de = Deserializer {

@@ -1,6 +1,6 @@
 use std::ops::ShrAssign;
 use num_traits::FromPrimitive;
-use crate::bytes::ReadBuffer;
+use crate::bytes::{BinaryBuffer, SharedBuffer};
 
 use crate::{bail, Result};
 
@@ -11,11 +11,16 @@ pub trait VarInt: Sized + FromPrimitive + ShrAssign<Self> + PartialOrd<Self>
         size_of_varint(self)
     }
 
-    fn read(buf: &mut ReadBuffer) -> Result<Self>;
+    fn read<B>(buf: &mut B) -> Result<Self>
+    where
+        B: BinaryBuffer;
 }
 
 impl VarInt for u32 {
-    fn read(buf: &mut ReadBuffer) -> Result<Self> {
+    fn read<B>(buf: &mut B) -> Result<Self>
+    where
+        B: BinaryBuffer
+    {
         let mut v = 0;
         let mut i = 0;
         while i < 35 {
@@ -35,7 +40,10 @@ impl VarInt for u32 {
 }
 
 impl VarInt for i32 {
-    fn read(buf: &mut ReadBuffer) -> Result<Self> {
+    fn read<B>(buf: &mut B) -> Result<Self>
+    where
+        B: BinaryBuffer
+    {
         let vx = buf.read_var::<u32>()?;
         let mut v = (vx >> 1) as i32;
 
@@ -48,7 +56,10 @@ impl VarInt for i32 {
 }
 
 impl VarInt for u64 {
-    fn read(buf: &mut ReadBuffer) -> Result<Self> {
+    fn read<B>(buf: &mut B) -> Result<Self>
+    where
+        B: BinaryBuffer
+    {
         let mut v = 0;
         let mut i = 0;
         while i < 70 {
@@ -70,7 +81,10 @@ impl VarInt for u64 {
 }
 
 impl VarInt for i64 {
-    fn read(buf: &mut ReadBuffer) -> Result<Self> {
+    fn read<B>(buf: &mut B) -> Result<Self>
+    where
+        B: BinaryBuffer
+    {
         let vx = buf.read_var::<u64>()?;
         let mut v = (vx >> 1) as i64;
 

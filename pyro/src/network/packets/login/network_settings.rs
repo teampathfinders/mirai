@@ -1,6 +1,6 @@
 use bytes::Bytes;
 use bytes::{BufMut, BytesMut};
-use util::bytes::WriteBuffer;
+use util::bytes::OwnedBuffer;
 
 use crate::network::packets::ConnectedPacket;
 use util::Serialize;
@@ -58,7 +58,7 @@ impl ConnectedPacket for NetworkSettings {
 }
 
 impl Serialize for NetworkSettings {
-    fn serialize(&self, buffer: &mut WriteBuffer) {
+    fn serialize(&self, buffer: &mut OwnedBuffer) {
         buffer.write_be::<u16>(self.compression_threshold);
         buffer.write_be::<u16>(self.compression_algorithm as u16);
         buffer.write_be::<bool>(self.client_throttle.enabled);
