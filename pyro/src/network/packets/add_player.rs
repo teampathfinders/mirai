@@ -164,14 +164,14 @@ impl ConnectedPacket for AddPlayer<'_> {
 }
 
 impl Serialize for AddPlayer<'_> {
-    fn serialize(&self, buffer: &mut MutableBuffer) {
-        buffer.write_uuid(&self.uuid);
+    fn serialize(&self, buffer: &mut MutableBuffer) -> Result<()> {
+        buffer.write_uuid_le(&self.uuid);
         buffer.write_str(self.username);
         buffer.write_var_u64(self.runtime_id);
         buffer.write_str(""); // Platform chat ID
-        buffer.write_le(&self.position);
-        buffer.write_le(&self.velocity);
-        buffer.write_le(&self.rotation);
+        buffer.write_vecf(&self.position);
+        buffer.write_vecf(&self.velocity);
+        buffer.write_vecf(&self.rotation);
         self.held_item.serialize(buffer);
         buffer.write_var_i32(self.game_mode as i32);
         // buffer.put_metadata(&self.metadata);
@@ -186,6 +186,8 @@ impl Serialize for AddPlayer<'_> {
         }
 
         buffer.write_str(self.device_id);
-        buffer.write_le(self.device_os as i32);
+        buffer.write_i32_le(self.device_os as i32);
+
+        Ok(())
     }
 }

@@ -19,12 +19,14 @@ impl<'a> ConnectedPacket for UpdateSkin<'a> {
 }
 
 impl<'a> Serialize for UpdateSkin<'a> {
-    fn serialize(&self, buffer: &mut MutableBuffer) {
+    fn serialize(&self, buffer: &mut MutableBuffer) -> Result<()> {
         buffer.write_u128_le(self.uuid.as_u128());
         self.skin.serialize(buffer);
         buffer.write_str(""); // Old skin name. Unused
         buffer.write_str(""); // New skin name. Unused
         buffer.write_bool(self.skin.is_trusted);
+
+        Ok(())
     }
 }
 

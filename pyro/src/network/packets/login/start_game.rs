@@ -45,7 +45,7 @@ pub struct EducationResourceURI {
 }
 
 impl EducationResourceURI {
-    pub fn encode(&self, buffer: &mut MutableBuffer) {
+    pub fn serialize(&self, buffer: &mut MutableBuffer) {
         buffer.write_str(&self.button_name);
         buffer.write_str(&self.link_uri);
     }
@@ -104,7 +104,8 @@ pub struct BlockEntry {
 
 impl BlockEntry {
     pub fn serialized_size(&self) -> usize {
-        self.name.var_len() + self.properties.serialized_net_size("")
+        todo!("properties field");
+        self.name.var_len() //+ self.properties.serialized_net_size("")
     }
 
     pub fn serialize(&self, buffer: &mut MutableBuffer) {
@@ -134,7 +135,7 @@ impl ItemEntry {
     pub fn serialize(&self, buffer: &mut MutableBuffer) {
         buffer.write_str(&self.name);
         buffer.write_u16_le(self.runtime_id);
-        buffer.write_le(self.component_based);
+        buffer.write_bool(self.component_based);
     }
 }
 
@@ -357,14 +358,14 @@ impl ConnectedPacket for StartGame<'_> {
         MULTIPLAYER_CORRELATION_ID.var_len() +
         1 +
         CLIENT_VERSION_STRING.var_len() +
-        self.property_data.serialized_net_size("") +
+        // self.property_data.serialized_net_size("") +
         8 +
         16
     }
 }
 
 impl Serialize for StartGame<'_> {
-    fn serialize(&self, buffer: &mut MutableBuffer) {
+    fn serialize(&self, buffer: &mut MutableBuffer) -> Result<()> {
         buffer.write_var_i64(self.entity_id);
         buffer.write_var_u64(self.runtime_id);
         buffer.write_var_i32(self.game_mode as i32);
@@ -377,7 +378,8 @@ impl Serialize for StartGame<'_> {
         buffer.write_var_i32(self.generator as i32);
         buffer.write_var_i32(self.world_game_mode as i32);
         buffer.write_var_i32(self.difficulty as i32);
-        buffer.put_block_pos(&self.world_spawn);
+        todo!("write_block_pos");
+        // buffer.write_block_pos(&self.world_spawn);
 
         buffer.write_bool(self.achievements_disabled);
         buffer.write_bool(self.editor_world);
@@ -456,8 +458,10 @@ impl Serialize for StartGame<'_> {
         todo!();
         // nbt::serialize_net("", &self.property_data, buffer);
 
-        buffer.write_le::<u64>(self.server_block_state_checksum);
-        buffer.write_le::<u128>(self.world_template_id);
+        buffer.write_u64_le(self.server_block_state_checksum);
+        buffer.write_u128_le(self.world_template_id);
         buffer.write_bool(self.client_side_generation);
+
+        Ok(())
     }
 }

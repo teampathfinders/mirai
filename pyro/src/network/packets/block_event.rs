@@ -39,10 +39,12 @@ impl ConnectedPacket for BlockEvent {
 }
 
 impl Serialize for BlockEvent {
-    fn serialize(&self, buffer: &mut MutableBuffer) {
+    fn serialize(&self, buffer: &mut MutableBuffer) -> Result<()> {
         buffer.write_block_pos(&self.position);
         buffer.write_var_i32(self.event_type as i32);
         buffer.write_var_i32(self.event_data);
+
+        Ok(())
     }
 }
 

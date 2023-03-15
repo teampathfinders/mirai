@@ -44,9 +44,11 @@ impl ConnectedPacket for CreditsUpdate {
 }
 
 impl Serialize for CreditsUpdate {
-    fn serialize(&self, buffer: &mut MutableBuffer) {
+    fn serialize(&self, buffer: &mut MutableBuffer) -> Result<()> {
         buffer.write_var_u64(self.runtime_id);
         buffer.write_var_i32(self.status as i32);
+
+        Ok(())
     }
 }
 

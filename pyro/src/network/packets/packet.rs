@@ -47,6 +47,7 @@ impl<T: ConnectedPacket + Serialize> Packet<T> {
         let expected_size = self.header.serialized_size() + self.content.serialized_size();
         let capacity = 5 + expected_size;
 
+        // FIXME: Properly calculate packet size to reduce this to one allocation.
         let mut buffer = MutableBuffer::with_capacity(capacity);
 
         let mut rest = MutableBuffer::with_capacity(expected_size);
@@ -56,8 +57,8 @@ impl<T: ConnectedPacket + Serialize> Packet<T> {
         // debug_assert_eq!(rest.len(), expected_size, "While serializing {:x}", self.header.id);
 
         buffer.write_var_u32(rest.len() as u32);
-        buffer.append(rest);
+        buffer.append(&rest);
 
-        buffer.freeze()
+        buffer
     }
 }

@@ -1,7 +1,7 @@
 use std::ops::Range;
 
 use util::bytes::{BinaryReader, BinaryWriter, MutableBuffer, SharedBuffer};
-use util::pyassert;
+use util::{pyassert, u24::u24};
 use util::Result;
 use util::{Deserialize, Serialize};
 
@@ -15,21 +15,23 @@ pub enum AckRecord {
 }
 
 /// Encodes a list of acknowledgement records.
-fn encode_records(buffer: &mut MutableBuffer, records: &[AckRecord]) {
+fn encode_records(buffer: &mut MutableBuffer, records: &[AckRecord]) -> Result<()> {
     buffer.write_i16_be(records.len() as i16);
     for record in records {
         match record {
             AckRecord::Single(id) => {
                 buffer.write_u8(1); // Is single
-                buffer.write_u24_le(*id);
+                buffer.write_u24_le((*id).try_into()?);
             }
             AckRecord::Range(range) => {
                 buffer.write_u8(0); // Is range
-                buffer.write_u24_le(range.start);
-                buffer.write_u24_le(range.end);
+                buffer.write_u24_le(range.start.try_into()?);
+                buffer.write_u24_le(range.end.try_into()?);
             }
         }
     }
+
+    Ok(())
 }
 
 /// Decodes a list of acknowledgement records.
@@ -41,10 +43,10 @@ fn decode_records(mut buffer: SharedBuffer) -> Result<Vec<AckRecord>> {
         let is_range = buffer.read_u8()? == 0;
         if is_range {
             records.push(AckRecord::Range(
-                buffer.read_le_u24()?..buffer.read_le_u24()?,
+                buffer.read_u24_le()?.into()..buffer.read_u24_le()?.into(),
             ));
         } else {
-            records.push(AckRecord::Single(buffer.read_le_u24()));
+            records.push(AckRecord::Single(buffer.read_u24_le()?.into()));
         }
     }
 
@@ -73,7 +75,7 @@ impl Ack {
 }
 
 impl Serialize for Ack {
-    fn serialize(&self, buffer: &mut MutableBuffer) {
+    fn serialize(&self, buffer: &mut MutableBuffer) -> Result<()> {
         buffer.write_u8(Self::ID);
 
         encode_records(buffer, &self.records)
@@ -82,7 +84,7 @@ impl Serialize for Ack {
 
 impl Deserialize<'_> for Ack {
     fn deserialize(mut buffer: SharedBuffer) -> Result<Self> {
-        pyassert!(buffer.get_u8() == Self::ID);
+        pyassert!(buffer.read_u8()? == Self::ID);
 
         let records = decode_records(buffer)?;
 
@@ -112,7 +114,7 @@ impl Nak {
 }
 
 impl Serialize for Nak {
-    fn serialize(&self, buffer: &mut MutableBuffer) {
+    fn serialize(&self, buffer: &mut MutableBuffer) -> Result<()> {
         buffer.write_u8(Self::ID);
 
         encode_records(buffer, &self.records)
@@ -121,7 +123,7 @@ impl Serialize for Nak {
 
 impl Deserialize<'_> for Nak {
     fn deserialize(mut buffer: SharedBuffer) -> Result<Self> {
-        pyassert!(buffer.get_u8() == Self::ID);
+        pyassert!(buffer.read_u8()? == Self::ID);
 
         let records = decode_records(buffer)?;
 

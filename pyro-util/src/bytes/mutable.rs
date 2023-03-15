@@ -1,29 +1,12 @@
 use crate::bytes::{BinaryReader, BinaryWriter, SharedBuffer, VarInt};
-use crate::{bail, Result};
+use crate::{bail, BlockPosition, Result, Vector};
 use paste::paste;
 use std::borrow::Cow;
 use std::fmt::Debug;
 use std::io::Write;
 use std::ops::{Deref, DerefMut};
 use std::{fmt, io};
-
-macro_rules! define_write_fns {
-    ($($ty: ident),+) => {
-        paste! {$(
-            #[inline]
-            fn [<write_ $ty _le>](&mut self, v: $ty) {
-                let bytes = v.to_le_bytes();
-                self.0.extend_from_slice(&bytes);
-            }
-
-            #[inline]
-            fn [<write_ $ty _be>](&mut self, v: $ty) {
-                let bytes = v.to_be_bytes();
-                self.0.extend_from_slice(&bytes);
-            }
-        )+}
-    }
-}
+use uuid::Uuid;
 
 /// A buffer that can be read from and written to.
 /// It is the owned version of [`ReadBuffer`].
@@ -38,11 +21,6 @@ impl MutableBuffer {
     #[inline]
     pub fn clear(&mut self) {
         self.0.clear();
-    }
-
-    #[inline]
-    pub fn append(&mut self, v: &[u8]) {
-        self.0.extend_from_slice(v);
     }
 
     #[inline]
@@ -74,65 +52,9 @@ impl MutableBuffer {
 }
 
 impl BinaryWriter for MutableBuffer {
-    define_write_fns!(u16, i16, u32, i32, u64, i64, u128, i128, f32, f64);
-
     #[inline]
-    fn write_bool(&mut self, v: bool) {
-        self.append(&[v as u8]);
-    }
-
-    #[inline]
-    fn write_u8(&mut self, v: u8) {
-        self.append(&[v])
-    }
-
-    #[inline]
-    fn write_i8(&mut self, v: i8) {
-        self.append(&[v as u8]);
-    }
-
-    #[inline]
-    fn write_var_u32(&mut self, mut v: u32) {
-        while v >= 0x80 {
-            self.write_u8((v as u8) | 0x80);
-            v >>= 7;
-        }
-        self.write_u8(v as u8);
-    }
-
-    #[inline]
-    fn write_var_u64(&mut self, mut v: u64) {
-        while v >= 0x80 {
-            self.write_u8((v as u8) | 0x80);
-            v >>= 7;
-        }
-        self.write_u8(v as u8);
-    }
-
-    #[inline]
-    fn write_var_i32(&mut self, v: i32) {
-        let mut ux = (v as u32) << 1;
-        if v < 0 {
-            ux = !ux;
-        }
-
-        self.write_var_u32(ux);
-    }
-
-    #[inline]
-    fn write_var_i64(&mut self, v: i64) {
-        let mut ux = (v as u64) << 1;
-        if v < 0 {
-            ux = !ux;
-        }
-
-        self.write_var_u64(ux);
-    }
-
-    #[inline]
-    fn write_str(&mut self, v: &str) {
-        self.write_var_u32(v.len() as u32);
-        self.append(v.as_bytes());
+    fn append(&mut self, v: &[u8]) {
+        self.0.extend_from_slice(v);
     }
 }
 

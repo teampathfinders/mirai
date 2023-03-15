@@ -67,7 +67,7 @@ impl<'a> Deserialize<'a> for FrameBatch<'a> {
 }
 
 impl<'a> Serialize for FrameBatch<'a> {
-    fn serialize(&self, buffer: &mut MutableBuffer) {
+    fn serialize(&self, buffer: &mut MutableBuffer) -> Result<()> {
         buffer.write_u8(CONNECTED_PEER_BIT_FLAG);
         buffer.write_u24_le(self.sequence_number);
 
@@ -162,7 +162,7 @@ impl<'a> Frame<'a> {
     }
 
     /// Encodes the frame.
-    fn serialize(&self, buffer: &mut MutableBuffer) {
+    fn serialize(&self, buffer: &mut MutableBuffer) -> Result<()> {
         let mut flags = (self.reliability as u8) << 5;
         if self.is_compound {
             flags |= COMPOUND_BIT_FLAG;

@@ -8,12 +8,12 @@ use super::ConnectedPacket;
 
 /// Opens a dialog showing details about a player's Xbox account.
 #[derive(Debug, Clone)]
-pub struct ShowProfile<'s> {
+pub struct ShowProfile<'a> {
     /// XUID of the profile to display.
-    pub xuid: &'s str,
+    pub xuid: &'a str,
 }
 
-impl ConnectedPacket for ShowProfile<'_> {
+impl<'a> ConnectedPacket for ShowProfile<'a> {
     const ID: u32 = 0x68;
 
     fn serialized_size(&self) -> usize {
@@ -21,8 +21,10 @@ impl ConnectedPacket for ShowProfile<'_> {
     }
 }
 
-impl Serialize for ShowProfile<'_> {
-    fn serialize(&self, buffer: &mut MutableBuffer) {
+impl<'a> Serialize for ShowProfile<'a> {
+    fn serialize(&self, buffer: &mut MutableBuffer) -> Result<()> {
         buffer.write_str(self.xuid);
+
+        Ok(())
     }
 }

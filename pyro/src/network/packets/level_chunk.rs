@@ -1,4 +1,4 @@
-
+use std::io::Write;
 use util::{Result, Vector2i};
 use util::bytes::{BinaryWriter, MutableBuffer};
 
@@ -16,7 +16,7 @@ pub enum SubChunkRequestMode {
     Limited,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct LevelChunk {
     /// Position of the chunk.
     pub position: Vector2i,
@@ -39,8 +39,8 @@ impl ConnectedPacket for LevelChunk {
 }
 
 impl Serialize for LevelChunk {
-    fn serialize(&self, buffer: &mut MutableBuffer) {
-        buffer.write_vec2i(&self.position);
+    fn serialize(&self, buffer: &mut MutableBuffer) -> Result<()> {
+        buffer.write_veci(&self.position);
         match self.request_mode {
             SubChunkRequestMode::Legacy => {
                 buffer.write_var_u32(self.sub_chunk_count);
@@ -62,6 +62,7 @@ impl Serialize for LevelChunk {
             }
         }
 
-        buffer.put(self.raw_payload.as_ref());
+        buffer.append(self.raw_payload.as_ref());
+        Ok(())
     }
 }

@@ -1,6 +1,5 @@
 use std::collections::{HashMap, HashSet};
 
-
 use util::{bail, Result};
 use util::bytes::{BinaryWriter, MutableBuffer};
 
@@ -31,7 +30,7 @@ impl ConnectedPacket for AvailableCommands<'_> {
 }
 
 impl Serialize for AvailableCommands<'_> {
-    fn serialize(&self, buffer: &mut MutableBuffer) {
+    fn serialize(&self, buffer: &mut MutableBuffer) -> Result<()> {
         let mut value_indices = HashMap::new();
         let mut values = Vec::new();
         for command in self.commands {
@@ -207,5 +206,6 @@ impl Serialize for AvailableCommands<'_> {
         }
 
         buffer.write_var_u32(0); // No constraints, they are useless.
+        Ok(())
     }
 }

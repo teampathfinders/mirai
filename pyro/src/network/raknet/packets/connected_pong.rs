@@ -21,9 +21,11 @@ impl ConnectedPong {
 }
 
 impl Serialize for ConnectedPong {
-    fn serialize(&self, buffer: &mut MutableBuffer) {
+    fn serialize(&self, buffer: &mut MutableBuffer) -> Result<()> {
         buffer.write_u8(Self::ID);
         buffer.write_i64_be(self.ping_time);
         buffer.write_i64_be(self.pong_time);
+
+        Ok(())
     }
 }

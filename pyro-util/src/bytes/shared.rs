@@ -1,4 +1,4 @@
-use crate::bail;
+use crate::{bail, BlockPosition};
 use crate::bytes::{BinaryReader, VarInt};
 use paste::paste;
 use std::borrow::Borrow;
@@ -11,24 +11,6 @@ use std::sync::Arc;
 use std::{cmp, fmt, io};
 
 use crate::Result;
-
-macro_rules! define_read_fns {
-    ($($ty: ident),+) => {
-        paste!{$(
-            #[inline]
-            fn [<read_ $ty _be>](&mut self) -> $crate::Result<$ty> {
-                let bytes = self.take_const()?;
-                Ok(<$ty>::from_be_bytes(bytes))
-            }
-
-            #[inline]
-            fn [<read_ $ty _le>](&mut self) -> $crate::Result<$ty> {
-                let bytes = self.take_const()?;
-                Ok(<$ty>::from_le_bytes(bytes))
-            }
-        )+}
-    }
-}
 
 pub struct ArcBuffer(Arc<Vec<u8>>);
 
@@ -56,8 +38,6 @@ impl<'a> SharedBuffer<'a> {
 }
 
 impl<'a> BinaryReader for &'a [u8] {
-    define_read_fns!(u16, i16, u32, i32, u64, i64, u128, i128, f32, f64);
-
     /// Takes a specified amount of bytes from the buffer.
     ///
     /// If the amount of bytes to take from the buffer is known at compile-time,
@@ -152,88 +132,6 @@ impl<'a> BinaryReader for &'a [u8] {
             // due to the slicing above which already implements bounds checks.
             unsafe { Ok(dst.try_into().unwrap_unchecked()) }
         }
-    }
-
-    #[inline]
-    fn read_bool(&mut self) -> Result<bool> {
-        Ok(self.take_const::<1>()?[0] != 0)
-    }
-
-    #[inline]
-    fn read_u8(&mut self) -> Result<u8> {
-        Ok(self.take_const::<1>()?[0])
-    }
-
-    #[inline]
-    fn read_i8(&mut self) -> Result<i8> {
-        Ok(self.take_const::<1>()?[0] as i8)
-    }
-
-    fn read_var_u32(&mut self) -> Result<u32> {
-        let mut v = 0;
-        let mut i = 0;
-        while i < 35 {
-            let b = self.read_u8()?;
-            v |= ((b & 0x7f) as u32) << i;
-            if b & 0x80 == 0 {
-                return Ok(v);
-            }
-            i += 7;
-        }
-
-        bail!(
-            Malformed,
-            "variable 32-bit integer did not end after 5 bytes"
-        )
-    }
-
-    fn read_var_u64(&mut self) -> Result<u64> {
-        let mut v = 0;
-        let mut i = 0;
-        while i < 70 {
-            let b = self.read_u8()?;
-            v |= ((b & 0x7f) as u64) << i;
-
-            if b & 0x80 == 0 {
-                return Ok(v);
-            }
-
-            i += 7;
-        }
-
-        bail!(
-            Malformed,
-            "variable 64-bit integer did not end after 10 bytes"
-        )
-    }
-
-    fn read_var_i32(&mut self) -> Result<i32> {
-        let vx = self.read_var_u32()?;
-        let mut v = (vx >> 1) as i32;
-
-        if vx & 1 != 0 {
-            v = !v;
-        }
-
-        Ok(v)
-    }
-
-    fn read_var_i64(&mut self) -> Result<i64> {
-        let vx = self.read_var_u64()?;
-        let mut v = (vx >> 1) as i64;
-
-        if vx & 1 != 0 {
-            v = !v;
-        }
-
-        Ok(v)
-    }
-
-    fn read_str(&mut self) -> Result<&str> {
-        let len = self.read_var_u32()?;
-        let data = self.take_n(len as usize)?;
-
-        Ok(std::str::from_utf8(data)?)
     }
 }
 

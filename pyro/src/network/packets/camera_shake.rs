@@ -40,10 +40,12 @@ impl ConnectedPacket for CameraShake {
 }
 
 impl Serialize for CameraShake {
-    fn serialize(&self, buffer: &mut MutableBuffer) {
+    fn serialize(&self, buffer: &mut MutableBuffer) -> Result<()> {
         buffer.write_f32_le(self.intensity);
         buffer.write_f32_le(self.duration);
         buffer.write_u8(self.shake_type as u8);
         buffer.write_u8(self.action as u8);
+
+        Ok(())
     }
 }

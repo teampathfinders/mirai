@@ -135,7 +135,7 @@ impl Session {
     }
 
     /// Processes an unencapsulated game packet.
-    async fn handle_unframed_packet(&self, mut pk: SharedBuffer<'_>) -> Result<()> {
+    async fn handle_unframed_packet(&self, mut pk: MutableBuffer) -> Result<()> {
         let bytes = pk.as_ref();
 
         let packet_id = *pk.first().expect("Game packet buffer was empty");
@@ -153,27 +153,30 @@ impl Session {
         Ok(())
     }
 
-    async fn handle_game_packet(&self, mut pk: SharedBuffer<'_>) -> Result<()> {
-        pyassert!(pk.read_u8()? == 0xfe);
-
+    async fn handle_game_packet(&self, mut pk: MutableBuffer) -> Result<()> {
         // Decrypt packet
-        if self.encryptor.initialized() {
+        let pk = if self.encryptor.initialized() {
             // Safe to unwrap because the encryptor is confirmed to exist.
             let encryptor = self
                 .encryptor
                 .get()
                 .expect("Encryptor was destroyed while it was in use");
 
-            pk = match encryptor.decrypt(pk) {
+            // Remove 0xfe packet ID.
+            let snapshot = SharedBuffer::from(&pk.as_slice()[1..]);
+            match encryptor.decrypt(snapshot) {
                 Ok(t) => t,
                 Err(e) => {
                     return Err(e);
                 }
             }
-        }
+        } else {
+            SharedBuffer::from(&pk.as_slice()[1..])
+        };
 
         let compression_enabled =
             self.raknet.compression_enabled.load(Ordering::SeqCst);
+
         let compression_threshold = SERVER_CONFIG.read().compression_threshold;
 
         if compression_enabled

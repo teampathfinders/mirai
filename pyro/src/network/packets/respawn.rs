@@ -44,16 +44,18 @@ impl ConnectedPacket for Respawn {
 }
 
 impl Serialize for Respawn {
-    fn serialize(&self, buffer: &mut MutableBuffer) {
-        buffer.write_vec3f(&self.position);
+    fn serialize(&self, buffer: &mut MutableBuffer) -> Result<()> {
+        buffer.write_vecf(&self.position);
         buffer.write_u8(self.state as u8);
         buffer.write_var_u64(self.runtime_id);
+
+        Ok(())
     }
 }
 
 impl Deserialize<'_> for Respawn {
     fn deserialize(mut buffer: SharedBuffer) -> Result<Self> {
-        let position = buffer.read_vec3f()?;
+        let position = buffer.read_vecf()?;
         let state = RespawnState::try_from(buffer.read_u8()?)?;
         let runtime_id = buffer.read_var_u64()?;
 

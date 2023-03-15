@@ -72,7 +72,7 @@ impl ConnectedPacket for ResourcePackStack<'_> {
 }
 
 impl Serialize for ResourcePackStack<'_> {
-    fn serialize(&self, buffer: &mut MutableBuffer) {
+    fn serialize(&self, buffer: &mut MutableBuffer) -> Result<()> {
         buffer.write_bool(self.forced_to_accept);
 
         buffer.write_var_u32(self.resource_packs.len() as u32);
@@ -93,5 +93,6 @@ impl Serialize for ResourcePackStack<'_> {
         }
 
         buffer.write_bool(self.experiments_previously_toggled);
+        Ok(())
     }
 }

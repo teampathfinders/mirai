@@ -7,6 +7,8 @@ use util::bytes::{BinaryWriter, MutableBuffer, size_of_varint, VarInt, VarString
 
 use crate::{command::ParsedArgument, network::packets::ConnectedPacket};
 
+// FIXME: This whole module could use some cleanup...
+
 pub const BOOLEAN_GAME_RULES: &[&str] = &[
     "commandblocksenabled",
     "commandblockoutput",
@@ -203,7 +205,7 @@ impl GameRule {
             let rule_value = match str_boolean.as_str() {
                 "true" => true,
                 "false" => false,
-                _ => bail!(InvalidCommand, "Invalid boolean, must be true or false, got {str_boolean}")
+                _ => bail!(Malformed, "Invalid boolean, must be true or false, got {str_boolean}")
             };
 
             Ok(match name {
@@ -233,7 +235,7 @@ impl GameRule {
                 "showdeathmessages" => Self::ShowDeathMessages(rule_value),
                 "showtags" => Self::ShowTags(rule_value),
                 "tntexplodes" => Self::TntExplodes(rule_value),
-                _ => bail!(InvalidCommand, "Invalid boolean game rule name {name}")
+                _ => bail!(Malformed, "Invalid boolean game rule name {name}")
             })
         } else if let ParsedArgument::Int(integer) = value {
             Ok(match name {
@@ -241,10 +243,10 @@ impl GameRule {
                 "maxcommandchainlength" => Self::MaxCommandChainLength(*integer),
                 "randomtickspeed" => Self::RandomTickSpeed(*integer),
                 "spawnradius" => Self::SpawnRadius(*integer),
-                _ => bail!(InvalidCommand, "Invalid integer game rule name {name}")
+                _ => bail!(Malformed, "Invalid integer game rule name {name}")
             })
         } else {
-            bail!(InvalidCommand, "Invalid game rule value type, it must be a boolean or integer")
+            bail!(Malformed, "Invalid game rule value type, it must be a boolean or integer")
         }
     }
 
@@ -349,10 +351,12 @@ impl ConnectedPacket for GameRulesChanged<'_> {
 }
 
 impl Serialize for GameRulesChanged<'_> {
-    fn serialize(&self, buffer: &mut MutableBuffer) {
+    fn serialize(&self, buffer: &mut MutableBuffer) -> Result<()> {
         buffer.write_var_u32(self.game_rules.len() as u32);
         for game_rule in self.game_rules {
             game_rule.serialize(buffer);
         }
+
+        Ok(())
     }
 }

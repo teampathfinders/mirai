@@ -20,7 +20,8 @@ impl<'a> ConnectedPacket for ConnectAutomationClient<'a> {
 }
 
 impl<'a> Serialize for ConnectAutomationClient<'a> {
-    fn serialize(&self, buffer: &mut MutableBuffer) {
+    fn serialize(&self, buffer: &mut MutableBuffer) -> Result<()> {
         buffer.write_str(self.server_uri);
+        Ok(())
     }
 }

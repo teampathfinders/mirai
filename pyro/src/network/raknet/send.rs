@@ -3,7 +3,7 @@ use std::sync::atomic::Ordering;
 
 use async_recursion::async_recursion;
 
-use flate2::write::DeflateEncoder;
+use flate2::bufread::DeflateEncoder;
 use flate2::Compression;
 
 use crate::config::SERVER_CONFIG;
@@ -50,7 +50,7 @@ impl Session {
         let mut buffer = MutableBuffer::new();
         buffer.write_u8(CONNECTED_PACKET_ID);
 
-        if self.raknet.compression_enabled.load(Ordering::SeqCst) {
+        let mut pk = if self.raknet.compression_enabled.load(Ordering::SeqCst) {
             let (algorithm, threshold) = {
                 let config = SERVER_CONFIG.read();
                 (config.compression_algorithm, config.compression_threshold)
@@ -69,12 +69,17 @@ impl Session {
                         );
 
                         writer.write_all(pk.as_ref())?;
-                        pk =
-                            SharedBuffer::copy_from_slice(writer.finish()?.as_slice());
+                        let compressed = writer.into_inner();
+
+                        MutableBuffer::from(compressed)
                     }
                 }
+            } else {
+                MutableBuffer::from(pk.as_ref().to_vec())
             }
-        }
+        } else {
+            MutableBuffer::from(pk.as_ref().to_vec())
+        };
 
         if let Some(encryptor) = self.encryptor.get() {
             pk = encryptor.encrypt(pk)?;

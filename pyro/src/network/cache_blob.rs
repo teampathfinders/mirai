@@ -1,4 +1,5 @@
 use std::io::Write;
+use crate::Result;
 use util::bytes::{BinaryWriter, MutableBuffer, SharedBuffer};
 
 /// A blob used in the cache protocol.
@@ -11,13 +12,15 @@ pub struct CacheBlob<'a> {
 }
 
 impl<'a> CacheBlob<'a> {
-    pub fn serialize(&self, buffer: &mut MutableBuffer) {
+    pub fn serialize(&self, buffer: &mut MutableBuffer) -> Result<()> {
         buffer.write_u64_le(self.hash);
-        buffer.write(&self.payload);
+        buffer.append(&self.payload);
+
+        Ok(())
     }
 
     #[inline]
-    pub const fn len(&self) -> usize {
+    pub fn len(&self) -> usize {
         8 + self.payload.len()
     }
 }

@@ -84,10 +84,10 @@ impl ConnectedPacket for MovePlayer {
 }
 
 impl Serialize for MovePlayer {
-    fn serialize(&self, buffer: &mut MutableBuffer) {
+    fn serialize(&self, buffer: &mut MutableBuffer) -> Result<()> {
         buffer.write_var_u64(self.runtime_id);
-        buffer.write_vec3f(&self.position);
-        buffer.write_vec3f(&self.rotation);
+        buffer.write_vecf(&self.position);
+        buffer.write_vecf(&self.rotation);
         buffer.write_u8(self.mode as u8);
         buffer.write_bool(self.on_ground);
         buffer.write_var_u64(self.ridden_runtime_id);
@@ -98,14 +98,16 @@ impl Serialize for MovePlayer {
         }
 
         buffer.write_var_u64(self.tick);
+
+        Ok(())
     }
 }
 
 impl Deserialize<'_> for MovePlayer {
     fn deserialize(mut buffer: SharedBuffer) -> Result<Self> {
         let runtime_id = buffer.read_var_u64()?;
-        let position = buffer.read_vec3f()?;
-        let rotation = buffer.read_vec3f()?;
+        let position = buffer.read_vecf()?;
+        let rotation = buffer.read_vecf()?;
         let mode = MovementMode::try_from(buffer.read_u8()?)?;
         let on_ground = buffer.read_bool()?;
         let ridden_runtime_id = buffer.read_var_u64()?;

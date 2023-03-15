@@ -39,13 +39,15 @@ impl ConnectedPacket for ClientBoundDebugRenderer<'_> {
 }
 
 impl Serialize for ClientBoundDebugRenderer<'_> {
-    fn serialize(&self, buffer: &mut MutableBuffer) {
-        buffer.write_le::<i32>()(self.action as i32);
+    fn serialize(&self, buffer: &mut MutableBuffer) -> Result<()> {
+        buffer.write_i32_le(self.action as i32);
         if self.action == DebugRendererAction::AddCube {
             buffer.write_str(self.text);
-            buffer.write_vec3f(&self.position);
-            buffer.write_vec4f(&self.color);
+            buffer.write_vecf(&self.position);
+            buffer.write_vecf(&self.color);
             buffer.write_i64_le(self.duration);
         }
+
+        Ok(())
     }
 }

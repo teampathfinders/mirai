@@ -1,5 +1,5 @@
 use std::io::Write;
-use util::bytes::MutableBuffer;
+use util::bytes::{BinaryWriter, MutableBuffer};
 
 use crate::network::raknet::OFFLINE_MESSAGE_DATA;
 use util::Result;
@@ -29,11 +29,15 @@ impl UnconnectedPong<'_> {
 }
 
 impl Serialize for UnconnectedPong<'_> {
-    fn serialize(&self, buffer: &mut MutableBuffer) {
+    fn serialize(&self, buffer: &mut MutableBuffer) -> Result<()> {
         buffer.write_u8(Self::ID);
-        buffer.write_be::<u64>(self.time);
-        buffer.write_be::<u64>(self.server_guid);
-        buffer.write(OFFLINE_MESSAGE_DATA);
-        buffer.put_raknet_string(self.metadata);
+        buffer.write_u64_be(self.time);
+        buffer.write_u64_be(self.server_guid);
+        buffer.append(OFFLINE_MESSAGE_DATA);
+
+        buffer.write_u16_be(self.metadata.len() as u16);
+        buffer.append(self.metadata.as_bytes());
+
+        Ok(())
     }
 }

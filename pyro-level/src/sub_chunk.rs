@@ -105,7 +105,7 @@ impl SubLayer {
         Ok(Self { indices, palette })
     }
 
-    // fn serialize(&self, buffer: &mut MutableBuffer) {
+    // fn serialize(&self, buffer: &mut MutableBuffer) -> Result<()> {
     //     // Determine the required bits per index
     //     let index_size = {
     //         let palette_size = self.palette.len();
@@ -238,7 +238,7 @@ impl SubChunk {
         }
     }
 
-    // pub fn serialize(&self, buffer: &mut MutableBuffer) {
+    // pub fn serialize(&self, buffer: &mut MutableBuffer) -> Result<()> {
     //     buffer.write_u8(self.version as u8);
     //     match self.version {
     //         SubChunkVersion::Legacy => todo!(),

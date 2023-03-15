@@ -250,17 +250,19 @@ impl ConnectedPacket for LevelEvent {
 }
 
 impl Serialize for LevelEvent {
-    fn serialize(&self, buffer: &mut MutableBuffer) {
+    fn serialize(&self, buffer: &mut MutableBuffer) -> Result<()> {
         buffer.write_var_i32(self.event_type as i32);
-        buffer.write_vec3f(&self.position);
+        buffer.write_vecf(&self.position);
         buffer.write_var_i32(self.event_data);
+
+        Ok(())
     }
 }
 
 impl Deserialize<'_> for LevelEvent {
     fn deserialize(mut buffer: SharedBuffer) -> Result<Self> {
         let event_type = LevelEventType::try_from(buffer.read_var_i32()?)?;
-        let position = buffer.read_vec3f()?;
+        let position = buffer.read_vecf()?;
         let event_data = buffer.read_var_i32()?;
 
         Ok(Self {

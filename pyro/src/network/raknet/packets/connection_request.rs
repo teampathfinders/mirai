@@ -20,7 +20,7 @@ impl ConnectionRequest {
 
 impl Deserialize<'_> for ConnectionRequest {
     fn deserialize(mut buffer: SharedBuffer) -> Result<Self> {
-        pyassert!(buffer.get_u8() == Self::ID);
+        pyassert!(buffer.read_u8()? == Self::ID);
 
         let guid = buffer.read_i64_be()?;
         let time = buffer.read_i64_be()?;

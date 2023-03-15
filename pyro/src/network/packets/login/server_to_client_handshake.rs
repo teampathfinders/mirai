@@ -1,7 +1,6 @@
-use std::fmt::Write;
 
 
-use util::bytes::{MutableBuffer, VarString};
+use util::bytes::{BinaryWriter, MutableBuffer, VarString};
 
 use crate::network::packets::ConnectedPacket;
 use util::Serialize;
@@ -16,7 +15,7 @@ pub struct ServerToClientHandshake<'a> {
     pub jwt: &'a str,
 }
 
-impl ConnectedPacket for ServerToClientHandshake<'_> {
+impl<'a> ConnectedPacket for ServerToClientHandshake<'a> {
     const ID: u32 = 0x03;
 
     fn serialized_size(&self) -> usize {
@@ -24,8 +23,9 @@ impl ConnectedPacket for ServerToClientHandshake<'_> {
     }
 }
 
-impl Serialize for ServerToClientHandshake<'_> {
-    fn serialize(&self, buffer: &mut MutableBuffer) {
+impl<'a> Serialize for ServerToClientHandshake<'a> {
+    fn serialize(&self, buffer: &mut MutableBuffer) -> Result<()> {
         buffer.write_str(self.jwt);
+        Ok(())
     }
 }

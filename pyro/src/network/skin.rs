@@ -137,11 +137,11 @@ impl PersonaPiece {
     }
 
     fn deserialize(buffer: &mut SharedBuffer) -> Result<Self> {
-        let piece_id = buffer.read_str()?;
+        let piece_id = buffer.read_str()?.to_owned();
         let piece_type = PersonaPieceType::try_from(buffer.read_str()?)?;
-        let pack_id = buffer.read_str()?;
-        let default = buffer.read_bool();
-        let product_id = buffer.read_str()?;
+        let pack_id = buffer.read_str()?.to_owned();
+        let default = buffer.read_bool()?;
+        let product_id = buffer.read_str()?.to_owned();
 
         Ok(Self {
             piece_id,
@@ -175,9 +175,9 @@ impl PersonaPieceTint {
     }
 
     fn deserialize(buffer: &mut SharedBuffer) -> Result<Self> {
-        let piece_type = PersonaPieceType::try_from(buffer.read_str()?.as_str())?;
+        let piece_type = PersonaPieceType::try_from(buffer.read_str()?)?;
 
-        let color_count = buffer.get_u32_le();
+        let color_count = buffer.read_u32_le()?;
         if color_count > 4 {
             bail!(Malformed, "Persona piece tint cannot have more than 4 colours, received {color_count}");
         }
@@ -240,7 +240,7 @@ impl TryFrom<u32> for SkinExpressionType {
 }
 
 /// A skin animation.
-#[derive(Debug, Deserialize, Clone)]
+#[derive(Debug, Deserialize)]
 pub struct SkinAnimation {
     /// Width of the animation image in pixels.
     #[serde(rename = "ImageWidth")]
@@ -442,7 +442,7 @@ impl Skin {
         buffer.write_u32_le(self.image_width);
         buffer.write_u32_le(self.image_height);
         buffer.write_var_u32(self.image_data.len() as u32);
-        buffer.write(self.image_data.as_ref())?;
+        buffer.append(self.image_data.as_ref())?;
 
         buffer.write_u32_le(self.animations.len() as u32);
         for animation in &self.animations {
@@ -452,7 +452,7 @@ impl Skin {
         buffer.write_u32_le(self.cape_image_width);
         buffer.write_u32_le(self.cape_image_height);
         buffer.write_var_u32(self.cape_image_data.len() as u32);
-        buffer.write(self.cape_image_data.as_ref())?;
+        buffer.append(self.cape_image_data.as_ref())?;
 
         buffer.write_str(&self.geometry);
         buffer.write_str(&self.geometry_engine_version);
@@ -480,14 +480,14 @@ impl Skin {
     }
 
     pub fn deserialize(buffer: &mut SharedBuffer) -> Result<Self> {
-        let skin_id = buffer.read_str()?;
-        let playfab_id = buffer.read_str()?;
-        let resource_patch = buffer.read_str()?;
+        let skin_id = buffer.read_str()?.to_owned();
+        let playfab_id = buffer.read_str()?.to_owned();
+        let resource_patch = buffer.read_str()?.to_owned();
         
         let image_width = buffer.read_u32_le()?;
         let image_height = buffer.read_u32_le()?;
         let image_size = buffer.read_var_u32()?;
-        let image_data = buffer.copy_to_bytes(image_size as usize);
+        let image_data = MutableBuffer::from(buffer.take_n(image_size as usize)?.to_vec());
 
         let animation_count = buffer.read_u32_le()?;
         let mut animations = Vec::with_capacity(animation_count as usize);
@@ -498,15 +498,15 @@ impl Skin {
         let cape_image_width = buffer.read_u32_le()?;
         let cape_image_height = buffer.read_u32_le()?;
         let cape_image_size = buffer.read_var_u32()?;
-        let cape_image_data = buffer.copy_to_bytes(cape_image_size as usize);
+        let cape_image_data = MutableBuffer::from(buffer.take_n(cape_image_size as usize)?.to_vec());
 
-        let geometry = buffer.read_str()?;
-        let geometry_engine_version = buffer.read_str()?;
-        let animation_data = buffer.read_str()?;
-        let cape_id = buffer.read_str()?;
-        let full_id = buffer.read_str()?;
-        let arm_size = ArmSize::try_from(buffer.read_str()?.as_str())?;
-        let color = buffer.read_str()?;
+        let geometry = buffer.read_str()?.to_owned();
+        let geometry_engine_version = buffer.read_str()?.to_owned();
+        let animation_data = buffer.read_str()?.to_owned();
+        let cape_id = buffer.read_str()?.to_owned();
+        let full_id = buffer.read_str()?.to_owned();
+        let arm_size = ArmSize::try_from(buffer.read_str()?)?;
+        let color = buffer.read_str()?.to_owned();
 
         let persona_piece_count = buffer.read_u32_le()?;
         let mut persona_pieces = Vec::with_capacity(persona_piece_count as usize);

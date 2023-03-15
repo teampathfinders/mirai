@@ -1,7 +1,7 @@
 
 use uuid::Uuid;
 use util::{bail, Error, Result};
-use util::bytes::SharedBuffer;
+use util::bytes::{BinaryReader, SharedBuffer};
 
 use util::Deserialize;
 
@@ -58,26 +58,26 @@ impl TryFrom<u32> for CommandOriginType {
 /// Even if the command isn't listed by the [`AvailableCommands`](super::AvailableCommands) packet,
 /// the client will still send a request.
 #[derive(Debug, Clone)]
-pub struct CommandRequest {
+pub struct CommandRequest<'a> {
     /// The actual command.
     /// This is a raw string (i.e. "/kill @e[type=cow]")
-    pub command: String,
+    pub command: &'a str,
     /// Command origin.
     pub origin: CommandOriginType,
     /// Request ID.
     /// If a command is requested by a websocket server, 
     /// then this ID is used to forward the result to the server instead of the client.
-    pub request_id: String,
+    pub request_id: &'a str,
 }
 
-impl ConnectedPacket for CommandRequest {
+impl<'a> ConnectedPacket for CommandRequest<'a> {
     const ID: u32 = 0x4d;
 }
 
-impl Deserialize<'_> for CommandRequest {
-    fn deserialize(mut buffer: SharedBuffer) -> Result<Self> {
+impl<'a> Deserialize<'a> for CommandRequest<'a> {
+    fn deserialize(mut buffer: SharedBuffer<'a>) -> Result<Self> {
         let command = buffer.read_str()?;
-        let origin = CommandOriginType::try_from(buffer.read_var::<u32>()?)?;
+        let origin = CommandOriginType::try_from(buffer.read_var_u32()?)?;
         buffer.advance(16);
         let request_id = buffer.read_str()?;
 

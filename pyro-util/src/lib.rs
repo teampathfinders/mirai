@@ -10,7 +10,7 @@ macro_rules! glob_export {
 pub mod bytes;
 mod error;
 mod traits;
-mod u24;
+pub mod u24;
 mod vector;
 
 pub use error::*;

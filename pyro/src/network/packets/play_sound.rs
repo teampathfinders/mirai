@@ -8,9 +8,9 @@ use super::ConnectedPacket;
 
 /// Plays a sound for the client.
 #[derive(Debug)]
-pub struct PlaySound<'s> {
+pub struct PlaySound<'a> {
     /// Name of the sound.
-    pub name: &'s str,
+    pub name: &'a str,
     /// Position of the sound.
     pub position: Vector3i,
     /// Volume of the sound.
@@ -19,7 +19,7 @@ pub struct PlaySound<'s> {
     pub pitch: f32,
 }
 
-impl<'s> ConnectedPacket for PlaySound<'s> {
+impl<'a> ConnectedPacket for PlaySound<'a> {
     const ID: u32 = 0x56;
 
     fn serialized_size(&self) -> usize {
@@ -28,11 +28,13 @@ impl<'s> ConnectedPacket for PlaySound<'s> {
     }
 }
 
-impl<'s> Serialize for PlaySound<'s> {
-    fn serialize(&self, buffer: &mut MutableBuffer) {
+impl<'a> Serialize for PlaySound<'a> {
+    fn serialize(&self, buffer: &mut MutableBuffer) -> Result<()> {
         buffer.write_str(self.name);
-        buffer.write_vec3i(&self.position);
+        buffer.write_veci(&self.position);
         buffer.write_f32_le(self.volume);
         buffer.write_f32_le(self.pitch);
+
+        Ok(())
     }
 }

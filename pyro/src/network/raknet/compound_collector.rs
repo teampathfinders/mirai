@@ -1,7 +1,7 @@
 
 
 use dashmap::DashMap;
-use util::bytes::{ArcBuffer, SharedBuffer};
+use util::bytes::{ArcBuffer, MutableBuffer, SharedBuffer};
 
 use crate::network::raknet::Frame;
 use crate::network::raknet::Reliability;
@@ -9,7 +9,7 @@ use crate::network::raknet::Reliability;
 /// Keeps track of packet fragments, merging them when all fragments have been received.
 #[derive(Debug, Default)]
 pub struct CompoundCollector {
-    compounds: DashMap<u16, Vec<ArcBuffer>>,
+    compounds: DashMap<u16, Vec<MutableBuffer>>,
 }
 
 impl CompoundCollector {
@@ -29,7 +29,7 @@ impl CompoundCollector {
                     let mut vec =
                         Vec::with_capacity(frame.compound_size as usize);
 
-                    vec.resize(frame.compound_size as usize, SharedBuffer::new());
+                    vec.resize_with(frame.compound_size as usize, || MutableBuffer::new());
                     vec
                 });
 
@@ -40,8 +40,8 @@ impl CompoundCollector {
                 return None;
             }
 
-            fragments[frame.compound_index as usize] = frame.body.clone();
-            !fragments.iter().any(SharedBuffer::is_empty)
+            fragments[frame.compound_index as usize] = frame.body;
+            !fragments.iter().any(<[u8]>::is_empty)
         };
 
         if is_completed {

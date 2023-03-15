@@ -55,7 +55,7 @@ impl ConnectedPacket for BossEvent<'_> {
 }
 
 impl Serialize for BossEvent<'_> {
-    fn serialize(&self, buffer: &mut MutableBuffer) {
+    fn serialize(&self, buffer: &mut MutableBuffer) -> Result<()> {
         buffer.write_var_i64(self.boss_unique_id);
         match self.event {
             BossEventType::Show {
@@ -118,5 +118,7 @@ impl Serialize for BossEvent<'_> {
                 buffer.write_var_i64(player_unique_id);
             }
         }
+
+        Ok(())
     }
 }

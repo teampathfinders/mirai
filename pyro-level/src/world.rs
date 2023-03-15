@@ -288,7 +288,7 @@ impl DatabaseKey {
             }
     }
 
-    // pub(crate) fn serialize(&self, buffer: &mut MutableBuffer) {
+    // pub(crate) fn serialize(&self, buffer: &mut MutableBuffer) -> Result<()> {
     //     buffer.write_i32_le(self.x);
     //     buffer.write_i32_le(self.z);
     //

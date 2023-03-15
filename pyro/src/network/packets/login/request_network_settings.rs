@@ -1,6 +1,6 @@
 
 
-use util::bytes::SharedBuffer;
+use util::bytes::{BinaryReader, SharedBuffer};
 
 use util::pyassert;
 use util::Deserialize;

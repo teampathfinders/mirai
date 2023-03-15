@@ -20,10 +20,12 @@ impl ConnectedPacket for ContainerOpen {
 }
 
 impl Serialize for ContainerOpen {
-    fn serialize(&self, buffer: &mut MutableBuffer) {
+    fn serialize(&self, buffer: &mut MutableBuffer) -> Result<()> {
         buffer.write_u8(self.window_id);
         buffer.write_u8(self.container_type);
-        buffer.write_vec3i(&self.position);
+        buffer.write_veci(&self.position);
         buffer.write_var_i64(self.container_entity_unique_id);
+
+        Ok(())
     }
 }

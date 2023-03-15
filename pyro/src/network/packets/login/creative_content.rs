@@ -54,11 +54,11 @@ impl ItemStack {
         // }
     }
 
-    pub fn serialize(&self, buffer: &mut MutableBuffer) {
+    pub fn serialize(&self, buffer: &mut MutableBuffer) -> Result<()> {
         buffer.write_var_u32(self.item_type.network_id);
         if self.item_type.network_id == 0 {
             // Air has no data.
-            return;
+            return Ok(());
         }
 
         buffer.write_u16_be(self.count);
@@ -81,17 +81,19 @@ impl ItemStack {
 
         buffer.write_u32_be(self.can_be_placed_on.len() as u32);
         for item in &self.can_be_placed_on {
-            buffer.put_str(item);
+            buffer.write_str(item);
         }
 
         buffer.write_u32_be(self.can_break.len() as u32);
         for item in &self.can_break {
-            buffer.put_str(item);
+            buffer.write_str(item);
         }
 
         if self.item_type.network_id == ITEM_ID_SHIELD {
             buffer.write_u64_be(0); // Blocking tick.
         }
+
+        Ok(())
     }
 }
 
@@ -110,10 +112,12 @@ impl ConnectedPacket for CreativeContent<'_> {
 }
 
 impl Serialize for CreativeContent<'_> {
-    fn serialize(&self, buffer: &mut MutableBuffer) {
+    fn serialize(&self, buffer: &mut MutableBuffer) -> Result<()> {
         buffer.write_var_u32(self.items.len() as u32);
         for item in self.items {
             item.serialize(buffer);
         }
+
+        Ok(())
     }
 }

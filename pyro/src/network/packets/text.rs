@@ -104,7 +104,7 @@ impl<'a> ConnectedPacket for TextMessage<'a> {
 }
 
 impl<'a> Serialize for TextMessage<'a> {
-    fn serialize(&self, buffer: &mut MutableBuffer) {
+    fn serialize(&self, buffer: &mut MutableBuffer) -> Result<()> {
         buffer.write_u8(self.message_type as u8);
         buffer.write_bool(self.needs_translation);
 
@@ -137,13 +137,15 @@ impl<'a> Serialize for TextMessage<'a> {
 
         buffer.write_str(&self.xuid);
         buffer.write_str(&self.platform_chat_id);
+
+        Ok(())
     }
 }
 
 impl<'a> Deserialize<'a> for TextMessage<'a> {
     fn deserialize(mut buffer: SharedBuffer<'a>) -> Result<Self> {
         let message_type = MessageType::try_from(buffer.read_u8()?)?;
-        let needs_translation = buffer.get_bool();
+        let needs_translation = buffer.read_bool()?;
         let message;
         let mut source_name = "";
         let mut parameters = Vec::new();
@@ -168,7 +170,7 @@ impl<'a> Deserialize<'a> for TextMessage<'a> {
             | MessageType::JukeboxPopup => {
                 message = buffer.read_str()?;
 
-                let count = buffer.read_var::<u32>()?;
+                let count = buffer.read_var_u32()?;
                 parameters.reserve(count as usize);
 
                 for _ in 0..count {

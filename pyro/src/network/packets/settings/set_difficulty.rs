@@ -2,7 +2,7 @@
 use util::{bail, Error, Result};
 
 use util::{Deserialize, Serialize};
-use util::bytes::{BinaryWriter, MutableBuffer, SharedBuffer, size_of_varint};
+use util::bytes::{BinaryReader, BinaryWriter, MutableBuffer, SharedBuffer, size_of_varint};
 
 use crate::network::packets::ConnectedPacket;
 
@@ -47,8 +47,10 @@ impl ConnectedPacket for SetDifficulty {
 }
 
 impl Serialize for SetDifficulty {
-    fn serialize(&self, buffer: &mut MutableBuffer) {
+    fn serialize(&self, buffer: &mut MutableBuffer) -> Result<()> {
         buffer.write_var_i32(self.difficulty as i32);
+
+        Ok(())
     }
 }
 

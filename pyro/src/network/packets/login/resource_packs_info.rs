@@ -112,7 +112,7 @@ impl<'a> ConnectedPacket for ResourcePacksInfo<'a> {
 }
 
 impl<'a> Serialize for ResourcePacksInfo<'a> {
-    fn serialize(&self, buffer: &mut MutableBuffer) {
+    fn serialize(&self, buffer: &mut MutableBuffer) -> Result<()> {
         buffer.write_bool(self.required);
         buffer.write_bool(self.scripting_enabled);
         buffer.write_bool(self.forcing_server_packs);
@@ -139,5 +139,7 @@ impl<'a> Serialize for ResourcePacksInfo<'a> {
             buffer.write_bool(pack.has_scripts);
             buffer.write_bool(pack.rtx_enabled);
         }
+
+        Ok(())
     }
 }

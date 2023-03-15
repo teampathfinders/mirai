@@ -28,15 +28,17 @@ impl ConnectionRequestAccepted {
 }
 
 impl Serialize for ConnectionRequestAccepted {
-    fn serialize(&self, buffer: &mut MutableBuffer) {
+    fn serialize(&self, buffer: &mut MutableBuffer) -> Result<()> {
         buffer.write_u8(Self::ID);
-        buffer.put_addr(self.client_address);
+        buffer.write_addr(self.client_address);
         buffer.write_u16_be(0); // System index
         for _ in 0..20 {
             // 20 internal IDs
-            buffer.put_addr(*EMPTY_IPV4_ADDRESS);
+            buffer.write_addr(EMPTY_IPV4_ADDRESS);
         }
         buffer.write_i64_be(self.request_time);
         buffer.write_i64_be(self.request_time); // Response time
+
+        Ok(())
     }
 }

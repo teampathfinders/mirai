@@ -10,7 +10,7 @@ use crate::network::packets::ConnectedPacket;
 use util::Deserialize;
 use util::{bail, pyassert};
 use util::{Error, Result};
-use util::bytes::SharedBuffer;
+use util::bytes::{BinaryReader, SharedBuffer};
 use crate::network::Skin;
 
 /// Device operating system
@@ -63,7 +63,7 @@ impl ConnectedPacket for Login {
 impl Deserialize<'_> for Login {
     fn deserialize(mut buffer: SharedBuffer) -> Result<Self> {
         buffer.advance(4); // Skip protocol version, use the one in RequestNetworkSettings instead.
-        buffer.read_var::<u32>()?;
+        buffer.read_var_u32()?;
 
         let identity_data = parse_identity_data(&mut buffer)?;
         let data =

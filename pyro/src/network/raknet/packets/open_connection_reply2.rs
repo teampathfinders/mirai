@@ -36,12 +36,16 @@ impl OpenConnectionReply2 {
 }
 
 impl Serialize for OpenConnectionReply2 {
-    fn serialize(&self, buffer: &mut MutableBuffer) {
+    fn serialize(&self, buffer: &mut MutableBuffer) -> Result<()> {
         buffer.write_u8(Self::ID);
-        buffer.write(OFFLINE_MESSAGE_DATA);
-        buffer.write_be::<u64>()(self.server_guid);
-        buffer.put_addr(self.client_address);
+        buffer.append(OFFLINE_MESSAGE_DATA);
+        buffer.write_u64_be(self.server_guid);
+        buffer.write_addr(self.client_address);
         buffer.write_u16_be(self.mtu);
-        buffer.write_bool(false); // Encryption not enabled, must be false to continue login sequence
+        // Encryption not enabled, must be false to continue login sequence.
+        // Actual encryption will be enabled later on, using `ServerToClientHandshake`.
+        buffer.write_bool(false);
+
+        Ok(())
     }
 }
