@@ -1,5 +1,6 @@
 use bytes::{BufMut, BytesMut, Bytes};
-use util::{BlockPosition, Serialize, Vector3i, Result, WriteExtensions, size_of_varint};
+use util::{BlockPosition, Serialize, Vector3i, Result};
+use util::bytes::{BinaryWriter, MutableBuffer, size_of_varint};
 use crate::network::packets::ConnectedPacket;
 
 #[derive(Debug, Clone)]
@@ -19,10 +20,10 @@ impl ConnectedPacket for ContainerOpen {
 }
 
 impl Serialize for ContainerOpen {
-    fn serialize(&self, buffer: &mut BytesMut) {
-        buffer.write_le::<u8>(self.window_id);
-        buffer.write_le::<u8>(self.container_type);
-        buffer.put_vec3i(&self.position);
-        buffer.put_var_i64(self.container_entity_unique_id);
+    fn serialize(&self, buffer: &mut MutableBuffer) {
+        buffer.write_u8(self.window_id);
+        buffer.write_u8(self.container_type);
+        buffer.write_vec3i(&self.position);
+        buffer.write_var_i64(self.container_entity_unique_id);
     }
 }

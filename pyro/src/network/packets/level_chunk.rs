@@ -1,5 +1,6 @@
 use bytes::{BufMut, BytesMut, Bytes};
-use util::{Result, Vector2i, WriteExtensions};
+use util::{Result, Vector2i};
+use util::bytes::{BinaryWriter, MutableBuffer};
 
 use util::Serialize;
 
@@ -38,28 +39,26 @@ impl ConnectedPacket for LevelChunk {
 }
 
 impl Serialize for LevelChunk {
-    fn serialize(&self, buffer: &mut BytesMut) {
-        let mut buffer = BytesMut::new();
-
-        buffer.put_vec2i(&self.position);
+    fn serialize(&self, buffer: &mut MutableBuffer) {
+        buffer.write_vec2i(&self.position);
         match self.request_mode {
             SubChunkRequestMode::Legacy => {
-                buffer.put_var_u32(self.sub_chunk_count);
+                buffer.write_var_u32(self.sub_chunk_count);
             }
             SubChunkRequestMode::Limitless => {
-                buffer.put_var_u32(u32::MAX);
+                buffer.write_var_u32(u32::MAX);
             }
             SubChunkRequestMode::Limited => {
-                buffer.put_var_u32(u32::MAX - 1);
-                buffer.write_be::<u16>()(self.highest_sub_chunk);
+                buffer.write_var_u32(u32::MAX - 1);
+                buffer.write_u16_be(self.highest_sub_chunk);
             }
         }
 
         buffer.write_bool(self.blob_hashes.is_some());
         if let Some(hashes) = &self.blob_hashes {
-            buffer.put_var_u32(hashes.len() as u32);
+            buffer.write_var_u32(hashes.len() as u32);
             for hash in hashes {
-                buffer.write_be::<u64>()(*hash);
+                buffer.write_u64_be(*hash);
             }
         }
 

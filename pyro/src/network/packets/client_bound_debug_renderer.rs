@@ -1,5 +1,6 @@
 use bytes::{BufMut, BytesMut, Bytes};
-use util::{Serialize, Result, Vector3f, Vector4f, WriteExtensions, size_of_varint};
+use util::{Serialize, Result, Vector3f, Vector4f};
+use util::bytes::{BinaryWriter, MutableBuffer, size_of_varint};
 
 use super::ConnectedPacket;
 
@@ -38,13 +39,13 @@ impl ConnectedPacket for ClientBoundDebugRenderer<'_> {
 }
 
 impl Serialize for ClientBoundDebugRenderer<'_> {
-    fn serialize(&self, buffer: &mut BytesMut) {
+    fn serialize(&self, buffer: &mut MutableBuffer) {
         buffer.write_le::<i32>()(self.action as i32);
         if self.action == DebugRendererAction::AddCube {
-            buffer.put_string(self.text);
-            buffer.put_vec3f(&self.position);
-            buffer.put_vec4f(&self.color);
-            buffer.put_i64_le(self.duration);
+            buffer.write_str(self.text);
+            buffer.write_vec3f(&self.position);
+            buffer.write_vec4f(&self.color);
+            buffer.write_i64_le(self.duration);
         }
     }
 }

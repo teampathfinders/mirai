@@ -1,8 +1,8 @@
 use std::collections::HashMap;
 use bytes::{BytesMut, BufMut, Bytes};
-use util::{Vector3f, Serialize, Result, WriteExtensions};
+use util::{Vector3f, Serialize, Result};
 use uuid::Uuid;
-use util::bytes::MutableBuffer;
+use util::bytes::{BinaryWriter, MutableBuffer};
 use crate::command::CommandPermissionLevel;
 use crate::network::packets::login::{DeviceOS, ItemStack, PermissionLevel};
 
@@ -37,9 +37,9 @@ pub struct EntityLink {
 
 impl EntityLink {
     pub fn encode(&self, buffer: &mut MutableBuffer) {
-        buffer.put_var_i64(self.ridden_entity_id);
-        buffer.put_var_i64(self.rider_entity_id);
-        buffer.write_le::<u8>(self.link_type as u8);
+        buffer.write_var_i64(self.ridden_entity_id);
+        buffer.write_var_i64(self.rider_entity_id);
+        buffer.write_u8(self.link_type as u8);
         buffer.write_bool(self.is_immediate);
         buffer.write_bool(self.is_rider_initiated);
     }
@@ -91,11 +91,11 @@ pub struct AbilityLayer {
 
 impl AbilityLayer {
     pub fn encode(&self, buffer: &mut MutableBuffer) {
-        buffer.write_le::<u16>()(self.ability_type as u16);
-        buffer.write_le::<u32>()(self.abilities);
-        buffer.write_le::<u32>()(self.values);
-        buffer.put_f32_le(self.fly_speed);
-        buffer.put_f32_le(self.walk_speed);
+        buffer.write_u16_le(self.ability_type as u16);
+        buffer.write_u32_le(self.abilities);
+        buffer.write_u32_le(self.values);
+        buffer.write_f32_le(self.fly_speed);
+        buffer.write_f32_le(self.walk_speed);
     }
 }
 
@@ -114,11 +114,11 @@ pub struct AbilityData<'a> {
 
 impl AbilityData<'_> {
     pub fn encode(&self, buffer: &mut MutableBuffer) {
-        buffer.write_le(self.entity_id); // For some reason this isn't a varint64.
-        buffer.write_le(self.permission_level as u8);
-        buffer.write_le(self.command_permission_level as u8);
+        buffer.write_i64_le(self.entity_id); // For some reason this isn't a varint64.
+        buffer.write_u8(self.permission_level as u8);
+        buffer.write_u8(self.command_permission_level as u8);
 
-        buffer.write_le(self.layers.len() as u8);
+        buffer.write_u8(self.layers.len() as u8);
         for layer in self.layers {
             layer.encode(buffer);
         }
@@ -147,7 +147,7 @@ pub struct AddPlayer<'a> {
     pub game_mode: GameMode,
     /// Item held by the player.
     pub held_item: ItemStack,
-    pub metadata: HashMap<u32, nbt::Value>,
+    // pub metadata: HashMap<u32, nbt::Value>,
     // pub properties: EntityProperties,
     /// Abilities of the player. See [`AbilityData`].
     pub ability_data: AbilityData<'a>,
@@ -165,27 +165,27 @@ impl ConnectedPacket for AddPlayer<'_> {
 
 impl Serialize for AddPlayer<'_> {
     fn serialize(&self, buffer: &mut MutableBuffer) {
-        buffer.put_uuid(&self.uuid);
-        buffer.put_string(self.username);
-        buffer.put_var_u64(self.runtime_id);
-        buffer.put_string(""); // Platform chat ID
+        buffer.write_uuid(&self.uuid);
+        buffer.write_str(self.username);
+        buffer.write_var_u64(self.runtime_id);
+        buffer.write_str(""); // Platform chat ID
         buffer.write_le(&self.position);
         buffer.write_le(&self.velocity);
         buffer.write_le(&self.rotation);
         self.held_item.serialize(buffer);
-        buffer.put_var_i32(self.game_mode as i32);
+        buffer.write_var_i32(self.game_mode as i32);
         // buffer.put_metadata(&self.metadata);
-        buffer.put_var_u32(0); // TODO: Entity metadata.
-        buffer.put_var_u32(0); // Entity properties are unused.
-        buffer.put_var_u32(0); // Entity properties are unused.
+        buffer.write_var_u32(0); // TODO: Entity metadata.
+        buffer.write_var_u32(0); // Entity properties are unused.
+        buffer.write_var_u32(0); // Entity properties are unused.
         self.ability_data.encode(buffer);
 
-        buffer.put_var_u32(self.links.len() as u32);
+        buffer.write_var_u32(self.links.len() as u32);
         for link in self.links {
             link.encode(buffer);
         }
 
-        buffer.put_string(self.device_id);
+        buffer.write_str(self.device_id);
         buffer.write_le(self.device_os as i32);
     }
 }

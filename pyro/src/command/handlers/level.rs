@@ -11,7 +11,7 @@ impl LevelManager {
         let rule_name = command.parameters.get("rule")
             // Rule parameter should exist, but this is here just to be sure.
             .ok_or_else(|| error!(InvalidCommand, "Missing game rule name."))?
-            .get_string()?;
+            .read_str()?;
 
         // Command has value parameter, store the game rule value.
         if let Some(value) = command.parameters.get("value") {

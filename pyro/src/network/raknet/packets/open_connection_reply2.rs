@@ -38,11 +38,11 @@ impl OpenConnectionReply2 {
 
 impl Serialize for OpenConnectionReply2 {
     fn serialize(&self, buffer: &mut BytesMut) {
-        buffer.write_le::<u8>(Self::ID);
+        buffer.write_u8(Self::ID);
         buffer.put(OFFLINE_MESSAGE_DATA);
         buffer.write_be::<u64>()(self.server_guid);
         buffer.put_addr(self.client_address);
-        buffer.write_be::<u16>()(self.mtu);
+        buffer.write_u16_be()(self.mtu);
         buffer.write_bool(false); // Encryption not enabled, must be false to continue login sequence
     }
 }

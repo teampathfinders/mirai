@@ -2,10 +2,9 @@ use bytes::Bytes;
 use bytes::{BufMut, BytesMut};
 
 use crate::network::packets::ConnectedPacket;
-use util::{Serialize, size_of_varint, size_of_string, VarString};
-use util::bytes::MutableBuffer;
+use util::{Serialize};
+use util::bytes::{BinaryWriter, MutableBuffer, VarString};
 use util::Result;
-use util::WriteExtensions;
 
 #[derive(Debug, Clone)]
 pub struct ExperimentData<'a> {
@@ -19,7 +18,7 @@ impl ExperimentData<'_> {
     }
 
     pub fn serialize(&self, buffer: &mut MutableBuffer) {
-        buffer.put_string(&self.name);
+        buffer.write_str(&self.name);
         buffer.write_bool(self.enabled);
     }
 }
@@ -39,9 +38,9 @@ impl ResourcePackStackEntry<'_> {
     }
 
     pub fn serialize(&self, buffer: &mut MutableBuffer) {
-        buffer.put_string(&self.pack_id);
-        buffer.put_string(&self.pack_version);
-        buffer.put_string(&self.subpack_name);
+        buffer.write_str(&self.pack_id);
+        buffer.write_str(&self.pack_version);
+        buffer.write_str(&self.subpack_name);
     }
 }
 
@@ -76,19 +75,19 @@ impl Serialize for ResourcePackStack<'_> {
     fn serialize(&self, buffer: &mut MutableBuffer) {
         buffer.write_bool(self.forced_to_accept);
 
-        buffer.put_var_u32(self.resource_packs.len() as u32);
+        buffer.write_var_u32(self.resource_packs.len() as u32);
         for pack in self.resource_packs {
             pack.serialize(buffer);
         }
 
-        buffer.put_var_u32(self.behavior_packs.len() as u32);
+        buffer.write_var_u32(self.behavior_packs.len() as u32);
         for pack in self.behavior_packs {
             pack.serialize(buffer);
         }
 
-        buffer.put_string(self.game_version);
+        buffer.write_str(self.game_version);
 
-        buffer.write_be::<u32>()(self.experiments.len() as u32);
+        buffer.write_u32_be()(self.experiments.len() as u32);
         for experiment in self.experiments {
             experiment.serialize(buffer);
         }

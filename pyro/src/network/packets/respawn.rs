@@ -1,9 +1,10 @@
 use bytes::{Buf, BufMut, BytesMut, Bytes};
 use util::{
-    bail, ReadExtensions, Error, Result, Vector3f, WriteExtensions, size_of_varint,
+    bail, Error, Result, Vector3f
 };
 
 use util::{Deserialize, Serialize};
+use util::bytes::{BinaryReader, BinaryWriter, MutableBuffer, SharedBuffer, size_of_varint};
 
 use super::ConnectedPacket;
 
@@ -43,18 +44,18 @@ impl ConnectedPacket for Respawn {
 }
 
 impl Serialize for Respawn {
-    fn serialize(&self, buffer: &mut BytesMut) {
-        buffer.put_vec3f(&self.position);
-        buffer.write_le::<u8>(self.state as u8);
-        buffer.put_var_u64(self.runtime_id);
+    fn serialize(&self, buffer: &mut MutableBuffer) {
+        buffer.write_vec3f(&self.position);
+        buffer.write_u8(self.state as u8);
+        buffer.write_var_u64(self.runtime_id);
     }
 }
 
 impl Deserialize for Respawn {
-    fn deserialize(mut buffer: Bytes) -> Result<Self> {
-        let position = buffer.get_vec3f();
-        let state = RespawnState::try_from(buffer.get_u8())?;
-        let runtime_id = buffer.get_var_u64()?;
+    fn deserialize(mut buffer: SharedBuffer) -> Result<Self> {
+        let position = buffer.read_vec3f()?;
+        let state = RespawnState::try_from(buffer.read_u8()?)?;
+        let runtime_id = buffer.read_var_u64()?;
 
         Ok(Self { position, state, runtime_id })
     }

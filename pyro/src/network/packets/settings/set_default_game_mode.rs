@@ -1,5 +1,5 @@
 use bytes::{BytesMut, Bytes};
-use util::{Deserialize, Serialize, ReadExtensions, Result, WriteExtensions, size_of_varint};
+use util::{Deserialize, Serialize, Result};
 
 use crate::network::packets::ConnectedPacket;
 
@@ -30,6 +30,6 @@ impl Deserialize for SetDefaultGameMode {
 
 impl Serialize for SetDefaultGameMode {
     fn serialize(&self, buffer: &mut BytesMut) {
-        buffer.put_var_i32(self.game_mode as i32);
+        buffer.write_var_i32(self.game_mode as i32);
     }
 }

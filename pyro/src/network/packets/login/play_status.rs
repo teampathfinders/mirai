@@ -1,11 +1,10 @@
 use bytes::Bytes;
 use bytes::{BufMut, BytesMut};
-use util::bytes::MutableBuffer;
+use util::bytes::{BinaryWriter, MutableBuffer};
 
 use crate::network::packets::ConnectedPacket;
 use util::Serialize;
 use util::Result;
-use util::WriteExtensions;
 
 /// Status of the [`PlayStatus`] packet.
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
@@ -48,6 +47,6 @@ impl ConnectedPacket for PlayStatus {
 
 impl Serialize for PlayStatus {
     fn serialize(&self, buffer: &mut MutableBuffer) {
-        buffer.write_be(self.status as u32);
+        buffer.write_u32_be(self.status as u32);
     }
 }

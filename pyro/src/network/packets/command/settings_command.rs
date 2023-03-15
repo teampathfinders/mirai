@@ -18,7 +18,7 @@ impl ConnectedPacket for SettingsCommand {
 
 impl Deserialize for SettingsCommand {
     fn deserialize(mut buffer: Bytes) -> Result<Self> {
-        let command = buffer.get_string()?;
+        let command = buffer.read_str()?;
         let suppress_output = buffer.get_bool();
 
         Ok(Self {

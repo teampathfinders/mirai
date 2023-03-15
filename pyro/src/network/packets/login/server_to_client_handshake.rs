@@ -1,11 +1,11 @@
+use std::fmt::Write;
 use bytes::Bytes;
 use bytes::{BufMut, BytesMut};
-use util::{size_of_varint, VarString};
+use util::bytes::{MutableBuffer, VarString};
 
 use crate::network::packets::ConnectedPacket;
 use util::Serialize;
 use util::Result;
-use util::WriteExtensions;
 
 /// Sent by the server to initiate encryption.
 /// The client responds with a [`ClientToServerHandshake`](super::ClientToServerHandshake) to
@@ -25,7 +25,7 @@ impl ConnectedPacket for ServerToClientHandshake<'_> {
 }
 
 impl Serialize for ServerToClientHandshake<'_> {
-    fn serialize(&self, buffer: &mut BytesMut) {
-        buffer.put_string(self.jwt);
+    fn serialize(&self, buffer: &mut MutableBuffer) {
+        buffer.write_str(self.jwt);
     }
 }

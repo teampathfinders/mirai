@@ -1,5 +1,6 @@
 use bytes::{BytesMut, Bytes};
-use util::{Result, size_of_varint};
+use util::{Result};
+use util::bytes::{BinaryWriter, MutableBuffer, size_of_varint};
 
 use util::Serialize;
 
@@ -21,7 +22,7 @@ impl ConnectedPacket for ShowProfile<'_> {
 }
 
 impl Serialize for ShowProfile<'_> {
-    fn serialize(&self, buffer: &mut BytesMut) {
-        buffer.put_string(self.xuid);
+    fn serialize(&self, buffer: &mut MutableBuffer) {
+        buffer.write_str(self.xuid);
     }
 }

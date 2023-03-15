@@ -1,7 +1,7 @@
 use bytes::{BufMut, Bytes, BytesMut};
 
-use util::{size_of_varint, Result, Deserialize, Serialize};
-use util::{ReadExtensions, WriteExtensions};
+use util::{Result, Deserialize, Serialize};
+use util::bytes::{BinaryReader, BinaryWriter, MutableBuffer, SharedBuffer, size_of_varint};
 
 /// Game packets are prefixed with a length and a header.
 /// The header contains the packet ID and target/subclient IDs in case of split screen multiplayer.
@@ -27,19 +27,19 @@ impl Header {
 
 impl Serialize for Header {
     /// Encodes the header.
-    fn serialize(&self, buffer: &mut BytesMut) {
+    fn serialize(&self, buffer: &mut MutableBuffer) {
         let value = self.id
             | ((self.sender_subclient as u32) << 10)
             | ((self.target_subclient as u32) << 12);
 
-        buffer.put_var_u32(value);
+        buffer.write_var_u32(value);
     }
 }
 
 impl Header {
     /// Decodes the header.
-    pub fn deserialize(buffer: &mut Bytes) -> Result<Self> {
-        let value = buffer.get_var_u32()?;
+    pub fn deserialize(buffer: &mut SharedBuffer) -> Result<Self> {
+        let value = buffer.read_var_u32()?;
 
         let id = value & 0x3ff;
         let sender_subclient = ((value >> 10) & 0x3) as u8;

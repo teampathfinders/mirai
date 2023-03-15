@@ -123,34 +123,34 @@ impl Serialize for AvailableCommands<'_> {
             }
         }
 
-        buffer.put_var_u32(values.len() as u32);
+        buffer.write_var_u32(values.len() as u32);
         for value in values {
-            buffer.put_string(value);
+            buffer.write_str(value);
         }
 
-        buffer.put_var_u32(suffixes.len() as u32);
+        buffer.write_var_u32(suffixes.len() as u32);
         for suffix in suffixes {
-            buffer.put_string(suffix);
+            buffer.write_str(suffix);
         }
 
-        buffer.put_var_u32(enums.len() as u32);
+        buffer.write_var_u32(enums.len() as u32);
         for command_enum in &enums {
-            buffer.put_string(&command_enum.enum_id);
-            buffer.put_var_u32(command_enum.options.len() as u32);
+            buffer.write_str(&command_enum.enum_id);
+            buffer.write_var_u32(command_enum.options.len() as u32);
 
             let index_count = value_indices.len() as u32;
             for option in &command_enum.options {
                 if index_count <= u8::MAX as u32 {
-                    buffer.write_le::<u8>(value_indices[option] as u8);
+                    buffer.write_u8(value_indices[option] as u8);
                 } else if index_count <= u16::MAX as u32 {
-                    buffer.write_le::<u16>()(value_indices[option] as u16);
+                    buffer.write_u16_le(value_indices[option] as u16);
                 } else {
-                    buffer.write_le::<u32>()(value_indices[option]);
+                    buffer.write_u32_le(value_indices[option]);
                 }
             }
         }
 
-        buffer.put_var_u32(self.commands.len() as u32);
+        buffer.write_var_u32(self.commands.len() as u32);
         for command in self.commands {
             let mut alias = if !command.aliases.is_empty() {
                 enum_indices[&(command.name.clone() + "Aliases")] as i32
@@ -158,15 +158,15 @@ impl Serialize for AvailableCommands<'_> {
                 -1
             };
 
-            buffer.put_string(&command.name);
-            buffer.put_string(&command.description);
-            buffer.write_le::<u16>()(0); // Command flags. Unknown.
-            buffer.write_le::<u8>(command.permission_level as u8);
+            buffer.write_str(&command.name);
+            buffer.write_str(&command.description);
+            buffer.write_u16_le(0); // Command flags. Unknown.
+            buffer.write_u8(command.permission_level as u8);
             buffer.write_le::<i32>()(alias);
 
-            buffer.put_var_u32(command.overloads.len() as u32);
+            buffer.write_var_u32(command.overloads.len() as u32);
             for overload in &command.overloads {
-                buffer.put_var_u32(overload.parameters.len() as u32);
+                buffer.write_var_u32(overload.parameters.len() as u32);
                 for parameter in &overload.parameters {
                     let mut command_type = parameter.data_type as u32;
                     
@@ -187,24 +187,24 @@ impl Serialize for AvailableCommands<'_> {
                         command_type |= COMMAND_PARAMETER_VALID;
                     }
 
-                    buffer.put_string(&parameter.name);
+                    buffer.write_str(&parameter.name);
                     buffer.write_le::<i32>()(command_type as i32);
                     buffer.write_bool(parameter.optional);
-                    buffer.write_le::<u8>(parameter.options);
+                    buffer.write_u8(parameter.options);
                 }
             }
         }
 
-        buffer.put_var_u32(dynamic_enums.len() as u32);
+        buffer.write_var_u32(dynamic_enums.len() as u32);
         for dynamic_enum in dynamic_enums.iter().copied().flatten() {
-            buffer.put_string(&dynamic_enum.enum_id);
-            buffer.put_var_u32(dynamic_enum.options.len() as u32);
+            buffer.write_str(&dynamic_enum.enum_id);
+            buffer.write_var_u32(dynamic_enum.options.len() as u32);
 
             for option in &dynamic_enum.options {
-                buffer.put_string(option);
+                buffer.write_str(option);
             }
         }
 
-        buffer.put_var_u32(0); // No constraints, they are useless.
+        buffer.write_var_u32(0); // No constraints, they are useless.
     }
 }

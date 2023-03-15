@@ -23,8 +23,9 @@ use crate::network::raknet::packets::{
 };
 use crate::network::raknet::{BroadcastPacket, Frame, FrameBatch};
 use crate::network::session::Session;
-use util::{bail, nvassert, ReadExtensions, Result};
+use util::{bail, nvassert, Result};
 use util::{Deserialize, Serialize};
+use util::bytes::{BinaryReader, SharedBuffer};
 
 use super::DEFAULT_SEND_CONFIG;
 use super::packets::ConnectedPing;
@@ -34,7 +35,7 @@ impl Session {
     ///
     /// If a packet is an ACK or NACK type, it will be responded to accordingly (using [`Session::handle_ack`] and [`Session::handle_nack`]).
     /// Frame batches are processed by [`Session::handle_frame_batch`].
-    pub async fn process_raw_packet(&self, pk: Bytes) -> Result<bool> {
+    pub async fn process_raw_packet(&self, pk: SharedBuffer) -> Result<bool> {
         *self.raknet.last_update.write() = Instant::now();
 
         if pk.is_empty() {
@@ -71,7 +72,7 @@ impl Session {
     /// * Inserting packets into the compound collector
     /// * Discarding old sequenced frames
     /// * Acknowledging reliable packets
-    async fn handle_frame_batch(&self, pk: Bytes) -> Result<()> {
+    async fn handle_frame_batch(&self, pk: SharedBuffer) -> Result<()> {
         let batch = FrameBatch::deserialize(pk)?;
         self.raknet
             .client_batch_number
@@ -135,7 +136,7 @@ impl Session {
     }
 
     /// Processes an unencapsulated game packet.
-    async fn handle_unframed_packet(&self, mut pk: Bytes) -> Result<()> {
+    async fn handle_unframed_packet(&self, mut pk: SharedBuffer) -> Result<()> {
         let bytes = pk.as_ref();
 
         let packet_id = *pk.first().expect("Game packet buffer was empty");
@@ -153,7 +154,7 @@ impl Session {
         Ok(())
     }
 
-    async fn handle_game_packet(&self, mut pk: Bytes) -> Result<()> {
+    async fn handle_game_packet(&self, mut pk: SharedBuffer) -> Result<()> {
         nvassert!(pk.get_u8() == 0xfe);
 
         // Decrypt packet
@@ -206,9 +207,9 @@ impl Session {
 
     async fn handle_decompressed_game_packet(
         &self,
-        mut pk: Bytes,
+        mut pk: SharedBuffer,
     ) -> Result<()> {
-        let length = pk.get_var_u32()?;
+        let length = pk.read_var_u32()?;
         let header = Header::deserialize(&mut pk)?;
 
         match header.id {

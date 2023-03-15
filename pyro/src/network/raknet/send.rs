@@ -14,9 +14,9 @@ use crate::network::raknet::packets::{Ack, AckRecord};
 use crate::network::raknet::Reliability;
 use crate::network::raknet::{Frame, FrameBatch};
 use crate::network::session::Session;
-use util::ReadExtensions;
 use util::Result;
 use util::{Deserialize, Serialize};
+use util::bytes::{BinaryWriter, MutableBuffer, SharedBuffer};
 
 use super::SendPriority;
 
@@ -47,8 +47,8 @@ impl Session {
         mut pk: Bytes,
         config: PacketConfig,
     ) -> Result<()> {
-        let mut buffer = BytesMut::new();
-        buffer.write_le::<u8>(CONNECTED_PACKET_ID);
+        let mut buffer = MutableBuffer::new();
+        buffer.write_u8(CONNECTED_PACKET_ID);
 
         if self.raknet.compression_enabled.load(Ordering::SeqCst) {
             let (algorithm, threshold) = {
@@ -89,14 +89,14 @@ impl Session {
     /// Sends a raw buffer with default settings
     /// (reliable ordered and medium priority).
     #[inline]
-    pub fn send_raw_buffer(&self, buffer: Bytes) {
+    pub fn send_raw_buffer(&self, buffer: SharedBuffer) {
         self.send_raw_buffer_with_config(buffer, DEFAULT_SEND_CONFIG);
     }
 
     /// Sends a raw buffer with custom reliability and priority.
     pub fn send_raw_buffer_with_config(
         &self,
-        buffer: Bytes,
+        buffer: SharedBuffer,
         config: PacketConfig,
     ) {
         self.raknet.send_queue.insert_raw(

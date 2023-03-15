@@ -1,5 +1,6 @@
 use bytes::{BytesMut, Bytes};
-use util::{Result, WriteExtensions, size_of_varint, VarInt};
+use util::{Result};
+use util::bytes::{BinaryWriter, MutableBuffer, VarInt};
 
 use util::Serialize;
 use crate::network::packets::ConnectedPacket;
@@ -20,7 +21,7 @@ impl ConnectedPacket for ChunkRadiusReply {
 }
 
 impl Serialize for ChunkRadiusReply {
-    fn serialize(&self, buffer: &mut BytesMut) {
-        buffer.put_var_i32(self.allowed_radius);
+    fn serialize(&self, buffer: &mut MutableBuffer) {
+        buffer.write_var_i32(self.allowed_radius);
     }
 }

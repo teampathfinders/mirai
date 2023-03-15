@@ -1,5 +1,6 @@
 use bytes::{BufMut, BytesMut, Bytes};
-use util::{Result, WriteExtensions, size_of_varint};
+use util::{Result};
+use util::bytes::{BinaryWriter, MutableBuffer, size_of_varint};
 
 use util::Serialize;
 
@@ -37,12 +38,12 @@ impl ConnectedPacket for UpdateDynamicEnum<'_> {
 }
 
 impl Serialize for UpdateDynamicEnum<'_> {
-    fn serialize(&self, buffer: &mut BytesMut) {
-        buffer.put_string(self.enum_id);
-        buffer.put_var_u32(self.options.len() as u32);
+    fn serialize(&self, buffer: &mut MutableBuffer) {
+        buffer.write_str(self.enum_id);
+        buffer.write_var_u32(self.options.len() as u32);
         for option in self.options {
-            buffer.put_string(option);
+            buffer.write_str(option);
         }
-        buffer.write_le::<u8>(self.action as u8);
+        buffer.write_u8(self.action as u8);
     }
 }

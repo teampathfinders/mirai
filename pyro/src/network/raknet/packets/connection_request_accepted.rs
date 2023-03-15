@@ -5,7 +5,8 @@ use bytes::{BufMut, Bytes, BytesMut};
 
 use crate::instance_manager::IPV4_LOCAL_ADDR;
 use util::Serialize;
-use util::{Result, IPV4_MEM_SIZE, IPV6_MEM_SIZE};
+use util::{Result};
+use util::bytes::{BinaryWriter, IPV4_MEM_SIZE, IPV6_MEM_SIZE, MutableBuffer};
 
 /// Sent in response to [`ConnectionRequest`](super::connection_request::ConnectionRequest).
 #[derive(Debug)]
@@ -26,15 +27,15 @@ impl ConnectionRequestAccepted {
 }
 
 impl Serialize for ConnectionRequestAccepted {
-    fn serialize(&self, buffer: &mut BytesMut) {
-        buffer.write_le::<u8>(Self::ID);
+    fn serialize(&self, buffer: &mut MutableBuffer) {
+        buffer.write_u8(Self::ID);
         buffer.put_addr(self.client_address);
-        buffer.write_be::<u16>(0); // System index
+        buffer.write_u16_be(0); // System index
         for _ in 0..20 {
             // 20 internal IDs
             buffer.put_addr(*EMPTY_IPV4_ADDRESS);
         }
-        buffer.write_be::<i64>()(self.request_time);
-        buffer.write_be::<i64>()(self.request_time); // Response time
+        buffer.write_i64_be(self.request_time);
+        buffer.write_i64_be(self.request_time); // Response time
     }
 }

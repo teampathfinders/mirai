@@ -1,5 +1,6 @@
 use bytes::{BufMut, BytesMut, Bytes};
-use util::{Result, WriteExtensions, size_of_varint};
+use util::{Result};
+use util::bytes::{BinaryWriter, MutableBuffer, size_of_varint};
 
 use util::Serialize;
 
@@ -24,8 +25,8 @@ impl ConnectedPacket for ToastRequest<'_> {
 }
 
 impl Serialize for ToastRequest<'_> {
-    fn serialize(&self, buffer: &mut BytesMut) {
-        buffer.put_string(self.title);
-        buffer.put_string(self.message);
+    fn serialize(&self, buffer: &mut MutableBuffer) {
+        buffer.write_str(self.title);
+        buffer.write_str(self.message);
     }
 }

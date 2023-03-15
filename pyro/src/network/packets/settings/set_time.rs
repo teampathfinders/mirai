@@ -1,5 +1,6 @@
 use bytes::{BytesMut, Bytes};
-use util::{Result, WriteExtensions, size_of_varint};
+use util::{Result};
+use util::bytes::{BinaryWriter, MutableBuffer, size_of_varint};
 
 use util::Serialize;
 
@@ -21,7 +22,7 @@ impl ConnectedPacket for SetTime {
 }
 
 impl Serialize for SetTime {
-    fn serialize(&self, buffer: &mut BytesMut) {
-        buffer.put_var_i32(self.time);
+    fn serialize(&self, buffer: &mut MutableBuffer) {
+        buffer.write_var_i32(self.time);
     }
 }

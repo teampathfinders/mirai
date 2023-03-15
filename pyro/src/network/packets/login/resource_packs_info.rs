@@ -1,10 +1,11 @@
+use std::fmt::Write;
 use bytes::Bytes;
 use bytes::{BufMut, BytesMut};
 
 use crate::network::packets::ConnectedPacket;
-use util::{Serialize, size_of_varint, VarString};
+use util::{Serialize};
+use util::bytes::VarString;
 use util::Result;
-use util::WriteExtensions;
 
 /// Behavior pack information.
 #[derive(Debug, Clone)]
@@ -116,25 +117,25 @@ impl Serialize for ResourcePacksInfo<'_> {
         buffer.write_bool(self.scripting_enabled);
         buffer.write_bool(self.forcing_server_packs);
 
-        buffer.write_be::<u16>()(self.behavior_info.len() as u16);
+        buffer.write_u16_be()(self.behavior_info.len() as u16);
         for pack in self.behavior_info {
-            buffer.put_string(&pack.uuid);
-            buffer.put_string(&pack.version);
-            buffer.write_be::<u64>()(pack.size);
-            buffer.put_string(&pack.content_key);
-            buffer.put_string(&pack.subpack_name);
-            buffer.put_string(&pack.content_identity);
+            buffer.write_str(&pack.uuid);
+            buffer.write_str(&pack.version);
+            buffer.write_u64_be(pack.size);
+            buffer.write_str(&pack.content_key);
+            buffer.write_str(&pack.subpack_name);
+            buffer.write_str(&pack.content_identity);
             buffer.write_bool(pack.has_scripts);
         }
 
-        buffer.write_be::<u16>()(self.resource_info.len() as u16);
+        buffer.write_u16_be()(self.resource_info.len() as u16);
         for pack in self.resource_info {
-            buffer.put_string(&pack.uuid);
-            buffer.put_string(&pack.version);
-            buffer.write_be::<u64>()(pack.size);
-            buffer.put_string(&pack.content_key);
-            buffer.put_string(&pack.subpack_name);
-            buffer.put_string(&pack.content_identity);
+            buffer.write_str(&pack.uuid);
+            buffer.write_str(&pack.version);
+            buffer.write_u64_be(pack.size);
+            buffer.write_str(&pack.content_key);
+            buffer.write_str(&pack.subpack_name);
+            buffer.write_str(&pack.content_identity);
             buffer.write_bool(pack.has_scripts);
             buffer.write_bool(pack.rtx_enabled);
         }

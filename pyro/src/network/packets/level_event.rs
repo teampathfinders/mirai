@@ -1,5 +1,6 @@
 use bytes::{BytesMut, Bytes};
-use util::{bail, Deserialize, Serialize, ReadExtensions, Vector3f, Error, Result, WriteExtensions, size_of_varint};
+use util::{bail, Deserialize, Serialize, Vector3f, Error, Result};
+use util::bytes::{BinaryReader, BinaryWriter, MutableBuffer, SharedBuffer, size_of_varint};
 use crate::network::packets::ConnectedPacket;
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
@@ -249,18 +250,18 @@ impl ConnectedPacket for LevelEvent {
 }
 
 impl Serialize for LevelEvent {
-    fn serialize(&self, buffer: &mut BytesMut) {
-        buffer.put_var_i32(self.event_type as i32);
-        buffer.put_vec3f(&self.position);
-        buffer.put_var_i32(self.event_data);
+    fn serialize(&self, buffer: &mut MutableBuffer) {
+        buffer.write_var_i32(self.event_type as i32);
+        buffer.write_vec3f(&self.position);
+        buffer.write_var_i32(self.event_data);
     }
 }
 
 impl Deserialize for LevelEvent {
-    fn deserialize(mut buffer: Bytes) -> Result<Self> {
-        let event_type = LevelEventType::try_from(buffer.get_var_i32()?)?;
-        let position = buffer.get_vec3f();
-        let event_data = buffer.get_var_i32()?;
+    fn deserialize(mut buffer: SharedBuffer) -> Result<Self> {
+        let event_type = LevelEventType::try_from(buffer.read_var_i32()?)?;
+        let position = buffer.read_vec3f()?;
+        let event_data = buffer.read_var_i32()?;
 
         Ok(Self {
             event_type,

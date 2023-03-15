@@ -247,7 +247,7 @@ impl GameRule {
     }
 
     pub fn serialize(&self, buffer: &mut BytesMut) {
-        buffer.put_string(self.name());
+        buffer.write_str(self.name());
         buffer.write_bool(true); // Player can modify. Doesn't seem to do anything.
 
         match self {
@@ -277,15 +277,15 @@ impl GameRule {
             | Self::ShowDeathMessages(b)
             | Self::ShowTags(b)
             | Self::TntExplodes(b) => {
-                buffer.put_var_u32(1);
+                buffer.write_var_u32(1);
                 buffer.write_bool(*b);
             }
             Self::FunctionCommandLimit(i)
             | Self::MaxCommandChainLength(i)
             | Self::RandomTickSpeed(i)
             | Self::SpawnRadius(i) => {
-                buffer.put_var_u32(2);
-                buffer.put_var_u32(*i as u32);
+                buffer.write_var_u32(2);
+                buffer.write_var_u32(*i as u32);
             }
         }
     }
@@ -348,7 +348,7 @@ impl ConnectedPacket for GameRulesChanged<'_> {
 
 impl Serialize for GameRulesChanged<'_> {
     fn serialize(&self, buffer: &mut BytesMut) {
-        buffer.put_var_u32(self.game_rules.len() as u32);
+        buffer.write_var_u32(self.game_rules.len() as u32);
         for game_rule in self.game_rules {
             game_rule.serialize(buffer);
         }

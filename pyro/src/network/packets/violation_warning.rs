@@ -1,11 +1,8 @@
-use bytes::Bytes;
-use bytes::BytesMut;
-
 use crate::network::packets::ConnectedPacket;
 use util::bail;
 use util::Deserialize;
-use util::ReadExtensions;
 use util::{Error, Result};
+use util::bytes::{BinaryReader, SharedBuffer};
 
 #[derive(Debug, Copy, Clone)]
 pub enum ViolationType {
@@ -44,7 +41,7 @@ impl TryFrom<i32> for ViolationSeverity {
 }
 
 #[derive(Debug)]
-pub struct ViolationWarning {
+pub struct ViolationWarning<'a> {
     /// Type of the violation.
     pub warning_type: ViolationType,
     /// Severity of the violation.
@@ -52,21 +49,19 @@ pub struct ViolationWarning {
     /// ID of the invalid packet.
     pub packet_id: i32,
     /// Description of the violation.
-    pub context: String,
+    pub context: &'a str,
 }
 
-impl ConnectedPacket for ViolationWarning {
+impl<'a> ConnectedPacket for ViolationWarning<'a> {
     const ID: u32 = 0x9c;
 }
 
-impl Deserialize for ViolationWarning {
-    fn deserialize(mut buffer: Bytes) -> Result<Self> {
-        tracing::debug!("{:x?}", buffer.as_ref());
-
-        let warning_type = ViolationType::try_from(buffer.get_var_i32()?)?;
-        let severity = ViolationSeverity::try_from(buffer.get_var_i32()?)?;
-        let packet_id = buffer.get_var_i32()?;
-        let context = buffer.get_string()?;
+impl<'a> Deserialize for ViolationWarning<'a> {
+    fn deserialize(mut buffer: SharedBuffer<'a>) -> Result<Self> {
+        let warning_type = ViolationType::try_from(buffer.read_var_i32()?)?;
+        let severity = ViolationSeverity::try_from(buffer.read_var_i32()?)?;
+        let packet_id = buffer.read_var_i32()?;
+        let context = buffer.read_str()?;
 
         Ok(Self {
             warning_type,

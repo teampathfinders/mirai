@@ -1,5 +1,6 @@
 use bytes::{BytesMut, Bytes};
-use util::{Deserialize, ReadExtensions, Result};
+use util::{Deserialize, Result};
+use util::bytes::{BinaryReader, SharedBuffer};
 use crate::network::packets::ConnectedPacket;
 
 #[derive(Debug, Clone)]
@@ -13,9 +14,9 @@ impl ConnectedPacket for GenericLevelEvent {
 }
 
 impl Deserialize for GenericLevelEvent {
-    fn deserialize(mut buffer: Bytes) -> Result<Self> {
-        let event_id = buffer.get_var_i32()?;
-        let data = nbt::deserialize_le(&mut buffer)?;
+    fn deserialize(mut buffer: SharedBuffer) -> Result<Self> {
+        let event_id = buffer.read_var_i32()?;
+        let data = nbt::from_le_bytes(&mut buffer)?;
 
         Ok(Self {
             event_id,

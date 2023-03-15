@@ -1,5 +1,6 @@
 use bytes::{BytesMut, Bytes};
-use util::{Result, WriteExtensions, size_of_varint};
+use util::{Result};
+use util::bytes::{BinaryWriter, MutableBuffer, size_of_varint};
 
 use util::Serialize;
 
@@ -11,7 +12,7 @@ pub struct DeathInfo<'a> {
     /// Cause of death.
     pub cause: &'a str,
     /// Additional info display in the death screen.
-    pub messages: &'a [String],
+    pub messages: &'a [&'a str],
 }
 
 impl ConnectedPacket for DeathInfo<'_> {
@@ -27,12 +28,12 @@ impl ConnectedPacket for DeathInfo<'_> {
 }
 
 impl Serialize for DeathInfo<'_> {
-    fn serialize(&self, buffer: &mut BytesMut) {
-        buffer.put_string(self.cause);
+    fn serialize(&self, buffer: &mut MutableBuffer) {
+        buffer.write_str(self.cause);
 
-        buffer.put_var_u32(self.messages.len() as u32);
+        buffer.write_var_u32(self.messages.len() as u32);
         for message in self.messages {
-            buffer.put_string(message);
+            buffer.write_str(message);
         }
     }
 }

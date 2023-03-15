@@ -7,7 +7,7 @@ use crate::network::raknet::Reliability;
 use util::nvassert;
 use util::Result;
 use util::{Deserialize, Serialize};
-use util::{ReadExtensions, WriteExtensions};
+use util::bytes::{BinaryReader, BinaryWriter, MutableBuffer, SharedBuffer};
 
 /// Bit flag indicating that the packet is encapsulated in a frame.
 pub const CONNECTED_PEER_BIT_FLAG: u8 = 0x80;
@@ -51,10 +51,10 @@ impl FrameBatch {
 }
 
 impl Deserialize for FrameBatch {
-    fn deserialize(mut buffer: Bytes) -> Result<Self> {
-        nvassert!(buffer.get_u8() & 0x80 != 0);
+    fn deserialize(mut buffer: SharedBuffer) -> Result<Self> {
+        nvassert!(buffer.read_u8()? & 0x80 != 0);
 
-        let batch_number = buffer.get_u24_le();
+        let batch_number = buffer.read_u24_le()?;
         let mut frames = Vec::new();
 
         while buffer.has_remaining() {
@@ -67,9 +67,9 @@ impl Deserialize for FrameBatch {
 }
 
 impl Serialize for FrameBatch {
-    fn serialize(&self, buffer: &mut BytesMut) {
-        buffer.write_le::<u8>(CONNECTED_PEER_BIT_FLAG);
-        buffer.put_u24_le(self.sequence_number);
+    fn serialize(&self, buffer: &mut MutableBuffer) {
+        buffer.write_u8(CONNECTED_PEER_BIT_FLAG);
+        buffer.write_u24_le(self.sequence_number);
 
         for frame in &self.frames {
             frame.serialize(buffer);
@@ -81,7 +81,7 @@ impl Serialize for FrameBatch {
 ///
 /// A frame provides extra metadata for the Raknet reliability layer.
 #[derive(Debug, Default, Clone)]
-pub struct Frame {
+pub struct Frame<'a> {
     /// Reliability of this packet.
     pub reliability: Reliability,
 
@@ -100,52 +100,52 @@ pub struct Frame {
     /// Channel to perform ordering in
     pub order_channel: u8,
     /// Raw bytes of the body.
-    pub body: Bytes,
+    pub body: SharedBuffer<'a>,
 }
 
-impl Frame {
+impl<'a> Frame<'a> {
     /// Creates a new frame.
-    pub fn new(reliability: Reliability, body: Bytes) -> Self {
+    pub fn new(reliability: Reliability, body: SharedBuffer<'a>) -> Self {
         Self { reliability, body, ..Default::default() }
     }
 
     /// Decodes the frame.
     #[allow(clippy::useless_let_if_seq)]
-    fn deserialize(buffer: &mut Bytes) -> Result<Self> {
-        let flags = buffer.get_u8();
+    fn deserialize(buffer: &mut SharedBuffer<'a>) -> Result<Self> {
+        let flags = buffer.read_u8()?;
 
         let reliability = Reliability::try_from(flags >> 5)?;
         let is_compound = flags & COMPOUND_BIT_FLAG != 0;
-        let length = buffer.get_u16() / 8;
+        let length = buffer.read_u16_be()? / 8;
 
         let mut reliable_index = 0;
         if reliability.is_reliable() {
-            reliable_index = buffer.get_u24_le();
+            reliable_index = buffer.read_u24_le()?;
         }
 
         let mut sequence_index = 0;
         if reliability.is_sequenced() {
-            sequence_index = buffer.get_u24_le();
+            sequence_index = buffer.read_u24_le()?;
         }
 
         let mut order_index = 0;
         let mut order_channel = 0;
         if reliability.is_ordered() {
-            order_index = buffer.get_u24_le();
-            order_channel = buffer.get_u8();
+            order_index = buffer.read_u24_le()?;
+            order_channel = buffer.read_u8()?;
         }
 
         let mut compound_size = 0;
         let mut compound_id = 0;
         let mut compound_index = 0;
         if is_compound {
-            compound_size = buffer.get_u32();
-            compound_id = buffer.get_u16();
-            compound_index = buffer.get_u32();
+            compound_size = buffer.read_u32_be()?;
+            compound_id = buffer.read_u16_be()?;
+            compound_index = buffer.read_u32_be()?;
         }
 
         let position = buffer.len() - buffer.remaining();
-        let mut body = Bytes::copy_from_slice(
+        let mut body = SharedBuffer::from(
             &buffer.as_ref()[position..(position + length as usize)],
         );
         buffer.advance(length as usize);
@@ -173,8 +173,8 @@ impl Frame {
             flags |= COMPOUND_BIT_FLAG;
         }
 
-        buffer.write_le::<u8>(flags);
-        buffer.write_be::<u16>()(self.body.len() as u16 * 8);
+        buffer.write_u8(flags);
+        buffer.write_u16_be()(self.body.len() as u16 * 8);
         if self.reliability.is_reliable() {
             buffer.put_u24_le(self.reliable_index);
         }
@@ -183,12 +183,12 @@ impl Frame {
         }
         if self.reliability.is_ordered() {
             buffer.put_u24_le(self.order_index);
-            buffer.write_le::<u8>(self.order_channel);
+            buffer.write_u8(self.order_channel);
         }
         if self.is_compound {
-            buffer.write_be::<u32>()(self.compound_size);
-            buffer.write_be::<u16>()(self.compound_id);
-            buffer.write_be::<u32>()(self.compound_index);
+            buffer.write_u32_be()(self.compound_size);
+            buffer.write_u16_be()(self.compound_id);
+            buffer.write_u32_be()(self.compound_index);
         }
 
         buffer.put(self.body.as_ref());

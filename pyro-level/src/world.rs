@@ -296,7 +296,7 @@ impl DatabaseKey {
     //         buffer.write_i32_le(self.dimension as i32);
     //     }
     //
-    //     buffer.write_le::<u8>(self.data.discriminant());
+    //     buffer.write_u8(self.data.discriminant());
     //     if let KeyData::SubChunk { index } = self.data {
     //         buffer.write_le::<i8>(index);
     //     }

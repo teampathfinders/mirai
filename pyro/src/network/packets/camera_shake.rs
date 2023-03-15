@@ -42,9 +42,9 @@ impl ConnectedPacket for CameraShake {
 
 impl Serialize for CameraShake {
     fn serialize(&self, buffer: &mut BytesMut) {
-        buffer.put_f32_le(self.intensity);
-        buffer.put_f32_le(self.duration);
-        buffer.write_le::<u8>(self.shake_type as u8);
-        buffer.write_le::<u8>(self.action as u8);
+        buffer.write_f32_le(self.intensity);
+        buffer.write_f32_le(self.duration);
+        buffer.write_u8(self.shake_type as u8);
+        buffer.write_u8(self.action as u8);
     }
 }

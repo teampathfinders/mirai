@@ -1,5 +1,6 @@
 use bytes::{BytesMut, Bytes};
-use util::{bail, BlockPosition, Deserialize, Serialize, ReadExtensions, Error, Result, WriteExtensions, size_of_varint};
+use util::{bail, BlockPosition, Deserialize, Serialize, Error, Result};
+use util::bytes::{BinaryReader, BinaryWriter, MutableBuffer, SharedBuffer, size_of_varint};
 use crate::network::packets::ConnectedPacket;
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
@@ -38,18 +39,18 @@ impl ConnectedPacket for BlockEvent {
 }
 
 impl Serialize for BlockEvent {
-    fn serialize(&self, buffer: &mut BytesMut) {
-        buffer.put_block_pos(&self.position);
-        buffer.put_var_i32(self.event_type as i32);
-        buffer.put_var_i32(self.event_data);
+    fn serialize(&self, buffer: &mut MutableBuffer) {
+        buffer.write_block_pos(&self.position);
+        buffer.write_var_i32(self.event_type as i32);
+        buffer.write_var_i32(self.event_data);
     }
 }
 
 impl Deserialize for BlockEvent {
-    fn deserialize(mut buffer: Bytes) -> Result<Self> {
-        let position = buffer.get_block_pos()?;
-        let event_type = BlockEventType::try_from(buffer.get_var_i32()?)?;
-        let event_data = buffer.get_var_i32()?;
+    fn deserialize(mut buffer: SharedBuffer) -> Result<Self> {
+        let position = buffer.read_block_pos()?;
+        let event_type = BlockEventType::try_from(buffer.read_var_i32()?)?;
+        let event_data = buffer.read_var_i32()?;
 
         Ok(Self {
             position, event_type, event_data

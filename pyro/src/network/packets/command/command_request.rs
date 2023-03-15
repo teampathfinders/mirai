@@ -76,10 +76,10 @@ impl ConnectedPacket for CommandRequest {
 
 impl Deserialize for CommandRequest {
     fn deserialize(mut buffer: SharedBuffer) -> Result<Self> {
-        let command = buffer.get_string()?;
+        let command = buffer.read_str()?;
         let origin = CommandOriginType::try_from(buffer.read_var::<u32>()?)?;
         buffer.advance(16);
-        let request_id = buffer.get_string()?;
+        let request_id = buffer.read_str()?;
 
         Ok(Self { command, origin, request_id })
     }

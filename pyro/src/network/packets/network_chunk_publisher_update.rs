@@ -1,5 +1,6 @@
 use bytes::{BufMut, BytesMut, Bytes};
-use util::{BlockPosition, Result, WriteExtensions, size_of_varint};
+use util::{BlockPosition, Result};
+use util::bytes::{BinaryWriter, MutableBuffer, size_of_varint};
 
 use util::Serialize;
 
@@ -23,11 +24,11 @@ impl ConnectedPacket for NetworkChunkPublisherUpdate {
 }
 
 impl Serialize for NetworkChunkPublisherUpdate {
-    fn serialize(&self, buffer: &mut BytesMut) {
-        buffer.put_block_pos(&self.position);
-        buffer.put_var_u32(self.radius);
+    fn serialize(&self, buffer: &mut MutableBuffer) {
+        buffer.write_block_pos(&self.position);
+        buffer.write_var_u32(self.radius);
 
         // No saved chunks.
-        buffer.write_be::<u32>()(0);
+        buffer.write_u32_be(0);
     }
 }

@@ -1,5 +1,6 @@
 use bytes::{Buf, BytesMut, Bytes};
-use util::{BlockPosition, Deserialize, ReadExtensions, Vector3i, Result};
+use util::{BlockPosition, Deserialize, Vector3i, Result};
+use util::bytes::{BinaryReader, SharedBuffer};
 use crate::network::packets::ConnectedPacket;
 
 /// Sent by the client when the user requests a block using the block pick key.
@@ -18,10 +19,10 @@ impl ConnectedPacket for BlockPickRequest {
 }
 
 impl Deserialize for BlockPickRequest {
-    fn deserialize(mut buffer: Bytes) -> Result<Self> {
-        let position = buffer.get_vec3i();
-        let with_nbt = buffer.get_bool();
-        let hotbar_slot = buffer.get_u8();
+    fn deserialize(mut buffer: SharedBuffer) -> Result<Self> {
+        let position = buffer.read_vec3i()?;
+        let with_nbt = buffer.read_bool()?;
+        let hotbar_slot = buffer.read_u8()?;
         
         Ok(Self {
             position,

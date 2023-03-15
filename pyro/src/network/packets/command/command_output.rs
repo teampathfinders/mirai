@@ -36,28 +36,28 @@ impl ConnectedPacket for CommandOutput<'_> {
 
 impl Serialize for CommandOutput<'_> {
     fn serialize(&self, buffer: &mut BytesMut) {
-        buffer.put_var_u32(self.origin as u32);
+        buffer.write_var_u32(self.origin as u32);
         buffer.put_uuid(&Uuid::nil());
-        buffer.put_string(self.request_id);
+        buffer.write_str(self.request_id);
 
         match self.origin {
             CommandOriginType::Test | CommandOriginType::DevConsole => {
-                buffer.put_var_i64(0);
+                buffer.write_var_i64(0);
             },
             _ => ()
         }
 
-        buffer.write_le::<u8>(self.output_type as u8);
-        buffer.put_var_u32(self.success_count);
+        buffer.write_u8(self.output_type as u8);
+        buffer.write_var_u32(self.success_count);
 
-        buffer.put_var_u32(self.output.len() as u32);
+        buffer.write_var_u32(self.output.len() as u32);
         for output in self.output {
             buffer.write_bool(output.is_success);
-            buffer.put_string(output.message);
+            buffer.write_str(output.message);
 
-            buffer.put_var_u32(output.parameters.len() as u32);
+            buffer.write_var_u32(output.parameters.len() as u32);
             for param in output.parameters {
-                buffer.put_string(param);
+                buffer.write_str(param);
             }
         }
 

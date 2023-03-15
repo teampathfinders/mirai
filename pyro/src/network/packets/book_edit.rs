@@ -63,11 +63,11 @@ impl Deserialize for BookEdit {
             action: match action {
                 0 => BookEditAction::ReplacePage {
                     page_number: buffer.read_le::<u8>()?,
-                    text: buffer.get_string()?
+                    text: buffer.read_str()?
                 },
                 1 => BookEditAction::AddPage {
                     page_number: buffer.read_le::<u8>()?,
-                    text: buffer.get_string()?
+                    text: buffer.read_str()?
                 },
                 2 => BookEditAction::DeletePage {
                     page_number: buffer.read_le::<u8>()?
@@ -77,9 +77,9 @@ impl Deserialize for BookEdit {
                     second_page: buffer.read_le::<u8>()?
                 },
                 4 => BookEditAction::Sign {
-                    title: buffer.get_string()?,
-                    author: buffer.get_string()?,
-                    xuid: buffer.get_string()?
+                    title: buffer.read_str()?,
+                    author: buffer.read_str()?,
+                    xuid: buffer.read_str()?
                 },
                 _ => bail!(Malformed, "Invalid book edit action {action}")
             }

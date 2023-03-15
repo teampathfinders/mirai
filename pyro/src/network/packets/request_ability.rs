@@ -1,5 +1,6 @@
 use bytes::{Buf, BytesMut, Bytes};
-use util::{bail, ReadExtensions, Error, Result};
+use util::{bail, Error, Result};
+use util::bytes::{BinaryReader, SharedBuffer};
 
 use util::Deserialize;
 
@@ -39,17 +40,17 @@ impl ConnectedPacket for RequestAbility {
 }
 
 impl Deserialize for RequestAbility {
-    fn deserialize(mut buffer: Bytes) -> Result<Self> {
-        let ability_type = buffer.get_var_i32()?;
-        let value_type = buffer.get_u8();
+    fn deserialize(mut buffer: SharedBuffer) -> Result<Self> {
+        let ability_type = buffer.read_var_i32()?;
+        let value_type = buffer.read_u8()?;
 
         let mut bool_value = false;
         let mut float_value = 0.0;
 
         if value_type == 1 {
-            bool_value = buffer.get_bool();
+            bool_value = buffer.read_bool()?;
         } else if value_type == 2 {
-            float_value = buffer.get_f32();
+            float_value = buffer.read_f32_be()?;
         } else {
             bail!(Malformed, "Invalid ability value type {value_type}")
         }
@@ -68,7 +69,7 @@ impl Deserialize for RequestAbility {
                 9 => Ability::Flying(float_value),
                 10 => Ability::MayFly(bool_value),
                 11 => Ability::InstantBuild(bool_value),
-                12 => Ability::Lightning(todo!()),
+                12 => Ability::Lightning(bool_value),
                 13 => Ability::FlySpeed(float_value),
                 14 => Ability::WalkSpeed(float_value),
                 15 => Ability::Muted(bool_value),

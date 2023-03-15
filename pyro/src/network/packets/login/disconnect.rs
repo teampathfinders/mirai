@@ -2,9 +2,9 @@ use bytes::Bytes;
 use bytes::{BufMut, BytesMut};
 
 use crate::network::packets::ConnectedPacket;
-use util::{Serialize, size_of_varint, VarString};
+use util::{Serialize};
+use util::bytes::{BinaryWriter, MutableBuffer, VarString};
 use util::Result;
-use util::WriteExtensions;
 
 pub const DISCONNECTED_NOT_AUTHENTICATED: &str =
     "disconnectionScreen.notAuthenticated";
@@ -33,8 +33,8 @@ impl ConnectedPacket for Disconnect<'_> {
 }
 
 impl Serialize for Disconnect<'_> {
-    fn serialize(&self, buffer: &mut BytesMut) {
+    fn serialize(&self, buffer: &mut MutableBuffer) {
         buffer.write_bool(self.hide_message);
-        buffer.put_string(self.message);
+        buffer.write_str(self.message);
     }
 }

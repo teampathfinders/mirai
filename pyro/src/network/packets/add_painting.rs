@@ -1,5 +1,7 @@
+use std::fmt::Write;
 use bytes::{BytesMut, Bytes};
-use util::{Result, Vector3f, Vector3i, WriteExtensions, size_of_varint};
+use util::{Result, Vector3f, Vector3i};
+use util::bytes::{BinaryWriter, MutableBuffer, size_of_varint};
 
 use util::Serialize;
 
@@ -40,11 +42,11 @@ impl ConnectedPacket for AddPainting<'_> {
 }
 
 impl Serialize for AddPainting<'_> {
-    fn serialize(&self, buffer: &mut BytesMut) {
-        buffer.put_var_i64(self.runtime_id as i64); // Unique entity ID.
-        buffer.put_var_u64(self.runtime_id);
-        buffer.put_vec3f(&self.position);
-        buffer.put_var_i32(self.direction as i32);
-        buffer.put_string(self.name);
+    fn serialize(&self, buffer: &mut MutableBuffer) {
+        buffer.write_var_i64(self.runtime_id as i64); // Unique entity ID.
+        buffer.write_var_u64(self.runtime_id);
+        buffer.write_vec3f(&self.position);
+        buffer.write_var_i32(self.direction as i32);
+        buffer.write_str(self.name);
     }
 }

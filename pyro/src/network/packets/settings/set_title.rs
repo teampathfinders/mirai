@@ -1,7 +1,8 @@
 use std::time::Duration;
 
 use bytes::{BytesMut, Bytes};
-use util::{Result, WriteExtensions, size_of_varint};
+use util::{Result};
+use util::bytes::{BinaryWriter, MutableBuffer, size_of_varint};
 
 use util::Serialize;
 
@@ -56,13 +57,13 @@ impl ConnectedPacket for SetTitle<'_> {
 }
 
 impl Serialize for SetTitle<'_> {
-    fn serialize(&self, buffer: &mut BytesMut) {
-        buffer.put_var_i32(self.action as i32);
-        buffer.put_string(self.text);
-        buffer.put_var_i32(self.fade_in_duration);
-        buffer.put_var_i32(self.remain_duration);
-        buffer.put_var_i32(self.fade_out_duration);
-        buffer.put_string(self.xuid);
-        buffer.put_string(self.platform_online_id);
+    fn serialize(&self, buffer: &mut MutableBuffer) {
+        buffer.write_var_i32(self.action as i32);
+        buffer.write_str(self.text);
+        buffer.write_var_i32(self.fade_in_duration);
+        buffer.write_var_i32(self.remain_duration);
+        buffer.write_var_i32(self.fade_out_duration);
+        buffer.write_str(self.xuid);
+        buffer.write_str(self.platform_online_id);
     }
 }

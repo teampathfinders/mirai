@@ -1,5 +1,6 @@
 use bytes::{BufMut, BytesMut, Bytes};
-use util::{Result, Vector, Vector3f, Vector3i, WriteExtensions, size_of_varint};
+use util::{Result, Vector, Vector3f, Vector3i};
+use util::bytes::{BinaryWriter, MutableBuffer, size_of_varint};
 
 use util::Serialize;
 
@@ -18,7 +19,7 @@ pub struct PlaySound<'s> {
     pub pitch: f32,
 }
 
-impl ConnectedPacket for PlaySound<'_> {
+impl<'s> ConnectedPacket for PlaySound<'s> {
     const ID: u32 = 0x56;
 
     fn serialized_size(&self) -> usize {
@@ -27,11 +28,11 @@ impl ConnectedPacket for PlaySound<'_> {
     }
 }
 
-impl Serialize for PlaySound<'_> {
-    fn serialize(&self, buffer: &mut BytesMut) {
-        buffer.put_string(self.name);
-        buffer.put_vec3i(&self.position);
-        buffer.put_f32_le(self.volume);
-        buffer.put_f32_le(self.pitch);
+impl<'s> Serialize for PlaySound<'s> {
+    fn serialize(&self, buffer: &mut MutableBuffer) {
+        buffer.write_str(self.name);
+        buffer.write_vec3i(&self.position);
+        buffer.write_f32_le(self.volume);
+        buffer.write_f32_le(self.pitch);
     }
 }

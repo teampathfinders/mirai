@@ -12,6 +12,11 @@ pub use shared::*;
 pub use varint::*;
 pub use write::*;
 
+/// Size of an IPv4 address in bytes.
+pub const IPV4_MEM_SIZE: usize = 1 + 4 + 2;
+/// Size of an IPv6 address in bytes.
+pub const IPV6_MEM_SIZE: usize = 1 + 2 + 2 + 4 + 16 + 4;
+
 // pub trait ReadableBuffer {
 //     fn take(&mut self, n: usize) -> Result<&[u8]>;
 //     fn take_const<const N: usize>(&mut self) -> Result<[u8; N]>;

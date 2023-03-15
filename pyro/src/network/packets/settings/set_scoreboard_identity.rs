@@ -1,5 +1,6 @@
 use bytes::{BufMut, BytesMut, Bytes};
-use util::{Serialize, Result, WriteExtensions, size_of_varint};
+use util::{Serialize, Result};
+use util::bytes::{BinaryWriter, MutableBuffer, size_of_varint};
 
 use crate::network::packets::ConnectedPacket;
 
@@ -47,20 +48,20 @@ impl ConnectedPacket for SetScoreboardIdentity {
 }
 
 impl Serialize for SetScoreboardIdentity {
-    fn serialize(&self, buffer: &mut BytesMut) {
-        buffer.write_le::<u8>(self.action as u8);
+    fn serialize(&self, buffer: &mut MutableBuffer) {
+        buffer.write_u8(self.action as u8);
         match self.action {
             ScoreboardIdentityAction::Add => {
-                buffer.put_var_u32(self.entries.len() as u32);
+                buffer.write_var_u32(self.entries.len() as u32);
                 for entry in &self.entries {
-                    buffer.put_var_i64(entry.entry_id);
-                    buffer.put_var_i64(entry.entity_unique_id);
+                    buffer.write_var_i64(entry.entry_id);
+                    buffer.write_var_i64(entry.entity_unique_id);
                 }
             }
             ScoreboardIdentityAction::Clear => {
-                buffer.put_var_u32(self.entries.len() as u32);
+                buffer.write_var_u32(self.entries.len() as u32);
                 for entry in &self.entries {
-                    buffer.put_var_i64(entry.entry_id);
+                    buffer.write_var_i64(entry.entry_id);
                 }
             }
         }

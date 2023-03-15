@@ -21,6 +21,6 @@ impl ConnectedPacket for ConnectAutomationClient<'_> {
 
 impl Serialize for ConnectAutomationClient<'_> {
     fn serialize(&self, buffer: &mut BytesMut) {
-        buffer.put_string(self.server_uri);
+        buffer.write_str(self.server_uri);
     }
 }

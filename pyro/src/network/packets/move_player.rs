@@ -1,9 +1,10 @@
 use bytes::{Buf, BufMut, BytesMut, Bytes};
 use util::{
-    bail, ReadExtensions, Error, Result, Vector3f, WriteExtensions, size_of_varint,
+    bail, Error, Result, Vector3f
 };
 
 use util::{Deserialize, Serialize};
+use util::bytes::{BinaryReader, BinaryWriter, MutableBuffer, SharedBuffer, size_of_varint};
 
 use super::ConnectedPacket;
 
@@ -83,42 +84,42 @@ impl ConnectedPacket for MovePlayer {
 }
 
 impl Serialize for MovePlayer {
-    fn serialize(&self, buffer: &mut BytesMut) {
-        buffer.put_var_u64(self.runtime_id);
-        buffer.put_vec3f(&self.position);
-        buffer.put_vec3f(&self.rotation);
-        buffer.write_le::<u8>(self.mode as u8);
+    fn serialize(&self, buffer: &mut MutableBuffer) {
+        buffer.write_var_u64(self.runtime_id);
+        buffer.write_vec3f(&self.position);
+        buffer.write_vec3f(&self.rotation);
+        buffer.write_u8(self.mode as u8);
         buffer.write_bool(self.on_ground);
-        buffer.put_var_u64(self.ridden_runtime_id);
+        buffer.write_var_u64(self.ridden_runtime_id);
 
         if self.mode == MovementMode::Teleport {
-            buffer.write_be::<i32>()(self.teleport_cause as i32);
-            buffer.write_be::<i32>()(self.teleport_source_type);
+            buffer.write_i32_be(self.teleport_cause as i32);
+            buffer.write_i32_be(self.teleport_source_type);
         }
 
-        buffer.put_var_u64(self.tick);
+        buffer.write_var_u64(self.tick);
     }
 }
 
 impl Deserialize for MovePlayer {
-    fn deserialize(mut buffer: Bytes) -> Result<Self> {
-        let runtime_id = buffer.get_var_u64()?;
-        let position = buffer.get_vec3f();
-        let rotation = buffer.get_vec3f();
-        let mode = MovementMode::try_from(buffer.get_u8())?;
-        let on_ground = buffer.get_bool();
-        let ridden_runtime_id = buffer.get_var_u64()?;
+    fn deserialize(mut buffer: SharedBuffer) -> Result<Self> {
+        let runtime_id = buffer.read_var_u64()?;
+        let position = buffer.read_vec3f()?;
+        let rotation = buffer.read_vec3f()?;
+        let mode = MovementMode::try_from(buffer.read_u8()?)?;
+        let on_ground = buffer.read_bool()?;
+        let ridden_runtime_id = buffer.read_var_u64()?;
 
         let (teleport_cause, teleport_source_type) = if mode == MovementMode::Teleport {
-            let cause = TeleportCause::try_from(buffer.get_i32())?;
-            let source_type = buffer.get_i32();
+            let cause = TeleportCause::try_from(buffer.read_i32_be()?)?;
+            let source_type = buffer.read_i32_be()?;
 
             (cause, source_type)
         } else {
             (TeleportCause::Unknown, 0)
         };
 
-        let tick = buffer.get_var_u64()?;
+        let tick = buffer.read_var_u64()?;
 
         Ok(Self {
             runtime_id,

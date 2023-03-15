@@ -1,5 +1,6 @@
 use bytes::{BufMut, BytesMut, Bytes};
-use util::{Serialize, Result, WriteExtensions};
+use util::{Serialize, Result};
+use util::bytes::{BinaryWriter, MutableBuffer};
 use crate::network::packets::ConnectedPacket;
 
 #[derive(Debug, Clone)]
@@ -19,8 +20,8 @@ impl ConnectedPacket for ContainerClose {
 }
 
 impl Serialize for ContainerClose {
-    fn serialize(&self, buffer: &mut BytesMut) {
-        buffer.write_le::<u8>(self.window_id);
+    fn serialize(&self, buffer: &mut MutableBuffer) {
+        buffer.write_u8(self.window_id);
         buffer.write_bool(self.server_initiated);
     }
 }

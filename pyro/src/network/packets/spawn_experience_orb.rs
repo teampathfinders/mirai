@@ -1,5 +1,6 @@
 use bytes::{BytesMut, Bytes};
-use util::{Result, Vector3f, size_of_varint};
+use util::{Result, Vector3f};
+use util::bytes::{BinaryWriter, MutableBuffer, size_of_varint};
 
 use util::Serialize;
 
@@ -20,8 +21,8 @@ impl ConnectedPacket for SpawnExperienceOrb {
 }
 
 impl Serialize for SpawnExperienceOrb {
-    fn serialize(&self, buffer: &mut BytesMut) {
-        buffer.put_vec3f(&self.position);
-        buffer.put_var_u32(self.amount);
+    fn serialize(&self, buffer: &mut MutableBuffer) {
+        buffer.write_vec3f(&self.position);
+        buffer.write_var_u32(self.amount);
     }
 }

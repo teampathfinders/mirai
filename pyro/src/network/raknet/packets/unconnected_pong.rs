@@ -32,7 +32,7 @@ impl UnconnectedPong<'_> {
 
 impl Serialize for UnconnectedPong<'_> {
     fn serialize(&self, buffer: &mut MutableBuffer) {
-        buffer.write_le::<u8>(Self::ID);
+        buffer.write_u8(Self::ID);
         buffer.write_be::<u64>(self.time);
         buffer.write_be::<u64>(self.server_guid);
         buffer.write(OFFLINE_MESSAGE_DATA);

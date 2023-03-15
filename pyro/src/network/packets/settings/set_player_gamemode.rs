@@ -1,7 +1,8 @@
 use bytes::{BytesMut, Bytes};
-use util::{bail, ReadExtensions, Error, Result, WriteExtensions, size_of_varint};
+use util::{bail, Error, Result};
 
 use util::{Deserialize, Serialize};
+use util::bytes::{BinaryReader, BinaryWriter, MutableBuffer, SharedBuffer, size_of_varint};
 
 use crate::network::packets::ConnectedPacket;
 
@@ -47,14 +48,15 @@ impl ConnectedPacket for SetPlayerGameMode {
 }
 
 impl Serialize for SetPlayerGameMode {
-    fn serialize(&self, buffer: &mut BytesMut) {
-        buffer.put_var_i32(self.game_mode as i32);
+    fn serialize(&self, buffer: &mut MutableBuffer) {
+        buffer.write_var_i32(self.game_mode as i32);
     }
 }
 
 impl Deserialize for SetPlayerGameMode {
-    fn deserialize(mut buffer: Bytes) -> Result<Self> {
-        let game_mode = GameMode::try_from(buffer.get_var_i32()?)?;
+    fn deserialize(mut buffer: SharedBuffer) -> Result<Self> {
+        let game_mode = GameMode::try_from(buffer.read_var_i32()?)?;
+
         Ok(Self { game_mode })
     }
 }

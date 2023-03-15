@@ -54,7 +54,7 @@ impl<'a> ser::Serializer for &'a mut Serializer {
     fn serialize_i16(self, v: i16) -> Result<()> {
         match self.flavor {
             Flavor::LittleEndian | Flavor::Network => {
-                self.output.write_le::<i16>(v);
+                self.output.write_i16_le(v);
             }
             Flavor::BigEndian => {
                 self.output.write_be::<i16>(v);
@@ -83,7 +83,7 @@ impl<'a> ser::Serializer for &'a mut Serializer {
                 self.output.write_le::<i64>(v);
             }
             Flavor::BigEndian => {
-                self.output.write_be::<i64>(v);
+                self.output.write_i64_be(v);
             }
         }
 
@@ -147,10 +147,10 @@ impl<'a> ser::Serializer for &'a mut Serializer {
     fn serialize_str(self, v: &str) -> Result<()> {
         match self.flavor {
             Flavor::LittleEndian => {
-                self.output.write_le::<u16>(v.len() as u16);
+                self.output.write_u16_le(v.len() as u16);
             }
             Flavor::BigEndian => {
-                self.output.write_be::<u16>(v.len() as u16);
+                self.output.write_u16_be(v.len() as u16);
             }
             Flavor::Network => {
                 todo!();

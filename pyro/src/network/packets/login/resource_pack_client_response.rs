@@ -4,9 +4,8 @@ use bytes::{Buf, BytesMut};
 use crate::network::packets::ConnectedPacket;
 use util::bail;
 use util::Deserialize;
-use util::ReadExtensions;
 use util::{Error, Result};
-use util::bytes::SharedBuffer;
+use util::bytes::{BinaryReader, SharedBuffer};
 
 /// Status contained in [`ResourcePackClientResponse`].
 #[derive(Debug, Copy, Clone)]
@@ -42,26 +41,26 @@ impl TryFrom<u8> for ResourcePackStatus {
 /// Sent in response to [`ResourcePacksInfo`](super::ResourcePacksInfo) and
 /// [`ResourcePackStack`](super::ResourcePackStack).
 #[derive(Debug)]
-pub struct ResourcePackClientResponse {
+pub struct ResourcePackClientResponse<'a> {
     /// The response status.
     pub status: ResourcePackStatus,
     /// IDs of affected packs.
-    pub pack_ids: Vec<String>,
+    pub pack_ids: Vec<&'a str>,
 }
 
-impl ConnectedPacket for ResourcePackClientResponse {
+impl<'a> ConnectedPacket for ResourcePackClientResponse<'a> {
     /// Unique ID of this packet.
     const ID: u32 = 0x08;
 }
 
-impl Deserialize for ResourcePackClientResponse {
-    fn deserialize(mut buffer: SharedBuffer) -> Result<Self> {
-        let status = ResourcePackStatus::try_from(buffer.read_be::<u8>()?)?;
-        let length = buffer.read_be::<u16>()?;
+impl<'a> Deserialize for ResourcePackClientResponse<'a> {
+    fn deserialize(mut buffer: SharedBuffer<'a>) -> Result<Self> {
+        let status = ResourcePackStatus::try_from(buffer.read_u8()?)?;
+        let length = buffer.read_u16_be()?;
 
         let mut pack_ids = Vec::with_capacity(length as usize);
         for _ in 0..length {
-            pack_ids.push(buffer.get_string()?);
+            pack_ids.push(buffer.read_str()?);
         }
 
         Ok(Self { status, pack_ids })

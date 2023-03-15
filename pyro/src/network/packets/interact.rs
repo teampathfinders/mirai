@@ -1,5 +1,6 @@
 use bytes::{Buf, BytesMut, Bytes};
-use util::{bail, ReadExtensions, Error, Result, Vector3f};
+use util::{bail, Error, Result, Vector3f};
+use util::bytes::{BinaryReader, SharedBuffer};
 
 use util::Deserialize;
 
@@ -43,13 +44,13 @@ impl ConnectedPacket for Interact {
 }
 
 impl Deserialize for Interact {
-    fn deserialize(mut buffer: Bytes) -> Result<Self> {
-        let action = InteractAction::try_from(buffer.get_u8())?;
-        let target_runtime_id = buffer.get_var_u64()?;
+    fn deserialize(mut buffer: SharedBuffer) -> Result<Self> {
+        let action = InteractAction::try_from(buffer.read_u8())?;
+        let target_runtime_id = buffer.read_var_u64()?;
 
         let position = match action {
             InteractAction::MouseOverEntity | InteractAction::LeaveVehicle => {
-                buffer.get_vec3f()
+                buffer.read_vec3f()
             }
             _ => Vector3f::from([0.0, 0.0, 0.0]),
         };

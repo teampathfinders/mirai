@@ -1,8 +1,8 @@
 use bytes::{BytesMut, Bytes};
-use util::{bail, Error, Result, size_of_varint};
+use util::{bail, Error, Result};
 
 use util::{Deserialize, Serialize};
-use util::bytes::SharedBuffer;
+use util::bytes::{BinaryReader, BinaryWriter, MutableBuffer, SharedBuffer, size_of_varint};
 
 use super::ConnectedPacket;
 
@@ -44,16 +44,16 @@ impl ConnectedPacket for CreditsUpdate {
 }
 
 impl Serialize for CreditsUpdate {
-    fn serialize(&self, buffer: &mut BytesMut) {
-        buffer.put_var_u64(self.runtime_id);
-        buffer.put_var_i32(self.status as i32);
+    fn serialize(&self, buffer: &mut MutableBuffer) {
+        buffer.write_var_u64(self.runtime_id);
+        buffer.write_var_i32(self.status as i32);
     }
 }
 
 impl Deserialize for CreditsUpdate {
     fn deserialize(mut buffer: SharedBuffer) -> Result<Self> {
-        let runtime_id = buffer.read_var::<u64>()?;
-        let status = CreditsStatus::try_from(buffer.get_var_i32()?)?;
+        let runtime_id = buffer.read_var_u64()?;
+        let status = CreditsStatus::try_from(buffer.read_var_i32()?)?;
 
         Ok(Self { runtime_id, status })
     }

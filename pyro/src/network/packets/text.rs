@@ -1,8 +1,8 @@
 use bytes::{Buf, BufMut, Bytes, BytesMut};
-use util::{bail,  Error, Result, VarString, VarInt};
+use util::{bail,  Error, Result};
 
 use util::{Deserialize, Serialize};
-use util::bytes::{SharedBuffer};
+use util::bytes::{BinaryReader, BinaryWriter, MutableBuffer, SharedBuffer, VarInt, VarString};
 
 use super::ConnectedPacket;
 
@@ -50,28 +50,28 @@ impl TryFrom<u8> for MessageType {
 
 /// Displays text messages.
 #[derive(Debug, Clone)]
-pub struct TextMessage {
+pub struct TextMessage<'a> {
     /// Type of the message.
     pub message_type: MessageType,
     /// Whether the message requires translation.
     /// This translation can be performed with messages containing %.
     pub needs_translation: bool,
     /// Source of the message
-    pub source_name: String,
+    pub source_name: &'a str,
     /// Message to display.
-    pub message: String,
+    pub message: &'a str,
     /// A list of parameters that are filled into the message. These parameters are only
     /// written if the type of the packet is [`Translation`](MessageType::Translation),
     /// [`Tip`](MessageType::Tip), [`Popup`](MessageType::Popup) or [`JukeboxPopup`](MessageType::JukeboxPopup).
-    pub parameters: Vec<String>,
+    pub parameters: Vec<&'a str>,
     /// XUID of the sender.
     /// This is only set if the type of the packet is [`Chat`](MessageType::Chat).
-    pub xuid: String,
+    pub xuid: &'a str,
     /// Identifier set for specific platforms that determines whether clients are able to chat with each other.
-    pub platform_chat_id: String,
+    pub platform_chat_id: &'a str,
 }
 
-impl ConnectedPacket for TextMessage {
+impl<'a> ConnectedPacket for TextMessage<'a> {
     const ID: u32 = 0x09;
 
     fn serialized_size(&self) -> usize {
@@ -103,17 +103,17 @@ impl ConnectedPacket for TextMessage {
     }
 }
 
-impl Serialize for TextMessage {
-    fn serialize(&self, buffer: &mut BytesMut) {
-        buffer.write_le::<u8>(self.message_type as u8);
+impl<'a> Serialize for TextMessage<'a> {
+    fn serialize(&self, buffer: &mut MutableBuffer) {
+        buffer.write_u8(self.message_type as u8);
         buffer.write_bool(self.needs_translation);
 
         match self.message_type {
             MessageType::Chat
             | MessageType::Whisper
             | MessageType::Announcement => {
-                buffer.put_string(&self.source_name);
-                buffer.put_string(&self.message);
+                buffer.write_str(&self.source_name);
+                buffer.write_str(&self.message);
             }
             MessageType::Raw
             | MessageType::Tip
@@ -121,39 +121,39 @@ impl Serialize for TextMessage {
             | MessageType::Object
             | MessageType::ObjectWhisper
             | MessageType::ObjectAnnouncement => {
-                buffer.put_string(&self.message);
+                buffer.write_str(&self.message);
             }
             MessageType::Translation
             | MessageType::Popup
             | MessageType::JukeboxPopup => {
-                buffer.put_string(&self.message);
+                buffer.write_str(&self.message);
 
-                buffer.put_var_u32(self.parameters.len() as u32);
+                buffer.write_var_u32(self.parameters.len() as u32);
                 for param in &self.parameters {
-                    buffer.put_string(param);
+                    buffer.write_str(param);
                 }
             }
         }
 
-        buffer.put_string(&self.xuid);
-        buffer.put_string(&self.platform_chat_id);
+        buffer.write_str(&self.xuid);
+        buffer.write_str(&self.platform_chat_id);
     }
 }
 
-impl Deserialize for TextMessage {
-    fn deserialize(mut buffer: SharedBuffer) -> Result<Self> {
+impl<'a> Deserialize for TextMessage<'a> {
+    fn deserialize(mut buffer: SharedBuffer<'a>) -> Result<Self> {
         let message_type = MessageType::try_from(buffer.read_le::<u8>()?)?;
         let needs_translation = buffer.get_bool();
         let message;
-        let mut source_name = String::new();
+        let mut source_name = "";
         let mut parameters = Vec::new();
 
         match message_type {
             MessageType::Chat
             | MessageType::Whisper
             | MessageType::Announcement => {
-                source_name = buffer.get_string()?;
-                message = buffer.get_string()?;
+                source_name = buffer.read_str()?;
+                message = buffer.read_str()?;
             }
             MessageType::Raw
             | MessageType::Tip
@@ -161,24 +161,24 @@ impl Deserialize for TextMessage {
             | MessageType::Object
             | MessageType::ObjectWhisper
             | MessageType::ObjectAnnouncement => {
-                message = buffer.get_string()?;
+                message = buffer.read_str()?;
             }
             MessageType::Translation
             | MessageType::Popup
             | MessageType::JukeboxPopup => {
-                message = buffer.get_string()?;
+                message = buffer.read_str()?;
 
                 let count = buffer.read_var::<u32>()?;
                 parameters.reserve(count as usize);
 
                 for _ in 0..count {
-                    parameters.push(buffer.get_string()?);
+                    parameters.push(buffer.read_str()?);
                 }
             }
         }
 
-        let xuid = buffer.get_string()?;
-        let platform_chat_id = buffer.get_string()?;
+        let xuid = buffer.read_str()?;
+        let platform_chat_id = buffer.read_str()?;
 
         Ok(Self {
             message_type,

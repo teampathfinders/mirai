@@ -1,8 +1,9 @@
 use bytes::{BytesMut, Bytes};
-use util::{Result, Vector3f, WriteExtensions};
+use util::{Result, Vector3f};
 
 use util::Serialize;
 use level::Dimension;
+use util::bytes::{BinaryWriter, MutableBuffer};
 
 use super::ConnectedPacket;
 
@@ -27,9 +28,9 @@ impl ConnectedPacket for ChangeDimension {
 }
 
 impl Serialize for ChangeDimension {
-    fn serialize(&self, buffer: &mut BytesMut) {
-        buffer.put_var_i32(self.dimension as i32);
-        buffer.put_vec3f(&self.position);
+    fn serialize(&self, buffer: &mut MutableBuffer) {
+        buffer.write_var_i32(self.dimension as i32);
+        buffer.write_vec3f(&self.position);
         buffer.write_bool(self.respawn);
     }
 }

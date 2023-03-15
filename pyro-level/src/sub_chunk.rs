@@ -122,7 +122,7 @@ impl SubLayer {
     //         bits_per_block as u8
     //     };
     //
-    //     buffer.write_le::<u8>(index_size << 1);
+    //     buffer.write_u8(index_size << 1);
     //
     //     // Amount of indices that fit in a single 32-bit integer.
     //     let indices_per_word =
@@ -147,10 +147,10 @@ impl SubLayer {
     //             word <<= indices_per_word;
     //         }
     //
-    //         buffer.write_le::<u32>(word);
+    //         buffer.write_u32_le(word);
     //     }
     //
-    //     buffer.write_le::<u32>(self.palette.len() as u32);
+    //     buffer.write_u32_le(self.palette.len() as u32);
     //     for entry in &self.palette {
     //         todo!("serialize BlockProperties nbt");
     //         // nbt::serialize_le("", entry, buffer);
@@ -239,7 +239,7 @@ impl SubChunk {
     }
 
     // pub fn serialize(&self, buffer: &mut MutableBuffer) {
-    //     buffer.write_le::<u8>(self.version as u8);
+    //     buffer.write_u8(self.version as u8);
     //     match self.version {
     //         SubChunkVersion::Legacy => todo!(),
     //         _ => {

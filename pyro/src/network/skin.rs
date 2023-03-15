@@ -1,9 +1,13 @@
+use std::fmt::Write;
+use std::io::Write;
 use bytes::{Buf, BufMut, BytesMut, Bytes};
 use util::{
-    bail, Serialize, ReadExtensions, Error, Result, WriteExtensions,
+    bail, Serialize, Error, Result
 };
 use serde::Deserialize;
 use serde_repr::Deserialize_repr;
+use tokio::io::AsyncWriteExt;
+use util::bytes::{BinaryReader, BinaryWriter, MutableBuffer, SharedBuffer};
 
 /// Size of arms of a skin.
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Deserialize)]
@@ -127,20 +131,20 @@ pub struct PersonaPiece {
 }
 
 impl PersonaPiece {
-    fn serialize(&self, buffer: &mut BytesMut) {
-        buffer.put_string(&self.piece_id);
-        buffer.put_string(self.piece_type.name());
-        buffer.put_string(&self.pack_id);
+    fn serialize(&self, buffer: &mut MutableBuffer) {
+        buffer.write_str(&self.piece_id);
+        buffer.write_str(self.piece_type.name());
+        buffer.write_str(&self.pack_id);
         buffer.write_bool(self.default);
-        buffer.put_string(&self.product_id);
+        buffer.write_str(&self.product_id);
     }
 
-    fn deserialize(buffer: &mut Bytes) -> Result<Self> {
-        let piece_id = buffer.get_string()?;
-        let piece_type = PersonaPieceType::try_from(buffer.get_string()?.as_str())?;
-        let pack_id = buffer.get_string()?;
+    fn deserialize(buffer: &mut SharedBuffer) -> Result<Self> {
+        let piece_id = buffer.read_str()?;
+        let piece_type = PersonaPieceType::try_from(buffer.read_str()?.as_str())?;
+        let pack_id = buffer.read_str()?;
         let default = buffer.get_bool();
-        let product_id = buffer.get_string()?;
+        let product_id = buffer.read_str()?;
 
         Ok(Self {
             piece_id,
@@ -164,17 +168,17 @@ pub struct PersonaPieceTint {
 }
 
 impl PersonaPieceTint {
-    fn serialize(&self, buffer: &mut BytesMut) {
-        buffer.put_string(self.piece_type.name());
+    fn serialize(&self, buffer: &mut MutableBuffer) {
+        buffer.write_str(self.piece_type.name());
 
-        buffer.write_le::<u32>()(self.colors.len() as u32);
+        buffer.write_u32_le(self.colors.len() as u32);
         for color in &self.colors {
-            buffer.put_string(color);
+            buffer.write_str(color);
         }
     }
 
-    fn deserialize(buffer: &mut Bytes) -> Result<Self> {
-        let piece_type = PersonaPieceType::try_from(buffer.get_string()?.as_str())?;
+    fn deserialize(buffer: &mut SharedBuffer) -> Result<Self> {
+        let piece_type = PersonaPieceType::try_from(buffer.read_str()?.as_str())?;
 
         let color_count = buffer.get_u32_le();
         if color_count > 4 {
@@ -184,7 +188,7 @@ impl PersonaPieceTint {
         // Not sure why Rust can't infer this type...
         let mut colors: [String; 4] = Default::default();
         for i in 0..color_count {
-            colors[i as usize] = buffer.get_string()?;
+            colors[i as usize] = buffer.read_str()?.to_owned();
         }
 
         Ok(Self {
@@ -263,27 +267,27 @@ pub struct SkinAnimation {
 }
 
 impl SkinAnimation {
-    pub fn serialize(&self, buffer: &mut BytesMut) {
-        buffer.write_le::<u32>()(self.image_width);
-        buffer.write_le::<u32>()(self.image_height);
+    pub fn serialize(&self, buffer: &mut MutableBuffer) {
+        buffer.write_u32_le(self.image_width);
+        buffer.write_u32_le(self.image_height);
         
-        buffer.put_var_u32(self.image_data.len() as u32);
+        buffer.write_var_u32(self.image_data.len() as u32);
         buffer.extend(&self.image_data);
 
-        buffer.write_le::<u32>()(self.animation_type as u32);
-        buffer.put_f32_le(self.frame_count);
-        buffer.write_le::<u32>()(self.expression_type as u32);
+        buffer.write_u32_le(self.animation_type as u32);
+        buffer.write_f32_le(self.frame_count);
+        buffer.write_u32_le(self.expression_type as u32);
     }
 
-    pub fn deserialize(buffer: &mut Bytes) -> Result<Self> {
-        let image_width = buffer.get_u32_le();
-        let image_height = buffer.get_u32_le();
-        let image_size = buffer.get_var_u32()?;
+    pub fn deserialize(buffer: &mut SharedBuffer) -> Result<Self> {
+        let image_width = buffer.read_u32_le()?;
+        let image_height = buffer.read_u32_le()?;
+        let image_size = buffer.read_var_u32()?;
         let image_data = buffer.copy_to_bytes(image_size as usize);
 
-        let animation_type = SkinAnimationType::try_from(buffer.get_u32_le())?;
-        let frame_count = buffer.get_f32_le();
-        let expression_type = SkinExpressionType::try_from(buffer.get_u32_le())?;
+        let animation_type = SkinAnimationType::try_from(buffer.read_u32_le()?)?;
+        let frame_count = buffer.read_f32_le()?;
+        let expression_type = SkinExpressionType::try_from(buffer.read_u32_le()?)?;
 
         Ok(Self {
             image_width, image_height, image_data, animation_type, frame_count, expression_type
@@ -433,41 +437,41 @@ impl Skin {
         Ok(())
     }
 
-    pub fn serialize(&self, buffer: &mut BytesMut) {
-        buffer.put_string(&self.skin_id);
-        buffer.put_string(&self.playfab_id);
-        buffer.put_string(&self.resource_patch);
+    pub fn serialize(&self, buffer: &mut MutableBuffer) {
+        buffer.write_str(&self.skin_id);
+        buffer.write_str(&self.playfab_id);
+        buffer.write_str(&self.resource_patch);
 
-        buffer.write_le::<u32>()(self.image_width);
-        buffer.write_le::<u32>()(self.image_height);
-        buffer.put_var_u32(self.image_data.len() as u32);
-        buffer.put(self.image_data.as_ref());
+        buffer.write_u32_le(self.image_width);
+        buffer.write_u32_le(self.image_height);
+        buffer.write_var_u32(self.image_data.len() as u32);
+        buffer.write(self.image_data.as_ref())?;
 
-        buffer.write_le::<u32>()(self.animations.len() as u32);
+        buffer.write_u32_le(self.animations.len() as u32);
         for animation in &self.animations {
             animation.serialize(buffer);
         }
 
-        buffer.write_le::<u32>()(self.cape_image_width);
-        buffer.write_le::<u32>()(self.cape_image_height);
-        buffer.put_var_u32(self.cape_image_data.len() as u32);
-        buffer.put(self.cape_image_data.as_ref());
+        buffer.write_u32_le(self.cape_image_width);
+        buffer.write_u32_le(self.cape_image_height);
+        buffer.write_var_u32(self.cape_image_data.len() as u32);
+        buffer.write(self.cape_image_data.as_ref())?;
 
-        buffer.put_string(&self.geometry);
-        buffer.put_string(&self.geometry_engine_version);
-        buffer.put_string(&self.animation_data);
+        buffer.write_str(&self.geometry);
+        buffer.write_str(&self.geometry_engine_version);
+        buffer.write_str(&self.animation_data);
 
-        buffer.put_string(&self.cape_id);
-        buffer.put_string(&self.full_id);
-        buffer.put_string(self.arm_size.name());
-        buffer.put_string(&self.color);
+        buffer.write_str(&self.cape_id);
+        buffer.write_str(&self.full_id);
+        buffer.write_str(self.arm_size.name());
+        buffer.write_str(&self.color);
 
-        buffer.write_le::<u32>()(self.persona_pieces.len() as u32);
+        buffer.write_u32_le(self.persona_pieces.len() as u32);
         for piece in &self.persona_pieces {
             piece.serialize(buffer);
         }
 
-        buffer.write_le::<u32>()(self.persona_piece_tints.len() as u32);
+        buffer.write_u32_le(self.persona_piece_tints.len() as u32);
         for tint in &self.persona_piece_tints {
             tint.serialize(buffer);
         }
@@ -478,51 +482,51 @@ impl Skin {
         buffer.write_bool(self.is_primary_user);
     }
 
-    pub fn deserialize(buffer: &mut Bytes) -> Result<Self> {
-        let skin_id = buffer.get_string()?;
-        let playfab_id = buffer.get_string()?;
-        let resource_patch = buffer.get_string()?;
+    pub fn deserialize(buffer: &mut SharedBuffer) -> Result<Self> {
+        let skin_id = buffer.read_str()?;
+        let playfab_id = buffer.read_str()?;
+        let resource_patch = buffer.read_str()?;
         
-        let image_width = buffer.get_u32_le();
-        let image_height = buffer.get_u32_le();
-        let image_size = buffer.get_var_u32()?;
+        let image_width = buffer.read_u32_le()?;
+        let image_height = buffer.read_u32_le()?;
+        let image_size = buffer.read_var_u32()?;
         let image_data = buffer.copy_to_bytes(image_size as usize);
 
-        let animation_count = buffer.get_u32_le();
+        let animation_count = buffer.read_u32_le()?;
         let mut animations = Vec::with_capacity(animation_count as usize);
         for _ in 0..animation_count {
             animations.push(SkinAnimation::deserialize(buffer)?);
         }
 
-        let cape_image_width = buffer.get_u32_le();
-        let cape_image_height = buffer.get_u32_le();
-        let cape_image_size = buffer.get_var_u32()?;
+        let cape_image_width = buffer.read_u32_le()?;
+        let cape_image_height = buffer.read_u32_le()?;
+        let cape_image_size = buffer.read_var_u32()?;
         let cape_image_data = buffer.copy_to_bytes(cape_image_size as usize);
 
-        let geometry = buffer.get_string()?;
-        let geometry_engine_version = buffer.get_string()?;
-        let animation_data = buffer.get_string()?;
-        let cape_id = buffer.get_string()?;
-        let full_id = buffer.get_string()?;
-        let arm_size = ArmSize::try_from(buffer.get_string()?.as_str())?;
-        let color = buffer.get_string()?;
+        let geometry = buffer.read_str()?;
+        let geometry_engine_version = buffer.read_str()?;
+        let animation_data = buffer.read_str()?;
+        let cape_id = buffer.read_str()?;
+        let full_id = buffer.read_str()?;
+        let arm_size = ArmSize::try_from(buffer.read_str()?.as_str())?;
+        let color = buffer.read_str()?;
 
-        let persona_piece_count = buffer.get_u32_le();
+        let persona_piece_count = buffer.read_u32_le()?;
         let mut persona_pieces = Vec::with_capacity(persona_piece_count as usize);
         for _ in 0..persona_piece_count {
             persona_pieces.push(PersonaPiece::deserialize(buffer)?);            
         }
 
-        let persona_tint_count = buffer.get_u32_le();
+        let persona_tint_count = buffer.read_u32_le()?;
         let mut persona_piece_tints = Vec::with_capacity(persona_tint_count as usize);
         for _ in 0..persona_piece_count {
             persona_piece_tints.push(PersonaPieceTint::deserialize(buffer)?);
         }
 
-        let is_premium = buffer.get_bool();
-        let is_persona = buffer.get_bool();
-        let cape_on_classic_skin = buffer.get_bool();
-        let is_primary_user = buffer.get_bool();
+        let is_premium = buffer.read_bool()?;
+        let is_persona = buffer.read_bool()?;
+        let cape_on_classic_skin = buffer.read_bool()?;
+        let is_primary_user = buffer.read_bool()?;
 
         Ok(Self {
             skin_id, 

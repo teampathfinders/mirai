@@ -1,6 +1,7 @@
 use bytes::{BytesMut, BufMut, Bytes};
-use util::{Serialize, Result, WriteExtensions, size_of_varint};
+use util::{Serialize, Result};
 use uuid::Uuid;
+use util::bytes::{BinaryWriter, MutableBuffer, size_of_varint};
 use crate::network::packets::login::DeviceOS;
 use crate::network::Skin;
 
@@ -34,22 +35,22 @@ pub struct PlayerListAdd<'a> {
     pub entries: &'a [PlayerListAddEntry<'a>],
 }
 
-impl ConnectedPacket for PlayerListAdd<'_> {
+impl<'a> ConnectedPacket for PlayerListAdd<'a> {
     const ID: u32 = 0x3f;
 }
 
-impl Serialize for PlayerListAdd<'_> {
-    fn serialize(&self, buffer: &mut BytesMut) {
-        buffer.write_le::<u8>(0); // Add player.
-        buffer.put_var_u32(self.entries.len() as u32);
+impl<'a> Serialize for PlayerListAdd<'a> {
+    fn serialize(&self, buffer: &mut MutableBuffer) {
+        buffer.write_u8(0); // Add player.
+        buffer.write_var_u32(self.entries.len() as u32);
         for entry in self.entries {
             buffer.put_uuid(&entry.uuid);
             
-            buffer.put_var_i64(entry.entity_id);
-            buffer.put_string(entry.username);
-            buffer.put_string(&entry.xuid.to_string());
-            buffer.put_string(""); // Platform chat ID.
-            buffer.write_le::<i32>()(entry.device_os as i32);
+            buffer.write_var_i64(entry.entity_id);
+            buffer.write_str(entry.username);
+            buffer.write_str(&entry.xuid.to_string());
+            buffer.write_str(""); // Platform chat ID.
+            buffer.write_i32_le(entry.device_os as i32);
             entry.skin.serialize(buffer);
             buffer.write_bool(false); // Player is not a teacher.
             buffer.write_bool(entry.host);
@@ -67,7 +68,7 @@ pub struct PlayerListRemove<'a> {
     pub entries: &'a [Uuid]
 }
 
-impl ConnectedPacket for PlayerListRemove<'_> {
+impl<'a> ConnectedPacket for PlayerListRemove<'a> {
     const ID: u32 = 0x3f;
 
     fn serialized_size(&self) -> usize {
@@ -75,12 +76,12 @@ impl ConnectedPacket for PlayerListRemove<'_> {
     }
 }
 
-impl Serialize for PlayerListRemove<'_> {
-    fn serialize(&self, buffer: &mut BytesMut) {
-        buffer.write_le::<u8>(1); // Remove player.
-        buffer.put_var_u32(self.entries.len() as u32);
+impl<'a> Serialize for PlayerListRemove<'a> {
+    fn serialize(&self, buffer: &mut MutableBuffer) {
+        buffer.write_u8(1); // Remove player.
+        buffer.write_var_u32(self.entries.len() as u32);
         for entry in self.entries {
-            buffer.put_uuid(entry);
+            buffer.write_uuid(entry);
         }
     }
 }

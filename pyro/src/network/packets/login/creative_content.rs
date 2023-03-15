@@ -4,9 +4,9 @@ use bytes::Bytes;
 use bytes::{BufMut, BytesMut};
 
 use crate::network::packets::ConnectedPacket;
-use util::{Serialize, VarInt};
+use util::{Serialize};
+use util::bytes::{BinaryWriter, MutableBuffer, VarInt};
 use util::Result;
-use util::WriteExtensions;
 
 pub const ITEM_ID_SHIELD: u32 = 513;
 
@@ -54,18 +54,16 @@ impl ItemStack {
         // }
     }
 
-    pub fn serialize(&self, buffer: &mut BytesMut) {
-        buffer.put_var_u32(self.item_type.network_id);
+    pub fn serialize(&self, buffer: &mut MutableBuffer) {
+        buffer.write_var_u32(self.item_type.network_id);
         if self.item_type.network_id == 0 {
             // Air has no data.
             return;
         }
 
-        buffer.write_be::<u16>()(self.count);
-        buffer.put_var_u32(self.item_type.metadata);
-        buffer.put_var_u32(self.runtime_id);
-
-        todo!();
+        buffer.write_u16_be(self.count);
+        buffer.write_var_u32(self.item_type.metadata);
+        buffer.write_var_u32(self.runtime_id);
 
         // if let Value::Compound(ref map) = self.nbt_data {
         //     let length = map.len();
@@ -73,7 +71,7 @@ impl ItemStack {
         //         buffer.put_i16(0); // Length
         //     } else {
         //         buffer.put_i16(-1); // Length
-        //         buffer.write_le::<u8>(1); // Version
+        //         buffer.write_u8(1); // Version
         //
         //         nbt::serialize_net("", &self.nbt_data, buffer);
         //     }
@@ -81,18 +79,18 @@ impl ItemStack {
         //     todo!()
         // }
 
-        buffer.write_be::<u32>()(self.can_be_placed_on.len() as u32);
+        buffer.write_u32_be(self.can_be_placed_on.len() as u32);
         for item in &self.can_be_placed_on {
-            buffer.put_string(item);
+            buffer.put_str(item);
         }
 
-        buffer.write_be::<u32>()(self.can_break.len() as u32);
+        buffer.write_u32_be(self.can_break.len() as u32);
         for item in &self.can_break {
-            buffer.put_string(item);
+            buffer.put_str(item);
         }
 
         if self.item_type.network_id == ITEM_ID_SHIELD {
-            buffer.write_be::<u64>()(0); // Blocking tick.
+            buffer.write_u64_be(0); // Blocking tick.
         }
     }
 }
@@ -112,8 +110,8 @@ impl ConnectedPacket for CreativeContent<'_> {
 }
 
 impl Serialize for CreativeContent<'_> {
-    fn serialize(&self, buffer: &mut BytesMut) {
-        buffer.put_var_u32(self.items.len() as u32);
+    fn serialize(&self, buffer: &mut MutableBuffer) {
+        buffer.write_var_u32(self.items.len() as u32);
         for item in self.items {
             item.serialize(buffer);
         }
