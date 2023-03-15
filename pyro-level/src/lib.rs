@@ -80,7 +80,6 @@ impl ChunkManager {
                 tracing::error!("Failed to save level: {e}");
             }
         }
-        drop(self);
 
         // Send the signal that the level has been closed.
         let _ = sender.send(());
