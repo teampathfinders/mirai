@@ -46,7 +46,7 @@ impl SubLayer {
     #[inline]
     fn deserialize(buffer: &mut SharedBuffer) -> Result<Self> {
         // Size of each index in bits.
-        let index_size = buffer.read_le::<u8>()? >> 1;
+        let index_size = buffer.read_u8()? >> 1;
         if index_size == 0x7f {
             bail!(Malformed, "Invalid block bit size {index_size}");
         }
@@ -60,7 +60,7 @@ impl SubLayer {
         let mut indices = [0u16; CHUNK_SIZE];
         for i in 0..word_count {
             // println!("{i} {}", i * indices_per_word);
-            let mut word = buffer.read_le::<u32>()?;
+            let mut word = buffer.read_u32_le()?;
 
             for j in 0..indices_per_word {
                 let index = word & mask;
@@ -73,7 +73,7 @@ impl SubLayer {
         // Padded sizes have an extra word.
         match index_size {
             3 | 5 | 6 => {
-                let mut word = buffer.read_le::<u32>()?;
+                let mut word = buffer.read_u32_le()?;
                 let last_index =
                     (word_count - 1) * indices_per_word + indices_per_word - 1;
 
@@ -87,7 +87,7 @@ impl SubLayer {
         }
 
         // Size of the block palette.
-        let palette_size = buffer.read_le::<u32>()?;
+        let palette_size = buffer.read_u32_le()?;
         let mut palette = Vec::with_capacity(palette_size as usize);
         // let mut palette = Vec::new();
         for _ in 0..palette_size {
@@ -105,57 +105,57 @@ impl SubLayer {
         Ok(Self { indices, palette })
     }
 
-    fn serialize(&self, buffer: &mut MutableBuffer) {
-        // Determine the required bits per index
-        let index_size = {
-            let palette_size = self.palette.len();
-
-            let mut bits_per_block = 0;
-            // Loop over allowed values.
-            for b in [1, 2, 3, 4, 5, 6, 8, 16] {
-                if 2usize.pow(b) >= palette_size {
-                    bits_per_block = b;
-                    break;
-                }
-            }
-
-            bits_per_block as u8
-        };
-
-        buffer.write_le::<u8>(index_size << 1);
-
-        // Amount of indices that fit in a single 32-bit integer.
-        let indices_per_word =
-            u32_ceil_div(u32::BITS, index_size as u32) as usize;
-
-        // Amount of words needed to encode 4096 block indices.
-        let word_count = {
-            let padding = match index_size {
-                3 | 5 | 6 => 1,
-                _ => 0,
-            };
-            CHUNK_SIZE / indices_per_word + padding
-        };
-
-        let mask = !(!0u32 << index_size);
-        for i in 0..word_count {
-            let mut word = 0;
-            for j in 0..indices_per_word {
-                let index =
-                    self.indices[i * indices_per_word + j] as u32 & mask;
-                word |= index;
-                word <<= indices_per_word;
-            }
-
-            buffer.write_le::<u32>(word);
-        }
-
-        buffer.write_le::<u32>(self.palette.len() as u32);
-        for entry in &self.palette {
-            todo!("serialize BlockProperties nbt");
-            // nbt::serialize_le("", entry, buffer);
-        }
-    }
+    // fn serialize(&self, buffer: &mut MutableBuffer) {
+    //     // Determine the required bits per index
+    //     let index_size = {
+    //         let palette_size = self.palette.len();
+    //
+    //         let mut bits_per_block = 0;
+    //         // Loop over allowed values.
+    //         for b in [1, 2, 3, 4, 5, 6, 8, 16] {
+    //             if 2usize.pow(b) >= palette_size {
+    //                 bits_per_block = b;
+    //                 break;
+    //             }
+    //         }
+    //
+    //         bits_per_block as u8
+    //     };
+    //
+    //     buffer.write_le::<u8>(index_size << 1);
+    //
+    //     // Amount of indices that fit in a single 32-bit integer.
+    //     let indices_per_word =
+    //         u32_ceil_div(u32::BITS, index_size as u32) as usize;
+    //
+    //     // Amount of words needed to encode 4096 block indices.
+    //     let word_count = {
+    //         let padding = match index_size {
+    //             3 | 5 | 6 => 1,
+    //             _ => 0,
+    //         };
+    //         CHUNK_SIZE / indices_per_word + padding
+    //     };
+    //
+    //     let mask = !(!0u32 << index_size);
+    //     for i in 0..word_count {
+    //         let mut word = 0;
+    //         for j in 0..indices_per_word {
+    //             let index =
+    //                 self.indices[i * indices_per_word + j] as u32 & mask;
+    //             word |= index;
+    //             word <<= indices_per_word;
+    //         }
+    //
+    //         buffer.write_le::<u32>(word);
+    //     }
+    //
+    //     buffer.write_le::<u32>(self.palette.len() as u32);
+    //     for entry in &self.palette {
+    //         todo!("serialize BlockProperties nbt");
+    //         // nbt::serialize_le("", entry, buffer);
+    //     }
+    // }
 }
 
 #[inline]
@@ -210,16 +210,12 @@ impl SubChunk {
     {
         let mut buffer = buffer.into();
 
-        let version = buffer.read_le::<u8>()?;
+        let version = buffer.read_u8()?;
         match version {
             1 => todo!(),
             8 | 9 => {
-                let storage_count = buffer.read_le::<u8>()?;
-                let index = if version == 9 {
-                    buffer.read_le::<i8>()?
-                } else {
-                    0
-                };
+                let storage_count = buffer.read_u8()?;
+                let index = if version == 9 { buffer.read_i8()? } else { 0 };
 
                 let mut storage_records =
                     Vec::with_capacity(storage_count as usize);
@@ -242,23 +238,23 @@ impl SubChunk {
         }
     }
 
-    pub fn serialize(&self, buffer: &mut MutableBuffer) {
-        buffer.write_le::<u8>(self.version as u8);
-        match self.version {
-            SubChunkVersion::Legacy => todo!(),
-            _ => {
-                buffer.write_le::<u8>(self.layers.len() as u8);
-
-                if self.version == SubChunkVersion::Limitless {
-                    buffer.write_le::<i8>(self.index);
-                }
-
-                for storage_record in &self.layers {
-                    storage_record.serialize(buffer);
-                }
-            }
-        }
-    }
+    // pub fn serialize(&self, buffer: &mut MutableBuffer) {
+    //     buffer.write_le::<u8>(self.version as u8);
+    //     match self.version {
+    //         SubChunkVersion::Legacy => todo!(),
+    //         _ => {
+    //             buffer.write_u8(self.layers.len() as u8);
+    //
+    //             if self.version == SubChunkVersion::Limitless {
+    //                 buffer.write_i8(self.index);
+    //             }
+    //
+    //             for storage_record in &self.layers {
+    //                 storage_record.serialize(buffer);
+    //             }
+    //         }
+    //     }
+    // }
 }
 
 pub struct LayerIter<'a> {

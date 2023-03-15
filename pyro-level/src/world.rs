@@ -288,19 +288,19 @@ impl DatabaseKey {
             }
     }
 
-    pub(crate) fn serialize(&self, buffer: &mut MutableBuffer) {
-        buffer.write_le::<i32>(self.x);
-        buffer.write_le::<i32>(self.z);
-
-        if self.dimension != Dimension::Overworld {
-            buffer.write_le::<i32>(self.dimension as i32);
-        }
-
-        buffer.write_le::<u8>(self.data.discriminant());
-        if let KeyData::SubChunk { index } = self.data {
-            buffer.write_le::<i8>(index);
-        }
-    }
+    // pub(crate) fn serialize(&self, buffer: &mut MutableBuffer) {
+    //     buffer.write_i32_le(self.x);
+    //     buffer.write_i32_le(self.z);
+    //
+    //     if self.dimension != Dimension::Overworld {
+    //         buffer.write_i32_le(self.dimension as i32);
+    //     }
+    //
+    //     buffer.write_le::<u8>(self.data.discriminant());
+    //     if let KeyData::SubChunk { index } = self.data {
+    //         buffer.write_le::<i8>(index);
+    //     }
+    // }
 }
 
 /// The Minecraft dimensions.

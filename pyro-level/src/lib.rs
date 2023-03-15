@@ -16,7 +16,6 @@ use tokio_util::sync::CancellationToken;
 use util::Result;
 pub use world::*;
 
-
 pub struct ChunkManager {
     /// Chunk database
     database: LevelDb,
@@ -31,8 +30,7 @@ impl ChunkManager {
     ) -> Result<(Arc<Self>, Receiver<()>)> {
         tracing::info!("Loading level {}...", path.as_ref());
 
-        let manager =
-            Arc::new(Self { database: LevelDb::new(path)?, token });
+        let manager = Arc::new(Self { database: LevelDb::new(path)?, token });
 
         let clone = manager.clone();
         let (sender, receiver) = tokio::sync::oneshot::channel();

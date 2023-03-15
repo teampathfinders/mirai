@@ -1,8 +1,8 @@
+use crate::Result;
 use crate::{u24::u24, Vector};
+use paste::paste;
 use std::mem;
 use uuid::Uuid;
-use crate::Result;
-use paste::paste;
 
 macro_rules! declare_read_fns {
     ($($ty: ident),+) => {

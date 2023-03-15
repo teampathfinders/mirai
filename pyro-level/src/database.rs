@@ -144,14 +144,14 @@ impl<'a> Drop for Keys<'a> {
 pub struct LevelDb {
     /// Pointer to the C++ Database struct, containing the database and corresponding options.
     /// This data is heap-allocated and must therefore also be deallocated by C++ when it is no longer needed.
-    pointer: NonNull<c_void>
+    pointer: NonNull<c_void>,
 }
 
 impl LevelDb {
     /// Opens the database at the specified path.
     pub fn new<P>(path: P) -> Result<Self>
     where
-        P: AsRef<str>
+        P: AsRef<str>,
     {
         let ffi_path = CString::new(path.as_ref())?;
 
@@ -164,7 +164,7 @@ impl LevelDb {
                 debug_assert_ne!(result.data, std::ptr::null_mut());
                 // SAFETY: If result.is_success is true, then the caller has set data to a valid pointer.
                 Ok(Self {
-                    pointer: NonNull::new_unchecked(result.data)
+                    pointer: NonNull::new_unchecked(result.data),
                 })
             } else {
                 Err(translate_ffi_error(result))
@@ -180,7 +180,7 @@ impl LevelDb {
     /// This function requires a raw key, i.e. the key must have been serialised already.
     pub fn get<K>(&self, key: K) -> Result<Guard>
     where
-        K: AsRef<[u8]>
+        K: AsRef<[u8]>,
     {
         let key = key.as_ref();
         unsafe {

@@ -1,10 +1,10 @@
 use crate::bail;
 use crate::bytes::{BinRead, VarInt};
+use paste::paste;
 use std::fmt::Debug;
 use std::io::Read;
 use std::ops::{Deref, Index};
 use std::{cmp, fmt, io};
-use paste::paste;
 
 use crate::Result;
 
@@ -219,23 +219,23 @@ impl<'a> BinRead for SharedBuffer<'a> {
         Ok(std::str::from_utf8(data)?)
     }
 }
-    // /// Reads the specified big-endian encoded type from the buffer without advancing the cursor.
-    // #[inline]
-    // fn peek_be<T: FromBytes>(&self) -> Result<T>
-    //     where
-    //         [(); T::SIZE]:,
-    // {
-    //     Ok(T::from_be(self.peek_const::<{ T::SIZE }>()?))
-    // }
-    //
-    // /// Reads the specified little-endian encoded type from the buffer without advancing the cursor.
-    // #[inline]
-    // fn peek_le<T: FromBytes>(&self) -> Result<T>
-    //     where
-    //         [(); T::SIZE]:,
-    // {
-    //     Ok(T::from_le(self.peek_const::<{ T::SIZE }>()?))
-    // }
+// /// Reads the specified big-endian encoded type from the buffer without advancing the cursor.
+// #[inline]
+// fn peek_be<T: FromBytes>(&self) -> Result<T>
+//     where
+//         [(); T::SIZE]:,
+// {
+//     Ok(T::from_be(self.peek_const::<{ T::SIZE }>()?))
+// }
+//
+// /// Reads the specified little-endian encoded type from the buffer without advancing the cursor.
+// #[inline]
+// fn peek_le<T: FromBytes>(&self) -> Result<T>
+//     where
+//         [(); T::SIZE]:,
+// {
+//     Ok(T::from_le(self.peek_const::<{ T::SIZE }>()?))
+// }
 
 //     /// Reads a little-endian encoded type from the buffer.
 //     ///
@@ -333,8 +333,8 @@ impl<'a> Read for SharedBuffer<'a> {
 
 #[cfg(test)]
 mod test {
-    use crate::bytes::BinRead;
     use super::SharedBuffer;
+    use crate::bytes::BinRead;
 
     #[test]
     fn test_read_u8() {
@@ -383,7 +383,9 @@ mod test {
     #[test]
     fn test_read_str() {
         let o = "Hello, World!";
-        let s: &[u8] = &[13, 72, 101, 108, 108, 111, 44, 32, 87, 111, 114, 108, 100, 33];
+        let s: &[u8] = &[
+            13, 72, 101, 108, 108, 111, 44, 32, 87, 111, 114, 108, 100, 33,
+        ];
         let mut buf = SharedBuffer::from(s);
 
         assert_eq!(buf.read_str().unwrap(), o);

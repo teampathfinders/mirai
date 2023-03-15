@@ -181,9 +181,7 @@ impl<'de, 'a> de::Deserializer<'de> for &'a mut Deserializer<'de> {
 
         let n = match self.flavor {
             Flavor::BigEndian => self.input.read_i16_be(),
-            Flavor::LittleEndian | Flavor::Network => {
-                self.input.read_i16_le()
-            }
+            Flavor::LittleEndian | Flavor::Network => self.input.read_i16_le(),
         }?;
 
         visitor.visit_i16(n)
@@ -198,9 +196,7 @@ impl<'de, 'a> de::Deserializer<'de> for &'a mut Deserializer<'de> {
 
         let n = match self.flavor {
             Flavor::BigEndian => self.input.read_i32_be(),
-            Flavor::LittleEndian | Flavor::Network => {
-                self.input.read_i32_le()
-            }
+            Flavor::LittleEndian | Flavor::Network => self.input.read_i32_le(),
         }?;
 
         visitor.visit_i32(n)
@@ -215,9 +211,7 @@ impl<'de, 'a> de::Deserializer<'de> for &'a mut Deserializer<'de> {
 
         let n = match self.flavor {
             Flavor::BigEndian => self.input.read_i64_be(),
-            Flavor::LittleEndian | Flavor::Network => {
-                self.input.read_i64_le()
-            }
+            Flavor::LittleEndian | Flavor::Network => self.input.read_i64_le(),
         }?;
 
         visitor.visit_i64(n)
@@ -299,7 +293,7 @@ impl<'de, 'a> de::Deserializer<'de> for &'a mut Deserializer<'de> {
         let len = match self.flavor {
             Flavor::BigEndian => self.input.read_u16_be()? as u32,
             Flavor::LittleEndian => self.input.read_u16_le()? as u32,
-            Flavor::Network => self.input.read_var_u32()?
+            Flavor::Network => self.input.read_var_u32()?,
         };
 
         let data = self.input.take_n(len as usize)?;
@@ -318,7 +312,7 @@ impl<'de, 'a> de::Deserializer<'de> for &'a mut Deserializer<'de> {
         let len = match self.flavor {
             Flavor::BigEndian => self.input.read_u16_be()? as u32,
             Flavor::LittleEndian => self.input.read_u16_le()? as u32,
-            Flavor::Network => self.input.read_var_u32()?
+            Flavor::Network => self.input.read_var_u32()?,
         };
 
         let data = self.input.take_n(len as usize)?;
@@ -644,7 +638,7 @@ mod test {
 
         dbg!(decoded);
     }
-    
+
     #[test]
     fn read_player_nan_value_nbt() {
         #[derive(Deserialize, Debug, PartialEq)]
