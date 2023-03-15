@@ -1,7 +1,7 @@
 use serde::Deserialize;
 use std::collections::HashMap;
 use std::iter::Enumerate;
-use util::bytes::{SharedBuf, LazyBuffer, BinaryBuffer};
+use util::bytes::{SharedBuffer, LazyBuffer, BinaryBuffer};
 use util::{bail, BlockPosition, Error, Result, Vector3b};
 
 const CHUNK_SIZE: usize = 4096;
@@ -18,27 +18,6 @@ fn u32_ceil_div(lhs: u32, rhs: u32) -> u32 {
     (lhs + rhs - 1) / rhs
 }
 
-mod block_version {
-    use serde::{Deserialize, Serialize};
-    use util::bytes::{FromBytes, ToBytes};
-
-    pub fn deserialize<'de, D>(d: D) -> Result<[u8; 4], D::Error>
-    where
-        D: serde::Deserializer<'de>,
-    {
-        let int = i32::deserialize(d)?;
-        Ok(int.to_be_bytes())
-    }
-
-    pub fn serialize<S>(v: [u8; 4], s: S) -> Result<S::Ok, S::Error>
-    where
-        S: serde::Serializer,
-    {
-        let int = i32::from_be_bytes(v);
-        int.serialize(s)
-    }
-}
-
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
 pub struct BlockStates {
     // states, this should probably be a HashMap<String, nbt::Value>
@@ -48,9 +27,8 @@ pub struct BlockStates {
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
 pub struct BlockProperties {
     pub name: String,
-    #[serde(with = "block_version")]
-    pub version: [u8; 4],
-    pub states: BlockStates,
+    pub version: Option<i32>,
+    pub states: Option<BlockStates>,
 }
 
 #[derive(Debug, Clone)]
@@ -65,7 +43,8 @@ impl SubLayer {
         LayerIter::from(self)
     }
 
-    fn deserialize(buffer: &mut SharedBuf) -> Result<Self> {
+    #[inline]
+    fn deserialize(buffer: &mut SharedBuffer) -> Result<Self> {
         // Size of each index in bits.
         let index_size = buffer.read_le::<u8>()? >> 1;
         if index_size == 0x7f {
@@ -179,12 +158,14 @@ impl SubLayer {
     }
 }
 
+#[inline]
 fn pos_to_offset(position: Vector3b) -> usize {
     16 * 16 * position.x as usize
         + 16 * position.z as usize
         + position.y as usize
 }
 
+#[inline]
 fn offset_to_pos(offset: usize) -> Vector3b {
     Vector3b::from([
         (offset >> 8) as u8 & 0xf,
@@ -222,9 +203,10 @@ impl SubChunk {
 }
 
 impl SubChunk {
+    #[inline]
     pub fn deserialize<'a, R>(buffer: R) -> Result<Self>
     where
-        R: Into<SharedBuf<'a>>
+        R: Into<SharedBuffer<'a>>
     {
         let mut buffer = buffer.into();
 
@@ -254,7 +236,9 @@ impl SubChunk {
 
                 Ok(Self { version, index, layers: storage_records })
             }
-            _ => bail!(Malformed, "Invalid chunk version {version}"),
+            _ => {
+                bail!(Malformed, "Invalid chunk version {version}")
+            },
         }
     }
 

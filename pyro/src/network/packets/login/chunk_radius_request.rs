@@ -1,6 +1,6 @@
 use bytes::Bytes;
 use util::{Result};
-use util::bytes::SharedBuf;
+use util::bytes::SharedBuffer;
 
 use util::Deserialize;
 use crate::network::packets::ConnectedPacket;
@@ -17,7 +17,7 @@ impl ConnectedPacket for ChunkRadiusRequest {
 }
 
 impl Deserialize for ChunkRadiusRequest {
-    fn deserialize(mut buffer: SharedBuf) -> Result<Self> {
+    fn deserialize(mut buffer: SharedBuffer) -> Result<Self> {
         let radius = buffer.read_var::<i32>()?;
 
         Ok(Self { radius })

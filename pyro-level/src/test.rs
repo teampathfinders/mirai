@@ -12,29 +12,34 @@ use crate::{biome::Biome3d, database::RawDatabase, DatabaseKey, Dimension, KeyDa
 #[test]
 fn database_test() {
     let db = RawDatabase::new("test/db").unwrap();
-    let mut iter = db.iter();
 
     let mut count = 0;
+    let mut failed = 0;
     let mut sum = 0;
 
-    for raw_ref in iter {
-        let key = raw_ref.key();
-        if key[key.len() - 2] == 0x2f {
-            count += 1;
+    for _ in 0..50 {
+        let mut iter = db.iter();
+        for raw_ref in iter {
+            let key = raw_ref.key();
+            if key[key.len() - 2] == 0x2f {
+                let start = std::time::Instant::now();
+                let subchunk = SubChunk::deserialize(raw_ref.value().as_ref());
+                let end = start.elapsed();
 
-            let start = std::time::Instant::now();
-            let subchunk = SubChunk::deserialize(raw_ref.value().as_ref()).unwrap();
-            let end = start.elapsed();
-
-            sum += end.as_micros();
-
-            println!("{subchunk:?}");
-            break
+                if subchunk.is_ok() {
+                    count += 1;
+                    sum += end.as_micros();
+                } else {
+                    failed += 1;
+                }
+            }
         }
     }
 
     let avg = sum as f64 / count as f64;
     println!("average: {avg}μs");
+    println!("total chunks: {}", count as f64 / 50.0f64);
+    println!("failed: {} ({}%)", failed, failed as f64 / (count + failed) as f64);
 
     // let mut buffer = BytesMut::new();
     // DatabaseKey {

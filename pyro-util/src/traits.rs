@@ -1,5 +1,5 @@
 use bytes::{Bytes, BytesMut};
-use crate::bytes::{SharedBuf, LazyBuffer};
+use crate::bytes::{SharedBuffer, LazyBuffer};
 
 use crate::Result;
 
@@ -12,7 +12,7 @@ pub trait Serialize {
 /// Trait that describes an object that can be deserialised from raw bytes.
 pub trait Deserialize {
     /// Deserializes the given buffer, returning the object.
-    fn deserialize(buffer: SharedBuf) -> Result<Self>
+    fn deserialize(buffer: SharedBuffer) -> Result<Self>
     where
         Self: Sized;
 }

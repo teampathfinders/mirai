@@ -1,6 +1,6 @@
 use std::ops::ShrAssign;
 use num_traits::FromPrimitive;
-use crate::bytes::{BinaryBuffer, SharedBuf};
+use crate::bytes::{BinaryBuffer, SharedBuffer};
 
 use crate::{bail, Result};
 

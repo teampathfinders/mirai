@@ -4,7 +4,7 @@ use crate::FieldType;
 use serde::de::{DeserializeSeed, MapAccess, SeqAccess, Visitor};
 use serde::{de, Deserialize};
 use serde::de::Unexpected::Seq;
-use util::bytes::{BinaryBuffer, LazyBuffer, SharedBuf};
+use util::bytes::{BinaryBuffer, LazyBuffer, SharedBuffer};
 use util::{bail, Error, Result};
 
 macro_rules! is_ty {
@@ -25,7 +25,7 @@ pub enum Flavor {
 #[derive(Debug)]
 pub struct Deserializer<'de> {
     flavor: Flavor,
-    input: SharedBuf<'de>,
+    input: SharedBuffer<'de>,
     next_ty: FieldType,
     is_key: bool,
 }
@@ -33,7 +33,7 @@ pub struct Deserializer<'de> {
 impl<'de> Deserializer<'de> {
     #[inline]
     pub(crate) fn from_bytes(input: &'de [u8], flavor: Flavor) -> Self {
-        let mut input = SharedBuf::from(input);
+        let mut input = SharedBuffer::from(input);
         assert_eq!(input.read_be::<u8>().unwrap(), FieldType::Compound as u8);
 
         let mut de = Deserializer {
@@ -62,6 +62,7 @@ impl<'de> Deserializer<'de> {
         Self::from_bytes(input, Flavor::Network)
     }
 
+    #[inline]
     fn deserialize_raw_str(&mut self) -> Result<&str> {
         let len = match self.flavor {
             Flavor::BigEndian => self.input.read_be::<u16>(),
@@ -144,6 +145,7 @@ impl<'de, 'a> de::Deserializer<'de> for &'a mut Deserializer<'de> {
         }
     }
 
+    #[inline]
     fn deserialize_bool<V>(self, visitor: V) -> Result<V::Value>
     where
         V: Visitor<'de>,
@@ -154,6 +156,7 @@ impl<'de, 'a> de::Deserializer<'de> for &'a mut Deserializer<'de> {
         visitor.visit_bool(n)
     }
 
+    #[inline]
     fn deserialize_i8<V>(self, visitor: V) -> Result<V::Value>
     where
         V: Visitor<'de>,
@@ -164,6 +167,7 @@ impl<'de, 'a> de::Deserializer<'de> for &'a mut Deserializer<'de> {
         visitor.visit_i8(n)
     }
 
+    #[inline]
     fn deserialize_i16<V>(self, visitor: V) -> Result<V::Value>
     where
         V: Visitor<'de>,
@@ -180,6 +184,7 @@ impl<'de, 'a> de::Deserializer<'de> for &'a mut Deserializer<'de> {
         visitor.visit_i16(n)
     }
 
+    #[inline]
     fn deserialize_i32<V>(self, visitor: V) -> Result<V::Value>
     where
         V: Visitor<'de>,
@@ -196,6 +201,7 @@ impl<'de, 'a> de::Deserializer<'de> for &'a mut Deserializer<'de> {
         visitor.visit_i32(n)
     }
 
+    #[inline]
     fn deserialize_i64<V>(self, visitor: V) -> Result<V::Value>
     where
         V: Visitor<'de>,
@@ -240,6 +246,7 @@ impl<'de, 'a> de::Deserializer<'de> for &'a mut Deserializer<'de> {
         bail!(Unsupported, "NBT does not support `u64`, use `i64` instead")
     }
 
+    #[inline]
     fn deserialize_f32<V>(self, visitor: V) -> Result<V::Value>
     where
         V: Visitor<'de>,
@@ -254,6 +261,7 @@ impl<'de, 'a> de::Deserializer<'de> for &'a mut Deserializer<'de> {
         visitor.visit_f32(n)
     }
 
+    #[inline]
     fn deserialize_f64<V>(self, visitor: V) -> Result<V::Value>
     where
         V: Visitor<'de>,
@@ -275,6 +283,7 @@ impl<'de, 'a> de::Deserializer<'de> for &'a mut Deserializer<'de> {
         bail!(Unsupported, "NBT does not support unicode characters, use String instead")
     }
 
+    #[inline]
     fn deserialize_str<V>(self, visitor: V) -> Result<V::Value>
     where
         V: Visitor<'de>,
@@ -293,6 +302,7 @@ impl<'de, 'a> de::Deserializer<'de> for &'a mut Deserializer<'de> {
         visitor.visit_str(str)
     }
 
+    #[inline]
     fn deserialize_string<V>(self, visitor: V) -> Result<V::Value>
     where
         V: Visitor<'de>,
@@ -327,6 +337,7 @@ impl<'de, 'a> de::Deserializer<'de> for &'a mut Deserializer<'de> {
         bail!(Unsupported, "NBT does not support byte buffers")
     }
 
+    #[inline]
     fn deserialize_option<V>(self, visitor: V) -> Result<V::Value>
     where
         V: Visitor<'de>,
@@ -366,6 +377,7 @@ impl<'de, 'a> de::Deserializer<'de> for &'a mut Deserializer<'de> {
         bail!(Unsupported, "NBT does not support newtype structs")
     }
 
+    #[inline]
     fn deserialize_seq<V>(self, visitor: V) -> Result<V::Value>
     where
         V: Visitor<'de>,
@@ -373,6 +385,7 @@ impl<'de, 'a> de::Deserializer<'de> for &'a mut Deserializer<'de> {
         self.deserialize_tuple(0, visitor)
     }
 
+    #[inline]
     fn deserialize_tuple<V>(self, len: usize, visitor: V) -> Result<V::Value>
     where
         V: Visitor<'de>,
@@ -400,6 +413,7 @@ impl<'de, 'a> de::Deserializer<'de> for &'a mut Deserializer<'de> {
         bail!(Unsupported, "NBT does not support tuple structs")
     }
 
+    #[inline]
     fn deserialize_map<V>(self, visitor: V) -> Result<V::Value>
     where
         V: Visitor<'de>,
@@ -410,6 +424,7 @@ impl<'de, 'a> de::Deserializer<'de> for &'a mut Deserializer<'de> {
         visitor.visit_map(de)
     }
 
+    #[inline]
     fn deserialize_struct<V>(
         self,
         name: &'static str,
@@ -434,6 +449,7 @@ impl<'de, 'a> de::Deserializer<'de> for &'a mut Deserializer<'de> {
         bail!(Unsupported, "NBT does not support enums")
     }
 
+    #[inline]
     fn deserialize_identifier<V>(self, visitor: V) -> Result<V::Value>
     where
         V: Visitor<'de>,
@@ -441,6 +457,7 @@ impl<'de, 'a> de::Deserializer<'de> for &'a mut Deserializer<'de> {
         self.deserialize_str(visitor)
     }
 
+    #[inline]
     fn deserialize_ignored_any<V>(self, visitor: V) -> Result<V::Value>
     where
         V: Visitor<'de>,
@@ -457,6 +474,7 @@ struct SeqDeserializer<'a, 'de: 'a> {
 }
 
 impl<'de, 'a> SeqDeserializer<'a, 'de> {
+    #[inline]
     pub fn new(
         de: &'a mut Deserializer<'de>, ty: FieldType, expected_len: i32
     ) -> Result<Self> {
@@ -484,6 +502,7 @@ impl<'de, 'a> SeqDeserializer<'a, 'de> {
 impl<'de, 'a> SeqAccess<'de> for SeqDeserializer<'a, 'de> {
     type Error = Error;
 
+    #[inline]
     fn next_element_seed<E>(&mut self, seed: E) -> Result<Option<E::Value>>
     where
         E: DeserializeSeed<'de>,
@@ -505,6 +524,7 @@ struct MapDeserializer<'a, 'de: 'a> {
 }
 
 impl<'de, 'a> From<&'a mut Deserializer<'de>> for MapDeserializer<'a, 'de> {
+    #[inline]
     fn from(v: &'a mut Deserializer<'de>) -> Self {
         Self { de: v }
     }
@@ -513,6 +533,7 @@ impl<'de, 'a> From<&'a mut Deserializer<'de>> for MapDeserializer<'a, 'de> {
 impl<'de, 'a> MapAccess<'de> for MapDeserializer<'a, 'de> {
     type Error = Error;
 
+    #[inline]
     fn next_key_seed<K>(&mut self, seed: K) -> Result<Option<K::Value>>
     where
         K: DeserializeSeed<'de>,
@@ -531,6 +552,7 @@ impl<'de, 'a> MapAccess<'de> for MapDeserializer<'a, 'de> {
         r
     }
 
+    #[inline]
     fn next_value_seed<V>(&mut self, seed: V) -> Result<V::Value>
     where
         V: DeserializeSeed<'de>,
