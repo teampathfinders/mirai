@@ -1,164 +1,36 @@
 use crate::{u24::u24, Vector};
 use std::mem;
 use uuid::Uuid;
+use crate::Result;
+use paste::paste;
 
-pub trait FromBytes: Sized {
-    const SIZE: usize;
-
-    fn from_le(bytes: [u8; Self::SIZE]) -> Self;
-    fn from_be(bytes: [u8; Self::SIZE]) -> Self;
-}
-
-macro_rules! from_bytes {
-    ($t: ty) => {
-        from_bytes!($t, <$t>::BITS);
-    };
-
-    ($t: ty, $b: expr) => {
-        impl FromBytes for $t {
-            const SIZE: usize = $b as usize / 8;
-
-            #[inline]
-            fn from_le(bytes: [u8; Self::SIZE]) -> Self {
-                <$t>::from_le_bytes(bytes)
-            }
-
-            #[inline]
-            fn from_be(bytes: [u8; Self::SIZE]) -> Self {
-                <$t>::from_be_bytes(bytes)
-            }
-        }
-    };
-}
-
-from_bytes!(u8);
-from_bytes!(u16);
-from_bytes!(u24);
-from_bytes!(u32);
-from_bytes!(u64);
-from_bytes!(u128);
-from_bytes!(i8);
-from_bytes!(i16);
-from_bytes!(i32);
-from_bytes!(i64);
-from_bytes!(i128);
-from_bytes!(f32, 32); // f32 does not have a BITS associated constant
-from_bytes!(f64, 64); // f64 does not have a BITS associated constant
-
-impl FromBytes for bool {
-    const SIZE: usize = 1;
-
-    #[inline]
-    fn from_le(bytes: [u8; Self::SIZE]) -> Self {
-        bytes[0] != 0
-    }
-
-    #[inline]
-    fn from_be(bytes: [u8; Self::SIZE]) -> Self {
-        bytes[0] != 0
+macro_rules! declare_read_fns {
+    ($($ty: ident),+) => {
+        paste! {$(
+            #[doc = concat!("Reads a little endian [`", stringify!($ty), "`] from the buffer")]
+            fn [<read_ $ty _le>] (&mut self) -> $crate::Result<$ty>;
+            #[doc = concat!("Reads a big endian [`", stringify!($ty), "`] from the buffer")]
+            fn [<read_ $ty _be>] (&mut self) -> $crate::Result<$ty>;
+        )+}
     }
 }
 
-impl<T: FromBytes, const N: usize> FromBytes for [T; N] {
-    const SIZE: usize = N * T::SIZE;
+pub trait BinRead {
+    fn take_n(&mut self, n: usize) -> Result<&[u8]>;
+    fn take_const<const N: usize>(&mut self) -> Result<[u8; N]>;
+    fn peek(&self, n: usize) -> Result<&[u8]>;
+    fn peek_const<const N: usize>(&self) -> Result<[u8; N]>;
 
-    #[inline]
-    fn from_le(bytes: [u8; Self::SIZE]) -> Self {
-        // Reverse bytes if the current machine is big endian.
-        if cfg!(target_endian = "big") {
-            for i in 0..N {
-                (&mut [(i * T::SIZE)..((i + 1) * T::SIZE)]).reverse();
-            }
-        }
+    fn read_bool(&mut self) -> Result<bool>;
+    fn read_u8(&mut self) -> Result<u8>;
+    fn read_i8(&mut self) -> Result<i8>;
 
-        // SAFETY: This is safe because Self::SIZE is guaranteed to be equal to T::SIZE * N.
-        // A transmute_copy is required because the compiler
-        // can't prove that both types are of the same size.
-        let cast =
-            unsafe { mem::transmute_copy::<[u8; Self::SIZE], [T; N]>(&bytes) };
+    declare_read_fns!(u16, i16, u32, i32, u64, i64, u128, i128, f32, f64);
 
-        mem::forget(bytes);
-        cast
-    }
+    fn read_var_u32(&mut self) -> Result<u32>;
+    fn read_var_u64(&mut self) -> Result<u64>;
+    fn read_var_i32(&mut self) -> Result<i32>;
+    fn read_var_i64(&mut self) -> Result<i64>;
 
-    #[inline]
-    fn from_be(bytes: [u8; Self::SIZE]) -> Self {
-        // Reverse bytes if the current machine is little endian.
-        if cfg!(target_endian = "little") {
-            for i in 0..N {
-                (&mut [(i * T::SIZE)..((i + 1) * T::SIZE)]).reverse();
-            }
-        }
-
-        // SAFETY: This is safe because Self::SIZE is guaranteed to be equal to T::SIZE * N.
-        // A transmute_copy is required because the compiler
-        // can't prove that both types are of the same size.
-        let cast =
-            unsafe { mem::transmute_copy::<[u8; Self::SIZE], [T; N]>(&bytes) };
-
-        mem::forget(bytes);
-        cast
-    }
-}
-
-impl<T: FromBytes, const N: usize> FromBytes for Vector<T, N> {
-    const SIZE: usize = N * mem::size_of::<T>();
-
-    #[inline]
-    fn from_le(bytes: [u8; Self::SIZE]) -> Self {
-        // This code was copied from the [T; N] implementation because it's easier than having
-        // to work with the incomplete generic_const_exprs API
-
-        // Reverse bytes if the current machine is big endian.
-        if cfg!(target_endian = "big") {
-            for i in 0..N {
-                (&mut [(i * T::SIZE)..((i + 1) * T::SIZE)]).reverse();
-            }
-        }
-
-        // SAFETY: This is safe because Self::SIZE is guaranteed to be equal to T::SIZE * N.
-        // A transmute_copy is required because the compiler
-        // can't prove that both types are of the same size.
-        let cast =
-            unsafe { mem::transmute_copy::<[u8; Self::SIZE], [T; N]>(&bytes) };
-
-        mem::forget(bytes);
-        Vector::from(cast)
-    }
-
-    #[inline]
-    fn from_be(bytes: [u8; Self::SIZE]) -> Self {
-        // This code was copied from the [T; N] implementation because it's easier than having
-        // to work with the incomplete generic_const_exprs API
-
-        // Reverse bytes if the current machine is little endian.
-        if cfg!(target_endian = "little") {
-            for i in 0..N {
-                (&mut [(i * T::SIZE)..((i + 1) * T::SIZE)]).reverse();
-            }
-        }
-
-        // SAFETY: This is safe because Self::SIZE is guaranteed to be equal to T::SIZE * N.
-        // A transmute_copy is required because the compiler
-        // can't prove that both types are of the same size.
-        let cast =
-            unsafe { mem::transmute_copy::<[u8; Self::SIZE], [T; N]>(&bytes) };
-
-        mem::forget(bytes);
-        Vector::from(cast)
-    }
-}
-
-impl FromBytes for Uuid {
-    const SIZE: usize = 16;
-
-    #[inline]
-    fn from_le(bytes: [u8; Self::SIZE]) -> Self {
-        Uuid::from_bytes_le(bytes)
-    }
-
-    #[inline]
-    fn from_be(bytes: [u8; Self::SIZE]) -> Self {
-        Uuid::from_bytes(bytes)
-    }
+    fn read_u16_str(&mut self) -> Result<&str>;
 }

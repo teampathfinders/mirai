@@ -4,7 +4,7 @@ use crate::FieldType;
 use serde::de::Unexpected::Seq;
 use serde::de::{DeserializeSeed, MapAccess, SeqAccess, Visitor};
 use serde::{de, Deserialize};
-use util::bytes::{BinaryBuffer, LazyBuffer, SharedBuffer};
+use util::bytes::{BinRead, MutableBuffer, SharedBuffer};
 use util::{bail, Error, Result};
 
 macro_rules! is_ty {
@@ -75,7 +75,7 @@ impl<'de> Deserializer<'de> {
             Flavor::Network => todo!(),
         }?;
 
-        let data = self.input.take(len as usize)?;
+        let data = self.input.take_n(len as usize)?;
         let str = std::str::from_utf8(data)?;
 
         Ok(str)
@@ -304,7 +304,7 @@ impl<'de, 'a> de::Deserializer<'de> for &'a mut Deserializer<'de> {
             }
         };
 
-        let data = self.input.take(len as usize)?;
+        let data = self.input.take_n(len as usize)?;
         let str = std::str::from_utf8(data)?;
 
         visitor.visit_str(str)
@@ -325,7 +325,7 @@ impl<'de, 'a> de::Deserializer<'de> for &'a mut Deserializer<'de> {
             }
         };
 
-        let data = self.input.take(len as usize)?;
+        let data = self.input.take_n(len as usize)?;
         let string = String::from_utf8(data.to_vec())?;
 
         visitor.visit_string(string)

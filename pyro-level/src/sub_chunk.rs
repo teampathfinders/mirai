@@ -1,7 +1,7 @@
 use serde::Deserialize;
 use std::collections::HashMap;
 use std::iter::Enumerate;
-use util::bytes::{BinaryBuffer, LazyBuffer, SharedBuffer};
+use util::bytes::{BinRead, MutableBuffer, SharedBuffer};
 use util::{bail, BlockPosition, Error, Result, Vector3b};
 
 const CHUNK_SIZE: usize = 4096;
@@ -105,7 +105,7 @@ impl SubLayer {
         Ok(Self { indices, palette })
     }
 
-    fn serialize(&self, buffer: &mut LazyBuffer) {
+    fn serialize(&self, buffer: &mut MutableBuffer) {
         // Determine the required bits per index
         let index_size = {
             let palette_size = self.palette.len();
@@ -242,7 +242,7 @@ impl SubChunk {
         }
     }
 
-    pub fn serialize(&self, buffer: &mut LazyBuffer) {
+    pub fn serialize(&self, buffer: &mut MutableBuffer) {
         buffer.write_le::<u8>(self.version as u8);
         match self.version {
             SubChunkVersion::Legacy => todo!(),

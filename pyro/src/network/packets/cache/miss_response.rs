@@ -1,6 +1,6 @@
 use bytes::{BytesMut, Bytes};
 use util::{Serialize, Result};
-use util::bytes::LazyBuffer;
+use util::bytes::MutableBuffer;
 use crate::network::cache_blob::CacheBlob;
 use crate::network::packets::ConnectedPacket;
 
@@ -18,7 +18,7 @@ impl ConnectedPacket for CacheMissResponse<'_> {
 }
 
 impl Serialize for CacheMissResponse<'_> {
-    fn serialize(&self, buffer: &mut LazyBuffer) {
+    fn serialize(&self, buffer: &mut MutableBuffer) {
         buffer.write_var::<u32>(self.blobs.len() as u32);
         for blob in self.blobs {
             blob.serialize(buffer);

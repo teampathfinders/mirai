@@ -1,4 +1,4 @@
-use crate::bytes::{BinaryBuffer, SharedBuffer};
+use crate::bytes::{BinRead, SharedBuffer};
 use num_traits::FromPrimitive;
 use std::ops::ShrAssign;
 
@@ -11,91 +11,12 @@ pub trait VarInt:
     fn var_len(self) -> usize {
         size_of_varint(self)
     }
-
-    fn read<B>(buf: &mut B) -> Result<Self>
-    where
-        B: BinaryBuffer;
 }
 
-impl VarInt for u32 {
-    fn read<B>(buf: &mut B) -> Result<Self>
-    where
-        B: BinaryBuffer,
-    {
-        let mut v = 0;
-        let mut i = 0;
-        while i < 35 {
-            let b = buf.read_le::<u8>()?;
-            v |= ((b & 0x7f) as u32) << i;
-            if b & 0x80 == 0 {
-                return Ok(v);
-            }
-            i += 7;
-        }
-
-        bail!(
-            Malformed,
-            "Variable 32-bit integer did not end after 5 bytes"
-        )
-    }
-}
-
-impl VarInt for i32 {
-    fn read<B>(buf: &mut B) -> Result<Self>
-    where
-        B: BinaryBuffer,
-    {
-        let vx = buf.read_var::<u32>()?;
-        let mut v = (vx >> 1) as i32;
-
-        if vx & 1 != 0 {
-            v = !v;
-        }
-
-        Ok(v)
-    }
-}
-
-impl VarInt for u64 {
-    fn read<B>(buf: &mut B) -> Result<Self>
-    where
-        B: BinaryBuffer,
-    {
-        let mut v = 0;
-        let mut i = 0;
-        while i < 70 {
-            let b = buf.read_le::<u8>()?;
-            v |= ((b & 0x7f) as u64) << i;
-
-            if b & 0x80 == 0 {
-                return Ok(v);
-            }
-
-            i += 7;
-        }
-
-        bail!(
-            Malformed,
-            "Variable 64-bit integer did not end after 10 bytes"
-        )
-    }
-}
-
-impl VarInt for i64 {
-    fn read<B>(buf: &mut B) -> Result<Self>
-    where
-        B: BinaryBuffer,
-    {
-        let vx = buf.read_var::<u64>()?;
-        let mut v = (vx >> 1) as i64;
-
-        if vx & 1 != 0 {
-            v = !v;
-        }
-
-        Ok(v)
-    }
-}
+impl VarInt for u32 {}
+impl VarInt for i32 {}
+impl VarInt for u64 {}
+impl VarInt for i64 {}
 
 pub fn size_of_string(value: &str) -> usize {
     size_of_varint(value.len() as u32) + value.len()

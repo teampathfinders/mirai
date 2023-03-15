@@ -6,7 +6,7 @@ use level::Dimension;
 use util::{Serialize, VarInt, VarString};
 use util::{bail, Error, Result};
 use util::{BlockPosition, Vector2f, Vector3f, WriteExtensions};
-use util::bytes::LazyBuffer;
+use util::bytes::MutableBuffer;
 use crate::network::packets::{CLIENT_VERSION_STRING, Difficulty, GameMode, ConnectedPacket, GameRule};
 use crate::network::packets::login::ExperimentData;
 
@@ -364,7 +364,7 @@ impl ConnectedPacket for StartGame<'_> {
 }
 
 impl Serialize for StartGame<'_> {
-    fn serialize(&self, buffer: &mut LazyBuffer) {
+    fn serialize(&self, buffer: &mut MutableBuffer) {
         buffer.put_var_i64(self.entity_id);
         buffer.put_var_u64(self.runtime_id);
         buffer.put_var_i32(self.game_mode as i32);

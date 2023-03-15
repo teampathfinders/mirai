@@ -1,6 +1,3 @@
-#![feature(generic_const_exprs)]
-#![allow(incomplete_features)]
-
 /// Shorthand for `mod module; pub use module::*;`.
 #[macro_export]
 macro_rules! glob_export {

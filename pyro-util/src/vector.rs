@@ -1,4 +1,4 @@
-use crate::bytes::{LazyBuffer, VarInt};
+use crate::bytes::{MutableBuffer, VarInt};
 use std::ops::{Deref, DerefMut};
 
 /// Type and size independent vector type
@@ -31,9 +31,10 @@ impl<T, const N: usize> From<[T; N]> for Vector<T, N> {
 }
 
 impl<const N: usize> Vector<f32, N> {
-    pub fn serialize(&self, buffer: &mut LazyBuffer) {
+    pub fn serialize(&self, buffer: &mut MutableBuffer) {
         for i in 0..N {
-            buffer.write_le::<f32>(self.components[i]);
+            todo!();
+            // buffer.write_f32_le(self.components[i]);
         }
     }
 }

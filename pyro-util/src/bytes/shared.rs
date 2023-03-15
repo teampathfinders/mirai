@@ -1,11 +1,30 @@
 use crate::bail;
-use crate::bytes::{BinaryBuffer, FromBytes, VarInt};
+use crate::bytes::{BinRead, VarInt};
 use std::fmt::Debug;
 use std::io::Read;
 use std::ops::{Deref, Index};
 use std::{cmp, fmt, io};
+use paste::paste;
 
 use crate::Result;
+
+macro_rules! define_read_fns {
+    ($($ty: ident),+) => {
+        paste!{$(
+            #[inline]
+            fn [<read_ $ty _be>](&mut self) -> $crate::Result<$ty> {
+                let bytes = self.take_const()?;
+                Ok(<$ty>::from_be_bytes(bytes))
+            }
+
+            #[inline]
+            fn [<read_ $ty _le>](&mut self) -> $crate::Result<$ty> {
+                let bytes = self.take_const()?;
+                Ok(<$ty>::from_le_bytes(bytes))
+            }
+        )+}
+    }
+}
 
 /// Buffer that can be used to read binary data.
 ///
@@ -19,44 +38,10 @@ impl<'a> SharedBuffer<'a> {
         let (_, b) = self.0.split_at(n);
         *self = SharedBuffer::from(b);
     }
-
-    /// Reads the specified big-endian encoded type from the buffer without advancing the cursor.
-    #[inline]
-    pub fn peek_be<T: FromBytes>(&self) -> Result<T>
-    where
-        [(); T::SIZE]:,
-    {
-        Ok(T::from_be(self.peek_const::<{ T::SIZE }>()?))
-    }
-
-    /// Reads the specified little-endian encoded type from the buffer without advancing the cursor.
-    #[inline]
-    pub fn peek_le<T: FromBytes>(&self) -> Result<T>
-    where
-        [(); T::SIZE]:,
-    {
-        Ok(T::from_le(self.peek_const::<{ T::SIZE }>()?))
-    }
 }
 
-impl<'a> BinaryBuffer for SharedBuffer<'a> {
-    // /// Reads the specified big-endian encoded type from the buffer without advancing the cursor.
-    // #[inline]
-    // fn peek_be<T: FromBytes>(&self) -> Result<T>
-    //     where
-    //         [(); T::SIZE]:,
-    // {
-    //     Ok(T::from_be(self.peek_const::<{ T::SIZE }>()?))
-    // }
-    //
-    // /// Reads the specified little-endian encoded type from the buffer without advancing the cursor.
-    // #[inline]
-    // fn peek_le<T: FromBytes>(&self) -> Result<T>
-    //     where
-    //         [(); T::SIZE]:,
-    // {
-    //     Ok(T::from_le(self.peek_const::<{ T::SIZE }>()?))
-    // }
+impl<'a> BinRead for SharedBuffer<'a> {
+    define_read_fns!(u16, i16, u32, i32, u64, i64, u128, i128, f32, f64);
 
     /// Takes a specified amount of bytes from the buffer.
     ///
@@ -66,7 +51,7 @@ impl<'a> BinaryBuffer for SharedBuffer<'a> {
     /// # Errors
     /// Returns [`UnexpectedEof`](Error::UnexpectedEof) if the read exceeds the buffer length.
     #[inline]
-    fn take(&mut self, n: usize) -> Result<&[u8]> {
+    fn take_n(&mut self, n: usize) -> Result<&[u8]> {
         if self.len() < n {
             bail!(
                 UnexpectedEof,
@@ -86,7 +71,7 @@ impl<'a> BinaryBuffer for SharedBuffer<'a> {
     /// In case the amount is known at compile time, this function can be used to
     /// take a sized array from the buffer.
     ///
-    /// See [`take`](Self::take) for a runtime-sized alternative.
+    /// See [`take_n`](Self::take_n) for a runtime-sized alternative.
     ///
     /// # Errors
     /// Returns [`UnexpectedEof`](Error::UnexpectedEof) if the read exceeds the buffer length.
@@ -152,40 +137,140 @@ impl<'a> BinaryBuffer for SharedBuffer<'a> {
         }
     }
 
-    /// Reads a little-endian encoded type from the buffer.
-    ///
-    /// See [`FromBytes`] for a list of types that can be read from the buffer with this method.
     #[inline]
-    fn read_le<T: FromBytes>(&mut self) -> Result<T>
-    where
-        [(); T::SIZE]:,
-    {
-        let bytes = self.take_const::<{ T::SIZE }>()?;
-        Ok(T::from_le(bytes))
+    fn read_bool(&mut self) -> Result<bool> {
+        Ok(self.take_const::<1>()?[0] != 0)
     }
 
-    /// Reads a big-endian encoded type from the buffer.
-    ///
-    /// See [`FromBytes`] for a list of types that can be read from the buffer with this method.
     #[inline]
-    fn read_be<T: FromBytes>(&mut self) -> Result<T>
-    where
-        [(); T::SIZE]:,
-    {
-        let bytes = self.take_const::<{ T::SIZE }>()?;
-        Ok(T::from_be(bytes))
+    fn read_u8(&mut self) -> Result<u8> {
+        Ok(self.take_const::<1>()?[0])
     }
 
-    /// Reads a variable size integer from the buffer.
-    /// See [`VarInt`] for a list of available types.
     #[inline]
-    fn read_var<T>(&mut self) -> Result<T>
-    where
-        T: VarInt,
-    {
-        T::read(self)
+    fn read_i8(&mut self) -> Result<i8> {
+        Ok(self.take_const::<1>()?[0] as i8)
+    }
+
+    fn read_var_u32(&mut self) -> Result<u32> {
+        let mut v = 0;
+        let mut i = 0;
+        while i < 35 {
+            let b = self.read_u8()?;
+            v |= ((b & 0x7f) as u32) << i;
+            if b & 0x80 == 0 {
+                return Ok(v);
+            }
+            i += 7;
+        }
+
+        bail!(
+            Malformed,
+            "variable 32-bit integer did not end after 5 bytes"
+        )
+    }
+
+    fn read_var_u64(&mut self) -> Result<u64> {
+        let mut v = 0;
+        let mut i = 0;
+        while i < 70 {
+            let b = self.read_u8()?;
+            v |= ((b & 0x7f) as u64) << i;
+
+            if b & 0x80 == 0 {
+                return Ok(v);
+            }
+
+            i += 7;
+        }
+
+        bail!(
+            Malformed,
+            "variable 64-bit integer did not end after 10 bytes"
+        )
+    }
+
+    fn read_var_i32(&mut self) -> Result<i32> {
+        let vx = self.read_var_u32()?;
+        let mut v = (vx >> 1) as i32;
+
+        if vx & 1 != 0 {
+            v = !v;
+        }
+
+        Ok(v)
+    }
+
+    fn read_var_i64(&mut self) -> Result<i64> {
+        let vx = self.read_var_u64()?;
+        let mut v = (vx >> 1) as i64;
+
+        if vx & 1 != 0 {
+            v = !v;
+        }
+
+        Ok(v)
+    }
+
+    fn read_u16_str(&mut self) -> Result<&str> {
+        let len = self.read_u16_be()?;
+        let data = self.take_n(len as usize)?;
+
+        Ok(std::str::from_utf8(data)?)
     }
 }
+    // /// Reads the specified big-endian encoded type from the buffer without advancing the cursor.
+    // #[inline]
+    // fn peek_be<T: FromBytes>(&self) -> Result<T>
+    //     where
+    //         [(); T::SIZE]:,
+    // {
+    //     Ok(T::from_be(self.peek_const::<{ T::SIZE }>()?))
+    // }
+    //
+    // /// Reads the specified little-endian encoded type from the buffer without advancing the cursor.
+    // #[inline]
+    // fn peek_le<T: FromBytes>(&self) -> Result<T>
+    //     where
+    //         [(); T::SIZE]:,
+    // {
+    //     Ok(T::from_le(self.peek_const::<{ T::SIZE }>()?))
+    // }
+
+//     /// Reads a little-endian encoded type from the buffer.
+//     ///
+//     /// See [`FromBytes`] for a list of types that can be read from the buffer with this method.
+//     #[inline]
+//     fn read_le<T: FromBytes>(&mut self) -> Result<T>
+//     where
+//         [(); T::SIZE]:,
+//     {
+//         let bytes = self.take_const::<{ T::SIZE }>()?;
+//         Ok(T::from_le(bytes))
+//     }
+//
+//     /// Reads a big-endian encoded type from the buffer.
+//     ///
+//     /// See [`FromBytes`] for a list of types that can be read from the buffer with this method.
+//     #[inline]
+//     fn read_be<T: FromBytes>(&mut self) -> Result<T>
+//     where
+//         [(); T::SIZE]:,
+//     {
+//         let bytes = self.take_const::<{ T::SIZE }>()?;
+//         Ok(T::from_be(bytes))
+//     }
+//
+//     /// Reads a variable size integer from the buffer.
+//     /// See [`VarInt`] for a list of available types.
+//     #[inline]
+//     fn read_var<T>(&mut self) -> Result<T>
+//     where
+//         T: VarInt,
+//     {
+//         T::read(self)
+//     }
+// }
 
 impl<'a> From<&'a [u8]> for SharedBuffer<'a> {
     #[inline]
@@ -248,6 +333,7 @@ impl<'a> Read for SharedBuffer<'a> {
 
 #[cfg(test)]
 mod test {
+    use crate::bytes::BinRead;
     use super::SharedBuffer;
 
     #[test]
@@ -256,8 +342,7 @@ mod test {
         let mut buf = SharedBuffer::from(s);
 
         for x in s {
-            assert_eq!(buf.peek_be::<u8>().unwrap(), *x);
-            assert_eq!(buf.read_be::<u8>().unwrap(), *x);
+            assert_eq!(buf.read_u8().unwrap(), *x);
         }
     }
 
@@ -269,8 +354,7 @@ mod test {
         });
 
         for x in s {
-            assert_eq!(buf.peek_be::<i8>().unwrap(), *x);
-            assert_eq!(buf.read_be::<i8>().unwrap(), *x);
+            assert_eq!(buf.read_i8().unwrap(), *x);
         }
     }
 
@@ -281,8 +365,7 @@ mod test {
         let mut buf = SharedBuffer::from(s);
 
         for x in o {
-            assert_eq!(buf.peek_be::<u16>().unwrap(), x);
-            assert_eq!(buf.read_be::<u16>().unwrap(), x);
+            assert_eq!(buf.read_u16_be().unwrap(), x);
         }
     }
 
@@ -293,8 +376,7 @@ mod test {
         let mut buf = SharedBuffer::from(s);
 
         for x in o {
-            assert_eq!(buf.peek_be::<i16>().unwrap(), x);
-            assert_eq!(buf.read_be::<i16>().unwrap(), x);
+            assert_eq!(buf.read_i16_be().unwrap(), x);
         }
     }
 }

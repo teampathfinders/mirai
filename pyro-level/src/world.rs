@@ -1,4 +1,4 @@
-use util::bytes::LazyBuffer;
+use util::bytes::MutableBuffer;
 use util::{Result, Serialize};
 
 // Special keys
@@ -288,7 +288,7 @@ impl DatabaseKey {
             }
     }
 
-    pub(crate) fn serialize(&self, buffer: &mut LazyBuffer) {
+    pub(crate) fn serialize(&self, buffer: &mut MutableBuffer) {
         buffer.write_le::<i32>(self.x);
         buffer.write_le::<i32>(self.z);
 

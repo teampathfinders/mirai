@@ -1,7 +1,7 @@
 use bytes::Bytes;
 use bytes::{BufMut, BytesMut};
 use std::io::Write;
-use util::bytes::LazyBuffer;
+use util::bytes::MutableBuffer;
 
 use crate::network::raknet::OFFLINE_MESSAGE_DATA;
 use util::Result;
@@ -31,7 +31,7 @@ impl UnconnectedPong<'_> {
 }
 
 impl Serialize for UnconnectedPong<'_> {
-    fn serialize(&self, buffer: &mut LazyBuffer) {
+    fn serialize(&self, buffer: &mut MutableBuffer) {
         buffer.write_le::<u8>(Self::ID);
         buffer.write_be::<u64>(self.time);
         buffer.write_be::<u64>(self.server_guid);

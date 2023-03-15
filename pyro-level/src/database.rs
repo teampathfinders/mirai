@@ -6,27 +6,27 @@ use std::{
     os::raw::{c_char, c_int},
 };
 
-use util::bytes::{LazyBuffer, SharedBuffer};
+use util::bytes::{MutableBuffer, SharedBuffer};
 use util::{error, Error, Result};
 
 use crate::ffi;
 
 /// Newtype wrapping a slice that makes sure data allocated by LevelDB is correctly deallocated.
 #[derive(Debug)]
-pub struct BufGuard<'a>(&'a [u8]);
+pub struct Guard<'a>(&'a [u8]);
 
-impl<'a> BufGuard<'a> {
-    // This is not implemented as a From trait so that BufGuard can only be constructed
+impl<'a> Guard<'a> {
+    // This is not implemented as a `From` trait so that `Guard` can only be constructed
     // inside of this crate.
-    // SAFETY: A BufGuard must only be created from a slice that was allocated by
-    // `RawDatabase` or `RawIter`.
+    // SAFETY: A `Guard` must only be created from a slice that was allocated by
+    // `LevelDb` or `Keys`.
     // The caller must also ensure that the slice is not referenced anywhere else in the program.
     pub(crate) unsafe fn from_slice(slice: &'a [u8]) -> Self {
-        BufGuard(slice)
+        Guard(slice)
     }
 }
 
-impl<'a> Deref for BufGuard<'a> {
+impl<'a> Deref for Guard<'a> {
     type Target = [u8];
 
     fn deref(&self) -> &Self::Target {
@@ -34,7 +34,7 @@ impl<'a> Deref for BufGuard<'a> {
     }
 }
 
-impl<'a> Drop for BufGuard<'a> {
+impl<'a> Drop for Guard<'a> {
     fn drop(&mut self) {
         unsafe {
             ffi::level_deallocate_array(self.0.as_ptr() as *mut i8);
@@ -42,36 +42,36 @@ impl<'a> Drop for BufGuard<'a> {
     }
 }
 
-pub struct RawRef<'a> {
+pub struct Ref<'a> {
     iter: NonNull<c_void>,
     /// The 'a lifetime isn't used in the struct.
-    /// It is only used to make sure that RawRef does not outlive RawDatabase and RawIter.
+    /// It is only used to make sure that `Self` does not outlive `LevelDb` and `Keys`.
     phantom: PhantomData<&'a ()>,
 }
 
-impl<'a> RawRef<'a> {
-    pub fn key(&self) -> BufGuard<'a> {
-        // SAFETY: A RawRef should only exist while the iterator is valid.
+impl<'a> Ref<'a> {
+    pub fn key(&self) -> Guard<'a> {
+        // SAFETY: A Ref should only exist while the iterator is valid.
         // This invariant is upheld by the lifetime 'a.
         unsafe {
             let result = ffi::level_iter_key(self.iter.as_ptr());
             debug_assert_eq!(result.is_success, 1);
 
-            BufGuard::from_slice(std::slice::from_raw_parts(
+            Guard::from_slice(std::slice::from_raw_parts(
                 result.data as *const u8,
                 result.size as usize,
             ))
         }
     }
 
-    pub fn value(&self) -> BufGuard<'a> {
-        // SAFETY: A RawRef should only exist while the iterator is valid.
+    pub fn value(&self) -> Guard<'a> {
+        // SAFETY: A Ref should only exist while the iterator is valid.
         // This invariant is upheld by the lifetime 'a.
         unsafe {
             let result = ffi::level_iter_value(self.iter.as_ptr());
             debug_assert_eq!(result.is_success, 1);
 
-            BufGuard::from_slice(std::slice::from_raw_parts(
+            Guard::from_slice(std::slice::from_raw_parts(
                 result.data as *const u8,
                 result.size as usize,
             ))
@@ -79,14 +79,14 @@ impl<'a> RawRef<'a> {
     }
 }
 
-pub struct RawKeyIter<'a> {
+pub struct Keys<'a> {
     index: usize,
-    parent: &'a RawDatabase,
+    parent: &'a LevelDb,
     iter: NonNull<c_void>,
 }
 
-impl<'a> RawKeyIter<'a> {
-    pub(crate) fn new(db: &'a RawDatabase) -> Self {
+impl<'a> Keys<'a> {
+    pub(crate) fn new(db: &'a LevelDb) -> Self {
         // SAFETY: level_iter is guaranteed to not return an error.
         // The iterator position has also been initialized by FFI and is not in an invalid state.
         let result = unsafe { ffi::level_iter(db.pointer.as_ptr()) };
@@ -103,8 +103,8 @@ impl<'a> RawKeyIter<'a> {
     }
 }
 
-impl<'a> Iterator for RawKeyIter<'a> {
-    type Item = RawRef<'a>;
+impl<'a> Iterator for Keys<'a> {
+    type Item = Ref<'a>;
 
     fn next(&mut self) -> Option<Self::Item> {
         if self.index != 0 {
@@ -119,10 +119,10 @@ impl<'a> Iterator for RawKeyIter<'a> {
         // The only code able to destroy the iter is the `Drop` implementation of `Self`, it is
         // therefore safe to call this function.
         // Furthermore, the above check ensures the iterator is valid and supports the key and value methods
-        // provided by `RawRef`.
+        // provided by `Ref`.
         let valid = unsafe { ffi::level_iter_valid(self.iter.as_ptr()) };
         if valid {
-            let raw_ref = RawRef { iter: self.iter, phantom: PhantomData };
+            let raw_ref = Ref { iter: self.iter, phantom: PhantomData };
             Some(raw_ref)
         } else {
             None
@@ -130,7 +130,7 @@ impl<'a> Iterator for RawKeyIter<'a> {
     }
 }
 
-impl<'a> Drop for RawKeyIter<'a> {
+impl<'a> Drop for Keys<'a> {
     fn drop(&mut self) {
         // SAFETY: `self` is the only object that is able to modify the iterator.
         // Therefore it is safe to delete because it hasn't been modified externally.
@@ -141,19 +141,20 @@ impl<'a> Drop for RawKeyIter<'a> {
 }
 
 /// Rust interface around a C++ LevelDB database.
-pub struct RawDatabase {
+pub struct LevelDb {
     /// Pointer to the C++ Database struct, containing the database and corresponding options.
     /// This data is heap-allocated and must therefore also be deallocated by C++ when it is no longer needed.
     pointer: NonNull<c_void>
 }
 
-impl RawDatabase {
+impl LevelDb {
     /// Opens the database at the specified path.
     pub fn new<P>(path: P) -> Result<Self>
     where
         P: AsRef<str>
     {
         let ffi_path = CString::new(path.as_ref())?;
+
         unsafe {
             // SAFETY: This function is guaranteed to not return exceptions.
             // It also does not modify the argument and returns a valid struct.
@@ -171,13 +172,13 @@ impl RawDatabase {
         }
     }
 
-    pub fn iter(&self) -> RawKeyIter {
-        RawKeyIter::new(self)
+    pub fn iter(&self) -> Keys {
+        Keys::new(self)
     }
 
     /// Loads the value of the given key.
     /// This function requires a raw key, i.e. the key must have been serialised already.
-    pub fn get<K>(&self, key: K) -> Result<BufGuard>
+    pub fn get<K>(&self, key: K) -> Result<Guard>
     where
         K: AsRef<[u8]>
     {
@@ -203,10 +204,10 @@ impl RawDatabase {
                     result.size as usize,
                 );
 
-                // SAFETY: The data passed into the BufGuard has been allocated in the leveldb FFI code.
-                // It is therefore also required to deallocate the data there, which is what BufGuard
+                // SAFETY: The data passed into the Guard has been allocated in the leveldb FFI code.
+                // It is therefore also required to deallocate the data there, which is what Guard
                 // does.
-                Ok(BufGuard::from_slice(data))
+                Ok(Guard::from_slice(data))
             } else {
                 Err(translate_ffi_error(result))
             }
@@ -214,7 +215,7 @@ impl RawDatabase {
     }
 }
 
-impl Drop for RawDatabase {
+impl Drop for LevelDb {
     fn drop(&mut self) {
         // Make sure to clean up the LevelDB resources when the database is dropped.
         // This can only be done by C++.
@@ -225,9 +226,9 @@ impl Drop for RawDatabase {
 }
 
 /// SAFETY: The LevelDB authors explicitly state their database is thread-safe.
-unsafe impl Send for RawDatabase {}
+unsafe impl Send for LevelDb {}
 /// SAFETY: The LevelDB authors explicitly state their database is thread-safe.
-unsafe impl Sync for RawDatabase {}
+unsafe impl Sync for LevelDb {}
 
 /// Translates an error received from the FFI, into an [`Error`].
 unsafe fn translate_ffi_error(result: ffi::LevelResult) -> Error {
