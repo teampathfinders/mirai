@@ -26,6 +26,7 @@ use crate::network::raknet::{BroadcastPacket, RaknetData};
 use crate::network::Skin;
 use util::{bail, Serialize, Vector3f};
 use util::{error, Result};
+use util::bytes::{MutableBuffer, SharedBuffer};
 
 use super::SessionManager;
 
@@ -86,7 +87,7 @@ impl Session {
     /// Creates a new session.
     pub fn new(
         broadcast: broadcast::Sender<BroadcastPacket>,
-        mut receiver: mpsc::Receiver<SharedBuffer>,
+        mut receiver: mpsc::Receiver<MutableBuffer>,
         level_manager: Arc<LevelManager>,
         ipv4_socket: Arc<UdpSocket>,
         address: SocketAddr,

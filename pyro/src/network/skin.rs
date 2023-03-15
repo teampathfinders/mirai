@@ -250,7 +250,7 @@ pub struct SkinAnimation {
     pub image_height: u32,
     /// Image data.
     #[serde(rename = "Image", with = "base64")]
-    pub image_data: SharedBuffer,
+    pub image_data: MutableBuffer,
     /// Animation type.
     #[serde(rename = "Type")]
     pub animation_type: SkinAnimationType,
@@ -280,7 +280,7 @@ impl SkinAnimation {
         let image_width = buffer.read_u32_le()?;
         let image_height = buffer.read_u32_le()?;
         let image_size = buffer.read_var_u32()?;
-        let image_data = buffer.copy_to_bytes(image_size as usize);
+        let image_data = MutableBuffer::from(buffer.take_n(image_size as usize)?.to_vec());
 
         let animation_type = SkinAnimationType::try_from(buffer.read_u32_le()?)?;
         let frame_count = buffer.read_f32_le()?;
@@ -313,7 +313,7 @@ pub struct Skin {
     pub image_height: u32,
     /// Skin image data.
     #[serde(rename = "SkinData", with = "base64")]
-    pub image_data: SharedBuffer,
+    pub image_data: MutableBuffer,
     /// Animations that the skin possesses.
     #[serde(rename = "AnimatedImageData")]
     pub animations: Vec<SkinAnimation>,
@@ -325,7 +325,7 @@ pub struct Skin {
     pub cape_image_height: u32,
     /// Cape image data
     #[serde(rename = "CapeData", with = "base64")]
-    pub cape_image_data: SharedBuffer,
+    pub cape_image_data: MutableBuffer,
     /// JSON containing information like bones.
     #[serde(rename = "SkinGeometryData", with = "base64_string")]
     pub geometry: String,
@@ -372,14 +372,15 @@ pub struct Skin {
 mod base64 {
     use base64::Engine;
     use serde::{Deserializer, Deserialize};
+    use util::bytes::{MutableBuffer, SharedBuffer};
 
     const ENGINE: base64::engine::GeneralPurpose = base64::engine::general_purpose::STANDARD;
 
-    pub fn deserialize<'de, D: Deserializer<'de>>(d: D) -> Result<SharedBuffer, D::Error> {
+    pub fn deserialize<'de, D: Deserializer<'de>>(d: D) -> Result<MutableBuffer, D::Error> {
         let base64 = String::deserialize(d)?;
 
         let bytes = ENGINE.decode(base64).map_err(serde::de::Error::custom)?;
-        Ok(SharedBuffer::from(bytes))
+        Ok(MutableBuffer::from(bytes))
     }
 }
 

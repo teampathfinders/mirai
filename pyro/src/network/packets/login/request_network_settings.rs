@@ -2,7 +2,7 @@
 
 use util::bytes::SharedBuffer;
 
-use util::nvassert;
+use util::pyassert;
 use util::Deserialize;
 use util::Result;
 
@@ -18,7 +18,7 @@ impl RequestNetworkSettings {
     pub const ID: u32 = 0xc1;
 }
 
-impl Deserialize for RequestNetworkSettings {
+impl Deserialize<'_> for RequestNetworkSettings {
     fn deserialize(mut buffer: SharedBuffer) -> Result<Self> {
         let protocol_version = buffer.read_u32_be()?;
 

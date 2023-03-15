@@ -14,10 +14,11 @@ use crate::network::packets::login::{
     Disconnect, DISCONNECTED_NO_REASON, DISCONNECTED_TIMEOUT,
 };
 use crate::network::packets::Packet;
-use crate::network::raknet::{BroadcastPacket, BufPacket};
+use crate::network::raknet::{BroadcastPacket, OwnedBufPacket, SharedBufPacket};
 use crate::network::session::session::Session;
 use crate::{config::SERVER_CONFIG, network::packets::ConnectedPacket};
 use util::{bail, error, Serialize, Result};
+use util::bytes::{MutableBuffer, SharedBuffer};
 
 const BROADCAST_CHANNEL_CAPACITY: usize = 16;
 const FORWARD_TIMEOUT: Duration = Duration::from_millis(20);
@@ -30,7 +31,7 @@ pub struct SessionManager {
     /// Once this token is cancelled, the tracker will cancel all the sessions' individual tokens.
     global_token: CancellationToken,
     /// Map of all tracked sessions, listed by IP address.
-    list: Arc<DashMap<SocketAddr, (mpsc::Sender<SharedBuffer>, Arc<Session>)>>,
+    list: Arc<DashMap<SocketAddr, (mpsc::Sender<MutableBuffer>, Arc<Session>)>>,
     /// The level manager.
     level_manager: OnceCell<Weak<LevelManager>>,
     /// Channel used for packet broadcasting.
@@ -105,7 +106,7 @@ impl SessionManager {
     }
 
     /// Forwards a packet from the network service to the correct session.
-    pub fn forward_packet(&self, pk: BufPacket) {
+    pub fn forward_packet(&self, pk: OwnedBufPacket) {
         // Spawn a new task so that the UDP receiver isn't interrupted
         // if forwarding takes a long amount time.
 
@@ -182,7 +183,7 @@ impl SessionManager {
 
     #[inline]
     async fn garbage_collector(
-        list: Arc<DashMap<SocketAddr, (mpsc::Sender<SharedBuffer>, Arc<Session>)>>,
+        list: Arc<DashMap<SocketAddr, (mpsc::Sender<MutableBuffer>, Arc<Session>)>>,
     ) -> ! {
         let mut interval = tokio::time::interval(GARBAGE_COLLECT_INTERVAL);
         loop {

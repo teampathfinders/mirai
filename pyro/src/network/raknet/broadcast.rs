@@ -2,13 +2,14 @@ use std::num::NonZeroU64;
 
 
 use util::{error, Serialize, Result};
+use util::bytes::{MutableBuffer, SharedBuffer};
 
 use crate::network::{
     packets::{ConnectedPacket, Packet},
     session::Session,
 };
 
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct BroadcastPacket {
     /// XUID of the sender of the packet.
     ///
@@ -20,7 +21,7 @@ pub struct BroadcastPacket {
     ///
     /// This must be an already serialized packet (use the [`Serialize`] trait)
     /// *without* a header.
-    pub content: SharedBuffer,
+    pub content: MutableBuffer,
 }
 
 impl BroadcastPacket {

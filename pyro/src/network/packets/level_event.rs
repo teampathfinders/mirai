@@ -257,7 +257,7 @@ impl Serialize for LevelEvent {
     }
 }
 
-impl Deserialize for LevelEvent {
+impl Deserialize<'_> for LevelEvent {
     fn deserialize(mut buffer: SharedBuffer) -> Result<Self> {
         let event_type = LevelEventType::try_from(buffer.read_var_i32()?)?;
         let position = buffer.read_vec3f()?;

@@ -1,4 +1,5 @@
-use util::nvassert;
+use util::bytes::SharedBuffer;
+use util::pyassert;
 use util::Deserialize;
 use util::Result;
 
@@ -21,14 +22,14 @@ impl OpenConnectionRequest1 {
     pub const ID: u8 = 0x05;
 }
 
-impl Deserialize for OpenConnectionRequest1 {
+impl Deserialize<'_> for OpenConnectionRequest1 {
     fn deserialize(mut buffer: SharedBuffer) -> Result<Self> {
         let mtu = buffer.len() as u16 + 28;
 
-        nvassert!(buffer.get_u8() == Self::ID);
+        pyassert!(buffer.read_u8()? == Self::ID);
 
         buffer.advance(16); // Skip magic
-        let protocol_version = buffer.get_u8();
+        let protocol_version = buffer.read_u8()?;
 
         Ok(Self { protocol_version, mtu })
     }

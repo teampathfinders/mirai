@@ -43,7 +43,7 @@ impl ConnectedPacket for Interact {
     const ID: u32 = 0x21;
 }
 
-impl Deserialize for Interact {
+impl Deserialize<'_> for Interact {
     fn deserialize(mut buffer: SharedBuffer) -> Result<Self> {
         let action = InteractAction::try_from(buffer.read_u8())?;
         let target_runtime_id = buffer.read_var_u64()?;

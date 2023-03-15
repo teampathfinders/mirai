@@ -29,10 +29,11 @@ use crate::network::raknet::packets::OpenConnectionRequest1;
 use crate::network::raknet::packets::OpenConnectionRequest2;
 use crate::network::raknet::packets::UnconnectedPing;
 use crate::network::raknet::packets::UnconnectedPong;
-use crate::network::raknet::BufPacket;
 use crate::network::raknet::RAKNET_VERSION;
+use crate::network::raknet::{OwnedBufPacket, SharedBufPacket};
 use crate::network::session::SessionManager;
 use util::bail;
+use util::bytes::{MutableBuffer, SharedBuffer};
 use util::{error, Result};
 use util::{Deserialize, Serialize};
 
@@ -46,8 +47,6 @@ const RECV_BUF_SIZE: usize = 4096;
 /// This data is displayed in the server menu.
 const METADATA_REFRESH_INTERVAL: Duration = Duration::from_secs(2);
 
-/// Global instance that manages all data and services of the server.
-#[derive(Debug)]
 pub struct InstanceManager {
     /// IPv4 UDP socket
     udp4_socket: Arc<UdpSocket>,
@@ -213,17 +212,18 @@ impl InstanceManager {
     /// Generates a response to the [`OfflinePing`] packet with [`OfflinePong`].
     #[inline]
     fn process_unconnected_ping(
-        mut pk: BufPacket,
+        mut pk: OwnedBufPacket,
         server_guid: u64,
         metadata: &str,
-    ) -> Result<BufPacket> {
-        let ping = UnconnectedPing::deserialize(pk.buf)?;
+    ) -> Result<OwnedBufPacket> {
+        let ping = UnconnectedPing::deserialize(pk.buf.snapshot())?;
         let pong = UnconnectedPong { time: ping.time, server_guid, metadata };
 
-        let mut serialized = OwnedBuffer::with_capacity(pong.serialized_size());
+        let mut serialized =
+            MutableBuffer::with_capacity(pong.serialized_size());
         pong.serialize(&mut serialized);
 
-        pk.buf = serialized.freeze();
+        let pk = OwnedBufPacket { buf: serialized, addr: pk.addr };
 
         Ok(pk)
     }
@@ -231,25 +231,25 @@ impl InstanceManager {
     /// Generates a response to the [`OpenConnectionRequest1`] packet with [`OpenConnectionReply1`].
     #[inline]
     fn process_open_connection_request1(
-        mut pk: BufPacket,
+        mut pk: OwnedBufPacket,
         server_guid: u64,
-    ) -> Result<BufPacket> {
-        let request = OpenConnectionRequest1::deserialize(pk.buf)?;
+    ) -> Result<OwnedBufPacket> {
+        let request = OpenConnectionRequest1::deserialize(pk.buf.snapshot())?;
 
-        let mut serialized = OwnedBuffer::new();
+        pk.buf.clear();
         if request.protocol_version != RAKNET_VERSION {
             let reply = IncompatibleProtocol { server_guid };
 
-            serialized.reserve(reply.serialized_size());
-            reply.serialize(&mut serialized);
+            pk.buf.clear();
+            pk.buf.reserve_to(reply.serialized_size());
+            reply.serialize(&mut pk.buf);
         } else {
             let reply = OpenConnectionReply1 { mtu: request.mtu, server_guid };
 
-            serialized.reserve(reply.serialized_size());
-            reply.serialize(&mut serialized);
+            pk.buf.clear();
+            pk.buf.reserve_to(reply.serialized_size());
+            reply.serialize(&mut pk.buf);
         }
-
-        pk.buf = serialized.freeze();
 
         Ok(pk)
     }
@@ -259,23 +259,21 @@ impl InstanceManager {
     /// From this point, all packets are encoded in a [`Frame`](crate::network::raknet::Frame).
     #[inline]
     fn process_open_connection_request2(
-        mut pk: BufPacket,
+        mut pk: OwnedBufPacket,
         udp_socket: Arc<UdpSocket>,
         sess_manager: Arc<SessionManager>,
         server_guid: u64,
-    ) -> Result<BufPacket> {
-        let request = OpenConnectionRequest2::deserialize(pk.buf)?;
+    ) -> Result<OwnedBufPacket> {
+        let request = OpenConnectionRequest2::deserialize(pk.buf.snapshot())?;
         let reply = OpenConnectionReply2 {
             server_guid,
             mtu: request.mtu,
             client_address: pk.addr,
         };
 
-        let mut serialized =
-            OwnedBuffer::with_capacity(reply.serialized_size());
-        reply.serialize(&mut serialized);
-
-        pk.buf = serialized.freeze();
+        pk.buf.clear();
+        pk.buf.reserve_to(reply.serialized_size());
+        reply.serialize(&mut pk.buf);
 
         sess_manager.add_session(
             udp_socket,
@@ -320,8 +318,8 @@ impl InstanceManager {
                 _ = token.cancelled() => break
             };
 
-            let mut pk = BufPacket {
-                buf: SharedBuffer::copy_from_slice(&recv_buf[..n]),
+            let mut pk = OwnedBufPacket {
+                buf: MutableBuffer::from(recv_buf[..n].to_vec()),
                 addr: address,
             };
 

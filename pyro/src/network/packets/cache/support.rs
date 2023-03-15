@@ -18,7 +18,7 @@ impl ConnectedPacket for CacheStatus {
     const ID: u32 = 0x81;
 }
 
-impl Deserialize for CacheStatus {
+impl Deserialize<'_> for CacheStatus {
     fn deserialize(mut buffer: SharedBuffer) -> Result<Self> {
         let support = buffer.read_bool()?;
 

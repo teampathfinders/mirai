@@ -1,4 +1,5 @@
-use util::nvassert;
+use util::bytes::{BinaryReader, SharedBuffer};
+use util::pyassert;
 use util::Deserialize;
 use util::Result;
 
@@ -16,14 +17,14 @@ impl OpenConnectionRequest2 {
     pub const ID: u8 = 0x07;
 }
 
-impl Deserialize for OpenConnectionRequest2 {
+impl Deserialize<'_> for OpenConnectionRequest2 {
     fn deserialize(mut buffer: SharedBuffer) -> Result<Self> {
-        nvassert!(buffer.get_u8() == Self::ID);
+        pyassert!(buffer.read_u8()? == Self::ID);
 
         buffer.advance(16); // Skip magic
-        buffer.get_addr()?; // Skip server address
-        let mtu = buffer.get_u16();
-        let client_guid = buffer.get_u64();
+        buffer.read_addr()?; // Skip server address
+        let mtu = buffer.read_u16_be()?;
+        let client_guid = buffer.read_u64_be()?;
 
         Ok(Self { mtu, client_guid })
     }

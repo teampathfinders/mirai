@@ -8,6 +8,7 @@ use crate::network::raknet::Reliability;
 use crate::network::session::Session;
 use util::Result;
 use util::{Deserialize, Serialize};
+use util::bytes::{MutableBuffer, SharedBuffer};
 
 use super::packets::ConnectedPing;
 use super::packets::ConnectedPong;
@@ -15,14 +16,14 @@ use super::{PacketConfig, SendPriority};
 
 impl Session {
     /// Handles a [`ConnectionRequest`] packet.
-    pub fn handle_connection_request(&self, pk: SharedBuffer) -> Result<()> {
+    pub fn handle_connection_request(&self, pk: SharedBuffer<'_>) -> Result<()> {
         let request = ConnectionRequest::deserialize(pk)?;
         let reply = ConnectionRequestAccepted {
             client_address: self.raknet.address,
             request_time: request.time,
         };
 
-        let mut serialized = OwnedBuffer::with_capacity(reply.serialized_size());
+        let mut serialized = MutableBuffer::with_capacity(reply.serialized_size());
         reply.serialize(&mut serialized);
 
         self.send_raw_buffer(serialized.freeze());
@@ -30,20 +31,20 @@ impl Session {
     }
 
     /// Handles a [`NewIncomingConnection`] packet.
-    pub fn handle_new_incoming_connection(&self, pk: SharedBuffer) -> Result<()> {
+    pub fn handle_new_incoming_connection(&self, pk: SharedBuffer<'_>) -> Result<()> {
         let request = NewIncomingConnection::deserialize(pk)?;
         Ok(())
     }
 
     /// Handles an [`OnlinePing`] packet.
-    pub fn handle_online_ping(&self, pk: SharedBuffer) -> Result<()> {
+    pub fn handle_online_ping(&self, pk: SharedBuffer<'_>) -> Result<()> {
         let ping = ConnectedPing::deserialize(pk)?;
         let pong = ConnectedPong {
             ping_time: ping.time,
             pong_time: ping.time,
         };
 
-        let mut buffer = OwnedBuffer::with_capacity(pong.serialized_size());
+        let mut buffer = MutableBuffer::with_capacity(pong.serialized_size());
         pong.serialize(&mut buffer);
 
         self.send_raw_buffer_with_config(

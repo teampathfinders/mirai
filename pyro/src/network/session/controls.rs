@@ -1,5 +1,6 @@
 
 use util::{Deserialize, Result, Vector3i};
+use util::bytes::SharedBuffer;
 
 use crate::network::{
     packets::{
@@ -10,13 +11,13 @@ use crate::network::{
 };
 
 impl Session {
-    pub fn handle_interaction(&self, pk: SharedBuffer) -> Result<()> {
+    pub fn handle_interaction(&self, pk: SharedBuffer<'_>) -> Result<()> {
         let request = Interact::deserialize(pk)?;
 
         Ok(())
     }
 
-    pub fn handle_move_player(&self, packet: SharedBuffer) -> Result<()> {
+    pub fn handle_move_player(&self, packet: SharedBuffer<'_>) -> Result<()> {
         let request = MovePlayer::deserialize(packet)?;
         self.broadcast_others(request)?;
 

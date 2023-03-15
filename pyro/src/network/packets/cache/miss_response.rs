@@ -1,12 +1,12 @@
 
 use util::{Serialize, Result};
-use util::bytes::MutableBuffer;
+use util::bytes::{BinaryWriter, MutableBuffer};
 use crate::network::cache_blob::CacheBlob;
 use crate::network::packets::ConnectedPacket;
 
 #[derive(Debug, Clone)]
 pub struct CacheMissResponse<'a> {
-    pub blobs: &'a [CacheBlob]
+    pub blobs: &'a [CacheBlob<'a>]
 }
 
 impl ConnectedPacket for CacheMissResponse<'_> {
@@ -19,7 +19,7 @@ impl ConnectedPacket for CacheMissResponse<'_> {
 
 impl Serialize for CacheMissResponse<'_> {
     fn serialize(&self, buffer: &mut MutableBuffer) {
-        buffer.write_var::<u32>(self.blobs.len() as u32);
+        buffer.write_var_u32(self.blobs.len() as u32);
         for blob in self.blobs {
             blob.serialize(buffer);
         }

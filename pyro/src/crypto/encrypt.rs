@@ -17,6 +17,7 @@ use rand::distributions::Alphanumeric;
 use rand::rngs::OsRng;
 use rand::Rng;
 use sha2::{Digest, Sha256};
+use util::bytes::{MutableBuffer, SharedBuffer};
 use util::{bail, Result};
 
 type Aes256CtrBE = ctr::Ctr64BE<aes::Aes256>;
@@ -157,7 +158,10 @@ impl Encryptor {
     ///
     /// If the checksum does not match, a [`BadPacket`](util::ErrorKind::Malformed) error is returned.
     /// The client must be disconnected if this fails, because the data has probably been tampered with.
-    pub fn decrypt(&self, mut buffer: SharedBuffer) -> Result<SharedBuffer> {
+    pub fn decrypt<'a>(
+        &self,
+        mut buffer: SharedBuffer<'a>,
+    ) -> Result<SharedBuffer<'a>> {
         if buffer.len() < 9 {
             bail!(
                 Malformed,
@@ -166,40 +170,43 @@ impl Encryptor {
             );
         }
 
-        let mut decryption_output = OwnedBuffer::with_capacity(buffer.len());
-        decryption_output.resize(buffer.len(), 0x00);
+        todo!();
+        // let mut decryption_output = OwnedBuffer::with_capacity(buffer.len());
+        // decryption_output.resize(buffer.len(), 0x00);
+        //
+        // self.cipher_decrypt
+        //     .lock()
+        //     .apply_keystream_b2b(buffer.as_ref(), decryption_output.as_mut())?;
+        // let counter = self.receive_counter.fetch_add(1, Ordering::SeqCst);
+        //
+        // let checksum =
+        //     &decryption_output.as_ref()[decryption_output.len() - 8..];
+        // let computed_checksum = self.compute_checksum(
+        //     &decryption_output.as_ref()[..decryption_output.len() - 8],
+        //     counter,
+        // );
 
-        self.cipher_decrypt
-            .lock()
-            .apply_keystream_b2b(buffer.as_ref(), decryption_output.as_mut())?;
-        let counter = self.receive_counter.fetch_add(1, Ordering::SeqCst);
-
-        let checksum =
-            &decryption_output.as_ref()[decryption_output.len() - 8..];
-        let computed_checksum = self.compute_checksum(
-            &decryption_output.as_ref()[..decryption_output.len() - 8],
-            counter,
-        );
-
-        if !checksum.eq(&computed_checksum) {
-            bail!(Malformed, "Encryption checksums do not match");
-        }
-
-        // Remove checksum from data.
-        buffer.truncate(buffer.len() - 8);
-
-        Ok(decryption_output.freeze())
+        // if !checksum.eq(&computed_checksum) {
+        //     bail!(Malformed, "Encryption checksums do not match");
+        // }
+        //
+        // // Remove checksum from data.
+        // buffer.truncate(buffer.len() - 8);
+        //
+        // Ok(decryption_output.freeze())
     }
 
     /// Encrypts a packet and appends the computed checksum.
-    pub fn encrypt(&self, mut buffer: SharedBuffer) -> Result<SharedBuffer> {
+    pub fn encrypt(&self, mut buffer: SharedBuffer) -> Result<MutableBuffer> {
         let counter = self.send_counter.fetch_add(1, Ordering::SeqCst);
         let checksum = self.compute_checksum(buffer.as_ref(), counter);
 
-        let mut buffer = [buffer.as_ref(), &checksum].concat();
-        self.cipher_encrypt.lock().apply_keystream(buffer.as_mut());
+        let mut encrypted = [buffer.as_ref(), &checksum].concat();
+        self.cipher_encrypt
+            .lock()
+            .apply_keystream(encrypted.as_mut());
 
-        Ok(SharedBuffer::from(buffer))
+        Ok(MutableBuffer::from(encrypted))
     }
 
     /// Returns the packet send counter.

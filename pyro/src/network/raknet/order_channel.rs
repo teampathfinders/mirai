@@ -6,7 +6,7 @@ use crate::network::raknet::Frame;
 
 #[derive(Debug, Default)]
 pub struct OrderChannel {
-    channel: DashMap<u32, Frame>,
+    // channel: DashMap<u32, Frame>,
     /// Last complete index received from client.
     last_complete: AtomicU32,
     /// Last index assigned by server.
@@ -15,11 +15,13 @@ pub struct OrderChannel {
 
 impl OrderChannel {
     pub fn new() -> Self {
-        Self {
-            channel: DashMap::new(),
-            last_complete: AtomicU32::new(0),
-            last_server_index: AtomicU32::new(0),
-        }
+        todo!()
+
+        // Self {
+        //     channel: DashMap::new(),
+        //     last_complete: AtomicU32::new(0),
+        //     last_server_index: AtomicU32::new(0),
+        // }
     }
 
     #[inline]

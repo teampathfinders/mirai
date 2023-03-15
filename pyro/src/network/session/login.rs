@@ -31,18 +31,19 @@ use util::{
     bail, error, BlockPosition, Deserialize, Result, Vector2f, Vector3f,
     Vector3i,
 };
+use util::bytes::SharedBuffer;
 
 impl Session {
     /// Handles a [`ClientCacheStatus`] packet.
     /// This stores the result in the [`Session::cache_support`] field.
-    pub fn handle_cache_status(&self, pk: SharedBuffer) -> Result<()> {
+    pub fn handle_cache_status(&self, pk: SharedBuffer<'_>) -> Result<()> {
         let request = CacheStatus::deserialize(pk)?;
         self.cache_support.set(request.supports_cache)?;
 
         Ok(())
     }
 
-    pub fn handle_violation_warning(&self, pk: SharedBuffer) -> Result<()> {
+    pub fn handle_violation_warning(&self, pk: SharedBuffer<'_>) -> Result<()> {
         let request = ViolationWarning::deserialize(pk)?;
         tracing::error!("Received violation warning: {request:?}");
 
@@ -55,7 +56,7 @@ impl Session {
     ///
     /// All connected sessions are notified of the new player
     /// and the new player gets a list of all current players.
-    pub fn handle_local_player_initialized(&self, pk: SharedBuffer) -> Result<()> {
+    pub fn handle_local_player_initialized(&self, pk: SharedBuffer<'_>) -> Result<()> {
         let request = SetLocalPlayerAsInitialized::deserialize(pk)?;
 
         // Add player to other's player lists.
@@ -86,16 +87,16 @@ impl Session {
             // })?;
 
             self.broadcast_others(TextMessage {
-                message: format!(
+                message: &format!(
                     "§e{} has joined the server.",
                     identity_data.display_name
                 ),
                 needs_translation: false,
                 parameters: vec![],
-                source_name: "".to_string(),
-                platform_chat_id: "".to_string(),
+                source_name: "",
+                platform_chat_id: "",
                 message_type: MessageType::System,
-                xuid: "".to_string(),
+                xuid: "",
             })?;
         }
         self.initialized.store(true, Ordering::SeqCst);
@@ -184,7 +185,7 @@ impl Session {
             item_properties: &[],
             server_authoritative_inventory: false,
             game_version: "1.19.60",
-            property_data: nbt::Value::Compound(HashMap::new()),
+            // property_data: nbt::Value::Compound(HashMap::new()),
             server_block_state_checksum: 0,
             world_template_id: 0,
             client_side_generation: false,
@@ -245,7 +246,7 @@ impl Session {
     }
 
     /// Handles a [`Login`] packet.
-    pub async fn handle_login(&self, pk: SharedBuffer) -> Result<()> {
+    pub async fn handle_login(&self, pk: SharedBuffer<'_>) -> Result<()> {
         let request = Login::deserialize(pk);
         let request = match request {
             Ok(r) => r,
@@ -271,7 +272,7 @@ impl Session {
     }
 
     /// Handles a [`RequestNetworkSettings`] packet.
-    pub fn handle_request_network_settings(&self, pk: SharedBuffer) -> Result<()> {
+    pub fn handle_request_network_settings(&self, pk: SharedBuffer<'_>) -> Result<()> {
         let request = RequestNetworkSettings::deserialize(pk)?;
         if request.protocol_version != NETWORK_VERSION {
             if request.protocol_version > NETWORK_VERSION {

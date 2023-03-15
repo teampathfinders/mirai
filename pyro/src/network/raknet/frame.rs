@@ -4,10 +4,10 @@ use std::io::Read;
 
 
 use crate::network::raknet::Reliability;
-use util::nvassert;
+use util::pyassert;
 use util::Result;
 use util::{Deserialize, Serialize};
-use util::bytes::{BinaryReader, BinaryWriter, MutableBuffer, SharedBuffer};
+use util::bytes::{BinaryReader, BinaryWriter, MutableBuffer, ArcBuffer, SharedBuffer};
 
 /// Bit flag indicating that the packet is encapsulated in a frame.
 pub const CONNECTED_PEER_BIT_FLAG: u8 = 0x80;
@@ -26,14 +26,14 @@ pub const NEEDS_B_AND_AS_BIT_FLAG: u8 = 0x04;
 
 /// Contains a set of frames.
 #[derive(Debug, Default, Clone)]
-pub struct FrameBatch {
+pub struct FrameBatch<'a> {
     /// Unique ID of this frame batch.
     pub sequence_number: u32,
     /// Individual frames
-    pub frames: Vec<Frame>,
+    pub frames: Vec<Frame<'a>>,
 }
 
-impl FrameBatch {
+impl<'a> FrameBatch<'a> {
     /// Gives a rough estimate of the size of this batch in bytes.
     /// This estimate will always be greater than the actual size of the batch.
     #[inline]
@@ -50,23 +50,23 @@ impl FrameBatch {
     }
 }
 
-impl Deserialize for FrameBatch {
-    fn deserialize(mut buffer: SharedBuffer) -> Result<Self> {
-        nvassert!(buffer.read_u8()? & 0x80 != 0);
+impl<'a> Deserialize<'a> for FrameBatch<'a> {
+    fn deserialize(mut buffer: SharedBuffer<'a>) -> Result<Self> {
+        pyassert!(buffer.read_u8()? & 0x80 != 0);
 
         let batch_number = buffer.read_u24_le()?;
         let mut frames = Vec::new();
 
-        while buffer.has_remaining() {
+        while !buffer.is_empty() {
             frames.push(Frame::deserialize(&mut buffer)?);
         }
-        assert_eq!(buffer.remaining(), 0);
+        assert_eq!(buffer.len(), 0);
 
         Ok(Self { sequence_number: batch_number, frames })
     }
 }
 
-impl Serialize for FrameBatch {
+impl<'a> Serialize for FrameBatch<'a> {
     fn serialize(&self, buffer: &mut MutableBuffer) {
         buffer.write_u8(CONNECTED_PEER_BIT_FLAG);
         buffer.write_u24_le(self.sequence_number);
@@ -144,12 +144,7 @@ impl<'a> Frame<'a> {
             compound_index = buffer.read_u32_be()?;
         }
 
-        let position = buffer.len() - buffer.remaining();
-        let mut body = SharedBuffer::from(
-            &buffer.as_ref()[position..(position + length as usize)],
-        );
-        buffer.advance(length as usize);
-
+        let mut body = SharedBuffer::from(buffer.take_n(length as usize)?);
         let frame = Self {
             reliability,
             reliable_index,
@@ -174,7 +169,7 @@ impl<'a> Frame<'a> {
         }
 
         buffer.write_u8(flags);
-        buffer.write_u16_be()(self.body.len() as u16 * 8);
+        buffer.write_u16_be(self.body.len() as u16 * 8);
         if self.reliability.is_reliable() {
             buffer.put_u24_le(self.reliable_index);
         }
@@ -186,9 +181,9 @@ impl<'a> Frame<'a> {
             buffer.write_u8(self.order_channel);
         }
         if self.is_compound {
-            buffer.write_u32_be()(self.compound_size);
-            buffer.write_u16_be()(self.compound_id);
-            buffer.write_u32_be()(self.compound_index);
+            buffer.write_u32_be(self.compound_size);
+            buffer.write_u16_be(self.compound_id);
+            buffer.write_u32_be(self.compound_index);
         }
 
         buffer.put(self.body.as_ref());

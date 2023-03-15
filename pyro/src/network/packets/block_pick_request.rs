@@ -18,7 +18,7 @@ impl ConnectedPacket for BlockPickRequest {
     const ID: u32 = 0x22;
 }
 
-impl Deserialize for BlockPickRequest {
+impl Deserialize<'_> for BlockPickRequest {
     fn deserialize(mut buffer: SharedBuffer) -> Result<Self> {
         let position = buffer.read_vec3i()?;
         let with_nbt = buffer.read_bool()?;

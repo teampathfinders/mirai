@@ -1,15 +1,15 @@
 
 
 use dashmap::DashMap;
-use util::bytes::SharedBuffer;
+use util::bytes::{ArcBuffer, SharedBuffer};
 
 use crate::network::raknet::Frame;
 use crate::network::raknet::Reliability;
 
 /// Keeps track of packet fragments, merging them when all fragments have been received.
 #[derive(Debug, Default)]
-pub struct CompoundCollector<'a> {
-    compounds: DashMap<u16, Vec<SharedBuffer<'a>>>,
+pub struct CompoundCollector {
+    compounds: DashMap<u16, Vec<ArcBuffer>>,
 }
 
 impl CompoundCollector {

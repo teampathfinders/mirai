@@ -53,7 +53,7 @@ impl Serialize for SetPlayerGameMode {
     }
 }
 
-impl Deserialize for SetPlayerGameMode {
+impl Deserialize<'_> for SetPlayerGameMode {
     fn deserialize(mut buffer: SharedBuffer) -> Result<Self> {
         let game_mode = GameMode::try_from(buffer.read_var_i32()?)?;
 

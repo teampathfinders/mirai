@@ -101,7 +101,7 @@ impl Serialize for MovePlayer {
     }
 }
 
-impl Deserialize for MovePlayer {
+impl Deserialize<'_> for MovePlayer {
     fn deserialize(mut buffer: SharedBuffer) -> Result<Self> {
         let runtime_id = buffer.read_var_u64()?;
         let position = buffer.read_vec3f()?;

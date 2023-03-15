@@ -74,7 +74,7 @@ impl ConnectedPacket for CommandRequest {
     const ID: u32 = 0x4d;
 }
 
-impl Deserialize for CommandRequest {
+impl Deserialize<'_> for CommandRequest {
     fn deserialize(mut buffer: SharedBuffer) -> Result<Self> {
         let command = buffer.read_str()?;
         let origin = CommandOriginType::try_from(buffer.read_var::<u32>()?)?;

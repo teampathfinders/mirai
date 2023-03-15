@@ -52,7 +52,7 @@ impl Serialize for SetDifficulty {
     }
 }
 
-impl Deserialize for SetDifficulty {
+impl Deserialize<'_> for SetDifficulty {
     fn deserialize(mut buffer: SharedBuffer) -> Result<Self> {
         let difficulty = Difficulty::try_from(buffer.read_var_i32()?)?;
 

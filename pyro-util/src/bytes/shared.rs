@@ -6,6 +6,8 @@ use std::fmt::Debug;
 use std::io::Read;
 use std::marker::PhantomData;
 use std::ops::{Deref, DerefMut, Index};
+use std::rc::Rc;
+use std::sync::Arc;
 use std::{cmp, fmt, io};
 
 use crate::Result;
@@ -28,19 +30,20 @@ macro_rules! define_read_fns {
     }
 }
 
-pub struct OwnedBuffer<'a>(Vec<u8>, &'a PhantomData<()>);
+pub struct ArcBuffer(Arc<Vec<u8>>);
 
-impl<'a> Deref for OwnedBuffer<'a> {
+impl Deref for ArcBuffer {
     type Target = [u8];
 
     fn deref(&self) -> &Self::Target {
-        self.0.as_ref()
+        self.0.as_slice()
     }
 }
 
 /// Buffer that can be used to read binary data.
 ///
 /// See [`MutableBuffer`](crate::MutableBuffer) for an owned and writable buffer.
+#[derive(Copy, Clone)]
 pub struct SharedBuffer<'a>(&'a [u8]);
 
 impl<'a> SharedBuffer<'a> {

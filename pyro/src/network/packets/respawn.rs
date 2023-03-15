@@ -51,7 +51,7 @@ impl Serialize for Respawn {
     }
 }
 
-impl Deserialize for Respawn {
+impl Deserialize<'_> for Respawn {
     fn deserialize(mut buffer: SharedBuffer) -> Result<Self> {
         let position = buffer.read_vec3f()?;
         let state = RespawnState::try_from(buffer.read_u8()?)?;

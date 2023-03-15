@@ -5,7 +5,7 @@ use std::num::NonZeroU64;
 
 use crate::network::header::Header;
 use crate::network::packets::ConnectedPacket;
-use util::{nvassert};
+use util::{pyassert};
 use util::bytes::{BinaryWriter, MutableBuffer, SharedBuffer};
 use util::Serialize;
 use util::Result;

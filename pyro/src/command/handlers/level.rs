@@ -1,16 +1,16 @@
 use std::fmt::format;
 
-use util::{nvassert, Result, error};
+use util::{pyassert, Result, error};
 
 use crate::{command::ParsedCommand, level_manager::LevelManager, network::packets::GameRule};
 
 impl LevelManager {
     pub fn handle_gamerule_command(&self, command: ParsedCommand) -> Result<String> {
-        nvassert!(command.name == "gamerule");
+        pyassert!(command.name == "gamerule");
         
         let rule_name = command.parameters.get("rule")
             // Rule parameter should exist, but this is here just to be sure.
-            .ok_or_else(|| error!(InvalidCommand, "Missing game rule name."))?
+            .ok_or_else(|| error!(Malformed, "Missing game rule name."))?
             .read_str()?;
 
         // Command has value parameter, store the game rule value.

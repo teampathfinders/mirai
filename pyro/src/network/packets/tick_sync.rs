@@ -2,6 +2,7 @@
 use util::Result;
 
 use util::{Deserialize, Serialize};
+use util::bytes::{BinaryReader, BinaryWriter, MutableBuffer, SharedBuffer};
 
 use super::ConnectedPacket;
 
@@ -24,18 +25,18 @@ impl ConnectedPacket for TickSync {
     }
 }
 
-impl Deserialize for TickSync {
+impl Deserialize<'_> for TickSync {
     fn deserialize(mut buffer: SharedBuffer) -> Result<Self> {
-        let request = buffer.get_u64_le();
-        let response = buffer.get_u64_le();
+        let request = buffer.read_u64_le()?;
+        let response = buffer.read_u64_le()?;
 
         Ok(Self { request, response })
     }
 }
 
 impl Serialize for TickSync {
-    fn serialize(&self, buffer: &mut OwnedBuffer) {
-        buffer.put_u64_le(self.request);
-        buffer.put_u64_le(self.response);
+    fn serialize(&self, buffer: &mut MutableBuffer) {
+        buffer.write_u64_le(self.request);
+        buffer.write_u64_le(self.response);
     }
 }

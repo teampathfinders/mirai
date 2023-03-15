@@ -13,7 +13,7 @@ impl ConnectedPacket for GenericLevelEvent {
     const ID: u32 = 0x7c;
 }
 
-impl Deserialize for GenericLevelEvent {
+impl Deserialize<'_> for GenericLevelEvent {
     fn deserialize(mut buffer: SharedBuffer) -> Result<Self> {
         let event_id = buffer.read_var_i32()?;
         let data = nbt::from_le_bytes(&mut buffer)?;

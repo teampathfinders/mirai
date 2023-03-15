@@ -1,5 +1,6 @@
 
 use util::{bail, Error, Result};
+use util::bytes::{BinaryReader, SharedBuffer};
 
 use util::Deserialize;
 
@@ -52,13 +53,13 @@ impl ConnectedPacket for Animate {
     const ID: u32 = 0x2c;
 }
 
-impl Deserialize for Animate {
+impl Deserialize<'_> for Animate {
     fn deserialize(mut buffer: SharedBuffer) -> Result<Self> {
         let action_type = AnimateAction::try_from(buffer.read_var_i32()?)?;
         let runtime_id = buffer.read_var_u64()?;
 
         let rowing_time = if action_type.is_rowing() {
-            buffer.get_f32()
+            buffer.read_f32_be()?
         } else {
             0.0
         };

@@ -1,5 +1,6 @@
 
 use util::{Deserialize, Result};
+use util::bytes::{BinaryReader, SharedBuffer};
 use crate::network::packets::ConnectedPacket;
 
 /// Sent by the client when changing settings that require the execution of commands.
@@ -16,9 +17,9 @@ impl ConnectedPacket for SettingsCommand {
     const ID: u32 = 0x8c;
 }
 
-impl Deserialize for SettingsCommand {
-    fn deserialize(mut buffer: SharedBuffer) -> Result<Self> {
-        let command = buffer.read_str()?;
+impl Deserialize<'_> for SettingsCommand {
+    fn deserialize(mut buffer: SharedBuffer<'_>) -> Result<Self> {
+        let command = buffer.read_str()?.to_owned();
         let suppress_output = buffer.get_bool();
 
         Ok(Self {

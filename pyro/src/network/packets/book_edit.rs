@@ -1,32 +1,33 @@
 
 use util::{bail, Deserialize, Serialize, Error, Result};
+use util::bytes::{BinaryReader, SharedBuffer};
 use crate::network::packets::ConnectedPacket;
 
 /// Sent when the client makes changes to a book.
 /// The client sends this packet every time the client briefly stops typing,
 /// not when the book is closed.
 #[derive(Debug, Clone)]
-pub struct BookEdit {
+pub struct BookEdit<'a> {
     /// Action to perform on the book.
-    pub action: BookEditAction,
+    pub action: BookEditAction<'a>,
     /// Inventory slot that the book was in.
     pub inventory_slot: u8,
 }
 
 /// An action performed on a book.
 #[derive(Debug, Clone)]
-pub enum BookEditAction {
+pub enum BookEditAction<'a> {
     ReplacePage {
         /// Page to be modified.
         page_number: u8,
         /// New text for the page.
-        text: String
+        text: &'a str
     },
     AddPage {
         /// Page to add.
         page_number: u8,
         /// Text to add to the new page.
-        text: String
+        text: &'a str
     },
     DeletePage {
         /// Page to delete.
@@ -40,23 +41,23 @@ pub enum BookEditAction {
     },
     Sign {
         /// Title of the book.
-        title: String,
+        title: &'a str,
         /// Author of the book.
         /// This isn't necessarily the client's username, it can be freely modified.
-        author: String,
+        author: &'a str,
         /// XUID of the client.
-        xuid: String
+        xuid: &'a str
     }
 }
 
-impl ConnectedPacket for BookEdit {
+impl<'a> ConnectedPacket for BookEdit<'a> {
     const ID: u32 = 0x61;
 }
 
-impl Deserialize for BookEdit {
-    fn deserialize(mut buffer: SharedBuffer) -> Result<Self>{
-        let action = buffer.get_u8();;
-        let inventory_slot = buffer.get_u8();
+impl<'a> Deserialize<'a> for BookEdit<'a> {
+    fn deserialize(mut buffer: SharedBuffer<'a>) -> Result<Self>{
+        let action = buffer.read_u8()?;
+        let inventory_slot = buffer.read_u8()?;
 
         Ok(Self {
             inventory_slot,

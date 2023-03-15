@@ -3,6 +3,7 @@ use std::io::Write;
 use base64::Engine;
 use jsonwebtoken::{Algorithm, DecodingKey, Validation};
 use p384::pkcs8::spki;
+use util::bytes::{BinaryReader, SharedBuffer};
 use util::{bail, error, Result};
 use uuid::Uuid;
 
@@ -107,7 +108,7 @@ fn parse_initial_token(token: &str) -> Result<String> {
     let public_key =
         match spki::SubjectPublicKeyInfoRef::try_from(bytes.as_ref()) {
             Ok(p) => p,
-            Err(e) => bail!(InvalidIdentity, "Invalid client public key: {e}"),
+            Err(e) => bail!(Malformed, "Invalid client public key: {e}"),
         };
 
     let decoding_key =
@@ -132,7 +133,7 @@ fn parse_mojang_token(token: &str, key: &str) -> Result<String> {
     let public_key =
         match spki::SubjectPublicKeyInfoRef::try_from(bytes.as_ref()) {
             Ok(p) => p,
-            Err(e) => bail!(InvalidIdentity, "Invalid client public key: {e}"),
+            Err(e) => bail!(Malformed, "Invalid client public key: {e}"),
         };
 
     let decoding_key =
@@ -163,7 +164,7 @@ fn parse_identity_token(
     let public_key =
         match spki::SubjectPublicKeyInfoRef::try_from(bytes.as_ref()) {
             Ok(p) => p,
-            Err(e) => bail!(InvalidIdentity, "Invalid client public key: {e}"),
+            Err(e) => bail!(Malformed, "Invalid client public key: {e}"),
         };
 
     let decoding_key =
@@ -191,7 +192,7 @@ fn parse_user_data_token(
     let public_key =
         match spki::SubjectPublicKeyInfoRef::try_from(bytes.as_ref()) {
             Ok(p) => p,
-            Err(e) => bail!(InvalidIdentity, "Invalid client public key: {e}"),
+            Err(e) => bail!(Malformed, "Invalid client public key: {e}"),
         };
 
     let decoding_key =
@@ -216,10 +217,8 @@ fn parse_user_data_token(
 pub fn parse_identity_data(
     buffer: &mut SharedBuffer,
 ) -> Result<IdentityTokenPayload> {
-    let token_length = buffer.get_u32_le();
-    let position = buffer.len() - buffer.remaining();
-    let token_chain =
-        &buffer.as_ref()[position..(position + token_length as usize)];
+    let token_length = buffer.read_u32_le()?;
+    let token_chain = buffer.take_n(token_length as usize)?;
 
     let tokens = serde_json::from_slice::<TokenChain>(token_chain)?;
     buffer.advance(token_length as usize);
@@ -238,10 +237,7 @@ pub fn parse_identity_data(
             // token was signed by Mojang.
             let mut key = parse_initial_token(&tokens.chain[0])?;
             if !key.eq(MOJANG_PUBLIC_KEY) {
-                bail!(
-                    InvalidIdentity,
-                    "Identity token was not signed by Mojang"
-                );
+                bail!(Malformed, "Identity token was not signed by Mojang");
             }
 
             key = parse_mojang_token(&tokens.chain[1], &key)?;
@@ -263,9 +259,8 @@ pub fn parse_user_data(
     buffer: &mut SharedBuffer,
     public_key: &str,
 ) -> Result<UserDataTokenPayload> {
-    let token_length = buffer.get_u32_le();
-    let position = buffer.len() - buffer.remaining();
-    let token = &buffer.as_ref()[position..(position + token_length as usize)];
+    let token_length = buffer.read_u32_le()?;
+    let token = buffer.take_n(token_length as usize)?;
     let token_string = String::from_utf8_lossy(token);
 
     let user_data = parse_user_data_token(token_string.as_ref(), public_key)?;

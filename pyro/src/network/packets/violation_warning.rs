@@ -56,7 +56,7 @@ impl<'a> ConnectedPacket for ViolationWarning<'a> {
     const ID: u32 = 0x9c;
 }
 
-impl<'a> Deserialize for ViolationWarning<'a> {
+impl<'a> Deserialize<'a> for ViolationWarning<'a> {
     fn deserialize(mut buffer: SharedBuffer<'a>) -> Result<Self> {
         let warning_type = ViolationType::try_from(buffer.read_var_i32()?)?;
         let severity = ViolationSeverity::try_from(buffer.read_var_i32()?)?;

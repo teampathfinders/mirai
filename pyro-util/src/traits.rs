@@ -9,9 +9,9 @@ pub trait Serialize {
 }
 
 /// Trait that describes an object that can be deserialised from raw bytes.
-pub trait Deserialize {
+pub trait Deserialize<'a> {
     /// Deserializes the given buffer, returning the object.
-    fn deserialize(buffer: SharedBuffer) -> Result<Self>
+    fn deserialize(buffer: SharedBuffer<'a>) -> Result<Self>
     where
         Self: Sized;
 }

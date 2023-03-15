@@ -36,6 +36,11 @@ impl MutableBuffer {
     }
 
     #[inline]
+    pub fn clear(&mut self) {
+        self.0.clear();
+    }
+
+    #[inline]
     pub fn append(&mut self, v: &[u8]) {
         self.0.extend_from_slice(v);
     }
@@ -48,6 +53,13 @@ impl MutableBuffer {
     #[inline]
     pub fn reserve(&mut self, additional: usize) {
         self.0.reserve(additional);
+    }
+
+    #[inline]
+    pub fn reserve_to(&mut self, total: usize) {
+        if total > self.0.capacity() {
+            self.reserve(self.0.capacity() - total);
+        }
     }
 
     #[inline]

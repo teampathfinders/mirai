@@ -1,6 +1,7 @@
 use std::net::SocketAddr;
+use util::bytes::SharedBuffer;
 
-use util::nvassert;
+use util::pyassert;
 use util::Deserialize;
 use util::Result;
 
@@ -13,9 +14,9 @@ impl NewIncomingConnection {
     pub const ID: u8 = 0x13;
 }
 
-impl Deserialize for NewIncomingConnection {
+impl Deserialize<'_> for NewIncomingConnection {
     fn deserialize(mut buffer: SharedBuffer) -> Result<Self> {
-        nvassert!(buffer.get_u8() == Self::ID);
+        pyassert!(buffer.read_u8()? == Self::ID);
 
         // No data in this packet is used, there is no point in decoding it
         Ok(Self)

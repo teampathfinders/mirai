@@ -20,7 +20,7 @@ impl<'a> ConnectedPacket for UpdateSkin<'a> {
 
 impl<'a> Serialize for UpdateSkin<'a> {
     fn serialize(&self, buffer: &mut MutableBuffer) {
-        buffer.put_u128_le(self.uuid.as_u128());
+        buffer.write_u128_le(self.uuid.as_u128());
         self.skin.serialize(buffer);
         buffer.write_str(""); // Old skin name. Unused
         buffer.write_str(""); // New skin name. Unused
@@ -28,14 +28,14 @@ impl<'a> Serialize for UpdateSkin<'a> {
     }
 }
 
-impl<'a> Deserialize for UpdateSkin<'a> {
+impl<'a> Deserialize<'a> for UpdateSkin<'a> {
     fn deserialize(mut buffer: SharedBuffer) -> Result<Self> {
-        let uuid = Uuid::from_u128(buffer.get_u128_le());
-        let skin = Skin::deserialize(&mut buffer)?;
+        // let uuid = Uuid::from_u128(buffer.get_u128_le());
+        // let skin = Skin::deserialize(&mut buffer)?;
 
         todo!();
-        Ok(Self {
-            uuid, skin
-        })
+        // Ok(Self {
+        //     uuid, skin
+        // })
     }
 }

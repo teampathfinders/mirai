@@ -1,4 +1,5 @@
-use util::nvassert;
+use util::bytes::{BinaryReader, SharedBuffer};
+use util::pyassert;
 use util::Deserialize;
 use util::Result;
 
@@ -22,13 +23,13 @@ impl UnconnectedPing {
     pub const ID: u8 = 0x01;
 }
 
-impl Deserialize for UnconnectedPing {
+impl Deserialize<'_> for UnconnectedPing {
     fn deserialize(mut buffer: SharedBuffer) -> Result<Self> {
-        nvassert!(buffer.get_u8() == Self::ID);
+        pyassert!(buffer.read_u8()? == Self::ID);
 
-        let time = buffer.get_u64();
+        let time = buffer.read_u64_be()?;
         buffer.advance(16); // Skip offline message data
-        let client_guid = buffer.get_u64();
+        let client_guid = buffer.read_u64_be()?;
 
         Ok(Self { time, client_guid })
     }

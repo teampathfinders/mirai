@@ -38,7 +38,7 @@ impl Session {
         let pk = Packet::new(pk);
         let mut serialized = pk.serialize();
 
-        self.send_serialized(serialized, DEFAULT_SEND_CONFIG)
+        self.send_serialized(serialized.snapshot(), DEFAULT_SEND_CONFIG)
     }
 
     /// Sends a game packet with custom reliability and priority

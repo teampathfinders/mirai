@@ -21,7 +21,7 @@ impl ConnectedPacket for SetDefaultGameMode {
     }
 }
 
-impl Deserialize for SetDefaultGameMode {
+impl Deserialize<'_> for SetDefaultGameMode {
     fn deserialize(mut buffer: SharedBuffer) -> Result<Self> {
         let game_mode = GameMode::try_from(buffer.read_var_i32()?)?;
 

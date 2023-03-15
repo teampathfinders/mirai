@@ -3,15 +3,15 @@ use std::fmt;
 /// Verifies that the given expression evaluates to true,
 /// or returns an error
 #[macro_export]
-macro_rules! nvassert {
+macro_rules! pyassert {
     ($expression: expr, $message: expr) => {
         if ($expression) == false {
-            $crate::bail!(AssertionFailure, "{} | {}", $expression, $message);
+            $crate::bail!(AssertionFailed, "{} | {}", $expression, $message);
         }
     };
 
     ($expression: expr) => {
-        nvassert!(
+        pyassert!(
             $expression,
             format!("Assertion failed: {}", stringify!($expression))
         );

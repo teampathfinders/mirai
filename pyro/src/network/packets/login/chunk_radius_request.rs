@@ -16,7 +16,7 @@ impl ConnectedPacket for ChunkRadiusRequest {
     const ID: u32 = 0x45;
 }
 
-impl Deserialize for ChunkRadiusRequest {
+impl Deserialize<'_> for ChunkRadiusRequest {
     fn deserialize(mut buffer: SharedBuffer) -> Result<Self> {
         let radius = buffer.read_var::<i32>()?;
 

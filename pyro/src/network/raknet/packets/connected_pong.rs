@@ -1,6 +1,4 @@
-
-
-
+use util::bytes::{BinaryWriter, MutableBuffer};
 use util::Serialize;
 use util::Result;
 
@@ -23,7 +21,7 @@ impl ConnectedPong {
 }
 
 impl Serialize for ConnectedPong {
-    fn serialize(&self, buffer: &mut OwnedBuffer) {
+    fn serialize(&self, buffer: &mut MutableBuffer) {
         buffer.write_u8(Self::ID);
         buffer.write_i64_be(self.ping_time);
         buffer.write_i64_be(self.pong_time);

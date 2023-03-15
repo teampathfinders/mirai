@@ -140,7 +140,7 @@ impl<'a> Serialize for TextMessage<'a> {
     }
 }
 
-impl<'a> Deserialize for TextMessage<'a> {
+impl<'a> Deserialize<'a> for TextMessage<'a> {
     fn deserialize(mut buffer: SharedBuffer<'a>) -> Result<Self> {
         let message_type = MessageType::try_from(buffer.read_u8()?)?;
         let needs_translation = buffer.get_bool();

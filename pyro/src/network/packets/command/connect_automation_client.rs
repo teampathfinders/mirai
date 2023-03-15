@@ -1,6 +1,6 @@
 
 use util::{Serialize, Result};
-use util::bytes::size_of_varint;
+use util::bytes::{BinaryWriter, MutableBuffer, size_of_varint};
 
 use crate::network::packets::ConnectedPacket;
 
@@ -11,7 +11,7 @@ pub struct ConnectAutomationClient<'a> {
     pub server_uri: &'a str,
 }
 
-impl ConnectedPacket for ConnectAutomationClient<'_> {
+impl<'a> ConnectedPacket for ConnectAutomationClient<'a> {
     const ID: u32 = 0x5f;
 
     fn serialized_size(&self) -> usize {
@@ -19,8 +19,8 @@ impl ConnectedPacket for ConnectAutomationClient<'_> {
     }
 }
 
-impl Serialize for ConnectAutomationClient<'_> {
-    fn serialize(&self, buffer: &mut OwnedBuffer) {
+impl<'a> Serialize for ConnectAutomationClient<'a> {
+    fn serialize(&self, buffer: &mut MutableBuffer) {
         buffer.write_str(self.server_uri);
     }
 }

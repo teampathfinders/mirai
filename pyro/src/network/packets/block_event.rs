@@ -46,7 +46,7 @@ impl Serialize for BlockEvent {
     }
 }
 
-impl Deserialize for BlockEvent {
+impl Deserialize<'_> for BlockEvent {
     fn deserialize(mut buffer: SharedBuffer) -> Result<Self> {
         let position = buffer.read_block_pos()?;
         let event_type = BlockEventType::try_from(buffer.read_var_i32()?)?;

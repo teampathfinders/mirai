@@ -1,4 +1,5 @@
-use util::nvassert;
+use util::bytes::{BinaryReader, SharedBuffer};
+use util::pyassert;
 use util::Deserialize;
 use util::Result;
 
@@ -17,12 +18,12 @@ impl ConnectionRequest {
     pub const ID: u8 = 0x09;
 }
 
-impl Deserialize for ConnectionRequest {
+impl Deserialize<'_> for ConnectionRequest {
     fn deserialize(mut buffer: SharedBuffer) -> Result<Self> {
-        nvassert!(buffer.get_u8() == Self::ID);
+        pyassert!(buffer.get_u8() == Self::ID);
 
-        let guid = buffer.get_i64();
-        let time = buffer.get_i64();
+        let guid = buffer.read_i64_be()?;
+        let time = buffer.read_i64_be()?;
 
         Ok(Self { guid, time })
     }

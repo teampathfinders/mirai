@@ -50,7 +50,7 @@ impl Serialize for CreditsUpdate {
     }
 }
 
-impl Deserialize for CreditsUpdate {
+impl Deserialize<'_> for CreditsUpdate {
     fn deserialize(mut buffer: SharedBuffer) -> Result<Self> {
         let runtime_id = buffer.read_var_u64()?;
         let status = CreditsStatus::try_from(buffer.read_var_i32()?)?;

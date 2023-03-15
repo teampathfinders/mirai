@@ -17,7 +17,7 @@ impl ConnectedPacket for SetLocalPlayerAsInitialized {
     const ID: u32 = 0x71;
 }
 
-impl Deserialize for SetLocalPlayerAsInitialized {
+impl Deserialize<'_> for SetLocalPlayerAsInitialized {
     fn deserialize(mut buffer: SharedBuffer) -> Result<Self> {
         Ok(Self { runtime_id: buffer.read_var::<u64>()? })
     }

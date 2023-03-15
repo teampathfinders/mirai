@@ -16,7 +16,7 @@ impl ConnectedPacket for CacheBlobStatus {
     const ID: u32 = 0x87;
 }
 
-impl Deserialize for CacheBlobStatus {
+impl Deserialize<'_> for CacheBlobStatus {
     fn deserialize(mut buffer: SharedBuffer) -> Result<Self> {
         let miss_count = buffer.read_var_u32()?;
         let hit_count = buffer.read_var_u32()?;

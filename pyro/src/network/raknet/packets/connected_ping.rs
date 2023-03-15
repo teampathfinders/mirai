@@ -1,7 +1,5 @@
-
-
-
-use util::nvassert;
+use util::bytes::{BinaryReader, SharedBuffer};
+use util::pyassert;
 use util::Deserialize;
 use util::Result;
 
@@ -18,11 +16,11 @@ impl ConnectedPing {
     pub const ID: u8 = 0x00;
 }
 
-impl Deserialize for ConnectedPing {
+impl Deserialize<'_> for ConnectedPing {
     fn deserialize(mut buffer: SharedBuffer) -> Result<Self> {
-        nvassert!(buffer.get_u8() == Self::ID);
+        pyassert!(buffer.read_u8()? == Self::ID);
 
-        let time = buffer.get_i64();
+        let time = buffer.read_i64_be()?;
 
         Ok(Self { time })
     }

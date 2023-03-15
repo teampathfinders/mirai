@@ -1,6 +1,7 @@
 
 use uuid::Uuid;
 use util::{Deserialize, Serialize, Result};
+use util::bytes::{BinaryWriter, MutableBuffer};
 use crate::network::packets::{ConnectedPacket};
 
 use super::CommandOriginType;
@@ -35,9 +36,9 @@ impl ConnectedPacket for CommandOutput<'_> {
 }
 
 impl Serialize for CommandOutput<'_> {
-    fn serialize(&self, buffer: &mut OwnedBuffer) {
+    fn serialize(&self, buffer: &mut MutableBuffer) {
         buffer.write_var_u32(self.origin as u32);
-        buffer.put_uuid(&Uuid::nil());
+        buffer.write_uuid(&Uuid::nil());
         buffer.write_str(self.request_id);
 
         match self.origin {

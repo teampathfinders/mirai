@@ -22,9 +22,9 @@ use crate::network::raknet::packets::{
 };
 use crate::network::raknet::{BroadcastPacket, Frame, FrameBatch};
 use crate::network::session::Session;
-use util::{bail, nvassert, Result};
+use util::{bail, pyassert, Result};
 use util::{Deserialize, Serialize};
-use util::bytes::{BinaryReader, SharedBuffer};
+use util::bytes::{BinaryReader, MutableBuffer, SharedBuffer};
 
 use super::DEFAULT_SEND_CONFIG;
 use super::packets::ConnectedPing;
@@ -34,7 +34,7 @@ impl Session {
     ///
     /// If a packet is an ACK or NACK type, it will be responded to accordingly (using [`Session::handle_ack`] and [`Session::handle_nack`]).
     /// Frame batches are processed by [`Session::handle_frame_batch`].
-    pub async fn process_raw_packet<'a>(&'a self, pk: SharedBuffer<'a>) -> Result<bool> {
+    pub async fn process_raw_packet(&self, pk: SharedBuffer<'_>) -> Result<bool> {
         *self.raknet.last_update.write() = Instant::now();
 
         if pk.is_empty() {
@@ -71,7 +71,7 @@ impl Session {
     /// * Inserting packets into the compound collector
     /// * Discarding old sequenced frames
     /// * Acknowledging reliable packets
-    async fn handle_frame_batch(&self, pk: SharedBuffer) -> Result<()> {
+    async fn handle_frame_batch(&self, pk: SharedBuffer<'_>) -> Result<()> {
         let batch = FrameBatch::deserialize(pk)?;
         self.raknet
             .client_batch_number
@@ -130,12 +130,12 @@ impl Session {
             return Ok(());
         }
 
-        self.handle_unframed_packet(frame.body.clone()).await?;
+        self.handle_unframed_packet(frame.body).await?;
         Ok(())
     }
 
     /// Processes an unencapsulated game packet.
-    async fn handle_unframed_packet(&self, mut pk: SharedBuffer) -> Result<()> {
+    async fn handle_unframed_packet(&self, mut pk: SharedBuffer<'_>) -> Result<()> {
         let bytes = pk.as_ref();
 
         let packet_id = *pk.first().expect("Game packet buffer was empty");
@@ -153,8 +153,8 @@ impl Session {
         Ok(())
     }
 
-    async fn handle_game_packet(&self, mut pk: SharedBuffer) -> Result<()> {
-        nvassert!(pk.get_u8() == 0xfe);
+    async fn handle_game_packet(&self, mut pk: SharedBuffer<'_>) -> Result<()> {
+        pyassert!(pk.read_u8()? == 0xfe);
 
         // Decrypt packet
         if self.encryptor.initialized() {
@@ -181,7 +181,7 @@ impl Session {
             && pk.len() > compression_threshold as usize
         {
             // Packet is compressed
-            let decompressed = match SERVER_CONFIG.read().compression_algorithm
+            match SERVER_CONFIG.read().compression_algorithm
             {
                 CompressionAlgorithm::Snappy => {
                     unimplemented!("Snappy decompression");
@@ -194,11 +194,10 @@ impl Session {
                     reader.read_to_end(&mut decompressed)?;
                     // .context("Failed to decompress packet using Deflate")?;
 
-                    SharedBuffer::copy_from_slice(decompressed.as_slice())
+                    let buffer = SharedBuffer::from(decompressed.as_slice());
+                    self.handle_decompressed_game_packet(buffer).await
                 }
-            };
-
-            self.handle_decompressed_game_packet(decompressed).await
+            }
         } else {
             self.handle_decompressed_game_packet(pk).await
         }
@@ -206,7 +205,7 @@ impl Session {
 
     async fn handle_decompressed_game_packet(
         &self,
-        mut pk: SharedBuffer,
+        mut pk: SharedBuffer<'_>,
     ) -> Result<()> {
         let length = pk.read_var_u32()?;
         let header = Header::deserialize(&mut pk)?;

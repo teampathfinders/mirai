@@ -39,7 +39,7 @@ impl ConnectedPacket for RequestAbility {
     const ID: u32 = 0xb8;
 }
 
-impl Deserialize for RequestAbility {
+impl Deserialize<'_> for RequestAbility {
     fn deserialize(mut buffer: SharedBuffer) -> Result<Self> {
         let ability_type = buffer.read_var_i32()?;
         let value_type = buffer.read_u8()?;

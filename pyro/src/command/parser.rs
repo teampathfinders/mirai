@@ -32,7 +32,7 @@ impl ParsedArgument {
         if let Self::String(ref value) = self {
             Ok(value)
         } else {
-            bail!(InvalidCommand, "Expected string, found {:?}", self)
+            bail!(Malformed, "Expected string, found {:?}", self)
         }
     }
 }

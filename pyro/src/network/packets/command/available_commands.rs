@@ -2,6 +2,7 @@ use std::collections::{HashMap, HashSet};
 
 
 use util::{bail, Result};
+use util::bytes::{BinaryWriter, MutableBuffer};
 
 use util::Serialize;
 
@@ -30,7 +31,7 @@ impl ConnectedPacket for AvailableCommands<'_> {
 }
 
 impl Serialize for AvailableCommands<'_> {
-    fn serialize(&self, buffer: &mut OwnedBuffer) {
+    fn serialize(&self, buffer: &mut MutableBuffer) {
         let mut value_indices = HashMap::new();
         let mut values = Vec::new();
         for command in self.commands {
@@ -162,7 +163,7 @@ impl Serialize for AvailableCommands<'_> {
             buffer.write_str(&command.description);
             buffer.write_u16_le(0); // Command flags. Unknown.
             buffer.write_u8(command.permission_level as u8);
-            buffer.write_le::<i32>()(alias);
+            buffer.write_i32_le(alias);
 
             buffer.write_var_u32(command.overloads.len() as u32);
             for overload in &command.overloads {
@@ -188,7 +189,7 @@ impl Serialize for AvailableCommands<'_> {
                     }
 
                     buffer.write_str(&parameter.name);
-                    buffer.write_le::<i32>()(command_type as i32);
+                    buffer.write_i32_le(command_type as i32);
                     buffer.write_bool(parameter.optional);
                     buffer.write_u8(parameter.options);
                 }

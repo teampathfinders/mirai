@@ -21,7 +21,6 @@ use crate::network::{
 /// Interval between standard Minecraft ticks.
 const LEVEL_TICK_INTERVAL: Duration = Duration::from_millis(1000 / 20);
 
-#[derive(Debug)]
 pub struct LevelManager {
     /// Used to load world data from disk.
     chunks: Arc<ChunkManager>,

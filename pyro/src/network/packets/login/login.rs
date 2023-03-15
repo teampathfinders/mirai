@@ -8,7 +8,7 @@ use crate::crypto::{
 };
 use crate::network::packets::ConnectedPacket;
 use util::Deserialize;
-use util::{bail, nvassert};
+use util::{bail, pyassert};
 use util::{Error, Result};
 use util::bytes::SharedBuffer;
 use crate::network::Skin;
@@ -60,7 +60,7 @@ impl ConnectedPacket for Login {
     const ID: u32 = 0x01;
 }
 
-impl Deserialize for Login {
+impl Deserialize<'_> for Login {
     fn deserialize(mut buffer: SharedBuffer) -> Result<Self> {
         buffer.advance(4); // Skip protocol version, use the one in RequestNetworkSettings instead.
         buffer.read_var::<u32>()?;

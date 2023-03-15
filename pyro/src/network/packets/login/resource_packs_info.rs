@@ -4,7 +4,7 @@ use std::fmt::Write;
 
 use crate::network::packets::ConnectedPacket;
 use util::{Serialize};
-use util::bytes::VarString;
+use util::bytes::{BinaryWriter, MutableBuffer, VarString};
 use util::Result;
 
 /// Behavior pack information.
@@ -97,7 +97,7 @@ pub struct ResourcePacksInfo<'a> {
     pub resource_info: &'a [ResourcePack],
 }
 
-impl ConnectedPacket for ResourcePacksInfo<'_> {
+impl<'a> ConnectedPacket for ResourcePacksInfo<'a> {
     const ID: u32 = 0x06;
 
     fn serialized_size(&self) -> usize {
@@ -111,13 +111,13 @@ impl ConnectedPacket for ResourcePacksInfo<'_> {
     }
 }
 
-impl Serialize for ResourcePacksInfo<'_> {
-    fn serialize(&self, buffer: &mut OwnedBuffer) {
+impl<'a> Serialize for ResourcePacksInfo<'a> {
+    fn serialize(&self, buffer: &mut MutableBuffer) {
         buffer.write_bool(self.required);
         buffer.write_bool(self.scripting_enabled);
         buffer.write_bool(self.forcing_server_packs);
 
-        buffer.write_u16_be()(self.behavior_info.len() as u16);
+        buffer.write_u16_be(self.behavior_info.len() as u16);
         for pack in self.behavior_info {
             buffer.write_str(&pack.uuid);
             buffer.write_str(&pack.version);
@@ -128,7 +128,7 @@ impl Serialize for ResourcePacksInfo<'_> {
             buffer.write_bool(pack.has_scripts);
         }
 
-        buffer.write_u16_be()(self.resource_info.len() as u16);
+        buffer.write_u16_be(self.resource_info.len() as u16);
         for pack in self.resource_info {
             buffer.write_str(&pack.uuid);
             buffer.write_str(&pack.version);

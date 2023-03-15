@@ -41,20 +41,20 @@ impl TryFrom<u8> for ResourcePackStatus {
 /// Sent in response to [`ResourcePacksInfo`](super::ResourcePacksInfo) and
 /// [`ResourcePackStack`](super::ResourcePackStack).
 #[derive(Debug)]
-pub struct ResourcePackClientResponse<'a> {
+pub struct ResourcePackClientResponse {
     /// The response status.
     pub status: ResourcePackStatus,
     /// IDs of affected packs.
-    pub pack_ids: Vec<&'a str>,
+    pub pack_ids: Vec<String>,
 }
 
-impl<'a> ConnectedPacket for ResourcePackClientResponse<'a> {
+impl ConnectedPacket for ResourcePackClientResponse {
     /// Unique ID of this packet.
     const ID: u32 = 0x08;
 }
 
-impl<'a> Deserialize for ResourcePackClientResponse<'a> {
-    fn deserialize(mut buffer: SharedBuffer<'a>) -> Result<Self> {
+impl Deserialize<'_> for ResourcePackClientResponse {
+    fn deserialize(mut buffer: SharedBuffer) -> Result<Self> {
         let status = ResourcePackStatus::try_from(buffer.read_u8()?)?;
         let length = buffer.read_u16_be()?;
 
