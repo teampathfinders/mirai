@@ -212,8 +212,8 @@ impl<'a> BinRead for SharedBuffer<'a> {
         Ok(v)
     }
 
-    fn read_u16_str(&mut self) -> Result<&str> {
-        let len = self.read_u16_be()?;
+    fn read_str(&mut self) -> Result<&str> {
+        let len = self.read_var_u32()?;
         let data = self.take_n(len as usize)?;
 
         Ok(std::str::from_utf8(data)?)
@@ -378,5 +378,15 @@ mod test {
         for x in o {
             assert_eq!(buf.read_i16_be().unwrap(), x);
         }
+    }
+
+    #[test]
+    fn test_read_str() {
+        let o = "Hello, World!";
+        let s: &[u8] = &[13, 72, 101, 108, 108, 111, 44, 32, 87, 111, 114, 108, 100, 33];
+        let mut buf = SharedBuffer::from(s);
+
+        assert_eq!(buf.read_str().unwrap(), o);
+        assert!(buf.is_empty());
     }
 }

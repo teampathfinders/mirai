@@ -1,12 +1,12 @@
 use crate::Result;
 
-mod from_bytes;
+mod read;
 mod mutable;
 mod shared;
 mod to_bytes;
 mod varint;
 
-pub use from_bytes::*;
+pub use read::*;
 pub use mutable::*;
 pub use shared::*;
 pub use to_bytes::*;

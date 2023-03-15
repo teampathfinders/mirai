@@ -39,7 +39,7 @@ impl<'de> Deserializer<'de> {
     #[inline]
     pub(crate) fn from_bytes(input: &'de [u8], flavor: Flavor) -> Self {
         let mut input = SharedBuffer::from(input);
-        assert_eq!(input.read_be::<u8>().unwrap(), FieldType::Compound as u8);
+        assert_eq!(input.read_u8().unwrap(), FieldType::Compound as u8);
 
         let mut de = Deserializer {
             input,
@@ -70,10 +70,10 @@ impl<'de> Deserializer<'de> {
     #[inline]
     fn deserialize_raw_str(&mut self) -> Result<&str> {
         let len = match self.flavor {
-            Flavor::BigEndian => self.input.read_be::<u16>(),
-            Flavor::LittleEndian => self.input.read_le::<u16>(),
-            Flavor::Network => todo!(),
-        }?;
+            Flavor::BigEndian => self.input.read_u16_be()? as u32,
+            Flavor::LittleEndian => self.input.read_u16_le()? as u32,
+            Flavor::Network => self.input.read_var_u32()?,
+        };
 
         let data = self.input.take_n(len as usize)?;
         let str = std::str::from_utf8(data)?;
@@ -157,7 +157,7 @@ impl<'de, 'a> de::Deserializer<'de> for &'a mut Deserializer<'de> {
     {
         is_ty!(Byte, self.next_ty);
 
-        let n = self.input.read_be::<bool>()?;
+        let n = self.input.read_bool()?;
         visitor.visit_bool(n)
     }
 
@@ -168,7 +168,7 @@ impl<'de, 'a> de::Deserializer<'de> for &'a mut Deserializer<'de> {
     {
         is_ty!(Byte, self.next_ty);
 
-        let n = self.input.read_be::<i8>()?;
+        let n = self.input.read_i8()?;
         visitor.visit_i8(n)
     }
 
@@ -180,9 +180,9 @@ impl<'de, 'a> de::Deserializer<'de> for &'a mut Deserializer<'de> {
         is_ty!(Short, self.next_ty);
 
         let n = match self.flavor {
-            Flavor::BigEndian => self.input.read_be::<i16>(),
+            Flavor::BigEndian => self.input.read_i16_be(),
             Flavor::LittleEndian | Flavor::Network => {
-                self.input.read_le::<i16>()
+                self.input.read_i16_le()
             }
         }?;
 
@@ -197,9 +197,9 @@ impl<'de, 'a> de::Deserializer<'de> for &'a mut Deserializer<'de> {
         is_ty!(Int, self.next_ty);
 
         let n = match self.flavor {
-            Flavor::BigEndian => self.input.read_be::<i32>(),
+            Flavor::BigEndian => self.input.read_i32_be(),
             Flavor::LittleEndian | Flavor::Network => {
-                self.input.read_le::<i32>()
+                self.input.read_i32_le()
             }
         }?;
 
@@ -214,9 +214,9 @@ impl<'de, 'a> de::Deserializer<'de> for &'a mut Deserializer<'de> {
         is_ty!(Long, self.next_ty);
 
         let n = match self.flavor {
-            Flavor::BigEndian => self.input.read_be::<i64>(),
+            Flavor::BigEndian => self.input.read_i64_be(),
             Flavor::LittleEndian | Flavor::Network => {
-                self.input.read_le::<i64>()
+                self.input.read_i64_le()
             }
         }?;
 
@@ -259,8 +259,8 @@ impl<'de, 'a> de::Deserializer<'de> for &'a mut Deserializer<'de> {
         is_ty!(Float, self.next_ty);
 
         let n = match self.flavor {
-            Flavor::BigEndian => self.input.read_be::<f32>(),
-            _ => self.input.read_le::<f32>(),
+            Flavor::BigEndian => self.input.read_f32_be(),
+            _ => self.input.read_f32_le(),
         }?;
 
         visitor.visit_f32(n)
@@ -274,8 +274,8 @@ impl<'de, 'a> de::Deserializer<'de> for &'a mut Deserializer<'de> {
         is_ty!(Double, self.next_ty);
 
         let n = match self.flavor {
-            Flavor::BigEndian => self.input.read_be::<f64>(),
-            _ => self.input.read_le::<f64>(),
+            Flavor::BigEndian => self.input.read_f64_be(),
+            _ => self.input.read_f64_le(),
         }?;
 
         visitor.visit_f64(n)
@@ -297,11 +297,9 @@ impl<'de, 'a> de::Deserializer<'de> for &'a mut Deserializer<'de> {
         V: Visitor<'de>,
     {
         let len = match self.flavor {
-            Flavor::BigEndian => self.input.read_be::<u16>()?,
-            Flavor::LittleEndian => self.input.read_le::<u16>()?,
-            Flavor::Network => {
-                todo!();
-            }
+            Flavor::BigEndian => self.input.read_u16_be()? as u32,
+            Flavor::LittleEndian => self.input.read_u16_le()? as u32,
+            Flavor::Network => self.input.read_var_u32()?
         };
 
         let data = self.input.take_n(len as usize)?;
@@ -318,11 +316,9 @@ impl<'de, 'a> de::Deserializer<'de> for &'a mut Deserializer<'de> {
         is_ty!(String, self.next_ty);
 
         let len = match self.flavor {
-            Flavor::BigEndian => self.input.read_be::<u16>()?,
-            Flavor::LittleEndian => self.input.read_le::<u16>()?,
-            Flavor::Network => {
-                todo!();
-            }
+            Flavor::BigEndian => self.input.read_u16_be()? as u32,
+            Flavor::LittleEndian => self.input.read_u16_le()? as u32,
+            Flavor::Network => self.input.read_var_u32()?
         };
 
         let data = self.input.take_n(len as usize)?;
@@ -402,10 +398,10 @@ impl<'de, 'a> de::Deserializer<'de> for &'a mut Deserializer<'de> {
             FieldType::ByteArray => FieldType::Byte,
             FieldType::IntArray => FieldType::Int,
             FieldType::LongArray => FieldType::Long,
-            _ => FieldType::try_from(self.input.read_le::<u8>()?)?,
+            _ => FieldType::try_from(self.input.read_u8()?)?,
         };
 
-        let de = SeqDeserializer::new(self, ty, len as i32)?;
+        let de = SeqDeserializer::new(self, ty, len as u32)?;
         visitor.visit_seq(de)
     }
 
@@ -478,7 +474,7 @@ impl<'de, 'a> de::Deserializer<'de> for &'a mut Deserializer<'de> {
 struct SeqDeserializer<'a, 'de: 'a> {
     de: &'a mut Deserializer<'de>,
     ty: FieldType,
-    remaining: i32,
+    remaining: u32,
 }
 
 impl<'de, 'a> SeqDeserializer<'a, 'de> {
@@ -486,7 +482,7 @@ impl<'de, 'a> SeqDeserializer<'a, 'de> {
     pub fn new(
         de: &'a mut Deserializer<'de>,
         ty: FieldType,
-        expected_len: i32,
+        expected_len: u32,
     ) -> Result<Self> {
         debug_assert_ne!(ty, FieldType::End);
 
@@ -494,9 +490,9 @@ impl<'de, 'a> SeqDeserializer<'a, 'de> {
 
         de.next_ty = ty;
         let remaining = match de.flavor {
-            Flavor::BigEndian => de.input.read_be::<i32>()?,
-            Flavor::LittleEndian => de.input.read_le::<i32>()?,
-            Flavor::Network => todo!(),
+            Flavor::BigEndian => de.input.read_i32_be()? as u32,
+            Flavor::LittleEndian => de.input.read_i32_le()? as u32,
+            Flavor::Network => de.input.read_var_u32()?,
         };
 
         if expected_len != 0 && expected_len != remaining {
@@ -547,7 +543,7 @@ impl<'de, 'a> MapAccess<'de> for MapDeserializer<'a, 'de> {
         K: DeserializeSeed<'de>,
     {
         self.de.is_key = true;
-        self.de.next_ty = FieldType::try_from(self.de.input.read_be::<u8>()?)?;
+        self.de.next_ty = FieldType::try_from(self.de.input.read_u8()?)?;
 
         let r = if self.de.next_ty == FieldType::End {
             Ok(None)
@@ -648,7 +644,7 @@ mod test {
 
         dbg!(decoded);
     }
-
+    
     #[test]
     fn read_player_nan_value_nbt() {
         #[derive(Deserialize, Debug, PartialEq)]

@@ -16,6 +16,8 @@ macro_rules! declare_read_fns {
 }
 
 pub trait BinRead {
+    declare_read_fns!(u16, i16, u32, i32, u64, i64, u128, i128, f32, f64);
+
     fn take_n(&mut self, n: usize) -> Result<&[u8]>;
     fn take_const<const N: usize>(&mut self) -> Result<[u8; N]>;
     fn peek(&self, n: usize) -> Result<&[u8]>;
@@ -25,12 +27,10 @@ pub trait BinRead {
     fn read_u8(&mut self) -> Result<u8>;
     fn read_i8(&mut self) -> Result<i8>;
 
-    declare_read_fns!(u16, i16, u32, i32, u64, i64, u128, i128, f32, f64);
-
     fn read_var_u32(&mut self) -> Result<u32>;
     fn read_var_u64(&mut self) -> Result<u64>;
     fn read_var_i32(&mut self) -> Result<i32>;
     fn read_var_i64(&mut self) -> Result<i64>;
 
-    fn read_u16_str(&mut self) -> Result<&str>;
+    fn read_str(&mut self) -> Result<&str>;
 }

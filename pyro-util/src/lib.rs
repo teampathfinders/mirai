@@ -7,9 +7,6 @@ macro_rules! glob_export {
     };
 }
 
-#[cfg(test)]
-mod test;
-
 pub mod bytes;
 mod error;
 mod extensions;
