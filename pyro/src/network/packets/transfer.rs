@@ -1,6 +1,6 @@
 use std::net::SocketAddr;
 
-use bytes::{BufMut, BytesMut, Bytes};
+
 use util::{Result};
 use util::bytes::{BinaryWriter, MutableBuffer, size_of_varint};
 

@@ -1,4 +1,4 @@
-use bytes::{Bytes, BytesMut};
+
 use util::{bail, Error, Result};
 
 use util::{Deserialize, Serialize};
@@ -54,7 +54,7 @@ impl Serialize for SetDifficulty {
 
 impl Deserialize for SetDifficulty {
     fn deserialize(mut buffer: SharedBuffer) -> Result<Self> {
-        let difficulty = Difficulty::try_from(buffer.get_var_i32()?)?;
+        let difficulty = Difficulty::try_from(buffer.read_var_i32()?)?;
 
         Ok(Self { difficulty })
     }

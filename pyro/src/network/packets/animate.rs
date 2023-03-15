@@ -1,4 +1,4 @@
-use bytes::{Buf, BytesMut, Bytes};
+
 use util::{bail, Error, Result};
 
 use util::Deserialize;
@@ -53,9 +53,9 @@ impl ConnectedPacket for Animate {
 }
 
 impl Deserialize for Animate {
-    fn deserialize(mut buffer: Bytes) -> Result<Self> {
-        let action_type = AnimateAction::try_from(buffer.get_var_i32()?)?;
-        let runtime_id = buffer.get_var_u64()?;
+    fn deserialize(mut buffer: SharedBuffer) -> Result<Self> {
+        let action_type = AnimateAction::try_from(buffer.read_var_i32()?)?;
+        let runtime_id = buffer.read_var_u64()?;
 
         let rowing_time = if action_type.is_rowing() {
             buffer.get_f32()

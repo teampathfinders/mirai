@@ -1,4 +1,4 @@
-use bytes::{BytesMut, Bytes};
+
 use util::{Result};
 use util::bytes::{BinaryWriter, MutableBuffer, VarInt};
 

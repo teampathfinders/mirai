@@ -1,7 +1,7 @@
-use bytes::Bytes;
-use bytes::{Buf, BytesMut};
+
+
 use tokio::io::ReadBuf;
-use util::bytes::SharedBuffer;
+use util::bytes::{BinaryReader, SharedBuffer};
 
 use crate::network::packets::ConnectedPacket;
 use util::Deserialize;
@@ -20,7 +20,7 @@ impl ConnectedPacket for CacheStatus {
 
 impl Deserialize for CacheStatus {
     fn deserialize(mut buffer: SharedBuffer) -> Result<Self> {
-        let support = buffer.read_le::<bool>()?;
+        let support = buffer.read_bool()?;
 
         Ok(Self { supports_cache: support })
     }

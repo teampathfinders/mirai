@@ -1,7 +1,7 @@
 use std::io::Read;
 
-use bytes::Bytes;
-use bytes::{Buf, BufMut, BytesMut};
+
+
 
 use crate::network::raknet::Reliability;
 use util::nvassert;
@@ -167,7 +167,7 @@ impl<'a> Frame<'a> {
     }
 
     /// Encodes the frame.
-    fn serialize(&self, buffer: &mut BytesMut) {
+    fn serialize(&self, buffer: &mut MutableBuffer) {
         let mut flags = (self.reliability as u8) << 5;
         if self.is_compound {
             flags |= COMPOUND_BIT_FLAG;

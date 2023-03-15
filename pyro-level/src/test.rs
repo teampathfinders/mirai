@@ -50,7 +50,7 @@ fn database_test() {
         failed as f64 / (count + failed) as f64
     );
 
-    // let mut buffer = BytesMut::new();
+    // let mut buffer = OwnedBuffer::new();
     // DatabaseKey {
     //     x: -2,
     //     z: -1,

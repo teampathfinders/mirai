@@ -2,7 +2,6 @@ use std::io::{Read, Write};
 use std::net::{IpAddr, SocketAddr};
 
 use base64::Engine;
-use bytes::{Buf, BufMut, BytesMut};
 use flate2::read::DeflateDecoder;
 use tokio::net::windows::named_pipe::PipeMode::Byte;
 
@@ -20,7 +19,7 @@ fn read_write_header() {
         target_subclient: 2,
     };
 
-    let mut buffer = BytesMut::new();
+    let mut buffer = OwnedBuffer::new();
     header.serialize(&mut buffer);
 
     assert_eq!(Header::deserialize(&mut buffer.freeze()).unwrap(), header);

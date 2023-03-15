@@ -1,14 +1,15 @@
-use bytes::Bytes;
-use bytes::{BufMut, BytesMut};
+
+
 use dashmap::DashMap;
+use util::bytes::SharedBuffer;
 
 use crate::network::raknet::Frame;
 use crate::network::raknet::Reliability;
 
 /// Keeps track of packet fragments, merging them when all fragments have been received.
 #[derive(Debug, Default)]
-pub struct CompoundCollector {
-    compounds: DashMap<u16, Vec<Bytes>>,
+pub struct CompoundCollector<'a> {
+    compounds: DashMap<u16, Vec<SharedBuffer<'a>>>,
 }
 
 impl CompoundCollector {
@@ -28,7 +29,7 @@ impl CompoundCollector {
                     let mut vec =
                         Vec::with_capacity(frame.compound_size as usize);
 
-                    vec.resize(frame.compound_size as usize, Bytes::new());
+                    vec.resize(frame.compound_size as usize, SharedBuffer::new());
                     vec
                 });
 
@@ -40,7 +41,7 @@ impl CompoundCollector {
             }
 
             fragments[frame.compound_index as usize] = frame.body.clone();
-            !fragments.iter().any(Bytes::is_empty)
+            !fragments.iter().any(SharedBuffer::is_empty)
         };
 
         if is_completed {
@@ -52,7 +53,7 @@ impl CompoundCollector {
             let fragments = &mut kv.1;
 
             // Merge all fragments
-            frame.body = Bytes::copy_from_slice(fragments.concat().as_slice());
+            frame.body = SharedBuffer::copy_from_slice(fragments.concat().as_slice());
 
             // Set compound tag to false to make sure the completed packet isn't added into the
             // collector again.

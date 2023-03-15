@@ -1,6 +1,3 @@
-use bytes::Bytes;
-use bytes::{BufMut, BytesMut};
-
 use crate::network::raknet::{OFFLINE_MESSAGE_DATA, RAKNET_VERSION};
 use util::Result;
 use util::Serialize;
@@ -27,7 +24,7 @@ impl IncompatibleProtocol {
 }
 
 impl Serialize for IncompatibleProtocol {
-    fn serialize(&self, buffer: &mut BytesMut) {
+    fn serialize(&self, buffer: &mut OwnedBuffer) {
         buffer.write_u8(Self::ID);
         buffer.write_u8(RAKNET_VERSION);
         buffer.put(OFFLINE_MESSAGE_DATA);

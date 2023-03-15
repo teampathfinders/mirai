@@ -1,4 +1,4 @@
-use bytes::{BufMut, BytesMut, Bytes};
+
 use util::{Result, Vector, Vector3f, Vector3i};
 use util::bytes::{BinaryWriter, MutableBuffer, size_of_varint};
 

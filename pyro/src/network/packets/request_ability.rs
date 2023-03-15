@@ -1,4 +1,4 @@
-use bytes::{Buf, BytesMut, Bytes};
+
 use util::{bail, Error, Result};
 use util::bytes::{BinaryReader, SharedBuffer};
 

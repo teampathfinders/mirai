@@ -3,7 +3,6 @@ use std::io::Read;
 use std::sync::atomic::{AtomicU16, AtomicU32, AtomicU64, Ordering};
 
 use base64::Engine;
-use bytes::{BufMut, Bytes, BytesMut};
 use ctr::cipher::KeyIvInit;
 use ctr::cipher::{StreamCipher, StreamCipherSeekCore};
 use flate2::read::DeflateDecoder;
@@ -158,7 +157,7 @@ impl Encryptor {
     ///
     /// If the checksum does not match, a [`BadPacket`](util::ErrorKind::Malformed) error is returned.
     /// The client must be disconnected if this fails, because the data has probably been tampered with.
-    pub fn decrypt(&self, mut buffer: Bytes) -> Result<Bytes> {
+    pub fn decrypt(&self, mut buffer: SharedBuffer) -> Result<SharedBuffer> {
         if buffer.len() < 9 {
             bail!(
                 Malformed,
@@ -167,7 +166,7 @@ impl Encryptor {
             );
         }
 
-        let mut decryption_output = BytesMut::with_capacity(buffer.len());
+        let mut decryption_output = OwnedBuffer::with_capacity(buffer.len());
         decryption_output.resize(buffer.len(), 0x00);
 
         self.cipher_decrypt
@@ -193,14 +192,14 @@ impl Encryptor {
     }
 
     /// Encrypts a packet and appends the computed checksum.
-    pub fn encrypt(&self, mut buffer: Bytes) -> Result<Bytes> {
+    pub fn encrypt(&self, mut buffer: SharedBuffer) -> Result<SharedBuffer> {
         let counter = self.send_counter.fetch_add(1, Ordering::SeqCst);
         let checksum = self.compute_checksum(buffer.as_ref(), counter);
 
         let mut buffer = [buffer.as_ref(), &checksum].concat();
         self.cipher_encrypt.lock().apply_keystream(buffer.as_mut());
 
-        Ok(Bytes::from(buffer))
+        Ok(SharedBuffer::from(buffer))
     }
 
     /// Returns the packet send counter.

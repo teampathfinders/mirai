@@ -1,5 +1,5 @@
-use bytes::Bytes;
-use bytes::{Buf, BytesMut};
+
+
 
 use util::nvassert;
 use util::Deserialize;
@@ -19,7 +19,7 @@ impl ConnectedPing {
 }
 
 impl Deserialize for ConnectedPing {
-    fn deserialize(mut buffer: Bytes) -> Result<Self> {
+    fn deserialize(mut buffer: SharedBuffer) -> Result<Self> {
         nvassert!(buffer.get_u8() == Self::ID);
 
         let time = buffer.get_i64();

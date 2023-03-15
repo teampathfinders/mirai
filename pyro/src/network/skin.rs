@@ -1,12 +1,9 @@
-use std::fmt::Write;
-use std::io::Write;
-use bytes::{Buf, BufMut, BytesMut, Bytes};
+
 use util::{
     bail, Serialize, Error, Result
 };
 use serde::Deserialize;
 use serde_repr::Deserialize_repr;
-use tokio::io::AsyncWriteExt;
 use util::bytes::{BinaryReader, BinaryWriter, MutableBuffer, SharedBuffer};
 
 /// Size of arms of a skin.
@@ -141,9 +138,9 @@ impl PersonaPiece {
 
     fn deserialize(buffer: &mut SharedBuffer) -> Result<Self> {
         let piece_id = buffer.read_str()?;
-        let piece_type = PersonaPieceType::try_from(buffer.read_str()?.as_str())?;
+        let piece_type = PersonaPieceType::try_from(buffer.read_str()?)?;
         let pack_id = buffer.read_str()?;
-        let default = buffer.get_bool();
+        let default = buffer.read_bool();
         let product_id = buffer.read_str()?;
 
         Ok(Self {
@@ -253,7 +250,7 @@ pub struct SkinAnimation {
     pub image_height: u32,
     /// Image data.
     #[serde(rename = "Image", with = "base64")]
-    pub image_data: Bytes,
+    pub image_data: SharedBuffer,
     /// Animation type.
     #[serde(rename = "Type")]
     pub animation_type: SkinAnimationType,
@@ -316,7 +313,7 @@ pub struct Skin {
     pub image_height: u32,
     /// Skin image data.
     #[serde(rename = "SkinData", with = "base64")]
-    pub image_data: Bytes,
+    pub image_data: SharedBuffer,
     /// Animations that the skin possesses.
     #[serde(rename = "AnimatedImageData")]
     pub animations: Vec<SkinAnimation>,
@@ -328,7 +325,7 @@ pub struct Skin {
     pub cape_image_height: u32,
     /// Cape image data
     #[serde(rename = "CapeData", with = "base64")]
-    pub cape_image_data: Bytes,
+    pub cape_image_data: SharedBuffer,
     /// JSON containing information like bones.
     #[serde(rename = "SkinGeometryData", with = "base64_string")]
     pub geometry: String,
@@ -374,16 +371,15 @@ pub struct Skin {
 /// Serde deserializer for raw base64.
 mod base64 {
     use base64::Engine;
-    use bytes::Bytes;
     use serde::{Deserializer, Deserialize};
 
     const ENGINE: base64::engine::GeneralPurpose = base64::engine::general_purpose::STANDARD;
 
-    pub fn deserialize<'de, D: Deserializer<'de>>(d: D) -> Result<Bytes, D::Error> {
+    pub fn deserialize<'de, D: Deserializer<'de>>(d: D) -> Result<SharedBuffer, D::Error> {
         let base64 = String::deserialize(d)?;
 
         let bytes = ENGINE.decode(base64).map_err(serde::de::Error::custom)?;
-        Ok(Bytes::from(bytes))
+        Ok(SharedBuffer::from(bytes))
     }
 }
 

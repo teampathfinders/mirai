@@ -1,6 +1,6 @@
 use std::collections::{HashMap, HashSet};
 
-use bytes::{BufMut, BytesMut, Bytes};
+
 use util::{bail, Result};
 
 use util::Serialize;
@@ -30,7 +30,7 @@ impl ConnectedPacket for AvailableCommands<'_> {
 }
 
 impl Serialize for AvailableCommands<'_> {
-    fn serialize(&self, buffer: &mut BytesMut) {
+    fn serialize(&self, buffer: &mut OwnedBuffer) {
         let mut value_indices = HashMap::new();
         let mut values = Vec::new();
         for command in self.commands {

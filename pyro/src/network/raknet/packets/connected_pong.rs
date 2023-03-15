@@ -1,5 +1,5 @@
-use bytes::Bytes;
-use bytes::{BufMut, BytesMut};
+
+
 
 use util::Serialize;
 use util::Result;
@@ -23,7 +23,7 @@ impl ConnectedPong {
 }
 
 impl Serialize for ConnectedPong {
-    fn serialize(&self, buffer: &mut BytesMut) {
+    fn serialize(&self, buffer: &mut OwnedBuffer) {
         buffer.write_u8(Self::ID);
         buffer.write_i64_be(self.ping_time);
         buffer.write_i64_be(self.pong_time);

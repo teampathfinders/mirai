@@ -1,4 +1,4 @@
-use bytes::{BufMut, BytesMut, Bytes};
+
 use uuid::Uuid;
 use util::{Deserialize, Serialize, Result};
 use crate::network::packets::{ConnectedPacket};
@@ -35,7 +35,7 @@ impl ConnectedPacket for CommandOutput<'_> {
 }
 
 impl Serialize for CommandOutput<'_> {
-    fn serialize(&self, buffer: &mut BytesMut) {
+    fn serialize(&self, buffer: &mut OwnedBuffer) {
         buffer.write_var_u32(self.origin as u32);
         buffer.put_uuid(&Uuid::nil());
         buffer.write_str(self.request_id);

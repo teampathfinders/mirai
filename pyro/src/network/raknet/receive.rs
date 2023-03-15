@@ -3,7 +3,6 @@ use std::sync::atomic::Ordering;
 use std::time::Instant;
 
 use async_recursion::async_recursion;
-use bytes::{Buf, Bytes, BytesMut};
 
 use crate::config::SERVER_CONFIG;
 use crate::network::header::Header;
@@ -35,7 +34,7 @@ impl Session {
     ///
     /// If a packet is an ACK or NACK type, it will be responded to accordingly (using [`Session::handle_ack`] and [`Session::handle_nack`]).
     /// Frame batches are processed by [`Session::handle_frame_batch`].
-    pub async fn process_raw_packet(&self, pk: SharedBuffer) -> Result<bool> {
+    pub async fn process_raw_packet<'a>(&'a self, pk: SharedBuffer<'a>) -> Result<bool> {
         *self.raknet.last_update.write() = Instant::now();
 
         if pk.is_empty() {
@@ -195,7 +194,7 @@ impl Session {
                     reader.read_to_end(&mut decompressed)?;
                     // .context("Failed to decompress packet using Deflate")?;
 
-                    Bytes::copy_from_slice(decompressed.as_slice())
+                    SharedBuffer::copy_from_slice(decompressed.as_slice())
                 }
             };
 

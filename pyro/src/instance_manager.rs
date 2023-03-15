@@ -3,7 +3,6 @@ use std::net::{Ipv4Addr, Ipv6Addr, SocketAddrV4};
 use std::sync::Arc;
 use std::time::{Duration, SystemTime};
 
-use bytes::{Bytes, BytesMut};
 use parking_lot::RwLock;
 use rand::Rng;
 use tokio::net::UdpSocket;
@@ -221,7 +220,7 @@ impl InstanceManager {
         let ping = UnconnectedPing::deserialize(pk.buf)?;
         let pong = UnconnectedPong { time: ping.time, server_guid, metadata };
 
-        let mut serialized = BytesMut::with_capacity(pong.serialized_size());
+        let mut serialized = OwnedBuffer::with_capacity(pong.serialized_size());
         pong.serialize(&mut serialized);
 
         pk.buf = serialized.freeze();
@@ -237,7 +236,7 @@ impl InstanceManager {
     ) -> Result<BufPacket> {
         let request = OpenConnectionRequest1::deserialize(pk.buf)?;
 
-        let mut serialized = BytesMut::new();
+        let mut serialized = OwnedBuffer::new();
         if request.protocol_version != RAKNET_VERSION {
             let reply = IncompatibleProtocol { server_guid };
 
@@ -272,7 +271,8 @@ impl InstanceManager {
             client_address: pk.addr,
         };
 
-        let mut serialized = BytesMut::with_capacity(reply.serialized_size());
+        let mut serialized =
+            OwnedBuffer::with_capacity(reply.serialized_size());
         reply.serialize(&mut serialized);
 
         pk.buf = serialized.freeze();
@@ -321,7 +321,7 @@ impl InstanceManager {
             };
 
             let mut pk = BufPacket {
-                buf: Bytes::copy_from_slice(&recv_buf[..n]),
+                buf: SharedBuffer::copy_from_slice(&recv_buf[..n]),
                 addr: address,
             };
 

@@ -1,4 +1,4 @@
-use bytes::{BytesMut, Bytes};
+
 use util::{bail, Error, Result};
 
 use util::{Deserialize, Serialize};

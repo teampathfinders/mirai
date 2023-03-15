@@ -1,6 +1,3 @@
-use bytes::Bytes;
-use bytes::{BufMut, BytesMut};
-
 use crate::network::raknet::OFFLINE_MESSAGE_DATA;
 use util::Result;
 use util::Serialize;
@@ -26,7 +23,7 @@ impl OpenConnectionReply1 {
 }
 
 impl Serialize for OpenConnectionReply1 {
-    fn serialize(&self, buffer: &mut BytesMut) {
+    fn serialize(&self, buffer: &mut OwnedBuffer) {
         buffer.write_u8(Self::ID);
         buffer.put(OFFLINE_MESSAGE_DATA);
         buffer.write_be::<u64>()(self.server_guid);

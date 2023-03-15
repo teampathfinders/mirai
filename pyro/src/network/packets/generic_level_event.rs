@@ -1,4 +1,4 @@
-use bytes::{BytesMut, Bytes};
+
 use util::{Deserialize, Result};
 use util::bytes::{BinaryReader, SharedBuffer};
 use crate::network::packets::ConnectedPacket;
@@ -6,7 +6,7 @@ use crate::network::packets::ConnectedPacket;
 #[derive(Debug, Clone)]
 pub struct GenericLevelEvent {
     pub event_id: i32,
-    pub data: nbt::Tag
+    // pub data: nbt::Tag
 }
 
 impl ConnectedPacket for GenericLevelEvent {
@@ -18,9 +18,10 @@ impl Deserialize for GenericLevelEvent {
         let event_id = buffer.read_var_i32()?;
         let data = nbt::from_le_bytes(&mut buffer)?;
 
-        Ok(Self {
-            event_id,
-            data
-        })
+        todo!();
+        // Ok(Self {
+        //     event_id,
+        //     data
+        // })
     }
 }

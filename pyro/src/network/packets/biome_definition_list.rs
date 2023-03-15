@@ -1,6 +1,4 @@
-use bytes::BufMut;
-use bytes::Bytes;
-use bytes::BytesMut;
+
 use util::Result;
 
 use util::Serialize;
@@ -22,7 +20,7 @@ impl ConnectedPacket for BiomeDefinitionList {
 }
 
 impl Serialize for BiomeDefinitionList {
-    fn serialize(&self, buffer: &mut BytesMut) {
+    fn serialize(&self, buffer: &mut OwnedBuffer) {
         buffer.put(DEFINITIONS);
     }
 }

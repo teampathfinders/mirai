@@ -2,7 +2,7 @@ use std::io::Write;
 use std::sync::atomic::Ordering;
 
 use async_recursion::async_recursion;
-use bytes::{Buf, BufMut, Bytes, BytesMut};
+
 use flate2::write::DeflateEncoder;
 use flate2::Compression;
 
@@ -44,7 +44,7 @@ impl Session {
     /// Sends a game packet with custom reliability and priority
     pub fn send_serialized(
         &self,
-        mut pk: Bytes,
+        mut pk: SharedBuffer,
         config: PacketConfig,
     ) -> Result<()> {
         let mut buffer = MutableBuffer::new();
@@ -70,7 +70,7 @@ impl Session {
 
                         writer.write_all(pk.as_ref())?;
                         pk =
-                            Bytes::copy_from_slice(writer.finish()?.as_slice());
+                            SharedBuffer::copy_from_slice(writer.finish()?.as_slice());
                     }
                 }
             }
@@ -188,7 +188,7 @@ impl Session {
         }
 
         let ack = Ack { records };
-        let mut serialized = BytesMut::with_capacity(ack.serialized_size());
+        let mut serialized = MutableBuffer::with_capacity(ack.serialized_size());
         ack.serialize(&mut serialized);
 
         self.raknet
@@ -201,7 +201,7 @@ impl Session {
 
     #[async_recursion]
     async fn send_raw_frames(&self, frames: Vec<Frame>) -> Result<()> {
-        let mut serialized = BytesMut::new();
+        let mut serialized = MutableBuffer::new();
 
         // Process fragments first to prevent sequence number duplication.
         for frame in &frames {
@@ -326,7 +326,7 @@ impl Session {
                 compound_index: i as u32,
                 compound_size: compound_size as u32,
                 compound_id,
-                body: Bytes::copy_from_slice(chunk),
+                body: SharedBuffer::copy_from_slice(chunk),
                 ..Default::default()
             };
 

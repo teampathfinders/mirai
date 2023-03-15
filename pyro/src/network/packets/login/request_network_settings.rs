@@ -1,5 +1,5 @@
-use bytes::Bytes;
-use bytes::{Buf, BytesMut};
+
+
 use util::bytes::SharedBuffer;
 
 use util::nvassert;
@@ -20,7 +20,7 @@ impl RequestNetworkSettings {
 
 impl Deserialize for RequestNetworkSettings {
     fn deserialize(mut buffer: SharedBuffer) -> Result<Self> {
-        let protocol_version = buffer.read_be::<u32>()?;
+        let protocol_version = buffer.read_u32_be()?;
 
         Ok(Self { protocol_version })
     }

@@ -1,6 +1,6 @@
 use std::num::NonZeroU64;
 
-use bytes::{Bytes, BytesMut};
+
 use util::{error, Serialize, Result};
 
 use crate::network::{
@@ -20,7 +20,7 @@ pub struct BroadcastPacket {
     ///
     /// This must be an already serialized packet (use the [`Serialize`] trait)
     /// *without* a header.
-    pub content: Bytes,
+    pub content: SharedBuffer,
 }
 
 impl BroadcastPacket {

@@ -1,7 +1,9 @@
 use std::{any::TypeId, fmt};
+use std::fmt::Write;
 
-use bytes::{BytesMut, Bytes};
-use util::{Serialize, Result, WriteExtensions, size_of_varint, bail, VarString, VarInt};
+
+use util::{Serialize, Result, bail};
+use util::bytes::{BinaryWriter, MutableBuffer, size_of_varint, VarInt, VarString};
 
 use crate::{command::ParsedArgument, network::packets::ConnectedPacket};
 
@@ -246,7 +248,7 @@ impl GameRule {
         }
     }
 
-    pub fn serialize(&self, buffer: &mut BytesMut) {
+    pub fn serialize(&self, buffer: &mut MutableBuffer) {
         buffer.write_str(self.name());
         buffer.write_bool(true); // Player can modify. Doesn't seem to do anything.
 
@@ -347,7 +349,7 @@ impl ConnectedPacket for GameRulesChanged<'_> {
 }
 
 impl Serialize for GameRulesChanged<'_> {
-    fn serialize(&self, buffer: &mut BytesMut) {
+    fn serialize(&self, buffer: &mut MutableBuffer) {
         buffer.write_var_u32(self.game_rules.len() as u32);
         for game_rule in self.game_rules {
             game_rule.serialize(buffer);

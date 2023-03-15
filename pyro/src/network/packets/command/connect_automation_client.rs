@@ -1,4 +1,4 @@
-use bytes::{BytesMut, Bytes};
+
 use util::{Serialize, Result};
 use util::bytes::size_of_varint;
 
@@ -20,7 +20,7 @@ impl ConnectedPacket for ConnectAutomationClient<'_> {
 }
 
 impl Serialize for ConnectAutomationClient<'_> {
-    fn serialize(&self, buffer: &mut BytesMut) {
+    fn serialize(&self, buffer: &mut OwnedBuffer) {
         buffer.write_str(self.server_uri);
     }
 }

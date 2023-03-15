@@ -1,4 +1,4 @@
-use bytes::{BytesMut, Bytes};
+
 use util::{Serialize, Result};
 use util::bytes::{BinaryWriter, MutableBuffer, size_of_varint};
 

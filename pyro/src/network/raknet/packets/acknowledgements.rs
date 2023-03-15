@@ -1,8 +1,5 @@
 use std::ops::Range;
 
-use bytes::Bytes;
-use bytes::{Buf, BufMut, BytesMut};
-
 use util::nvassert;
 use util::Result;
 use util::{Deserialize, Serialize};
@@ -17,7 +14,7 @@ pub enum AckRecord {
 }
 
 /// Encodes a list of acknowledgement records.
-fn encode_records(buffer: &mut BytesMut, records: &[AckRecord]) {
+fn encode_records(buffer: &mut OwnedBuffer, records: &[AckRecord]) {
     buffer.put_i16()(records.len() as i16);
     for record in records {
         match record {
@@ -35,7 +32,7 @@ fn encode_records(buffer: &mut BytesMut, records: &[AckRecord]) {
 }
 
 /// Decodes a list of acknowledgement records.
-fn decode_records(mut buffer: Bytes) -> Vec<AckRecord> {
+fn decode_records(mut buffer: SharedBuffer) -> Vec<AckRecord> {
     let record_count = buffer.get_u16();
     let mut records = Vec::with_capacity(record_count as usize);
 
@@ -75,7 +72,7 @@ impl Ack {
 }
 
 impl Serialize for Ack {
-    fn serialize(&self, buffer: &mut BytesMut) {
+    fn serialize(&self, buffer: &mut OwnedBuffer) {
         buffer.write_u8(Self::ID);
 
         encode_records(buffer, &self.records)
@@ -83,7 +80,7 @@ impl Serialize for Ack {
 }
 
 impl Deserialize for Ack {
-    fn deserialize(mut buffer: Bytes) -> Result<Self> {
+    fn deserialize(mut buffer: SharedBuffer) -> Result<Self> {
         nvassert!(buffer.get_u8() == Self::ID);
 
         let records = decode_records(buffer);
@@ -114,7 +111,7 @@ impl Nak {
 }
 
 impl Serialize for Nak {
-    fn serialize(&self, buffer: &mut BytesMut) {
+    fn serialize(&self, buffer: &mut OwnedBuffer) {
         buffer.write_u8(Self::ID);
 
         encode_records(buffer, &self.records)
@@ -122,7 +119,7 @@ impl Serialize for Nak {
 }
 
 impl Deserialize for Nak {
-    fn deserialize(mut buffer: Bytes) -> Result<Self> {
+    fn deserialize(mut buffer: SharedBuffer) -> Result<Self> {
         nvassert!(buffer.get_u8() == Self::ID);
 
         let records = decode_records(buffer);

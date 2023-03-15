@@ -7,7 +7,7 @@ use std::sync::{Arc, Weak};
 use std::time::{Duration, Instant};
 
 use aes::cipher::typenum::NonZero;
-use bytes::{Bytes, BytesMut};
+
 use parking_lot::{Mutex, RwLock, RwLockReadGuard};
 use tokio::net::UdpSocket;
 use tokio::sync::{broadcast, mpsc, OnceCell};
@@ -86,7 +86,7 @@ impl Session {
     /// Creates a new session.
     pub fn new(
         broadcast: broadcast::Sender<BroadcastPacket>,
-        mut receiver: mpsc::Receiver<Bytes>,
+        mut receiver: mpsc::Receiver<SharedBuffer>,
         level_manager: Arc<LevelManager>,
         ipv4_socket: Arc<UdpSocket>,
         address: SocketAddr,

@@ -1,6 +1,6 @@
 use std::net::SocketAddr;
 
-use bytes::{Bytes, BytesMut};
+
 
 use crate::network::raknet::CONNECTED_PEER_BIT_FLAG;
 
@@ -8,7 +8,7 @@ use crate::network::raknet::CONNECTED_PEER_BIT_FLAG;
 #[derive(Debug)]
 pub struct BufPacket {
     /// Data contained in the packet
-    pub buf: Bytes,
+    pub buf: SharedBuffer,
     /// IP address of the sender or recipient
     pub addr: SocketAddr,
 }

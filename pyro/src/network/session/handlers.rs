@@ -2,7 +2,7 @@ use std::collections::HashMap;
 use std::net::{Ipv4Addr, SocketAddr, SocketAddrV4};
 use std::time::Duration;
 
-use bytes::{Bytes, BytesMut};
+
 use util::{
     bail, BlockPosition, Deserialize, Result, Vector3f, Vector3i, Vector4f,
 };
@@ -30,14 +30,14 @@ use crate::network::{
 };
 
 impl Session {
-    pub fn handle_settings_command(&self, pk: Bytes) -> Result<()> {
+    pub fn handle_settings_command(&self, pk: SharedBuffer) -> Result<()> {
         let request = SettingsCommand::deserialize(pk)?;
         tracing::info!("{request:?}");
 
         Ok(())
     }
 
-    pub fn handle_text_message(&self, pk: Bytes) -> Result<()> {
+    pub fn handle_text_message(&self, pk: SharedBuffer) -> Result<()> {
         let request = TextMessage::deserialize(pk)?;
         if request.message_type != MessageType::Chat {
             bail!(Malformed, "Client is only allowed to send chat messages, received {:?} instead", request.message_type)
@@ -48,25 +48,25 @@ impl Session {
         self.broadcast(request)
     }
 
-    pub fn handle_skin_update(&self, pk: Bytes) -> Result<()> {
+    pub fn handle_skin_update(&self, pk: SharedBuffer) -> Result<()> {
         let request = UpdateSkin::deserialize(pk)?;
         self.broadcast(request)
     }
 
-    pub fn handle_ability_request(&self, pk: Bytes) -> Result<()> {
+    pub fn handle_ability_request(&self, pk: SharedBuffer) -> Result<()> {
         let request = RequestAbility::deserialize(pk)?;
         tracing::info!("{request:?}");
 
         Ok(())
     }
 
-    pub fn handle_animation(&self, pk: Bytes) -> Result<()> {
+    pub fn handle_animation(&self, pk: SharedBuffer) -> Result<()> {
         let request = Animate::deserialize(pk)?;
 
         Ok(())
     }
 
-    pub fn handle_command_request(&self, pk: Bytes) -> Result<()> {
+    pub fn handle_command_request(&self, pk: SharedBuffer) -> Result<()> {
         let request = CommandRequest::deserialize(pk)?;
 
         let command_list = self.level_manager.get_commands();

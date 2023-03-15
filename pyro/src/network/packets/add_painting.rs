@@ -1,5 +1,5 @@
 use std::fmt::Write;
-use bytes::{BytesMut, Bytes};
+
 use util::{Result, Vector3f, Vector3i};
 use util::bytes::{BinaryWriter, MutableBuffer, size_of_varint};
 

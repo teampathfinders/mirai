@@ -1,9 +1,11 @@
 use crate::bail;
 use crate::bytes::{BinaryReader, VarInt};
 use paste::paste;
+use std::borrow::Borrow;
 use std::fmt::Debug;
 use std::io::Read;
-use std::ops::{Deref, Index};
+use std::marker::PhantomData;
+use std::ops::{Deref, DerefMut, Index};
 use std::{cmp, fmt, io};
 
 use crate::Result;
@@ -26,9 +28,19 @@ macro_rules! define_read_fns {
     }
 }
 
+pub struct OwnedBuffer<'a>(Vec<u8>, &'a PhantomData<()>);
+
+impl<'a> Deref for OwnedBuffer<'a> {
+    type Target = [u8];
+
+    fn deref(&self) -> &Self::Target {
+        self.0.as_ref()
+    }
+}
+
 /// Buffer that can be used to read binary data.
 ///
-/// See [`OwnedBuffer`](crate::OwnedBuffer) for an owned and writable buffer.
+/// See [`MutableBuffer`](crate::MutableBuffer) for an owned and writable buffer.
 pub struct SharedBuffer<'a>(&'a [u8]);
 
 impl<'a> SharedBuffer<'a> {
@@ -40,7 +52,7 @@ impl<'a> SharedBuffer<'a> {
     }
 }
 
-impl<'a> BinaryReader for SharedBuffer<'a> {
+impl<'a> BinaryReader for &'a [u8] {
     define_read_fns!(u16, i16, u32, i32, u64, i64, u128, i128, f32, f64);
 
     /// Takes a specified amount of bytes from the buffer.
@@ -59,8 +71,9 @@ impl<'a> BinaryReader for SharedBuffer<'a> {
                 self.len()
             )
         } else {
-            let (a, b) = self.0.split_at(n);
-            *self = SharedBuffer::from(b);
+            let (a, b) = self.split_at(n);
+            // *self = SharedBuffer::from(b);
+            *self = b;
             Ok(a)
         }
     }
@@ -84,8 +97,9 @@ impl<'a> BinaryReader for SharedBuffer<'a> {
                 self.len()
             )
         } else {
-            let (a, b) = self.0.split_at(N);
-            *self = SharedBuffer::from(b);
+            let (a, b) = self.split_at(N);
+            // *self = SharedBuffer::from(b);
+            *self = b;
             // SAFETY: We can unwrap because the array is guaranteed to be the required size.
             unsafe { Ok(a.try_into().unwrap_unchecked()) }
         }
@@ -107,7 +121,7 @@ impl<'a> BinaryReader for SharedBuffer<'a> {
                 self.len()
             )
         } else {
-            Ok(&self.0[..n])
+            Ok(&self[..n])
         }
     }
 
@@ -130,7 +144,7 @@ impl<'a> BinaryReader for SharedBuffer<'a> {
                 self.len()
             )
         } else {
-            let dst = &self.0[..N];
+            let dst = &self[..N];
             // SAFETY: dst is guaranteed to be of length N
             // due to the slicing above which already implements bounds checks.
             unsafe { Ok(dst.try_into().unwrap_unchecked()) }
@@ -219,58 +233,6 @@ impl<'a> BinaryReader for SharedBuffer<'a> {
         Ok(std::str::from_utf8(data)?)
     }
 }
-// /// Reads the specified big-endian encoded type from the buffer without advancing the cursor.
-// #[inline]
-// fn peek_be<T: FromBytes>(&self) -> Result<T>
-//     where
-//         [(); T::SIZE]:,
-// {
-//     Ok(T::from_be(self.peek_const::<{ T::SIZE }>()?))
-// }
-//
-// /// Reads the specified little-endian encoded type from the buffer without advancing the cursor.
-// #[inline]
-// fn peek_le<T: FromBytes>(&self) -> Result<T>
-//     where
-//         [(); T::SIZE]:,
-// {
-//     Ok(T::from_le(self.peek_const::<{ T::SIZE }>()?))
-// }
-
-//     /// Reads a little-endian encoded type from the buffer.
-//     ///
-//     /// See [`FromBytes`] for a list of types that can be read from the buffer with this method.
-//     #[inline]
-//     fn read_le<T: FromBytes>(&mut self) -> Result<T>
-//     where
-//         [(); T::SIZE]:,
-//     {
-//         let bytes = self.take_const::<{ T::SIZE }>()?;
-//         Ok(T::from_le(bytes))
-//     }
-//
-//     /// Reads a big-endian encoded type from the buffer.
-//     ///
-//     /// See [`FromBytes`] for a list of types that can be read from the buffer with this method.
-//     #[inline]
-//     fn read_be<T: FromBytes>(&mut self) -> Result<T>
-//     where
-//         [(); T::SIZE]:,
-//     {
-//         let bytes = self.take_const::<{ T::SIZE }>()?;
-//         Ok(T::from_be(bytes))
-//     }
-//
-//     /// Reads a variable size integer from the buffer.
-//     /// See [`VarInt`] for a list of available types.
-//     #[inline]
-//     fn read_var<T>(&mut self) -> Result<T>
-//     where
-//         T: VarInt,
-//     {
-//         T::read(self)
-//     }
-// }
 
 impl<'a> From<&'a [u8]> for SharedBuffer<'a> {
     #[inline]
@@ -280,11 +242,18 @@ impl<'a> From<&'a [u8]> for SharedBuffer<'a> {
 }
 
 impl<'a> Deref for SharedBuffer<'a> {
-    type Target = [u8];
+    type Target = &'a [u8];
 
     #[inline]
     fn deref(&self) -> &Self::Target {
-        self.0
+        &self.0
+    }
+}
+
+impl<'a> DerefMut for SharedBuffer<'a> {
+    #[inline]
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.0
     }
 }
 

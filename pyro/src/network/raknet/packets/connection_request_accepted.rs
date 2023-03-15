@@ -1,12 +1,13 @@
-use std::net::SocketAddr;
+use std::net::{Ipv4Addr, SocketAddr, SocketAddrV4};
 use std::time::{SystemTime, UNIX_EPOCH};
 
-use bytes::{BufMut, Bytes, BytesMut};
-
 use crate::instance_manager::IPV4_LOCAL_ADDR;
+use util::bytes::{BinaryWriter, MutableBuffer, IPV4_MEM_SIZE, IPV6_MEM_SIZE};
+use util::Result;
 use util::Serialize;
-use util::{Result};
-use util::bytes::{BinaryWriter, IPV4_MEM_SIZE, IPV6_MEM_SIZE, MutableBuffer};
+
+const EMPTY_IPV4_ADDRESS: SocketAddr =
+    SocketAddr::V4(SocketAddrV4::new(Ipv4Addr::new(0, 0, 0, 0), 19132));
 
 /// Sent in response to [`ConnectionRequest`](super::connection_request::ConnectionRequest).
 #[derive(Debug)]

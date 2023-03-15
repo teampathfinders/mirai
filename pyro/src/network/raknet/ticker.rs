@@ -4,7 +4,7 @@ use std::{
 };
 use tokio::sync::mpsc;
 
-use bytes::Bytes;
+
 use util::Result;
 
 use crate::network::{
@@ -61,7 +61,7 @@ impl Session {
 
     pub fn start_packet_job(
         self: Arc<Self>,
-        mut receiver: mpsc::Receiver<Bytes>,
+        mut receiver: mpsc::Receiver<SharedBuffer>,
     ) {
         tokio::spawn(async move {
             let mut broadcast_recv = self.broadcast.subscribe();

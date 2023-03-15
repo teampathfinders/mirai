@@ -1,5 +1,6 @@
-use bytes::{BytesMut, Bytes};
-use util::{Result, WriteExtensions};
+
+use util::{Result};
+use util::bytes::{BinaryWriter, MutableBuffer};
 
 use util::Serialize;
 
@@ -23,7 +24,7 @@ impl ConnectedPacket for SetCommandsEnabled {
 }
 
 impl Serialize for SetCommandsEnabled {
-    fn serialize(&self, buffer: &mut BytesMut) {
+    fn serialize(&self, buffer: &mut MutableBuffer) {
         buffer.write_bool(self.enabled);
     }
 }

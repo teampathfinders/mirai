@@ -1,7 +1,6 @@
 use std::io::Write;
 
 use base64::Engine;
-use bytes::{Buf, Bytes, BytesMut};
 use jsonwebtoken::{Algorithm, DecodingKey, Validation};
 use p384::pkcs8::spki;
 use util::{bail, error, Result};
@@ -214,7 +213,9 @@ fn parse_user_data_token(
 /// Parses the identification data contained in the first token chain.
 ///
 /// This contains such as the XUID, display name and public key.
-pub fn parse_identity_data(buffer: &mut Bytes) -> Result<IdentityTokenPayload> {
+pub fn parse_identity_data(
+    buffer: &mut SharedBuffer,
+) -> Result<IdentityTokenPayload> {
     let token_length = buffer.get_u32_le();
     let position = buffer.len() - buffer.remaining();
     let token_chain =
@@ -259,7 +260,7 @@ pub fn parse_identity_data(buffer: &mut Bytes) -> Result<IdentityTokenPayload> {
 /// Parses the user data token from the login packet.
 /// This token contains the user's operating system, language, skin, etc.
 pub fn parse_user_data(
-    buffer: &mut Bytes,
+    buffer: &mut SharedBuffer,
     public_key: &str,
 ) -> Result<UserDataTokenPayload> {
     let token_length = buffer.get_u32_le();

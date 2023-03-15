@@ -1,6 +1,6 @@
 use std::fmt::Write;
-use bytes::Bytes;
-use bytes::{BufMut, BytesMut};
+
+
 
 use crate::network::packets::ConnectedPacket;
 use util::{Serialize};
@@ -112,7 +112,7 @@ impl ConnectedPacket for ResourcePacksInfo<'_> {
 }
 
 impl Serialize for ResourcePacksInfo<'_> {
-    fn serialize(&self, buffer: &mut BytesMut) {
+    fn serialize(&self, buffer: &mut OwnedBuffer) {
         buffer.write_bool(self.required);
         buffer.write_bool(self.scripting_enabled);
         buffer.write_bool(self.forcing_server_packs);

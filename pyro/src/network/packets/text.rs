@@ -1,4 +1,4 @@
-use bytes::{Buf, BufMut, Bytes, BytesMut};
+
 use util::{bail,  Error, Result};
 
 use util::{Deserialize, Serialize};
@@ -142,7 +142,7 @@ impl<'a> Serialize for TextMessage<'a> {
 
 impl<'a> Deserialize for TextMessage<'a> {
     fn deserialize(mut buffer: SharedBuffer<'a>) -> Result<Self> {
-        let message_type = MessageType::try_from(buffer.read_le::<u8>()?)?;
+        let message_type = MessageType::try_from(buffer.read_u8()?)?;
         let needs_translation = buffer.get_bool();
         let message;
         let mut source_name = "";

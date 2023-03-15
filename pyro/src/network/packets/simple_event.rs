@@ -1,4 +1,4 @@
-use bytes::{Buf, BufMut, BytesMut, Bytes};
+
 use util::{bail, Deserialize, Serialize, Error, Result};
 use crate::network::packets::ConnectedPacket;
 
@@ -31,13 +31,13 @@ impl ConnectedPacket for SimpleEvent {
 }
 
 impl Serialize for SimpleEvent {
-    fn serialize(&self, buffer: &mut BytesMut) {
+    fn serialize(&self, buffer: &mut OwnedBuffer) {
         buffer.write_i16_le()(*self as i16);
     }
 }
 
 impl Deserialize for SimpleEvent {
-    fn deserialize(mut buffer: Bytes) -> Result<Self> {
+    fn deserialize(mut buffer: SharedBuffer) -> Result<Self> {
         Self::try_from(buffer.get_i16_le())
     }
 }

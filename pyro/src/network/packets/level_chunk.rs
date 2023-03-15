@@ -1,4 +1,4 @@
-use bytes::{BufMut, BytesMut, Bytes};
+
 use util::{Result, Vector2i};
 use util::bytes::{BinaryWriter, MutableBuffer};
 
@@ -31,7 +31,7 @@ pub struct LevelChunk {
     /// This should be set to None if the client does not support the blob cache.
     pub blob_hashes: Option<Vec<u64>>,
     /// Raw chunk data.
-    pub raw_payload: BytesMut,
+    pub raw_payload: MutableBuffer,
 }
 
 impl ConnectedPacket for LevelChunk {

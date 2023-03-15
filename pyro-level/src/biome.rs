@@ -1,4 +1,3 @@
-use bytes::{Buf, Bytes};
 use util::bytes::{BinaryReader, SharedBuffer};
 use util::{Deserialize, Result};
 

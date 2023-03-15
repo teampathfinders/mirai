@@ -2,7 +2,7 @@ use std::net::SocketAddr;
 use std::sync::{Arc, Weak};
 use std::time::Duration;
 
-use bytes::Bytes;
+
 use dashmap::DashMap;
 use tokio::net::UdpSocket;
 use tokio::sync::{broadcast, mpsc, OnceCell};
@@ -30,7 +30,7 @@ pub struct SessionManager {
     /// Once this token is cancelled, the tracker will cancel all the sessions' individual tokens.
     global_token: CancellationToken,
     /// Map of all tracked sessions, listed by IP address.
-    list: Arc<DashMap<SocketAddr, (mpsc::Sender<Bytes>, Arc<Session>)>>,
+    list: Arc<DashMap<SocketAddr, (mpsc::Sender<SharedBuffer>, Arc<Session>)>>,
     /// The level manager.
     level_manager: OnceCell<Weak<LevelManager>>,
     /// Channel used for packet broadcasting.
@@ -182,7 +182,7 @@ impl SessionManager {
 
     #[inline]
     async fn garbage_collector(
-        list: Arc<DashMap<SocketAddr, (mpsc::Sender<Bytes>, Arc<Session>)>>,
+        list: Arc<DashMap<SocketAddr, (mpsc::Sender<SharedBuffer>, Arc<Session>)>>,
     ) -> ! {
         let mut interval = tokio::time::interval(GARBAGE_COLLECT_INTERVAL);
         loop {

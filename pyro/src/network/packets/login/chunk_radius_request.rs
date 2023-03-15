@@ -1,4 +1,4 @@
-use bytes::Bytes;
+
 use util::{Result};
 use util::bytes::SharedBuffer;
 

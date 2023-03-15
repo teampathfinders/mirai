@@ -1,6 +1,5 @@
 use std::sync::atomic::{AtomicU32, Ordering};
 
-use bytes::BytesMut;
 use dashmap::DashMap;
 
 use crate::network::raknet::Frame;

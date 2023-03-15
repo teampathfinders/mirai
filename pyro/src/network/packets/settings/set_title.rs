@@ -1,6 +1,6 @@
 use std::time::Duration;
 
-use bytes::{BytesMut, Bytes};
+
 use util::{Result};
 use util::bytes::{BinaryWriter, MutableBuffer, size_of_varint};
 

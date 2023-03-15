@@ -1,9 +1,9 @@
-use bytes::Bytes;
-use bytes::{BufMut, BytesMut};
+
+
 
 use crate::network::packets::ConnectedPacket;
 use util::{Serialize};
-use util::bytes::{BinaryWriter, MutableBuffer, VarString};
+use util::bytes::{BinaryWriter, MutableBuffer, size_of_varint, VarString};
 use util::Result;
 
 #[derive(Debug, Clone)]
@@ -87,7 +87,7 @@ impl Serialize for ResourcePackStack<'_> {
 
         buffer.write_str(self.game_version);
 
-        buffer.write_u32_be()(self.experiments.len() as u32);
+        buffer.write_u32_be(self.experiments.len() as u32);
         for experiment in self.experiments {
             experiment.serialize(buffer);
         }

@@ -1,4 +1,4 @@
-use bytes::Bytes;
+
 use util::Serialize;
 use crate::network::packets::ConnectedPacket;
 
@@ -6,7 +6,7 @@ use crate::network::packets::ConnectedPacket;
 #[derive(Debug, Clone)]
 pub struct AvailableActorIdentifiers {
     /// Serialised NBT structure containing the entities.
-    pub identifiers: Bytes
+    pub identifiers: SharedBuffer
 }
 
 impl ConnectedPacket for AvailableActorIdentifiers {

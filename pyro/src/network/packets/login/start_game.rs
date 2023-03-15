@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 use std::fmt::Write;
 
-use bytes::{BufMut, BytesMut, Bytes};
+
 use level::Dimension;
 
 use util::{Serialize};
@@ -24,7 +24,7 @@ pub enum WorldGenerator {
 }
 
 impl WorldGenerator {
-    pub fn serialize(&self, buffer: &mut BytesMut) {
+    pub fn serialize(&self, buffer: &mut MutableBuffer) {
         buffer.write_var_i32(*self as i32);
     }
 }
