@@ -1,13 +1,13 @@
+use std::ptr::NonNull;
 use std::{
     ffi::{c_void, CStr, CString},
     marker::PhantomData,
     ops::Deref,
     os::raw::{c_char, c_int},
 };
-use std::ptr::NonNull;
 
-use util::{error, Error, Result};
 use util::bytes::{LazyBuffer, SharedBuffer};
+use util::{error, Error, Result};
 
 use crate::ffi;
 
@@ -93,9 +93,7 @@ impl<'a> RawKeyIter<'a> {
             index: 0,
             db,
             // SAFETY: level_iter is guaranteed to not return an error.
-            iter: unsafe {
-                NonNull::new_unchecked(result.data)
-            }
+            iter: unsafe { NonNull::new_unchecked(result.data) },
         }
     }
 }
@@ -134,7 +132,7 @@ impl<'a> Drop for RawKeyIter<'a> {
 pub struct RawDatabase {
     /// Pointer to the C++ Database struct, containing the database and corresponding options.
     /// This data is heap-allocated and must therefore also be deallocated by C++ when it is no longer needed.
-    pointer: NonNull<c_void>
+    pointer: NonNull<c_void>,
 }
 
 impl RawDatabase {
@@ -150,9 +148,9 @@ impl RawDatabase {
         if result.is_success == 1 {
             debug_assert_ne!(result.data, std::ptr::null_mut());
             // SAFETY: If result.is_success is true, then the caller has set data to a valid pointer.
-            Ok(Self { pointer: unsafe {
-                NonNull::new_unchecked(result.data)
-            }})
+            Ok(Self {
+                pointer: unsafe { NonNull::new_unchecked(result.data) },
+            })
         } else {
             Err(translate_ffi_error(result))
         }

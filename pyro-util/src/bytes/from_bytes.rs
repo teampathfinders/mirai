@@ -1,6 +1,6 @@
+use crate::{u24::u24, Vector};
 use std::mem;
 use uuid::Uuid;
-use crate::{Vector, u24::u24};
 
 pub trait FromBytes: Sized {
     const SIZE: usize;
@@ -74,14 +74,13 @@ impl<T: FromBytes, const N: usize> FromBytes for [T; N] {
         // SAFETY: This is safe because Self::SIZE is guaranteed to be equal to T::SIZE * N.
         // A transmute_copy is required because the compiler
         // can't prove that both types are of the same size.
-        let cast = unsafe {
-            mem::transmute_copy::<[u8; Self::SIZE], [T; N]>(&bytes)
-        };
+        let cast =
+            unsafe { mem::transmute_copy::<[u8; Self::SIZE], [T; N]>(&bytes) };
 
         mem::forget(bytes);
         cast
     }
-    
+
     #[inline]
     fn from_be(bytes: [u8; Self::SIZE]) -> Self {
         // Reverse bytes if the current machine is little endian.
@@ -94,9 +93,8 @@ impl<T: FromBytes, const N: usize> FromBytes for [T; N] {
         // SAFETY: This is safe because Self::SIZE is guaranteed to be equal to T::SIZE * N.
         // A transmute_copy is required because the compiler
         // can't prove that both types are of the same size.
-        let cast = unsafe {
-            mem::transmute_copy::<[u8; Self::SIZE], [T; N]>(&bytes)
-        };
+        let cast =
+            unsafe { mem::transmute_copy::<[u8; Self::SIZE], [T; N]>(&bytes) };
 
         mem::forget(bytes);
         cast
@@ -121,9 +119,8 @@ impl<T: FromBytes, const N: usize> FromBytes for Vector<T, N> {
         // SAFETY: This is safe because Self::SIZE is guaranteed to be equal to T::SIZE * N.
         // A transmute_copy is required because the compiler
         // can't prove that both types are of the same size.
-        let cast = unsafe {
-            mem::transmute_copy::<[u8; Self::SIZE], [T; N]>(&bytes)
-        };
+        let cast =
+            unsafe { mem::transmute_copy::<[u8; Self::SIZE], [T; N]>(&bytes) };
 
         mem::forget(bytes);
         Vector::from(cast)
@@ -144,9 +141,8 @@ impl<T: FromBytes, const N: usize> FromBytes for Vector<T, N> {
         // SAFETY: This is safe because Self::SIZE is guaranteed to be equal to T::SIZE * N.
         // A transmute_copy is required because the compiler
         // can't prove that both types are of the same size.
-        let cast = unsafe {
-            mem::transmute_copy::<[u8; Self::SIZE], [T; N]>(&bytes)
-        };
+        let cast =
+            unsafe { mem::transmute_copy::<[u8; Self::SIZE], [T; N]>(&bytes) };
 
         mem::forget(bytes);
         Vector::from(cast)

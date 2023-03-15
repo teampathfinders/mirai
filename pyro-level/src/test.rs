@@ -1,6 +1,10 @@
 use util::{Deserialize, Serialize, Vector, Vector3b};
 
-use crate::{biome::Biome3d, database::RawDatabase, DatabaseKey, Dimension, KeyData, SubChunk, BIOME_DATA, LOCAL_PLAYER, MOB_EVENTS, OVERWORLD, SCHEDULER, SCOREBOARD, LevelData};
+use crate::{
+    biome::Biome3d, database::RawDatabase, DatabaseKey, Dimension, KeyData,
+    LevelData, SubChunk, BIOME_DATA, LOCAL_PLAYER, MOB_EVENTS, OVERWORLD,
+    SCHEDULER, SCOREBOARD,
+};
 
 // digp [x] [z] [?dimension]
 // contains two int32
@@ -39,7 +43,11 @@ fn database_test() {
     let avg = sum as f64 / count as f64;
     println!("average: {avg}μs");
     println!("total chunks: {}", count as f64 / 50.0f64);
-    println!("failed: {} ({}%)", failed, failed as f64 / (count + failed) as f64);
+    println!(
+        "failed: {} ({}%)",
+        failed,
+        failed as f64 / (count + failed) as f64
+    );
 
     // let mut buffer = BytesMut::new();
     // DatabaseKey {

@@ -4,8 +4,8 @@ use std::time::{SystemTime, UNIX_EPOCH};
 use bytes::{BufMut, Bytes, BytesMut};
 
 use crate::instance_manager::IPV4_LOCAL_ADDR;
-use util::{IPV4_MEM_SIZE, IPV6_MEM_SIZE, Result};
 use util::Serialize;
+use util::{Result, IPV4_MEM_SIZE, IPV6_MEM_SIZE};
 
 /// Sent in response to [`ConnectionRequest`](super::connection_request::ConnectionRequest).
 #[derive(Debug)]

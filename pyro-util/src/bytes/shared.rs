@@ -1,9 +1,9 @@
-use crate::{bail};
+use crate::bail;
+use crate::bytes::{BinaryBuffer, FromBytes, VarInt};
 use std::fmt::Debug;
 use std::io::Read;
 use std::ops::{Deref, Index};
 use std::{cmp, fmt, io};
-use crate::bytes::{BinaryBuffer, FromBytes, VarInt};
 
 use crate::Result;
 
@@ -157,8 +157,8 @@ impl<'a> BinaryBuffer for SharedBuffer<'a> {
     /// See [`FromBytes`] for a list of types that can be read from the buffer with this method.
     #[inline]
     fn read_le<T: FromBytes>(&mut self) -> Result<T>
-        where
-            [(); T::SIZE]:,
+    where
+        [(); T::SIZE]:,
     {
         let bytes = self.take_const::<{ T::SIZE }>()?;
         Ok(T::from_le(bytes))
@@ -169,8 +169,8 @@ impl<'a> BinaryBuffer for SharedBuffer<'a> {
     /// See [`FromBytes`] for a list of types that can be read from the buffer with this method.
     #[inline]
     fn read_be<T: FromBytes>(&mut self) -> Result<T>
-        where
-            [(); T::SIZE]:,
+    where
+        [(); T::SIZE]:,
     {
         let bytes = self.take_const::<{ T::SIZE }>()?;
         Ok(T::from_be(bytes))
@@ -264,8 +264,9 @@ mod test {
     #[test]
     fn test_read_i8() {
         let s: &[i8] = &[-10, 5, -42, 120];
-        let mut buf =
-            SharedBuffer::from(unsafe { std::mem::transmute::<&[i8], &[u8]>(s) });
+        let mut buf = SharedBuffer::from(unsafe {
+            std::mem::transmute::<&[i8], &[u8]>(s)
+        });
 
         for x in s {
             assert_eq!(buf.peek_be::<i8>().unwrap(), *x);

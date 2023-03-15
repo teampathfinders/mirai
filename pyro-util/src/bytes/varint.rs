@@ -1,11 +1,12 @@
-use std::ops::ShrAssign;
-use num_traits::FromPrimitive;
 use crate::bytes::{BinaryBuffer, SharedBuffer};
+use num_traits::FromPrimitive;
+use std::ops::ShrAssign;
 
 use crate::{bail, Result};
 
 /// Trait implemented for types that can be used as variable integers.
-pub trait VarInt: Sized + FromPrimitive + ShrAssign<Self> + PartialOrd<Self>
+pub trait VarInt:
+    Sized + FromPrimitive + ShrAssign<Self> + PartialOrd<Self>
 {
     fn var_len(self) -> usize {
         size_of_varint(self)
@@ -19,7 +20,7 @@ pub trait VarInt: Sized + FromPrimitive + ShrAssign<Self> + PartialOrd<Self>
 impl VarInt for u32 {
     fn read<B>(buf: &mut B) -> Result<Self>
     where
-        B: BinaryBuffer
+        B: BinaryBuffer,
     {
         let mut v = 0;
         let mut i = 0;
@@ -42,7 +43,7 @@ impl VarInt for u32 {
 impl VarInt for i32 {
     fn read<B>(buf: &mut B) -> Result<Self>
     where
-        B: BinaryBuffer
+        B: BinaryBuffer,
     {
         let vx = buf.read_var::<u32>()?;
         let mut v = (vx >> 1) as i32;
@@ -58,7 +59,7 @@ impl VarInt for i32 {
 impl VarInt for u64 {
     fn read<B>(buf: &mut B) -> Result<Self>
     where
-        B: BinaryBuffer
+        B: BinaryBuffer,
     {
         let mut v = 0;
         let mut i = 0;
@@ -83,7 +84,7 @@ impl VarInt for u64 {
 impl VarInt for i64 {
     fn read<B>(buf: &mut B) -> Result<Self>
     where
-        B: BinaryBuffer
+        B: BinaryBuffer,
     {
         let vx = buf.read_var::<u64>()?;
         let mut v = (vx >> 1) as i64;

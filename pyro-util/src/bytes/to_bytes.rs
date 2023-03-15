@@ -56,4 +56,3 @@ impl ToBytes for bool {
         [self as u8]
     }
 }
-

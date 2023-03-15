@@ -1,18 +1,23 @@
 use std::fmt;
 
 use crate::FieldType;
+use serde::de::Unexpected::Seq;
 use serde::de::{DeserializeSeed, MapAccess, SeqAccess, Visitor};
 use serde::{de, Deserialize};
-use serde::de::Unexpected::Seq;
 use util::bytes::{BinaryBuffer, LazyBuffer, SharedBuffer};
 use util::{bail, Error, Result};
 
 macro_rules! is_ty {
     ($expected: ident, $actual: expr) => {
         if $actual != FieldType::$expected {
-            bail!(Malformed, "expected type {:?}, but found {:?}", FieldType::$expected, $actual)
+            bail!(
+                Malformed,
+                "expected type {:?}, but found {:?}",
+                FieldType::$expected,
+                $actual
+            )
         }
-    }
+    };
 }
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
@@ -140,7 +145,7 @@ impl<'de, 'a> de::Deserializer<'de> for &'a mut Deserializer<'de> {
                     m
                 }
                 FieldType::IntArray => self.deserialize_seq(visitor),
-                FieldType::LongArray => self.deserialize_seq(visitor)
+                FieldType::LongArray => self.deserialize_seq(visitor),
             }
         }
     }
@@ -280,7 +285,10 @@ impl<'de, 'a> de::Deserializer<'de> for &'a mut Deserializer<'de> {
     where
         V: Visitor<'de>,
     {
-        bail!(Unsupported, "NBT does not support unicode characters, use String instead")
+        bail!(
+            Unsupported,
+            "NBT does not support unicode characters, use String instead"
+        )
     }
 
     #[inline]
@@ -394,7 +402,7 @@ impl<'de, 'a> de::Deserializer<'de> for &'a mut Deserializer<'de> {
             FieldType::ByteArray => FieldType::Byte,
             FieldType::IntArray => FieldType::Int,
             FieldType::LongArray => FieldType::Long,
-            _ => FieldType::try_from(self.input.read_le::<u8>()?)?
+            _ => FieldType::try_from(self.input.read_le::<u8>()?)?,
         };
 
         let de = SeqDeserializer::new(self, ty, len as i32)?;
@@ -470,13 +478,15 @@ impl<'de, 'a> de::Deserializer<'de> for &'a mut Deserializer<'de> {
 struct SeqDeserializer<'a, 'de: 'a> {
     de: &'a mut Deserializer<'de>,
     ty: FieldType,
-    remaining: i32
+    remaining: i32,
 }
 
 impl<'de, 'a> SeqDeserializer<'a, 'de> {
     #[inline]
     pub fn new(
-        de: &'a mut Deserializer<'de>, ty: FieldType, expected_len: i32
+        de: &'a mut Deserializer<'de>,
+        ty: FieldType,
+        expected_len: i32,
     ) -> Result<Self> {
         debug_assert_ne!(ty, FieldType::End);
 
@@ -493,9 +503,7 @@ impl<'de, 'a> SeqDeserializer<'a, 'de> {
             bail!(Malformed, "expected sequence of length {expected_len}, got length {remaining}");
         }
 
-        Ok(Self {
-            de, ty, remaining
-        })
+        Ok(Self { de, ty, remaining })
     }
 }
 
@@ -580,20 +588,20 @@ mod test {
         #[derive(Deserialize, Debug, PartialEq)]
         struct Food {
             name: String,
-            value: f32
+            value: f32,
         }
 
         #[derive(Deserialize, Debug, PartialEq)]
         struct Nested {
             egg: Food,
-            ham: Food
+            ham: Food,
         }
 
         #[derive(Deserialize, Debug, PartialEq)]
         struct ListCompound {
             #[serde(rename = "created-on")]
             created_on: i64,
-            name: String
+            name: String,
         }
 
         #[derive(Deserialize, Debug, PartialEq)]
@@ -616,10 +624,12 @@ mod test {
             long_test: i64,
             #[serde(rename = "listTest (compound)")]
             compound_list_test: (ListCompound, ListCompound),
-            #[serde(rename = "byteArrayTest (the first 1000 values of (n*n*255+n*7)%100, starting with n=0 (0, 62, 34, 16, 8, ...))")]
+            #[serde(
+                rename = "byteArrayTest (the first 1000 values of (n*n*255+n*7)%100, starting with n=0 (0, 62, 34, 16, 8, ...))"
+            )]
             byte_array_test: Vec<i8>,
             #[serde(rename = "shortTest")]
-            short_test: i16
+            short_test: i16,
         }
 
         let decoded: AllTypes = from_be_bytes(BIGTEST_NBT).unwrap().0;

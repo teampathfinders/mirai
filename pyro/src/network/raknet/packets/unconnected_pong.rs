@@ -1,6 +1,6 @@
-use std::io::Write;
 use bytes::Bytes;
 use bytes::{BufMut, BytesMut};
+use std::io::Write;
 use util::bytes::LazyBuffer;
 
 use crate::network::raknet::OFFLINE_MESSAGE_DATA;

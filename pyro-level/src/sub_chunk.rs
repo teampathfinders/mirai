@@ -1,7 +1,7 @@
 use serde::Deserialize;
 use std::collections::HashMap;
 use std::iter::Enumerate;
-use util::bytes::{SharedBuffer, LazyBuffer, BinaryBuffer};
+use util::bytes::{BinaryBuffer, LazyBuffer, SharedBuffer};
 use util::{bail, BlockPosition, Error, Result, Vector3b};
 
 const CHUNK_SIZE: usize = 4096;
@@ -21,7 +21,7 @@ fn u32_ceil_div(lhs: u32, rhs: u32) -> u32 {
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
 pub struct BlockStates {
     // states, this should probably be a HashMap<String, nbt::Value>
-    pillar_axis: Option<String>
+    pillar_axis: Option<String>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
@@ -206,7 +206,7 @@ impl SubChunk {
     #[inline]
     pub fn deserialize<'a, R>(buffer: R) -> Result<Self>
     where
-        R: Into<SharedBuffer<'a>>
+        R: Into<SharedBuffer<'a>>,
     {
         let mut buffer = buffer.into();
 
@@ -238,7 +238,7 @@ impl SubChunk {
             }
             _ => {
                 bail!(Malformed, "Invalid chunk version {version}")
-            },
+            }
         }
     }
 

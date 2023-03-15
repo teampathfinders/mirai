@@ -1,10 +1,10 @@
+use crate::bytes::{BinaryBuffer, FromBytes, ToBytes, VarInt};
+use crate::{bail, Result};
+use std::borrow::Cow;
 use std::fmt::Debug;
 use std::io::Write;
 use std::ops::{Deref, DerefMut};
 use std::{fmt, io};
-use std::borrow::Cow;
-use crate::{bail, Result};
-use crate::bytes::{BinaryBuffer, FromBytes, ToBytes, VarInt};
 
 /// A buffer that can be read from and written to.
 /// It is the owned version of [`ReadBuffer`].
@@ -44,7 +44,8 @@ impl<'a> LazyBuffer<'a> {
     pub fn advance(&mut self, n: usize) -> Result<()> {
         if self.len() < n {
             bail!(
-                UnexpectedEof, "cannot advance past end of buffer: expected: {n}, actual: {}",
+                UnexpectedEof,
+                "cannot advance past end of buffer: expected: {n}, actual: {}",
                 self.len()
             );
         }
@@ -62,7 +63,7 @@ impl<'a> LazyBuffer<'a> {
     #[inline]
     pub fn write_be<T: ToBytes>(&mut self, v: T)
     where
-        [(); T::SIZE]:
+        [(); T::SIZE]:,
     {
         self.0.to_mut().extend_from_slice(&v.to_bytes_be());
     }
@@ -70,7 +71,7 @@ impl<'a> LazyBuffer<'a> {
     #[inline]
     pub fn write_le<T: ToBytes>(&mut self, v: T)
     where
-        [(); T::SIZE]:
+        [(); T::SIZE]:,
     {
         self.0.to_mut().extend_from_slice(&v.to_bytes_le());
     }
@@ -87,7 +88,11 @@ impl<'a> BinaryBuffer for LazyBuffer<'a> {
     #[inline]
     fn take(&mut self, n: usize) -> Result<&[u8]> {
         if self.len() < n {
-            bail!(UnexpectedEof, "expect {n} remaining bytes, actual: {}", self.len());
+            bail!(
+                UnexpectedEof,
+                "expect {n} remaining bytes, actual: {}",
+                self.len()
+            );
         } else {
             if let Cow::Borrowed(buf) = self.0 {
                 let (a, b) = buf.split_at(n);
@@ -125,7 +130,8 @@ impl<'a> BinaryBuffer for LazyBuffer<'a> {
     fn take_const<const N: usize>(&mut self) -> Result<[u8; N]> {
         if self.len() < N {
             bail!(
-                UnexpectedEof, "expected {N} remaining bytes, got {}",
+                UnexpectedEof,
+                "expected {N} remaining bytes, got {}",
                 self.len()
             );
         }
@@ -204,8 +210,8 @@ impl<'a> BinaryBuffer for LazyBuffer<'a> {
     /// See [`FromBytes`] for a list of types that can be read from the buffer with this method.
     #[inline]
     fn read_le<T: FromBytes>(&mut self) -> Result<T>
-        where
-            [(); T::SIZE]:,
+    where
+        [(); T::SIZE]:,
     {
         let bytes = self.take_const::<{ T::SIZE }>()?;
         Ok(T::from_le(bytes))
@@ -216,8 +222,8 @@ impl<'a> BinaryBuffer for LazyBuffer<'a> {
     /// See [`FromBytes`] for a list of types that can be read from the buffer with this method.
     #[inline]
     fn read_be<T: FromBytes>(&mut self) -> Result<T>
-        where
-            [(); T::SIZE]:,
+    where
+        [(); T::SIZE]:,
     {
         let bytes = self.take_const::<{ T::SIZE }>()?;
         Ok(T::from_be(bytes))
@@ -227,8 +233,8 @@ impl<'a> BinaryBuffer for LazyBuffer<'a> {
     /// See [`VarInt`] for a list of available types.
     #[inline]
     fn read_var<T>(&mut self) -> Result<T>
-        where
-            T: VarInt,
+    where
+        T: VarInt,
     {
         T::read(self)
     }

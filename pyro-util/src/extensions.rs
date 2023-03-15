@@ -5,13 +5,13 @@ use bytes::{Buf, BufMut};
 use lazy_static::lazy_static;
 use num_traits::FromPrimitive;
 
-use crate::{bail, Vector};
 use crate::BlockPosition;
 use crate::Result;
 use crate::Vector2i;
 use crate::Vector3f;
 use crate::Vector3i;
 use crate::Vector4f;
+use crate::{bail, Vector};
 use uuid::Uuid;
 
 /// Size of an IPv4 address in bytes.
@@ -43,7 +43,7 @@ impl VarString for String {
 
 /// Trait implemented for types that can be used as variable integers.
 pub trait VarInt:
-Sized + FromPrimitive + ShrAssign<Self> + PartialOrd<Self>
+    Sized + FromPrimitive + ShrAssign<Self> + PartialOrd<Self>
 {
     fn var_len(self) -> usize {
         size_of_varint(self)
@@ -353,7 +353,7 @@ pub trait WriteExtensions: BufMut + Sized {
         self.put_f32_le(c);
     }
 
-    fn put_vec4f(&mut self, value: &Vector<f32,4 >) {
+    fn put_vec4f(&mut self, value: &Vector<f32, 4>) {
         let [a, b, c, d] = value.components();
 
         self.put_f32_le(a);

@@ -1,4 +1,4 @@
-use crate::bytes::{VarInt, LazyBuffer};
+use crate::bytes::{LazyBuffer, VarInt};
 use std::ops::{Deref, DerefMut};
 
 /// Type and size independent vector type

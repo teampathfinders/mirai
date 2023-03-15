@@ -35,14 +35,14 @@ pub struct Abilities {
     #[serde(rename = "flySpeed")]
     pub fly_speed: f32,
     #[serde(rename = "walkSpeed")]
-    pub walk_speed: f32
+    pub walk_speed: f32,
 }
 
 #[derive(serde::Deserialize, Debug, PartialEq)]
 #[serde(deny_unknown_fields)]
 pub struct Experiments {
     pub experiments_ever_used: bool,
-    pub saved_with_toggled_experiments: bool
+    pub saved_with_toggled_experiments: bool,
 }
 
 #[derive(serde::Deserialize, Debug, PartialEq)]
@@ -215,7 +215,7 @@ pub struct LevelData {
     pub player_permissions_level: i32,
     pub prid: String,
     #[serde(rename = "world_policies")]
-    pub world_policies: Policies
+    pub world_policies: Policies,
 }
 
 /// Database key prefixes.

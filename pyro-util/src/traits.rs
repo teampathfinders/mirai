@@ -1,5 +1,5 @@
+use crate::bytes::{LazyBuffer, SharedBuffer};
 use bytes::{Bytes, BytesMut};
-use crate::bytes::{SharedBuffer, LazyBuffer};
 
 use crate::Result;
 

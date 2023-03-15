@@ -19,7 +19,7 @@ enum FieldType {
     List,
     Compound,
     IntArray,
-    LongArray
+    LongArray,
 }
 
 impl TryFrom<u8> for FieldType {
@@ -34,12 +34,10 @@ impl TryFrom<u8> for FieldType {
         // SAFETY: Because `Self` is marked as `repr(u8)`, its layout is guaranteed to start
         // with a `u8` discriminant as its first field. Additionally, the raw discriminant is verified
         // to be in the enum's range.
-        Ok(unsafe {
-            mem::transmute::<u8, FieldType>(v)
-        })
+        Ok(unsafe { mem::transmute::<u8, FieldType>(v) })
     }
 }
 
+pub use crate::de::{from_be_bytes, from_le_bytes, from_net_bytes};
 use std::mem;
 use util::{bail, Error, Result};
-pub use crate::de::{from_be_bytes, from_le_bytes, from_net_bytes};
