@@ -16,8 +16,7 @@ use tokio_util::sync::CancellationToken;
 use util::Result;
 pub use world::*;
 
-/// Interface that is used to read and write world data.
-#[derive(Debug)]
+
 pub struct ChunkManager {
     /// Chunk database
     database: RawDatabase,

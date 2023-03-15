@@ -108,15 +108,21 @@ impl<'a> Iterator for RawKeyIter<'a> {
 
     fn next(&mut self) -> Option<Self::Item> {
         if self.index != 0 {
+            // SAFETY: `level_iter_next` is safe to call, as long as the iterator has not been destroyed.
+            // * The only way to delete the iterator is using the `Drop` implementation of `Self`,
+            // it is therefore safe to call this function.
             unsafe { ffi::level_iter_next(self.iter.as_ptr()) };
         }
         self.index += 1;
 
+        // SAFETY: `level_iter_valid` is safe to call, as long as the iterator has not been destroyed.
+        // The only code able to destroy the iter is the `Drop` implementation of `Self`, it is
+        // therefore safe to call this function.
+        // Furthermore, the above check ensures the iterator is valid and supports the key and value methods
+        // provided by `RawRef`.
         let valid = unsafe { ffi::level_iter_valid(self.iter.as_ptr()) };
-
         if valid {
             let raw_ref = RawRef { iter: self.iter, phantom: PhantomData };
-
             Some(raw_ref)
         } else {
             None
@@ -126,6 +132,8 @@ impl<'a> Iterator for RawKeyIter<'a> {
 
 impl<'a> Drop for RawKeyIter<'a> {
     fn drop(&mut self) {
+        // SAFETY: `self` is the only object that is able to modify the iterator.
+        // Therefore it is safe to delete because it hasn't been modified externally.
         unsafe {
             ffi::level_destroy_iter(self.iter.as_ptr());
         }
@@ -133,7 +141,6 @@ impl<'a> Drop for RawKeyIter<'a> {
 }
 
 /// Rust interface around a C++ LevelDB database.
-#[derive(Debug)]
 pub struct RawDatabase {
     /// Pointer to the C++ Database struct, containing the database and corresponding options.
     /// This data is heap-allocated and must therefore also be deallocated by C++ when it is no longer needed.
@@ -142,7 +149,10 @@ pub struct RawDatabase {
 
 impl RawDatabase {
     /// Opens the database at the specified path.
-    pub fn new<P: AsRef<str>>(path: P) -> Result<Self> {
+    pub fn new<P>(path: P) -> Result<Self>
+    where
+        P: AsRef<str>
+    {
         let ffi_path = CString::new(path.as_ref())?;
         unsafe {
             // SAFETY: This function is guaranteed to not return exceptions.
@@ -167,7 +177,10 @@ impl RawDatabase {
 
     /// Loads the value of the given key.
     /// This function requires a raw key, i.e. the key must have been serialised already.
-    pub fn get_raw_key<K: AsRef<[u8]>>(&self, key: K) -> Result<BufGuard> {
+    pub fn get<K>(&self, key: K) -> Result<BufGuard>
+    where
+        K: AsRef<[u8]>
+    {
         let key = key.as_ref();
         unsafe {
             // SAFETY: This function is guaranteed to not modify any arguments.
