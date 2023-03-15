@@ -1,5 +1,5 @@
 use crate::bail;
-use crate::bytes::{BinRead, VarInt};
+use crate::bytes::{BinaryReader, VarInt};
 use paste::paste;
 use std::fmt::Debug;
 use std::io::Read;
@@ -40,7 +40,7 @@ impl<'a> SharedBuffer<'a> {
     }
 }
 
-impl<'a> BinRead for SharedBuffer<'a> {
+impl<'a> BinaryReader for SharedBuffer<'a> {
     define_read_fns!(u16, i16, u32, i32, u64, i64, u128, i128, f32, f64);
 
     /// Takes a specified amount of bytes from the buffer.
@@ -334,7 +334,7 @@ impl<'a> Read for SharedBuffer<'a> {
 #[cfg(test)]
 mod test {
     use super::SharedBuffer;
-    use crate::bytes::BinRead;
+    use crate::bytes::BinaryReader;
 
     #[test]
     fn test_read_u8() {

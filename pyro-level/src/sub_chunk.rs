@@ -1,7 +1,7 @@
 use serde::Deserialize;
 use std::collections::HashMap;
 use std::iter::Enumerate;
-use util::bytes::{BinRead, MutableBuffer, SharedBuffer};
+use util::bytes::{BinaryReader, MutableBuffer, SharedBuffer};
 use util::{bail, BlockPosition, Error, Result, Vector3b};
 
 const CHUNK_SIZE: usize = 4096;

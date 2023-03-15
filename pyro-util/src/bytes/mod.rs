@@ -3,14 +3,14 @@ use crate::Result;
 mod mutable;
 mod read;
 mod shared;
-mod to_bytes;
 mod varint;
+mod write;
 
 pub use mutable::*;
 pub use read::*;
 pub use shared::*;
-pub use to_bytes::*;
 pub use varint::*;
+pub use write::*;
 
 // pub trait ReadableBuffer {
 //     fn take(&mut self, n: usize) -> Result<&[u8]>;

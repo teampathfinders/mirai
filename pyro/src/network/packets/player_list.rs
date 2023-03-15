@@ -51,12 +51,12 @@ impl Serialize for PlayerListAdd<'_> {
             buffer.put_string(""); // Platform chat ID.
             buffer.write_le::<i32>()(entry.device_os as i32);
             entry.skin.serialize(buffer);
-            buffer.write_le::<bool>(false); // Player is not a teacher.
-            buffer.write_le::<bool>(entry.host);
+            buffer.write_bool(false); // Player is not a teacher.
+            buffer.write_bool(entry.host);
         }
 
         for entry in self.entries {
-            buffer.write_le::<bool>(entry.skin.is_trusted);
+            buffer.write_bool(entry.skin.is_trusted);
         }
     }
 }

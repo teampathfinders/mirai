@@ -43,6 +43,6 @@ impl Serialize for OpenConnectionReply2 {
         buffer.write_be::<u64>()(self.server_guid);
         buffer.put_addr(self.client_address);
         buffer.write_be::<u16>()(self.mtu);
-        buffer.write_le::<bool>(false); // Encryption not enabled, must be false to continue login sequence
+        buffer.write_bool(false); // Encryption not enabled, must be false to continue login sequence
     }
 }

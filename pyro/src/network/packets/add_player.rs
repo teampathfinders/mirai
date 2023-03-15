@@ -40,8 +40,8 @@ impl EntityLink {
         buffer.put_var_i64(self.ridden_entity_id);
         buffer.put_var_i64(self.rider_entity_id);
         buffer.write_le::<u8>(self.link_type as u8);
-        buffer.write_le::<bool>(self.is_immediate);
-        buffer.write_le::<bool>(self.is_rider_initiated);
+        buffer.write_bool(self.is_immediate);
+        buffer.write_bool(self.is_rider_initiated);
     }
 }
 

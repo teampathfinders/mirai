@@ -106,7 +106,7 @@ impl ConnectedPacket for TextMessage {
 impl Serialize for TextMessage {
     fn serialize(&self, buffer: &mut BytesMut) {
         buffer.write_le::<u8>(self.message_type as u8);
-        buffer.write_le::<bool>(self.needs_translation);
+        buffer.write_bool(self.needs_translation);
 
         match self.message_type {
             MessageType::Chat

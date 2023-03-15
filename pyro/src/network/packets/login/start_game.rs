@@ -379,21 +379,21 @@ impl Serialize for StartGame<'_> {
         buffer.put_var_i32(self.difficulty as i32);
         buffer.put_block_pos(&self.world_spawn);
 
-        buffer.write_le::<bool>(self.achievements_disabled);
-        buffer.write_le::<bool>(self.editor_world);
+        buffer.write_bool(self.achievements_disabled);
+        buffer.write_bool(self.editor_world);
         buffer.put_var_i32(self.day_cycle_lock_time);
         buffer.put_var_i32(0); // Education offer.
-        buffer.write_le::<bool>(self.education_features_enabled);
+        buffer.write_bool(self.education_features_enabled);
         buffer.put_string(""); // Education product ID.
         buffer.write_le::<f32>(self.rain_level);
         buffer.write_le::<f32>(self.lightning_level);
-        buffer.write_le::<bool>(self.confirmed_platform_locked_content);
-        buffer.write_le::<bool>(true); // Whether the game is multiplayer, must always be true for servers.
-        buffer.write_le::<bool>(self.broadcast_to_lan);
+        buffer.write_bool(self.confirmed_platform_locked_content);
+        buffer.write_bool(true); // Whether the game is multiplayer, must always be true for servers.
+        buffer.write_bool(self.broadcast_to_lan);
         self.xbox_broadcast_intent.serialize(buffer);
         self.platform_broadcast_intent.serialize(buffer);
-        buffer.write_le::<bool>(self.enable_commands);
-        buffer.write_le::<bool>(self.texture_packs_required);
+        buffer.write_bool(self.enable_commands);
+        buffer.write_bool(self.texture_packs_required);
 
         buffer.put_var_u32(self.game_rules.len() as u32);
         for rule in self.game_rules {
@@ -405,34 +405,34 @@ impl Serialize for StartGame<'_> {
             experiment.serialize(buffer);
         }
 
-        buffer.write_le::<bool>(self.experiments_previously_enabled);
-        buffer.write_le::<bool>(self.bonus_chest_enabled);
-        buffer.write_le::<bool>(self.starter_map_enabled);
+        buffer.write_bool(self.experiments_previously_enabled);
+        buffer.write_bool(self.bonus_chest_enabled);
+        buffer.write_bool(self.starter_map_enabled);
         buffer.put_var_i32(self.permission_level as i32);
         buffer.write_le::<i32>(self.server_chunk_tick_range);
-        buffer.write_le::<bool>(self.has_locked_behavior_pack);
-        buffer.write_le::<bool>(self.has_locked_resource_pack);
-        buffer.write_le::<bool>(self.is_from_locked_world_template);
-        buffer.write_le::<bool>(self.use_msa_gamertags_only);
-        buffer.write_le::<bool>(self.is_from_world_template);
-        buffer.write_le::<bool>(self.is_world_template_option_locked);
-        buffer.write_le::<bool>(self.only_spawn_v1_villagers);
-        buffer.write_le::<bool>(self.persona_disabled);
-        buffer.write_le::<bool>(self.custom_skins_disabled);
-        buffer.write_le::<bool>(self.emote_chat_muted);
+        buffer.write_bool(self.has_locked_behavior_pack);
+        buffer.write_bool(self.has_locked_resource_pack);
+        buffer.write_bool(self.is_from_locked_world_template);
+        buffer.write_bool(self.use_msa_gamertags_only);
+        buffer.write_bool(self.is_from_world_template);
+        buffer.write_bool(self.is_world_template_option_locked);
+        buffer.write_bool(self.only_spawn_v1_villagers);
+        buffer.write_bool(self.persona_disabled);
+        buffer.write_bool(self.custom_skins_disabled);
+        buffer.write_bool(self.emote_chat_muted);
         buffer.put_string(CLIENT_VERSION_STRING); // Base game version
         buffer.write_le::<i32>(self.limited_world_width);
         buffer.write_le::<i32>(self.limited_world_height);
-        buffer.write_le::<bool>(true); // Use new nether
+        buffer.write_bool(true); // Use new nether
         buffer.put_string("");
         buffer.put_string("");
-        buffer.write_le::<bool>(self.force_experimental_gameplay);
+        buffer.write_bool(self.force_experimental_gameplay);
         self.chat_restriction_level.serialize(buffer);
-        buffer.write_le::<bool>(self.disable_player_interactions);
+        buffer.write_bool(self.disable_player_interactions);
         buffer.put_string(self.level_id);
         buffer.put_string(self.level_name);
         buffer.put_string(self.template_content_identity);
-        buffer.write_le::<bool>(false); // Game is not a trial.
+        buffer.write_bool(false); // Game is not a trial.
         self.movement_settings.serialize(buffer);
         buffer.write_le::<i64>(self.time);
         buffer.put_var_i32(self.enchantment_seed);
@@ -450,7 +450,7 @@ impl Serialize for StartGame<'_> {
         // Random multiplayer correlation UUID.
         buffer.put_string(MULTIPLAYER_CORRELATION_ID);
 
-        buffer.write_le::<bool>(self.server_authoritative_inventory);
+        buffer.write_bool(self.server_authoritative_inventory);
         buffer.put_string(CLIENT_VERSION_STRING); // Game version
 
         todo!();
@@ -458,6 +458,6 @@ impl Serialize for StartGame<'_> {
 
         buffer.write_le::<u64>(self.server_block_state_checksum);
         buffer.write_le::<u128>(self.world_template_id);
-        buffer.write_le::<bool>(self.client_side_generation);
+        buffer.write_bool(self.client_side_generation);
     }
 }

@@ -66,7 +66,6 @@ fn database_test() {
     // dbg!(block);
 }
 
-#[ignore]
 #[test]
 fn load_level_dat() {
     const LEVEL_DAT: &[u8] = include_bytes!("../test/level.dat");

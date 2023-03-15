@@ -1,4 +1,4 @@
-use crate::bytes::{BinRead, SharedBuffer};
+use crate::bytes::{BinaryReader, SharedBuffer};
 use num_traits::FromPrimitive;
 use std::ops::ShrAssign;
 

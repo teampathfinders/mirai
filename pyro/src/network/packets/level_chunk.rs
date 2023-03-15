@@ -55,7 +55,7 @@ impl Serialize for LevelChunk {
             }
         }
 
-        buffer.write_le::<bool>(self.blob_hashes.is_some());
+        buffer.write_bool(self.blob_hashes.is_some());
         if let Some(hashes) = &self.blob_hashes {
             buffer.put_var_u32(hashes.len() as u32);
             for hash in hashes {

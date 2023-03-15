@@ -20,7 +20,7 @@ impl ExperimentData<'_> {
 
     pub fn serialize(&self, buffer: &mut MutableBuffer) {
         buffer.put_string(&self.name);
-        buffer.write_le::<bool>(self.enabled);
+        buffer.write_bool(self.enabled);
     }
 }
 
@@ -74,7 +74,7 @@ impl ConnectedPacket for ResourcePackStack<'_> {
 
 impl Serialize for ResourcePackStack<'_> {
     fn serialize(&self, buffer: &mut MutableBuffer) {
-        buffer.write_le::<bool>(self.forced_to_accept);
+        buffer.write_bool(self.forced_to_accept);
 
         buffer.put_var_u32(self.resource_packs.len() as u32);
         for pack in self.resource_packs {
@@ -93,6 +93,6 @@ impl Serialize for ResourcePackStack<'_> {
             experiment.serialize(buffer);
         }
 
-        buffer.write_le::<bool>(self.experiments_previously_toggled);
+        buffer.write_bool(self.experiments_previously_toggled);
     }
 }

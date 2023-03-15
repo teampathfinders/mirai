@@ -4,7 +4,7 @@ use crate::FieldType;
 use serde::de::Unexpected::Seq;
 use serde::de::{DeserializeSeed, MapAccess, SeqAccess, Visitor};
 use serde::{de, Deserialize};
-use util::bytes::{BinRead, MutableBuffer, SharedBuffer};
+use util::bytes::{BinaryReader, MutableBuffer, SharedBuffer};
 use util::{bail, Error, Result};
 
 macro_rules! is_ty {

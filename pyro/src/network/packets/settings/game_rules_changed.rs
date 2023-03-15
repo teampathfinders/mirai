@@ -248,7 +248,7 @@ impl GameRule {
 
     pub fn serialize(&self, buffer: &mut BytesMut) {
         buffer.put_string(self.name());
-        buffer.write_le::<bool>(true); // Player can modify. Doesn't seem to do anything.
+        buffer.write_bool(true); // Player can modify. Doesn't seem to do anything.
 
         match self {
             Self::CommandBlocksEnabled(b)
@@ -278,7 +278,7 @@ impl GameRule {
             | Self::ShowTags(b)
             | Self::TntExplodes(b) => {
                 buffer.put_var_u32(1);
-                buffer.write_le::<bool>(*b);
+                buffer.write_bool(*b);
             }
             Self::FunctionCommandLimit(i)
             | Self::MaxCommandChainLength(i)

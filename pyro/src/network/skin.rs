@@ -131,7 +131,7 @@ impl PersonaPiece {
         buffer.put_string(&self.piece_id);
         buffer.put_string(self.piece_type.name());
         buffer.put_string(&self.pack_id);
-        buffer.write_le::<bool>(self.default);
+        buffer.write_bool(self.default);
         buffer.put_string(&self.product_id);
     }
 
@@ -472,10 +472,10 @@ impl Skin {
             tint.serialize(buffer);
         }
 
-        buffer.write_le::<bool>(self.is_premium);
-        buffer.write_le::<bool>(self.is_persona);
-        buffer.write_le::<bool>(self.cape_on_classic_skin);
-        buffer.write_le::<bool>(self.is_primary_user);
+        buffer.write_bool(self.is_premium);
+        buffer.write_bool(self.is_persona);
+        buffer.write_bool(self.cape_on_classic_skin);
+        buffer.write_bool(self.is_primary_user);
     }
 
     pub fn deserialize(buffer: &mut Bytes) -> Result<Self> {

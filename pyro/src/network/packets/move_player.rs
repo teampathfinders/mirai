@@ -88,7 +88,7 @@ impl Serialize for MovePlayer {
         buffer.put_vec3f(&self.position);
         buffer.put_vec3f(&self.rotation);
         buffer.write_le::<u8>(self.mode as u8);
-        buffer.write_le::<bool>(self.on_ground);
+        buffer.write_bool(self.on_ground);
         buffer.put_var_u64(self.ridden_runtime_id);
 
         if self.mode == MovementMode::Teleport {

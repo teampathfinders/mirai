@@ -112,9 +112,9 @@ impl ConnectedPacket for ResourcePacksInfo<'_> {
 
 impl Serialize for ResourcePacksInfo<'_> {
     fn serialize(&self, buffer: &mut BytesMut) {
-        buffer.write_le::<bool>(self.required);
-        buffer.write_le::<bool>(self.scripting_enabled);
-        buffer.write_le::<bool>(self.forcing_server_packs);
+        buffer.write_bool(self.required);
+        buffer.write_bool(self.scripting_enabled);
+        buffer.write_bool(self.forcing_server_packs);
 
         buffer.write_be::<u16>()(self.behavior_info.len() as u16);
         for pack in self.behavior_info {
@@ -124,7 +124,7 @@ impl Serialize for ResourcePacksInfo<'_> {
             buffer.put_string(&pack.content_key);
             buffer.put_string(&pack.subpack_name);
             buffer.put_string(&pack.content_identity);
-            buffer.write_le::<bool>(pack.has_scripts);
+            buffer.write_bool(pack.has_scripts);
         }
 
         buffer.write_be::<u16>()(self.resource_info.len() as u16);
@@ -135,8 +135,8 @@ impl Serialize for ResourcePacksInfo<'_> {
             buffer.put_string(&pack.content_key);
             buffer.put_string(&pack.subpack_name);
             buffer.put_string(&pack.content_identity);
-            buffer.write_le::<bool>(pack.has_scripts);
-            buffer.write_le::<bool>(pack.rtx_enabled);
+            buffer.write_bool(pack.has_scripts);
+            buffer.write_bool(pack.rtx_enabled);
         }
     }
 }

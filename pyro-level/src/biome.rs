@@ -1,5 +1,5 @@
 use bytes::{Buf, Bytes};
-use util::bytes::{BinRead, SharedBuffer};
+use util::bytes::{BinaryReader, SharedBuffer};
 use util::{Deserialize, Result};
 
 #[derive(Debug)]

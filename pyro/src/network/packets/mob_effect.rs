@@ -87,7 +87,7 @@ impl Serialize for MobEffectUpdate {
         buffer.write_le::<u8>(self.action as u8);
         buffer.put_var_i32(self.effect_kind as i32);
         buffer.put_var_i32(self.amplifier);
-        buffer.write_le::<bool>(self.particles);
+        buffer.write_bool(self.particles);
         buffer.put_var_i32(self.duration);
     }
 }

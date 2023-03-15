@@ -52,7 +52,7 @@ impl Serialize for CommandOutput<'_> {
 
         buffer.put_var_u32(self.output.len() as u32);
         for output in self.output {
-            buffer.write_le::<bool>(output.is_success);
+            buffer.write_bool(output.is_success);
             buffer.put_string(output.message);
 
             buffer.put_var_u32(output.parameters.len() as u32);

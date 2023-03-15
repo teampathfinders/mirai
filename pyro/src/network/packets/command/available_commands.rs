@@ -189,7 +189,7 @@ impl Serialize for AvailableCommands<'_> {
 
                     buffer.put_string(&parameter.name);
                     buffer.write_le::<i32>()(command_type as i32);
-                    buffer.write_le::<bool>(parameter.optional);
+                    buffer.write_bool(parameter.optional);
                     buffer.write_le::<u8>(parameter.options);
                 }
             }
