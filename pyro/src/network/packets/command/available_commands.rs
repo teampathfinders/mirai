@@ -1,6 +1,6 @@
-use std::collections::{HashMap, HashSet};
+use std::collections::{HashMap};
 
-use util::{bail, Result};
+use util::{Result};
 use util::bytes::{BinaryWriter, MutableBuffer};
 
 use util::Serialize;
@@ -152,7 +152,7 @@ impl Serialize for AvailableCommands<'_> {
 
         buffer.write_var_u32(self.commands.len() as u32);
         for command in self.commands {
-            let mut alias = if !command.aliases.is_empty() {
+            let alias = if !command.aliases.is_empty() {
                 enum_indices[&(command.name.clone() + "Aliases")] as i32
             } else {
                 -1

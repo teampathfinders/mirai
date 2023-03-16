@@ -1,5 +1,5 @@
 
-use uuid::Uuid;
+
 use util::{bail, Error, Result};
 use util::bytes::{BinaryReader, SharedBuffer};
 

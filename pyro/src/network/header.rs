@@ -1,6 +1,6 @@
 
 
-use util::{Result, Deserialize, Serialize};
+use util::{Result, Serialize};
 use util::bytes::{BinaryReader, BinaryWriter, MutableBuffer, SharedBuffer, size_of_varint};
 
 /// Game packets are prefixed with a length and a header.

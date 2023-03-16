@@ -1,6 +1,4 @@
-use std::{any::TypeId, fmt};
-use std::fmt::Write;
-
+use std::fmt;
 
 use util::{Serialize, Result, bail};
 use util::bytes::{BinaryWriter, MutableBuffer, size_of_varint, VarInt, VarString};

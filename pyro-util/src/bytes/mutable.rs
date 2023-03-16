@@ -23,6 +23,11 @@ impl MutableBuffer {
     }
 
     #[inline]
+    pub fn insert(&mut self, index: usize, element: u8) {
+        self.data.insert(index, element);
+    }
+
+    #[inline]
     pub fn advance_cursor(&mut self, n: usize) {
         self.cursor += n;
     }

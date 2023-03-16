@@ -1,17 +1,17 @@
-use std::fmt::{Debug, Formatter, Write};
-use std::io::Read;
-use std::sync::atomic::{AtomicU16, AtomicU32, AtomicU64, Ordering};
+use std::fmt::{Debug, Formatter};
+
+use std::sync::atomic::{AtomicU64, Ordering};
 
 use base64::Engine;
 use ctr::cipher::KeyIvInit;
 use ctr::cipher::{StreamCipher, StreamCipherSeekCore};
-use flate2::read::DeflateDecoder;
-use jsonwebtoken::{Algorithm, DecodingKey, EncodingKey, Validation};
-use lazy_static::lazy_static;
+
+use jsonwebtoken::Algorithm;
+
 use p384::ecdh::diffie_hellman;
 use p384::ecdsa::SigningKey;
 use p384::pkcs8::{DecodePublicKey, EncodePrivateKey, EncodePublicKey};
-use p384::{NistP384, PublicKey};
+use p384::PublicKey;
 use parking_lot::Mutex;
 use rand::distributions::Alphanumeric;
 use rand::rngs::OsRng;
@@ -158,7 +158,7 @@ impl Encryptor {
     ///
     /// If the checksum does not match, a [`BadPacket`](util::ErrorKind::Malformed) error is returned.
     /// The client must be disconnected if this fails, because the data has probably been tampered with.
-    pub fn decrypt<'a>(&self, mut buffer: &mut MutableBuffer) -> Result<()> {
+    pub fn decrypt<'a>(&self, buffer: &mut MutableBuffer) -> Result<()> {
         if buffer.len() < 9 {
             bail!(
                 Malformed,
@@ -186,7 +186,7 @@ impl Encryptor {
     }
 
     /// Encrypts a packet and appends the computed checksum.
-    pub fn encrypt(&self, mut buffer: SharedBuffer) -> Result<MutableBuffer> {
+    pub fn encrypt(&self, buffer: SharedBuffer) -> Result<MutableBuffer> {
         let counter = self.send_counter.fetch_add(1, Ordering::SeqCst);
         let checksum = self.compute_checksum(buffer.as_ref(), counter);
 

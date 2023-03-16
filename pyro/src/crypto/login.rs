@@ -1,5 +1,3 @@
-use std::io::Write;
-
 use base64::Engine;
 use jsonwebtoken::{Algorithm, DecodingKey, Validation};
 use p384::pkcs8::spki;

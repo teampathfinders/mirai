@@ -372,7 +372,7 @@ pub struct Skin {
 mod base64 {
     use base64::Engine;
     use serde::{Deserializer, Deserialize};
-    use util::bytes::{MutableBuffer, SharedBuffer};
+    use util::bytes::{MutableBuffer};
 
     const ENGINE: base64::engine::GeneralPurpose = base64::engine::general_purpose::STANDARD;
 

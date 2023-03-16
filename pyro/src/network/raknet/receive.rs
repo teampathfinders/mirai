@@ -1,5 +1,5 @@
 use std::io::Read;
-use std::sync::Arc;
+
 use std::sync::atomic::Ordering;
 use std::time::Instant;
 
@@ -23,9 +23,9 @@ use crate::{
 };
 use crate::{BroadcastPacket, Frame, FrameBatch};
 use crate::Session;
-use util::{bail, error, pyassert, Result};
+use util::{bail, Result};
 use util::{Deserialize, Serialize};
-use util::bytes::{BinaryReader, MutableBuffer, SharedBuffer, VarInt};
+use util::bytes::{BinaryReader, MutableBuffer, VarInt};
 
 use crate::DEFAULT_SEND_CONFIG;
 use crate::ConnectedPing;
@@ -134,8 +134,8 @@ impl Session {
     }
 
     /// Processes an unencapsulated game packet.
-    async fn handle_unframed_packet(&self, mut pk: MutableBuffer) -> Result<()> {
-        let bytes = pk.as_ref();
+    async fn handle_unframed_packet(&self, pk: MutableBuffer) -> Result<()> {
+        let _bytes = pk.as_ref();
 
         let packet_id = *pk.first().expect("Game packet buffer was empty");
         match packet_id {
@@ -211,7 +211,7 @@ impl Session {
         pk.advance_cursor(1); // Skip over 0xfe ID.
         let mut snapshot = pk.snapshot();
         let start_len = snapshot.len();
-        let length = snapshot.read_var_u32()?;
+        let _length = snapshot.read_var_u32()?;
         let header = Header::deserialize(&mut snapshot)?;
 
         // Advance past the header.

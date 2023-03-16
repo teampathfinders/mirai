@@ -1,5 +1,5 @@
 use util::bytes::SharedBuffer;
-use util::Serialize;
+
 use crate::ConnectedPacket;
 
 /// Lets the client know about the entities available on the server.

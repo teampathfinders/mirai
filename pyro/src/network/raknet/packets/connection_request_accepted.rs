@@ -1,7 +1,5 @@
 use std::net::{Ipv4Addr, SocketAddr, SocketAddrV4};
-use std::time::{SystemTime, UNIX_EPOCH};
 
-use crate::instance_manager::IPV4_LOCAL_ADDR;
 use util::bytes::{BinaryWriter, MutableBuffer, IPV4_MEM_SIZE, IPV6_MEM_SIZE};
 use util::Result;
 use util::Serialize;

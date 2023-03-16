@@ -1,9 +1,9 @@
-use std::sync::Arc;
+
 use dashmap::DashMap;
-use util::bytes::{ArcBuffer, BinaryWriter, MutableBuffer, SharedBuffer};
+use util::bytes::{BinaryWriter, MutableBuffer};
 
 use crate::{Frame};
-use crate::Reliability;
+
 
 /// Keeps track of packet fragments, merging them when all fragments have been received.
 #[derive(Default, Debug)]
@@ -21,7 +21,7 @@ impl CompoundCollector {
     ///
     /// If this fragment makes the compound complete, all fragments will be merged
     /// and the completed packet will be returned.
-    pub fn insert(&self, mut frame: Frame) -> Option<Frame> {
+    pub fn insert(&self, frame: Frame) -> Option<Frame> {
         // Save compound_id, because the frame will be moved.
         let compound_id = frame.compound_id;
         let is_completed = {
@@ -36,7 +36,7 @@ impl CompoundCollector {
                     vec
                 });
 
-            let mut fragments = entry.value_mut();
+            let fragments = entry.value_mut();
 
             // Verify that the fragment index is valid
             if frame.compound_index >= frame.compound_size {

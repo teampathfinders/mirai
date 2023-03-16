@@ -1,18 +1,17 @@
 
-use util::{Deserialize, Result, Vector3i};
-use util::bytes::{MutableBuffer, SharedBuffer};
+use util::{Deserialize, Result};
+use util::bytes::{MutableBuffer};
 
 use crate::{
     {
-        CameraShake, CameraShakeAction, CameraShakeType, Interact,
-        InteractAction, MovePlayer, PlaySound,
+        Interact, MovePlayer,
     },
     Session,
 };
 
 impl Session {
     pub fn handle_interaction(&self, pk: MutableBuffer) -> Result<()> {
-        let request = Interact::deserialize(pk.snapshot())?;
+        let _request = Interact::deserialize(pk.snapshot())?;
 
         Ok(())
     }

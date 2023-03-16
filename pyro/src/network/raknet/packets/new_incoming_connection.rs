@@ -1,4 +1,3 @@
-use std::net::SocketAddr;
 use util::bytes::SharedBuffer;
 
 use util::pyassert;

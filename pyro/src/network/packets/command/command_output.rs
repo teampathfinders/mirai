@@ -1,6 +1,6 @@
 
 use uuid::Uuid;
-use util::{Deserialize, Serialize, Result};
+use util::{Serialize, Result};
 use util::bytes::{BinaryWriter, MutableBuffer};
 use crate::{ConnectedPacket};
 

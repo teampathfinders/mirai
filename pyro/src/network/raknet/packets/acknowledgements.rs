@@ -1,8 +1,8 @@
 use std::ops::Range;
 
 use util::bytes::{BinaryReader, BinaryWriter, MutableBuffer, SharedBuffer};
+use util::pyassert;
 use util::Result;
-use util::{pyassert, u24::u24};
 use util::{Deserialize, Serialize};
 
 /// Record containing IDs of confirmed packets.

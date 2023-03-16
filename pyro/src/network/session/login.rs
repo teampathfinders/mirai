@@ -1,8 +1,8 @@
-use std::collections::HashMap;
-use std::num::NonZeroU64;
+
+
 use std::sync::atomic::Ordering;
 
-use jsonwebtoken::jwk::KeyOperations::Encrypt;
+
 use level::Dimension;
 
 use crate::SERVER_CONFIG;
@@ -11,27 +11,24 @@ use crate::CacheStatus;
 use crate::AvailableCommands;
 use crate::{
     BroadcastIntent, ChatRestrictionLevel, ChunkRadiusReply,
-    ChunkRadiusRequest, ClientToServerHandshake, CreativeContent, ItemStack,
-    ItemType, Login, NetworkSettings, PermissionLevel, PlayerMovementSettings,
+    ChunkRadiusRequest, ClientToServerHandshake, CreativeContent, Login, NetworkSettings, PermissionLevel, PlayerMovementSettings,
     PlayerMovementType, RequestNetworkSettings, ResourcePackClientResponse,
     ResourcePackStack, ResourcePacksInfo, ServerToClientHandshake,
     SpawnBiomeType, StartGame, WorldGenerator, DISCONNECTED_LOGIN_FAILED, Status, PlayStatus,
 };
-use crate::GameMode::Creative;
+
 use crate::{
-    AbilityData, AddPlayer, BiomeDefinitionList, Difficulty, GameMode,
-    GameRule, MessageType,  PlayerListAdd, PlayerListAddEntry,
-    SetLocalPlayerAsInitialized, TextMessage, UpdateSkin,
+    BiomeDefinitionList, Difficulty, GameMode, MessageType,
+    SetLocalPlayerAsInitialized, TextMessage,
     ViolationWarning, CLIENT_VERSION_STRING, NETWORK_VERSION,
 };
-use crate::Reliability;
-use crate::{Frame, FrameBatch};
+
+
 use crate::Session;
 use util::{
-    bail, error, BlockPosition, Deserialize, Result, Vector2f, Vector3f,
-    Vector3i,
+    bail, BlockPosition, Deserialize, Result, Vector2f, Vector3f,
 };
-use util::bytes::{MutableBuffer, SharedBuffer};
+use util::bytes::{MutableBuffer};
 
 impl Session {
     /// Handles a [`ClientCacheStatus`] packet.
@@ -57,7 +54,7 @@ impl Session {
     /// All connected sessions are notified of the new player
     /// and the new player gets a list of all current players.
     pub fn handle_local_player_initialized(&self, pk: MutableBuffer) -> Result<()> {
-        let request = SetLocalPlayerAsInitialized::deserialize(pk.snapshot())?;
+        let _request = SetLocalPlayerAsInitialized::deserialize(pk.snapshot())?;
 
         // Add player to other's player lists.
         tracing::info!("{} has connected", self.get_display_name()?);
@@ -65,7 +62,7 @@ impl Session {
         // Tell rest of server that this client has joined...
         {
             let identity_data = self.get_identity_data()?;
-            let user_data = self.get_user_data()?;
+            let _user_data = self.get_user_data()?;
 
             // self.broadcast_others(PlayerListAdd {
             //     entries: &[PlayerListAddEntry {
@@ -109,7 +106,7 @@ impl Session {
 
     /// Handles a [`ChunkRadiusRequest`] packet by returning the maximum allowed render distance.
     pub fn handle_chunk_radius_request(&self, pk: MutableBuffer) -> Result<()> {
-        let request = ChunkRadiusRequest::deserialize(pk.snapshot())?;
+        let _request = ChunkRadiusRequest::deserialize(pk.snapshot())?;
         self.send(ChunkRadiusReply {
             allowed_radius: SERVER_CONFIG.read().allowed_render_distance,
         })
@@ -119,7 +116,7 @@ impl Session {
         &self,
         pk: MutableBuffer,
     ) -> Result<()> {
-        let request = ResourcePackClientResponse::deserialize(pk.snapshot())?;
+        let _request = ResourcePackClientResponse::deserialize(pk.snapshot())?;
 
         // TODO: Implement resource packs.
 

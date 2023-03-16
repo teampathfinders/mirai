@@ -5,9 +5,9 @@ use std::time::Duration;
 use dashmap::mapref::one::Ref;
 use dashmap::DashMap;
 use level::ChunkManager;
-use parking_lot::{RwLock, RwLockReadGuard};
+
 use tokio::sync::oneshot::Receiver;
-use tokio::task::JoinHandle;
+
 use tokio_util::sync::CancellationToken;
 use util::Result;
 
@@ -112,24 +112,27 @@ impl LevelManager {
 
     /// Sets the value of a game rule, returning the old value if there was one.
     #[inline]
-    pub fn set_game_rule(&self, game_rule: GameRule) -> Option<GameRule> {
+    pub fn set_game_rule(
+        &self,
+        game_rule: GameRule,
+    ) -> Result<Option<GameRule>> {
         let name = game_rule.name();
 
         self.session_manager
-            .broadcast(GameRulesChanged { game_rules: &[game_rule] });
-        self.game_rules.insert(name.to_owned(), game_rule)
+            .broadcast(GameRulesChanged { game_rules: &[game_rule] })?;
+        Ok(self.game_rules.insert(name.to_owned(), game_rule))
     }
 
     /// Modifies multiple game rules at the same time.
     /// This function also notifies all the clients of the change.
     #[inline]
-    pub fn set_game_rules(&self, game_rules: &[GameRule]) {
+    pub fn set_game_rules(&self, game_rules: &[GameRule]) -> Result<()> {
         for game_rule in game_rules {
             let name = game_rule.name();
             self.game_rules.insert(name.to_owned(), *game_rule);
         }
 
         self.session_manager
-            .broadcast(GameRulesChanged { game_rules });
+            .broadcast(GameRulesChanged { game_rules })
     }
 }

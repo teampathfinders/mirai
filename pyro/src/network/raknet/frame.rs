@@ -1,13 +1,13 @@
-use std::io::Read;
-use std::ops::Deref;
-use std::sync::Arc;
+
+
+
 
 
 use crate::Reliability;
 use util::pyassert;
 use util::Result;
 use util::{Deserialize, Serialize};
-use util::bytes::{BinaryReader, BinaryWriter, MutableBuffer, ArcBuffer, SharedBuffer};
+use util::bytes::{BinaryReader, BinaryWriter, MutableBuffer, SharedBuffer};
 
 /// Bit flag indicating that the packet is encapsulated in a frame.
 pub const CONNECTED_PEER_BIT_FLAG: u8 = 0x80;
@@ -50,17 +50,15 @@ impl FrameBatch {
     }
 
     pub fn deserialize(mut buffer: SharedBuffer) -> Result<Self> {
-        pyassert!(buffer.read_u8()? & 0x80 != 0);
+        debug_assert_ne!(buffer.read_u8()? & 0x80, 0);
 
         let batch_number = buffer.read_u24_le()?;
-        tracing::debug!("{buffer:?}");
-
         let mut frames = Vec::new();
 
         while !buffer.is_empty() {
             frames.push(Frame::deserialize(&mut buffer)?);
         }
-        assert_eq!(buffer.len(), 0);
+        debug_assert_eq!(buffer.len(), 0);
 
         Ok(Self { sequence_number: batch_number.into(), frames })
     }
@@ -70,7 +68,7 @@ impl FrameBatch {
         buffer.write_u24_le(self.sequence_number.try_into()?);
 
         for frame in &self.frames {
-            frame.serialize(buffer);
+            frame.serialize(buffer)?;
         }
 
         Ok(())

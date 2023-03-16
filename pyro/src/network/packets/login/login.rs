@@ -1,6 +1,6 @@
 use base64::Engine;
 
-use jsonwebtoken::{Algorithm, DecodingKey, Validation};
+
 use serde_repr::Deserialize_repr;
 
 use crate::crypto::{
@@ -8,8 +8,8 @@ use crate::crypto::{
 };
 use crate::ConnectedPacket;
 use util::Deserialize;
-use util::{bail, pyassert};
-use util::{Error, Result};
+
+use util::{Result};
 use util::bytes::{BinaryReader, SharedBuffer};
 use crate::Skin;
 

@@ -28,7 +28,7 @@ impl Session {
 
         let mut serialized = MutableBuffer::new();
         for frame_batch in frame_batches {
-            frame_batch.serialize(&mut serialized);            
+            frame_batch.serialize(&mut serialized)?;
 
             self.raknet
                 .udp_socket

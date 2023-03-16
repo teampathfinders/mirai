@@ -31,7 +31,7 @@ impl<'a> Serialize for UpdateSkin<'a> {
 }
 
 impl<'a> Deserialize<'a> for UpdateSkin<'a> {
-    fn deserialize(mut buffer: SharedBuffer) -> Result<Self> {
+    fn deserialize(_buffer: SharedBuffer) -> Result<Self> {
         // let uuid = Uuid::from_u128(buffer.get_u128_le());
         // let skin = Skin::deserialize(&mut buffer)?;
 

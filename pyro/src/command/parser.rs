@@ -2,7 +2,7 @@ use std::cmp::Ordering;
 use std::collections::HashMap;
 
 use std::str::Split;
-use util::{Result, bail, error};
+use util::{Result, bail};
 use dashmap::DashMap;
 
 use crate::{Command, CommandDataType, CommandOverload};

@@ -1,15 +1,13 @@
-use std::f32::consts::E;
 use std::net::{Ipv4Addr, Ipv6Addr, SocketAddrV4};
 use std::sync::Arc;
-use std::time::{Duration, SystemTime};
+use std::time::Duration;
 
 use parking_lot::RwLock;
 use rand::Rng;
 use tokio::net::UdpSocket;
-use tokio::signal;
+
 use tokio::sync::oneshot::Receiver;
-use tokio::sync::{mpsc, OnceCell};
-use tokio::task::JoinHandle;
+
 use tokio_util::sync::CancellationToken;
 
 use crate::level_manager::LevelManager;
@@ -29,12 +27,12 @@ use crate::{
     CommandPermissionLevel,
 };
 use crate::{
-    GameRule, BOOLEAN_GAME_RULES, CLIENT_VERSION_STRING, INTEGER_GAME_RULES,
+    BOOLEAN_GAME_RULES, CLIENT_VERSION_STRING, INTEGER_GAME_RULES,
     NETWORK_VERSION,
 };
-use util::bail;
-use util::bytes::{MutableBuffer, SharedBuffer};
-use util::{error, Result};
+
+use util::bytes::MutableBuffer;
+use util::Result;
 use util::{Deserialize, Serialize};
 
 /// Local IPv4 address
@@ -175,7 +173,7 @@ impl InstanceManager {
 
         session_manager.set_level_manager(Arc::downgrade(&level_manager))?;
 
-        /// UDP receiver job.
+        // UDP receiver job.
         let receiver_task = {
             let udp_socket = udp_socket.clone();
             let session_manager = session_manager.clone();
@@ -196,7 +194,9 @@ impl InstanceManager {
 
         // then shut down all services.
         tracing::info!("Disconnecting all clients");
-        session_manager.kick_all("Server closed").await;
+        if let Err(e) = session_manager.kick_all("Server closed").await {
+            tracing::error!("Failed to kick remaining sessions: {e}");
+        }
 
         tracing::info!("Waiting for services to shut down...");
         token.cancel();
@@ -204,7 +204,7 @@ impl InstanceManager {
         drop(session_manager);
         drop(level_manager);
 
-        tokio::join!(receiver_task, level_notifier);
+        let _ = tokio::join!(receiver_task, level_notifier);
 
         Ok(())
     }
@@ -212,7 +212,7 @@ impl InstanceManager {
     /// Generates a response to the [`OfflinePing`] packet with [`OfflinePong`].
     #[inline]
     fn process_unconnected_ping(
-        mut pk: RawPacket,
+        pk: RawPacket,
         server_guid: u64,
         metadata: &str,
     ) -> Result<RawPacket> {
@@ -221,7 +221,7 @@ impl InstanceManager {
 
         let mut serialized =
             MutableBuffer::with_capacity(pong.serialized_size());
-        pong.serialize(&mut serialized);
+        pong.serialize(&mut serialized)?;
 
         let pk = RawPacket { buf: serialized, addr: pk.addr };
 
@@ -242,13 +242,13 @@ impl InstanceManager {
 
             pk.buf.clear();
             pk.buf.reserve_to(reply.serialized_size());
-            reply.serialize(&mut pk.buf);
+            reply.serialize(&mut pk.buf)?;
         } else {
             let reply = OpenConnectionReply1 { mtu: request.mtu, server_guid };
 
             pk.buf.clear();
             pk.buf.reserve_to(reply.serialized_size());
-            reply.serialize(&mut pk.buf);
+            reply.serialize(&mut pk.buf)?;
         }
 
         Ok(pk)
@@ -273,7 +273,7 @@ impl InstanceManager {
 
         pk.buf.clear();
         pk.buf.reserve_to(reply.serialized_size());
-        reply.serialize(&mut pk.buf);
+        reply.serialize(&mut pk.buf)?;
 
         sess_manager.add_session(
             udp_socket,
@@ -292,7 +292,7 @@ impl InstanceManager {
         sess_manager: Arc<SessionManager>,
     ) {
         let server_guid = rand::thread_rng().gen();
-        let mut metadata = Self::refresh_metadata(
+        let metadata = Self::refresh_metadata(
             "description",
             server_guid,
             sess_manager.session_count(),
@@ -318,7 +318,7 @@ impl InstanceManager {
                 _ = token.cancelled() => break
             };
 
-            let mut pk = RawPacket {
+            let pk = RawPacket {
                 buf: MutableBuffer::from(recv_buf[..n].to_vec()),
                 addr: address,
             };

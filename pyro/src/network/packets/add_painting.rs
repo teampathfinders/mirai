@@ -1,6 +1,4 @@
-use std::fmt::Write;
-
-use util::{Result, Vector3f, Vector3i};
+use util::{Result, Vector3f};
 use util::bytes::{BinaryWriter, MutableBuffer, size_of_varint};
 
 use util::Serialize;

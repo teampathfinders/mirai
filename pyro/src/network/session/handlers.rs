@@ -1,30 +1,24 @@
-use std::collections::HashMap;
-use std::net::{Ipv4Addr, SocketAddr, SocketAddrV4};
-use std::time::Duration;
+
+
+
 
 
 use util::{
-    bail, BlockPosition, Deserialize, Result, Vector3f, Vector3i, Vector4f,
+    bail, Deserialize, Result,
 };
-use util::bytes::{MutableBuffer, SharedBuffer};
+use util::bytes::{MutableBuffer};
 
 use crate::ParsedCommand;
 use crate::{
     CommandOutput, CommandOutputMessage, CommandOutputType, CommandRequest,
     SettingsCommand,
 };
-use crate::{ItemStack, ItemType, PermissionLevel};
-use crate::{AbilityData, AddPlayer};
+
+
 use crate::{
     {
-        AddPainting, Animate, CameraShake, CameraShakeAction, CameraShakeType,
-        ChangeDimension, ClientBoundDebugRenderer, CreditsStatus,
-        CreditsUpdate, DebugRendererAction, Difficulty, GameMode, GameRule,
-        GameRulesChanged, MessageType, MobEffectAction, MobEffectKind,
-        MobEffectUpdate, NetworkChunkPublisherUpdate, PaintingDirection,
-        PlaySound, RequestAbility, SetCommandsEnabled, SetDifficulty,
-        SetPlayerGameMode, SetTime, SetTitle, ShowProfile, SpawnExperienceOrb,
-        TextMessage, TitleAction, ToastRequest, Transfer, UpdateFogStack,
+        Animate, MessageType, RequestAbility,
+        TextMessage,
         UpdateSkin,
     },
     Session,
@@ -62,7 +56,7 @@ impl Session {
     }
 
     pub fn handle_animation(&self, pk: MutableBuffer) -> Result<()> {
-        let request = Animate::deserialize(pk.snapshot())?;
+        let _request = Animate::deserialize(pk.snapshot())?;
 
         Ok(())
     }

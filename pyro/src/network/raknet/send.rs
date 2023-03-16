@@ -7,7 +7,7 @@ use flate2::write::DeflateEncoder;
 use flate2::Compression;
 
 use crate::SERVER_CONFIG;
-use crate::Header;
+
 use crate::CompressionAlgorithm;
 use crate::{ConnectedPacket, Packet, CONNECTED_PACKET_ID};
 use crate::{Ack, AckRecord};
@@ -15,8 +15,8 @@ use crate::Reliability;
 use crate::{Frame, FrameBatch};
 use crate::Session;
 use util::Result;
-use util::{Deserialize, Serialize};
-use util::bytes::{ArcBuffer, BinaryWriter, MutableBuffer, SharedBuffer};
+use util::{Serialize};
+use util::bytes::{BinaryWriter, MutableBuffer, SharedBuffer};
 
 use crate::SendPriority;
 
@@ -36,21 +36,18 @@ impl Session {
     #[inline]
     pub fn send<T: ConnectedPacket + Serialize>(&self, pk: T) -> Result<()> {
         let pk = Packet::new(pk);
-        let mut serialized = pk.serialize()?;
+        let serialized = pk.serialize()?;
 
         self.send_serialized(serialized, DEFAULT_SEND_CONFIG)
     }
 
     /// Sends a game packet with custom reliability and priority
-    pub fn send_serialized<B>(
-        &self,
-        mut pk: B,
-        config: PacketConfig,
-    ) -> Result<()>
+    pub fn send_serialized<B>(&self, mut pk: B, config: PacketConfig) -> Result<()>
     where
         B: AsRef<[u8]>
     {
-        let mut pk = if self.raknet.compression_enabled.load(Ordering::SeqCst) {
+        let mut out;
+        if self.raknet.compression_enabled.load(Ordering::SeqCst) {
             let (algorithm, threshold) = {
                 let config = SERVER_CONFIG.read();
                 (config.compression_algorithm, config.compression_threshold)
@@ -69,21 +66,25 @@ impl Session {
                         );
 
                         writer.write_all(pk.as_ref())?;
-                        MutableBuffer::from(writer.finish()?)
+                        out = MutableBuffer::from(writer.finish()?)
                     }
                 }
             } else {
-                MutableBuffer::from(vec![CONNECTED_PACKET_ID])
+                out = MutableBuffer::with_capacity(1 + pk.as_ref().len());
+                out.write_u8(CONNECTED_PACKET_ID);
+                out.append(pk.as_ref());
             }
         } else {
-            MutableBuffer::from(vec![CONNECTED_PACKET_ID])
+            out = MutableBuffer::with_capacity(1 + pk.as_ref().len());
+            out.write_u8(CONNECTED_PACKET_ID);
+            out.append(pk.as_ref());
         };
 
         if let Some(encryptor) = self.encryptor.get() {
-            pk = encryptor.encrypt(SharedBuffer::from(&pk.as_ref()[1..]))?
+            out = encryptor.encrypt(SharedBuffer::from(&pk.as_ref()[1..]))?
         };
 
-        self.send_raw_buffer_with_config(pk, config);
+        self.send_raw_buffer_with_config(out, config);
         Ok(())
     }
 
@@ -206,7 +207,7 @@ impl Session {
 
     #[async_recursion]
     async fn send_raw_frames(&self, frames: Vec<Frame>) -> Result<()> {
-        dbg!("SENDING");
+        dbg!(&frames);
 
         let mut serialized = MutableBuffer::new();
 
@@ -260,7 +261,7 @@ impl Session {
                 batch.frames.push(frame);
             } else if !batch.is_empty() {
                 serialized.clear();
-                batch.serialize(&mut serialized);
+                batch.serialize(&mut serialized)?;
 
                 // TODO: Add IPv6 support
                 self.raknet
@@ -286,7 +287,7 @@ impl Session {
         // Send remaining packets not sent by loop
         if !batch.is_empty() {
             serialized.clear();
-            batch.serialize(&mut serialized);
+            batch.serialize(&mut serialized)?;
 
             if has_reliable_packet {
                 self.raknet.recovery_queue.insert(batch);
@@ -306,7 +307,7 @@ impl Session {
         Ok(())
     }
 
-    fn split_frame(&self, mut frame: &Frame) -> Vec<Frame> {
+    fn split_frame(&self, frame: &Frame) -> Vec<Frame> {
         let chunk_max_size = self.raknet.mtu as usize
             - std::mem::size_of::<Frame>()
             - std::mem::size_of::<FrameBatch>();
@@ -327,7 +328,7 @@ impl Session {
             self.raknet.compound_id.fetch_add(1, Ordering::SeqCst);
 
         for (i, chunk) in chunks.enumerate() {
-            let mut fragment = Frame {
+            let fragment = Frame {
                 reliability: frame.reliability,
                 is_compound: true,
                 compound_index: i as u32,

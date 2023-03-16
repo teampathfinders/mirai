@@ -1,11 +1,7 @@
-use std::collections::HashMap;
-use std::fmt::Write;
-
-
 use level::Dimension;
 
 use util::{Serialize};
-use util::{bail, Error, Result};
+use util::{Result};
 use util::{BlockPosition, Vector2f, Vector3f};
 use util::bytes::{BinaryWriter, MutableBuffer, VarInt, VarString};
 use crate::{CLIENT_VERSION_STRING, Difficulty, GameMode, ConnectedPacket, GameRule};

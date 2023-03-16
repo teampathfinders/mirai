@@ -1,34 +1,31 @@
 use std::net::SocketAddr;
-use std::num::NonZeroU64;
+
 use std::sync::atomic::{
-    AtomicBool, AtomicU16, AtomicU32, AtomicU64, Ordering,
+    AtomicBool, AtomicU64, Ordering,
 };
-use std::sync::{Arc, Weak};
-use std::time::{Duration, Instant};
+use std::sync::{Arc};
+use std::time::{Instant};
 
 use aes::cipher::typenum::NonZero;
 
-use parking_lot::{Mutex, RwLock, RwLockReadGuard};
+use parking_lot::{Mutex, RwLock};
 use tokio::net::UdpSocket;
 use tokio::sync::{broadcast, mpsc, OnceCell};
 use tokio_util::sync::CancellationToken;
 use uuid::Uuid;
 
 use crate::crypto::{Encryptor, IdentityData, UserData};
-use crate::instance_manager::InstanceManager;
+
 use crate::level_manager::LevelManager;
 use crate::{DeviceOS, Disconnect, PermissionLevel};
 use crate::{
-    ConnectedPacket, GameMode, MessageType, Packet, PlayerListRemove,
-    TextMessage,
+    ConnectedPacket, GameMode,
 };
 use crate::{BroadcastPacket, RaknetData};
 use crate::Skin;
-use util::{bail, Serialize, Vector3f};
+use util::Vector3f;
 use util::{error, Result};
-use util::bytes::{MutableBuffer, SharedBuffer};
-
-use crate::SessionManager;
+use util::bytes::MutableBuffer;
 
 static RUNTIME_ID_COUNTER: AtomicU64 = AtomicU64::new(0);
 
@@ -86,7 +83,7 @@ impl Session {
     /// Creates a new session.
     pub fn new(
         broadcast: broadcast::Sender<BroadcastPacket>,
-        mut receiver: mpsc::Receiver<MutableBuffer>,
+        receiver: mpsc::Receiver<MutableBuffer>,
         level_manager: Arc<LevelManager>,
         ipv4_socket: Arc<UdpSocket>,
         address: SocketAddr,

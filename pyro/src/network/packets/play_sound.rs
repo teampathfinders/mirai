@@ -1,5 +1,5 @@
 
-use util::{Result, Vector, Vector3f, Vector3i};
+use util::{Result, Vector3i};
 use util::bytes::{BinaryWriter, MutableBuffer, size_of_varint};
 
 use util::Serialize;

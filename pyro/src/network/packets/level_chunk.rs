@@ -1,4 +1,4 @@
-use std::io::Write;
+
 use util::{Result, Vector2i};
 use util::bytes::{BinaryWriter, MutableBuffer};
 

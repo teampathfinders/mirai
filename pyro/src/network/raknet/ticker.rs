@@ -3,7 +3,7 @@ use std::{
     time::{Duration, Instant},
 };
 use tokio::sync::mpsc;
-use util::bytes::{MutableBuffer, SharedBuffer};
+use util::bytes::{MutableBuffer};
 
 
 use util::Result;
@@ -41,7 +41,7 @@ impl Session {
             // Flush last acknowledgements before closing
             match self.flush_acknowledgements().await {
                 Ok(_) => (),
-                Err(e) => {
+                Err(_e) => {
                     tracing::error!(
                         "Failed to flush last acknowledgements before session close"
                     );
@@ -51,7 +51,7 @@ impl Session {
             // Flush last packets before closing
             match self.flush().await {
                 Ok(_) => (),
-                Err(e) => {
+                Err(_e) => {
                     tracing::error!(
                         "Failed to flush last packets before session close"
                     );
@@ -120,7 +120,7 @@ impl Session {
 
     /// Performs tasks not related to packet processing
     pub async fn tick(&self) -> Result<()> {
-        let current_tick = self.current_tick.fetch_add(1, Ordering::SeqCst);
+        let _current_tick = self.current_tick.fetch_add(1, Ordering::SeqCst);
 
         // Session has timed out
         if Instant::now().duration_since(*self.raknet.last_update.read())

@@ -2,7 +2,7 @@
 
 use util::bytes::{BinaryReader, SharedBuffer};
 
-use util::pyassert;
+
 use util::Deserialize;
 use util::Result;
 

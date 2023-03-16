@@ -3,12 +3,12 @@
 use crate::ConnectionRequest;
 use crate::ConnectionRequestAccepted;
 use crate::NewIncomingConnection;
-use crate::Frame;
+
 use crate::Reliability;
 use crate::Session;
 use util::Result;
 use util::{Deserialize, Serialize};
-use util::bytes::{MutableBuffer, SharedBuffer};
+use util::bytes::{MutableBuffer};
 
 use crate::ConnectedPing;
 use crate::ConnectedPong;
@@ -25,7 +25,7 @@ impl Session {
 
         pk.clear();
         pk.reserve_to(reply.serialized_size());
-        reply.serialize(&mut pk);
+        reply.serialize(&mut pk)?;
 
         self.send_raw_buffer(pk);
         Ok(())
@@ -33,7 +33,7 @@ impl Session {
 
     /// Handles a [`NewIncomingConnection`] packet.
     pub fn handle_new_incoming_connection(&self, pk: MutableBuffer) -> Result<()> {
-        let request = NewIncomingConnection::deserialize(pk.snapshot())?;
+        let _request = NewIncomingConnection::deserialize(pk.snapshot())?;
         Ok(())
     }
 
@@ -47,7 +47,7 @@ impl Session {
 
         pk.clear();
         pk.reserve_to(pong.serialized_size());
-        pong.serialize(&mut pk);
+        pong.serialize(&mut pk)?;
 
         self.send_raw_buffer_with_config(
             pk,

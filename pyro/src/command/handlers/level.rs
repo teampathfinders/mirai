@@ -1,4 +1,4 @@
-use std::fmt::format;
+
 
 use util::{pyassert, Result, error};
 
@@ -16,7 +16,7 @@ impl LevelManager {
         // Command has value parameter, store the game rule value.
         if let Some(value) = command.parameters.get("value") {
             let new_value = GameRule::from_parsed(rule_name, value)?;
-            let old_value = self.set_game_rule(new_value);
+            let old_value = self.set_game_rule(new_value)?;
 
             if let Some(old_value) = old_value {
                 Ok(format!("Set game rule '{rule_name}' to {new_value} (was {old_value})."))

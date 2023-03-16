@@ -1,5 +1,5 @@
 
-use util::{BlockPosition, Deserialize, Vector3i, Result};
+use util::{Deserialize, Vector3i, Result};
 use util::bytes::{BinaryReader, SharedBuffer};
 use crate::ConnectedPacket;
 

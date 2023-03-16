@@ -1,6 +1,6 @@
 use util::bytes::SharedBuffer;
 use crate::ConnectedPacket;
-use util::pyassert;
+
 use util::Deserialize;
 use util::Result;
 

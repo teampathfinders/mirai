@@ -1,6 +1,6 @@
 use crate::{OFFLINE_MESSAGE_DATA, RAKNET_VERSION};
 use std::io::Write;
-use util::bytes::{BinaryWriter, MutableBuffer, SharedBuffer};
+use util::bytes::{BinaryWriter, MutableBuffer};
 use util::Result;
 use util::Serialize;
 
