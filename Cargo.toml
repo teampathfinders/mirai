@@ -1,20 +1,19 @@
 [workspace]
 members = [
-    "nbt",
-    "common",
-    "server",
-    "level"
+    "pyro",
+    "pyro-nbt",
+    "pyro-util",
+    "pyro-level"
 ]
 
 [profile.release]
-# debug = true
 opt-level = 3
-debug = false
-strip = "symbols"
+debug = true
+strip = "none"  # Keep debuginfo for panic backtraces
 debug-assertions = false
 overflow-checks = false
 lto = "thin"
 panic = "unwind"
 incremental = false
-codegen-units = 16
+codegen-units = 1
 rpath = false
