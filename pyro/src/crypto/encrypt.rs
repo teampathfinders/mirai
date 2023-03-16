@@ -167,13 +167,13 @@ impl Encryptor {
             );
         }
 
-        self.cipher_decrypt.lock().apply_keystream(buffer.as_mut());
-
+        self.cipher_decrypt.lock().apply_keystream(buffer.as_mut_slice());
         let counter = self.receive_counter.fetch_add(1, Ordering::SeqCst);
-
-        let checksum = &buffer.as_ref()[buffer.len() - 8..];
+        
+        let slice = buffer.as_slice();
+        let checksum = &slice[slice.len() - 8..];
         let computed_checksum = self
-            .compute_checksum(&buffer.as_ref()[..buffer.len() - 8], counter);
+            .compute_checksum(&slice[..slice.len() - 8], counter);
 
         if !checksum.eq(&computed_checksum) {
             bail!(Malformed, "Encryption checksums do not match");
