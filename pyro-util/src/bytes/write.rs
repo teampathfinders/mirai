@@ -1,8 +1,8 @@
-use std::net::SocketAddr;
-use paste::paste;
-use uuid::Uuid;
-use crate::{BlockPosition, Vector};
 use crate::u24::u24;
+use crate::{BlockPosition, Vector};
+use paste::paste;
+use std::net::SocketAddr;
+use uuid::Uuid;
 
 macro_rules! declare_primitive_fns {
     ($($ty: ident),+) => {
@@ -25,7 +25,9 @@ macro_rules! declare_primitive_fns {
 }
 
 pub trait BinaryWriter {
-    declare_primitive_fns!(u16, i16, u24, u32, i32, u64, i64, u128, i128, f32, f64);
+    declare_primitive_fns!(
+        u16, i16, u24, u32, i32, u64, i64, u128, i128, f32, f64
+    );
 
     fn append(&mut self, v: &[u8]);
 

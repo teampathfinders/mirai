@@ -2,8 +2,8 @@ use std::net::SocketAddr;
 use util::bytes::SharedBuffer;
 
 use util::pyassert;
-use util::{Deserialize, bytes::BinaryReader};
 use util::Result;
+use util::{bytes::BinaryReader, Deserialize};
 
 /// Confirms that the connection was successfully initiated.
 #[derive(Debug)]

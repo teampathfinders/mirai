@@ -1,5 +1,5 @@
-use std::io::Write;
 use crate::Result;
+use std::io::Write;
 use util::bytes::{BinaryWriter, MutableBuffer, SharedBuffer};
 
 /// A blob used in the cache protocol.

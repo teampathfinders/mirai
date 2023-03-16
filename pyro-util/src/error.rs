@@ -76,13 +76,17 @@ pub enum ErrorKind {
 pub struct Error {
     kind: ErrorKind,
     msg: String,
-    backtrace: Backtrace
+    backtrace: Backtrace,
 }
 
 impl Error {
     #[inline]
     pub fn new(kind: ErrorKind, msg: String) -> Self {
-        Self { kind, msg, backtrace: Backtrace::capture() }
+        Self {
+            kind,
+            msg,
+            backtrace: Backtrace::capture(),
+        }
     }
 
     #[inline]
@@ -101,7 +105,7 @@ impl serde::de::Error for Error {
         Self {
             kind: ErrorKind::Malformed,
             msg: v.to_string(),
-            backtrace: Backtrace::capture()
+            backtrace: Backtrace::capture(),
         }
     }
 }
@@ -119,7 +123,11 @@ impl fmt::Debug for Error {
 
 impl fmt::Display for Error {
     fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
-        write!(fmt, "{:?} | {}\nbacktrace: {}", self.kind, self.msg, self.backtrace)
+        write!(
+            fmt,
+            "{:?} | {}\nbacktrace: {}",
+            self.kind, self.msg, self.backtrace
+        )
     }
 }
 

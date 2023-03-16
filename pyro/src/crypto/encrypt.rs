@@ -158,10 +158,7 @@ impl Encryptor {
     ///
     /// If the checksum does not match, a [`BadPacket`](util::ErrorKind::Malformed) error is returned.
     /// The client must be disconnected if this fails, because the data has probably been tampered with.
-    pub fn decrypt<'a>(
-        &self,
-        mut buffer: &mut MutableBuffer,
-    ) -> Result<()> {
+    pub fn decrypt<'a>(&self, mut buffer: &mut MutableBuffer) -> Result<()> {
         if buffer.len() < 9 {
             bail!(
                 Malformed,
@@ -170,18 +167,13 @@ impl Encryptor {
             );
         }
 
-        self.cipher_decrypt
-            .lock()
-            .apply_keystream(buffer.as_mut());
+        self.cipher_decrypt.lock().apply_keystream(buffer.as_mut());
 
         let counter = self.receive_counter.fetch_add(1, Ordering::SeqCst);
 
-        let checksum =
-            &buffer.as_ref()[buffer.len() - 8..];
-        let computed_checksum = self.compute_checksum(
-            &buffer.as_ref()[..buffer.len() - 8],
-            counter,
-        );
+        let checksum = &buffer.as_ref()[buffer.len() - 8..];
+        let computed_checksum = self
+            .compute_checksum(&buffer.as_ref()[..buffer.len() - 8], counter);
 
         if !checksum.eq(&computed_checksum) {
             bail!(Malformed, "Encryption checksums do not match");

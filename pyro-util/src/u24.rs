@@ -1,4 +1,5 @@
 use crate::{bail, Error, ErrorKind, Result};
+use core::fmt;
 
 #[allow(non_camel_case_types)]
 #[derive(Copy, Clone, PartialEq, Eq, Hash)]
@@ -62,6 +63,12 @@ impl u24 {
         } else {
             u32::from_le_bytes([0, self.0[0], self.0[1], self.0[2]])
         }
+    }
+}
+
+impl fmt::Debug for u24 {
+    fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
+        write!(fmt, "{:?}", self.to_u32())
     }
 }
 

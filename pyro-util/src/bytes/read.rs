@@ -27,7 +27,9 @@ macro_rules! declare_primitive_fns {
 
 /// Adds binary reading capabilities to a reader.
 pub trait BinaryReader<'a> {
-    declare_primitive_fns!(u16, i16, u24, u32, i32, u64, i64, u128, i128, f32, f64);
+    declare_primitive_fns!(
+        u16, i16, u24, u32, i32, u64, i64, u128, i128, f32, f64
+    );
 
     fn advance(&mut self, n: usize) -> Result<()>;
     /// Takes `n` bytes out of the reader.

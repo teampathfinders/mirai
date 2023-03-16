@@ -1,5 +1,5 @@
-use crate::{bail, BlockPosition};
 use crate::bytes::{BinaryReader, MutableBuffer, VarInt};
+use crate::{bail, BlockPosition};
 use paste::paste;
 use std::borrow::Borrow;
 use std::fmt::Debug;
@@ -81,7 +81,7 @@ impl<'a> BinaryReader<'a> for &'a [u8] {
 
         Ok(())
     }
-    
+
     /// Takes a specified amount of bytes from the buffer.
     ///
     /// If the amount of bytes to take from the buffer is known at compile-time,
@@ -248,61 +248,178 @@ impl<'a> Read for SharedBuffer<'a> {
 #[cfg(test)]
 mod test {
     use super::SharedBuffer;
-    use crate::bytes::BinaryReader;
+    use crate::bytes::{BinaryReader, BinaryWriter, MutableBuffer};
+    use crate::u24::u24;
+    use paste::paste;
+
+    macro_rules! define_test_fns {
+        ($($ty: ident),+) => {
+            paste! {$(
+                #[test]
+                fn [<read_write_ $ty _ le>]() {
+                    const VALUES: [$ty; 4] = [$ty::MAX, $ty::MIN, $ty::MAX - 42, $ty::MIN + 42];
+
+                    let mut buffer = MutableBuffer::new();
+                    for v in VALUES {
+                        buffer.[<write_ $ty _le>](v);
+                    }
+
+                    let mut ss = buffer.snapshot();
+                    for v in VALUES {
+                        assert_eq!(v, ss.[<read_ $ty _le>]().unwrap());
+                    }
+                }
+
+                #[test]
+                fn [<read_write_ $ty _ be>]() {
+                    const VALUES: [$ty; 4] = [$ty::MAX, $ty::MIN, $ty::MAX - 42, $ty::MIN + 42];
+
+                    let mut buffer = MutableBuffer::new();
+                    for v in VALUES {
+                        buffer.[<write_ $ty _be>](v);
+                    }
+
+                    let mut ss = buffer.snapshot();
+                    for v in VALUES {
+                        assert_eq!(v, ss.[<read_ $ty _be>]().unwrap());
+                    }
+                }
+            )+}
+        };
+    }
+
+    define_test_fns!(u16, i16, u32, i32, u64, i64, u128, i128);
 
     #[test]
-    fn test_read_u8() {
-        let s: &[u8] = &[42, 12, 1, 2, 3];
-        let mut buf = SharedBuffer::from(s);
+    fn read_write_u8() {
+        const VALUES: [u8; 4] = [u8::MAX, u8::MIN, u8::MAX - 42, u8::MIN + 42];
 
-        for x in s {
-            assert_eq!(buf.read_u8().unwrap(), *x);
+        let mut buffer = MutableBuffer::new();
+        for v in VALUES {
+            buffer.write_u8(v);
+        }
+
+        let mut ss = buffer.snapshot();
+        for v in VALUES {
+            assert_eq!(v, ss.read_u8().unwrap());
         }
     }
 
     #[test]
-    fn test_read_i8() {
-        let s: &[i8] = &[-10, 5, -42, 120];
-        let mut buf = SharedBuffer::from(unsafe {
-            std::mem::transmute::<&[i8], &[u8]>(s)
-        });
+    fn read_write_i8() {
+        const VALUES: [i8; 4] = [i8::MAX, i8::MIN, i8::MAX - 42, i8::MIN + 42];
 
-        for x in s {
-            assert_eq!(buf.read_i8().unwrap(), *x);
+        let mut buffer = MutableBuffer::new();
+        for v in VALUES {
+            buffer.write_i8(v);
+        }
+
+        let mut ss = buffer.snapshot();
+        for v in VALUES {
+            assert_eq!(v, ss.read_i8().unwrap());
+        }
+    }
+
+    // #[test]
+    // fn read_write_u24_le() {
+    //     const VALUES: [u24; 4] = [u24::MAX, u24::MIN, u24::MAX - 42.0, u24::MIN + 42.0];
+    //
+    //     let mut buffer = MutableBuffer::new();
+    //     for v in VALUES {
+    //         buffer.write_u24_le(v);
+    //     }
+    //
+    //     let mut ss = buffer.snapshot();
+    //     for v in VALUES {
+    //         assert_eq!(v, ss.read_u24_le().unwrap());
+    //     }
+    // }
+    //
+    // #[test]
+    // fn read_write_u24_be() {
+    //     const VALUES: [u24; 4] = [u24::MAX, u24::MIN, u24::MAX - 42.0, u24::MIN + 42.0];
+    //
+    //     let mut buffer = MutableBuffer::new();
+    //     for v in VALUES {
+    //         buffer.write_u24_be(v);
+    //     }
+    //
+    //     let mut ss = buffer.snapshot();
+    //     for v in VALUES {
+    //         assert_eq!(v, ss.read_u24_be().unwrap());
+    //     }
+    // }
+
+    #[test]
+    fn read_write_f32_le() {
+        const VALUES: [f32; 4] =
+            [f32::MAX, f32::MIN, f32::MAX - 42.0, f32::MIN + 42.0];
+
+        let mut buffer = MutableBuffer::new();
+        for v in VALUES {
+            buffer.write_f32_le(v);
+        }
+
+        let mut ss = buffer.snapshot();
+        for v in VALUES {
+            assert_eq!(v, ss.read_f32_le().unwrap());
         }
     }
 
     #[test]
-    fn test_read_u16() {
-        let o = [42, 24083];
-        let s: &[u8] = &[0, 42, 94, 19];
-        let mut buf = SharedBuffer::from(s);
+    fn read_write_f32_be() {
+        const VALUES: [f32; 4] =
+            [f32::MAX, f32::MIN, f32::MAX - 42.0, f32::MIN + 42.0];
 
-        for x in o {
-            assert_eq!(buf.read_u16_be().unwrap(), x);
+        let mut buffer = MutableBuffer::new();
+        for v in VALUES {
+            buffer.write_f32_be(v);
+        }
+
+        let mut ss = buffer.snapshot();
+        for v in VALUES {
+            assert_eq!(v, ss.read_f32_be().unwrap());
         }
     }
 
     #[test]
-    fn test_read_i16() {
-        let o = [-2397, 24083];
-        let s: &[u8] = &[246, 163, 94, 19];
-        let mut buf = SharedBuffer::from(s);
+    fn read_write_f64_le() {
+        const VALUES: [f64; 4] =
+            [f64::MAX, f64::MIN, f64::MAX - 42.0, f64::MIN + 42.0];
 
-        for x in o {
-            assert_eq!(buf.read_i16_be().unwrap(), x);
+        let mut buffer = MutableBuffer::new();
+        for v in VALUES {
+            buffer.write_f64_le(v);
+        }
+
+        let mut ss = buffer.snapshot();
+        for v in VALUES {
+            assert_eq!(v, ss.read_f64_le().unwrap());
         }
     }
 
     #[test]
-    fn test_read_str() {
-        let o = "Hello, World!";
-        let s: &[u8] = &[
-            13, 72, 101, 108, 108, 111, 44, 32, 87, 111, 114, 108, 100, 33,
-        ];
-        let mut buf = SharedBuffer::from(s);
+    fn read_write_f64_be() {
+        const VALUES: [f64; 4] =
+            [f64::MAX, f64::MIN, f64::MAX - 42.0, f64::MIN + 42.0];
 
-        assert_eq!(buf.read_str().unwrap(), o);
-        assert!(buf.is_empty());
+        let mut buffer = MutableBuffer::new();
+        for v in VALUES {
+            buffer.write_f64_be(v);
+        }
+
+        let mut ss = buffer.snapshot();
+        for v in VALUES {
+            assert_eq!(v, ss.read_f64_be().unwrap());
+        }
+    }
+
+    #[test]
+    fn read_write_str() {
+        let mut buffer = MutableBuffer::new();
+        buffer.write_str("Hello, World!");
+
+        let mut ss = buffer.snapshot();
+        assert_eq!(ss.read_str().unwrap(), "Hello, World!");
     }
 }

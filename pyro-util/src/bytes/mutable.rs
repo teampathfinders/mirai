@@ -12,7 +12,7 @@ use uuid::Uuid;
 /// It is the owned version of [`ReadBuffer`].
 pub struct MutableBuffer {
     data: Vec<u8>,
-    cursor: usize
+    cursor: usize,
 }
 
 impl MutableBuffer {
@@ -41,7 +41,7 @@ impl MutableBuffer {
     pub fn with_capacity(capacity: usize) -> Self {
         Self {
             data: Vec::with_capacity(capacity),
-            cursor: 0
+            cursor: 0,
         }
     }
 
@@ -99,18 +99,14 @@ impl BinaryWriter for MutableBuffer {
 impl From<Vec<u8>> for MutableBuffer {
     #[inline]
     fn from(data: Vec<u8>) -> Self {
-        Self {
-            data, cursor: 0
-        }
+        Self { data, cursor: 0 }
     }
 }
 
 impl Default for MutableBuffer {
     #[inline]
     fn default() -> Self {
-        Self {
-            data: Vec::new(), cursor: 0
-        }
+        Self { data: Vec::new(), cursor: 0 }
     }
 }
 

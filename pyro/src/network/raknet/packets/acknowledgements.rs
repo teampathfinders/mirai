@@ -1,8 +1,8 @@
 use std::ops::Range;
 
 use util::bytes::{BinaryReader, BinaryWriter, MutableBuffer, SharedBuffer};
-use util::{pyassert, u24::u24};
 use util::Result;
+use util::{pyassert, u24::u24};
 use util::{Deserialize, Serialize};
 
 /// Record containing IDs of confirmed packets.
@@ -15,7 +15,10 @@ pub enum AckRecord {
 }
 
 /// Encodes a list of acknowledgement records.
-fn encode_records(buffer: &mut MutableBuffer, records: &[AckRecord]) -> Result<()> {
+fn encode_records(
+    buffer: &mut MutableBuffer,
+    records: &[AckRecord],
+) -> Result<()> {
     buffer.write_i16_be(records.len() as i16);
     for record in records {
         match record {
