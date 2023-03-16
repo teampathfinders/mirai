@@ -160,8 +160,8 @@ impl Encryptor {
     /// The client must be disconnected if this fails, because the data has probably been tampered with.
     pub fn decrypt<'a>(
         &self,
-        mut buffer: SharedBuffer<'a>,
-    ) -> Result<SharedBuffer<'a>> {
+        mut buffer: &mut MutableBuffer,
+    ) -> Result<()> {
         if buffer.len() < 9 {
             bail!(
                 Malformed,
@@ -170,30 +170,27 @@ impl Encryptor {
             );
         }
 
-        todo!();
-        // let mut decryption_output = OwnedBuffer::with_capacity(buffer.len());
-        // decryption_output.resize(buffer.len(), 0x00);
-        //
-        // self.cipher_decrypt
-        //     .lock()
-        //     .apply_keystream_b2b(buffer.as_ref(), decryption_output.as_mut())?;
-        // let counter = self.receive_counter.fetch_add(1, Ordering::SeqCst);
-        //
-        // let checksum =
-        //     &decryption_output.as_ref()[decryption_output.len() - 8..];
-        // let computed_checksum = self.compute_checksum(
-        //     &decryption_output.as_ref()[..decryption_output.len() - 8],
-        //     counter,
-        // );
+        self.cipher_decrypt
+            .lock()
+            .apply_keystream(buffer.as_mut());
 
-        // if !checksum.eq(&computed_checksum) {
-        //     bail!(Malformed, "Encryption checksums do not match");
-        // }
-        //
-        // // Remove checksum from data.
-        // buffer.truncate(buffer.len() - 8);
-        //
-        // Ok(decryption_output.freeze())
+        let counter = self.receive_counter.fetch_add(1, Ordering::SeqCst);
+
+        let checksum =
+            &buffer.as_ref()[buffer.len() - 8..];
+        let computed_checksum = self.compute_checksum(
+            &buffer.as_ref()[..buffer.len() - 8],
+            counter,
+        );
+
+        if !checksum.eq(&computed_checksum) {
+            bail!(Malformed, "Encryption checksums do not match");
+        }
+
+        // Remove checksum from data.
+        buffer.truncate(buffer.len() - 8);
+
+        Ok(())
     }
 
     /// Encrypts a packet and appends the computed checksum.

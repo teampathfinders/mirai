@@ -1,12 +1,13 @@
+use std::sync::Arc;
 use std::sync::atomic::{AtomicU32, Ordering};
 
 use dashmap::DashMap;
 
-use crate::network::raknet::Frame;
+use crate::network::raknet::{Frame};
 
 #[derive(Debug, Default)]
 pub struct OrderChannel {
-    // channel: DashMap<u32, Frame>,
+    channel: DashMap<u32, Arc<Frame>>,
     /// Last complete index received from client.
     last_complete: AtomicU32,
     /// Last index assigned by server.
@@ -15,13 +16,11 @@ pub struct OrderChannel {
 
 impl OrderChannel {
     pub fn new() -> Self {
-        todo!()
-
-        // Self {
-        //     channel: DashMap::new(),
-        //     last_complete: AtomicU32::new(0),
-        //     last_server_index: AtomicU32::new(0),
-        // }
+        Self {
+            channel: DashMap::new(),
+            last_complete: AtomicU32::new(0),
+            last_server_index: AtomicU32::new(0),
+        }
     }
 
     #[inline]
@@ -29,7 +28,7 @@ impl OrderChannel {
         self.last_server_index.fetch_add(1, Ordering::SeqCst)
     }
 
-    pub fn insert(&self, frame: Frame) -> Option<Vec<Frame>> {
+    pub fn insert(&self, frame: Arc<Frame>) -> Option<Vec<Arc<Frame>>> {
         self.channel.insert(frame.order_index, frame);
 
         // Figure out which indexes are ready.

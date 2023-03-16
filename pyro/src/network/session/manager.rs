@@ -25,7 +25,6 @@ const FORWARD_TIMEOUT: Duration = Duration::from_millis(20);
 const GARBAGE_COLLECT_INTERVAL: Duration = Duration::from_secs(1);
 
 /// Keeps track of all sessions on the server.
-#[derive(Debug)]
 pub struct SessionManager {
     /// Whether the server is running.
     /// Once this token is cancelled, the tracker will cancel all the sessions' individual tokens.

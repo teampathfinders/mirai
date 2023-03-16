@@ -2,6 +2,7 @@ use crate::{bail, BlockPosition, Result};
 use crate::{u24::u24, Vector};
 use paste::paste;
 use std::mem;
+use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr};
 use uuid::Uuid;
 
 macro_rules! declare_primitive_fns {
@@ -25,9 +26,10 @@ macro_rules! declare_primitive_fns {
 }
 
 /// Adds binary reading capabilities to a reader.
-pub trait BinaryReader {
+pub trait BinaryReader<'a> {
     declare_primitive_fns!(u16, i16, u24, u32, i32, u64, i64, u128, i128, f32, f64);
 
+    fn advance(&mut self, n: usize) -> Result<()>;
     /// Takes `n` bytes out of the reader.
     fn take_n(&mut self, n: usize) -> Result<&[u8]>;
     /// Takes `N` bytes out of the reader.
@@ -127,7 +129,7 @@ pub trait BinaryReader {
 
     /// Reads a string prefixed by a variable u32.
     #[inline]
-    fn read_str(&mut self) -> Result<&str> {
+    fn read_str(&'a mut self) -> Result<&'a str> {
         let len = self.read_var_u32()?;
         let data = self.take_n(len as usize)?;
 
@@ -159,5 +161,32 @@ pub trait BinaryReader {
             x[i] = self.read_f32_le()?;
         }
         Ok(Vector::from(x))
+    }
+
+    fn read_addr(&mut self) -> Result<SocketAddr> {
+        let variant = self.read_u8()?;
+        Ok(match variant {
+            4 => {
+                let addr = IpAddr::V4(Ipv4Addr::from(self.read_u32_be()?));
+                let port = self.read_u16_be()?;
+
+                SocketAddr::new(addr, port)
+            }
+            6 => {
+                self.advance(2)?; // IP family (AF_INET6)
+                let port = self.read_u16_be()?;
+                self.advance(4)?; // Flow information
+                let addr = IpAddr::V6(Ipv6Addr::from(self.read_u128_be()?));
+                self.advance(4)?; // Scope ID
+
+                SocketAddr::new(addr, port)
+            }
+            _ => {
+                bail!(
+                    Malformed,
+                    "Invalid IP type {variant}, expected either 4 or 6"
+                );
+            }
+        })
     }
 }

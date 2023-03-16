@@ -269,7 +269,7 @@ impl SkinAnimation {
         buffer.write_u32_le(self.image_height);
         
         buffer.write_var_u32(self.image_data.len() as u32);
-        buffer.extend(&self.image_data);
+        buffer.append(&self.image_data);
 
         buffer.write_u32_le(self.animation_type as u32);
         buffer.write_f32_le(self.frame_count);
@@ -293,7 +293,7 @@ impl SkinAnimation {
 }
 
 /// A classic or persona skin.
-#[derive(Debug, Deserialize, Clone)]
+#[derive(Debug, Deserialize)]
 pub struct Skin {
     /// UUID created for the skin.
     #[serde(rename = "SkinId")]
@@ -406,7 +406,7 @@ impl Skin {
             != self.image_data.len() as u32
         {
             bail!(
-                InvalidSkin,
+                Malformed,
                 "Invalid skin dimensions, image data does not match"
             )
         }
@@ -415,7 +415,7 @@ impl Skin {
             != self.cape_image_data.len() as u32
         {
             bail!(
-                InvalidSkin,
+                Malformed,
                 "Invalid cape dimensions, image data does not match"
             )
         }
@@ -425,7 +425,7 @@ impl Skin {
                 != animation.image_data.len() as u32
             {
                 bail!(
-                    InvalidSkin,
+                    Malformed,
                     "Invalid animation dimensions, image data does not match"
                 )
             }
@@ -442,7 +442,7 @@ impl Skin {
         buffer.write_u32_le(self.image_width);
         buffer.write_u32_le(self.image_height);
         buffer.write_var_u32(self.image_data.len() as u32);
-        buffer.append(self.image_data.as_ref())?;
+        buffer.append(self.image_data.as_ref());
 
         buffer.write_u32_le(self.animations.len() as u32);
         for animation in &self.animations {
@@ -452,7 +452,7 @@ impl Skin {
         buffer.write_u32_le(self.cape_image_width);
         buffer.write_u32_le(self.cape_image_height);
         buffer.write_var_u32(self.cape_image_data.len() as u32);
-        buffer.append(self.cape_image_data.as_ref())?;
+        buffer.append(self.cape_image_data.as_ref());
 
         buffer.write_str(&self.geometry);
         buffer.write_str(&self.geometry_engine_version);

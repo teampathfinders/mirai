@@ -1,5 +1,5 @@
 use crate::{bail, BlockPosition};
-use crate::bytes::{BinaryReader, VarInt};
+use crate::bytes::{BinaryReader, MutableBuffer, VarInt};
 use paste::paste;
 use std::borrow::Borrow;
 use std::fmt::Debug;
@@ -12,11 +12,34 @@ use std::{cmp, fmt, io};
 
 use crate::Result;
 
+#[derive(Debug, Clone)]
 pub struct ArcBuffer(Arc<Vec<u8>>);
+
+impl ArcBuffer {
+    #[inline]
+    pub fn as_slice(&self) -> &[u8] {
+        self.0.as_slice()
+    }
+}
+
+impl From<MutableBuffer> for ArcBuffer {
+    #[inline]
+    fn from(value: MutableBuffer) -> Self {
+        ArcBuffer(Arc::new(value.into_inner()))
+    }
+}
+
+impl AsRef<[u8]> for ArcBuffer {
+    #[inline]
+    fn as_ref(&self) -> &[u8] {
+        self.0.as_slice()
+    }
+}
 
 impl Deref for ArcBuffer {
     type Target = [u8];
 
+    #[inline]
     fn deref(&self) -> &Self::Target {
         self.0.as_slice()
     }
@@ -35,9 +58,30 @@ impl<'a> SharedBuffer<'a> {
         let (_, b) = self.0.split_at(n);
         *self = SharedBuffer::from(b);
     }
+
+    #[inline]
+    pub fn truncate(&mut self, n: usize) {
+        let (a, _) = self.0.split_at(n);
+        *self = SharedBuffer::from(a);
+    }
 }
 
-impl<'a> BinaryReader for &'a [u8] {
+impl<'a> BinaryReader<'a> for &'a [u8] {
+    fn advance(&mut self, n: usize) -> Result<()> {
+        if self.len() < n {
+            bail!(
+                UnexpectedEof,
+                "cannot advance past {n} bytes, remaining: {}",
+                self.len()
+            )
+        }
+
+        let (_, b) = self.split_at(n);
+        *self = b;
+
+        Ok(())
+    }
+    
     /// Takes a specified amount of bytes from the buffer.
     ///
     /// If the amount of bytes to take from the buffer is known at compile-time,

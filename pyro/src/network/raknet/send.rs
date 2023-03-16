@@ -3,7 +3,7 @@ use std::sync::atomic::Ordering;
 
 use async_recursion::async_recursion;
 
-use flate2::bufread::DeflateEncoder;
+use flate2::write::DeflateEncoder;
 use flate2::Compression;
 
 use crate::config::SERVER_CONFIG;
@@ -16,7 +16,7 @@ use crate::network::raknet::{Frame, FrameBatch};
 use crate::network::session::Session;
 use util::Result;
 use util::{Deserialize, Serialize};
-use util::bytes::{BinaryWriter, MutableBuffer, SharedBuffer};
+use util::bytes::{ArcBuffer, BinaryWriter, MutableBuffer, SharedBuffer};
 
 use super::SendPriority;
 
@@ -38,25 +38,25 @@ impl Session {
         let pk = Packet::new(pk);
         let mut serialized = pk.serialize();
 
-        self.send_serialized(serialized.snapshot(), DEFAULT_SEND_CONFIG)
+        self.send_serialized(serialized, DEFAULT_SEND_CONFIG)
     }
 
     /// Sends a game packet with custom reliability and priority
-    pub fn send_serialized(
+    pub fn send_serialized<B>(
         &self,
-        mut pk: SharedBuffer,
+        mut pk: B,
         config: PacketConfig,
-    ) -> Result<()> {
-        let mut buffer = MutableBuffer::new();
-        buffer.write_u8(CONNECTED_PACKET_ID);
-
+    ) -> Result<()>
+    where
+        B: AsRef<[u8]>
+    {
         let mut pk = if self.raknet.compression_enabled.load(Ordering::SeqCst) {
             let (algorithm, threshold) = {
                 let config = SERVER_CONFIG.read();
                 (config.compression_algorithm, config.compression_threshold)
             };
 
-            if pk.len() > threshold as usize {
+            if pk.as_ref().len() > threshold as usize {
                 // Compress packet
                 match SERVER_CONFIG.read().compression_algorithm {
                     CompressionAlgorithm::Snappy => {
@@ -64,46 +64,46 @@ impl Session {
                     }
                     CompressionAlgorithm::Deflate => {
                         let mut writer = DeflateEncoder::new(
-                            Vec::new(),
+                            vec![CONNECTED_PACKET_ID],
                             Compression::best(),
                         );
 
                         writer.write_all(pk.as_ref())?;
-                        let compressed = writer.into_inner();
-
-                        MutableBuffer::from(compressed)
+                        MutableBuffer::from(writer.finish()?)
                     }
                 }
             } else {
-                MutableBuffer::from(pk.as_ref().to_vec())
+                MutableBuffer::from(vec![CONNECTED_PACKET_ID])
             }
         } else {
-            MutableBuffer::from(pk.as_ref().to_vec())
+            MutableBuffer::from(vec![CONNECTED_PACKET_ID])
         };
 
         if let Some(encryptor) = self.encryptor.get() {
-            pk = encryptor.encrypt(pk)?;
-        }
-        
-        buffer.put(pk);
+            pk = encryptor.encrypt(SharedBuffer::from(&pk.as_ref()[1..]))?
+        };
 
-        self.send_raw_buffer_with_config(buffer.freeze(), config);
+        self.send_raw_buffer_with_config(pk, config);
         Ok(())
     }
 
     /// Sends a raw buffer with default settings
     /// (reliable ordered and medium priority).
     #[inline]
-    pub fn send_raw_buffer(&self, buffer: SharedBuffer) {
+    pub fn send_raw_buffer<B>(&self, buffer: B)
+    where
+        B: Into<MutableBuffer>
+    {
         self.send_raw_buffer_with_config(buffer, DEFAULT_SEND_CONFIG);
     }
 
     /// Sends a raw buffer with custom reliability and priority.
-    pub fn send_raw_buffer_with_config(
+    pub fn send_raw_buffer_with_config<B>(
         &self,
-        buffer: SharedBuffer,
+        buffer: B,
         config: PacketConfig,
-    ) {
+    ) where B: Into<MutableBuffer> {
+        let buffer = buffer.into();
         self.raknet.send_queue.insert_raw(
             config.priority,
             Frame::new(config.reliability, buffer),
@@ -257,10 +257,6 @@ impl Session {
             if batch.estimate_size() + frame_size <= self.raknet.mtu as usize {
                 batch.frames.push(frame);
             } else if !batch.is_empty() {
-                if has_reliable_packet {
-                    self.raknet.recovery_queue.insert(batch.clone());
-                }
-
                 serialized.clear();
                 batch.serialize(&mut serialized);
 
@@ -269,6 +265,10 @@ impl Session {
                     .udp_socket
                     .send_to(serialized.as_ref(), self.raknet.address)
                     .await?;
+
+                if has_reliable_packet {
+                    self.raknet.recovery_queue.insert(batch);
+                }
 
                 has_reliable_packet = false;
                 batch = FrameBatch {
@@ -283,12 +283,12 @@ impl Session {
 
         // Send remaining packets not sent by loop
         if !batch.is_empty() {
-            if has_reliable_packet {
-                self.raknet.recovery_queue.insert(batch.clone());
-            }
-
             serialized.clear();
             batch.serialize(&mut serialized);
+
+            if has_reliable_packet {
+                self.raknet.recovery_queue.insert(batch);
+            }
 
             // TODO: Add IPv6 support
             self.raknet
@@ -331,7 +331,7 @@ impl Session {
                 compound_index: i as u32,
                 compound_size: compound_size as u32,
                 compound_id,
-                body: SharedBuffer::copy_from_slice(chunk),
+                body: MutableBuffer::from(chunk.to_vec()),
                 ..Default::default()
             };
 

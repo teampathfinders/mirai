@@ -54,7 +54,6 @@ pub struct PlayerData {
 ///
 /// Anything that has to do with specific clients must be communicated with their associated sessions.
 /// The server does not interact with clients directly, everything is done through these sessions.
-#[derive(Debug)]
 pub struct Session {
     /// Identity data such as XUID and display name.
     pub identity: OnceCell<IdentityData>,

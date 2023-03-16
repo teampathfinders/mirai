@@ -1,3 +1,4 @@
+use std::net::SocketAddr;
 use paste::paste;
 use uuid::Uuid;
 use crate::{BlockPosition, Vector};
@@ -119,6 +120,24 @@ pub trait BinaryWriter {
     fn write_vecf<const N: usize>(&mut self, v: &Vector<f32, N>) {
         for v in v.components() {
             self.write_f32_le(v);
+        }
+    }
+
+    fn write_addr(&mut self, v: SocketAddr) {
+        match v {
+            SocketAddr::V4(addr_v4) => {
+                self.write_u8(4);
+                self.append(addr_v4.ip().octets().as_ref());
+                self.write_u16_be(v.port());
+            }
+            SocketAddr::V6(addr_v6) => {
+                self.write_u8(6);
+                self.write_u16_be(23); // AF_INET6 family
+                self.write_u16_be(v.port());
+                self.write_u32_be(0); // Flow information
+                self.append(addr_v6.ip().octets().as_ref());
+                self.write_u32_be(0); // Scope information
+            }
         }
     }
 }

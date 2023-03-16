@@ -3,7 +3,7 @@ use std::{
     time::{Duration, Instant},
 };
 use tokio::sync::mpsc;
-use util::bytes::SharedBuffer;
+use util::bytes::{MutableBuffer, SharedBuffer};
 
 
 use util::Result;
@@ -62,7 +62,7 @@ impl Session {
 
     pub fn start_packet_job(
         self: Arc<Self>,
-        mut receiver: mpsc::Receiver<SharedBuffer>,
+        mut receiver: mpsc::Receiver<MutableBuffer>,
     ) {
         tokio::spawn(async move {
             let mut broadcast_recv = self.broadcast.subscribe();
@@ -102,13 +102,13 @@ impl Session {
             if let Ok(uuid) = self.get_uuid() {
                 tracing::info!("{display_name} has disconnected");
                 let _ = self.broadcast_others(TextMessage {
-                    message: format!("§e{display_name} has left the server."),
+                    message: &format!("§e{display_name} has left the server."),
                     message_type: MessageType::System,
                     needs_translation: false,
                     parameters: vec![],
-                    platform_chat_id: "".to_owned(),
-                    source_name: "".to_owned(),
-                    xuid: "".to_owned(),
+                    platform_chat_id: "",
+                    source_name: "",
+                    xuid: "",
                 });
 
                 let _ = self

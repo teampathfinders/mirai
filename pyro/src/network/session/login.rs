@@ -31,20 +31,20 @@ use util::{
     bail, error, BlockPosition, Deserialize, Result, Vector2f, Vector3f,
     Vector3i,
 };
-use util::bytes::SharedBuffer;
+use util::bytes::{MutableBuffer, SharedBuffer};
 
 impl Session {
     /// Handles a [`ClientCacheStatus`] packet.
     /// This stores the result in the [`Session::cache_support`] field.
-    pub fn handle_cache_status(&self, pk: SharedBuffer<'_>) -> Result<()> {
-        let request = CacheStatus::deserialize(pk)?;
+    pub fn handle_cache_status(&self, pk: MutableBuffer) -> Result<()> {
+        let request = CacheStatus::deserialize(pk.snapshot())?;
         self.cache_support.set(request.supports_cache)?;
 
         Ok(())
     }
 
-    pub fn handle_violation_warning(&self, pk: SharedBuffer<'_>) -> Result<()> {
-        let request = ViolationWarning::deserialize(pk)?;
+    pub fn handle_violation_warning(&self, pk: MutableBuffer) -> Result<()> {
+        let request = ViolationWarning::deserialize(pk.snapshot())?;
         tracing::error!("Received violation warning: {request:?}");
 
         self.kick("Violation warning")?;
@@ -56,8 +56,8 @@ impl Session {
     ///
     /// All connected sessions are notified of the new player
     /// and the new player gets a list of all current players.
-    pub fn handle_local_player_initialized(&self, pk: SharedBuffer<'_>) -> Result<()> {
-        let request = SetLocalPlayerAsInitialized::deserialize(pk)?;
+    pub fn handle_local_player_initialized(&self, pk: MutableBuffer) -> Result<()> {
+        let request = SetLocalPlayerAsInitialized::deserialize(pk.snapshot())?;
 
         // Add player to other's player lists.
         tracing::info!("{} has connected", self.get_display_name()?);
@@ -108,8 +108,8 @@ impl Session {
     }
 
     /// Handles a [`ChunkRadiusRequest`] packet by returning the maximum allowed render distance.
-    pub fn handle_chunk_radius_request(&self, pk: SharedBuffer) -> Result<()> {
-        let request = ChunkRadiusRequest::deserialize(pk)?;
+    pub fn handle_chunk_radius_request(&self, pk: MutableBuffer) -> Result<()> {
+        let request = ChunkRadiusRequest::deserialize(pk.snapshot())?;
         self.send(ChunkRadiusReply {
             allowed_radius: SERVER_CONFIG.read().allowed_render_distance,
         })
@@ -117,9 +117,9 @@ impl Session {
 
     pub fn handle_resource_pack_client_response(
         &self,
-        pk: SharedBuffer,
+        pk: MutableBuffer,
     ) -> Result<()> {
-        let request = ResourcePackClientResponse::deserialize(pk)?;
+        let request = ResourcePackClientResponse::deserialize(pk.snapshot())?;
 
         // TODO: Implement resource packs.
 
@@ -216,8 +216,8 @@ impl Session {
         Ok(())
     }
 
-    pub fn handle_client_to_server_handshake(&self, pk: SharedBuffer) -> Result<()> {
-        ClientToServerHandshake::deserialize(pk)?;
+    pub fn handle_client_to_server_handshake(&self, pk: MutableBuffer) -> Result<()> {
+        ClientToServerHandshake::deserialize(pk.snapshot())?;
 
         let response = PlayStatus { status: Status::LoginSuccess };
         self.send(response)?;
@@ -246,8 +246,8 @@ impl Session {
     }
 
     /// Handles a [`Login`] packet.
-    pub async fn handle_login(&self, pk: SharedBuffer<'_>) -> Result<()> {
-        let request = Login::deserialize(pk);
+    pub async fn handle_login(&self, pk: MutableBuffer) -> Result<()> {
+        let request = Login::deserialize(pk.snapshot());
         let request = match request {
             Ok(r) => r,
             Err(e) => {
@@ -272,8 +272,8 @@ impl Session {
     }
 
     /// Handles a [`RequestNetworkSettings`] packet.
-    pub fn handle_request_network_settings(&self, pk: SharedBuffer<'_>) -> Result<()> {
-        let request = RequestNetworkSettings::deserialize(pk)?;
+    pub fn handle_request_network_settings(&self, pk: MutableBuffer) -> Result<()> {
+        let request = RequestNetworkSettings::deserialize(pk.snapshot())?;
         if request.protocol_version != NETWORK_VERSION {
             if request.protocol_version > NETWORK_VERSION {
                 let response = PlayStatus { status: Status::FailedServer };

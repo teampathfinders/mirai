@@ -1,4 +1,5 @@
 use std::io::Read;
+use std::sync::Arc;
 use std::sync::atomic::Ordering;
 use std::time::Instant;
 
@@ -24,7 +25,7 @@ use crate::network::raknet::{BroadcastPacket, Frame, FrameBatch};
 use crate::network::session::Session;
 use util::{bail, pyassert, Result};
 use util::{Deserialize, Serialize};
-use util::bytes::{BinaryReader, MutableBuffer, SharedBuffer};
+use util::bytes::{BinaryReader, MutableBuffer, SharedBuffer, VarInt};
 
 use super::DEFAULT_SEND_CONFIG;
 use super::packets::ConnectedPing;
@@ -34,7 +35,7 @@ impl Session {
     ///
     /// If a packet is an ACK or NACK type, it will be responded to accordingly (using [`Session::handle_ack`] and [`Session::handle_nack`]).
     /// Frame batches are processed by [`Session::handle_frame_batch`].
-    pub async fn process_raw_packet(&self, pk: SharedBuffer<'_>) -> Result<bool> {
+    pub async fn process_raw_packet(&self, pk: MutableBuffer) -> Result<bool> {
         *self.raknet.last_update.write() = Instant::now();
 
         if pk.is_empty() {
@@ -43,8 +44,8 @@ impl Session {
 
         let pk_id = *pk.first().unwrap();
         match pk_id {
-            Ack::ID => self.handle_ack(pk)?,
-            Nak::ID => self.handle_nack(pk).await?,
+            Ack::ID => self.handle_ack(pk.snapshot())?,
+            Nak::ID => self.handle_nack(pk.snapshot()).await?,
             _ => self.handle_frame_batch(pk).await?,
         }
 
@@ -71,14 +72,14 @@ impl Session {
     /// * Inserting packets into the compound collector
     /// * Discarding old sequenced frames
     /// * Acknowledging reliable packets
-    async fn handle_frame_batch(&self, pk: SharedBuffer<'_>) -> Result<()> {
-        let batch = FrameBatch::deserialize(pk)?;
+    async fn handle_frame_batch(&self, pk: MutableBuffer) -> Result<()> {
+        let batch = FrameBatch::deserialize(pk.snapshot())?;
         self.raknet
             .client_batch_number
             .fetch_max(batch.sequence_number, Ordering::SeqCst);
 
-        for frame in &batch.frames {
-            self.handle_frame(frame, batch.sequence_number).await?;
+        for frame in batch.frames {
+            self.handle_frame(frame.into(), batch.sequence_number).await?;
         }
 
         Ok(())
@@ -87,7 +88,7 @@ impl Session {
     #[async_recursion]
     async fn handle_frame(
         &self,
-        frame: &Frame,
+        frame: Arc<Frame>,
         batch_number: u32,
     ) -> Result<()> {
         if frame.reliability.is_sequenced()
@@ -108,7 +109,7 @@ impl Session {
             if let Some(p) =
                 self.raknet.compound_collector.insert(frame.clone())
             {
-                return self.handle_frame(&p, batch_number).await;
+                return self.handle_frame(p.into(), batch_number).await;
             }
 
             return Ok(());
@@ -155,7 +156,7 @@ impl Session {
 
     async fn handle_game_packet(&self, mut pk: MutableBuffer) -> Result<()> {
         // Decrypt packet
-        let pk = if self.encryptor.initialized() {
+        if self.encryptor.initialized() {
             // Safe to unwrap because the encryptor is confirmed to exist.
             let encryptor = self
                 .encryptor
@@ -163,15 +164,14 @@ impl Session {
                 .expect("Encryptor was destroyed while it was in use");
 
             // Remove 0xfe packet ID.
-            let snapshot = SharedBuffer::from(&pk.as_slice()[1..]);
-            match encryptor.decrypt(snapshot) {
-                Ok(t) => t,
+            // let mut snapshot = SharedBuffer::from(&pk.as_slice()[1..]);
+            pk.advance_cursor(1);
+            match encryptor.decrypt(&mut pk) {
+                Ok(_) => (),
                 Err(e) => {
                     return Err(e);
                 }
             }
-        } else {
-            SharedBuffer::from(&pk.as_slice()[1..])
         };
 
         let compression_enabled =
@@ -183,9 +183,10 @@ impl Session {
             && compression_threshold != 0
             && pk.len() > compression_threshold as usize
         {
+            let alg = SERVER_CONFIG.read().compression_algorithm;
+
             // Packet is compressed
-            match SERVER_CONFIG.read().compression_algorithm
-            {
+            match alg {
                 CompressionAlgorithm::Snappy => {
                     unimplemented!("Snappy decompression");
                 }
@@ -195,9 +196,8 @@ impl Session {
 
                     let mut decompressed = Vec::new();
                     reader.read_to_end(&mut decompressed)?;
-                    // .context("Failed to decompress packet using Deflate")?;
 
-                    let buffer = SharedBuffer::from(decompressed.as_slice());
+                    let buffer = MutableBuffer::from(decompressed);
                     self.handle_decompressed_game_packet(buffer).await
                 }
             }
@@ -208,10 +208,18 @@ impl Session {
 
     async fn handle_decompressed_game_packet(
         &self,
-        mut pk: SharedBuffer<'_>,
+        mut pk: MutableBuffer,
     ) -> Result<()> {
-        let length = pk.read_var_u32()?;
-        let header = Header::deserialize(&mut pk)?;
+        let mut snapshot = pk.snapshot();
+        let start_len = snapshot.len();
+
+        let length = snapshot.read_var_u32()?;
+        pyassert!(length as usize == pk.len());
+
+        let header = Header::deserialize(&mut snapshot)?;
+
+        // Advance past the header.
+        pk.advance_cursor(length.var_len() + start_len - snapshot.len());
 
         match header.id {
             RequestNetworkSettings::ID => {

@@ -1,9 +1,8 @@
-
-
+use std::sync::Arc;
 use dashmap::DashMap;
-use util::bytes::{ArcBuffer, MutableBuffer, SharedBuffer};
+use util::bytes::{ArcBuffer, BinaryWriter, MutableBuffer, SharedBuffer};
 
-use crate::network::raknet::Frame;
+use crate::network::raknet::{Frame};
 use crate::network::raknet::Reliability;
 
 /// Keeps track of packet fragments, merging them when all fragments have been received.
@@ -22,7 +21,7 @@ impl CompoundCollector {
     ///
     /// If this fragment makes the compound complete, all fragments will be merged
     /// and the completed packet will be returned.
-    pub fn insert(&self, mut frame: Frame) -> Option<Frame> {
+    pub fn insert(&self, mut frame: Arc<Frame>) -> Option<Frame> {
         let is_completed = {
             let mut entry =
                 self.compounds.entry(frame.compound_id).or_insert_with(|| {
@@ -41,7 +40,7 @@ impl CompoundCollector {
             }
 
             fragments[frame.compound_index as usize] = frame.body;
-            !fragments.iter().any(<[u8]>::is_empty)
+            !fragments.iter().any(|b| b.is_empty())
         };
 
         if is_completed {
@@ -53,7 +52,10 @@ impl CompoundCollector {
             let fragments = &mut kv.1;
 
             // Merge all fragments
-            frame.body = SharedBuffer::copy_from_slice(fragments.concat().as_slice());
+            let mut frame = Arc::try_unwrap(frame).unwrap();
+
+            frame.body = MutableBuffer::new();
+            fragments.iter().for_each(|b| frame.body.append(b.as_slice()));
 
             // Set compound tag to false to make sure the completed packet isn't added into the
             // collector again.
