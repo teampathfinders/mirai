@@ -8,7 +8,7 @@ use crate::network::raknet::Reliability;
 /// Keeps track of packet fragments, merging them when all fragments have been received.
 #[derive(Debug, Default)]
 pub struct CompoundCollector {
-    compounds: DashMap<u16, Vec<MutableBuffer>>,
+    compounds: DashMap<u16, Vec<Option<Arc<Frame>>>>,
 }
 
 impl CompoundCollector {
@@ -28,7 +28,7 @@ impl CompoundCollector {
                     let mut vec =
                         Vec::with_capacity(frame.compound_size as usize);
 
-                    vec.resize_with(frame.compound_size as usize, || MutableBuffer::new());
+                    vec.resize(frame.compound_size as usize, None);
                     vec
                 });
 
@@ -39,8 +39,8 @@ impl CompoundCollector {
                 return None;
             }
 
-            fragments[frame.compound_index as usize] = frame.body;
-            !fragments.iter().any(|b| b.is_empty())
+            fragments[frame.compound_index as usize] = Some(frame.clone());
+            !fragments.iter().any(Option::is_none)
         };
 
         if is_completed {
@@ -55,7 +55,12 @@ impl CompoundCollector {
             let mut frame = Arc::try_unwrap(frame).unwrap();
 
             frame.body = MutableBuffer::new();
-            fragments.iter().for_each(|b| frame.body.append(b.as_slice()));
+
+            fragments
+                .iter()
+                .for_each(|b| if let Some(b) = b {
+                    frame.body.append(b.body.as_slice())
+                });
 
             // Set compound tag to false to make sure the completed packet isn't added into the
             // collector again.

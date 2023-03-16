@@ -2,6 +2,7 @@ use std::sync::Arc;
 use std::sync::atomic::{AtomicU32, Ordering};
 
 use dashmap::DashMap;
+use crate::Result;
 
 use crate::network::raknet::{Frame};
 
@@ -28,7 +29,7 @@ impl OrderChannel {
         self.last_server_index.fetch_add(1, Ordering::SeqCst)
     }
 
-    pub fn insert(&self, frame: Arc<Frame>) -> Option<Vec<Arc<Frame>>> {
+    pub fn insert(&self, frame: Arc<Frame>) -> Option<Vec<Frame>> {
         self.channel.insert(frame.order_index, frame);
 
         // Figure out which indexes are ready.
@@ -54,9 +55,11 @@ impl OrderChannel {
                         .1,
                 );
             }
-            return Some(ready);
-        }
 
-        None
+            let mapped = ready.into_iter().map(|a| Arc::try_unwrap(a).unwrap()).collect::<Vec<_>>();
+            Some(mapped)
+        } else {
+            None
+        }
     }
 }

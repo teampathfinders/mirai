@@ -23,7 +23,7 @@ use crate::network::raknet::packets::{
 };
 use crate::network::raknet::{BroadcastPacket, Frame, FrameBatch};
 use crate::network::session::Session;
-use util::{bail, pyassert, Result};
+use util::{bail, error, pyassert, Result};
 use util::{Deserialize, Serialize};
 use util::bytes::{BinaryReader, MutableBuffer, SharedBuffer, VarInt};
 
@@ -131,6 +131,7 @@ impl Session {
             return Ok(());
         }
 
+        let frame = Arc::try_unwrap(frame).map_err(|_| error!(Other, "There were multiple strong references"))?;
         self.handle_unframed_packet(frame.body).await?;
         Ok(())
     }
