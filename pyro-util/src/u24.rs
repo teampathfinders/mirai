@@ -32,12 +32,18 @@ impl u24 {
     }
 
     #[inline]
-    pub fn from_le_bytes(bytes: [u8; 3]) -> Self {
+    pub fn from_le_bytes(mut bytes: [u8; 3]) -> Self {
+        if cfg!(target_endian = "big") {
+            bytes.reverse();
+        }
         Self(bytes)
     }
 
     #[inline]
-    pub fn from_be_bytes(bytes: [u8; 3]) -> Self {
+    pub fn from_be_bytes(mut bytes: [u8; 3]) -> Self {
+        if cfg!(target_endian = "little") {
+            bytes.reverse();
+        }
         Self(bytes)
     }
 
@@ -74,6 +80,7 @@ impl TryFrom<u32> for u24 {
 
 impl From<u24> for u32 {
     fn from(value: u24) -> Self {
-        value.to_u32()
+        let b = value.0;
+        (b[0] as u32) | ((b[1] as u32) << 8) | ((b[2] as u32) << 16)
     }
 }

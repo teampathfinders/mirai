@@ -34,8 +34,6 @@ pub struct SendQueue {
 impl SendQueue {
     /// Creates a new send queue.
     pub fn new() -> Self {
-        todo!();
-
         Self {
             high_priority: Mutex::new(VecDeque::new()),
             medium_priority: Mutex::new(VecDeque::new()),

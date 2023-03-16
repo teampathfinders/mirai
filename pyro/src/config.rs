@@ -32,7 +32,7 @@ pub struct ServerConfig {
     /// Set to 0 to disable autosaves.
     pub autosave_interval: Duration,
     /// Path to the world to host.
-    pub level_path: String,
+    pub level_path: &'static str,
 }
 
 lazy_static! {
@@ -51,6 +51,6 @@ lazy_static! {
         server_name: "Pathfinders",
         allowed_render_distance: 16,
         autosave_interval: Duration::from_secs(60),
-        level_path: String::from("level/test/db")
+        level_path: "pyro-level/test/db"
     });
 }

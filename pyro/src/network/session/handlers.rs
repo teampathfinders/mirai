@@ -68,7 +68,7 @@ impl Session {
     }
 
     pub fn handle_command_request(&self, pk: MutableBuffer) -> Result<()> {
-        let request = CommandRequest::deserialize(&mut pk.snapshot())?;
+        let request = CommandRequest::deserialize(pk.snapshot())?;
 
         let command_list = self.level_manager.get_commands();
         let result = ParsedCommand::parse(command_list, &request.command);

@@ -8,11 +8,11 @@ members = [
 
 [profile.release]
 opt-level = 3
-debug = false
-strip = "symbols"
+debug = true
+strip = "none"  # Keep debuginfo for panic backtraces
 debug-assertions = false
 overflow-checks = false
-lto = "fat"
+lto = "thin"
 panic = "unwind"
 incremental = false
 codegen-units = 1

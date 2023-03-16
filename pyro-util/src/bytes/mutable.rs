@@ -53,7 +53,7 @@ impl MutableBuffer {
     #[inline]
     pub fn reserve_to(&mut self, total: usize) {
         if total > self.data.capacity() {
-            self.reserve(self.data.capacity() - total);
+            self.reserve(total - self.data.capacity());
         }
     }
 

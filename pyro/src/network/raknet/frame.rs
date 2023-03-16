@@ -53,6 +53,8 @@ impl FrameBatch {
         pyassert!(buffer.read_u8()? & 0x80 != 0);
 
         let batch_number = buffer.read_u24_le()?;
+        tracing::debug!("{buffer:?}");
+
         let mut frames = Vec::new();
 
         while !buffer.is_empty() {
@@ -110,7 +112,6 @@ impl Frame {
     /// Decodes the frame.
     #[allow(clippy::useless_let_if_seq)]
     fn deserialize(buffer: &mut SharedBuffer) -> Result<Self> {
-        let start_len = buffer.len();
         let flags = buffer.read_u8()?;
 
         let reliability = Reliability::try_from(flags >> 5)?;
@@ -143,9 +144,7 @@ impl Frame {
             compound_index = buffer.read_u32_be()?;
         }
 
-        let position = start_len - buffer.len();
-        let body = MutableBuffer::from(buffer.take_n(position)?.to_vec());
-
+        let body = MutableBuffer::from(buffer.take_n(length as usize)?.to_vec());
         let frame = Self {
             reliability,
             reliable_index,

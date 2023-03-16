@@ -1,3 +1,4 @@
+use std::backtrace::Backtrace;
 use std::fmt;
 
 /// Verifies that the given expression evaluates to true,
@@ -75,12 +76,13 @@ pub enum ErrorKind {
 pub struct Error {
     kind: ErrorKind,
     msg: String,
+    backtrace: Backtrace
 }
 
 impl Error {
     #[inline]
     pub fn new(kind: ErrorKind, msg: String) -> Self {
-        Self { kind, msg }
+        Self { kind, msg, backtrace: Backtrace::capture() }
     }
 
     #[inline]
@@ -99,6 +101,7 @@ impl serde::de::Error for Error {
         Self {
             kind: ErrorKind::Malformed,
             msg: v.to_string(),
+            backtrace: Backtrace::capture()
         }
     }
 }
@@ -109,13 +112,14 @@ impl fmt::Debug for Error {
             .debug_struct("Error")
             .field("kind", &self.kind)
             .field("msg", &self.msg)
+            .field("backtrace", &self.backtrace)
             .finish()
     }
 }
 
 impl fmt::Display for Error {
     fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
-        write!(fmt, "{:?} | {}", self.kind, self.msg)
+        write!(fmt, "{:?} | {}\nbacktrace: {}", self.kind, self.msg, self.backtrace)
     }
 }
 
