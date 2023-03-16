@@ -31,7 +31,7 @@ pub trait BinaryReader<'a> {
 
     fn advance(&mut self, n: usize) -> Result<()>;
     /// Takes `n` bytes out of the reader.
-    fn take_n(&mut self, n: usize) -> Result<&[u8]>;
+    fn take_n(&mut self, n: usize) -> Result<&'a [u8]>;
     /// Takes `N` bytes out of the reader.
     /// This can be used to get sized arrays if the size is known at compile time.
     fn take_const<const N: usize>(&mut self) -> Result<[u8; N]>;
@@ -129,7 +129,7 @@ pub trait BinaryReader<'a> {
 
     /// Reads a string prefixed by a variable u32.
     #[inline]
-    fn read_str(&'a mut self) -> Result<&'a str> {
+    fn read_str(&mut self) -> Result<&'a str> {
         let len = self.read_var_u32()?;
         let data = self.take_n(len as usize)?;
 

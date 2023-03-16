@@ -90,7 +90,7 @@ impl<'a> BinaryReader<'a> for &'a [u8] {
     /// # Errors
     /// Returns [`UnexpectedEof`](Error::UnexpectedEof) if the read exceeds the buffer length.
     #[inline]
-    fn take_n(&mut self, n: usize) -> Result<&[u8]> {
+    fn take_n(&mut self, n: usize) -> Result<&'a [u8]> {
         if self.len() < n {
             bail!(
                 UnexpectedEof,
