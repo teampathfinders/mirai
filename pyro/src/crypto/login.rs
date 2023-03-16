@@ -219,8 +219,6 @@ pub fn parse_identity_data(
     let token_chain = buffer.take_n(token_length as usize)?;
 
     let tokens = serde_json::from_slice::<TokenChain>(token_chain)?;
-    buffer.advance(token_length as usize);
-
     let identity_data = match tokens.chain.len() {
         1 => {
             // Client is not signed into Xbox.

@@ -135,8 +135,6 @@ impl Session {
 
     /// Processes an unencapsulated game packet.
     async fn handle_unframed_packet(&self, pk: MutableBuffer) -> Result<()> {
-        let _bytes = pk.as_ref();
-
         let packet_id = *pk.first().expect("Game packet buffer was empty");
         match packet_id {
             CONNECTED_PACKET_ID => self.handle_game_packet(pk).await?,
@@ -153,6 +151,11 @@ impl Session {
     }
 
     async fn handle_game_packet(&self, mut pk: MutableBuffer) -> Result<()> {
+        // dbg!(&pk);
+
+        // Remove 0xfe packet ID.
+        pk.advance_cursor(1);
+
         // Decrypt packet
         if self.encryptor.initialized() {
             // Safe to unwrap because the encryptor is confirmed to exist.
@@ -161,9 +164,6 @@ impl Session {
                 .get()
                 .expect("Encryptor was destroyed while it was in use");
 
-            // Remove 0xfe packet ID.
-            // let mut snapshot = SharedBuffer::from(&pk.as_slice()[1..]);
-            pk.advance_cursor(1);
             match encryptor.decrypt(&mut pk) {
                 Ok(_) => (),
                 Err(e) => {
@@ -190,7 +190,7 @@ impl Session {
                 }
                 CompressionAlgorithm::Deflate => {
                     let mut reader =
-                        flate2::read::DeflateDecoder::new(pk.as_ref());
+                        flate2::read::DeflateDecoder::new(pk.as_slice());
 
                     let mut decompressed = Vec::new();
                     reader.read_to_end(&mut decompressed)?;
@@ -208,10 +208,10 @@ impl Session {
         &self,
         mut pk: MutableBuffer,
     ) -> Result<()> {
-        pk.advance_cursor(1); // Skip over 0xfe ID.
         let mut snapshot = pk.snapshot();
         let start_len = snapshot.len();
         let _length = snapshot.read_var_u32()?;
+
         let header = Header::deserialize(&mut snapshot)?;
 
         // Advance past the header.

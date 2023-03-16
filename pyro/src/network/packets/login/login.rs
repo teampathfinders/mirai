@@ -62,7 +62,7 @@ impl ConnectedPacket for Login {
 
 impl Deserialize<'_> for Login {
     fn deserialize(mut buffer: SharedBuffer) -> Result<Self> {
-        buffer.advance(4); // Skip protocol version, use the one in RequestNetworkSettings instead.
+        let version = buffer.read_u32_be()?; // Skip protocol version, use the one in RequestNetworkSettings instead.
         buffer.read_var_u32()?;
 
         let identity_data = parse_identity_data(&mut buffer)?;

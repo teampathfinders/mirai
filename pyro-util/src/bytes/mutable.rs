@@ -33,6 +33,11 @@ impl MutableBuffer {
     }
 
     #[inline]
+    pub fn set_cursor(&mut self, n: usize) {
+        self.cursor = n;
+    }
+
+    #[inline]
     pub fn truncate(&mut self, n: usize) {
         self.data.truncate(n);
     }

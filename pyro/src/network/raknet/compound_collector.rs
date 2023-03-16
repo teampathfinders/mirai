@@ -71,6 +71,8 @@ impl CompoundCollector {
                     merged.append(b.body.as_slice())
                 });
 
+            dbg!(merged.len());
+
             let mut frame = fragments[0].take().unwrap();
             frame.body = merged;
 
