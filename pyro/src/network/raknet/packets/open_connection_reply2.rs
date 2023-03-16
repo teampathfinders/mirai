@@ -2,11 +2,11 @@ use std::io::Write;
 use std::net::SocketAddr;
 use util::bytes::{BinaryWriter, MutableBuffer};
 
-use crate::network::raknet::OFFLINE_MESSAGE_DATA;
+use crate::OFFLINE_MESSAGE_DATA;
 use util::Result;
 use util::Serialize;
 
-/// Sent in response to [`OpenConnectionRequest2`](super::open_connection_request2::OpenConnectionRequest2).
+/// Sent in response to [`OpenConnectionRequest2`](crate::open_connection_request2::OpenConnectionRequest2).
 #[derive(Debug)]
 pub struct OpenConnectionReply2 {
     /// GUID of the server.
@@ -15,7 +15,7 @@ pub struct OpenConnectionReply2 {
     /// IP address of the client.
     pub client_address: SocketAddr,
     /// MTU of the connection.
-    /// This value should be the same as [`OpenConnectionRequest2::mtu`](super::open_connection_request2::OpenConnectionRequest2::mtu).
+    /// This value should be the same as [`OpenConnectionRequest2::mtu`](crate::open_connection_request2::OpenConnectionRequest2::mtu).
     pub mtu: u16,
 }
 

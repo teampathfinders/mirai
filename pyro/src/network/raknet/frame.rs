@@ -3,7 +3,7 @@ use std::ops::Deref;
 use std::sync::Arc;
 
 
-use crate::network::raknet::Reliability;
+use crate::Reliability;
 use util::pyassert;
 use util::Result;
 use util::{Deserialize, Serialize};

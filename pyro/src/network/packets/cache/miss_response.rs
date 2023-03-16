@@ -1,8 +1,8 @@
 
 use util::{Serialize, Result};
 use util::bytes::{BinaryWriter, MutableBuffer};
+use crate::ConnectedPacket;
 use crate::network::cache_blob::CacheBlob;
-use crate::network::packets::ConnectedPacket;
 
 #[derive(Debug, Clone)]
 pub struct CacheMissResponse<'a> {

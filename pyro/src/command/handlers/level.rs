@@ -2,7 +2,7 @@ use std::fmt::format;
 
 use util::{pyassert, Result, error};
 
-use crate::{command::ParsedCommand, level_manager::LevelManager, network::packets::GameRule};
+use crate::{command::ParsedCommand, level_manager::LevelManager, network::GameRule};
 
 impl LevelManager {
     pub fn handle_gamerule_command(&self, command: ParsedCommand) -> Result<String> {

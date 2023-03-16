@@ -5,7 +5,7 @@ use util::Serialize;
 use level::Dimension;
 use util::bytes::{BinaryWriter, MutableBuffer};
 
-use super::ConnectedPacket;
+use crate::ConnectedPacket;
 
 /// Used to transfer the client to another dimension.
 #[derive(Debug, Clone)]

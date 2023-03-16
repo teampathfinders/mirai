@@ -6,7 +6,7 @@ use util::{
 use util::{Deserialize, Serialize};
 use util::bytes::{BinaryReader, BinaryWriter, MutableBuffer, SharedBuffer, size_of_varint};
 
-use super::ConnectedPacket;
+use crate::ConnectedPacket;
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum RespawnState {

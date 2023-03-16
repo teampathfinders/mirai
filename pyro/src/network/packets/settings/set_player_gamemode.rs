@@ -4,7 +4,7 @@ use util::{bail, Error, Result};
 use util::{Deserialize, Serialize};
 use util::bytes::{BinaryReader, BinaryWriter, MutableBuffer, SharedBuffer, size_of_varint};
 
-use crate::network::packets::ConnectedPacket;
+use crate::ConnectedPacket;
 
 /// The Minecraft game modes.
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]

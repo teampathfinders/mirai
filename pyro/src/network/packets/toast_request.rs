@@ -4,7 +4,7 @@ use util::bytes::{BinaryWriter, MutableBuffer, size_of_varint};
 
 use util::Serialize;
 
-use super::ConnectedPacket;
+use crate::ConnectedPacket;
 
 /// Displays a notification at the top of the screen.
 #[derive(Debug, Clone)]

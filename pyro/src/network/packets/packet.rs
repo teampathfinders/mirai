@@ -3,8 +3,8 @@ use std::num::NonZeroU64;
 
 
 
-use crate::network::header::Header;
-use crate::network::packets::ConnectedPacket;
+use crate::Header;
+use crate::ConnectedPacket;
 use util::{pyassert};
 use util::bytes::{BinaryWriter, MutableBuffer, SharedBuffer};
 use util::Serialize;

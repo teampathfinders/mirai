@@ -1,4 +1,4 @@
-use crate::Result;
+use util::Result;
 use std::io::Write;
 use util::bytes::{BinaryWriter, MutableBuffer, SharedBuffer};
 

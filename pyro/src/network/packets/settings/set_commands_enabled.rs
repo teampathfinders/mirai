@@ -4,7 +4,7 @@ use util::bytes::{BinaryWriter, MutableBuffer};
 
 use util::Serialize;
 
-use crate::network::packets::ConnectedPacket;
+use crate::ConnectedPacket;
 
 /// Enables or disables the usage of commands.
 ///

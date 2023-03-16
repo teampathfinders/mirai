@@ -3,7 +3,7 @@ use util::Result;
 
 use util::Serialize;
 
-use super::ConnectedPacket;
+use crate::ConnectedPacket;
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum CameraShakeType {

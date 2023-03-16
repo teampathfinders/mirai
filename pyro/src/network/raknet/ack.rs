@@ -1,7 +1,7 @@
 
 
-use crate::network::raknet::packets::{Ack, Nak};
-use crate::network::session::Session;
+use crate::{Ack, Nak};
+use crate::Session;
 use util::Result;
 use util::{Deserialize, Serialize};
 use util::bytes::{MutableBuffer, SharedBuffer};

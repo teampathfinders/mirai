@@ -2,7 +2,7 @@
 use util::{Serialize, Result};
 use util::bytes::{BinaryWriter, MutableBuffer, size_of_varint};
 
-use crate::network::packets::ConnectedPacket;
+use crate::ConnectedPacket;
 
 /// An action to perform on an identity entry.
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]

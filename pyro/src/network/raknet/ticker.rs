@@ -8,9 +8,9 @@ use util::bytes::{MutableBuffer, SharedBuffer};
 
 use util::Result;
 
-use crate::network::{
-    packets::{MessageType, PlayerListRemove, TextMessage},
-    session::Session,
+use crate::{
+    {MessageType, PlayerListRemove, TextMessage},
+    Session,
 };
 
 /// Tick interval of the internal session ticker.

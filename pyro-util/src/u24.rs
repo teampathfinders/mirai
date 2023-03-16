@@ -50,7 +50,7 @@ impl u24 {
 
     #[inline]
     pub(crate) const fn from_u32_unchecked(v: u32) -> Self {
-        debug_assert!(v < Self::MAX_U32);
+        debug_assert!(v <= Self::MAX_U32);
 
         let b = v.to_ne_bytes();
         Self([b[0], b[1], b[2]])

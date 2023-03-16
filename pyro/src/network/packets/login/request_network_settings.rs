@@ -6,7 +6,7 @@ use util::pyassert;
 use util::Deserialize;
 use util::Result;
 
-/// Sent by the client to request a [`NetworkSettings`](super::NetworkSettings) packet.
+/// Sent by the client to request a [`NetworkSettings`](crate::NetworkSettings) packet.
 #[derive(Debug)]
 pub struct RequestNetworkSettings {
     /// Minecraft network version

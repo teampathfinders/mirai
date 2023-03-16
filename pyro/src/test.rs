@@ -6,8 +6,8 @@ use base64::Engine;
 use flate2::read::DeflateDecoder;
 
 use crate::instance_manager::{IPV4_LOCAL_ADDR, IPV6_LOCAL_ADDR};
-use crate::network::raknet::{Frame, OrderChannel};
-use crate::network::Header;
+use crate::{Frame, OrderChannel};
+use crate::Header;
 use util::bytes::MutableBuffer;
 use util::{Result, Serialize};
 

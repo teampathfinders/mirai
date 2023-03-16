@@ -2,7 +2,7 @@
 use util::{Serialize, Result, Vector3f, Vector4f};
 use util::bytes::{BinaryWriter, MutableBuffer, size_of_varint};
 
-use super::ConnectedPacket;
+use crate::ConnectedPacket;
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum DebugRendererAction {

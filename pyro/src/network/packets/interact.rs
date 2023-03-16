@@ -4,7 +4,7 @@ use util::bytes::{BinaryReader, SharedBuffer};
 
 use util::Deserialize;
 
-use super::ConnectedPacket;
+use crate::ConnectedPacket;
 
 /// All types of interaction.
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]

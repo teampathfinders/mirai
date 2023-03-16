@@ -2,9 +2,9 @@
 use uuid::Uuid;
 use util::{Deserialize, Serialize, Result};
 use util::bytes::{BinaryWriter, MutableBuffer};
-use crate::network::packets::{ConnectedPacket};
+use crate::{ConnectedPacket};
 
-use super::CommandOriginType;
+use crate::CommandOriginType;
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum CommandOutputType {

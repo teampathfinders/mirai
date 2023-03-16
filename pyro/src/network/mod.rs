@@ -1,8 +1,12 @@
 use util::glob_export;
 
-pub mod packets;
-pub mod raknet;
-pub mod session;
+mod packets;
+mod raknet;
+mod session;
+
+pub use packets::*;
+pub use raknet::*;
+pub use session::*;
 
 mod cache_blob;
 

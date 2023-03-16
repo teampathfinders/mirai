@@ -5,10 +5,10 @@ use util::bytes::{BinaryWriter, MutableBuffer};
 
 use util::Serialize;
 
-use crate::network::packets::ConnectedPacket;
-use crate::command::CommandEnum;
+use crate::ConnectedPacket;
+use crate::CommandEnum;
 
-use crate::command::Command;
+use crate::Command;
 
 pub const COMMAND_PARAMETER_VALID: u32 = 0x100000;
 pub const COMMAND_PARAMETER_ENUM: u32 = 0x200000;

@@ -5,7 +5,7 @@ use std::str::Split;
 use util::{Result, bail, error};
 use dashmap::DashMap;
 
-use super::{Command, CommandDataType, CommandOverload};
+use crate::{Command, CommandDataType, CommandOverload};
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum CommandParseErrorKind {

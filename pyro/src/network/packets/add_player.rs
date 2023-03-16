@@ -3,10 +3,10 @@ use std::collections::HashMap;
 use util::{Vector3f, Serialize, Result};
 use uuid::Uuid;
 use util::bytes::{BinaryWriter, MutableBuffer};
-use crate::command::CommandPermissionLevel;
-use crate::network::packets::login::{DeviceOS, ItemStack, PermissionLevel};
+use crate::CommandPermissionLevel;
+use crate::{DeviceOS, ItemStack, PermissionLevel};
 
-use super::{GameMode, ConnectedPacket};
+use crate::{GameMode, ConnectedPacket};
 
 /// Type of an entity link.
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
@@ -126,7 +126,7 @@ impl AbilityData<'_> {
 }
 
 /// Adds a player to the game.
-/// A [`PlayerListAdd`](super::PlayerListAdd) packet, adding the player to the player list,
+/// A [`PlayerListAdd`](crate::PlayerListAdd) packet, adding the player to the player list,
 /// must be sent before using this.
 #[derive(Debug, Clone)]
 pub struct AddPlayer<'a> {

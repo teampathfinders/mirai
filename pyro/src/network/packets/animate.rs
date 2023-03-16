@@ -4,7 +4,7 @@ use util::bytes::{BinaryReader, SharedBuffer};
 
 use util::Deserialize;
 
-use super::ConnectedPacket;
+use crate::ConnectedPacket;
 
 /// Type of animation to perform.
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]

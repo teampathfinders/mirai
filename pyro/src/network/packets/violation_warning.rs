@@ -1,4 +1,4 @@
-use crate::network::packets::ConnectedPacket;
+use crate::ConnectedPacket;
 use util::bail;
 use util::Deserialize;
 use util::{Error, Result};

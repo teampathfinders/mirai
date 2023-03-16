@@ -4,7 +4,7 @@ use util::{bail,  Error, Result};
 use util::{Deserialize, Serialize};
 use util::bytes::{BinaryReader, BinaryWriter, MutableBuffer, SharedBuffer, VarInt, VarString};
 
-use super::ConnectedPacket;
+use crate::ConnectedPacket;
 
 /// Type of message.
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]

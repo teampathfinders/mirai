@@ -3,7 +3,7 @@ use std::{sync::{Arc, atomic::{AtomicU32, AtomicU16, AtomicBool}}, net::SocketAd
 use parking_lot::{RwLock, Mutex};
 use tokio::net::UdpSocket;
 
-use super::{CompoundCollector, OrderChannel, SendQueue, RecoveryQueue};
+use crate::{CompoundCollector, OrderChannel, SendQueues, RecoveryQueue};
 
 const ORDER_CHANNEL_COUNT: usize = 5;
 
@@ -37,7 +37,7 @@ pub struct RaknetData {
     /// Channels used to order packets.
     pub order_channels: [OrderChannel; ORDER_CHANNEL_COUNT],
     /// Keeps track of all packets that are waiting to be sent.
-    pub send_queue: SendQueue,
+    pub send_queue: SendQueues,
     /// Packets that are ready to be acknowledged.
     pub confirmed_packets: Mutex<Vec<u32>>,
     /// Queue that stores packets in case they need to be recovered due to packet loss.

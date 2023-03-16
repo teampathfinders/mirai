@@ -1,7 +1,7 @@
 
 use util::{Deserialize, Result};
 use util::bytes::{BinaryReader, SharedBuffer};
-use crate::network::packets::ConnectedPacket;
+use crate::ConnectedPacket;
 
 #[derive(Debug, Clone)]
 pub struct GenericLevelEvent {

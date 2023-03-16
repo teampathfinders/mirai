@@ -4,11 +4,20 @@ use std::num::NonZeroU64;
 use util::{error, Serialize, Result};
 use util::bytes::{ArcBuffer, MutableBuffer, SharedBuffer};
 
-use crate::network::{
-    packets::{ConnectedPacket, Packet},
-    session::Session,
+use crate::{
+    {ConnectedPacket, Packet},
+    Session,
 };
 
+/// A packet that can be broadcasted to other sessions.
+///
+/// Unlike standard packets, this packet contains an optional sender.
+/// As every session listens to a single broadcast channel, this sender field can be used
+/// to prevent a session from receiving its own broadcast.
+/// In case the session is meant to receive their own packet (such as with the [`Text`](crate::Text) packet)
+/// this field should be set to `None`.
+///
+/// Additionally, the actual buffer content is reference counted to allow for cheap cloning.
 #[derive(Debug, Clone)]
 pub struct BroadcastPacket {
     /// XUID of the sender of the packet.
@@ -25,6 +34,7 @@ pub struct BroadcastPacket {
 }
 
 impl BroadcastPacket {
+    /// Creates a new broadcast packet from the given packet.
     pub fn new<T: ConnectedPacket + Serialize>(
         packet: T,
         sender: Option<NonZeroU64>,

@@ -8,15 +8,15 @@ use util::{
 };
 use util::bytes::{MutableBuffer, SharedBuffer};
 
-use crate::command::ParsedCommand;
-use crate::network::packets::command::{
+use crate::ParsedCommand;
+use crate::{
     CommandOutput, CommandOutputMessage, CommandOutputType, CommandRequest,
     SettingsCommand,
 };
-use crate::network::packets::login::{ItemStack, ItemType, PermissionLevel};
-use crate::network::packets::{AbilityData, AddPlayer};
-use crate::network::{
-    packets::{
+use crate::{ItemStack, ItemType, PermissionLevel};
+use crate::{AbilityData, AddPlayer};
+use crate::{
+    {
         AddPainting, Animate, CameraShake, CameraShakeAction, CameraShakeType,
         ChangeDimension, ClientBoundDebugRenderer, CreditsStatus,
         CreditsUpdate, DebugRendererAction, Difficulty, GameMode, GameRule,
@@ -27,7 +27,7 @@ use crate::network::{
         TextMessage, TitleAction, ToastRequest, Transfer, UpdateFogStack,
         UpdateSkin,
     },
-    session::Session,
+    Session,
 };
 
 impl Session {

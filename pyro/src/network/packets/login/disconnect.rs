@@ -1,7 +1,7 @@
 
 
 
-use crate::network::packets::ConnectedPacket;
+use crate::ConnectedPacket;
 use util::{Serialize};
 use util::bytes::{BinaryWriter, MutableBuffer, VarString};
 use util::Result;

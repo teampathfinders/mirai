@@ -2,12 +2,12 @@
 use util::{Deserialize, Result, Vector3i};
 use util::bytes::{MutableBuffer, SharedBuffer};
 
-use crate::network::{
-    packets::{
+use crate::{
+    {
         CameraShake, CameraShakeAction, CameraShakeType, Interact,
         InteractAction, MovePlayer, PlaySound,
     },
-    session::Session,
+    Session,
 };
 
 impl Session {

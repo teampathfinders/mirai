@@ -4,7 +4,7 @@ use util::bytes::{BinaryReader, SharedBuffer};
 
 use util::Deserialize;
 
-use super::ConnectedPacket;
+use crate::ConnectedPacket;
 
 /// Sent by the client to indicate that the player has been fully initialised.
 #[derive(Debug, Clone)]

@@ -4,7 +4,7 @@ use util::bytes::{BinaryWriter, MutableBuffer, size_of_varint};
 
 use util::Serialize;
 
-use crate::network::packets::ConnectedPacket;
+use crate::ConnectedPacket;
 
 /// Sets the current time for the client.
 #[derive(Debug, Clone)]

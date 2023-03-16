@@ -2,7 +2,7 @@
 use util::{Serialize, Result};
 use util::bytes::{BinaryWriter, MutableBuffer, size_of_varint};
 
-use super::ConnectedPacket;
+use crate::ConnectedPacket;
 
 /// Adds a fog to the client's fog stack.
 #[derive(Debug, Clone)]

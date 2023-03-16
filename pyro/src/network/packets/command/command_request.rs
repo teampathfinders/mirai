@@ -5,7 +5,7 @@ use util::bytes::{BinaryReader, SharedBuffer};
 
 use util::Deserialize;
 
-use crate::network::packets::ConnectedPacket;
+use crate::ConnectedPacket;
 
 /// Command origin.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -55,7 +55,7 @@ impl TryFrom<u32> for CommandOriginType {
 }
 
 /// Requests execution of a command.
-/// Even if the command isn't listed by the [`AvailableCommands`](super::AvailableCommands) packet,
+/// Even if the command isn't listed by the [`AvailableCommands`](crate::AvailableCommands) packet,
 /// the client will still send a request.
 #[derive(Debug, Clone)]
 pub struct CommandRequest<'a> {

@@ -2,14 +2,14 @@
 
 use util::bytes::{BinaryWriter, MutableBuffer};
 
-use crate::network::packets::ConnectedPacket;
+use crate::ConnectedPacket;
 use util::Serialize;
 use util::Result;
 
 /// Status of the [`PlayStatus`] packet.
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum Status {
-    /// Sent by the server after receiving the [`ClientToServerHandshake`](super::ClientToServerHandshake) packet.
+    /// Sent by the server after receiving the [`ClientToServerHandshake`](crate::ClientToServerHandshake) packet.
     /// This indicates the client has successfully logged in.
     LoginSuccess,
     /// Displays "Could not connect: Outdated client!"

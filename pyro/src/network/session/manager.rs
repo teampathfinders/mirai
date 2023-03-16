@@ -10,13 +10,13 @@ use tokio_util::sync::CancellationToken;
 
 use crate::instance_manager::InstanceManager;
 use crate::level_manager::LevelManager;
-use crate::network::packets::login::{
+use crate::{
     Disconnect, DISCONNECTED_NO_REASON, DISCONNECTED_TIMEOUT,
 };
-use crate::network::packets::Packet;
-use crate::network::raknet::{BroadcastPacket, OwnedBufPacket, SharedBufPacket};
-use crate::network::session::session::Session;
-use crate::{config::SERVER_CONFIG, network::packets::ConnectedPacket};
+use crate::Packet;
+use crate::{BroadcastPacket, RawPacket};
+use crate::Session;
+use crate::{config::SERVER_CONFIG, network::ConnectedPacket};
 use util::{bail, error, Serialize, Result};
 use util::bytes::{MutableBuffer, SharedBuffer};
 
@@ -105,7 +105,7 @@ impl SessionManager {
     }
 
     /// Forwards a packet from the network service to the correct session.
-    pub fn forward_packet(&self, pk: OwnedBufPacket) {
+    pub fn forward_packet(&self, pk: RawPacket) {
         // Spawn a new task so that the UDP receiver isn't interrupted
         // if forwarding takes a long amount time.
 

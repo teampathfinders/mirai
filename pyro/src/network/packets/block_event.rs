@@ -1,7 +1,7 @@
 
 use util::{bail, BlockPosition, Deserialize, Serialize, Error, Result};
 use util::bytes::{BinaryReader, BinaryWriter, MutableBuffer, SharedBuffer, size_of_varint};
-use crate::network::packets::ConnectedPacket;
+use crate::ConnectedPacket;
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum BlockEventType {

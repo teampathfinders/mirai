@@ -12,26 +12,26 @@ use tokio::sync::{mpsc, OnceCell};
 use tokio::task::JoinHandle;
 use tokio_util::sync::CancellationToken;
 
-use crate::command::{
+use crate::{
     Command, CommandDataType, CommandEnum, CommandOverload, CommandParameter,
     CommandPermissionLevel,
 };
-use crate::config::SERVER_CONFIG;
+use crate::SERVER_CONFIG;
 use crate::level_manager::LevelManager;
-use crate::network::packets::{
+use crate::{
     GameRule, BOOLEAN_GAME_RULES, CLIENT_VERSION_STRING, INTEGER_GAME_RULES,
     NETWORK_VERSION,
 };
-use crate::network::raknet::packets::IncompatibleProtocol;
-use crate::network::raknet::packets::OpenConnectionReply1;
-use crate::network::raknet::packets::OpenConnectionReply2;
-use crate::network::raknet::packets::OpenConnectionRequest1;
-use crate::network::raknet::packets::OpenConnectionRequest2;
-use crate::network::raknet::packets::UnconnectedPing;
-use crate::network::raknet::packets::UnconnectedPong;
-use crate::network::raknet::RAKNET_VERSION;
-use crate::network::raknet::{OwnedBufPacket, SharedBufPacket};
-use crate::network::session::SessionManager;
+use crate::IncompatibleProtocol;
+use crate::OpenConnectionReply1;
+use crate::OpenConnectionReply2;
+use crate::OpenConnectionRequest1;
+use crate::OpenConnectionRequest2;
+use crate::UnconnectedPing;
+use crate::UnconnectedPong;
+use crate::RAKNET_VERSION;
+use crate::{RawPacket};
+use crate::SessionManager;
 use util::bail;
 use util::bytes::{MutableBuffer, SharedBuffer};
 use util::{error, Result};
@@ -212,10 +212,10 @@ impl InstanceManager {
     /// Generates a response to the [`OfflinePing`] packet with [`OfflinePong`].
     #[inline]
     fn process_unconnected_ping(
-        mut pk: OwnedBufPacket,
+        mut pk: RawPacket,
         server_guid: u64,
         metadata: &str,
-    ) -> Result<OwnedBufPacket> {
+    ) -> Result<RawPacket> {
         let ping = UnconnectedPing::deserialize(pk.buf.snapshot())?;
         let pong = UnconnectedPong { time: ping.time, server_guid, metadata };
 
@@ -223,7 +223,7 @@ impl InstanceManager {
             MutableBuffer::with_capacity(pong.serialized_size());
         pong.serialize(&mut serialized);
 
-        let pk = OwnedBufPacket { buf: serialized, addr: pk.addr };
+        let pk = RawPacket { buf: serialized, addr: pk.addr };
 
         Ok(pk)
     }
@@ -231,9 +231,9 @@ impl InstanceManager {
     /// Generates a response to the [`OpenConnectionRequest1`] packet with [`OpenConnectionReply1`].
     #[inline]
     fn process_open_connection_request1(
-        mut pk: OwnedBufPacket,
+        mut pk: RawPacket,
         server_guid: u64,
-    ) -> Result<OwnedBufPacket> {
+    ) -> Result<RawPacket> {
         let request = OpenConnectionRequest1::deserialize(pk.buf.snapshot())?;
 
         pk.buf.clear();
@@ -256,14 +256,14 @@ impl InstanceManager {
 
     /// Responds to the [`OpenConnectionRequest2`] packet with [`OpenConnectionReply2`].
     /// This is also when a session is created for the client.
-    /// From this point, all packets are encoded in a [`Frame`](crate::network::raknet::Frame).
+    /// From this point, all packets are encoded in a [`Frame`](crate::Frame).
     #[inline]
     fn process_open_connection_request2(
-        mut pk: OwnedBufPacket,
+        mut pk: RawPacket,
         udp_socket: Arc<UdpSocket>,
         sess_manager: Arc<SessionManager>,
         server_guid: u64,
-    ) -> Result<OwnedBufPacket> {
+    ) -> Result<RawPacket> {
         let request = OpenConnectionRequest2::deserialize(pk.buf.snapshot())?;
         let reply = OpenConnectionReply2 {
             server_guid,
@@ -318,7 +318,7 @@ impl InstanceManager {
                 _ = token.cancelled() => break
             };
 
-            let mut pk = OwnedBufPacket {
+            let mut pk = RawPacket {
                 buf: MutableBuffer::from(recv_buf[..n].to_vec()),
                 addr: address,
             };

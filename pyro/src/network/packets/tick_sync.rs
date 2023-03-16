@@ -4,7 +4,7 @@ use util::Result;
 use util::{Deserialize, Serialize};
 use util::bytes::{BinaryReader, BinaryWriter, MutableBuffer, SharedBuffer};
 
-use super::ConnectedPacket;
+use crate::ConnectedPacket;
 
 /// Synchronises the current tick.
 ///

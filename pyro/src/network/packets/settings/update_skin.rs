@@ -2,7 +2,7 @@
 use util::{Serialize, Result, Deserialize};
 use uuid::Uuid;
 use util::bytes::{BinaryWriter, MutableBuffer, SharedBuffer};
-use crate::network::{Skin, packets::ConnectedPacket};
+use crate::{Skin, ConnectedPacket};
 
 #[derive(Debug, Clone)]
 pub struct UpdateSkin<'a> {

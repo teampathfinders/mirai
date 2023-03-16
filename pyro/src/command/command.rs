@@ -15,12 +15,12 @@ pub enum CommandPermissionLevel {
 #[derive(Debug, Clone)]
 pub struct CommandEnum {
     /// ID of the autocompleted type.
-    /// If the enum is dynamic, this ID can be used in the [`UpdateDynamicEnum`](super::UpdateDynamicEnum)
+    /// If the enum is dynamic, this ID can be used in the [`UpdateDynamicEnum`](crate::UpdateDynamicEnum)
     /// packet to update the autocompletion options.
     pub enum_id: String,
     /// Available options.
     pub options: Vec<String>,
-    /// Whether the server can update this enum on the fly.
+    /// Whether the server can update this enum after the command has been registered.
     pub dynamic: bool,
 }
 

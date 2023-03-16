@@ -1,7 +1,7 @@
 
 
 
-use crate::network::packets::ConnectedPacket;
+use crate::ConnectedPacket;
 use util::bail;
 use util::Deserialize;
 use util::{Error, Result};
@@ -38,8 +38,8 @@ impl TryFrom<u8> for ResourcePackStatus {
     }
 }
 
-/// Sent in response to [`ResourcePacksInfo`](super::ResourcePacksInfo) and
-/// [`ResourcePackStack`](super::ResourcePackStack).
+/// Sent in response to [`ResourcePacksInfo`](crate::ResourcePacksInfo) and
+/// [`ResourcePackStack`](crate::ResourcePackStack).
 #[derive(Debug)]
 pub struct ResourcePackClientResponse<'a> {
     /// The response status.

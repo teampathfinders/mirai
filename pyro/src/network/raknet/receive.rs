@@ -5,30 +5,30 @@ use std::time::Instant;
 
 use async_recursion::async_recursion;
 
-use crate::config::SERVER_CONFIG;
-use crate::network::header::Header;
-use crate::network::packets::cache::CacheStatus;
-use crate::network::packets::command::{CommandRequest, SettingsCommand};
-use crate::network::packets::login::{
+use crate::SERVER_CONFIG;
+use crate::Header;
+use crate::CacheStatus;
+use crate::{CommandRequest, SettingsCommand};
+use crate::{
     ChunkRadiusRequest, ClientToServerHandshake, CompressionAlgorithm, Login,
     RequestNetworkSettings, ResourcePackClientResponse,
 };
-use crate::network::packets::{
+use crate::{
     Animate, ConnectedPacket, Interact, MovePlayer, RequestAbility,
     SetLocalPlayerAsInitialized, TextMessage, UpdateSkin, ViolationWarning,
     CONNECTED_PACKET_ID,
 };
-use crate::network::raknet::packets::{
+use crate::{
     Ack, ConnectionRequest, DisconnectNotification, Nak, NewIncomingConnection,
 };
-use crate::network::raknet::{BroadcastPacket, Frame, FrameBatch};
-use crate::network::session::Session;
+use crate::{BroadcastPacket, Frame, FrameBatch};
+use crate::Session;
 use util::{bail, error, pyassert, Result};
 use util::{Deserialize, Serialize};
 use util::bytes::{BinaryReader, MutableBuffer, SharedBuffer, VarInt};
 
-use super::DEFAULT_SEND_CONFIG;
-use super::packets::ConnectedPing;
+use crate::DEFAULT_SEND_CONFIG;
+use crate::ConnectedPing;
 
 impl Session {
     /// Processes the raw packet coming directly from the network.
@@ -88,7 +88,7 @@ impl Session {
     #[async_recursion]
     async fn handle_frame(
         &self,
-        frame: Arc<Frame>,
+        frame: Frame,
         batch_number: u32,
     ) -> Result<()> {
         if frame.reliability.is_sequenced()
@@ -106,23 +106,22 @@ impl Session {
         }
 
         if frame.is_compound {
-            if let Some(p) =
-                self.raknet.compound_collector.insert(frame.clone())
+            return if let Some(p) =
+                self.raknet.compound_collector.insert(frame)
             {
                 return self.handle_frame(p.into(), batch_number).await;
+            } else {
+                // Compound incomplete
+                Ok(())
             }
-
-            return Ok(());
         }
-
-        // TODO: Handle errors in processing properly
 
         // Sequenced implies ordered
         if frame.reliability.is_ordered() || frame.reliability.is_sequenced() {
             // Add packet to order queue
             if let Some(ready) = self.raknet.order_channels
                 [frame.order_channel as usize]
-                .insert(frame.clone())
+                .insert(frame)
             {
                 for packet in ready {
                     self.handle_unframed_packet(packet.body).await?;
@@ -131,9 +130,7 @@ impl Session {
             return Ok(());
         }
 
-        let frame = Arc::try_unwrap(frame).map_err(|_| error!(Other, "There were multiple strong references"))?;
-        self.handle_unframed_packet(frame.body).await?;
-        Ok(())
+        self.handle_unframed_packet(frame.body).await
     }
 
     /// Processes an unencapsulated game packet.

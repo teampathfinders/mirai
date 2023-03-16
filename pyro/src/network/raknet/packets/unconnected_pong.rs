@@ -1,15 +1,15 @@
 use std::io::Write;
 use util::bytes::{BinaryWriter, MutableBuffer};
 
-use crate::network::raknet::OFFLINE_MESSAGE_DATA;
+use crate::OFFLINE_MESSAGE_DATA;
 use util::Result;
 use util::Serialize;
 
-/// Response to [`OfflinePing`](super::offline_ping::OfflinePing).
+/// Response to [`OfflinePing`](crate::offline_ping::OfflinePing).
 #[derive(Debug)]
 pub struct UnconnectedPong<'a> {
     /// Timestamp of when the ping was sent.
-    /// This should be given the same value as [`OfflinePing::time`](super::offline_ping::OfflinePing::time).
+    /// This should be given the same value as [`OfflinePing::time`](crate::offline_ping::OfflinePing::time).
     pub time: u64,
     /// Randomised GUID of the server.
     /// Corresponds to [`ServerInstance::guid`](crate::ServerInstance::guid)

@@ -2,10 +2,10 @@
 use util::{Serialize, Result};
 use uuid::Uuid;
 use util::bytes::{BinaryWriter, MutableBuffer, size_of_varint};
-use crate::network::packets::login::DeviceOS;
-use crate::network::Skin;
+use crate::DeviceOS;
+use crate::Skin;
 
-use super::{ConnectedPacket};
+use crate::{ConnectedPacket};
 
 #[derive(Debug, Clone)]
 pub struct PlayerListAddEntry<'a> {

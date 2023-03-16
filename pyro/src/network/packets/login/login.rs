@@ -6,12 +6,12 @@ use serde_repr::Deserialize_repr;
 use crate::crypto::{
     parse_identity_data, parse_user_data, IdentityData, UserData,
 };
-use crate::network::packets::ConnectedPacket;
+use crate::ConnectedPacket;
 use util::Deserialize;
 use util::{bail, pyassert};
 use util::{Error, Result};
 use util::bytes::{BinaryReader, SharedBuffer};
-use crate::network::Skin;
+use crate::Skin;
 
 /// Device operating system
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Deserialize_repr)]
@@ -45,7 +45,7 @@ pub enum UiProfile {
 }
 
 /// Packet received by the client before initiating encryption.
-/// A [`ServerToClientHandshake`](super::ServerToClientHandshake) should be sent in response.
+/// A [`ServerToClientHandshake`](crate::ServerToClientHandshake) should be sent in response.
 #[derive(Debug)]
 pub struct Login {
     /// Identity data (Xbox account ID, username, etc.)

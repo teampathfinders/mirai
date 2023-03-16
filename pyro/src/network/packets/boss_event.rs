@@ -1,7 +1,7 @@
 
 use util::{Serialize, Result};
 use util::bytes::{BinaryWriter, MutableBuffer};
-use crate::network::packets::ConnectedPacket;
+use crate::ConnectedPacket;
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum BossEventColor {

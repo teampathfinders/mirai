@@ -5,7 +5,7 @@ use util::Result;
 
 /// Sent to retrieve information about the server
 /// while the user is in Minecraft's server tab.
-/// An [`OfflinePong`](super::offline_pong::OfflinePong) packet should be sent in response.
+/// An [`OfflinePong`](crate::offline_pong::OfflinePong) packet should be sent in response.
 #[derive(Debug)]
 pub struct UnconnectedPing {
     /// Time when this ping was sent.

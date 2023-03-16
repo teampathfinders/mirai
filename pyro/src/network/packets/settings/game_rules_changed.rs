@@ -5,7 +5,7 @@ use std::fmt::Write;
 use util::{Serialize, Result, bail};
 use util::bytes::{BinaryWriter, MutableBuffer, size_of_varint, VarInt, VarString};
 
-use crate::{command::ParsedArgument, network::packets::ConnectedPacket};
+use crate::{command::ParsedArgument, network::ConnectedPacket};
 
 // FIXME: This whole module could use some cleanup...
 

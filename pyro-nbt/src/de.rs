@@ -566,7 +566,7 @@ impl<'de, 'a> MapAccess<'de> for MapDeserializer<'a, 'de> {
 mod test {
     use serde::Deserialize;
 
-    use super::{from_be_bytes, Deserializer};
+    use crate::{from_be_bytes, Deserializer};
 
     const BIGTEST_NBT: &[u8] = include_bytes!("../test/bigtest.nbt");
     const HELLO_WORLD_NBT: &[u8] = include_bytes!("../test/hello_world.nbt");

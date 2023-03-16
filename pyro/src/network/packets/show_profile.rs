@@ -4,7 +4,7 @@ use util::bytes::{BinaryWriter, MutableBuffer, size_of_varint};
 
 use util::Serialize;
 
-use super::ConnectedPacket;
+use crate::ConnectedPacket;
 
 /// Opens a dialog showing details about a player's Xbox account.
 #[derive(Debug, Clone)]

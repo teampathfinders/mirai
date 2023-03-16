@@ -5,7 +5,7 @@ use util::bytes::{BinaryWriter, MutableBuffer, size_of_varint};
 
 use util::Serialize;
 
-use super::ConnectedPacket;
+use crate::ConnectedPacket;
 
 /// Directions a painting can face.
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]

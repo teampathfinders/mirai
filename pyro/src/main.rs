@@ -1,30 +1,13 @@
-#![allow(dead_code)]
-#![allow(unused)]
-#![allow(clippy::module_inception)]
-#![warn(clippy::nursery)]
-
-extern crate core;
-
 use std::sync::atomic::{AtomicU16, Ordering};
 
 use clap::{crate_authors, crate_description, Command};
 use tokio::runtime;
 
-use crate::instance_manager::InstanceManager;
+use pyro::InstanceManager;
 use util::Result;
 
-mod command;
-mod config;
-mod crypto;
-mod instance_manager;
-mod level_manager;
-mod network;
-
-#[cfg(test)]
-mod test;
-
 fn main() -> Result<()> {
-    let matches = Command::new("pyro")
+    let _ = Command::new("pyro")
         .version(concat!(
             env!("VERGEN_GIT_SHA_SHORT"),
             " ",

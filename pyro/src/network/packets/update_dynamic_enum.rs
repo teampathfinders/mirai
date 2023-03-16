@@ -4,7 +4,7 @@ use util::bytes::{BinaryWriter, MutableBuffer, size_of_varint};
 
 use util::Serialize;
 
-use super::ConnectedPacket;
+use crate::ConnectedPacket;
 
 /// Action to perform on the dynamic enum.
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
@@ -17,7 +17,7 @@ pub enum SoftEnumAction {
 /// Updates command autocompletion entries.
 #[derive(Debug, Clone)]
 pub struct UpdateDynamicEnum<'a> {
-    /// ID of the enum, previously specified in [`CommandEnum::enum_id`](super::CommandEnum::enum_id).
+    /// ID of the enum, previously specified in [`CommandEnum::enum_id`](crate::CommandEnum::enum_id).
     pub enum_id: &'a str,
     /// List of enum options.
     pub options: &'a [String],

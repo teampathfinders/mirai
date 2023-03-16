@@ -1,18 +1,18 @@
 
 
-use crate::network::raknet::packets::ConnectionRequest;
-use crate::network::raknet::packets::ConnectionRequestAccepted;
-use crate::network::raknet::packets::NewIncomingConnection;
-use crate::network::raknet::Frame;
-use crate::network::raknet::Reliability;
-use crate::network::session::Session;
+use crate::ConnectionRequest;
+use crate::ConnectionRequestAccepted;
+use crate::NewIncomingConnection;
+use crate::Frame;
+use crate::Reliability;
+use crate::Session;
 use util::Result;
 use util::{Deserialize, Serialize};
 use util::bytes::{MutableBuffer, SharedBuffer};
 
-use super::packets::ConnectedPing;
-use super::packets::ConnectedPong;
-use super::{PacketConfig, SendPriority};
+use crate::ConnectedPing;
+use crate::ConnectedPong;
+use crate::{PacketConfig, SendPriority};
 
 impl Session {
     /// Handles a [`ConnectionRequest`] packet.

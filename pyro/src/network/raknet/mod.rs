@@ -1,6 +1,8 @@
 use util::glob_export;
 
-pub mod packets;
+mod packets;
+
+pub use packets::*;
 
 glob_export!(ack);
 glob_export!(broadcast);

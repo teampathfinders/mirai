@@ -17,18 +17,18 @@ use uuid::Uuid;
 use crate::crypto::{Encryptor, IdentityData, UserData};
 use crate::instance_manager::InstanceManager;
 use crate::level_manager::LevelManager;
-use crate::network::packets::login::{DeviceOS, Disconnect, PermissionLevel};
-use crate::network::packets::{
+use crate::{DeviceOS, Disconnect, PermissionLevel};
+use crate::{
     ConnectedPacket, GameMode, MessageType, Packet, PlayerListRemove,
     TextMessage,
 };
-use crate::network::raknet::{BroadcastPacket, RaknetData};
-use crate::network::Skin;
+use crate::{BroadcastPacket, RaknetData};
+use crate::Skin;
 use util::{bail, Serialize, Vector3f};
 use util::{error, Result};
 use util::bytes::{MutableBuffer, SharedBuffer};
 
-use super::SessionManager;
+use crate::SessionManager;
 
 static RUNTIME_ID_COUNTER: AtomicU64 = AtomicU64::new(0);
 
@@ -64,7 +64,7 @@ pub struct Session {
     /// Whether the client supports the chunk cache.
     pub cache_support: OnceCell<bool>,
     /// Whether the client has fully been initialised.
-    /// This is set to true after receiving the [`SetLocalPlayerAsInitialized`](crate::network::packets::SetLocalPlayerAsInitialized) packet
+    /// This is set to true after receiving the [`SetLocalPlayerAsInitialized`](crate::SetLocalPlayerAsInitialized) packet
     pub initialized: AtomicBool,
     /// Manages entire world.
     pub level_manager: Arc<LevelManager>,

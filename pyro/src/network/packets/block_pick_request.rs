@@ -1,7 +1,7 @@
 
 use util::{BlockPosition, Deserialize, Vector3i, Result};
 use util::bytes::{BinaryReader, SharedBuffer};
-use crate::network::packets::ConnectedPacket;
+use crate::ConnectedPacket;
 
 /// Sent by the client when the user requests a block using the block pick key.
 #[derive(Debug)]

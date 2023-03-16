@@ -3,7 +3,7 @@ use std::time::Duration;
 use lazy_static::lazy_static;
 use parking_lot::RwLock;
 
-use crate::network::packets::login::{
+use crate::{
     ClientThrottleSettings, CompressionAlgorithm,
 };
 

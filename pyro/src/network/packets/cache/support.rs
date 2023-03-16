@@ -3,7 +3,7 @@
 use tokio::io::ReadBuf;
 use util::bytes::{BinaryReader, SharedBuffer};
 
-use crate::network::packets::ConnectedPacket;
+use crate::ConnectedPacket;
 use util::Deserialize;
 use util::Result;
 

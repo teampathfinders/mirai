@@ -1,7 +1,7 @@
 
 use util::{bail, Deserialize, Result};
 use level::Dimension;
-use crate::network::packets::ConnectedPacket;
+use crate::ConnectedPacket;
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 #[repr(u16)]

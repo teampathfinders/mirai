@@ -4,7 +4,7 @@ use util::bytes::{BinaryWriter, MutableBuffer, size_of_varint};
 
 use util::Serialize;
 
-use super::ConnectedPacket;
+use crate::ConnectedPacket;
 
 /// Information about a player's death.
 #[derive(Debug, Clone)]

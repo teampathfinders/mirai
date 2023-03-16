@@ -9,12 +9,12 @@ use util::Serialize;
 const EMPTY_IPV4_ADDRESS: SocketAddr =
     SocketAddr::V4(SocketAddrV4::new(Ipv4Addr::new(0, 0, 0, 0), 19132));
 
-/// Sent in response to [`ConnectionRequest`](super::connection_request::ConnectionRequest).
+/// Sent in response to [`ConnectionRequest`](crate::connection_request::ConnectionRequest).
 #[derive(Debug)]
 pub struct ConnectionRequestAccepted {
     /// IP address of the client.
     pub client_address: SocketAddr,
-    /// Corresponds to [`ConnectionRequest::time`](super::connection_request::ConnectionRequest::time).
+    /// Corresponds to [`ConnectionRequest::time`](crate::connection_request::ConnectionRequest::time).
     pub request_time: i64,
 }
 

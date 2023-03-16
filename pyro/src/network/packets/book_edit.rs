@@ -1,7 +1,7 @@
 
 use util::{bail, Deserialize, Serialize, Error, Result};
 use util::bytes::{BinaryReader, SharedBuffer};
-use crate::network::packets::ConnectedPacket;
+use crate::ConnectedPacket;
 
 /// Sent when the client makes changes to a book.
 /// The client sends this packet every time the client briefly stops typing,

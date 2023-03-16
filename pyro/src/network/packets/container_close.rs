@@ -1,11 +1,11 @@
 
 use util::{Serialize, Result};
 use util::bytes::{BinaryWriter, MutableBuffer};
-use crate::network::packets::ConnectedPacket;
+use crate::ConnectedPacket;
 
 #[derive(Debug, Clone)]
 pub struct ContainerClose {
-    /// Equal to the window ID sent in the [`ContainerOpen`](super::ContainerOpen) packet.
+    /// Equal to the window ID sent in the [`ContainerOpen`](crate::ContainerOpen) packet.
     pub window_id: u8,
     /// Whether the server force-closed the container.
     pub server_initiated: bool

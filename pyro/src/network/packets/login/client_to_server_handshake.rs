@@ -1,10 +1,10 @@
 use util::bytes::SharedBuffer;
-use crate::network::packets::ConnectedPacket;
+use crate::ConnectedPacket;
 use util::pyassert;
 use util::Deserialize;
 use util::Result;
 
-/// Sent by the client in response to a [`ServerToClientHandshake`](super::ServerToClientHandshake)
+/// Sent by the client in response to a [`ServerToClientHandshake`](crate::ServerToClientHandshake)
 /// to confirm that encryption is working.
 ///
 /// It has no data.

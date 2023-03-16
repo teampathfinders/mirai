@@ -1,8 +1,12 @@
 use util::glob_export;
 
-pub mod cache;
-pub mod command;
-pub mod login;
+mod cache;
+mod command;
+mod login;
+
+pub use cache::*;
+pub use command::*;
+pub use login::*;
 
 glob_export!(add_player);
 glob_export!(add_painting);

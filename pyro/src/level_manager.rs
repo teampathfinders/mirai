@@ -11,11 +11,11 @@ use tokio::task::JoinHandle;
 use tokio_util::sync::CancellationToken;
 use util::Result;
 
-use crate::command::Command;
-use crate::config::SERVER_CONFIG;
-use crate::network::{
-    packets::{GameRule, GameRulesChanged},
-    session::SessionManager,
+use crate::Command;
+use crate::SERVER_CONFIG;
+use crate::{
+    {GameRule, GameRulesChanged},
+    SessionManager,
 };
 
 /// Interval between standard Minecraft ticks.

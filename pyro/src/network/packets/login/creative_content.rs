@@ -3,7 +3,7 @@ use std::collections::HashMap;
 
 
 
-use crate::network::packets::ConnectedPacket;
+use crate::ConnectedPacket;
 use util::{Serialize};
 use util::bytes::{BinaryWriter, MutableBuffer, VarInt};
 use util::Result;

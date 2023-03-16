@@ -8,6 +8,14 @@ repository = "https://github.com/teampathfinders/pyro"
 license = "Apache-2.0"
 build = "build.rs"
 
+[lib]
+name = "pyro"
+path = "src/lib.rs"
+
+#[[bin]]
+#name = "pyro"
+#path = "src/main.rs"
+
 [features]
 # Requires the tokio_unstable rustc flag
 tokio-console = ["console-subscriber"]

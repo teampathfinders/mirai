@@ -2,12 +2,12 @@
 
 use util::bytes::{BinaryWriter, MutableBuffer, VarString};
 
-use crate::network::packets::ConnectedPacket;
+use crate::ConnectedPacket;
 use util::Serialize;
 use util::Result;
 
 /// Sent by the server to initiate encryption.
-/// The client responds with a [`ClientToServerHandshake`](super::ClientToServerHandshake) to
+/// The client responds with a [`ClientToServerHandshake`](crate::ClientToServerHandshake) to
 /// indicate encryption has successfully been initiated.
 #[derive(Debug, Clone)]
 pub struct ServerToClientHandshake<'a> {

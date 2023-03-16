@@ -5,11 +5,11 @@ use std::sync::atomic::Ordering;
 use jsonwebtoken::jwk::KeyOperations::Encrypt;
 use level::Dimension;
 
-use crate::config::SERVER_CONFIG;
+use crate::SERVER_CONFIG;
 use crate::crypto::Encryptor;
-use crate::network::packets::cache::CacheStatus;
-use crate::network::packets::command::AvailableCommands;
-use crate::network::packets::login::{
+use crate::CacheStatus;
+use crate::AvailableCommands;
+use crate::{
     BroadcastIntent, ChatRestrictionLevel, ChunkRadiusReply,
     ChunkRadiusRequest, ClientToServerHandshake, CreativeContent, ItemStack,
     ItemType, Login, NetworkSettings, PermissionLevel, PlayerMovementSettings,
@@ -17,16 +17,16 @@ use crate::network::packets::login::{
     ResourcePackStack, ResourcePacksInfo, ServerToClientHandshake,
     SpawnBiomeType, StartGame, WorldGenerator, DISCONNECTED_LOGIN_FAILED, Status, PlayStatus,
 };
-use crate::network::packets::GameMode::Creative;
-use crate::network::packets::{
+use crate::GameMode::Creative;
+use crate::{
     AbilityData, AddPlayer, BiomeDefinitionList, Difficulty, GameMode,
     GameRule, MessageType,  PlayerListAdd, PlayerListAddEntry,
     SetLocalPlayerAsInitialized, TextMessage, UpdateSkin,
     ViolationWarning, CLIENT_VERSION_STRING, NETWORK_VERSION,
 };
-use crate::network::raknet::Reliability;
-use crate::network::raknet::{Frame, FrameBatch};
-use crate::network::session::session::Session;
+use crate::Reliability;
+use crate::{Frame, FrameBatch};
+use crate::Session;
 use util::{
     bail, error, BlockPosition, Deserialize, Result, Vector2f, Vector3f,
     Vector3i,

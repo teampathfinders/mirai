@@ -5,7 +5,7 @@ use std::sync::Arc;
 use parking_lot::Mutex;
 use tokio::net::UdpSocket;
 
-use crate::network::raknet::Frame;
+use crate::Frame;
 
 /// Priority of the packet.
 /// This affects when they're sent.
@@ -19,32 +19,45 @@ pub enum SendPriority {
     Low,
 }
 
-/// Queue containing packets that need to be sent.
-/// The packets are sorted by priority.
-#[derive(Debug)]
-pub struct SendQueue {
+/// Contains three LIFO deques that each have a different priority assigned to them.
+/// The priority of a given frame determines which queue it enters and how the
+/// server prioritizes sending it.
+#[derive(Default, Debug)]
+pub struct SendQueues {
+    /// Queue for high priority frames.
+    /// Flushed every session tick.
     high_priority: Mutex<VecDeque<Frame>>,
+    /// Queue for medium priority frames.
+    /// Flushed every 2 session ticks.
     medium_priority: Mutex<VecDeque<Frame>>,
+    /// Queue for low priority frames.
+    /// Flushed every 4 session ticks.
     low_priority: Mutex<VecDeque<Frame>>,
-
-    // Faster to use a single atomic than to try locking all 3 mutexes and checking if they're empty.
+    /// It is faster to update a boolean on each read/write and check that,
+    /// than to lock each of the three queues to check if they are empty.
     is_empty: AtomicBool,
 }
 
-impl SendQueue {
+impl SendQueues {
     /// Creates a new send queue.
     pub fn new() -> Self {
-        Self {
-            high_priority: Mutex::new(VecDeque::new()),
-            medium_priority: Mutex::new(VecDeque::new()),
-            low_priority: Mutex::new(VecDeque::new()),
-            is_empty: AtomicBool::new(true),
-        }
+        Default::default()
     }
 
+    /// Whether all three priority queues are completely empty.
     #[inline]
     pub fn is_empty(&self) -> bool {
-        self.is_empty.load(Ordering::SeqCst)
+        let empty = self.is_empty.load(Ordering::SeqCst);
+
+        {
+            let hp = self.high_priority.lock().is_empty();
+            let mp = self.medium_priority.lock().is_empty();
+            let lp = self.low_priority.lock().is_empty();
+
+            debug_assert_eq!(hp && mp && lp, empty);
+        }
+
+        empty
     }
 
     /// Inserts a new packet into the send queue.
@@ -67,7 +80,11 @@ impl SendQueue {
         }
     }
 
+    /// Flushes the specified queue.
     pub fn flush(&self, priority: SendPriority) -> Option<Vec<Frame>> {
+        // FIXME: This function can potentially return a reference instead of moving the frames
+        // to reduce allocations.
+
         self.is_empty.store(true, Ordering::SeqCst);
 
         match priority {
@@ -96,11 +113,5 @@ impl SendQueue {
                 }
             }
         }
-    }
-}
-
-impl Default for SendQueue {
-    fn default() -> Self {
-        Self::new()
     }
 }

@@ -1,17 +1,17 @@
-use crate::network::raknet::OFFLINE_MESSAGE_DATA;
+use crate::OFFLINE_MESSAGE_DATA;
 use std::io::Write;
 use util::bytes::{BinaryWriter, MutableBuffer};
 use util::Result;
 use util::Serialize;
 
-/// Sent in response to [`OpenConnectionRequest1`](super::open_connection_request1::OpenConnectionRequest1).
+/// Sent in response to [`OpenConnectionRequest1`](crate::open_connection_request1::OpenConnectionRequest1).
 #[derive(Debug)]
 pub struct OpenConnectionReply1 {
     /// GUID of the server.
     /// Corresponds to [`ServerInstance::guid`](crate::ServerInstance::guid).
     pub server_guid: u64,
     /// MTU of the connection.
-    /// This should be given the same value as [`OpenConnectionRequest1::mtu`](super::open_connection_request1::OpenConnectionRequest1::mtu).
+    /// This should be given the same value as [`OpenConnectionRequest1::mtu`](crate::open_connection_request1::OpenConnectionRequest1::mtu).
     pub mtu: u16,
 }
 

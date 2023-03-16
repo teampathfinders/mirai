@@ -1,4 +1,4 @@
-use crate::network::raknet::{OFFLINE_MESSAGE_DATA, RAKNET_VERSION};
+use crate::{OFFLINE_MESSAGE_DATA, RAKNET_VERSION};
 use std::io::Write;
 use util::bytes::{BinaryWriter, MutableBuffer, SharedBuffer};
 use util::Result;
@@ -7,8 +7,8 @@ use util::Serialize;
 /// Notifies the client that they're using a version of the Raknet protocol that is incompatible
 /// with the version used by the server ([`RAKNET_VERSION`]).
 ///
-/// This packet should be sent in response to [`OpenConnectionRequest1`](super::open_connection_request1::OpenConnectionRequest1)
-/// if the [`protocol_version`](super::open_connection_request1::OpenConnectionRequest1::protocol_version) field does not match the server's version.
+/// This packet should be sent in response to [`OpenConnectionRequest1`](crate::open_connection_request1::OpenConnectionRequest1)
+/// if the [`protocol_version`](crate::open_connection_request1::OpenConnectionRequest1::protocol_version) field does not match the server's version.
 #[derive(Debug)]
 pub struct IncompatibleProtocol {
     /// Randomly generated GUID of the server.

@@ -6,19 +6,19 @@ use async_recursion::async_recursion;
 use flate2::write::DeflateEncoder;
 use flate2::Compression;
 
-use crate::config::SERVER_CONFIG;
-use crate::network::header::Header;
-use crate::network::packets::login::CompressionAlgorithm;
-use crate::network::packets::{ConnectedPacket, Packet, CONNECTED_PACKET_ID};
-use crate::network::raknet::packets::{Ack, AckRecord};
-use crate::network::raknet::Reliability;
-use crate::network::raknet::{Frame, FrameBatch};
-use crate::network::session::Session;
+use crate::SERVER_CONFIG;
+use crate::Header;
+use crate::CompressionAlgorithm;
+use crate::{ConnectedPacket, Packet, CONNECTED_PACKET_ID};
+use crate::{Ack, AckRecord};
+use crate::Reliability;
+use crate::{Frame, FrameBatch};
+use crate::Session;
 use util::Result;
 use util::{Deserialize, Serialize};
 use util::bytes::{ArcBuffer, BinaryWriter, MutableBuffer, SharedBuffer};
 
-use super::SendPriority;
+use crate::SendPriority;
 
 pub struct PacketConfig {
     pub reliability: Reliability,
@@ -238,7 +238,7 @@ impl Session {
             if frame.reliability.is_ordered() {
                 let order_index = self.raknet.order_channels
                     [frame.order_channel as usize]
-                    .get_server_index();
+                    .fetch_index();
                 frame.order_index = order_index;
             }
 

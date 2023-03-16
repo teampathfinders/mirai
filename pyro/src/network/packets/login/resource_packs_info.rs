@@ -2,7 +2,7 @@ use std::fmt::Write;
 
 
 
-use crate::network::packets::ConnectedPacket;
+use crate::ConnectedPacket;
 use util::{Serialize};
 use util::bytes::{BinaryWriter, MutableBuffer, VarString};
 use util::Result;
@@ -78,10 +78,10 @@ impl ResourcePack {
 }
 
 /// Contains information about the addons used by the server.
-/// This should be sent after sending the [`PlayStatus`](super::PlayStatus) packet with a
-/// [`LoginSuccess`](super::Status::LoginSuccess) status.
+/// This should be sent after sending the [`PlayStatus`](crate::PlayStatus) packet with a
+/// [`LoginSuccess`](crate::Status::LoginSuccess) status.
 /// 
-/// If the server has no resource packs, a [`ResourcePackStack`](super::ResourcePackStack) packet can be sent immediately after this one
+/// If the server has no resource packs, a [`ResourcePackStack`](crate::ResourcePackStack) packet can be sent immediately after this one
 /// to prevent a client response.
 #[derive(Debug)]
 pub struct ResourcePacksInfo<'a> {

@@ -2,7 +2,7 @@
 
 use util::bytes::{BinaryWriter, MutableBuffer};
 
-use crate::network::packets::ConnectedPacket;
+use crate::ConnectedPacket;
 use util::Serialize;
 use util::Result;
 
