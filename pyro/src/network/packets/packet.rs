@@ -43,7 +43,7 @@ impl<T: ConnectedPacket + Serialize> Packet<T> {
         self.header.serialized_size() + self.content.serialized_size()
     }
 
-    pub fn serialize(&self) -> MutableBuffer {
+    pub fn serialize(&self) -> Result<MutableBuffer> {
         let expected_size = self.header.serialized_size() + self.content.serialized_size();
         let capacity = 5 + expected_size;
 
@@ -51,14 +51,14 @@ impl<T: ConnectedPacket + Serialize> Packet<T> {
         let mut buffer = MutableBuffer::with_capacity(capacity);
 
         let mut rest = MutableBuffer::with_capacity(expected_size);
-        self.header.serialize(&mut rest);
-        self.content.serialize(&mut rest);
+        self.header.serialize(&mut rest)?;
+        self.content.serialize(&mut rest)?;
 
         // debug_assert_eq!(rest.len(), expected_size, "While serializing {:x}", self.header.id);
 
         buffer.write_var_u32(rest.len() as u32);
         buffer.append(&rest);
 
-        buffer
+        Ok(buffer)
     }
 }

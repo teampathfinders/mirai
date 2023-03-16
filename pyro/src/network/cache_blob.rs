@@ -1,6 +1,6 @@
-use util::Result;
 use std::io::Write;
 use util::bytes::{BinaryWriter, MutableBuffer, SharedBuffer};
+use util::Result;
 
 /// A blob used in the cache protocol.
 #[derive(Debug, Clone)]

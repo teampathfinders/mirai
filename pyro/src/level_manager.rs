@@ -14,8 +14,7 @@ use util::Result;
 use crate::Command;
 use crate::SERVER_CONFIG;
 use crate::{
-    {GameRule, GameRulesChanged},
-    SessionManager,
+    SessionManager, {GameRule, GameRulesChanged},
 };
 
 /// Interval between standard Minecraft ticks.

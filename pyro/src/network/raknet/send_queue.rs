@@ -85,10 +85,12 @@ impl SendQueues {
         // FIXME: This function can potentially return a reference instead of moving the frames
         // to reduce allocations.
 
-        self.is_empty.store(true, Ordering::SeqCst);
-
+        // self.is_empty.store(true, Ordering::SeqCst);
         match priority {
             SendPriority::High => {
+                let is_empty = self.low_priority.lock().is_empty() && self.medium_priority.lock().is_empty();
+                self.is_empty.store(is_empty, Ordering::SeqCst);
+
                 let mut lock = self.high_priority.lock();
                 if lock.is_empty() {
                     None
@@ -97,6 +99,9 @@ impl SendQueues {
                 }
             }
             SendPriority::Medium => {
+                let is_empty = self.low_priority.lock().is_empty() && self.medium_priority.lock().is_empty();
+                self.is_empty.store(is_empty, Ordering::SeqCst);
+
                 let mut lock = self.medium_priority.lock();
                 if lock.is_empty() {
                     None
@@ -105,6 +110,9 @@ impl SendQueues {
                 }
             }
             SendPriority::Low => {
+                let is_empty = self.low_priority.lock().is_empty() && self.medium_priority.lock().is_empty();
+                self.is_empty.store(is_empty, Ordering::SeqCst);
+
                 let mut lock = self.low_priority.lock();
                 if lock.is_empty() {
                     None

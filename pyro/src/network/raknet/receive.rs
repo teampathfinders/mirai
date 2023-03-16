@@ -208,16 +208,14 @@ impl Session {
         &self,
         mut pk: MutableBuffer,
     ) -> Result<()> {
+        pk.advance_cursor(1); // Skip over 0xfe ID.
         let mut snapshot = pk.snapshot();
         let start_len = snapshot.len();
-
         let length = snapshot.read_var_u32()?;
-        pyassert!(length as usize == pk.len());
-
         let header = Header::deserialize(&mut snapshot)?;
 
         // Advance past the header.
-        pk.advance_cursor(length.var_len() + start_len - snapshot.len());
+        pk.advance_cursor(start_len - snapshot.len());
 
         match header.id {
             RequestNetworkSettings::ID => {

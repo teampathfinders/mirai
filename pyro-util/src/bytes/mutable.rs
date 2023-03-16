@@ -10,6 +10,7 @@ use uuid::Uuid;
 
 /// A buffer that can be read from and written to.
 /// It is the owned version of [`ReadBuffer`].
+#[derive(Default)]
 pub struct MutableBuffer {
     data: Vec<u8>,
     cursor: usize,
@@ -64,7 +65,8 @@ impl MutableBuffer {
 
     #[inline]
     pub fn snapshot(&self) -> SharedBuffer {
-        SharedBuffer::from(&self.as_slice()[self.cursor..])
+        // SharedBuffer::from(&self.as_slice()[self.cursor..])
+        SharedBuffer::from(self.as_slice())
     }
 
     #[inline]
@@ -100,13 +102,6 @@ impl From<Vec<u8>> for MutableBuffer {
     #[inline]
     fn from(data: Vec<u8>) -> Self {
         Self { data, cursor: 0 }
-    }
-}
-
-impl Default for MutableBuffer {
-    #[inline]
-    fn default() -> Self {
-        Self { data: Vec::new(), cursor: 0 }
     }
 }
 

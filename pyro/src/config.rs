@@ -3,9 +3,7 @@ use std::time::Duration;
 use lazy_static::lazy_static;
 use parking_lot::RwLock;
 
-use crate::{
-    ClientThrottleSettings, CompressionAlgorithm,
-};
+use crate::{ClientThrottleSettings, CompressionAlgorithm};
 
 /// Global service that contains all configuration settings
 pub struct ServerConfig {

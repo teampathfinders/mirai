@@ -247,7 +247,7 @@ impl<'a> Read for SharedBuffer<'a> {
 
 #[cfg(test)]
 mod test {
-    use crate::SharedBuffer;
+    use crate::bytes::SharedBuffer;
     use crate::bytes::{BinaryReader, BinaryWriter, MutableBuffer};
     use crate::u24::u24;
     use paste::paste;

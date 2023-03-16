@@ -43,7 +43,7 @@ impl BroadcastPacket {
         
         Ok(Self {
             sender,
-            content: ArcBuffer::from(packet.serialize())
+            content: ArcBuffer::from(packet.serialize()?)
         })
     }
 }

@@ -36,7 +36,7 @@ impl Session {
     #[inline]
     pub fn send<T: ConnectedPacket + Serialize>(&self, pk: T) -> Result<()> {
         let pk = Packet::new(pk);
-        let mut serialized = pk.serialize();
+        let mut serialized = pk.serialize()?;
 
         self.send_serialized(serialized, DEFAULT_SEND_CONFIG)
     }
@@ -58,7 +58,7 @@ impl Session {
 
             if pk.as_ref().len() > threshold as usize {
                 // Compress packet
-                match SERVER_CONFIG.read().compression_algorithm {
+                match algorithm {
                     CompressionAlgorithm::Snappy => {
                         unimplemented!("Snappy compression");
                     }
@@ -194,7 +194,7 @@ impl Session {
 
         let ack = Ack { records };
         let mut serialized = MutableBuffer::with_capacity(ack.serialized_size());
-        ack.serialize(&mut serialized);
+        ack.serialize(&mut serialized)?;
 
         self.raknet
             .udp_socket
@@ -206,6 +206,8 @@ impl Session {
 
     #[async_recursion]
     async fn send_raw_frames(&self, frames: Vec<Frame>) -> Result<()> {
+        dbg!("SENDING");
+
         let mut serialized = MutableBuffer::new();
 
         // Process fragments first to prevent sequence number duplication.
