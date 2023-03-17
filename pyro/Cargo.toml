@@ -1,9 +1,9 @@
 [package]
 name = "pyro"
 version = "0.1.0"
-edition = "2021"
-authors = ["RadiatedMonkey"]
 description = "Lightweight, dedicated server software for Minecraft: Bedrock Edition"
+edition = "2021"
+authors = ["Ruben Adema"]
 repository = "https://github.com/teampathfinders/pyro"
 license = "Apache-2.0"
 build = "build.rs"
@@ -11,10 +11,6 @@ build = "build.rs"
 [lib]
 name = "pyro"
 path = "src/lib.rs"
-
-#[[bin]]
-#name = "pyro"
-#path = "src/main.rs"
 
 [features]
 # Requires the tokio_unstable rustc flag

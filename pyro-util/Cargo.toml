@@ -2,6 +2,9 @@
 name = "pyro-util"
 version = "0.1.0"
 edition = "2021"
+authors = ["Ruben Adema"]
+repository = "https://github.com/teampathfinders/pyro"
+license = "Apache-2.0"
 
 [dependencies]
 base64 = "0.21.0"
