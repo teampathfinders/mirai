@@ -81,6 +81,7 @@ impl Session {
         };
 
         if let Some(encryptor) = self.encryptor.get() {
+            // panic!("panic");
             out = encryptor.encrypt(SharedBuffer::from(&pk.as_ref()[1..]))?
         };
 
@@ -207,8 +208,6 @@ impl Session {
 
     #[async_recursion]
     async fn send_raw_frames(&self, frames: Vec<Frame>) -> Result<()> {
-        dbg!(&frames);
-
         let mut serialized = MutableBuffer::new();
 
         // Process fragments first to prevent sequence number duplication.

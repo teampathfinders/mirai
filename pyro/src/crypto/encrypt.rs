@@ -1,4 +1,5 @@
 use std::fmt::{Debug, Formatter};
+use std::ops::Deref;
 
 use std::sync::atomic::{AtomicU64, Ordering};
 
@@ -17,7 +18,7 @@ use rand::distributions::Alphanumeric;
 use rand::rngs::OsRng;
 use rand::Rng;
 use sha2::{Digest, Sha256};
-use util::bytes::{MutableBuffer, SharedBuffer};
+use util::bytes::{BinaryWriter, MutableBuffer, SharedBuffer};
 use util::{bail, Result};
 
 type Aes256CtrBE = ctr::Ctr64BE<aes::Aes256>;
@@ -158,7 +159,7 @@ impl Encryptor {
     ///
     /// If the checksum does not match, a [`BadPacket`](util::ErrorKind::Malformed) error is returned.
     /// The client must be disconnected if this fails, because the data has probably been tampered with.
-    pub fn decrypt<'a>(&self, buffer: &mut MutableBuffer) -> Result<()> {
+    pub fn decrypt(&self, buffer: &mut MutableBuffer) -> Result<()> {
         if buffer.len() < 9 {
             bail!(
                 Malformed,
@@ -192,12 +193,14 @@ impl Encryptor {
         let counter = self.send_counter.fetch_add(1, Ordering::SeqCst);
         let checksum = self.compute_checksum(buffer.as_ref(), counter);
 
-        let mut encrypted = [buffer.as_ref(), &checksum].concat();
-        self.cipher_encrypt
-            .lock()
-            .apply_keystream(encrypted.as_mut());
+        let mut out = MutableBuffer::with_capacity(buffer.len() + 8);
+        out.append(&buffer);
 
-        Ok(MutableBuffer::from(encrypted))
+        self.cipher_encrypt.lock().apply_keystream(out.as_mut());
+
+        out.append(&checksum);
+
+        Ok(out)
     }
 
     /// Returns the packet send counter.

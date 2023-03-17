@@ -93,7 +93,7 @@ pub struct Keys<'a> {
     /// Pointer to the C++ iterator.
     iter: NonNull<c_void>,
     /// Ensures the iterator does not outlive the database.
-    _marker: PhantomData<&'a ()>
+    _marker: PhantomData<&'a ()>,
 }
 
 impl<'a> Keys<'a> {
@@ -110,7 +110,7 @@ impl<'a> Keys<'a> {
             index: 0,
             // SAFETY: level_iter is guaranteed to not return an error.
             iter: unsafe { NonNull::new_unchecked(result.data) },
-            _marker: PhantomData
+            _marker: PhantomData,
         }
     }
 }
@@ -177,9 +177,7 @@ impl Database {
                 debug_assert_ne!(result.data, std::ptr::null_mut());
 
                 // SAFETY: If result.is_success is true, then the caller has set data to a valid pointer.
-                Ok(Self {
-                    ptr: NonNull::new_unchecked(result.data),
-                })
+                Ok(Self { ptr: NonNull::new_unchecked(result.data) })
             } else {
                 Err(translate_ffi_error(result))
             }

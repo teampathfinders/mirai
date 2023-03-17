@@ -22,7 +22,7 @@ impl TryFrom<u8> for SubChunkVersion {
             1 => Self::Legacy,
             8 => Self::Limited,
             9 => Self::Limitless,
-            _ => bail!(Malformed, "Invalid chunk version: {v}")
+            _ => bail!(Malformed, "Invalid chunk version: {v}"),
         })
     }
 }
@@ -203,10 +203,7 @@ impl SubLayer {
 impl Default for SubLayer {
     // Std using const generics for arrays would be really nice...
     fn default() -> Self {
-        Self {
-            indices: [0; 4096],
-            palette: Vec::new()
-        }
+        Self { indices: [0; 4096], palette: Vec::new() }
     }
 }
 
@@ -253,7 +250,7 @@ pub struct SubChunk {
     ///
     // Surprisingly using a Vec is faster than using a SmallVec.
     // This is probably because of the expensive copy of `SubLayer::indices`
-    layers: Vec<SubLayer>
+    layers: Vec<SubLayer>,
 }
 
 impl SubChunk {
@@ -285,9 +282,7 @@ impl SubChunk {
         let version = SubChunkVersion::try_from(buffer.read_u8()?)?;
         let layer_count = match version {
             SubChunkVersion::Legacy => 1,
-            _ => {
-                buffer.read_u8()?
-            }
+            _ => buffer.read_u8()?,
         };
 
         if layer_count == 0 || layer_count > 2 {
