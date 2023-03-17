@@ -1,4 +1,5 @@
 use std::fmt::{Debug, Formatter};
+use std::io::Read;
 use std::ops::Deref;
 
 use std::sync::atomic::{AtomicU64, Ordering};
@@ -6,9 +7,11 @@ use std::sync::atomic::{AtomicU64, Ordering};
 use base64::Engine;
 use ctr::cipher::KeyIvInit;
 use ctr::cipher::{StreamCipher, StreamCipherSeekCore};
+use flate2::read::DeflateDecoder;
 
 use jsonwebtoken::Algorithm;
 
+use crate::CONNECTED_PACKET_ID;
 use p384::ecdh::diffie_hellman;
 use p384::ecdsa::SigningKey;
 use p384::pkcs8::{DecodePublicKey, EncodePrivateKey, EncodePublicKey};
@@ -189,18 +192,15 @@ impl Encryptor {
     }
 
     /// Encrypts a packet and appends the computed checksum.
-    pub fn encrypt(&self, buffer: SharedBuffer) -> Result<MutableBuffer> {
+    pub fn encrypt(&self, buffer: &mut MutableBuffer) {
         let counter = self.send_counter.fetch_add(1, Ordering::SeqCst);
-        let checksum = self.compute_checksum(buffer.as_ref(), counter);
+        // Exclude 0xfe header from checksum calculations.
+        let checksum = self.compute_checksum(&buffer.as_ref()[1..], counter);
+        buffer.append(&checksum);
 
-        let mut out = MutableBuffer::with_capacity(buffer.len() + 8);
-        out.append(&buffer);
-
-        self.cipher_encrypt.lock().apply_keystream(out.as_mut());
-
-        out.append(&checksum);
-
-        Ok(out)
+        self.cipher_encrypt
+            .lock()
+            .apply_keystream(&mut buffer.as_mut_slice()[1..]);
     }
 
     /// Returns the packet send counter.

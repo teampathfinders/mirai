@@ -70,19 +70,22 @@ impl Session {
                     }
                 }
             } else {
-                out = MutableBuffer::with_capacity(1 + pk.as_ref().len());
+                // Also reserve capacity for checksum even if encryption is disabled,
+                // preventing allocations.
+                out = MutableBuffer::with_capacity(1 + pk.as_ref().len() + 8);
                 out.write_u8(CONNECTED_PACKET_ID);
                 out.append(pk.as_ref());
             }
         } else {
-            out = MutableBuffer::with_capacity(1 + pk.as_ref().len());
+            // Also reserve capacity for checksum even if encryption is disabled,
+            // preventing allocations.
+            out = MutableBuffer::with_capacity(1 + pk.as_ref().len() + 8);
             out.write_u8(CONNECTED_PACKET_ID);
             out.append(pk.as_ref());
         };
 
         if let Some(encryptor) = self.encryptor.get() {
-            // panic!("panic");
-            out = encryptor.encrypt(SharedBuffer::from(&pk.as_ref()[1..]))?
+            encryptor.encrypt(&mut out);
         };
 
         self.send_raw_buffer_with_config(out, config);
