@@ -11,7 +11,7 @@ mod world;
 
 use std::{sync::Arc, time::Duration};
 
-use database::LevelDb;
+use database::Database;
 pub use sub_chunk::*;
 use tokio::sync::oneshot::{Receiver, Sender};
 use tokio_util::sync::CancellationToken;
@@ -20,7 +20,7 @@ pub use world::*;
 
 pub struct ChunkManager {
     /// Chunk database
-    database: LevelDb,
+    database: Database,
     token: CancellationToken,
 }
 
@@ -32,7 +32,7 @@ impl ChunkManager {
     ) -> Result<(Arc<Self>, Receiver<()>)> {
         tracing::info!("Loading level {}...", path.as_ref());
 
-        let manager = Arc::new(Self { database: LevelDb::new(path)?, token });
+        let manager = Arc::new(Self { database: Database::open(path)?, token });
 
         let clone = manager.clone();
         let (sender, receiver) = tokio::sync::oneshot::channel();

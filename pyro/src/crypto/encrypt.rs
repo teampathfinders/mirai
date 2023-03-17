@@ -169,7 +169,7 @@ impl Encryptor {
 
         self.cipher_decrypt.lock().apply_keystream(buffer.as_mut_slice());
         let counter = self.receive_counter.fetch_add(1, Ordering::SeqCst);
-        
+
         let slice = buffer.as_slice();
         let checksum = &slice[slice.len() - 8..];
         let computed_checksum = self

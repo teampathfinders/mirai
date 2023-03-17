@@ -11,7 +11,7 @@ use util::{error, Error, Result};
 
 use crate::ffi;
 
-/// Newtype wrapping a slice that makes sure data allocated by LevelDB is correctly deallocated.
+/// Wraps a LevelDB buffer, ensuring the buffer is deallocated after use.
 #[derive(Debug)]
 pub struct Guard<'a>(&'a [u8]);
 
@@ -21,6 +21,7 @@ impl<'a> Guard<'a> {
     // SAFETY: A `Guard` must only be created from a slice that was allocated by
     // `LevelDb` or `Keys`.
     // The caller must also ensure that the slice is not referenced anywhere else in the program.
+    #[inline]
     pub(crate) unsafe fn from_slice(slice: &'a [u8]) -> Self {
         Guard(slice)
     }
@@ -29,28 +30,33 @@ impl<'a> Guard<'a> {
 impl<'a> Deref for Guard<'a> {
     type Target = [u8];
 
+    #[inline]
     fn deref(&self) -> &Self::Target {
         self.0
     }
 }
 
 impl<'a> Drop for Guard<'a> {
+    #[inline]
     fn drop(&mut self) {
+        // SAFETY: The slice in self should have been allocated by the database.
+        // It is safe to delete because the pointer is unique and guaranteed to exist.
         unsafe {
             ffi::level_deallocate_array(self.0.as_ptr() as *mut i8);
         }
     }
 }
 
-pub struct Ref<'a> {
+/// Reference to a key-value pair returned by the [`Keys`] iterator.
+pub struct KvRef<'a> {
     iter: NonNull<c_void>,
-    /// The 'a lifetime isn't used in the struct.
-    /// It is only used to make sure that `Self` does not outlive `LevelDb` and `Keys`.
-    phantom: PhantomData<&'a ()>,
+    /// Ensures that [`KvRef`] does not outlive the parent [`Keys`] iterator.
+    _marker: PhantomData<&'a ()>,
 }
 
-impl<'a> Ref<'a> {
-    pub fn key(&self) -> Guard<'a> {
+impl<'a> KvRef<'a> {
+    /// The key associated with this pair.
+    pub fn key(&self) -> Guard {
         // SAFETY: A Ref should only exist while the iterator is valid.
         // This invariant is upheld by the lifetime 'a.
         unsafe {
@@ -64,7 +70,8 @@ impl<'a> Ref<'a> {
         }
     }
 
-    pub fn value(&self) -> Guard<'a> {
+    /// The data associated with this pair.
+    pub fn value(&self) -> Guard {
         // SAFETY: A Ref should only exist while the iterator is valid.
         // This invariant is upheld by the lifetime 'a.
         unsafe {
@@ -79,32 +86,37 @@ impl<'a> Ref<'a> {
     }
 }
 
+/// Iterator over keys in a LevelDB database.
 pub struct Keys<'a> {
+    /// Current position of the iterator.
     index: usize,
-    parent: &'a LevelDb,
+    /// Pointer to the C++ iterator.
     iter: NonNull<c_void>,
+    /// Ensures the iterator does not outlive the database.
+    _marker: PhantomData<&'a ()>
 }
 
 impl<'a> Keys<'a> {
-    pub(crate) fn new(db: &'a LevelDb) -> Self {
+    /// Creates a new iterator for the given database.
+    pub fn new(db: &'a Database) -> Self {
         // SAFETY: level_iter is guaranteed to not return an error.
         // The iterator position has also been initialized by FFI and is not in an invalid state.
-        let result = unsafe { ffi::level_iter(db.pointer.as_ptr()) };
+        let result = unsafe { ffi::level_iter(db.ptr.as_ptr()) };
 
         debug_assert_eq!(result.is_success, 1);
         debug_assert_ne!(result.data, std::ptr::null_mut());
 
         Self {
             index: 0,
-            parent: db,
             // SAFETY: level_iter is guaranteed to not return an error.
             iter: unsafe { NonNull::new_unchecked(result.data) },
+            _marker: PhantomData
         }
     }
 }
 
 impl<'a> Iterator for Keys<'a> {
-    type Item = Ref<'a>;
+    type Item = KvRef<'a>;
 
     fn next(&mut self) -> Option<Self::Item> {
         if self.index != 0 {
@@ -122,7 +134,7 @@ impl<'a> Iterator for Keys<'a> {
         // provided by `Ref`.
         let valid = unsafe { ffi::level_iter_valid(self.iter.as_ptr()) };
         if valid {
-            let raw_ref = Ref { iter: self.iter, phantom: PhantomData };
+            let raw_ref = KvRef { iter: self.iter, _marker: PhantomData };
             Some(raw_ref)
         } else {
             None
@@ -131,6 +143,7 @@ impl<'a> Iterator for Keys<'a> {
 }
 
 impl<'a> Drop for Keys<'a> {
+    #[inline]
     fn drop(&mut self) {
         // SAFETY: `self` is the only object that is able to modify the iterator.
         // Therefore it is safe to delete because it hasn't been modified externally.
@@ -140,16 +153,16 @@ impl<'a> Drop for Keys<'a> {
     }
 }
 
-/// Rust interface around a C++ LevelDB database.
-pub struct LevelDb {
+/// A LevelDB database.
+pub struct Database {
     /// Pointer to the C++ Database struct, containing the database and corresponding options.
     /// This data is heap-allocated and must therefore also be deallocated by C++ when it is no longer needed.
-    pointer: NonNull<c_void>,
+    ptr: NonNull<c_void>,
 }
 
-impl LevelDb {
+impl Database {
     /// Opens the database at the specified path.
-    pub fn new<P>(path: P) -> Result<Self>
+    pub fn open<P>(path: P) -> Result<Self>
     where
         P: AsRef<str>,
     {
@@ -162,9 +175,10 @@ impl LevelDb {
 
             if result.is_success == 1 {
                 debug_assert_ne!(result.data, std::ptr::null_mut());
+
                 // SAFETY: If result.is_success is true, then the caller has set data to a valid pointer.
                 Ok(Self {
-                    pointer: NonNull::new_unchecked(result.data),
+                    ptr: NonNull::new_unchecked(result.data),
                 })
             } else {
                 Err(translate_ffi_error(result))
@@ -172,12 +186,13 @@ impl LevelDb {
         }
     }
 
+    /// Creates a new [`Keys`] iterator.
+    #[inline]
     pub fn iter(&self) -> Keys {
         Keys::new(self)
     }
 
-    /// Loads the value of the given key.
-    /// This function requires a raw key, i.e. the key must have been serialised already.
+    /// Loads the specified value from the database.
     pub fn get<K>(&self, key: K) -> Result<Guard>
     where
         K: AsRef<[u8]>,
@@ -189,7 +204,7 @@ impl LevelDb {
             //
             // LevelDB is thread-safe, this function can be used by multiple threads.
             let result = ffi::level_get_key(
-                self.pointer.as_ptr(),
+                self.ptr.as_ptr(),
                 key.as_ptr() as *mut c_char,
                 key.len() as c_int,
             );
@@ -215,20 +230,21 @@ impl LevelDb {
     }
 }
 
-impl Drop for LevelDb {
+impl Drop for Database {
+    #[inline]
     fn drop(&mut self) {
         // Make sure to clean up the LevelDB resources when the database is dropped.
         // This can only be done by C++.
         unsafe {
-            ffi::level_close_database(self.pointer.as_ptr());
+            ffi::level_close_database(self.ptr.as_ptr());
         }
     }
 }
 
-/// SAFETY: The LevelDB authors explicitly state their database is thread-safe.
-unsafe impl Send for LevelDb {}
-/// SAFETY: The LevelDB authors explicitly state their database is thread-safe.
-unsafe impl Sync for LevelDb {}
+/// SAFETY: All LevelDB operations are thread-safe.
+unsafe impl Send for Database {}
+/// SAFETY: All LevelDB operations are thread-safe.
+unsafe impl Sync for Database {}
 
 /// Translates an error received from the FFI, into an [`Error`].
 unsafe fn translate_ffi_error(result: ffi::LevelResult) -> Error {

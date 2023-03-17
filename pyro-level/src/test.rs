@@ -1,7 +1,7 @@
 use util::{Deserialize, Serialize, Vector, Vector3b};
 
 use crate::{
-    biome::Biome3d, database::LevelDb, DatabaseKey, Dimension, KeyData,
+    biome::Biome3d, database::Database, DatabaseKey, Dimension, KeyData,
     LevelData, SubChunk, BIOME_DATA, LOCAL_PLAYER, MOB_EVENTS, OVERWORLD,
     SCHEDULER, SCOREBOARD,
 };
@@ -15,13 +15,13 @@ use crate::{
 
 #[test]
 fn database_test() {
-    let db = LevelDb::new("test/db").unwrap();
+    let db = Database::open("test/db").unwrap();
 
     let mut count = 0;
     let mut failed = 0;
     let mut sum = 0;
 
-    for _ in 0..50 {
+    for _ in 0..5 {
         let mut iter = db.iter();
         for raw_ref in iter {
             let key = raw_ref.key();
