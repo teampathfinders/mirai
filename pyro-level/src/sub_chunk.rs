@@ -1,6 +1,7 @@
 use serde::Deserialize;
 use std::collections::HashMap;
 use std::iter::Enumerate;
+use std::mem::MaybeUninit;
 use util::bytes::{BinaryReader, MutableBuffer, SharedBuffer};
 use util::{bail, BlockPosition, Error, Result, Vector3b};
 
@@ -13,36 +14,77 @@ pub enum SubChunkVersion {
     Limitless = 9,
 }
 
+impl TryFrom<u8> for SubChunkVersion {
+    type Error = Error;
+
+    fn try_from(v: u8) -> Result<Self> {
+        Ok(match v {
+            1 => Self::Legacy,
+            8 => Self::Limited,
+            9 => Self::Limitless,
+            _ => bail!(Malformed, "Invalid chunk version: {v}")
+        })
+    }
+}
+
+/// Performs ceiling division on two u32s.
 #[inline]
 fn u32_ceil_div(lhs: u32, rhs: u32) -> u32 {
     (lhs + rhs - 1) / rhs
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
+/// Block-specific data.
+#[derive(Debug, PartialEq, Eq, Deserialize)]
 pub struct BlockStates {
     // states, this should probably be a HashMap<String, nbt::Value>
     pillar_axis: Option<String>,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
+/// Definition of block in the sub chunk block palette.
+#[derive(Debug, PartialEq, Eq, Deserialize)]
 pub struct BlockProperties {
+    /// Name of the block.
     pub name: String,
+    /// Version of the block.
     pub version: Option<i32>,
+    /// Block-specific properties.
     pub states: Option<BlockStates>,
 }
 
-#[derive(Debug, Clone)]
+/// A layer in a sub chunk.
+///
+/// Sub chunks can have multiple layers.
+/// The first layer contains plain old block data,
+/// while the second layer (if it exists) generally contains water logging data.
+///
+/// The layer is prefixed with a byte indicating the size in bits of the block indices.
+/// This is followed by `4096 / (32 / bits)` 32-bit integers containing the actual indices.
+/// In case the size is 3, 5 or 6, there is one more integer appended to the end to fit all data.
+///
+/// Immediately following the indices, the palette starts.
+/// This is prefixed with a 32-bit little endian integer specifying the size of the palette.
+/// The rest of the palette then consists of `n` concatenated NBT compounds.
+#[doc(alias = "storage record")]
+#[derive(Debug)]
 pub struct SubLayer {
+    /// List of indices into the palette.
+    ///
+    /// Coordinates can be converted to an offset into the array using [`to_offset`].
     indices: [u16; CHUNK_SIZE],
+    /// List of all different block types in this sub chunk layer.
     palette: Vec<BlockProperties>,
 }
 
 impl SubLayer {
+    /// Creates an iterator over the blocks in this layer.
+    ///
+    /// This iterates over every indices
     #[inline]
     pub fn iter(&self) -> LayerIter {
         LayerIter::from(self)
     }
 
+    /// Deserializes a single layer from the given buffer.
     #[inline]
     fn deserialize(buffer: &mut SharedBuffer) -> Result<Self> {
         // Size of each index in bits.
@@ -158,15 +200,31 @@ impl SubLayer {
     // }
 }
 
+impl Default for SubLayer {
+    // Std using const generics for arrays would be really nice...
+    fn default() -> Self {
+        Self {
+            indices: [0; 4096],
+            palette: Vec::new()
+        }
+    }
+}
+
+/// Converts coordinates to offsets into the block palette indices.
+///
+/// These coordinates should be in the range [0, 16) for each component.
 #[inline]
-fn pos_to_offset(position: Vector3b) -> usize {
+pub fn to_offset(position: Vector3b) -> usize {
     16 * 16 * position.x as usize
         + 16 * position.z as usize
         + position.y as usize
 }
 
+/// Converts an offset back to coordinates.
+///
+/// This offset should be in the range [0, 4096).
 #[inline]
-fn offset_to_pos(offset: usize) -> Vector3b {
+pub fn from_offset(offset: usize) -> Vector3b {
     Vector3b::from([
         (offset >> 8) as u8 & 0xf,
         (offset >> 0) as u8 & 0xf,
@@ -174,28 +232,42 @@ fn offset_to_pos(offset: usize) -> Vector3b {
     ])
 }
 
-/// Represents the blocks in a sub chunk.
-#[derive(Debug, Clone)]
+/// A Minecraft sub chunk.
+///
+/// Every world contains
+#[derive(Debug)]
 pub struct SubChunk {
-    /// Version of the chunk.
-    /// This version affects the format of the chunk.
+    /// Version of the sub chunk.
+    ///
+    /// See [`SubChunkVersion`] for more info.
     version: SubChunkVersion,
-    /// Chunk index.
+    /// Index of the sub chunk.
+    ///
+    /// This specifies the vertical position of the sub chunk.
+    /// It is only used if `version` is set to [`Limitless`](SubChunkVersion::Limitless)
+    /// and set to 0 otherwise.
     index: i8,
-    /// Layers of this chunk.
-    /// The first layer contains blocks,
-    /// the second layer contains waterlog data if it exists.
-    layers: Vec<SubLayer>,
+    /// Layers the sub chunk consists of.
+    ///
+    /// See [`SubLayer`] for more info.
+    ///
+    // Surprisingly using a Vec is faster than using a SmallVec.
+    // This is probably because of the expensive copy of `SubLayer::indices`
+    layers: Vec<SubLayer>
 }
 
 impl SubChunk {
+    /// Gets a block at the specified position.
+    ///
+    /// See [`to_offset`] for the requirements on `position`.
     pub fn get(&self, position: Vector3b) -> Option<&BlockProperties> {
-        let offset = pos_to_offset(position);
+        let offset = to_offset(position);
         let index = self.layers[0].indices[offset];
 
         self.layers[0].palette.get(index as usize)
     }
 
+    /// Returns the specified layer from the sub chunk.
     #[inline]
     pub fn layer(&self, index: usize) -> Option<&SubLayer> {
         self.layers.get(index)
@@ -203,39 +275,38 @@ impl SubChunk {
 }
 
 impl SubChunk {
-    #[inline]
-    pub fn deserialize<'a, R>(buffer: R) -> Result<Self>
+    /// Deserialize a full sub chunk from the given buffer.
+    pub(crate) fn deserialize<'a, R>(buffer: R) -> Result<Self>
     where
         R: Into<SharedBuffer<'a>>,
     {
         let mut buffer = buffer.into();
 
-        let version = buffer.read_u8()?;
-        match version {
-            1 => todo!(),
-            8 | 9 => {
-                let storage_count = buffer.read_u8()?;
-                let index = if version == 9 { buffer.read_i8()? } else { 0 };
-
-                let mut storage_records =
-                    Vec::with_capacity(storage_count as usize);
-
-                for _ in 0..storage_count {
-                    storage_records.push(SubLayer::deserialize(&mut buffer)?);
-                }
-
-                let version = if version == 8 {
-                    SubChunkVersion::Limited
-                } else {
-                    SubChunkVersion::Limitless
-                };
-
-                Ok(Self { version, index, layers: storage_records })
-            }
+        let version = SubChunkVersion::try_from(buffer.read_u8()?)?;
+        let layer_count = match version {
+            SubChunkVersion::Legacy => 1,
             _ => {
-                bail!(Malformed, "Invalid chunk version {version}")
+                buffer.read_u8()?
             }
+        };
+
+        if layer_count == 0 || layer_count > 2 {
+            bail!(Malformed, "Sub chunk must have 1 or 2 layers");
         }
+
+        let index = if version == SubChunkVersion::Limitless {
+            buffer.read_i8()?
+        } else {
+            0
+        };
+
+        // let mut layers = SmallVec::with_capacity(layer_count as usize);
+        let mut layers = Vec::with_capacity(layer_count as usize);
+        for _ in 0..layer_count {
+            layers.push(SubLayer::deserialize(&mut buffer)?);
+        }
+
+        Ok(Self { version, index, layers })
     }
 
     // pub fn serialize(&self, buffer: &mut MutableBuffer) -> Result<()> {
@@ -257,8 +328,12 @@ impl SubChunk {
     // }
 }
 
+/// Iterator over blocks in a layer.
 pub struct LayerIter<'a> {
+    /// Indices in the sub chunk.
+    /// While iterating, this is slowly consumed by `std::slice::split_at`.
     indices: &'a [u16],
+    /// All possible block states in the current chunk.
     palette: &'a [BlockProperties],
 }
 

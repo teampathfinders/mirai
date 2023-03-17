@@ -241,9 +241,9 @@ impl Drop for Database {
     }
 }
 
-/// SAFETY: All LevelDB operations are thread-safe.
+// SAFETY: All LevelDB operations are thread-safe.
 unsafe impl Send for Database {}
-/// SAFETY: All LevelDB operations are thread-safe.
+// SAFETY: All LevelDB operations are thread-safe.
 unsafe impl Sync for Database {}
 
 /// Translates an error received from the FFI, into an [`Error`].

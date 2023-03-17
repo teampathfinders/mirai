@@ -21,7 +21,7 @@ fn database_test() {
     let mut failed = 0;
     let mut sum = 0;
 
-    for _ in 0..5 {
+    for _ in 0..50 {
         let mut iter = db.iter();
         for raw_ref in iter {
             let key = raw_ref.key();
@@ -71,5 +71,4 @@ fn load_level_dat() {
     const LEVEL_DAT: &[u8] = include_bytes!("../test/level.dat");
 
     let decoded: LevelData = nbt::from_le_bytes(&LEVEL_DAT[8..]).unwrap().0;
-    dbg!(decoded);
 }
