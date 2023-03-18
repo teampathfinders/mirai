@@ -106,13 +106,13 @@ impl Session {
         }
 
         if frame.is_compound {
-            return if let Some(p) =
-                self.raknet.compound_collector.insert(frame)
+            if let Some(p) =
+                self.raknet.compound_collector.insert(frame)?
             {
                 return self.handle_frame(p.into(), batch_number).await;
             } else {
                 // Compound incomplete
-                Ok(())
+                return Ok(())
             }
         }
 

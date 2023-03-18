@@ -1,5 +1,5 @@
 use std::fmt::{Debug, Formatter};
-use std::io::Read;
+use std::io::{Read, Write};
 use std::ops::Deref;
 
 use std::sync::atomic::{AtomicU64, Ordering};
@@ -21,7 +21,7 @@ use rand::distributions::Alphanumeric;
 use rand::rngs::OsRng;
 use rand::Rng;
 use sha2::{Digest, Sha256};
-use util::bytes::{BinaryWriter, MutableBuffer, SharedBuffer};
+use util::bytes::{BinaryWrite, MutableBuffer, SharedBuffer};
 use util::{bail, Result};
 
 type Aes256CtrBE = ctr::Ctr64BE<aes::Aes256>;
@@ -192,26 +192,28 @@ impl Encryptor {
     }
 
     /// Encrypts a packet and appends the computed checksum.
-    pub fn encrypt(&self, buffer: &mut MutableBuffer) {
+    pub fn encrypt(&self, buffer: &mut MutableBuffer) -> Result<()> {
         let counter = self.send_counter.fetch_add(1, Ordering::SeqCst);
         // Exclude 0xfe header from checksum calculations.
         let checksum = self.compute_checksum(&buffer.as_ref()[1..], counter);
-        buffer.append(&checksum);
+        buffer.write_all(&checksum)?;
 
         self.cipher_encrypt
             .lock()
             .apply_keystream(&mut buffer.as_mut_slice()[1..]);
+
+        Ok(())
     }
 
     /// Returns the packet send counter.
-    fn get_send_counter(&self) -> u64 {
+    fn send_ctr(&self) -> u64 {
         let counter = self.cipher_encrypt.lock().get_core().get_block_pos();
 
         counter
     }
 
     /// Returns the packet receive counter.
-    fn get_receive_counter(&self) -> u64 {
+    fn recv_ctr(&self) -> u64 {
         let counter = self.cipher_decrypt.lock().get_core().get_block_pos();
 
         counter

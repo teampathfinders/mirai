@@ -1,6 +1,6 @@
 use std::io::Write;
 use std::net::SocketAddr;
-use util::bytes::{BinaryWriter, MutableBuffer};
+use util::bytes::{BinaryWrite, MutableBuffer};
 
 use crate::OFFLINE_MESSAGE_DATA;
 use util::Result;
@@ -38,7 +38,7 @@ impl OpenConnectionReply2 {
 impl Serialize for OpenConnectionReply2 {
     fn serialize(&self, buffer: &mut MutableBuffer) -> Result<()> {
         buffer.write_u8(Self::ID);
-        buffer.append(OFFLINE_MESSAGE_DATA);
+        buffer.write_all(OFFLINE_MESSAGE_DATA);
         buffer.write_u64_be(self.server_guid);
         buffer.write_addr(self.client_address);
         buffer.write_u16_be(self.mtu);

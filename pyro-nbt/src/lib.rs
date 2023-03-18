@@ -1,6 +1,3 @@
-#![feature(min_specialization)]
-#![warn(clippy::nursery)]
-
 mod de;
 mod ser;
 
@@ -30,7 +27,7 @@ pub trait NbtFlavor {
 pub enum Flavor {
     Little,
     Big,
-    Var
+    Var,
 }
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
@@ -67,5 +64,7 @@ impl TryFrom<u8> for FieldType {
     }
 }
 
-pub use crate::de::{Deserializer, from_be_bytes, from_le_bytes, from_var_bytes};
+pub use crate::de::{
+    from_be_bytes, from_le_bytes, from_var_bytes, Deserializer,
+};
 pub use crate::ser::Serializer;

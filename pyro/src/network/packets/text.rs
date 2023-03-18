@@ -2,7 +2,7 @@
 use util::{bail,  Error, Result};
 
 use util::{Deserialize, Serialize};
-use util::bytes::{BinaryReader, BinaryWriter, MutableBuffer, SharedBuffer, VarInt, VarString};
+use util::bytes::{BinaryReader, BinaryWrite, MutableBuffer, SharedBuffer, VarInt, VarString};
 
 use crate::ConnectedPacket;
 

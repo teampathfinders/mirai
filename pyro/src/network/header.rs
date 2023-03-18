@@ -1,7 +1,7 @@
 
 
 use util::{Result, Serialize};
-use util::bytes::{BinaryReader, BinaryWriter, MutableBuffer, SharedBuffer, size_of_varint};
+use util::bytes::{BinaryReader, BinaryWrite, MutableBuffer, SharedBuffer, size_of_varint};
 
 /// Game packets are prefixed with a length and a header.
 /// The header contains the packet ID and target/subclient IDs in case of split screen multiplayer.

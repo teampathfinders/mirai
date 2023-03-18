@@ -1,12 +1,8 @@
-
-
-
-
-
+use std::io::Write;
 use crate::Header;
 use crate::ConnectedPacket;
 
-use util::bytes::{BinaryWriter, MutableBuffer};
+use util::bytes::{BinaryWrite, MutableBuffer};
 use util::Serialize;
 use util::Result;
 
@@ -56,8 +52,8 @@ impl<T: ConnectedPacket + Serialize> Packet<T> {
 
         // debug_assert_eq!(rest.len(), expected_size, "While serializing {:x}", self.header.id);
 
-        buffer.write_var_u32(rest.len() as u32);
-        buffer.append(&rest);
+        buffer.write_var_u32(rest.len() as u32)?;
+        buffer.write_all(&rest)?;
 
         Ok(buffer)
     }

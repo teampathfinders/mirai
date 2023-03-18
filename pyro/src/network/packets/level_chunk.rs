@@ -1,6 +1,6 @@
-
+use std::io::Write;
 use util::{Result, Vector2i};
-use util::bytes::{BinaryWriter, MutableBuffer};
+use util::bytes::{BinaryWrite, MutableBuffer};
 
 use util::Serialize;
 
@@ -62,7 +62,7 @@ impl Serialize for LevelChunk {
             }
         }
 
-        buffer.append(self.raw_payload.as_ref());
+        buffer.write_all(self.raw_payload.as_ref())?;
         Ok(())
     }
 }

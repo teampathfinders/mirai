@@ -3,7 +3,7 @@ use util::{Result, Vector3f};
 
 use util::Serialize;
 use level::Dimension;
-use util::bytes::{BinaryWriter, MutableBuffer};
+use util::bytes::{BinaryWrite, MutableBuffer};
 
 use crate::ConnectedPacket;
 

@@ -3,7 +3,7 @@
 
 use crate::ConnectedPacket;
 use util::{Serialize};
-use util::bytes::{BinaryWriter, MutableBuffer, size_of_varint, VarString};
+use util::bytes::{BinaryWrite, MutableBuffer, size_of_varint, VarString};
 use util::Result;
 
 #[derive(Debug, Clone)]

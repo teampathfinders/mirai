@@ -2,7 +2,7 @@ use std::net::SocketAddr;
 
 
 use util::{Result};
-use util::bytes::{BinaryWriter, MutableBuffer, size_of_varint};
+use util::bytes::{BinaryWrite, MutableBuffer, size_of_varint};
 
 use util::Serialize;
 

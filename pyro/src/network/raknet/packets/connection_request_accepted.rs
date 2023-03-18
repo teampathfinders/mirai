@@ -1,6 +1,6 @@
 use std::net::{Ipv4Addr, SocketAddr, SocketAddrV4};
 
-use util::bytes::{BinaryWriter, MutableBuffer, IPV4_MEM_SIZE, IPV6_MEM_SIZE};
+use util::bytes::{BinaryWrite, MutableBuffer, IPV4_MEM_SIZE, IPV6_MEM_SIZE};
 use util::Result;
 use util::Serialize;
 

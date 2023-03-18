@@ -1,4 +1,4 @@
-use crate::bytes::{BinaryReader, BinaryWriter, SharedBuffer, VarInt};
+use crate::bytes::{BinaryReader, BinaryWrite, SharedBuffer, VarInt};
 use crate::{bail, BlockPosition, Result, Vector};
 use paste::paste;
 use std::borrow::Cow;
@@ -98,13 +98,6 @@ impl MutableBuffer {
 impl AsRef<[u8]> for MutableBuffer {
     fn as_ref(&self) -> &[u8] {
         self.data.as_ref()
-    }
-}
-
-impl BinaryWriter for MutableBuffer {
-    #[inline]
-    fn append(&mut self, v: &[u8]) {
-        self.data.extend_from_slice(v);
     }
 }
 

@@ -16,7 +16,7 @@ use crate::{Frame, FrameBatch};
 use crate::Session;
 use util::Result;
 use util::{Serialize};
-use util::bytes::{BinaryWriter, MutableBuffer, SharedBuffer};
+use util::bytes::{BinaryWrite, MutableBuffer, SharedBuffer};
 
 use crate::SendPriority;
 
@@ -74,14 +74,14 @@ impl Session {
                 // preventing allocations.
                 out = MutableBuffer::with_capacity(1 + pk.as_ref().len() + 8);
                 out.write_u8(CONNECTED_PACKET_ID);
-                out.append(pk.as_ref());
+                out.write_all(pk.as_ref());
             }
         } else {
             // Also reserve capacity for checksum even if encryption is disabled,
             // preventing allocations.
             out = MutableBuffer::with_capacity(1 + pk.as_ref().len() + 8);
             out.write_u8(CONNECTED_PACKET_ID);
-            out.append(pk.as_ref());
+            out.write_all(pk.as_ref());
         };
 
         if let Some(encryptor) = self.encryptor.get() {

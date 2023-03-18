@@ -3,12 +3,12 @@ use std::fmt;
 use std::io::Read;
 use std::marker::PhantomData;
 
+use crate::{BigEndian, FieldType, Flavor, LittleEndian, NbtFlavor, VarEndian};
 use serde::de::Unexpected::Seq;
 use serde::de::{DeserializeSeed, MapAccess, SeqAccess, Visitor};
 use serde::{de, Deserialize};
 use util::bytes::{BinaryReader, MutableBuffer, SharedBuffer};
 use util::{bail, Error, Result};
-use crate::{BigEndian, FieldType, Flavor, LittleEndian, NbtFlavor, VarEndian};
 
 macro_rules! is_ty {
     ($expected: ident, $actual: expr) => {
@@ -26,20 +26,20 @@ macro_rules! is_ty {
 #[derive(Debug)]
 pub struct Deserializer<'de, F>
 where
-    F: NbtFlavor
+    F: NbtFlavor,
 {
     input: SharedBuffer<'de>,
     next_ty: FieldType,
     is_key: bool,
-    _marker: PhantomData<F>
+    _marker: PhantomData<F>,
 }
 
 impl<'de, F> Deserializer<'de, F>
 where
-    F: NbtFlavor
+    F: NbtFlavor,
 {
     #[inline]
-    pub fn from_bytes(input: &'de [u8]) -> Self {
+    pub fn new(input: &'de [u8]) -> Self {
         let mut input = SharedBuffer::from(input);
         assert_eq!(input.read_u8().unwrap(), FieldType::Compound as u8);
 
@@ -47,7 +47,7 @@ where
             input,
             next_ty: FieldType::Compound,
             is_key: false,
-            _marker: PhantomData
+            _marker: PhantomData,
         };
 
         let _ = de.deserialize_raw_str().unwrap();
@@ -58,7 +58,7 @@ where
     fn deserialize_raw_str(&mut self) -> Result<&str> {
         let len = match F::AS_ENUM {
             Flavor::Big => self.input.read_u16_be()? as u32,
-            Flavor::Little=> self.input.read_u16_le()? as u32,
+            Flavor::Little => self.input.read_u16_le()? as u32,
             Flavor::Var => self.input.read_var_u32()?,
         };
 
@@ -72,10 +72,11 @@ where
 #[inline]
 fn from_bytes<'a, T, F>(b: &'a [u8]) -> Result<(T, usize)>
 where
-    T: Deserialize<'a>, F: NbtFlavor
+    T: Deserialize<'a>,
+    F: NbtFlavor,
 {
     let start = b.len();
-    let mut deserializer = Deserializer::<F>::from_bytes(b);
+    let mut deserializer = Deserializer::<F>::new(b);
     let output = T::deserialize(&mut deserializer)?;
     let end = deserializer.input.len();
 
@@ -108,7 +109,7 @@ where
 
 impl<'de, 'a, F> de::Deserializer<'de> for &'a mut Deserializer<'de, F>
 where
-    F: NbtFlavor
+    F: NbtFlavor,
 {
     type Error = Error;
 
@@ -452,22 +453,27 @@ where
     {
         self.deserialize_any(visitor)
     }
+
+    #[inline]
+    fn is_human_readable(&self) -> bool {
+        false
+    }
 }
 
 #[derive(Debug)]
 struct SeqDeserializer<'a, 'de: 'a, F>
 where
-    F: NbtFlavor
+    F: NbtFlavor,
 {
     de: &'a mut Deserializer<'de, F>,
     ty: FieldType,
     remaining: u32,
-    _marker: PhantomData<F>
+    _marker: PhantomData<F>,
 }
 
 impl<'de, 'a, F> SeqDeserializer<'a, 'de, F>
 where
-    F: NbtFlavor
+    F: NbtFlavor,
 {
     #[inline]
     pub fn new(
@@ -496,7 +502,7 @@ where
 
 impl<'de, 'a, F> SeqAccess<'de> for SeqDeserializer<'a, 'de, F>
 where
-    F: NbtFlavor
+    F: NbtFlavor,
 {
     type Error = Error;
 
@@ -519,15 +525,16 @@ where
 #[derive(Debug)]
 struct MapDeserializer<'a, 'de: 'a, F>
 where
-    F: NbtFlavor
+    F: NbtFlavor,
 {
     de: &'a mut Deserializer<'de, F>,
-    _marker: PhantomData<F>
+    _marker: PhantomData<F>,
 }
 
-impl<'de, 'a, F> From<&'a mut Deserializer<'de, F>> for MapDeserializer<'a, 'de, F>
+impl<'de, 'a, F> From<&'a mut Deserializer<'de, F>>
+    for MapDeserializer<'a, 'de, F>
 where
-    F: NbtFlavor
+    F: NbtFlavor,
 {
     #[inline]
     fn from(v: &'a mut Deserializer<'de, F>) -> Self {
@@ -537,7 +544,7 @@ where
 
 impl<'de, 'a, F> MapAccess<'de> for MapDeserializer<'a, 'de, F>
 where
-    F: NbtFlavor
+    F: NbtFlavor,
 {
     type Error = Error;
 

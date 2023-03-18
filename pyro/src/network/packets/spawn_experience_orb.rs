@@ -1,6 +1,6 @@
 
 use util::{Result, Vector3f};
-use util::bytes::{BinaryWriter, MutableBuffer, size_of_varint};
+use util::bytes::{BinaryWrite, MutableBuffer, size_of_varint};
 
 use util::Serialize;
 

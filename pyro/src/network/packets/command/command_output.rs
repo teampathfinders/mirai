@@ -1,7 +1,7 @@
 
 use uuid::Uuid;
 use util::{Serialize, Result};
-use util::bytes::{BinaryWriter, MutableBuffer};
+use util::bytes::{BinaryWrite, MutableBuffer};
 use crate::{ConnectedPacket};
 
 use crate::CommandOriginType;

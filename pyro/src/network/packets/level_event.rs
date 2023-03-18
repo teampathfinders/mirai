@@ -1,6 +1,6 @@
 
 use util::{bail, Deserialize, Serialize, Vector3f, Error, Result};
-use util::bytes::{BinaryReader, BinaryWriter, MutableBuffer, SharedBuffer, size_of_varint};
+use util::bytes::{BinaryReader, BinaryWrite, MutableBuffer, SharedBuffer, size_of_varint};
 use crate::ConnectedPacket;
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
