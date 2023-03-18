@@ -136,7 +136,7 @@ pub trait BinaryWrite: Write {
         Ok(())
     }
 
-    fn write_addr(&mut self, v: SocketAddr) -> Result<()> {
+    fn write_addr(&mut self, v: &SocketAddr) -> Result<()> {
         match v {
             SocketAddr::V4(addr_v4) => {
                 self.write_u8(4)?;

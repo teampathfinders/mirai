@@ -4,8 +4,6 @@ use util::bytes::{BinaryWrite, MutableBuffer, IPV4_MEM_SIZE, IPV6_MEM_SIZE};
 use util::Result;
 use util::Serialize;
 
-const EMPTY_IPV4_ADDRESS: SocketAddr =
-    SocketAddr::V4(SocketAddrV4::new(Ipv4Addr::new(0, 0, 0, 0), 19132));
 
 /// Sent in response to [`ConnectionRequest`](crate::connection_request::ConnectionRequest).
 #[derive(Debug)]
@@ -27,16 +25,16 @@ impl ConnectionRequestAccepted {
 
 impl Serialize for ConnectionRequestAccepted {
     fn serialize(&self, buffer: &mut MutableBuffer) -> Result<()> {
-        buffer.write_u8(Self::ID);
-        buffer.write_addr(self.client_address);
-        buffer.write_u16_be(0); // System index
+        buffer.write_u8(Self::ID)?;
+        buffer.write_addr(&self.client_address)?;
+        buffer.write_u16_be(0)?; // System index
+
+        let null_addr = SocketAddr::V4(SocketAddrV4::new(Ipv4Addr::new(0, 0, 0, 0), 19132));
         for _ in 0..20 {
             // 20 internal IDs
-            buffer.write_addr(EMPTY_IPV4_ADDRESS);
+            buffer.write_addr(&null_addr)?;
         }
-        buffer.write_i64_be(self.request_time);
-        buffer.write_i64_be(self.request_time); // Response time
-
-        Ok(())
+        buffer.write_i64_be(self.request_time)?;
+        buffer.write_i64_be(self.request_time) // Response time
     }
 }
