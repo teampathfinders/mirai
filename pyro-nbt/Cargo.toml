@@ -12,3 +12,4 @@ util = { package = "pyro-util", path = "../pyro-util" }
 
 bytes = "1.4.0"
 serde = { version = "1.0.152", features = ["derive"] }
+paste = "1.0.12"

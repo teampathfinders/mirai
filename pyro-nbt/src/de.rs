@@ -1,9 +1,12 @@
+use paste::paste;
 use std::any::TypeId;
 use std::fmt;
 use std::io::Read;
 use std::marker::PhantomData;
 
-use crate::{BigEndian, FieldType, Variant, LittleEndian, VariantImpl, Variable};
+use crate::{
+    BigEndian, FieldType, LittleEndian, Variable, Variant, VariantImpl,
+};
 use serde::de::Unexpected::Seq;
 use serde::de::{DeserializeSeed, MapAccess, SeqAccess, Visitor};
 use serde::{de, Deserialize};
@@ -21,6 +24,20 @@ macro_rules! is_ty {
             )
         }
     };
+}
+
+macro_rules! forward_unsupported {
+    ($($ty: ident),+) => {
+        paste! {$(
+            #[inline]
+            fn [<deserialize_ $ty>]<V>(self, visitor: V) -> util::Result<V::Value>
+            where
+                V: Visitor<'de>
+            {
+                bail!(Unsupported, concat!("Deserialisation of `", stringify!($ty), "` is not supported"));
+            }
+        )+}
+    }
 }
 
 #[derive(Debug)]
@@ -113,6 +130,8 @@ where
 {
     type Error = Error;
 
+    forward_unsupported!(char, u8, u16, u32, u64, u128);
+
     fn deserialize_any<V>(self, visitor: V) -> Result<V::Value>
     where
         V: Visitor<'de>,
@@ -172,7 +191,9 @@ where
 
         let n = match F::AS_ENUM {
             Variant::BigEndian => self.input.read_i16_be(),
-            Variant::LittleEndian | Variant::Variable => self.input.read_i16_le(),
+            Variant::LittleEndian | Variant::Variable => {
+                self.input.read_i16_le()
+            }
         }?;
 
         visitor.visit_i16(n)
@@ -187,7 +208,8 @@ where
 
         let n = match F::AS_ENUM {
             Variant::BigEndian => self.input.read_i32_be(),
-            Variant::LittleEndian | Variant::Variable => self.input.read_i32_le(),
+            Variant::LittleEndian => self.input.read_i32_le(),
+            Variant::Variable => self.input.read_var_i32(),
         }?;
 
         visitor.visit_i32(n)
@@ -202,38 +224,11 @@ where
 
         let n = match F::AS_ENUM {
             Variant::BigEndian => self.input.read_i64_be(),
-            Variant::LittleEndian | Variant::Variable => self.input.read_i64_le(),
+            Variant::LittleEndian => self.input.read_i64_le(),
+            Variant::Variable => self.input.read_var_i64(),
         }?;
 
         visitor.visit_i64(n)
-    }
-
-    fn deserialize_u8<V>(self, visitor: V) -> Result<V::Value>
-    where
-        V: Visitor<'de>,
-    {
-        bail!(Unsupported, "NBT does not support `u8`, use `i8` instead")
-    }
-
-    fn deserialize_u16<V>(self, visitor: V) -> Result<V::Value>
-    where
-        V: Visitor<'de>,
-    {
-        bail!(Unsupported, "NBT does not support `u16`, use `i16` instead")
-    }
-
-    fn deserialize_u32<V>(self, visitor: V) -> Result<V::Value>
-    where
-        V: Visitor<'de>,
-    {
-        bail!(Unsupported, "NBT does not support `u32`, use `i32` instead")
-    }
-
-    fn deserialize_u64<V>(self, visitor: V) -> Result<V::Value>
-    where
-        V: Visitor<'de>,
-    {
-        bail!(Unsupported, "NBT does not support `u64`, use `i64` instead")
     }
 
     #[inline]
@@ -264,16 +259,6 @@ where
         }?;
 
         visitor.visit_f64(n)
-    }
-
-    fn deserialize_char<V>(self, visitor: V) -> Result<V::Value>
-    where
-        V: Visitor<'de>,
-    {
-        bail!(
-            Unsupported,
-            "NBT does not support unicode characters, use String instead"
-        )
     }
 
     #[inline]
