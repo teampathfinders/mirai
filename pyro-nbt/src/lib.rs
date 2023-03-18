@@ -67,5 +67,5 @@ impl TryFrom<u8> for FieldType {
     }
 }
 
-pub use crate::de::{from_be_bytes, from_le_bytes, from_net_bytes};
+pub use crate::de::{Deserializer, from_be_bytes, from_le_bytes, from_var_bytes};
 pub use crate::ser::Serializer;
