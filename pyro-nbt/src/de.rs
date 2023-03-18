@@ -3,7 +3,7 @@ use std::fmt;
 use std::io::Read;
 use std::marker::PhantomData;
 
-use crate::{BigEndian, FieldType, Flavor, LittleEndian, NbtFlavor, VarEndian};
+use crate::{BigEndian, FieldType, Variant, LittleEndian, VariantImpl, Variable};
 use serde::de::Unexpected::Seq;
 use serde::de::{DeserializeSeed, MapAccess, SeqAccess, Visitor};
 use serde::{de, Deserialize};
@@ -26,7 +26,7 @@ macro_rules! is_ty {
 #[derive(Debug)]
 pub struct Deserializer<'de, F>
 where
-    F: NbtFlavor,
+    F: VariantImpl,
 {
     input: SharedBuffer<'de>,
     next_ty: FieldType,
@@ -36,7 +36,7 @@ where
 
 impl<'de, F> Deserializer<'de, F>
 where
-    F: NbtFlavor,
+    F: VariantImpl,
 {
     #[inline]
     pub fn new(input: &'de [u8]) -> Self {
@@ -57,9 +57,9 @@ where
     #[inline]
     fn deserialize_raw_str(&mut self) -> Result<&str> {
         let len = match F::AS_ENUM {
-            Flavor::Big => self.input.read_u16_be()? as u32,
-            Flavor::Little => self.input.read_u16_le()? as u32,
-            Flavor::Var => self.input.read_var_u32()?,
+            Variant::BigEndian => self.input.read_u16_be()? as u32,
+            Variant::LittleEndian => self.input.read_u16_le()? as u32,
+            Variant::Variable => self.input.read_var_u32()?,
         };
 
         let data = self.input.take_n(len as usize)?;
@@ -73,7 +73,7 @@ where
 fn from_bytes<'a, T, F>(b: &'a [u8]) -> Result<(T, usize)>
 where
     T: Deserialize<'a>,
-    F: NbtFlavor,
+    F: VariantImpl,
 {
     let start = b.len();
     let mut deserializer = Deserializer::<F>::new(b);
@@ -104,12 +104,12 @@ pub fn from_var_bytes<'a, T>(b: &'a [u8]) -> Result<(T, usize)>
 where
     T: Deserialize<'a>,
 {
-    from_bytes::<T, VarEndian>(b)
+    from_bytes::<T, Variable>(b)
 }
 
 impl<'de, 'a, F> de::Deserializer<'de> for &'a mut Deserializer<'de, F>
 where
-    F: NbtFlavor,
+    F: VariantImpl,
 {
     type Error = Error;
 
@@ -171,8 +171,8 @@ where
         is_ty!(Short, self.next_ty);
 
         let n = match F::AS_ENUM {
-            Flavor::Big => self.input.read_i16_be(),
-            Flavor::Little | Flavor::Var => self.input.read_i16_le(),
+            Variant::BigEndian => self.input.read_i16_be(),
+            Variant::LittleEndian | Variant::Variable => self.input.read_i16_le(),
         }?;
 
         visitor.visit_i16(n)
@@ -186,8 +186,8 @@ where
         is_ty!(Int, self.next_ty);
 
         let n = match F::AS_ENUM {
-            Flavor::Big => self.input.read_i32_be(),
-            Flavor::Little | Flavor::Var => self.input.read_i32_le(),
+            Variant::BigEndian => self.input.read_i32_be(),
+            Variant::LittleEndian | Variant::Variable => self.input.read_i32_le(),
         }?;
 
         visitor.visit_i32(n)
@@ -201,8 +201,8 @@ where
         is_ty!(Long, self.next_ty);
 
         let n = match F::AS_ENUM {
-            Flavor::Big => self.input.read_i64_be(),
-            Flavor::Little | Flavor::Var => self.input.read_i64_le(),
+            Variant::BigEndian => self.input.read_i64_be(),
+            Variant::LittleEndian | Variant::Variable => self.input.read_i64_le(),
         }?;
 
         visitor.visit_i64(n)
@@ -244,7 +244,7 @@ where
         is_ty!(Float, self.next_ty);
 
         let n = match F::AS_ENUM {
-            Flavor::Big => self.input.read_f32_be(),
+            Variant::BigEndian => self.input.read_f32_be(),
             _ => self.input.read_f32_le(),
         }?;
 
@@ -259,7 +259,7 @@ where
         is_ty!(Double, self.next_ty);
 
         let n = match F::AS_ENUM {
-            Flavor::Big => self.input.read_f64_be(),
+            Variant::BigEndian => self.input.read_f64_be(),
             _ => self.input.read_f64_le(),
         }?;
 
@@ -282,9 +282,9 @@ where
         V: Visitor<'de>,
     {
         let len = match F::AS_ENUM {
-            Flavor::Big => self.input.read_u16_be()? as u32,
-            Flavor::Little => self.input.read_u16_le()? as u32,
-            Flavor::Var => self.input.read_var_u32()?,
+            Variant::BigEndian => self.input.read_u16_be()? as u32,
+            Variant::LittleEndian => self.input.read_u16_le()? as u32,
+            Variant::Variable => self.input.read_var_u32()?,
         };
 
         let data = self.input.take_n(len as usize)?;
@@ -301,9 +301,9 @@ where
         is_ty!(String, self.next_ty);
 
         let len = match F::AS_ENUM {
-            Flavor::Big => self.input.read_u16_be()? as u32,
-            Flavor::Little => self.input.read_u16_le()? as u32,
-            Flavor::Var => self.input.read_var_u32()?,
+            Variant::BigEndian => self.input.read_u16_be()? as u32,
+            Variant::LittleEndian => self.input.read_u16_le()? as u32,
+            Variant::Variable => self.input.read_var_u32()?,
         };
 
         let data = self.input.take_n(len as usize)?;
@@ -463,7 +463,7 @@ where
 #[derive(Debug)]
 struct SeqDeserializer<'a, 'de: 'a, F>
 where
-    F: NbtFlavor,
+    F: VariantImpl,
 {
     de: &'a mut Deserializer<'de, F>,
     ty: FieldType,
@@ -473,7 +473,7 @@ where
 
 impl<'de, 'a, F> SeqDeserializer<'a, 'de, F>
 where
-    F: NbtFlavor,
+    F: VariantImpl,
 {
     #[inline]
     pub fn new(
@@ -487,9 +487,9 @@ where
 
         de.next_ty = ty;
         let remaining = match F::AS_ENUM {
-            Flavor::Big => de.input.read_i32_be()? as u32,
-            Flavor::Little => de.input.read_i32_le()? as u32,
-            Flavor::Var => de.input.read_var_u32()?,
+            Variant::BigEndian => de.input.read_i32_be()? as u32,
+            Variant::LittleEndian => de.input.read_i32_le()? as u32,
+            Variant::Variable => de.input.read_var_u32()?,
         };
 
         if expected_len != 0 && expected_len != remaining {
@@ -502,7 +502,7 @@ where
 
 impl<'de, 'a, F> SeqAccess<'de> for SeqDeserializer<'a, 'de, F>
 where
-    F: NbtFlavor,
+    F: VariantImpl,
 {
     type Error = Error;
 
@@ -525,7 +525,7 @@ where
 #[derive(Debug)]
 struct MapDeserializer<'a, 'de: 'a, F>
 where
-    F: NbtFlavor,
+    F: VariantImpl,
 {
     de: &'a mut Deserializer<'de, F>,
     _marker: PhantomData<F>,
@@ -534,7 +534,7 @@ where
 impl<'de, 'a, F> From<&'a mut Deserializer<'de, F>>
     for MapDeserializer<'a, 'de, F>
 where
-    F: NbtFlavor,
+    F: VariantImpl,
 {
     #[inline]
     fn from(v: &'a mut Deserializer<'de, F>) -> Self {
@@ -544,7 +544,7 @@ where
 
 impl<'de, 'a, F> MapAccess<'de> for MapDeserializer<'a, 'de, F>
 where
-    F: NbtFlavor,
+    F: VariantImpl,
 {
     type Error = Error;
 

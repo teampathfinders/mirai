@@ -4,13 +4,13 @@ use std::marker::PhantomData;
 use util::bytes::MutableBuffer;
 use util::{Error, Result};
 
-use crate::{de, BigEndian, Flavor, LittleEndian, NbtFlavor};
+use crate::{de, BigEndian, Variant, LittleEndian, VariantImpl};
 
 #[inline]
 pub fn to_bytes<T, F>(t: &T) -> Result<MutableBuffer>
 where
     T: Serialize,
-    F: NbtFlavor,
+    F: VariantImpl,
 {
     let mut ser = Serializer::<MutableBuffer, F>::new(MutableBuffer::new());
     // t.serialize(&mut ser)?;
@@ -21,7 +21,7 @@ where
 pub struct Serializer<W, E>
 where
     W: Write,
-    E: NbtFlavor,
+    E: VariantImpl,
 {
     writer: W,
     _marker: PhantomData<E>,
@@ -30,7 +30,7 @@ where
 impl<W, E> Serializer<W, E>
 where
     W: Write,
-    E: NbtFlavor,
+    E: VariantImpl,
 {
     #[inline]
     pub fn new(w: W) -> Serializer<W, E> {
