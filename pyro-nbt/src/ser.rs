@@ -13,45 +13,60 @@ use crate::{
     de, BigEndian, FieldType, LittleEndian, Variable, Variant, VariantImpl,
 };
 
+/// Serializes the given data in big endian format.
+///
+/// This is the format used by Minecraft: Java Edition.
+///
+/// See [`to_be_bytes_in`] for an alternative that serializes into the given writer, instead
+/// of producing a new one.
 #[inline]
 pub fn to_be_bytes<T>(v: &T) -> Result<MutableBuffer>
 where
     T: ?Sized + Serialize,
 {
-    let mut ser =
-        Serializer::<MutableBuffer, BigEndian>::new(MutableBuffer::new());
-    // ser.writer.write_u8(FieldType::Compound as u8)?;
-    // ser.writer.write_u16_be(0)?;
+    let mut ser = Serializer::<_, BigEndian>::new(MutableBuffer::new());
 
     v.serialize(&mut ser)?;
     Ok(ser.into_inner())
 }
 
+/// Serializes the given data in little endian format.
+///
+/// This is the format used by disk formats in Minecraft: Bedrock Edition.
+///
+/// See [`to_le_bytes_in`] for an alternative that serializes into the given writer, instead
+/// of producing a new one.
 #[inline]
 pub fn to_le_bytes<T>(v: &T) -> Result<MutableBuffer>
 where
     T: ?Sized + Serialize,
 {
-    let mut ser =
-        Serializer::<MutableBuffer, LittleEndian>::new(MutableBuffer::new());
-    // ser.writer.write_u8(FieldType::Compound as u8)?;
-    // ser.writer.write_u16_le(0)?;
+    let mut ser = Serializer::<_, LittleEndian>::new(MutableBuffer::new());
 
     v.serialize(&mut ser)?;
     Ok(ser.into_inner())
 }
 
+/// Serializes the given data in variable format.
+///
+/// This is the format used by network formats in Minecraft: Bedrock Edition.
+///
+/// See [`to_var_bytes_in`] for an alternative that serializes into the given writer, instead
+/// of producing a new one.
 #[inline]
 pub fn to_var_bytes<T>(v: &T) -> Result<MutableBuffer>
 where
     T: ?Sized + Serialize,
 {
-    let mut ser = Serializer::<MutableBuffer, Variable>::new(MutableBuffer::new());
+    let mut ser = Serializer::<_, Variable>::new(MutableBuffer::new());
 
     v.serialize(&mut ser)?;
     Ok(ser.into_inner())
 }
 
+/// Serializes the given data, into the given writer, in big endian format.
+///
+/// This is the format used by Minecraft: Java Edition.
 #[inline]
 pub fn to_be_bytes_in<W, T>(w: W, v: &T) -> Result<W>
     where
@@ -64,6 +79,9 @@ pub fn to_be_bytes_in<W, T>(w: W, v: &T) -> Result<W>
     Ok(ser.into_inner())
 }
 
+/// Serializes the given data, into the given writer, in little endian format.
+///
+/// This is the format used by disk formats in Minecraft: Bedrock Edition.
 #[inline]
 pub fn to_le_bytes_in<W, T>(w: W, v: &T) -> Result<W>
     where
@@ -76,28 +94,35 @@ pub fn to_le_bytes_in<W, T>(w: W, v: &T) -> Result<W>
     Ok(ser.into_inner())
 }
 
+/// Serializes the given data, into the given writer, in variable format.
+///
+/// This is the format used by network formats in Minecraft: Bedrock Edition.
 #[inline]
-pub fn to_var_bytes_in<W, T>(w: W, v: &T) -> Result<W>
+pub fn to_var_bytes_in<W, T>(writer: W, value: &T) -> Result<W>
     where
         T: ?Sized + Serialize,
         W: Write
 {
     let mut ser = Serializer::<W, Variable>::new(w);
 
-    v.serialize(&mut ser)?;
+    value.serialize(&mut ser)?;
     Ok(ser.into_inner())
 }
 
+/// NBT data serialiser.
 #[derive(Debug)]
-pub struct Serializer<W, M>
+pub struct Serializer<W, F>
 where
     W: Write,
-    M: VariantImpl,
+    F: VariantImpl,
 {
     writer: W,
+    /// Whether this is the first data to be written.
+    /// This makes sure that the name and type of the root compound are written.
     is_initial: bool,
+    /// Stores the length of the list that is currently being serialised.
     len: usize,
-    _marker: PhantomData<M>,
+    _marker: PhantomData<F>,
 }
 
 impl<W, M> Serializer<W, M>
@@ -105,6 +130,7 @@ where
     W: Write,
     M: VariantImpl,
 {
+    /// Creates a new and empty serialiser.
     #[inline]
     pub fn new(w: W) -> Serializer<W, M> {
         Serializer {
@@ -115,12 +141,14 @@ where
         }
     }
 
+    /// Consumes the serialiser and returns the inner writer.
     #[inline]
     pub fn into_inner(self) -> W {
         self.writer
     }
 }
 
+/// Returns a `not supported` error.
 macro_rules! forward_unsupported {
     ($($ty: ident),+) => {
         paste! {$(
@@ -500,6 +528,11 @@ where
     }
 }
 
+/// Separate serialiser that writes data types to the writer.
+///
+/// Serde does not provide any type information, hence this exists.
+///
+/// This serialiser writes the data type of the given value and does not consume it.
 struct FieldTypeSerializer<'a, W, F>
 where
     W: Write,
