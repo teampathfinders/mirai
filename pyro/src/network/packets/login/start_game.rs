@@ -374,8 +374,7 @@ impl Serialize for StartGame<'_> {
         buffer.write_var_i32(self.generator as i32);
         buffer.write_var_i32(self.world_game_mode as i32);
         buffer.write_var_i32(self.difficulty as i32);
-        todo!("write_block_pos");
-        // buffer.write_block_pos(&self.world_spawn);
+        buffer.write_block_pos(&self.world_spawn);
 
         buffer.write_bool(self.achievements_disabled);
         buffer.write_bool(self.editor_world);
@@ -452,6 +451,7 @@ impl Serialize for StartGame<'_> {
         buffer.write_str(CLIENT_VERSION_STRING); // Game version
 
         todo!();
+
         // nbt::serialize_net("", &self.property_data, buffer);
 
         buffer.write_u64_le(self.server_block_state_checksum);
