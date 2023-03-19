@@ -68,45 +68,39 @@ where
 ///
 /// This is the format used by Minecraft: Java Edition.
 #[inline]
-pub fn to_be_bytes_in<W, T>(w: W, v: &T) -> Result<W>
+pub fn to_be_bytes_in<W, T>(w: W, v: &T) -> Result<()>
     where
         T: ?Sized + Serialize,
         W: Write
 {
     let mut ser = Serializer::<W, BigEndian>::new(w);
-
-    v.serialize(&mut ser)?;
-    Ok(ser.into_inner())
+    v.serialize(&mut ser)
 }
 
 /// Serializes the given data, into the given writer, in little endian format.
 ///
 /// This is the format used by disk formats in Minecraft: Bedrock Edition.
 #[inline]
-pub fn to_le_bytes_in<W, T>(w: W, v: &T) -> Result<W>
+pub fn to_le_bytes_in<W, T>(w: W, v: &T) -> Result<()>
     where
         T: ?Sized + Serialize,
         W: Write,
 {
     let mut ser = Serializer::<W, LittleEndian>::new(w);
-
-    v.serialize(&mut ser)?;
-    Ok(ser.into_inner())
+    v.serialize(&mut ser)
 }
 
 /// Serializes the given data, into the given writer, in variable format.
 ///
 /// This is the format used by network formats in Minecraft: Bedrock Edition.
 #[inline]
-pub fn to_var_bytes_in<W, T>(w: W, value: &T) -> Result<W>
+pub fn to_var_bytes_in<W, T>(w: W, value: &T) -> Result<()>
     where
         T: ?Sized + Serialize,
         W: Write
 {
     let mut ser = Serializer::<W, Variable>::new(w);
-
-    value.serialize(&mut ser)?;
-    Ok(ser.into_inner())
+    value.serialize(&mut ser)
 }
 
 /// NBT data serialiser.

@@ -59,9 +59,11 @@ where
     F: VariantImpl,
 {
     #[inline]
-    pub fn new(input: &'de [u8]) -> Self {
+    pub fn new(input: &'de [u8]) -> Result<Self> {
         let mut input = SharedBuffer::from(input);
-        assert_eq!(input.read_u8().unwrap(), FieldType::Compound as u8);
+        if input.read_u8()? != FieldType::Compound as u8 {
+            bail!(Malformed, "Expected compound tag as root");
+        }
 
         let mut de = Deserializer {
             input,
@@ -70,8 +72,8 @@ where
             _marker: PhantomData,
         };
 
-        let _ = de.deserialize_raw_str().unwrap();
-        de
+        let _ = de.deserialize_raw_str()?;
+        Ok(de)
     }
 
     #[inline]
@@ -96,7 +98,7 @@ where
     F: VariantImpl,
 {
     let start = b.len();
-    let mut deserializer = Deserializer::<F>::new(b);
+    let mut deserializer = Deserializer::<F>::new(b)?;
     let output = T::deserialize(&mut deserializer)?;
     let end = deserializer.input.len();
 
@@ -133,7 +135,7 @@ where
 {
     type Error = Error;
 
-    forward_unsupported!(char, u8, u16, u32, u64, u128);
+    forward_unsupported!(char, u8, u16, u32, u64, i128, u128);
 
     fn deserialize_any<V>(self, visitor: V) -> Result<V::Value>
     where
@@ -143,7 +145,7 @@ where
             self.deserialize_str(visitor)
         } else {
             match self.next_ty {
-                FieldType::End => bail!(Malformed, "found unexpected end tag"),
+                FieldType::End => bail!(Malformed, "Found unexpected End tag"),
                 FieldType::Byte => self.deserialize_i8(visitor),
                 FieldType::Short => self.deserialize_i16(visitor),
                 FieldType::Int => self.deserialize_i32(visitor),
@@ -311,7 +313,16 @@ where
     where
         V: Visitor<'de>,
     {
-        bail!(Unsupported, "NBT does not support byte buffers")
+        is_ty!(ByteArray, self.next_ty);
+
+        let len = match F::AS_ENUM {
+            Variant::BigEndian => self.input.read_i32_be()? as u32,
+            Variant::LittleEndian => self.input.read_i32_le()? as u32,
+            Variant::Variable => self.input.read_var_u32()?,
+        };
+
+        let buf = self.input.take_n(len as usize)?.to_vec();
+        visitor.visit_byte_buf(buf)
     }
 
     #[inline]
@@ -481,7 +492,7 @@ where
         };
 
         if expected_len != 0 && expected_len != remaining {
-            bail!(Malformed, "expected sequence of length {expected_len}, got length {remaining}");
+            bail!(Malformed, "Expected sequence of length {expected_len}, got length {remaining}");
         }
 
         Ok(Self { de, ty, remaining, _marker: PhantomData })
@@ -542,16 +553,18 @@ where
         K: DeserializeSeed<'de>,
     {
         self.de.is_key = true;
-        self.de.next_ty = FieldType::try_from(self.de.input.read_u8()?)?;
+        self.de.next_ty = FieldType::String;
 
-        let r = if self.de.next_ty == FieldType::End {
+        let next_ty = FieldType::try_from(self.de.input.read_u8()?)?;
+
+        let r = if next_ty == FieldType::End {
             Ok(None)
         } else {
-            // Reads 0 tag instead of string, because string length starts with 0
             seed.deserialize(&mut *self.de).map(Some)
         };
 
         self.de.is_key = false;
+        self.de.next_ty = next_ty;
         r
     }
 
