@@ -13,12 +13,13 @@ use serde::{de, Deserialize};
 use util::bytes::{BinaryReader, MutableBuffer, SharedBuffer};
 use util::{bail, Error, Result};
 
+/// Verifies that the deserialised type is equal to the expected type.
 macro_rules! is_ty {
     ($expected: ident, $actual: expr) => {
         if $actual != FieldType::$expected {
             bail!(
                 Malformed,
-                "expected type {:?}, but found {:?}",
+                "Expected type {:?}, but found {:?}",
                 FieldType::$expected,
                 $actual
             )
@@ -26,6 +27,7 @@ macro_rules! is_ty {
     };
 }
 
+/// Returns a `not supported` error.
 macro_rules! forward_unsupported {
     ($($ty: ident),+) => {
         paste! {$(
@@ -40,6 +42,7 @@ macro_rules! forward_unsupported {
     }
 }
 
+/// NBT deserialiser.
 #[derive(Debug)]
 pub struct Deserializer<'de, F>
 where
