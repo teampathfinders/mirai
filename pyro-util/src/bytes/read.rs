@@ -21,6 +21,20 @@ macro_rules! declare_primitive_fns {
                 let bytes = self.take_const()?;
                 Ok(<$ty>::from_be_bytes(bytes))
             }
+
+            #[doc = concat!("Reads a little endian [`", stringify!($ty), "`] from the reader without advancing the cursor")]
+            #[inline]
+            fn [<peek_ $ty _le>](&self) -> $crate::Result<$ty> {
+                let bytes = self.peek_const()?;
+                Ok(<$ty>::from_le_bytes(bytes))
+            }
+
+            #[doc = concat!("Reads a big endian [`", stringify!($ty), "`] from the reader without advancing the cursor")]
+            #[inline]
+            fn [<peek_ $ty _be>](&self) -> $crate::Result<$ty> {
+                let bytes = self.peek_const()?;
+                Ok(<$ty>::from_be_bytes(bytes))
+            }
         )+}
     }
 }
