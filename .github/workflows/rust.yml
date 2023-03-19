@@ -1,4 +1,4 @@
-name: Rust
+name: Compile and test
 
 on:
   push:
@@ -24,7 +24,7 @@ jobs:
       with:
         submodules: recursive
         
-    - name: Rust Cache
+    - name: Dependency cache
       uses: Swatinem/rust-cache@v2.2.1
 
     - name: Build
