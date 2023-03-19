@@ -4,6 +4,7 @@ mod test;
 mod de;
 mod ser;
 
+use std::collections::HashMap;
 pub use crate::de::{
     from_be_bytes, from_le_bytes, from_var_bytes, Deserializer,
 };
@@ -122,4 +123,20 @@ impl TryFrom<u8> for FieldType {
         // to be in the enum's range.
         Ok(unsafe { std::mem::transmute::<u8, FieldType>(v) })
     }
+}
+
+#[derive(Debug, Clone)]
+pub enum Value {
+    Byte(i8),
+    Short(i16),
+    Int(i32),
+    Long(i64),
+    Float(f32),
+    Double(f64),
+    ByteArray(Vec<u8>),
+    String(String),
+    List(Vec<Value>),
+    Compound(HashMap<String, Value>),
+    IntArray(Vec<i32>),
+    LongArray(Vec<i64>)
 }
