@@ -46,10 +46,43 @@ pub fn to_var_bytes<T>(v: &T) -> Result<MutableBuffer>
 where
     T: ?Sized + Serialize,
 {
-    let mut ser =
-        Serializer::<MutableBuffer, Variable>::new(MutableBuffer::new());
-    // ser.writer.write_u8(FieldType::Compound as u8)?;
-    // ser.writer.write_var_u32(0)?;
+    let mut ser = Serializer::<MutableBuffer, Variable>::new(MutableBuffer::new());
+
+    v.serialize(&mut ser)?;
+    Ok(ser.into_inner())
+}
+
+#[inline]
+pub fn to_be_bytes_in<W, T>(w: W, v: &T) -> Result<W>
+    where
+        T: ?Sized + Serialize,
+        W: Write
+{
+    let mut ser = Serializer::<W, BigEndian>::new(w);
+
+    v.serialize(&mut ser)?;
+    Ok(ser.into_inner())
+}
+
+#[inline]
+pub fn to_le_bytes_in<W, T>(w: W, v: &T) -> Result<W>
+    where
+        T: ?Sized + Serialize,
+        W: Write,
+{
+    let mut ser = Serializer::<W, LittleEndian>::new(w);
+
+    v.serialize(&mut ser)?;
+    Ok(ser.into_inner())
+}
+
+#[inline]
+pub fn to_var_bytes_in<W, T>(w: W, v: &T) -> Result<W>
+    where
+        T: ?Sized + Serialize,
+        W: Write
+{
+    let mut ser = Serializer::<W, Variable>::new(w);
 
     v.serialize(&mut ser)?;
     Ok(ser.into_inner())

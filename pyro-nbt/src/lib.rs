@@ -8,7 +8,7 @@ pub use crate::de::{
     from_be_bytes, from_le_bytes, from_var_bytes, Deserializer,
 };
 pub use crate::ser::{
-    to_be_bytes, to_le_bytes, to_var_bytes, Serializer
+    to_be_bytes, to_le_bytes, to_var_bytes, to_be_bytes_in, to_le_bytes_in, to_var_bytes_in, Serializer
 };
 
 mod private {
