@@ -1,6 +1,6 @@
 use std::io::Write;
 use std::net::SocketAddr;
-use util::bytes::{BinaryWrite, IPV4_MEM_SIZE, IPV6_MEM_SIZE, MutableBuffer};
+use util::bytes::{BinaryWrite, MutableBuffer, IPV4_MEM_SIZE, IPV6_MEM_SIZE};
 
 use crate::OFFLINE_MESSAGE_DATA;
 use util::Result;

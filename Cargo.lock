@@ -1253,6 +1253,7 @@ name = "pyro-nbt"
 version = "0.1.0"
 dependencies = [
  "bytes",
+ "paste",
  "pyro-util",
  "serde",
 ]
