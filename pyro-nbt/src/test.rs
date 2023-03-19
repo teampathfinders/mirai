@@ -60,7 +60,6 @@ mod test {
         }
 
         let decoded: AllTypes = from_be_bytes(BIG_TEST_NBT).unwrap().0;
-        // dbg!(&decoded);
 
         let encoded = to_be_bytes(&decoded).unwrap();
         let decoded2: AllTypes = from_be_bytes(encoded.as_slice()).unwrap().0;

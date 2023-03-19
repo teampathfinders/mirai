@@ -141,7 +141,7 @@ impl SubLayer {
             };
 
             palette.push(properties);
-            buffer.advance(n + 3);
+            buffer.advance(n);
         }
 
         Ok(Self { indices, palette })
