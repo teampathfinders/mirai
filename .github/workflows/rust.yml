@@ -15,12 +15,11 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+    - name: Checkout
     - uses: actions/checkout@v3
-    - name: Build
       with:
         submodules: recursive
+    - name: Build
       run: cargo build
     - name: Run tests
-      with:
-          submodules: recursive
       run: cargo test
