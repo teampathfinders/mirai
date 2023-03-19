@@ -3,6 +3,18 @@ name: Deploy docs
 on:
   push:
     branches: [ "master" ]
+    
+  # Allow triggering manual builds
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency: 
+  group: "pages-deployment"
+  cancel-in-progress: false
 
 env:
   CARGO_TERM_COLOR: always
@@ -10,7 +22,7 @@ env:
 jobs:
   build:
     runs-on: ubuntu-latest
-
+    
     steps:
     - uses: actions/checkout@v3
     
@@ -19,20 +31,20 @@ jobs:
     
     - name: Generate documentation
       run: RUSTFLAGS='--cfg skip_leveldb' cargo doc --no-deps
-      
-    - name: Commit generated files
-      run: |
-        cd target/doc
-        git init
-        git add -A
-        git config --local user.email "actions@github.com"
-        git config --local user.name "Github Actions"
-        git commit -m "Deploy docs"
-      
-    - name: Force push to branch
-      uses: ad-m/github-push-action@v0.5.0
+    
+    - name: Artifact upload
+      uses: actions/upload-pages-artifact@v1
       with:
-        github_token: ${{ secrets.GITHUB_TOKEN }}
-        branch: gh-pages
-        force: true
-        directory: ./target/doc
+        path: target/doc
+    
+  deploy:
+    needs: build
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy to Github Pages
+        id: deployment
+        uses: actions/deploy-pages@v1
