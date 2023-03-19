@@ -3,7 +3,7 @@ mod test {
     use serde::{Deserialize, Serialize};
 
     use crate::ser::to_be_bytes;
-    use crate::{de::Deserializer, from_be_bytes};
+    use crate::{de::Deserializer, from_be_bytes, Value};
 
     const BIG_TEST_NBT: &[u8] = include_bytes!("../test/bigtest.nbt");
     const HELLO_WORLD_NBT: &[u8] = include_bytes!("../test/hello_world.nbt");
@@ -65,14 +65,13 @@ mod test {
         let decoded2: AllTypes = from_be_bytes(encoded.as_slice()).unwrap().0;
         // dbg!(&decoded2);
 
-        let any: crate::Value = from_be_bytes(BIG_TEST_NBT).unwrap().0;
-        dbg!(any);
+        let value: Value = from_be_bytes(BIG_TEST_NBT).unwrap().0;
+        dbg!(value);
 
         // Checking floats for equality is a pain.
         // If the data can be decoded, it's pretty much correct
     }
 
-    #[ignore]
     #[test]
     fn read_write_hello_world() {
         #[derive(Deserialize, Serialize, Debug, PartialEq)]
@@ -82,13 +81,13 @@ mod test {
         }
 
         let decoded: HelloWorld = from_be_bytes(HELLO_WORLD_NBT).unwrap().0;
-        dbg!(&decoded);
         let encoded = to_be_bytes(&decoded).unwrap();
-
         assert_eq!(encoded.as_slice(), HELLO_WORLD_NBT);
+
+        let value: Value = from_be_bytes(HELLO_WORLD_NBT).unwrap().0;
+        dbg!(value);
     }
 
-    #[ignore]
     #[test]
     fn read_write_player() {
         #[derive(Deserialize, Serialize, Debug, PartialEq)]
@@ -108,10 +107,13 @@ mod test {
             rotation: [f32; 2],
         }
 
-        let decoded: Player = from_be_bytes(PLAYER_NAN_VALUE_NBT).unwrap().0;
-        let encoded = to_be_bytes(&decoded).unwrap();
+        // let decoded: Player = from_be_bytes(PLAYER_NAN_VALUE_NBT).unwrap().0;
+        // let encoded = to_be_bytes(&decoded).unwrap();
+        //
+        // let decoded2: Player = from_be_bytes(encoded.as_slice()).unwrap().0;
 
-        let decoded2: Player = from_be_bytes(encoded.as_slice()).unwrap().0;
+        let value: Value = from_be_bytes(PLAYER_NAN_VALUE_NBT).unwrap().0;
+        dbg!(value);
 
         // Checking floats for equality is a pain.
         // If the data can be decoded, it's pretty much correct

@@ -129,7 +129,7 @@ impl<'de> Deserialize<'de> for Value {
                 where
                     A: MapAccess<'de>,
             {
-                let mut out = HashMap::new();
+                let mut out: HashMap<String, Value> = HashMap::new();
                 if let Some(hint) = map.size_hint() {
                     out.reserve(hint);
                 }
