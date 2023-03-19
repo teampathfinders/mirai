@@ -14,6 +14,9 @@ jobs:
     steps:
     - uses: actions/checkout@v3
     
+    - name: Dependency cache
+      uses: Swatinem/rust-cache@v2.2.1
+    
     - name: Generate documentation
       run: RUSTFLAGS='--cfg skip_leveldb' cargo doc --no-deps
       
