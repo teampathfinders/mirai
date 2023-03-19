@@ -20,7 +20,19 @@ jobs:
     - name: Generate documentation
       run: RUSTFLAGS='--cfg skip_leveldb' cargo doc --no-deps
       
-    - name: Deploy
-      uses: JamesIves/github-pages-deploy-action@v4
+    - name: Commit generated files
+      run: |
+        cd target/doc
+        git init
+        git add -A
+        git config --local user.email "actions@github.com"
+        git config --local user.name "Github Actions"
+        git commit -m "Deploy docs"
+      
+    - name: Force push to branch
+      uses: ad-m/github-push-action@v0.5.0
       with:
-        folder: target/doc
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+        branch: gh-pages
+        force: true
+        directory: ./target/doc
