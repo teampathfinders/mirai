@@ -1,5 +1,5 @@
 
-use util::{Result, Vector3i};
+use util::{Result, Vector};
 use util::bytes::{BinaryWrite, MutableBuffer, size_of_varint};
 
 use util::Serialize;
@@ -12,7 +12,7 @@ pub struct PlaySound<'a> {
     /// Name of the sound.
     pub name: &'a str,
     /// Position of the sound.
-    pub position: Vector3i,
+    pub position: Vector<i32, 3>,
     /// Volume of the sound.
     pub volume: f32,
     /// Pitch of the sound.

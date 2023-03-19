@@ -1,5 +1,5 @@
 
-use util::{bail, Error, Result, Vector3f};
+use util::{bail, Error, Result, Vector};
 use util::bytes::{BinaryReader, SharedBuffer};
 
 use util::Deserialize;
@@ -36,7 +36,7 @@ pub struct Interact {
     /// Target of the interaction.
     pub target_runtime_id: u64,
     /// Position of the interaction,
-    pub position: Vector3f,
+    pub position: Vector<f32, 3>,
 }
 
 impl ConnectedPacket for Interact {
@@ -52,7 +52,7 @@ impl Deserialize<'_> for Interact {
             InteractAction::MouseOverEntity | InteractAction::LeaveVehicle => {
                 buffer.read_vecf()?
             }
-            _ => Vector3f::from([0.0, 0.0, 0.0]),
+            _ => Vector::from([0.0, 0.0, 0.0]),
         };
 
         Ok(Self { action, target_runtime_id, position })

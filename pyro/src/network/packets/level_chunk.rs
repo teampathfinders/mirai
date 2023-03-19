@@ -1,5 +1,5 @@
 use std::io::Write;
-use util::{Result, Vector2i};
+use util::{Result, Vector};
 use util::bytes::{BinaryWrite, MutableBuffer};
 
 use util::Serialize;
@@ -19,7 +19,7 @@ pub enum SubChunkRequestMode {
 #[derive(Debug)]
 pub struct LevelChunk {
     /// Position of the chunk.
-    pub position: Vector2i,
+    pub position: Vector<i32, 2>,
     /// How these chunks should be handled by the client.
     pub request_mode: SubChunkRequestMode,
     /// Top sub chunk in the packet.

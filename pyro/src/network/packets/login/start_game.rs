@@ -1,8 +1,8 @@
 use level::Dimension;
 
-use util::{Serialize};
+use util::{Serialize, Vector};
 use util::{Result};
-use util::{BlockPosition, Vector2f, Vector3f};
+use util::{BlockPosition};
 use util::bytes::{BinaryWrite, MutableBuffer, VarInt, VarString};
 use crate::{CLIENT_VERSION_STRING, Difficulty, GameMode, ConnectedPacket, GameRule};
 use crate::ExperimentData;
@@ -167,9 +167,9 @@ pub struct StartGame<'a> {
     /// This is not the same as the world game mode.
     pub game_mode: GameMode,
     /// Spawn position.
-    pub position: Vector3f,
+    pub position: Vector<f32, 3>,
     /// Spawn rotation.
-    pub rotation: Vector2f,
+    pub rotation: Vector<f32, 2>,
     /// World seed.
     /// This is displayed in the settings menu.
     pub world_seed: u64,
@@ -365,8 +365,8 @@ impl Serialize for StartGame<'_> {
         buffer.write_var_i64(self.entity_id);
         buffer.write_var_u64(self.runtime_id);
         buffer.write_var_i32(self.game_mode as i32);
-        self.position.serialize(buffer);
-        self.rotation.serialize(buffer);
+        buffer.write_vecf(&self.position)?;
+        buffer.write_vecf(&self.rotation)?;
         buffer.write_u64_le(self.world_seed);
         buffer.write_i16_le(self.spawn_biome_type as i16);
         buffer.write_str(self.custom_biome_name);

@@ -1,4 +1,4 @@
-use util::{Result, Vector3f};
+use util::{Result, Vector};
 use util::bytes::{BinaryWrite, MutableBuffer, size_of_varint};
 
 use util::Serialize;
@@ -20,7 +20,7 @@ pub struct AddPainting<'a> {
     /// Entity runtime ID of the painting.
     pub runtime_id: u64,
     /// Position of the painting.
-    pub position: Vector3f,
+    pub position: Vector<f32, 3>,
     /// Direction the painting is facing in.
     pub direction: PaintingDirection,
     /// Painting [`name`](https://minecraft.fandom.com/wiki/Painting#Data_values).

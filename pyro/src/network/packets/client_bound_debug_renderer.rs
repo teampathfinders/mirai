@@ -1,5 +1,5 @@
 
-use util::{Serialize, Result, Vector3f, Vector4f};
+use util::{Serialize, Result, Vector};
 use util::bytes::{BinaryWrite, MutableBuffer, size_of_varint};
 
 use crate::ConnectedPacket;
@@ -17,10 +17,10 @@ pub struct ClientBoundDebugRenderer<'a> {
     /// Text to display above the debug renderer.
     pub text: &'a str,
     /// Position of the renderer.
-    pub position: Vector3f,
+    pub position: Vector<f32, 3>,
     /// Colour of the debug renderer.
     /// Every component should range from 0-1.
-    pub color: Vector4f,
+    pub color: Vector<f32, 4>,
     /// How long the renderer will last in milliseconds.
     pub duration: i64,
 }

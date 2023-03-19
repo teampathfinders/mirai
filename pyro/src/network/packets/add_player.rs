@@ -1,6 +1,6 @@
 
 
-use util::{Vector3f, Serialize, Result};
+use util::{Serialize, Result, Vector};
 use uuid::Uuid;
 use util::bytes::{BinaryWrite, MutableBuffer};
 use crate::CommandPermissionLevel;
@@ -137,12 +137,12 @@ pub struct AddPlayer<'a> {
     /// Runtime ID of the player.
     pub runtime_id: u64,
     /// Initial position.
-    pub position: Vector3f,
+    pub position: Vector<f32, 3>,
     /// Initial velocity.
-    pub velocity: Vector3f,
+    pub velocity: Vector<f32, 3>,
     /// Initial rotation.
     /// The third component is head yaw.
-    pub rotation: Vector3f,
+    pub rotation: Vector<f32, 3>,
     /// Game mode of the player.
     pub game_mode: GameMode,
     /// Item held by the player.

@@ -1,5 +1,5 @@
 
-use util::{bail, Deserialize, Serialize, Vector3f, Error, Result};
+use util::{bail, Deserialize, Serialize, Error, Result, Vector};
 use util::bytes::{BinaryReader, BinaryWrite, MutableBuffer, SharedBuffer, size_of_varint};
 use crate::ConnectedPacket;
 
@@ -236,7 +236,7 @@ impl TryFrom<i32> for LevelEventType {
 #[derive(Debug, Clone)]
 pub struct LevelEvent {
     pub event_type: LevelEventType,
-    pub position: Vector3f,
+    pub position: Vector<f32, 3>,
     pub event_data: i32
 }
 

@@ -1,7 +1,5 @@
 
-use util::{
-    bail, Error, Result, Vector3f
-};
+use util::{bail, Error, Result, Vector};
 
 use util::{Deserialize, Serialize};
 use util::bytes::{BinaryReader, BinaryWrite, MutableBuffer, SharedBuffer, size_of_varint};
@@ -30,7 +28,7 @@ impl TryFrom<u8> for RespawnState {
 
 #[derive(Debug, Clone)]
 pub struct Respawn {
-    pub position: Vector3f,
+    pub position: Vector<f32, 3>,
     pub state: RespawnState,
     pub runtime_id: u64,
 }

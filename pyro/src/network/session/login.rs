@@ -25,9 +25,7 @@ use crate::{
 
 
 use crate::Session;
-use util::{
-    bail, BlockPosition, Deserialize, Result, Vector2f, Vector3f,
-};
+use util::{bail, BlockPosition, Deserialize, Result, Vector};
 use util::bytes::{MutableBuffer};
 
 impl Session {
@@ -124,8 +122,8 @@ impl Session {
             entity_id: 1,
             runtime_id: 1,
             game_mode: self.get_game_mode(),
-            position: Vector3f::from([0.0, 50.0, 0.0]),
-            rotation: Vector2f::from([0.0, 0.0]),
+            position: Vector::from([0.0, 50.0, 0.0]),
+            rotation: Vector::from([0.0, 0.0]),
             world_seed: 69420,
             spawn_biome_type: SpawnBiomeType::Default,
             custom_biome_name: "plains",

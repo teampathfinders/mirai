@@ -23,8 +23,7 @@ use crate::{
 };
 use crate::{BroadcastPacket, RaknetData};
 use crate::Skin;
-use util::Vector3f;
-use util::{error, Result};
+use util::{error, Result, Vector};
 use util::bytes::MutableBuffer;
 
 static RUNTIME_ID_COUNTER: AtomicU64 = AtomicU64::new(0);
@@ -32,11 +31,11 @@ static RUNTIME_ID_COUNTER: AtomicU64 = AtomicU64::new(0);
 #[derive(Debug)]
 pub struct PlayerData {
     /// Position of the player.
-    pub position: Vector3f,
+    pub position: Vector<f32, 3>,
     /// Rotation of the player.
     /// x and y components are general rotation.
     /// z component is head yaw.
-    pub rotation: Vector3f,
+    pub rotation: Vector<f32, 3>,
     /// Game mode.
     pub game_mode: GameMode,
     /// General permission level.
@@ -103,8 +102,8 @@ impl Session {
 
             current_tick: AtomicU64::new(0),
             player: RwLock::new(PlayerData {
-                position: Vector3f::from([23.0, 23.0, 2.0]),
-                rotation: Vector3f::from([0.0; 3]),
+                position: Vector::from([23.0, 23.0, 2.0]),
+                rotation: Vector::from([0.0; 3]),
                 runtime_id: RUNTIME_ID_COUNTER.fetch_add(1, Ordering::SeqCst),
                 game_mode: GameMode::Survival,
                 permission_level: PermissionLevel::Member,
@@ -162,12 +161,12 @@ impl Session {
     }
 
     #[inline]
-    pub fn get_position(&self) -> Vector3f {
+    pub fn get_position(&self) -> Vector<f32, 3> {
         self.player.read().position.clone()
     }
 
     #[inline]
-    pub fn get_rotation(&self) -> Vector3f {
+    pub fn get_rotation(&self) -> Vector<f32, 3> {
         self.player.read().rotation.clone()
     }
 
