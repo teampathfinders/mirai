@@ -1,5 +1,5 @@
 
-use util::{Serialize, Vector3i, Result};
+use util::{Serialize, Result, Vector};
 use util::bytes::{BinaryWrite, MutableBuffer, size_of_varint};
 use crate::ConnectedPacket;
 
@@ -7,7 +7,7 @@ use crate::ConnectedPacket;
 pub struct ContainerOpen {
     pub window_id: u8,
     pub container_type: u8,
-    pub position: Vector3i,
+    pub position: Vector<i32, 3>,
     pub container_entity_unique_id: i64
 }
 

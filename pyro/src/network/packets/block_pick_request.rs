@@ -1,5 +1,5 @@
 
-use util::{Deserialize, Vector3i, Result};
+use util::{Deserialize, Result, Vector};
 use util::bytes::{BinaryReader, SharedBuffer};
 use crate::ConnectedPacket;
 
@@ -7,7 +7,7 @@ use crate::ConnectedPacket;
 #[derive(Debug)]
 pub struct BlockPickRequest {
     /// Position of the block to pick.
-    pub position: Vector3i,
+    pub position: Vector<i32, 3>,
     /// Whether to include the block's NBT tags.
     pub with_nbt: bool,
     /// Hot bar slot to put the item into.

@@ -20,33 +20,31 @@ impl<T: PartialEq, const N: usize> PartialEq for Vector<T, N> {
 impl<T: Eq, const N: usize> Eq for Vector<T, N> {}
 
 impl<T: Clone, const N: usize> Vector<T, N> {
+    /// Returns the components of this vector by value
+    #[inline]
     pub fn components(&self) -> [T; N] {
         self.components.clone()
     }
 }
 
 impl<T, const N: usize> Vector<T, N> {
+    /// Returns a reference to the components of this vector.
+    #[inline]
     pub fn components_ref(&self) -> &[T; N] {
         &self.components
     }
 
+    /// Returns a mutable reference to the components of this vector.
+    #[inline]
     pub fn components_mut(&mut self) -> &mut [T; N] {
         &mut self.components
     }
 }
 
 impl<T, const N: usize> From<[T; N]> for Vector<T, N> {
+    #[inline]
     fn from(components: [T; N]) -> Self {
         Self { components }
-    }
-}
-
-impl<const N: usize> Vector<f32, N> {
-    pub fn serialize(&self, buffer: &mut MutableBuffer) -> Result<()> {
-        for i in 0..N {
-            buffer.write_f32_le(self.components[i])?;
-        }
-        Ok(())
     }
 }
 
@@ -83,6 +81,7 @@ pub struct VectorFields1<T> {
 impl<T> Deref for Vector<T, 1> {
     type Target = VectorFields1<T>;
 
+    #[inline]
     fn deref(&self) -> &Self::Target {
         // SAFETY: `Vector<T, 1>` and `VectorFields1<T>` are guaranteed to have the same
         // layout due to the `repr(C)` attribute.
@@ -92,6 +91,7 @@ impl<T> Deref for Vector<T, 1> {
 }
 
 impl<T> DerefMut for Vector<T, 1> {
+    #[inline]
     fn deref_mut(&mut self) -> &mut Self::Target {
         // SAFETY: `Vector<T, 1>` and `VectorFields1<T>` are guaranteed to have the same
         // layout due to the `repr(C)` attribute.
@@ -135,6 +135,7 @@ pub struct VectorFields2<T> {
 impl<T> Deref for Vector<T, 2> {
     type Target = VectorFields2<T>;
 
+    #[inline]
     fn deref(&self) -> &Self::Target {
         // SAFETY: `Vector<T, 2>` and `VectorFields2<T>` are guaranteed to have the same
         // layout due to the `repr(C)` attribute.
@@ -144,6 +145,7 @@ impl<T> Deref for Vector<T, 2> {
 }
 
 impl<T> DerefMut for Vector<T, 2> {
+    #[inline]
     fn deref_mut(&mut self) -> &mut Self::Target {
         // SAFETY: `Vector<T, 2>` and `VectorFields2<T>` are guaranteed to have the same
         // layout due to the `repr(C)` attribute.
@@ -189,6 +191,7 @@ pub struct VectorFields3<T> {
 impl<T> Deref for Vector<T, 3> {
     type Target = VectorFields3<T>;
 
+    #[inline]
     fn deref(&self) -> &Self::Target {
         // SAFETY: `Vector<T, 3>` and `VectorFields3<T>` are guaranteed to have the same
         // layout due to the `repr(C)` attribute.
@@ -198,6 +201,7 @@ impl<T> Deref for Vector<T, 3> {
 }
 
 impl<T> DerefMut for Vector<T, 3> {
+    #[inline]
     fn deref_mut(&mut self) -> &mut Self::Target {
         // SAFETY: `Vector<T, 3>` and `VectorFields3<T>` are guaranteed to have the same
         // layout due to the `repr(C)` attribute.
@@ -245,6 +249,7 @@ pub struct VectorFields4<T> {
 impl<T> Deref for Vector<T, 4> {
     type Target = VectorFields4<T>;
 
+    #[inline]
     fn deref(&self) -> &Self::Target {
         // SAFETY: `Vector<T, 4>` and `VectorFields4<T>` are guaranteed to have the same
         // layout due to the `repr(C)` attribute.
@@ -254,6 +259,7 @@ impl<T> Deref for Vector<T, 4> {
 }
 
 impl<T> DerefMut for Vector<T, 4> {
+    #[inline]
     fn deref_mut(&mut self) -> &mut Self::Target {
         // SAFETY: `Vector<T, 4>` and `VectorFields4<T>` are guaranteed to have the same
         // layout due to the `repr(C)` attribute.
@@ -261,18 +267,6 @@ impl<T> DerefMut for Vector<T, 4> {
         unsafe { &mut *(self as *mut _ as *mut VectorFields4<T>) }
     }
 }
-
-/// 32-bit float vector with 2 components
-pub type Vector2f = Vector<f32, 2>;
-/// 32-bit float vector with 3 components
-pub type Vector3f = Vector<f32, 3>;
-/// 32-bit float vector with 4 components
-pub type Vector4f = Vector<f32, 4>;
-/// 32-bit signed integer vector with 2 components.
-pub type Vector2i = Vector<i32, 2>;
-/// 32-bit signed integer vector with 3 components.
-pub type Vector3i = Vector<i32, 3>;
-pub type Vector3b = Vector<u8, 3>;
 
 #[derive(Debug, Clone)]
 pub struct BlockPosition {

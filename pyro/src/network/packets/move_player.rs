@@ -1,7 +1,5 @@
 
-use util::{
-    bail, Error, Result, Vector3f
-};
+use util::{bail, Error, Result, Vector};
 
 use util::{Deserialize, Serialize};
 use util::bytes::{BinaryReader, BinaryWrite, MutableBuffer, SharedBuffer, size_of_varint};
@@ -57,8 +55,8 @@ impl TryFrom<i32> for TeleportCause {
 #[derive(Debug, Clone)]
 pub struct MovePlayer {
     pub runtime_id: u64,
-    pub position: Vector3f,
-    pub rotation: Vector3f,
+    pub position: Vector<f32, 3>,
+    pub rotation: Vector<f32, 3>,
     pub mode: MovementMode,
     pub on_ground: bool,
     pub ridden_runtime_id: u64,

@@ -1,5 +1,5 @@
 
-use util::{Result, Vector3f};
+use util::{Result, Vector};
 use util::bytes::{BinaryWrite, MutableBuffer, size_of_varint};
 
 use util::Serialize;
@@ -8,7 +8,7 @@ use crate::ConnectedPacket;
 
 #[derive(Debug, Clone)]
 pub struct SpawnExperienceOrb {
-    pub position: Vector3f,
+    pub position: Vector<f32, 3>,
     pub amount: u32,
 }
 

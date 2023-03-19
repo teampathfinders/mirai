@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use std::iter::Enumerate;
 use std::mem::MaybeUninit;
 use util::bytes::{BinaryReader, MutableBuffer, SharedBuffer};
-use util::{bail, BlockPosition, Error, Result, Vector3b};
+use util::{bail, BlockPosition, Error, Result, Vector};
 
 const CHUNK_SIZE: usize = 4096;
 
@@ -211,7 +211,7 @@ impl Default for SubLayer {
 ///
 /// These coordinates should be in the range [0, 16) for each component.
 #[inline]
-pub fn to_offset(position: Vector3b) -> usize {
+pub fn to_offset(position: Vector<u8, 3>) -> usize {
     16 * 16 * position.x as usize
         + 16 * position.z as usize
         + position.y as usize
@@ -221,8 +221,8 @@ pub fn to_offset(position: Vector3b) -> usize {
 ///
 /// This offset should be in the range [0, 4096).
 #[inline]
-pub fn from_offset(offset: usize) -> Vector3b {
-    Vector3b::from([
+pub fn from_offset(offset: usize) -> Vector<u8, 3> {
+    Vector::from([
         (offset >> 8) as u8 & 0xf,
         (offset >> 0) as u8 & 0xf,
         (offset >> 4) as u8 & 0xf,
@@ -257,7 +257,7 @@ impl SubChunk {
     /// Gets a block at the specified position.
     ///
     /// See [`to_offset`] for the requirements on `position`.
-    pub fn get(&self, position: Vector3b) -> Option<&BlockProperties> {
+    pub fn get(&self, position: Vector<u8, 3>) -> Option<&BlockProperties> {
         let offset = to_offset(position);
         let index = self.layers[0].indices[offset];
 
