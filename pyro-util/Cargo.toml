@@ -9,7 +9,6 @@ rust-version =  "1.65.0"
 
 [dependencies]
 base64 = "0.21.0"
-bytes = "1.4.0"
 cipher = "0.4.4"
 dashmap = "5.4.0"
 jsonwebtoken = "8.3.0"
