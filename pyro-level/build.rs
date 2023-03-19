@@ -1,4 +1,7 @@
+#[cfg(not(skip_leveldb))]
 fn main() {
+    println!("cargo:rerun-if-env-changed=skip-leveldb");
+
     let dst = cmake::Config::new("leveldb")
         .profile("Release")
         .build();
@@ -12,4 +15,9 @@ fn main() {
 
     #[cfg(unix)]
     println!("cargo:rustc-link-lib=dylib=stdc++");
+}
+
+#[cfg(skip_leveldb)]
+fn main() {
+    // Speed up docs build by not building LevelDB
 }
