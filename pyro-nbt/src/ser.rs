@@ -98,7 +98,7 @@ pub fn to_le_bytes_in<W, T>(w: W, v: &T) -> Result<W>
 ///
 /// This is the format used by network formats in Minecraft: Bedrock Edition.
 #[inline]
-pub fn to_var_bytes_in<W, T>(writer: W, value: &T) -> Result<W>
+pub fn to_var_bytes_in<W, T>(w: W, value: &T) -> Result<W>
     where
         T: ?Sized + Serialize,
         W: Write
