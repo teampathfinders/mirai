@@ -1,4 +1,4 @@
-use util::{Deserialize, Serialize, Vector, Vector<u8, 3>};
+use util::{Deserialize, Serialize};
 
 use crate::{
     biome::Biome3d, database::Database, DatabaseKey, Dimension, KeyData,
