@@ -20,6 +20,9 @@ jobs:
         submodules: recursive
     - name: Cache
       uses: actions/cache@v2.1.8
+      with:
+        path: dependencies
+        key: ${{ runner.os }}-${{ hashFiles('Cargo.lock') }}
     - name: Build
       run: cargo build
     - name: Run tests
