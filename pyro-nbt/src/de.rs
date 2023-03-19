@@ -60,18 +60,26 @@ where
 {
     #[inline]
     pub fn new(input: &'de [u8]) -> Self {
-        let mut input = SharedBuffer::from(input);
-        assert_eq!(input.read_u8().unwrap(), FieldType::Compound as u8);
-
-        let mut de = Deserializer {
+        let input = SharedBuffer::from(input);
+        Deserializer {
             input,
-            next_ty: FieldType::Compound,
+            next_ty: FieldType::End,
             is_key: false,
             _marker: PhantomData,
-        };
+        }
 
-        let _ = de.deserialize_raw_str().unwrap();
-        de
+        // let mut input = SharedBuffer::from(input);
+        // assert_eq!(input.read_u8().unwrap(), FieldType::Compound as u8);
+        //
+        // let mut de = Deserializer {
+        //     input,
+        //     next_ty: FieldType::Compound,
+        //     is_key: false,
+        //     _marker: PhantomData,
+        // };
+        //
+        // let _ = de.deserialize_raw_str().unwrap();
+        // de
     }
 
     #[inline]
@@ -139,28 +147,14 @@ where
     where
         V: Visitor<'de>,
     {
-        if self.is_key {
-            self.deserialize_str(visitor)
-        } else {
-            match self.next_ty {
-                FieldType::End => bail!(Malformed, "found unexpected end tag"),
-                FieldType::Byte => self.deserialize_i8(visitor),
-                FieldType::Short => self.deserialize_i16(visitor),
-                FieldType::Int => self.deserialize_i32(visitor),
-                FieldType::Long => self.deserialize_i64(visitor),
-                FieldType::Float => self.deserialize_f32(visitor),
-                FieldType::Double => self.deserialize_f64(visitor),
-                FieldType::ByteArray => self.deserialize_byte_buf(visitor),
-                FieldType::String => self.deserialize_string(visitor),
-                FieldType::List => self.deserialize_seq(visitor),
-                FieldType::Compound => {
-                    let m = self.deserialize_map(visitor);
-                    m
-                }
-                FieldType::IntArray => self.deserialize_seq(visitor),
-                FieldType::LongArray => self.deserialize_seq(visitor),
-            }
-        }
+        self.next_ty = FieldType::try_from(self.input.read_u8()?)?;
+        let len = match F::AS_ENUM {
+            Variant::BigEndian => self.input.read_u16_be()? as usize,
+            Variant::LittleEndian => self.input.read_u16_le()? as usize,
+            Variant::Variable => self.input.read_var_u32()? as usize
+        };
+        self.input.advance(len);
+        self.deserialize_ignored_any(visitor)
     }
 
     #[inline]
@@ -439,7 +433,30 @@ where
     where
         V: Visitor<'de>,
     {
-        self.deserialize_any(visitor)
+        if self.is_key {
+            self.deserialize_str(visitor)
+        } else {
+            dbg!(self.next_ty);
+
+            match self.next_ty {
+                FieldType::End => bail!(Malformed, "Found unexpected end tag"),
+                FieldType::Byte => self.deserialize_i8(visitor),
+                FieldType::Short => self.deserialize_i16(visitor),
+                FieldType::Int => self.deserialize_i32(visitor),
+                FieldType::Long => self.deserialize_i64(visitor),
+                FieldType::Float => self.deserialize_f32(visitor),
+                FieldType::Double => self.deserialize_f64(visitor),
+                FieldType::ByteArray => self.deserialize_byte_buf(visitor),
+                FieldType::String => self.deserialize_string(visitor),
+                FieldType::List => self.deserialize_seq(visitor),
+                FieldType::Compound => {
+                    let m = self.deserialize_map(visitor);
+                    m
+                }
+                FieldType::IntArray => self.deserialize_seq(visitor),
+                FieldType::LongArray => self.deserialize_seq(visitor),
+            }
+        }
     }
 
     #[inline]
@@ -474,6 +491,8 @@ where
         // ty is not read in here because the x_array types don't have a type prefix.
 
         de.next_ty = ty;
+        println!("List of {ty:?}");
+
         let remaining = match F::AS_ENUM {
             Variant::BigEndian => de.input.read_i32_be()? as u32,
             Variant::LittleEndian => de.input.read_i32_le()? as u32,
@@ -536,31 +555,49 @@ where
 {
     type Error = Error;
 
-    #[inline]
     fn next_key_seed<K>(&mut self, seed: K) -> Result<Option<K::Value>>
     where
-        K: DeserializeSeed<'de>,
+        K: DeserializeSeed<'de>
     {
-        self.de.is_key = true;
-        self.de.next_ty = FieldType::try_from(self.de.input.read_u8()?)?;
-
-        let r = if self.de.next_ty == FieldType::End {
+        let ty = FieldType::try_from(self.de.input.read_u8()?)?;
+        if ty == FieldType::End {
             Ok(None)
         } else {
-            // Reads 0 tag instead of string, because string length starts with 0
-            seed.deserialize(&mut *self.de).map(Some)
-        };
+            self.de.is_key = true;
+            self.de.next_ty = ty;
 
-        self.de.is_key = false;
-        r
+            let key = seed.deserialize(&mut *self.de)?;
+            self.de.is_key = false;
+
+            Ok(Some(key))
+        }
     }
 
     #[inline]
     fn next_value_seed<V>(&mut self, seed: V) -> Result<V::Value>
     where
-        V: DeserializeSeed<'de>,
+        V: DeserializeSeed<'de>
     {
-        debug_assert_ne!(self.de.next_ty, FieldType::End);
         seed.deserialize(&mut *self.de)
+    }
+
+    #[inline]
+    fn next_entry_seed<K, V>(&mut self, kseed: K, vseed: V) -> Result<Option<(K::Value, V::Value)>>
+    where
+        K: DeserializeSeed<'de>,
+        V: DeserializeSeed<'de>
+    {
+        let ty = FieldType::try_from(self.de.input.read_u8()?)?;
+        if ty == FieldType::End {
+            Ok(None)
+        } else {
+            self.de.is_key = true;
+            self.de.next_ty = ty;
+
+            let key = kseed.deserialize(&mut *self.de)?;
+            self.de.is_key = false;
+
+            Ok(Some((key, vseed.deserialize(&mut *self.de)?)))
+        }
     }
 }

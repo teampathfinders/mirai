@@ -583,6 +583,7 @@ where
         self.ser.writer.write_u8(FieldType::Short as u8)
     }
 
+    #[inline]
     fn serialize_i32(
         self,
         v: i32,
@@ -590,6 +591,7 @@ where
         self.ser.writer.write_u8(FieldType::Int as u8)
     }
 
+    #[inline]
     fn serialize_i64(
         self,
         v: i64,
@@ -597,6 +599,7 @@ where
         self.ser.writer.write_u8(FieldType::Long as u8)
     }
 
+    #[inline]
     fn serialize_f32(
         self,
         v: f32,
@@ -604,6 +607,7 @@ where
         self.ser.writer.write_u8(FieldType::Float as u8)
     }
 
+    #[inline]
     fn serialize_f64(
         self,
         v: f64,
@@ -611,6 +615,7 @@ where
         self.ser.writer.write_u8(FieldType::Double as u8)
     }
 
+    #[inline]
     fn serialize_str(
         self,
         v: &str,
@@ -618,6 +623,7 @@ where
         self.ser.writer.write_u8(FieldType::String as u8)
     }
 
+    #[inline]
     fn serialize_bytes(
         self,
         v: &[u8],
@@ -683,6 +689,7 @@ where
         todo!()
     }
 
+    #[inline]
     fn serialize_seq(
         self,
         _len: Option<usize>,
@@ -691,11 +698,11 @@ where
         Ok(self)
     }
 
+    #[inline]
     fn serialize_tuple(
         self,
         len: usize,
     ) -> std::result::Result<Self::SerializeTuple, Self::Error> {
-        println!("list");
         self.ser.writer.write_u8(FieldType::List as u8)?;
         Ok(self)
     }
