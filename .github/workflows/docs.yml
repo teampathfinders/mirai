@@ -36,7 +36,7 @@ jobs:
       run: |
         cd target/doc
         touch index.html
-        echo "<meta http-equiv=\"refresh\" content=\"0; url=https://radiatedmonkey.github.io/pyro/pyro/index.html\">" > index.html
+        echo "<meta http-equiv=\"refresh\" content=\"0; url=https://teampathfinders.github.io/pyro/pyro/index.html\">" > index.html
       
     - name: Artifact upload
       uses: actions/upload-pages-artifact@v1
