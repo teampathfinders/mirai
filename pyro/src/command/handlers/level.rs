@@ -5,7 +5,7 @@ use util::{pyassert, Result, error};
 use crate::{command::ParsedCommand, level_manager::LevelManager, network::GameRule};
 
 impl LevelManager {
-    pub fn handle_gamerule_command(&self, command: ParsedCommand) -> Result<String> {
+    pub fn execute_game_rule_command(&self, command: ParsedCommand) -> Result<String> {
         pyassert!(command.name == "gamerule");
         
         let rule_name = command.parameters.get("rule")

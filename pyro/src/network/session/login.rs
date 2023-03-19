@@ -33,14 +33,14 @@ use util::bytes::{MutableBuffer};
 impl Session {
     /// Handles a [`ClientCacheStatus`] packet.
     /// This stores the result in the [`Session::cache_support`] field.
-    pub fn handle_cache_status(&self, pk: MutableBuffer) -> Result<()> {
+    pub fn process_cache_status(&self, pk: MutableBuffer) -> Result<()> {
         let request = CacheStatus::deserialize(pk.snapshot())?;
         self.cache_support.set(request.supports_cache)?;
 
         Ok(())
     }
 
-    pub fn handle_violation_warning(&self, pk: MutableBuffer) -> Result<()> {
+    pub fn process_violation_warning(&self, pk: MutableBuffer) -> Result<()> {
         let request = ViolationWarning::deserialize(pk.snapshot())?;
         tracing::error!("Received violation warning: {request:?}");
 
@@ -53,7 +53,7 @@ impl Session {
     ///
     /// All connected sessions are notified of the new player
     /// and the new player gets a list of all current players.
-    pub fn handle_local_player_initialized(&self, pk: MutableBuffer) -> Result<()> {
+    pub fn process_local_initialized(&self, pk: MutableBuffer) -> Result<()> {
         let _request = SetLocalPlayerAsInitialized::deserialize(pk.snapshot())?;
 
         // Add player to other's player lists.
@@ -105,14 +105,14 @@ impl Session {
     }
 
     /// Handles a [`ChunkRadiusRequest`] packet by returning the maximum allowed render distance.
-    pub fn handle_chunk_radius_request(&self, pk: MutableBuffer) -> Result<()> {
+    pub fn process_radius_request(&self, pk: MutableBuffer) -> Result<()> {
         let _request = ChunkRadiusRequest::deserialize(pk.snapshot())?;
         self.send(ChunkRadiusReply {
             allowed_radius: SERVER_CONFIG.read().allowed_render_distance,
         })
     }
 
-    pub fn handle_resource_pack_client_response(
+    pub fn process_pack_client_response(
         &self,
         pk: MutableBuffer,
     ) -> Result<()> {
@@ -213,7 +213,7 @@ impl Session {
         Ok(())
     }
 
-    pub fn handle_client_to_server_handshake(&self, pk: MutableBuffer) -> Result<()> {
+    pub fn process_cts_handshake(&self, pk: MutableBuffer) -> Result<()> {
         ClientToServerHandshake::deserialize(pk.snapshot())?;
 
         let response = PlayStatus { status: Status::LoginSuccess };
@@ -243,7 +243,7 @@ impl Session {
     }
 
     /// Handles a [`Login`] packet.
-    pub async fn handle_login(&self, pk: MutableBuffer) -> Result<()> {
+    pub async fn process_login(&self, pk: MutableBuffer) -> Result<()> {
         let request = Login::deserialize(pk.snapshot());
         let request = match request {
             Ok(r) => r,
@@ -269,7 +269,7 @@ impl Session {
     }
 
     /// Handles a [`RequestNetworkSettings`] packet.
-    pub fn handle_request_network_settings(&self, pk: MutableBuffer) -> Result<()> {
+    pub fn process_network_settings_request(&self, pk: MutableBuffer) -> Result<()> {
         let request = RequestNetworkSettings::deserialize(pk.snapshot())?;
         if request.protocol_version != NETWORK_VERSION {
             if request.protocol_version > NETWORK_VERSION {

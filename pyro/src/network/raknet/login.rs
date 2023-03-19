@@ -16,7 +16,7 @@ use crate::{PacketConfig, SendPriority};
 
 impl Session {
     /// Handles a [`ConnectionRequest`] packet.
-    pub fn handle_connection_request(&self, mut pk: MutableBuffer) -> Result<()> {
+    pub fn process_connection_request(&self, mut pk: MutableBuffer) -> Result<()> {
         let request = ConnectionRequest::deserialize(pk.snapshot())?;
         let reply = ConnectionRequestAccepted {
             client_address: self.raknet.address,
@@ -32,13 +32,13 @@ impl Session {
     }
 
     /// Handles a [`NewIncomingConnection`] packet.
-    pub fn handle_new_incoming_connection(&self, pk: MutableBuffer) -> Result<()> {
+    pub fn process_new_incoming_connection(&self, pk: MutableBuffer) -> Result<()> {
         let _request = NewIncomingConnection::deserialize(pk.snapshot())?;
         Ok(())
     }
 
     /// Handles an [`OnlinePing`] packet.
-    pub fn handle_online_ping(&self, mut pk: MutableBuffer) -> Result<()> {
+    pub fn process_online_ping(&self, mut pk: MutableBuffer) -> Result<()> {
         let ping = ConnectedPing::deserialize(pk.snapshot())?;
         let pong = ConnectedPong {
             ping_time: ping.time,

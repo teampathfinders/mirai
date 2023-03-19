@@ -25,14 +25,14 @@ use crate::{
 };
 
 impl Session {
-    pub fn handle_settings_command(&self, pk: MutableBuffer) -> Result<()> {
+    pub fn process_settings_command(&self, pk: MutableBuffer) -> Result<()> {
         let request = SettingsCommand::deserialize(pk.snapshot())?;
         tracing::info!("{request:?}");
 
         Ok(())
     }
 
-    pub fn handle_text_message(&self, pk: MutableBuffer) -> Result<()> {
+    pub fn process_text_message(&self, pk: MutableBuffer) -> Result<()> {
         let request = TextMessage::deserialize(pk.snapshot())?;
         if request.message_type != MessageType::Chat {
             bail!(Malformed, "Client is only allowed to send chat messages, received {:?} instead", request.message_type)
@@ -43,25 +43,25 @@ impl Session {
         self.broadcast(request)
     }
 
-    pub fn handle_skin_update(&self, pk: MutableBuffer) -> Result<()> {
+    pub fn process_skin_update(&self, pk: MutableBuffer) -> Result<()> {
         let request = UpdateSkin::deserialize(pk.snapshot())?;
         self.broadcast(request)
     }
 
-    pub fn handle_ability_request(&self, pk: MutableBuffer) -> Result<()> {
+    pub fn process_ability_request(&self, pk: MutableBuffer) -> Result<()> {
         let request = RequestAbility::deserialize(pk.snapshot())?;
         tracing::info!("{request:?}");
 
         Ok(())
     }
 
-    pub fn handle_animation(&self, pk: MutableBuffer) -> Result<()> {
+    pub fn process_animation(&self, pk: MutableBuffer) -> Result<()> {
         let _request = Animate::deserialize(pk.snapshot())?;
 
         Ok(())
     }
 
-    pub fn handle_command_request(&self, pk: MutableBuffer) -> Result<()> {
+    pub fn process_command_request(&self, pk: MutableBuffer) -> Result<()> {
         let request = CommandRequest::deserialize(pk.snapshot())?;
 
         let command_list = self.level_manager.get_commands();
@@ -70,7 +70,7 @@ impl Session {
         if let Ok(parsed) = result {
             let output = match parsed.name.as_str() {
                 "gamerule" => {
-                    self.level_manager.handle_gamerule_command(parsed)
+                    self.level_manager.execute_game_rule_command(parsed)
                 }
                 _ => todo!(),
             };
