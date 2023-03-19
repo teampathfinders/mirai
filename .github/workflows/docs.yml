@@ -1,0 +1,59 @@
+name: Deploy docs
+
+on:
+  push:
+    branches: [ "master" ]
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build:
+    
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Build docs
+      run: RUSTFLAGS='--cfg skip_leveldb' cargo doc --no-deps
+    
+    - name: Archive artifact
+      shell: sh
+      run: |
+        chmod -c -R +rX "$INPUT_PATH" | while read line; do
+          echo "::warning title=Invalid file permissions automatically fixed::$line"
+        done
+        tar \
+          --dereference --hard-dereference \
+          --directory "$INPUT_PATH" \
+          -cvf "$RUNNER_TEMP/artifact.tar" \
+          --exclude=.git \
+          --exclude=.github \
+          .
+      env:
+        INPUT_PATH: "_site/"
+    
+    - name: Upload artifact
+      uses: actions/upload-artifact@main
+      with:
+        name: ${{ inputs.name }}
+        path: ${{ runner.temp}/artifact.rar
+        retention-days: ${{ inputs.retention-days }}
+    
+  deploy:
+    needs: build
+    
+    permissions:
+      pages: write
+      id-token: write
+      
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+      
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy to Github Pages
+        id: deployment
+        uses: actions/deploy-pages@v1
