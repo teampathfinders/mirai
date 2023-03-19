@@ -10,6 +10,15 @@ pub struct Vector<T, const N: usize> {
     components: [T; N],
 }
 
+impl<T: PartialEq, const N: usize> PartialEq for Vector<T, N> {
+    #[inline]
+    fn eq(&self, other: &Self) -> bool {
+        self.components == other.components
+    }
+}
+
+impl<T: Eq, const N: usize> Eq for Vector<T, N> {}
+
 impl<T: Clone, const N: usize> Vector<T, N> {
     pub fn components(&self) -> [T; N] {
         self.components.clone()
