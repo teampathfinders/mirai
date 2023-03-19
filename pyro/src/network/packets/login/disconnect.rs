@@ -3,7 +3,7 @@
 
 use crate::ConnectedPacket;
 use util::{Serialize};
-use util::bytes::{BinaryWriter, MutableBuffer, VarString};
+use util::bytes::{BinaryWrite, MutableBuffer, VarString};
 use util::Result;
 
 pub const DISCONNECTED_NOT_AUTHENTICATED: &str =

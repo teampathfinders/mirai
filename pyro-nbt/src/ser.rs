@@ -1,569 +1,225 @@
-use std::{
-    any::{Any, TypeId},
-    fmt::format,
-    io::Write,
+use paste::paste;
+use serde::de::SeqAccess;
+use serde::ser::{
+    Impossible, SerializeMap, SerializeSeq, SerializeStruct, SerializeTuple,
 };
-
 use serde::{ser, Serialize};
+use std::io::Write;
+use std::marker::PhantomData;
+use util::bytes::{BinaryWrite, MutableBuffer};
 use util::{bail, Error, Result};
-use util::bytes::WriteBuffer;
 
 use crate::{
-    bail, de::Flavor, error::Result, Error, TAG_BYTE, TAG_COMPOUND, TAG_DOUBLE,
-    TAG_END, TAG_FLOAT, TAG_INT, TAG_LONG, TAG_SHORT, TAG_STRING,
+    de, BigEndian, FieldType, LittleEndian, Variable, Variant, VariantImpl,
 };
 
-pub struct Serializer {
-    flavor: Flavor,
-    output: WriteBuffer,
-}
-
-pub fn to_bytes<T>(value: &T, flavor: Flavor) -> Result<WriteBuffer>
+#[inline]
+pub fn to_be_bytes<T>(v: &T) -> Result<MutableBuffer>
 where
-    T: Serialize,
+    T: ?Sized + Serialize,
 {
-    let mut serializer = Serializer { flavor, output: WriteBuffer::new() };
+    let mut ser =
+        Serializer::<MutableBuffer, BigEndian>::new(MutableBuffer::new());
+    // ser.writer.write_u8(FieldType::Compound as u8)?;
+    // ser.writer.write_u16_be(0)?;
 
-    value.serialize(&mut serializer)?;
-
-    Ok(serializer.output)
+    v.serialize(&mut ser)?;
+    Ok(ser.into_inner())
 }
 
-impl<'a> ser::Serializer for &'a mut Serializer {
+#[inline]
+pub fn to_le_bytes<T>(v: &T) -> Result<MutableBuffer>
+where
+    T: ?Sized + Serialize,
+{
+    let mut ser =
+        Serializer::<MutableBuffer, LittleEndian>::new(MutableBuffer::new());
+    // ser.writer.write_u8(FieldType::Compound as u8)?;
+    // ser.writer.write_u16_le(0)?;
+
+    v.serialize(&mut ser)?;
+    Ok(ser.into_inner())
+}
+
+#[inline]
+pub fn to_var_bytes<T>(v: &T) -> Result<MutableBuffer>
+where
+    T: ?Sized + Serialize,
+{
+    let mut ser =
+        Serializer::<MutableBuffer, Variable>::new(MutableBuffer::new());
+    // ser.writer.write_u8(FieldType::Compound as u8)?;
+    // ser.writer.write_var_u32(0)?;
+
+    v.serialize(&mut ser)?;
+    Ok(ser.into_inner())
+}
+
+#[derive(Debug)]
+pub struct Serializer<W, M>
+where
+    W: Write,
+    M: VariantImpl,
+{
+    writer: W,
+    is_initial: bool,
+    len: usize,
+    _marker: PhantomData<M>,
+}
+
+impl<W, M> Serializer<W, M>
+where
+    W: Write,
+    M: VariantImpl,
+{
+    #[inline]
+    pub fn new(w: W) -> Serializer<W, M> {
+        Serializer {
+            writer: w,
+            is_initial: true,
+            len: 0,
+            _marker: PhantomData,
+        }
+    }
+
+    #[inline]
+    pub fn into_inner(self) -> W {
+        self.writer
+    }
+}
+
+macro_rules! forward_unsupported {
+    ($($ty: ident),+) => {
+        paste! {$(
+           #[inline]
+            fn [<serialize_ $ty>](self, v: $ty) -> util::Result<()> {
+                util::bail!(Unsupported, concat!("Serialisation of `", stringify!($ty), "` is not supported"));
+            }
+        )+}
+    }
+}
+
+impl<'a, W, M> ser::Serializer for &'a mut Serializer<W, M>
+where
+    M: VariantImpl,
+    W: Write,
+{
     type Ok = ();
     type Error = Error;
 
     type SerializeSeq = Self;
     type SerializeTuple = Self;
-    type SerializeTupleStruct = Self;
-    type SerializeTupleVariant = Self;
+    type SerializeTupleStruct = Impossible<(), Error>;
+    type SerializeTupleVariant = Impossible<(), Error>;
     type SerializeMap = Self;
     type SerializeStruct = Self;
-    type SerializeStructVariant = Self;
+    type SerializeStructVariant = Impossible<(), Error>;
 
+    forward_unsupported!(char, u8, u16, u32, u64, i128);
+
+    #[inline]
     fn serialize_bool(self, v: bool) -> Result<()> {
-        self.output.write_be::<bool>(v);
+        self.writer.write_bool(v)?;
         Ok(())
     }
 
+    #[inline]
     fn serialize_i8(self, v: i8) -> Result<()> {
-        self.output.write_be::<i8>(v);
+        self.writer.write_i8(v)?;
         Ok(())
     }
 
+    #[inline]
     fn serialize_i16(self, v: i16) -> Result<()> {
-        match self.flavor {
-            Flavor::LittleEndian | Flavor::Network => {
-                self.output.write_i16_le(v);
-            }
-            Flavor::BigEndian => {
-                self.output.write_be::<i16>(v);
+        match M::AS_ENUM {
+            Variant::BigEndian => self.writer.write_i16_be(v),
+            Variant::LittleEndian | Variant::Variable => {
+                self.writer.write_i16_le(v)
             }
         }
-
-        Ok(())
     }
 
+    #[inline]
     fn serialize_i32(self, v: i32) -> Result<()> {
-        match self.flavor {
-            Flavor::LittleEndian | Flavor::Network => {
-                self.output.write_le::<i32>(v);
-            }
-            Flavor::BigEndian => {
-                self.output.write_be::<i32>(v);
-            }
+        match M::AS_ENUM {
+            Variant::BigEndian => self.writer.write_i32_be(v),
+            Variant::LittleEndian => self.writer.write_i32_le(v),
+            Variant::Variable => self.writer.write_var_i32(v),
         }
-
-        Ok(())
     }
 
+    #[inline]
     fn serialize_i64(self, v: i64) -> Result<()> {
-        match self.flavor {
-            Flavor::LittleEndian | Flavor::Network => {
-                self.output.write_le::<i64>(v);
-            }
-            Flavor::BigEndian => {
-                self.output.write_i64_be(v);
-            }
+        match M::AS_ENUM {
+            Variant::BigEndian => self.writer.write_i64_be(v),
+            Variant::LittleEndian => self.writer.write_i64_le(v),
+            Variant::Variable => self.writer.write_var_i64(v),
         }
-
-        Ok(())
     }
 
-    // NBT does not support unsigned types.
-    fn serialize_u8(self, _v: u8) -> Result<()> {
-        bail!(Unsupported)
-    }
-
-    // NBT does not support unsigned types.
-    fn serialize_u16(self, _v: u16) -> Result<()> {
-        bail!(Unsupported)
-    }
-
-    // NBT does not support unsigned types.
-    fn serialize_u32(self, _v: u32) -> Result<()> {
-        bail!(Unsupported)
-    }
-
-    // NBT does not support unsigned types.
-    fn serialize_u64(self, _v: u64) -> Result<()> {
-        bail!(Unsupported)
-    }
-
+    #[inline]
     fn serialize_f32(self, v: f32) -> Result<()> {
-        match self.flavor {
-            Flavor::LittleEndian | Flavor::Network => {
-                self.output.write_le::<f32>(v);
-            }
-            Flavor::BigEndian => {
-                self.output.write_be::<f32>(v);
+        match M::AS_ENUM {
+            Variant::BigEndian => self.writer.write_f32_be(v),
+            Variant::LittleEndian | Variant::Variable => {
+                self.writer.write_f32_le(v)
             }
         }
-
-        Ok(())
     }
 
+    #[inline]
     fn serialize_f64(self, v: f64) -> Result<()> {
-        match self.flavor {
-            Flavor::LittleEndian | Flavor::Network => {
-                self.output.write_le::<f64>(v);
-            }
-            Flavor::BigEndian => {
-                self.output.write_be::<f64>(v);
+        match M::AS_ENUM {
+            Variant::BigEndian => self.writer.write_f64_be(v),
+            Variant::LittleEndian | Variant::Variable => {
+                self.writer.write_f64_le(v)
             }
         }
-
-        Ok(())
     }
 
-    fn serialize_char(self, v: char) -> Result<()> {
-        let mut utf8_buf = [0u8; 4];
-        v.encode_utf8(&mut utf8_buf);
-
-        self.output.write_all(&utf8_buf[..v.len_utf8()])?;
-        Ok(())
-    }
-
+    #[inline]
     fn serialize_str(self, v: &str) -> Result<()> {
-        match self.flavor {
-            Flavor::LittleEndian => {
-                self.output.write_u16_le(v.len() as u16);
-            }
-            Flavor::BigEndian => {
-                self.output.write_u16_be(v.len() as u16);
-            }
-            Flavor::Network => {
-                todo!();
-            }
-        }
-        self.output.write_all(v.as_bytes())?;
+        match M::AS_ENUM {
+            Variant::BigEndian => self.writer.write_u16_be(v.len() as u16),
+            Variant::LittleEndian => self.writer.write_u16_le(v.len() as u16),
+            Variant::Variable => self.writer.write_var_u32(v.len() as u32),
+        }?;
 
+        self.writer.write_all(v.as_bytes())?;
         Ok(())
     }
 
-    fn serialize_bytes(self, _v: &[u8]) -> Result<()> {
-        todo!()
-    }
-
-    fn serialize_none(self) -> Result<()> {
-        todo!()
-    }
-
-    fn serialize_some<T: ?Sized>(self, _v: &T) -> Result<()>
-    where
-        T: Serialize,
-    {
-        todo!()
-    }
-
-    fn serialize_unit(self) -> Result<()> {
-        todo!()
-    }
-
-    fn serialize_unit_struct(self, _name: &'static str) -> Result<()> {
-        todo!()
-    }
-
-    fn serialize_unit_variant(
-        self,
-        _name: &'static str,
-        _variant_index: u32,
-        _variant: &'static str,
-    ) -> Result<()> {
-        todo!()
-    }
-
-    fn serialize_newtype_struct<T: ?Sized>(
-        self,
-        _name: &'static str,
-        _value: &T,
-    ) -> Result<()>
-    where
-        T: Serialize,
-    {
-        todo!()
-    }
-
-    fn serialize_newtype_variant<T: ?Sized>(
-        self,
-        _name: &'static str,
-        _variant_index: u32,
-        _variant: &'static str,
-        _value: &T,
-    ) -> Result<()>
-    where
-        T: Serialize,
-    {
-        todo!()
-    }
-
-    fn serialize_seq(
-        self,
-        _len: Option<usize>,
-    ) -> std::result::std::result::Result<Self, Error> {
-        todo!()
-    }
-
-    fn serialize_tuple(self, len: usize) -> std::result::std::result::Result<Self, Error> {
-        todo!()
-    }
-
-    fn serialize_tuple_struct(
-        self,
-        _name: &'static str,
-        _len: usize,
-    ) -> std::result::std::result::Result<Self, Error> {
-        todo!()
-    }
-
-    fn serialize_tuple_variant(
-        self,
-        name: &'static str,
-        variant_index: u32,
-        variant: &'static str,
-        len: usize,
-    ) -> std::result::std::result::Result<Self, Error> {
-        todo!()
-    }
-
-    fn serialize_map(
-        self,
-        len: Option<usize>,
-    ) -> std::result::std::result::Result<Self, Error> {
-        Ok(self)
-    }
-
-    fn serialize_struct(
-        self,
-        name: &'static str,
-        len: usize,
-    ) -> std::result::std::result::Result<Self, Error> {
-        self.output.write_be::<u8>(TAG_COMPOUND);
-        // self.output.write_u16_le(name.len() as u16);
-        // self.output.write_all(name.as_bytes())?;
-        Ok(self)
-        // self.serialize_map(Some(len))
-    }
-
-    fn serialize_struct_variant(
-        self,
-        name: &'static str,
-        variant_index: u32,
-        variant: &'static str,
-        len: usize,
-    ) -> std::result::Result<Self::SerializeStructVariant, Self::Error> {
-        todo!()
-    }
-}
-
-impl<'a> ser::SerializeSeq for &'a mut Serializer {
-    type Ok = ();
-    type Error = Error;
-
-    fn serialize_element<T>(&mut self, value: &T) -> Result<()>
-    where
-        T: ?Sized + Serialize,
-    {
-        todo!();
-    }
-
-    fn end(self) -> Result<()> {
-        todo!();
-    }
-}
-
-impl<'a> ser::SerializeTuple for &'a mut Serializer {
-    type Ok = ();
-    type Error = Error;
-
-    fn serialize_element<T>(&mut self, value: &T) -> Result<()>
-    where
-        T: ?Sized + Serialize,
-    {
-        todo!();
-    }
-
-    fn end(self) -> Result<()> {
-        todo!();
-    }
-}
-
-impl<'a> ser::SerializeTupleStruct for &'a mut Serializer {
-    type Ok = ();
-    type Error = Error;
-
-    fn serialize_field<T>(&mut self, value: &T) -> Result<()>
-    where
-        T: ?Sized + Serialize,
-    {
-        todo!();
-    }
-
-    fn end(self) -> Result<()> {
-        todo!();
-    }
-}
-
-impl<'a> ser::SerializeTupleVariant for &'a mut Serializer {
-    type Ok = ();
-    type Error = Error;
-
-    fn serialize_field<T>(&mut self, value: &T) -> Result<()>
-    where
-        T: ?Sized + Serialize,
-    {
-        todo!();
-    }
-
-    fn end(self) -> Result<()> {
-        todo!();
-    }
-}
-
-impl<'a> ser::SerializeMap for &'a mut Serializer {
-    type Ok = ();
-    type Error = Error;
-
-    fn serialize_key<T>(&mut self, key: &T) -> Result<()>
-    where
-        T: ?Sized + Serialize,
-    {
-        todo!();
-    }
-
-    fn serialize_value<T>(&mut self, value: &T) -> Result<()>
-    where
-        T: ?Sized + Serialize,
-    {
-        todo!();
-    }
-
-    fn end(self) -> Result<()> {
-        todo!();
-    }
-}
-
-impl<'a> ser::SerializeStruct for &'a mut Serializer {
-    type Ok = ();
-    type Error = Error;
-
-    fn serialize_field<T>(&mut self, key: &'static str, value: &T) -> Result<()>
-    where
-        T: ?Sized + Serialize,
-    {
-        // Encode the header.
-        value.serialize(HeaderSerializer::new(&mut self.output, Some(key)))?;
-        // Encode the name
-        // key.serialize(&mut **self)?;
-        serde::Serializer::serialize_str(&mut **self, key)?;
-        // Encode the value
-        value.serialize(&mut **self)
-    }
-
-    fn end(self) -> Result<()> {
-        self.output.write_u8(TAG_END);
-        Ok(())
-    }
-}
-
-impl<'a> ser::SerializeStructVariant for &'a mut Serializer {
-    type Ok = ();
-    type Error = Error;
-
-    fn serialize_field<T>(&mut self, key: &'static str, value: &T) -> Result<()>
-    where
-        T: ?Sized + Serialize,
-    {
-        todo!();
-    }
-
-    fn end(self) -> Result<()> {
-        todo!();
-    }
-}
-
-// enum DataType {
-//     I8,
-//     I16,
-//     I32,
-//     I64,
-//     F32,
-//     F64,
-//     String
-// }
-
-// trait ValidTag {
-//     // fn ty() -> Option<DataType>;
-//     fn id() -> Result<u8>;
-//     fn is_primitive() -> bool;
-// }
-
-// impl<T: ?Sized + Serialize> ValidTag for T {
-//     // default fn ty() -> Option<DataType> { None }
-//     default fn id() -> Result<u8> {
-//         Err(Error::Unsupported(format!("{} serialization is not supported", std::any::type_name::<T>())))
-//     }
-//     default fn is_primitive() -> bool { false }
-// }
-
-// macro_rules! valid_tag {
-//     ($t: ty, $i: ident /*, $d: ident*/) => {
-//         impl ValidTag for $t {
-//             // fn ty() -> Option<DataType> {
-//             //     Some(DataType::$d)
-//             // }
-
-//             fn id() -> Result<u8> {
-//                 Ok($crate::$i)
-//             }
-
-//             fn is_primitive() -> bool {
-//                 true
-//             }
-//         }
-//     }
-// }
-
-// // valid_tag!(i8, I8);
-// // valid_tag!(i16, I16);
-// // valid_tag!(i32, I32);
-// // valid_tag!(i64, I64);
-// // valid_tag!(f32, F32);
-// // valid_tag!(f64, F64);
-// // valid_tag!(&str, String);
-// // valid_tag!(String, String);
-
-// valid_tag!(i8, TAG_BYTE);
-// valid_tag!(i16, TAG_SHORT);
-// valid_tag!(i32, TAG_INT);
-// valid_tag!(i64, TAG_LONG);
-// valid_tag!(f32, TAG_FLOAT);
-// valid_tag!(f64, TAG_DOUBLE);
-// valid_tag!(&str, TAG_STRING);
-// valid_tag!(String, TAG_STRING);
-
-struct HeaderSerializer<'a> {
-    key: Option<&'static str>,
-    // serializer: &'a mut Serializer
-    buffer: &'a mut WriteBuffer,
-}
-
-impl<'a> HeaderSerializer<'a> {
-    pub fn new(buffer: &'a mut WriteBuffer, key: Option<&'static str>) -> Self {
-        Self { key, buffer }
-    }
-}
-
-impl<'a> ser::Serializer for HeaderSerializer<'a> {
-    type Ok = ();
-    type Error = Error;
-
-    type SerializeSeq = Self;
-    type SerializeTuple = Self;
-    type SerializeTupleStruct = Self;
-    type SerializeTupleVariant = Self;
-    type SerializeMap = Self;
-    type SerializeStruct = Self;
-    type SerializeStructVariant = Self;
-
-    fn serialize_bool(self, _v: bool) -> Result<()> {
-        self.buffer.write_u8(TAG_BYTE);
-        Ok(())
-    }
-
-    fn serialize_i8(self, _v: i8) -> Result<()> {
-        self.buffer.write_u8(TAG_BYTE);
-        Ok(())
-    }
-
-    fn serialize_i16(self, _v: i16) -> Result<()> {
-        self.buffer.write_u8(TAG_SHORT);
-        Ok(())
-    }
-
-    fn serialize_i32(self, v: i32) -> Result<()> {
-        todo!()
-    }
-
-    fn serialize_i64(self, v: i64) -> Result<()> {
-        todo!()
-    }
-
-    fn serialize_u8(self, v: u8) -> Result<()> {
-        todo!()
-    }
-
-    fn serialize_u16(self, v: u16) -> Result<()> {
-        todo!()
-    }
-
-    fn serialize_u32(self, v: u32) -> Result<()> {
-        todo!()
-    }
-
-    fn serialize_u64(self, v: u64) -> Result<()> {
-        todo!()
-    }
-
-    fn serialize_f32(self, v: f32) -> Result<()> {
-        todo!()
-    }
-
-    fn serialize_f64(self, v: f64) -> Result<()> {
-        self.buffer.write_u8(TAG_DOUBLE);
-        Ok(())
-    }
-
-    fn serialize_char(self, v: char) -> Result<()> {
-        todo!()
-    }
-
-    fn serialize_str(self, v: &str) -> Result<()> {
-        self.buffer.write_u8(TAG_STRING);
-        Ok(())
-    }
-
+    #[inline]
     fn serialize_bytes(self, v: &[u8]) -> Result<()> {
-        todo!()
+        match M::AS_ENUM {
+            Variant::BigEndian => self.writer.write_u16_be(v.len() as u16),
+            Variant::LittleEndian => self.writer.write_u16_le(v.len() as u16),
+            Variant::Variable => self.writer.write_var_u32(v.len() as u32),
+        }?;
+
+        self.writer.write_all(v)?;
+        Ok(())
     }
 
+    #[inline]
     fn serialize_none(self) -> Result<()> {
-        todo!()
+        unreachable!("None fields cannot exist, this should have been stopped by the key serializer");
     }
 
     fn serialize_some<T: ?Sized>(self, value: &T) -> Result<()>
     where
         T: Serialize,
     {
-        todo!()
+        todo!();
     }
 
+    #[inline]
     fn serialize_unit(self) -> Result<()> {
-        todo!()
+        unreachable!("Unit fields cannot exist, this should have been stopped by the key serializer");
     }
 
     fn serialize_unit_struct(self, name: &'static str) -> Result<()> {
-        todo!()
+        unreachable!("Unit struct fields cannot exist, this should have been stopped by the key serializer");
     }
 
     fn serialize_unit_variant(
@@ -599,18 +255,23 @@ impl<'a> ser::Serializer for HeaderSerializer<'a> {
         todo!()
     }
 
-    fn serialize_seq(
-        self,
-        len: Option<usize>,
-    ) -> std::result::Result<Self::SerializeSeq, Self::Error> {
-        todo!()
+    #[inline]
+    fn serialize_seq(self, len: Option<usize>) -> Result<Self> {
+        if let Some(len) = len {
+            self.len = len;
+            Ok(self)
+        } else {
+            bail!(
+                Unsupported,
+                "Sequences with a size not known upfront are not supported"
+            );
+        }
     }
 
-    fn serialize_tuple(
-        self,
-        len: usize,
-    ) -> std::result::Result<Self::SerializeTuple, Self::Error> {
-        todo!()
+    #[inline]
+    fn serialize_tuple(self, len: usize) -> Result<Self> {
+        self.len = len;
+        Ok(self)
     }
 
     fn serialize_tuple_struct(
@@ -635,7 +296,7 @@ impl<'a> ser::Serializer for HeaderSerializer<'a> {
         self,
         len: Option<usize>,
     ) -> std::result::Result<Self::SerializeMap, Self::Error> {
-        todo!()
+        Ok(self)
     }
 
     fn serialize_struct(
@@ -643,7 +304,13 @@ impl<'a> ser::Serializer for HeaderSerializer<'a> {
         name: &'static str,
         len: usize,
     ) -> std::result::Result<Self::SerializeStruct, Self::Error> {
-        todo!()
+        if self.is_initial {
+            self.writer.write_u8(FieldType::Compound as u8)?;
+            self.serialize_str(name)?;
+            self.is_initial = false;
+        }
+
+        Ok(self)
     }
 
     fn serialize_struct_variant(
@@ -657,458 +324,466 @@ impl<'a> ser::Serializer for HeaderSerializer<'a> {
     }
 }
 
-impl<'a> ser::SerializeSeq for HeaderSerializer<'a> {
+impl<'a, W, F> SerializeSeq for &'a mut Serializer<W, F>
+where
+    W: Write,
+    F: VariantImpl,
+{
     type Ok = ();
     type Error = Error;
 
-    fn serialize_element<T>(&mut self, value: &T) -> Result<()>
+    #[inline]
+    fn serialize_element<T>(&mut self, element: &T) -> Result<()>
     where
         T: ?Sized + Serialize,
     {
-        todo!();
-    }
-
-    fn end(self) -> Result<()> {
-        todo!();
-    }
-}
-
-impl<'a> ser::SerializeTuple for HeaderSerializer<'a> {
-    type Ok = ();
-    type Error = Error;
-
-    fn serialize_element<T>(&mut self, value: &T) -> Result<()>
-    where
-        T: ?Sized + Serialize,
-    {
-        todo!();
-    }
-
-    fn end(self) -> Result<()> {
-        todo!();
-    }
-}
-
-impl<'a> ser::SerializeTupleStruct for HeaderSerializer<'a> {
-    type Ok = ();
-    type Error = Error;
-
-    fn serialize_field<T>(&mut self, value: &T) -> Result<()>
-    where
-        T: ?Sized + Serialize,
-    {
-        todo!();
-    }
-
-    fn end(self) -> Result<()> {
-        todo!();
-    }
-}
-
-impl<'a> ser::SerializeTupleVariant for HeaderSerializer<'a> {
-    type Ok = ();
-    type Error = Error;
-
-    fn serialize_field<T>(&mut self, value: &T) -> Result<()>
-    where
-        T: ?Sized + Serialize,
-    {
-        todo!();
-    }
-
-    fn end(self) -> Result<()> {
-        todo!();
-    }
-}
-
-impl<'a> ser::SerializeMap for HeaderSerializer<'a> {
-    type Ok = ();
-    type Error = Error;
-
-    fn serialize_key<T>(&mut self, key: &T) -> Result<()>
-    where
-        T: ?Sized + Serialize,
-    {
-        todo!();
-    }
-
-    fn serialize_value<T>(&mut self, value: &T) -> Result<()>
-    where
-        T: ?Sized + Serialize,
-    {
-        todo!();
-    }
-
-    fn end(self) -> Result<()> {
-        todo!();
-    }
-}
-
-impl<'a> ser::SerializeStruct for HeaderSerializer<'a> {
-    type Ok = ();
-    type Error = Error;
-
-    fn serialize_field<T>(&mut self, key: &'static str, value: &T) -> Result<()>
-    where
-        T: ?Sized + Serialize,
-    {
-        todo!();
-    }
-
-    fn end(self) -> Result<()> {
-        todo!();
-    }
-}
-
-impl<'a> ser::SerializeStructVariant for HeaderSerializer<'a> {
-    type Ok = ();
-    type Error = Error;
-
-    fn serialize_field<T>(&mut self, key: &'static str, value: &T) -> Result<()>
-    where
-        T: ?Sized + Serialize,
-    {
-        todo!();
-    }
-
-    fn end(self) -> Result<()> {
-        todo!();
-    }
-}
-
-// struct ValueSerializer<'a> {
-//     key: Option<&'static str>,
-//     // serializer: &'a mut Serializer
-//     buffer: &'a mut WriteBuffer
-// }
-
-// impl<'a> HeaderSerializer<'a> {
-//     pub fn new(buffer: &'a mut WriteBuffer, key: Option<&'static str>) -> Self {
-//         Self {
-//             key, buffer
-//         }
-//     }
-// }
-
-// impl<'a> ser::Serializer for HeaderSerializer<'a> {
-//     type Ok = ();
-//     type Error = Error;
-
-//     type SerializeSeq = Self;
-//     type SerializeTuple = Self;
-//     type SerializeTupleStruct = Self;
-//     type SerializeTupleVariant = Self;
-//     type SerializeMap = Self;
-//     type SerializeStruct = Self;
-//     type SerializeStructVariant = Self;
-
-//     fn serialize_bool(self, _v: bool) -> Result<()> {
-//         self.buffer.write_u8(TAG_BYTE);
-//         Ok(())
-//     }
-
-//     fn serialize_i8(self, _v: i8) -> Result<()> {
-//         self.buffer.write_u8(TAG_BYTE);
-//         Ok(())
-//     }
-
-//     fn serialize_i16(self, _v: i16) -> Result<()> {
-//         self.buffer.write_u8(TAG_SHORT);
-//         Ok(())
-//     }
-
-//     fn serialize_i32(self, v: i32) -> Result<()> {
-//         todo!()
-//     }
-
-//     fn serialize_i64(self, v: i64) -> Result<()> {
-//         todo!()
-//     }
-
-//     fn serialize_u8(self, v: u8) -> Result<()> {
-//         todo!()
-//     }
-
-//     fn serialize_u16(self, v: u16) -> Result<()> {
-//         todo!()
-//     }
-
-//     fn serialize_u32(self, v: u32) -> Result<()> {
-//         todo!()
-//     }
-
-//     fn serialize_u64(self, v: u64) -> Result<()> {
-//         todo!()
-//     }
-
-//     fn serialize_f32(self, v: f32) -> Result<()> {
-//         todo!()
-//     }
-
-//     fn serialize_f64(self, v: f64) -> Result<()> {
-//         self.buffer.write_u8(TAG_DOUBLE);
-//         Ok(())
-//     }
-
-//     fn serialize_char(self, v: char) -> Result<()> {
-//         todo!()
-//     }
-
-//     fn serialize_str(self, v: &str) -> Result<()> {
-//         self.buffer.write_u8(TAG_STRING);
-//         Ok(())
-//     }
-
-//     fn serialize_bytes(self, v: &[u8]) -> Result<()> {
-//         todo!()
-//     }
-
-//     fn serialize_none(self) -> Result<()> {
-//         todo!()
-//     }
-
-//     fn serialize_some<T: ?Sized>(self, value: &T) -> Result<()>
-//     where
-//         T: Serialize {
-//         todo!()
-//     }
-
-//     fn serialize_unit(self) -> Result<()> {
-//         todo!()
-//     }
-
-//     fn serialize_unit_struct(self, name: &'static str) -> Result<()> {
-//         todo!()
-//     }
-
-//     fn serialize_unit_variant(
-//         self,
-//         name: &'static str,
-//         variant_index: u32,
-//         variant: &'static str,
-//     ) -> Result<()> {
-//         todo!()
-//     }
-
-//     fn serialize_newtype_struct<T: ?Sized>(
-//         self,
-//         name: &'static str,
-//         value: &T,
-//     ) -> Result<()>
-//     where
-//         T: Serialize {
-//         todo!()
-//     }
-
-//     fn serialize_newtype_variant<T: ?Sized>(
-//         self,
-//         name: &'static str,
-//         variant_index: u32,
-//         variant: &'static str,
-//         value: &T,
-//     ) -> Result<()>
-//     where
-//         T: Serialize {
-//         todo!()
-//     }
-
-//     fn serialize_seq(self, len: Option<usize>) -> std::result::Result<Self::SerializeSeq, Self::Error> {
-//         todo!()
-//     }
-
-//     fn serialize_tuple(self, len: usize) -> std::result::Result<Self::SerializeTuple, Self::Error> {
-//         todo!()
-//     }
-
-//     fn serialize_tuple_struct(
-//         self,
-//         name: &'static str,
-//         len: usize,
-//     ) -> std::result::Result<Self::SerializeTupleStruct, Self::Error> {
-//         todo!()
-//     }
-
-//     fn serialize_tuple_variant(
-//         self,
-//         name: &'static str,
-//         variant_index: u32,
-//         variant: &'static str,
-//         len: usize,
-//     ) -> std::result::Result<Self::SerializeTupleVariant, Self::Error> {
-//         todo!()
-//     }
-
-//     fn serialize_map(self, len: Option<usize>) -> std::result::Result<Self::SerializeMap, Self::Error> {
-//         todo!()
-//     }
-
-//     fn serialize_struct(
-//         self,
-//         name: &'static str,
-//         len: usize,
-//     ) -> std::result::Result<Self::SerializeStruct, Self::Error> {
-//         todo!()
-//     }
-
-//     fn serialize_struct_variant(
-//         self,
-//         name: &'static str,
-//         variant_index: u32,
-//         variant: &'static str,
-//         len: usize,
-//     ) -> std::result::Result<Self::SerializeStructVariant, Self::Error> {
-//         todo!()
-//     }
-// }
-
-// impl<'a> ser::SerializeSeq for HeaderSerializer<'a> {
-//     type Ok = ();
-//     type Error = Error;
-
-//     fn serialize_element<T>(&mut self, value: &T) -> Result<()>
-//     where
-//         T: ?Sized + Serialize
-//     {
-//         todo!();
-//     }
-
-//     fn end(self) -> Result<()> {
-//         todo!();
-//     }
-// }
-
-// impl<'a> ser::SerializeTuple for HeaderSerializer<'a> {
-//     type Ok = ();
-//     type Error = Error;
-
-//     fn serialize_element<T>(&mut self, value: &T) -> Result<()>
-//     where
-//         T: ?Sized + Serialize,
-//     {
-//         todo!();
-//     }
-
-//     fn end(self) -> Result<()> {
-//         todo!();
-//     }
-// }
-
-// impl<'a> ser::SerializeTupleStruct for HeaderSerializer<'a> {
-//     type Ok = ();
-//     type Error = Error;
-
-//     fn serialize_field<T>(&mut self, value: &T) -> Result<()>
-//     where
-//         T: ?Sized + Serialize,
-//     {
-//         todo!();
-//     }
-
-//     fn end(self) -> Result<()> {
-//         todo!();
-//     }
-// }
-
-// impl<'a> ser::SerializeTupleVariant for HeaderSerializer<'a> {
-//     type Ok = ();
-//     type Error = Error;
-
-//     fn serialize_field<T>(&mut self, value: &T) -> Result<()>
-//     where
-//         T: ?Sized + Serialize,
-//     {
-//         todo!();
-//     }
-
-//     fn end(self) -> Result<()> {
-//         todo!();
-//     }
-// }
-
-// impl<'a> ser::SerializeMap for HeaderSerializer<'a> {
-//     type Ok = ();
-//     type Error = Error;
-
-//     fn serialize_key<T>(&mut self, key: &T) -> Result<()>
-//     where
-//         T: ?Sized + Serialize,
-//     {
-//         todo!();
-//     }
-
-//     fn serialize_value<T>(&mut self, value: &T) -> Result<()>
-//     where
-//         T: ?Sized + Serialize,
-//     {
-//         todo!();
-//     }
-
-//     fn end(self) -> Result<()> {
-//         todo!();
-//     }
-// }
-
-// impl<'a> ser::SerializeStruct for HeaderSerializer<'a> {
-//     type Ok = ();
-//     type Error = Error;
-
-//     fn serialize_field<T>(&mut self, key: &'static str, value: &T) -> Result<()>
-//     where
-//         T: ?Sized + Serialize,
-//     {
-//         todo!();
-//     }
-
-//     fn end(self) -> Result<()> {
-//         todo!();
-//     }
-// }
-
-// impl<'a> ser::SerializeStructVariant for HeaderSerializer<'a> {
-//     type Ok = ();
-//     type Error = Error;
-
-//     fn serialize_field<T>(&mut self, key: &'static str, value: &T) -> Result<()>
-//     where
-//         T: ?Sized + Serialize,
-//     {
-//         todo!();
-//     }
-
-//     fn end(self) -> Result<()> {
-//         todo!();
-//     }
-// }
-
-#[cfg(test)]
-mod test {
-    use serde::Serialize;
-
-    use crate::{de::Flavor, ser::to_bytes};
-
-    #[test]
-    fn write_compound() {
-        #[derive(Serialize)]
-        pub struct Inner {
-            string: &'static str,
+        if self.len != 0 {
+            let ty_serializer = FieldTypeSerializer::new(self);
+            element.serialize(ty_serializer)?;
+
+            match F::AS_ENUM {
+                Variant::BigEndian => self.writer.write_i32_be(self.len as i32),
+                Variant::LittleEndian => {
+                    self.writer.write_i32_le(self.len as i32)
+                }
+                Variant::Variable => self.writer.write_var_u32(self.len as u32),
+            }?;
+            self.len = 0;
         }
 
-        #[derive(Serialize)]
-        pub struct OuterStruct {
-            byte: i8,
-            short: i16,
-            float: f64,
-            inner: &'static str,
+        element.serialize(&mut **self)
+    }
+
+    #[inline]
+    fn end(self) -> Result<()> {
+        Ok(())
+    }
+}
+
+impl<'a, W, M> SerializeTuple for &'a mut Serializer<W, M>
+where
+    W: Write,
+    M: VariantImpl,
+{
+    type Ok = ();
+    type Error = Error;
+
+    #[inline]
+    fn serialize_element<T>(&mut self, element: &T) -> Result<()>
+    where
+        T: ?Sized + Serialize,
+    {
+        if self.len != 0 {
+            let ty_serializer = FieldTypeSerializer::new(self);
+            element.serialize(ty_serializer)?;
+
+            match M::AS_ENUM {
+                Variant::BigEndian => self.writer.write_i32_be(self.len as i32),
+                Variant::LittleEndian => {
+                    self.writer.write_i32_le(self.len as i32)
+                }
+                Variant::Variable => self.writer.write_var_u32(self.len as u32),
+            }?;
+            self.len = 0;
         }
 
-        let compound = OuterStruct {
-            byte: 5,
-            short: 3974,
-            float: 2.5,
-            inner: "Hello, World",
-        };
+        element.serialize(&mut **self)
+    }
 
-        let buffer = to_bytes(&compound, Flavor::LittleEndian).unwrap();
-        println!("{buffer:?} {}", String::from_utf8_lossy(buffer.as_ref()));
+    #[inline]
+    fn end(self) -> Result<()> {
+        Ok(())
+    }
+}
+
+impl<'a, W, M> SerializeMap for &'a mut Serializer<W, M>
+where
+    W: Write,
+    M: VariantImpl,
+{
+    type Ok = ();
+    type Error = Error;
+
+    fn serialize_key<K>(&mut self, _key: &K) -> Result<()>
+    where
+        K: ?Sized + Serialize,
+    {
+        unimplemented!("Use MapSerializer::serialize_entry instead");
+    }
+
+    fn serialize_value<V>(&mut self, _value: &V) -> Result<()>
+    where
+        V: ?Sized + Serialize,
+    {
+        unimplemented!("Use MapSerializer::serialize_entry instead");
+    }
+
+    fn serialize_entry<K, V>(&mut self, key: &K, value: &V) -> Result<()>
+    where
+        K: ?Sized + Serialize,
+        V: ?Sized + Serialize,
+    {
+        let ty_serializer = FieldTypeSerializer::new(self);
+        value.serialize(ty_serializer)?;
+
+        key.serialize(&mut **self)?;
+        value.serialize(&mut **self)
+    }
+
+    #[inline]
+    fn end(self) -> Result<()> {
+        self.writer.write_u8(FieldType::End as u8)
+    }
+}
+
+impl<'a, W, M> SerializeStruct for &'a mut Serializer<W, M>
+where
+    W: Write,
+    M: VariantImpl,
+{
+    type Ok = ();
+    type Error = Error;
+
+    fn serialize_field<V>(&mut self, key: &'static str, value: &V) -> Result<()>
+    where
+        V: ?Sized + Serialize,
+    {
+        let ty_serializer = FieldTypeSerializer::new(self);
+        value.serialize(ty_serializer)?;
+
+        match M::AS_ENUM {
+            Variant::LittleEndian => self.writer.write_u16_le(key.len() as u16),
+            Variant::BigEndian => self.writer.write_u16_be(key.len() as u16),
+            Variant::Variable => self.writer.write_var_u32(key.len() as u32),
+        }?;
+
+        self.writer.write_all(key.as_bytes())?;
+        value.serialize(&mut **self)
+    }
+
+    #[inline]
+    fn end(self) -> Result<()> {
+        self.writer.write_u8(FieldType::End as u8)
+    }
+}
+
+struct FieldTypeSerializer<'a, W, F>
+where
+    W: Write,
+    F: VariantImpl,
+{
+    ser: &'a mut Serializer<W, F>,
+}
+
+impl<'a, W, F> FieldTypeSerializer<'a, W, F>
+where
+    W: Write,
+    F: VariantImpl,
+{
+    pub fn new(ser: &'a mut Serializer<W, F>) -> Self {
+        Self { ser }
+    }
+}
+
+impl<'a, W, F> ser::Serializer for FieldTypeSerializer<'a, W, F>
+where
+    W: Write,
+    F: VariantImpl,
+{
+    type Ok = ();
+    type Error = Error;
+    type SerializeSeq = Self;
+    type SerializeTuple = Self;
+    type SerializeTupleStruct = Impossible<(), Error>;
+    type SerializeTupleVariant = Impossible<(), Error>;
+    type SerializeMap = Self;
+    type SerializeStruct = Self;
+    type SerializeStructVariant = Impossible<(), Error>;
+
+    forward_unsupported!(char, u8, u16, u32, u64, i128);
+
+    #[inline]
+    fn serialize_bool(self, _v: bool) -> Result<()> {
+        self.ser.writer.write_u8(FieldType::Byte as u8)
+    }
+
+    #[inline]
+    fn serialize_i8(
+        self,
+        _v: i8,
+    ) -> std::result::Result<Self::Ok, Self::Error> {
+        self.ser.writer.write_u8(FieldType::Byte as u8)
+    }
+
+    #[inline]
+    fn serialize_i16(
+        self,
+        v: i16,
+    ) -> std::result::Result<Self::Ok, Self::Error> {
+        self.ser.writer.write_u8(FieldType::Short as u8)
+    }
+
+    fn serialize_i32(
+        self,
+        v: i32,
+    ) -> std::result::Result<Self::Ok, Self::Error> {
+        self.ser.writer.write_u8(FieldType::Int as u8)
+    }
+
+    fn serialize_i64(
+        self,
+        v: i64,
+    ) -> std::result::Result<Self::Ok, Self::Error> {
+        self.ser.writer.write_u8(FieldType::Long as u8)
+    }
+
+    fn serialize_f32(
+        self,
+        v: f32,
+    ) -> std::result::Result<Self::Ok, Self::Error> {
+        self.ser.writer.write_u8(FieldType::Float as u8)
+    }
+
+    fn serialize_f64(
+        self,
+        v: f64,
+    ) -> std::result::Result<Self::Ok, Self::Error> {
+        self.ser.writer.write_u8(FieldType::Double as u8)
+    }
+
+    fn serialize_str(
+        self,
+        v: &str,
+    ) -> std::result::Result<Self::Ok, Self::Error> {
+        self.ser.writer.write_u8(FieldType::String as u8)
+    }
+
+    fn serialize_bytes(
+        self,
+        v: &[u8],
+    ) -> std::result::Result<Self::Ok, Self::Error> {
+        self.ser.writer.write_u8(FieldType::ByteArray as u8)
+    }
+
+    fn serialize_none(self) -> std::result::Result<Self::Ok, Self::Error> {
+        todo!();
+    }
+
+    fn serialize_some<T: ?Sized>(
+        self,
+        value: &T,
+    ) -> std::result::Result<Self::Ok, Self::Error>
+    where
+        T: Serialize,
+    {
+        todo!()
+    }
+
+    fn serialize_unit(self) -> std::result::Result<Self::Ok, Self::Error> {
+        todo!()
+    }
+
+    fn serialize_unit_struct(
+        self,
+        name: &'static str,
+    ) -> std::result::Result<Self::Ok, Self::Error> {
+        todo!()
+    }
+
+    fn serialize_unit_variant(
+        self,
+        name: &'static str,
+        variant_index: u32,
+        variant: &'static str,
+    ) -> std::result::Result<Self::Ok, Self::Error> {
+        todo!()
+    }
+
+    fn serialize_newtype_struct<T: ?Sized>(
+        self,
+        name: &'static str,
+        value: &T,
+    ) -> std::result::Result<Self::Ok, Self::Error>
+    where
+        T: Serialize,
+    {
+        todo!()
+    }
+
+    fn serialize_newtype_variant<T: ?Sized>(
+        self,
+        name: &'static str,
+        variant_index: u32,
+        variant: &'static str,
+        value: &T,
+    ) -> std::result::Result<Self::Ok, Self::Error>
+    where
+        T: Serialize,
+    {
+        todo!()
+    }
+
+    fn serialize_seq(
+        self,
+        _len: Option<usize>,
+    ) -> std::result::Result<Self::SerializeSeq, Self::Error> {
+        self.ser.writer.write_u8(FieldType::List as u8)?;
+        Ok(self)
+    }
+
+    fn serialize_tuple(
+        self,
+        len: usize,
+    ) -> std::result::Result<Self::SerializeTuple, Self::Error> {
+        println!("list");
+        self.ser.writer.write_u8(FieldType::List as u8)?;
+        Ok(self)
+    }
+
+    fn serialize_tuple_struct(
+        self,
+        name: &'static str,
+        len: usize,
+    ) -> std::result::Result<Self::SerializeTupleStruct, Self::Error> {
+        todo!()
+    }
+
+    fn serialize_tuple_variant(
+        self,
+        name: &'static str,
+        variant_index: u32,
+        variant: &'static str,
+        len: usize,
+    ) -> std::result::Result<Self::SerializeTupleVariant, Self::Error> {
+        todo!()
+    }
+
+    #[inline]
+    fn serialize_map(
+        self,
+        _len: Option<usize>,
+    ) -> std::result::Result<Self::SerializeMap, Self::Error> {
+        self.ser.writer.write_u8(FieldType::Compound as u8)?;
+        Ok(self)
+    }
+
+    #[inline]
+    fn serialize_struct(
+        self,
+        _name: &'static str,
+        _len: usize,
+    ) -> std::result::Result<Self::SerializeStruct, Self::Error> {
+        self.ser.writer.write_u8(FieldType::Compound as u8)?;
+        Ok(self)
+    }
+
+    fn serialize_struct_variant(
+        self,
+        name: &'static str,
+        variant_index: u32,
+        variant: &'static str,
+        len: usize,
+    ) -> std::result::Result<Self::SerializeStructVariant, Self::Error> {
+        todo!()
+    }
+}
+
+impl<'a, W, F> SerializeSeq for FieldTypeSerializer<'a, W, F>
+where
+    W: Write,
+    F: VariantImpl,
+{
+    type Ok = ();
+    type Error = Error;
+
+    #[inline]
+    fn serialize_element<T>(&mut self, _element: &T) -> Result<()>
+    where
+        T: ?Sized + Serialize,
+    {
+        Ok(())
+    }
+
+    #[inline]
+    fn end(self) -> Result<()> {
+        Ok(())
+    }
+}
+
+impl<'a, W, F> SerializeTuple for FieldTypeSerializer<'a, W, F>
+where
+    W: Write,
+    F: VariantImpl,
+{
+    type Ok = ();
+    type Error = Error;
+
+    #[inline]
+    fn serialize_element<T>(&mut self, _element: &T) -> Result<()>
+    where
+        T: ?Sized + Serialize,
+    {
+        Ok(())
+    }
+
+    #[inline]
+    fn end(self) -> Result<()> {
+        Ok(())
+    }
+}
+
+impl<'a, W, F> SerializeMap for FieldTypeSerializer<'a, W, F>
+where
+    W: Write,
+    F: VariantImpl,
+{
+    type Ok = ();
+    type Error = Error;
+
+    #[inline]
+    fn serialize_key<K>(&mut self, _key: &K) -> Result<()>
+    where
+        K: ?Sized + Serialize,
+    {
+        Ok(())
+    }
+
+    #[inline]
+    fn serialize_value<V>(&mut self, _value: &V) -> Result<()>
+    where
+        V: ?Sized + Serialize,
+    {
+        Ok(())
+    }
+
+    #[inline]
+    fn end(self) -> Result<()> {
+        Ok(())
+    }
+}
+
+impl<'a, W, F> SerializeStruct for FieldTypeSerializer<'a, W, F>
+where
+    W: Write,
+    F: VariantImpl,
+{
+    type Ok = ();
+    type Error = Error;
+
+    #[inline]
+    fn serialize_field<V>(
+        &mut self,
+        _key: &'static str,
+        value: &V,
+    ) -> Result<()>
+    where
+        V: ?Sized + Serialize,
+    {
+        Ok(())
+    }
+
+    #[inline]
+    fn end(self) -> Result<()> {
+        Ok(())
     }
 }

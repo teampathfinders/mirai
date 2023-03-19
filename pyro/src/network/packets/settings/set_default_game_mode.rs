@@ -1,6 +1,6 @@
 
 use util::{Deserialize, Serialize, Result};
-use util::bytes::{BinaryReader, BinaryWriter, MutableBuffer, SharedBuffer, size_of_varint};
+use util::bytes::{BinaryReader, BinaryWrite, MutableBuffer, SharedBuffer, size_of_varint};
 
 use crate::ConnectedPacket;
 

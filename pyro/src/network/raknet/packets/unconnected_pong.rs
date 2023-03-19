@@ -1,5 +1,5 @@
 use std::io::Write;
-use util::bytes::{BinaryWriter, MutableBuffer};
+use util::bytes::{BinaryWrite, MutableBuffer};
 
 use crate::OFFLINE_MESSAGE_DATA;
 use util::Result;
@@ -33,10 +33,10 @@ impl Serialize for UnconnectedPong<'_> {
         buffer.write_u8(Self::ID);
         buffer.write_u64_be(self.time);
         buffer.write_u64_be(self.server_guid);
-        buffer.append(OFFLINE_MESSAGE_DATA);
+        buffer.write_all(OFFLINE_MESSAGE_DATA);
 
         buffer.write_u16_be(self.metadata.len() as u16);
-        buffer.append(self.metadata.as_bytes());
+        buffer.write_all(self.metadata.as_bytes());
 
         Ok(())
     }

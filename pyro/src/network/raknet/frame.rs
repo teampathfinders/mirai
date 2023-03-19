@@ -1,13 +1,9 @@
-
-
-
-
-
+use std::io::Write;
 use crate::Reliability;
 use util::pyassert;
 use util::Result;
 use util::{Deserialize, Serialize};
-use util::bytes::{BinaryReader, BinaryWriter, MutableBuffer, SharedBuffer};
+use util::bytes::{BinaryReader, BinaryWrite, MutableBuffer, SharedBuffer};
 
 /// Bit flag indicating that the packet is encapsulated in a frame.
 pub const CONNECTED_PEER_BIT_FLAG: u8 = 0x80;
@@ -184,7 +180,7 @@ impl Frame {
             buffer.write_u32_be(self.compound_index);
         }
 
-        buffer.append(self.body.as_ref());
+        buffer.write_all(self.body.as_ref());
         Ok(())
     }
 }

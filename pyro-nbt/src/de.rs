@@ -1,6 +1,12 @@
+use paste::paste;
+use std::any::TypeId;
 use std::fmt;
+use std::io::Read;
+use std::marker::PhantomData;
 
-use crate::FieldType;
+use crate::{
+    BigEndian, FieldType, LittleEndian, Variable, Variant, VariantImpl,
+};
 use serde::de::Unexpected::Seq;
 use serde::de::{DeserializeSeed, MapAccess, SeqAccess, Visitor};
 use serde::{de, Deserialize};
@@ -20,32 +26,45 @@ macro_rules! is_ty {
     };
 }
 
-#[derive(Debug, Copy, Clone, PartialEq, Eq)]
-pub enum Flavor {
-    Network,
-    LittleEndian,
-    BigEndian,
+macro_rules! forward_unsupported {
+    ($($ty: ident),+) => {
+        paste! {$(
+            #[inline]
+            fn [<deserialize_ $ty>]<V>(self, visitor: V) -> util::Result<V::Value>
+            where
+                V: Visitor<'de>
+            {
+                bail!(Unsupported, concat!("Deserialisation of `", stringify!($ty), "` is not supported"));
+            }
+        )+}
+    }
 }
 
 #[derive(Debug)]
-pub struct Deserializer<'de> {
-    flavor: Flavor,
+pub struct Deserializer<'de, F>
+where
+    F: VariantImpl,
+{
     input: SharedBuffer<'de>,
     next_ty: FieldType,
     is_key: bool,
+    _marker: PhantomData<F>,
 }
 
-impl<'de> Deserializer<'de> {
+impl<'de, F> Deserializer<'de, F>
+where
+    F: VariantImpl,
+{
     #[inline]
-    pub(crate) fn from_bytes(input: &'de [u8], flavor: Flavor) -> Self {
+    pub fn new(input: &'de [u8]) -> Self {
         let mut input = SharedBuffer::from(input);
         assert_eq!(input.read_u8().unwrap(), FieldType::Compound as u8);
 
         let mut de = Deserializer {
             input,
-            flavor,
             next_ty: FieldType::Compound,
             is_key: false,
+            _marker: PhantomData,
         };
 
         let _ = de.deserialize_raw_str().unwrap();
@@ -53,26 +72,11 @@ impl<'de> Deserializer<'de> {
     }
 
     #[inline]
-    pub(crate) fn from_le_bytes(input: &'de [u8]) -> Self {
-        Self::from_bytes(input, Flavor::LittleEndian)
-    }
-
-    #[inline]
-    pub(crate) fn from_be_bytes(input: &'de [u8]) -> Self {
-        Self::from_bytes(input, Flavor::BigEndian)
-    }
-
-    #[inline]
-    pub(crate) fn from_network_bytes(input: &'de [u8]) -> Self {
-        Self::from_bytes(input, Flavor::Network)
-    }
-
-    #[inline]
     fn deserialize_raw_str(&mut self) -> Result<&str> {
-        let len = match self.flavor {
-            Flavor::BigEndian => self.input.read_u16_be()? as u32,
-            Flavor::LittleEndian => self.input.read_u16_le()? as u32,
-            Flavor::Network => self.input.read_var_u32()?,
+        let len = match F::AS_ENUM {
+            Variant::BigEndian => self.input.read_u16_be()? as u32,
+            Variant::LittleEndian => self.input.read_u16_le()? as u32,
+            Variant::Variable => self.input.read_var_u32()?,
         };
 
         let data = self.input.take_n(len as usize)?;
@@ -83,12 +87,13 @@ impl<'de> Deserializer<'de> {
 }
 
 #[inline]
-pub fn from_bytes<'a, T>(b: &'a [u8], flavor: Flavor) -> Result<(T, usize)>
+fn from_bytes<'a, T, F>(b: &'a [u8]) -> Result<(T, usize)>
 where
     T: Deserialize<'a>,
+    F: VariantImpl,
 {
-    let mut deserializer = Deserializer::from_bytes(b, flavor);
-    let start = deserializer.input.len();
+    let start = b.len();
+    let mut deserializer = Deserializer::<F>::new(b);
     let output = T::deserialize(&mut deserializer)?;
     let end = deserializer.input.len();
 
@@ -100,7 +105,7 @@ pub fn from_le_bytes<'a, T>(b: &'a [u8]) -> Result<(T, usize)>
 where
     T: Deserialize<'a>,
 {
-    from_bytes(b, Flavor::LittleEndian)
+    from_bytes::<T, LittleEndian>(b)
 }
 
 #[inline]
@@ -108,19 +113,24 @@ pub fn from_be_bytes<'a, T>(b: &'a [u8]) -> Result<(T, usize)>
 where
     T: Deserialize<'a>,
 {
-    from_bytes(b, Flavor::BigEndian)
+    from_bytes::<T, BigEndian>(b)
 }
 
 #[inline]
-pub fn from_net_bytes<'a, T>(b: &'a [u8]) -> Result<(T, usize)>
+pub fn from_var_bytes<'a, T>(b: &'a [u8]) -> Result<(T, usize)>
 where
     T: Deserialize<'a>,
 {
-    from_bytes(b, Flavor::Network)
+    from_bytes::<T, Variable>(b)
 }
 
-impl<'de, 'a> de::Deserializer<'de> for &'a mut Deserializer<'de> {
+impl<'de, 'a, F> de::Deserializer<'de> for &'a mut Deserializer<'de, F>
+where
+    F: VariantImpl,
+{
     type Error = Error;
+
+    forward_unsupported!(char, u8, u16, u32, u64, u128);
 
     fn deserialize_any<V>(self, visitor: V) -> Result<V::Value>
     where
@@ -179,9 +189,11 @@ impl<'de, 'a> de::Deserializer<'de> for &'a mut Deserializer<'de> {
     {
         is_ty!(Short, self.next_ty);
 
-        let n = match self.flavor {
-            Flavor::BigEndian => self.input.read_i16_be(),
-            Flavor::LittleEndian | Flavor::Network => self.input.read_i16_le(),
+        let n = match F::AS_ENUM {
+            Variant::BigEndian => self.input.read_i16_be(),
+            Variant::LittleEndian | Variant::Variable => {
+                self.input.read_i16_le()
+            }
         }?;
 
         visitor.visit_i16(n)
@@ -194,9 +206,10 @@ impl<'de, 'a> de::Deserializer<'de> for &'a mut Deserializer<'de> {
     {
         is_ty!(Int, self.next_ty);
 
-        let n = match self.flavor {
-            Flavor::BigEndian => self.input.read_i32_be(),
-            Flavor::LittleEndian | Flavor::Network => self.input.read_i32_le(),
+        let n = match F::AS_ENUM {
+            Variant::BigEndian => self.input.read_i32_be(),
+            Variant::LittleEndian => self.input.read_i32_le(),
+            Variant::Variable => self.input.read_var_i32(),
         }?;
 
         visitor.visit_i32(n)
@@ -209,40 +222,13 @@ impl<'de, 'a> de::Deserializer<'de> for &'a mut Deserializer<'de> {
     {
         is_ty!(Long, self.next_ty);
 
-        let n = match self.flavor {
-            Flavor::BigEndian => self.input.read_i64_be(),
-            Flavor::LittleEndian | Flavor::Network => self.input.read_i64_le(),
+        let n = match F::AS_ENUM {
+            Variant::BigEndian => self.input.read_i64_be(),
+            Variant::LittleEndian => self.input.read_i64_le(),
+            Variant::Variable => self.input.read_var_i64(),
         }?;
 
         visitor.visit_i64(n)
-    }
-
-    fn deserialize_u8<V>(self, visitor: V) -> Result<V::Value>
-    where
-        V: Visitor<'de>,
-    {
-        bail!(Unsupported, "NBT does not support `u8`, use `i8` instead")
-    }
-
-    fn deserialize_u16<V>(self, visitor: V) -> Result<V::Value>
-    where
-        V: Visitor<'de>,
-    {
-        bail!(Unsupported, "NBT does not support `u16`, use `i16` instead")
-    }
-
-    fn deserialize_u32<V>(self, visitor: V) -> Result<V::Value>
-    where
-        V: Visitor<'de>,
-    {
-        bail!(Unsupported, "NBT does not support `u32`, use `i32` instead")
-    }
-
-    fn deserialize_u64<V>(self, visitor: V) -> Result<V::Value>
-    where
-        V: Visitor<'de>,
-    {
-        bail!(Unsupported, "NBT does not support `u64`, use `i64` instead")
     }
 
     #[inline]
@@ -252,8 +238,8 @@ impl<'de, 'a> de::Deserializer<'de> for &'a mut Deserializer<'de> {
     {
         is_ty!(Float, self.next_ty);
 
-        let n = match self.flavor {
-            Flavor::BigEndian => self.input.read_f32_be(),
+        let n = match F::AS_ENUM {
+            Variant::BigEndian => self.input.read_f32_be(),
             _ => self.input.read_f32_le(),
         }?;
 
@@ -267,22 +253,12 @@ impl<'de, 'a> de::Deserializer<'de> for &'a mut Deserializer<'de> {
     {
         is_ty!(Double, self.next_ty);
 
-        let n = match self.flavor {
-            Flavor::BigEndian => self.input.read_f64_be(),
+        let n = match F::AS_ENUM {
+            Variant::BigEndian => self.input.read_f64_be(),
             _ => self.input.read_f64_le(),
         }?;
 
         visitor.visit_f64(n)
-    }
-
-    fn deserialize_char<V>(self, visitor: V) -> Result<V::Value>
-    where
-        V: Visitor<'de>,
-    {
-        bail!(
-            Unsupported,
-            "NBT does not support unicode characters, use String instead"
-        )
     }
 
     #[inline]
@@ -290,10 +266,10 @@ impl<'de, 'a> de::Deserializer<'de> for &'a mut Deserializer<'de> {
     where
         V: Visitor<'de>,
     {
-        let len = match self.flavor {
-            Flavor::BigEndian => self.input.read_u16_be()? as u32,
-            Flavor::LittleEndian => self.input.read_u16_le()? as u32,
-            Flavor::Network => self.input.read_var_u32()?,
+        let len = match F::AS_ENUM {
+            Variant::BigEndian => self.input.read_u16_be()? as u32,
+            Variant::LittleEndian => self.input.read_u16_le()? as u32,
+            Variant::Variable => self.input.read_var_u32()?,
         };
 
         let data = self.input.take_n(len as usize)?;
@@ -309,10 +285,10 @@ impl<'de, 'a> de::Deserializer<'de> for &'a mut Deserializer<'de> {
     {
         is_ty!(String, self.next_ty);
 
-        let len = match self.flavor {
-            Flavor::BigEndian => self.input.read_u16_be()? as u32,
-            Flavor::LittleEndian => self.input.read_u16_le()? as u32,
-            Flavor::Network => self.input.read_var_u32()?,
+        let len = match F::AS_ENUM {
+            Variant::BigEndian => self.input.read_u16_be()? as u32,
+            Variant::LittleEndian => self.input.read_u16_le()? as u32,
+            Variant::Variable => self.input.read_var_u32()?,
         };
 
         let data = self.input.take_n(len as usize)?;
@@ -425,7 +401,7 @@ impl<'de, 'a> de::Deserializer<'de> for &'a mut Deserializer<'de> {
     #[inline]
     fn deserialize_struct<V>(
         self,
-        name: &'static str,
+        _name: &'static str,
         _fields: &'static [&'static str],
         visitor: V,
     ) -> Result<V::Value>
@@ -439,7 +415,7 @@ impl<'de, 'a> de::Deserializer<'de> for &'a mut Deserializer<'de> {
         self,
         _name: &'static str,
         _variants: &'static [&'static str],
-        visitor: V,
+        _visitor: V,
     ) -> Result<V::Value>
     where
         V: Visitor<'de>,
@@ -462,19 +438,31 @@ impl<'de, 'a> de::Deserializer<'de> for &'a mut Deserializer<'de> {
     {
         self.deserialize_any(visitor)
     }
+
+    #[inline]
+    fn is_human_readable(&self) -> bool {
+        false
+    }
 }
 
 #[derive(Debug)]
-struct SeqDeserializer<'a, 'de: 'a> {
-    de: &'a mut Deserializer<'de>,
+struct SeqDeserializer<'a, 'de: 'a, F>
+where
+    F: VariantImpl,
+{
+    de: &'a mut Deserializer<'de, F>,
     ty: FieldType,
     remaining: u32,
+    _marker: PhantomData<F>,
 }
 
-impl<'de, 'a> SeqDeserializer<'a, 'de> {
+impl<'de, 'a, F> SeqDeserializer<'a, 'de, F>
+where
+    F: VariantImpl,
+{
     #[inline]
     pub fn new(
-        de: &'a mut Deserializer<'de>,
+        de: &'a mut Deserializer<'de, F>,
         ty: FieldType,
         expected_len: u32,
     ) -> Result<Self> {
@@ -483,21 +471,24 @@ impl<'de, 'a> SeqDeserializer<'a, 'de> {
         // ty is not read in here because the x_array types don't have a type prefix.
 
         de.next_ty = ty;
-        let remaining = match de.flavor {
-            Flavor::BigEndian => de.input.read_i32_be()? as u32,
-            Flavor::LittleEndian => de.input.read_i32_le()? as u32,
-            Flavor::Network => de.input.read_var_u32()?,
+        let remaining = match F::AS_ENUM {
+            Variant::BigEndian => de.input.read_i32_be()? as u32,
+            Variant::LittleEndian => de.input.read_i32_le()? as u32,
+            Variant::Variable => de.input.read_var_u32()?,
         };
 
         if expected_len != 0 && expected_len != remaining {
             bail!(Malformed, "expected sequence of length {expected_len}, got length {remaining}");
         }
 
-        Ok(Self { de, ty, remaining })
+        Ok(Self { de, ty, remaining, _marker: PhantomData })
     }
 }
 
-impl<'de, 'a> SeqAccess<'de> for SeqDeserializer<'a, 'de> {
+impl<'de, 'a, F> SeqAccess<'de> for SeqDeserializer<'a, 'de, F>
+where
+    F: VariantImpl,
+{
     type Error = Error;
 
     #[inline]
@@ -517,18 +508,29 @@ impl<'de, 'a> SeqAccess<'de> for SeqDeserializer<'a, 'de> {
 }
 
 #[derive(Debug)]
-struct MapDeserializer<'a, 'de: 'a> {
-    de: &'a mut Deserializer<'de>,
+struct MapDeserializer<'a, 'de: 'a, F>
+where
+    F: VariantImpl,
+{
+    de: &'a mut Deserializer<'de, F>,
+    _marker: PhantomData<F>,
 }
 
-impl<'de, 'a> From<&'a mut Deserializer<'de>> for MapDeserializer<'a, 'de> {
+impl<'de, 'a, F> From<&'a mut Deserializer<'de, F>>
+    for MapDeserializer<'a, 'de, F>
+where
+    F: VariantImpl,
+{
     #[inline]
-    fn from(v: &'a mut Deserializer<'de>) -> Self {
-        Self { de: v }
+    fn from(v: &'a mut Deserializer<'de, F>) -> Self {
+        Self { de: v, _marker: PhantomData }
     }
 }
 
-impl<'de, 'a> MapAccess<'de> for MapDeserializer<'a, 'de> {
+impl<'de, 'a, F> MapAccess<'de> for MapDeserializer<'a, 'de, F>
+where
+    F: VariantImpl,
+{
     type Error = Error;
 
     #[inline]
@@ -557,119 +559,5 @@ impl<'de, 'a> MapAccess<'de> for MapDeserializer<'a, 'de> {
     {
         debug_assert_ne!(self.de.next_ty, FieldType::End);
         seed.deserialize(&mut *self.de)
-    }
-}
-
-////////////////////////////////////////////////////////////////////////////////////////////////////
-
-#[cfg(test)]
-mod test {
-    use serde::Deserialize;
-
-    use crate::{de::Deserializer, from_be_bytes};
-
-    const BIGTEST_NBT: &[u8] = include_bytes!("../test/bigtest.nbt");
-    const HELLO_WORLD_NBT: &[u8] = include_bytes!("../test/hello_world.nbt");
-    const PLAYER_NAN_VALUE_NBT: &[u8] =
-        include_bytes!("../test/player_nan_value.nbt");
-
-    #[test]
-    fn read_bigtest_nbt() {
-        #[derive(Deserialize, Debug, PartialEq)]
-        struct Food {
-            name: String,
-            value: f32,
-        }
-
-        #[derive(Deserialize, Debug, PartialEq)]
-        struct Nested {
-            egg: Food,
-            ham: Food,
-        }
-
-        #[derive(Deserialize, Debug, PartialEq)]
-        struct ListCompound {
-            #[serde(rename = "created-on")]
-            created_on: i64,
-            name: String,
-        }
-
-        #[derive(Deserialize, Debug, PartialEq)]
-        struct AllTypes {
-            #[serde(rename = "nested compound test")]
-            nested: Nested,
-            #[serde(rename = "intTest")]
-            int_test: i32,
-            #[serde(rename = "byteTest")]
-            byte_test: i8,
-            #[serde(rename = "stringTest")]
-            string_test: String,
-            #[serde(rename = "listTest (long)")]
-            long_list_test: [i64; 5],
-            #[serde(rename = "doubleTest")]
-            double_test: f64,
-            #[serde(rename = "floatTest")]
-            float_test: f32,
-            #[serde(rename = "longTest")]
-            long_test: i64,
-            #[serde(rename = "listTest (compound)")]
-            compound_list_test: (ListCompound, ListCompound),
-            #[serde(
-                rename = "byteArrayTest (the first 1000 values of (n*n*255+n*7)%100, starting with n=0 (0, 62, 34, 16, 8, ...))"
-            )]
-            byte_array_test: Vec<i8>,
-            #[serde(rename = "shortTest")]
-            short_test: i16,
-        }
-
-        let decoded: AllTypes = from_be_bytes(BIGTEST_NBT).unwrap().0;
-        println!("{decoded:?}");
-    }
-
-    #[test]
-    fn read_hello_world_nbt() {
-        #[derive(Deserialize, Debug, PartialEq)]
-        struct HelloWorld {
-            name: String,
-        }
-
-        let decoded: HelloWorld = from_be_bytes(HELLO_WORLD_NBT).unwrap().0;
-        assert_eq!(decoded, HelloWorld { name: String::from("Bananrama") });
-
-        dbg!(decoded);
-    }
-
-    #[test]
-    fn read_player_nan_value_nbt() {
-        #[derive(Deserialize, Debug, PartialEq)]
-        struct Player {
-            #[serde(rename = "Pos")]
-            pos: [f64; 3],
-            #[serde(rename = "Motion")]
-            motion: [f64; 3],
-            #[serde(rename = "OnGround")]
-            on_ground: bool,
-            #[serde(rename = "DeathTime")]
-            death_time: i16,
-            #[serde(rename = "Air")]
-            air: i16,
-            #[serde(rename = "Health")]
-            health: i16,
-            #[serde(rename = "FallDistance")]
-            fall_distance: f32,
-            #[serde(rename = "AttackTime")]
-            attack_time: i16,
-            #[serde(rename = "HurtTime")]
-            hurt_time: i16,
-            #[serde(rename = "Fire")]
-            fire: i16,
-            #[serde(rename = "Rotation")]
-            rotation: [f32; 2],
-        }
-
-        let decoded: (Player, usize) =
-            from_be_bytes(PLAYER_NAN_VALUE_NBT).unwrap();
-
-        dbg!(decoded);
     }
 }

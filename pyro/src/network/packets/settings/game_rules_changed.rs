@@ -1,7 +1,7 @@
 use std::fmt;
 
 use util::{Serialize, Result, bail};
-use util::bytes::{BinaryWriter, MutableBuffer, size_of_varint, VarInt, VarString};
+use util::bytes::{BinaryWrite, MutableBuffer, size_of_varint, VarInt, VarString};
 
 use crate::{command::ParsedArgument, network::ConnectedPacket};
 

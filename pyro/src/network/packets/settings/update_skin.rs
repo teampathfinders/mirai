@@ -1,7 +1,7 @@
 
 use util::{Serialize, Result, Deserialize};
 use uuid::Uuid;
-use util::bytes::{BinaryWriter, MutableBuffer, SharedBuffer};
+use util::bytes::{BinaryWrite, MutableBuffer, SharedBuffer};
 use crate::{Skin, ConnectedPacket};
 
 #[derive(Debug, Clone)]

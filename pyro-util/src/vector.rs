@@ -1,4 +1,4 @@
-use crate::bytes::{BinaryWriter, MutableBuffer, VarInt};
+use crate::bytes::{BinaryWrite, MutableBuffer, VarInt};
 use std::ops::{Deref, DerefMut};
 
 /// Type and size independent vector type

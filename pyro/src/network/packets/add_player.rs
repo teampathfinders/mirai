@@ -2,7 +2,7 @@
 
 use util::{Vector3f, Serialize, Result};
 use uuid::Uuid;
-use util::bytes::{BinaryWriter, MutableBuffer};
+use util::bytes::{BinaryWrite, MutableBuffer};
 use crate::CommandPermissionLevel;
 use crate::{DeviceOS, ItemStack, PermissionLevel};
 

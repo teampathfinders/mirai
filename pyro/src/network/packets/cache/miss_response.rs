@@ -1,6 +1,6 @@
 
 use util::{Serialize, Result};
-use util::bytes::{BinaryWriter, MutableBuffer};
+use util::bytes::{BinaryWrite, MutableBuffer};
 use crate::ConnectedPacket;
 use crate::network::cache_blob::CacheBlob;
 

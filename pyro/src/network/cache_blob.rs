@@ -1,4 +1,5 @@
-use util::bytes::{BinaryWriter, MutableBuffer, SharedBuffer};
+use std::io::Write;
+use util::bytes::{BinaryWrite, MutableBuffer, SharedBuffer};
 use util::Result;
 
 /// A blob used in the cache protocol.
@@ -12,8 +13,8 @@ pub struct CacheBlob<'a> {
 
 impl<'a> CacheBlob<'a> {
     pub fn serialize(&self, buffer: &mut MutableBuffer) -> Result<()> {
-        buffer.write_u64_le(self.hash);
-        buffer.append(&self.payload);
+        buffer.write_u64_le(self.hash)?;
+        buffer.write_all(&self.payload)?;
 
         Ok(())
     }

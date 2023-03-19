@@ -1,6 +1,6 @@
 
 use util::{Result};
-use util::bytes::{BinaryWriter, MutableBuffer};
+use util::bytes::{BinaryWrite, MutableBuffer};
 
 use util::Serialize;
 

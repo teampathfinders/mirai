@@ -1,7 +1,7 @@
 
 use util::{Serialize, Result};
 use uuid::Uuid;
-use util::bytes::{BinaryWriter, MutableBuffer, size_of_varint};
+use util::bytes::{BinaryWrite, MutableBuffer, size_of_varint};
 use crate::DeviceOS;
 use crate::Skin;
 

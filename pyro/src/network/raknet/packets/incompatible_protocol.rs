@@ -1,6 +1,6 @@
 use crate::{OFFLINE_MESSAGE_DATA, RAKNET_VERSION};
 use std::io::Write;
-use util::bytes::{BinaryWriter, MutableBuffer};
+use util::bytes::{BinaryWrite, MutableBuffer};
 use util::Result;
 use util::Serialize;
 
@@ -29,7 +29,7 @@ impl Serialize for IncompatibleProtocol {
     fn serialize(&self, buffer: &mut MutableBuffer) -> Result<()> {
         buffer.write_u8(Self::ID);
         buffer.write_u8(RAKNET_VERSION);
-        buffer.append(OFFLINE_MESSAGE_DATA);
+        buffer.write_all(OFFLINE_MESSAGE_DATA);
         buffer.write_u64_be(self.server_guid);
 
         Ok(())

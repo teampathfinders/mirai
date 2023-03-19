@@ -1,7 +1,8 @@
-
+use std::io::Write;
 use dashmap::DashMap;
-use util::bytes::{BinaryWriter, MutableBuffer};
+use util::bytes::{BinaryWrite, MutableBuffer};
 
+use util::Result;
 use crate::{Frame};
 
 
@@ -21,7 +22,7 @@ impl CompoundCollector {
     ///
     /// If this fragment makes the compound complete, all fragments will be merged
     /// and the completed packet will be returned.
-    pub fn insert(&self, frame: Frame) -> Option<Frame> {
+    pub fn insert(&self, frame: Frame) -> Result<Option<Frame>> {
         // Save compound_id, because the frame will be moved.
         let compound_id = frame.compound_id;
         let is_completed = {
@@ -40,7 +41,7 @@ impl CompoundCollector {
 
             // Verify that the fragment index is valid
             if frame.compound_index >= frame.compound_size {
-                return None;
+                return Ok(None);
             }
 
             // Save compound_index, because frame is moved by the Some constructor.
@@ -65,11 +66,18 @@ impl CompoundCollector {
                     .fold(0, |acc, f| acc + f.as_ref().unwrap().body.len())
             );
 
+            let mut failed = None;
             fragments
                 .iter()
                 .for_each(|b| if let Some(b) = b {
-                    merged.append(b.body.as_slice())
+                    if let Err(e) = merged.write_all(b.body.as_slice()) {
+                        failed = Some(e);
+                    }
                 });
+
+            if let Some(e) = failed {
+                return Err(e.into());
+            }
 
             let mut frame = fragments[0].take().unwrap();
             frame.body = merged;
@@ -80,9 +88,9 @@ impl CompoundCollector {
             // Set reliability to unreliable to prevent duplicated acknowledgements
             // frame.reliability = Reliability::Unreliable;
 
-            return Some(frame);
+            return Ok(Some(frame));
         }
 
-        None
+        Ok(None)
     }
 }

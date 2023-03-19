@@ -1,6 +1,6 @@
 use crate::OFFLINE_MESSAGE_DATA;
 use std::io::Write;
-use util::bytes::{BinaryWriter, MutableBuffer};
+use util::bytes::{BinaryWrite, MutableBuffer};
 use util::Result;
 use util::Serialize;
 
@@ -27,7 +27,7 @@ impl OpenConnectionReply1 {
 impl Serialize for OpenConnectionReply1 {
     fn serialize(&self, buffer: &mut MutableBuffer) -> Result<()> {
         buffer.write_u8(Self::ID);
-        buffer.append(OFFLINE_MESSAGE_DATA);
+        buffer.write_all(OFFLINE_MESSAGE_DATA);
         buffer.write_u64_be(self.server_guid);
         // Disable security, required for login sequence.
         // Encryption will be enabled later on.
