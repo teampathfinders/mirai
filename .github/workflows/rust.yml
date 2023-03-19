@@ -18,15 +18,17 @@ jobs:
     runs-on: ${{ matrix.os }}
 
     steps:
+    - run: rustup toolchain install 1.65.0 --profile minimal
+    
     - uses: actions/checkout@v3
       with:
         submodules: recursive
-    - name: Cache
-      uses: actions/cache@v2.1.8
-      with:
-        path: dependencies
-        key: ${{ runner.os }}-${{ hashFiles('Cargo.lock') }}
+        
+    - name: Rust Cache
+      uses: Swatinem/rust-cache@v2.2.1
+
     - name: Build
       run: cargo build
+      
     - name: Run tests
       run: cargo test
