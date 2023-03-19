@@ -3,6 +3,18 @@ name: Deploy docs
 on:
   push:
     branches: [ "master" ]
+    
+  # Allow triggering manual builds
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency: 
+  group: "pages-deployment"
+  cancel-in-progress: false
 
 env:
   CARGO_TERM_COLOR: always
@@ -10,7 +22,7 @@ env:
 jobs:
   build:
     runs-on: ubuntu-latest
-
+    
     steps:
     - uses: actions/checkout@v3
     
@@ -20,7 +32,25 @@ jobs:
     - name: Generate documentation
       run: RUSTFLAGS='--cfg skip_leveldb' cargo doc --no-deps
       
-    - name: Deploy
-      uses: JamesIves/github-pages-deploy-action@v4
+    - name: Add root index
+      run: |
+        cd target/doc
+        touch index.html
+        echo "<meta http-equiv="refresh" content="0; url=https://repo.github.io/folder/index.html">" > index.html
+      
+    - name: Artifact upload
+      uses: actions/upload-pages-artifact@v1
       with:
-        folder: target/doc
+        path: target/doc
+    
+  deploy:
+    needs: build
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy to Github Pages
+        id: deployment
+        uses: actions/deploy-pages@v1
