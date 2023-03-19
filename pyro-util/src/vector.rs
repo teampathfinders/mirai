@@ -1,10 +1,12 @@
 use crate::bytes::{BinaryWrite, MutableBuffer, VarInt};
 use std::ops::{Deref, DerefMut};
+use crate::Result;
 
 /// Type and size independent vector type
 #[derive(Debug, Clone)]
 #[repr(C)]
 pub struct Vector<T, const N: usize> {
+    /// Generically-sized array of components of type `T` and size `N`.
     components: [T; N],
 }
 
@@ -31,75 +33,200 @@ impl<T, const N: usize> From<[T; N]> for Vector<T, N> {
 }
 
 impl<const N: usize> Vector<f32, N> {
-    pub fn serialize(&self, buffer: &mut MutableBuffer) {
+    pub fn serialize(&self, buffer: &mut MutableBuffer) -> Result<()> {
         for i in 0..N {
-            buffer.write_f32_le(self.components[i]);
+            buffer.write_f32_le(self.components[i])?;
         }
+        Ok(())
     }
 }
 
+/// Maps a 1-vector to directly-accessible fields.
+///
+/// Internally, [`Vector`] stores its components as an array to allow for generic size.
+/// The components can be retrieved from the vector using the [`components_*`](Vector::components)
+/// family of methods.
+///
+/// This however, provides an alternate implementation that provides direct access to fields instead.
+/// Under the hood, this is implemented using [`Deref`] and [`DerefMut`] implementations for each
+/// vector arity up to 4.
+///
+/// The compiler initially cannot these fields on the vector and therefore looks at the
+/// deref implementations. The deref implementations transmute the vector array to one of these
+/// field structs.
+///
+/// # Example
+///
+/// ```rust
+/// # use pyro_util::Vector;
+/// # fn main() { ///
+/// let mut vec = Vector::from([0]);
+/// vec.x = 1;
+///
+/// assert_eq!(vec, Vector::from([1]));
+/// # }
+/// ```
 #[repr(C)]
-pub struct Vector1Accessors<T> {
+pub struct VectorFields1<T> {
     pub x: T,
 }
 
 impl<T> Deref for Vector<T, 1> {
-    type Target = Vector1Accessors<T>;
+    type Target = VectorFields1<T>;
 
     fn deref(&self) -> &Self::Target {
-        unsafe { &*(self as *const _ as *const Vector1Accessors<T>) }
+        // SAFETY: `Vector<T, 1>` and `VectorFields1<T>` are guaranteed to have the same
+        // layout due to the `repr(C)` attribute.
+        // It is therefore safe to cast from one to the other
+        unsafe { &*(self as *const _ as *const VectorFields1<T>) }
     }
 }
 
 impl<T> DerefMut for Vector<T, 1> {
     fn deref_mut(&mut self) -> &mut Self::Target {
-        unsafe { &mut *(self as *mut _ as *mut Vector1Accessors<T>) }
+        // SAFETY: `Vector<T, 1>` and `VectorFields1<T>` are guaranteed to have the same
+        // layout due to the `repr(C)` attribute.
+        // It is therefore safe to cast from one to the other
+        unsafe { &mut *(self as *mut _ as *mut VectorFields1<T>) }
     }
 }
 
+/// Maps a 2-vector to directly-accessible fields.
+///
+/// Internally, [`Vector`] stores its components as an array to allow for generic size.
+/// The components can be retrieved from the vector using the [`components_*`](Vector::components)
+/// family of methods.
+///
+/// This however, provides an alternate implementation that provides direct access to fields instead.
+/// Under the hood, this is implemented using [`Deref`] and [`DerefMut`] implementations for each
+/// vector arity up to 4.
+///
+/// The compiler initially cannot these fields on the vector and therefore looks at the
+/// deref implementations. The deref implementations transmute the vector array to one of these
+/// field structs.
+///
+/// # Example
+///
+/// ```rust
+/// # use pyro_util::Vector;
+/// # fn main() { ///
+/// let mut vec = Vector::from([0, 1]);
+/// vec.x = 1;
+/// vec.y = 2;
+///
+/// assert_eq!(vec, Vector::from([1, 2]));
+/// # }
+/// ```
 #[repr(C)]
-pub struct Vector2Accessors<T> {
+pub struct VectorFields2<T> {
     pub x: T,
     pub y: T,
 }
 
 impl<T> Deref for Vector<T, 2> {
-    type Target = Vector2Accessors<T>;
+    type Target = VectorFields2<T>;
 
     fn deref(&self) -> &Self::Target {
-        unsafe { &*(self as *const _ as *const Vector2Accessors<T>) }
+        // SAFETY: `Vector<T, 2>` and `VectorFields2<T>` are guaranteed to have the same
+        // layout due to the `repr(C)` attribute.
+        // It is therefore safe to cast from one to the other
+        unsafe { &*(self as *const _ as *const VectorFields2<T>) }
     }
 }
 
 impl<T> DerefMut for Vector<T, 2> {
     fn deref_mut(&mut self) -> &mut Self::Target {
-        unsafe { &mut *(self as *mut _ as *mut Vector2Accessors<T>) }
+        // SAFETY: `Vector<T, 2>` and `VectorFields2<T>` are guaranteed to have the same
+        // layout due to the `repr(C)` attribute.
+        // It is therefore safe to cast from one to the other
+        unsafe { &mut *(self as *mut _ as *mut VectorFields2<T>) }
     }
 }
 
+/// Maps a 3-vector to directly-accessible fields.
+///
+/// Internally, [`Vector`] stores its components as an array to allow for generic size.
+/// The components can be retrieved from the vector using the [`components_*`](Vector::components)
+/// family of methods.
+///
+/// This however, provides an alternate implementation that provides direct access to fields instead.
+/// Under the hood, this is implemented using [`Deref`] and [`DerefMut`] implementations for each
+/// vector arity up to 4.
+///
+/// The compiler initially cannot these fields on the vector and therefore looks at the
+/// deref implementations. The deref implementations transmute the vector array to one of these
+/// field structs.
+///
+/// # Example
+///
+/// ```rust
+/// # use pyro_util::Vector;
+/// # fn main() { ///
+/// let mut vec = Vector::from([0, 1, 2]);
+/// vec.x = 1;
+/// vec.y = 2;
+/// vec.z = 3;
+///
+/// assert_eq!(vec, Vector::from([1, 2, 3]));
+/// # }
+/// ```
 #[repr(C)]
-pub struct Vector3Accessors<T> {
+pub struct VectorFields3<T> {
     pub x: T,
     pub y: T,
     pub z: T,
 }
 
 impl<T> Deref for Vector<T, 3> {
-    type Target = Vector3Accessors<T>;
+    type Target = VectorFields3<T>;
 
     fn deref(&self) -> &Self::Target {
-        unsafe { &*(self as *const _ as *const Vector3Accessors<T>) }
+        // SAFETY: `Vector<T, 3>` and `VectorFields3<T>` are guaranteed to have the same
+        // layout due to the `repr(C)` attribute.
+        // It is therefore safe to cast from one to the other
+        unsafe { &*(self as *const _ as *const VectorFields3<T>) }
     }
 }
 
 impl<T> DerefMut for Vector<T, 3> {
     fn deref_mut(&mut self) -> &mut Self::Target {
-        unsafe { &mut *(self as *mut _ as *mut Vector3Accessors<T>) }
+        // SAFETY: `Vector<T, 3>` and `VectorFields3<T>` are guaranteed to have the same
+        // layout due to the `repr(C)` attribute.
+        // It is therefore safe to cast from one to the other
+        unsafe { &mut *(self as *mut _ as *mut VectorFields3<T>) }
     }
 }
 
+/// Maps a 4-vector to directly-accessible fields.
+///
+/// Internally, [`Vector`] stores its components as an array to allow for generic size.
+/// The components can be retrieved from the vector using the [`components_*`](Vector::components)
+/// family of methods.
+///
+/// This however, provides an alternate implementation that provides direct access to fields instead.
+/// Under the hood, this is implemented using [`Deref`] and [`DerefMut`] implementations for each
+/// vector arity up to 4.
+///
+/// The compiler initially cannot these fields on the vector and therefore looks at the
+/// deref implementations. The deref implementations transmute the vector array to one of these
+/// field structs.
+///
+/// # Example
+///
+/// ```rust
+/// # use pyro_util::Vector;
+/// # fn main() { ///
+/// let mut vec = Vector::from([0, 1, 2, 3]);
+/// vec.x = 1;
+/// vec.y = 2;
+/// vec.z = 3;
+/// vec.w = 4;
+///
+/// assert_eq!(vec, Vector::from([1, 2, 3, 4]));
+/// # }
+/// ```
 #[repr(C)]
-pub struct Vector4Accessors<T> {
+pub struct VectorFields4<T> {
     pub x: T,
     pub y: T,
     pub z: T,
@@ -107,16 +234,22 @@ pub struct Vector4Accessors<T> {
 }
 
 impl<T> Deref for Vector<T, 4> {
-    type Target = Vector4Accessors<T>;
+    type Target = VectorFields4<T>;
 
     fn deref(&self) -> &Self::Target {
-        unsafe { &*(self as *const _ as *const Vector4Accessors<T>) }
+        // SAFETY: `Vector<T, 4>` and `VectorFields4<T>` are guaranteed to have the same
+        // layout due to the `repr(C)` attribute.
+        // It is therefore safe to cast from one to the other
+        unsafe { &*(self as *const _ as *const VectorFields4<T>) }
     }
 }
 
 impl<T> DerefMut for Vector<T, 4> {
     fn deref_mut(&mut self) -> &mut Self::Target {
-        unsafe { &mut *(self as *mut _ as *mut Vector4Accessors<T>) }
+        // SAFETY: `Vector<T, 4>` and `VectorFields4<T>` are guaranteed to have the same
+        // layout due to the `repr(C)` attribute.
+        // It is therefore safe to cast from one to the other
+        unsafe { &mut *(self as *mut _ as *mut VectorFields4<T>) }
     }
 }
 
