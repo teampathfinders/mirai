@@ -38,7 +38,7 @@ jobs:
       uses: actions/upload-artifact@main
       with:
         name: ${{ inputs.name }}
-        path: ${{ runner.temp}/artifact.rar
+        path: ${{ runner.temp }}/artifact.tar
         retention-days: ${{ inputs.retention-days }}
     
   deploy:
