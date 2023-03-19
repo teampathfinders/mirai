@@ -5,11 +5,7 @@ fn main() {
         .build();
 
     println!(
-        "cargo:rustc-link-search=native={}/build/Release",
-        dst.display()
-    );
-    println!(
-        "cargo:rustc-link-search=native={}/build/vendor/Release",
+        "cargo:rustc-link-search=native={}/build/out",
         dst.display()
     );
     println!("cargo:rustc-link-lib=static=leveldb-wrapper");
