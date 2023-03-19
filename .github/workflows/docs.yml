@@ -1,4 +1,4 @@
-name: Deploy docs
+name: Continuous Deployment / Deploy Documentation to GitHub Pages
 
 on:
   push:
@@ -14,7 +14,6 @@ permissions:
 
 concurrency: 
   group: "pages-deployment"
-  cancel-in-progress: false
 
 env:
   CARGO_TERM_COLOR: always
