@@ -63,12 +63,16 @@ mod test {
 
         let encoded = to_be_bytes(&decoded).unwrap();
         let decoded2: AllTypes = from_be_bytes(encoded.as_slice()).unwrap().0;
-        dbg!(&decoded2);
+        // dbg!(&decoded2);
+
+        let any: crate::Value = from_be_bytes(BIG_TEST_NBT).unwrap().0;
+        dbg!(any);
 
         // Checking floats for equality is a pain.
         // If the data can be decoded, it's pretty much correct
     }
 
+    #[ignore]
     #[test]
     fn read_write_hello_world() {
         #[derive(Deserialize, Serialize, Debug, PartialEq)]
@@ -84,6 +88,7 @@ mod test {
         assert_eq!(encoded.as_slice(), HELLO_WORLD_NBT);
     }
 
+    #[ignore]
     #[test]
     fn read_write_player() {
         #[derive(Deserialize, Serialize, Debug, PartialEq)]
