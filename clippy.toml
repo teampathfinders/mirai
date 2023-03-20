@@ -1,2 +1,2 @@
-undocumented_unsafe_blocks = "deny"
-
+msrv = "1.66.0"
+warn = ["pedantic"]
