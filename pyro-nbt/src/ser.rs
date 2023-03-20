@@ -274,7 +274,8 @@ where
     }
 
     fn serialize_unit_struct(self, name: &'static str) -> Result<()> {
-        unreachable!("Unit struct fields cannot exist, this should have been stopped by the key serializer");
+        Ok(())
+        // unreachable!("Unit struct fields cannot exist, this should have been stopped by the key serializer");
     }
 
     fn serialize_unit_variant(
