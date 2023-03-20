@@ -4,6 +4,10 @@ use serde::{de, Deserialize, Deserializer, Serialize, Serializer};
 use serde::de::{MapAccess, SeqAccess, Visitor};
 use serde::ser::{SerializeMap, SerializeSeq};
 
+/// General NBT value type that can represent any value.
+///
+/// In case the structure of some piece of NBT data is not known, this
+/// type can be used to deserialise it.
 #[derive(Debug, Clone)]
 pub enum Value {
     Byte(i8),
@@ -14,10 +18,230 @@ pub enum Value {
     Double(f64),
     ByteArray(Vec<u8>),
     String(String),
+    /// List of an arbitrary NBT value.
     List(Vec<Value>),
+    /// Key-value map.
     Compound(HashMap<String, Value>),
     IntArray(Vec<i32>),
     LongArray(Vec<i64>)
+}
+
+impl Value {
+    /// Returns true if [`Value`] is a byte.
+    ///
+    /// For any [`Value`] on which `is_i8` returns true, `as_i8` is guaranteed to return
+    /// a value.
+    #[inline]
+    pub fn is_i8(&self) -> bool {
+        matches!(self, Value::Byte(_))
+    }
+
+    /// Returns true if [`Value`] is a short.
+    ///
+    /// For any [`Value`] on which `is_i16` returns true, `as_i16` is guaranteed to return
+    /// a value.
+    #[inline]
+    pub fn is_i16(&self) -> bool {
+        matches!(self, Value::Short(_))
+    }
+
+    /// Returns true if [`Value`] is an integer.
+    ///
+    /// For any [`Value`] on which `is_i32` returns true, `as_i32` is guaranteed to return
+    /// a value.
+    #[inline]
+    pub fn is_i32(&self) -> bool {
+        matches!(self, Value::Int(_))
+    }
+
+    /// Returns true if [`Value`] is a long.
+    ///
+    /// For any [`Value`] on which `is_i64` returns true, `as_i64` is guaranteed to return
+    /// a value.
+    #[inline]
+    pub fn is_i64(&self) -> bool {
+        matches!(self, Value::Long(_))
+    }
+
+    /// Returns true if [`Value`] is a float.
+    ///
+    /// For any [`Value`] on which `is_f32` returns true, `as_f32` is guaranteed to return
+    /// a value.
+    #[inline]
+    pub fn is_f32(&self) -> bool {
+        matches!(self, Value::Float(_))
+    }
+
+    /// Returns true if [`Value`] is a double.
+    ///
+    /// For any [`Value`] on which `is_f64` returns true, `as_f64` is guaranteed to return
+    /// a value.
+    #[inline]
+    pub fn is_f64(&self) -> bool {
+        matches!(self, Value::Double(_))
+    }
+
+    /// Returns true if [`Value`] is a byte array.
+    ///
+    /// For any [`Value`] on which `is_u8_array` returns true, `as_u8_array` is guaranteed to return
+    /// a value.
+    #[inline]
+    pub fn is_u8_array(&self) -> bool {
+        matches!(self, Value::ByteArray(_))
+    }
+
+    /// Returns true if [`Value`] is a string.
+    ///
+    /// For any [`Value`] on which `is_string` returns true, `as_string` is guaranteed to return
+    /// a value.
+    #[inline]
+    pub fn is_string(&self) -> bool {
+        matches!(self, Value::String(_))
+    }
+
+    /// Returns true if [`Value`] is a list.
+    ///
+    /// For any [`Value`] on which `is_list` returns true, `as_list` is guaranteed to return
+    /// a value.
+    #[inline]
+    pub fn is_list(&self) -> bool {
+        matches!(self, Value::List(_))
+    }
+
+    /// Returns true if [`Value`] is a compound.
+    ///
+    /// For any [`Value`] on which `is_compound` returns true, `as_compound` is guaranteed to return
+    /// a value.
+    #[inline]
+    pub fn is_compound(&self) -> bool {
+        matches!(self, Value::Compound(_))
+    }
+
+    /// Returns true if [`Value`] is an integer array.
+    ///
+    /// For any [`Value`] on which `is_i32_array` returns true, `as_i32_array` is guaranteed to return
+    /// a value.
+    #[inline]
+    pub fn is_i32_array(&self) -> bool {
+        matches!(self, Value::IntArray(_))
+    }
+
+    /// Returns true if [`Value`] is a long array.
+    ///
+    /// For any [`Value`] on which `is_i64_array` returns true, `as_i64_array` is guaranteed to return
+    /// a value.
+    #[inline]
+    pub fn is_i64_array(&self) -> bool {
+        matches!(self, Value::LongArray(_))
+    }
+
+    /// If this [`Value`] is a byte, represent it as `i8`. Returns None otherwise.
+    #[inline]
+    pub fn as_i8(&self) -> Option<i8> {
+        match self {
+            Value::Byte(v) => Some(*v),
+            _ => None
+        }
+    }
+
+    /// If this [`Value`] is a short, represent it as `i16`. Returns None otherwise.
+    #[inline]
+    pub fn as_i16(&self) -> Option<i16> {
+        match self {
+            Value::Short(v) => Some(*v),
+            _ => None
+        }
+    }
+
+    /// If this [`Value`] is an integer, represent it as `i32`. Returns None otherwise.
+    #[inline]
+    pub fn as_i32(&self) -> Option<i32> {
+        match self {
+            Value::Int(v) => Some(*v),
+            _ => None
+        }
+    }
+
+    /// If this [`Value`] is a long, represent it as `i64`. Returns None otherwise.
+    #[inline]
+    pub fn as_i64(&self) -> Option<i64> {
+        match self {
+            Value::Long(v) => Some(*v),
+            _ => None
+        }
+    }
+
+    /// If this [`Value`] is a float, represent it as `f32`. Returns None otherwise.
+    #[inline]
+    pub fn as_f32(&self) -> Option<f32> {
+        match self {
+            Value::Float(v) => Some(*v),
+            _ => None
+        }
+    }
+
+    /// If this [`Value`] is a double, represent it as `f64`. Returns None otherwise.
+    #[inline]
+    pub fn as_f64(&self) -> Option<f64> {
+        match self {
+            Value::Double(v) => Some(*v),
+            _ => None
+        }
+    }
+
+    /// If this [`Value`] is a byte array, represent it as `&[u8]`. Returns None otherwise.
+    #[inline]
+    pub fn as_u8_array(&self) -> Option<&[u8]> {
+        match self {
+            Value::ByteArray(v) => Some(v),
+            _ => None
+        }
+    }
+
+    /// If this [`Value`] is a string, represent it as `&str`. Returns None otherwise.
+    #[inline]
+    pub fn as_string(&self) -> Option<&str> {
+        match self {
+            Value::String(v) => Some(v),
+            _ => None
+        }
+    }
+
+    /// If this [`Value`] is a list, represent it as `&[Value]`. Returns None otherwise.
+    #[inline]
+    pub fn as_list(&self) -> Option<&[Value]> {
+        match self {
+            Value::List(v) => Some(v),
+            _ => None
+        }
+    }
+
+    /// If this [`Value`] is a compound/map, returns the map. Returns None otherwise.
+    #[inline]
+    pub fn as_compound(&self) -> Option<&HashMap<String, Value>> {
+        match self {
+            Value::Compound(v) => Some(v),
+            _ => None
+        }
+    }
+
+    /// If this [`Value`] is an integer array, represent it as `&[i32]`. Returns None otherwise.
+    #[inline]
+    pub fn as_i32_array(&self) -> Option<&[i32]> {
+        match self {
+            Value::IntArray(v) => Some(v),
+            _ => None
+        }
+    }
+
+    /// If this [`Value`] is a long array, represent it as `&[i64]`. Returns None otherwise.
+    #[inline]
+    pub fn as_i64_array(&self) -> Option<&[i64]> {
+        match self {
+            Value::LongArray(v) => Some(v),
+            _ => None
+        }
+    }
 }
 
 impl<'de> Deserialize<'de> for Value {
