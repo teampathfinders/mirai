@@ -61,13 +61,14 @@ where
     #[inline]
     pub fn new(input: &'de [u8]) -> Result<Self> {
         let mut input = SharedBuffer::from(input);
-        if input.read_u8()? != FieldType::Compound as u8 {
+        let next_ty = FieldType::try_from(input.read_u8()?)?;
+        if next_ty != FieldType::Compound {
             bail!(Malformed, "Expected compound tag as root");
         }
 
         let mut de = Deserializer {
             input,
-            next_ty: FieldType::Compound,
+            next_ty,
             is_key: false,
             _marker: PhantomData,
         };

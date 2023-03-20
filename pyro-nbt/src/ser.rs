@@ -247,8 +247,8 @@ where
     #[inline]
     fn serialize_bytes(self, v: &[u8]) -> Result<()> {
         match M::AS_ENUM {
-            Variant::BigEndian => self.writer.write_u16_be(v.len() as u16),
-            Variant::LittleEndian => self.writer.write_u16_le(v.len() as u16),
+            Variant::BigEndian => self.writer.write_i32_be(v.len() as i32),
+            Variant::LittleEndian => self.writer.write_i32_le(v.len() as i32),
             Variant::Variable => self.writer.write_var_u32(v.len() as u32),
         }?;
 
@@ -265,7 +265,7 @@ where
     where
         T: Serialize,
     {
-        todo!();
+        value.serialize(self)
     }
 
     #[inline]
@@ -351,6 +351,14 @@ where
         self,
         len: Option<usize>,
     ) -> std::result::Result<Self::SerializeMap, Self::Error> {
+        // nbt::Value does not distinguish between maps and structs.
+        // Therefore this is also needed here
+        if self.is_initial {
+            self.writer.write_u8(FieldType::Compound as u8)?;
+            self.serialize_str("")?;
+            self.is_initial = false;
+        }
+
         Ok(self)
     }
 
@@ -636,7 +644,7 @@ where
     where
         T: Serialize,
     {
-        todo!()
+        value.serialize(self)
     }
 
     fn serialize_unit(self) -> std::result::Result<Self::Ok, Self::Error> {
@@ -695,7 +703,6 @@ where
         self,
         len: usize,
     ) -> std::result::Result<Self::SerializeTuple, Self::Error> {
-        println!("list");
         self.ser.writer.write_u8(FieldType::List as u8)?;
         Ok(self)
     }
