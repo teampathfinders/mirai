@@ -1,12 +1,9 @@
 use std::collections::HashMap;
-use std::iter::Enumerate;
-use std::mem::MaybeUninit;
 
 use serde::{Deserialize, Serialize};
 
-use nbt::{from_var_bytes, to_var_bytes};
-use util::{bail, BlockPosition, Error, Result, Vector};
-use util::bytes::{BinaryReader, MutableBuffer, SharedBuffer};
+use util::{bail, Error, Result, Vector};
+use util::bytes::{BinaryReader, SharedBuffer};
 
 const CHUNK_SIZE: usize = 4096;
 
@@ -248,7 +245,7 @@ pub fn to_offset(position: Vector<u8, 3>) -> usize {
 pub fn from_offset(offset: usize) -> Vector<u8, 3> {
     Vector::from([
         (offset >> 8) as u8 & 0xf,
-        (offset >> 0) as u8 & 0xf,
+        offset as u8 & 0xf,
         (offset >> 4) as u8 & 0xf,
     ])
 }

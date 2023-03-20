@@ -1,6 +1,3 @@
-use util::{Result, Serialize};
-use util::bytes::MutableBuffer;
-
 // Special keys
 
 pub const AUTONOMOUS_ENTITIES: &[u8] = "AutonomousEntities".as_bytes();

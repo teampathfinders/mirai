@@ -3,7 +3,6 @@ use std::marker::PhantomData;
 
 use paste::paste;
 use serde::{ser, Serialize};
-use serde::de::SeqAccess;
 use serde::ser::{
     Impossible, SerializeMap, SerializeSeq, SerializeStruct, SerializeTuple,
 };
@@ -12,7 +11,7 @@ use util::{bail, Error, Result};
 use util::bytes::{BinaryWrite, MutableBuffer};
 
 use crate::{
-    BigEndian, de, FieldType, LittleEndian, Variable, Variant, VariantImpl,
+    BigEndian, FieldType, LittleEndian, Variable, Variant, VariantImpl,
 };
 
 /// Serializes the given data in big endian format.
@@ -251,7 +250,7 @@ macro_rules! forward_unsupported {
     ($($ty: ident),+) => {
         paste! {$(
            #[inline]
-            fn [<serialize_ $ty>](self, v: $ty) -> util::Result<()> {
+            fn [<serialize_ $ty>](self, _v: $ty) -> util::Result<()> {
                 util::bail!(Unsupported, concat!("Serialisation of `", stringify!($ty), "` is not supported"));
             }
         )+}
@@ -377,24 +376,24 @@ impl<'a, W, M> ser::Serializer for &'a mut Serializer<W, M>
         unreachable!("Unit fields cannot exist, this should have been stopped by the key serializer");
     }
 
-    fn serialize_unit_struct(self, name: &'static str) -> Result<()> {
+    fn serialize_unit_struct(self, _name: &'static str) -> Result<()> {
         Ok(())
         // unreachable!("Unit struct fields cannot exist, this should have been stopped by the key serializer");
     }
 
     fn serialize_unit_variant(
         self,
-        name: &'static str,
-        variant_index: u32,
-        variant: &'static str,
+        _name: &'static str,
+        _variant_index: u32,
+        _variant: &'static str,
     ) -> Result<()> {
         todo!()
     }
 
     fn serialize_newtype_struct<T: ?Sized>(
         self,
-        name: &'static str,
-        value: &T,
+        _name: &'static str,
+        _value: &T,
     ) -> Result<()>
         where
             T: Serialize,
@@ -404,10 +403,10 @@ impl<'a, W, M> ser::Serializer for &'a mut Serializer<W, M>
 
     fn serialize_newtype_variant<T: ?Sized>(
         self,
-        name: &'static str,
-        variant_index: u32,
-        variant: &'static str,
-        value: &T,
+        _name: &'static str,
+        _variant_index: u32,
+        _variant: &'static str,
+        _value: &T,
     ) -> Result<()>
         where
             T: Serialize,
@@ -436,25 +435,25 @@ impl<'a, W, M> ser::Serializer for &'a mut Serializer<W, M>
 
     fn serialize_tuple_struct(
         self,
-        name: &'static str,
-        len: usize,
+        _name: &'static str,
+        _len: usize,
     ) -> std::result::Result<Self::SerializeTupleStruct, Self::Error> {
         todo!()
     }
 
     fn serialize_tuple_variant(
         self,
-        name: &'static str,
-        variant_index: u32,
-        variant: &'static str,
-        len: usize,
+        _name: &'static str,
+        _variant_index: u32,
+        _variant: &'static str,
+        _len: usize,
     ) -> std::result::Result<Self::SerializeTupleVariant, Self::Error> {
         todo!()
     }
 
     fn serialize_map(
         self,
-        len: Option<usize>,
+        _len: Option<usize>,
     ) -> std::result::Result<Self::SerializeMap, Self::Error> {
         // nbt::Value does not distinguish between maps and structs.
         // Therefore this is also needed here
@@ -470,7 +469,7 @@ impl<'a, W, M> ser::Serializer for &'a mut Serializer<W, M>
     fn serialize_struct(
         self,
         name: &'static str,
-        len: usize,
+        _len: usize,
     ) -> std::result::Result<Self::SerializeStruct, Self::Error> {
         if self.is_initial {
             self.writer.write_u8(FieldType::Compound as u8)?;
@@ -483,10 +482,10 @@ impl<'a, W, M> ser::Serializer for &'a mut Serializer<W, M>
 
     fn serialize_struct_variant(
         self,
-        name: &'static str,
-        variant_index: u32,
-        variant: &'static str,
-        len: usize,
+        _name: &'static str,
+        _variant_index: u32,
+        _variant: &'static str,
+        _len: usize,
     ) -> std::result::Result<Self::SerializeStructVariant, Self::Error> {
         todo!()
     }
@@ -691,49 +690,49 @@ impl<'a, W, F> ser::Serializer for FieldTypeSerializer<'a, W, F>
     #[inline]
     fn serialize_i16(
         self,
-        v: i16,
+        _v: i16,
     ) -> std::result::Result<Self::Ok, Self::Error> {
         self.ser.writer.write_u8(FieldType::Short as u8)
     }
 
     fn serialize_i32(
         self,
-        v: i32,
+        _v: i32,
     ) -> std::result::Result<Self::Ok, Self::Error> {
         self.ser.writer.write_u8(FieldType::Int as u8)
     }
 
     fn serialize_i64(
         self,
-        v: i64,
+        _v: i64,
     ) -> std::result::Result<Self::Ok, Self::Error> {
         self.ser.writer.write_u8(FieldType::Long as u8)
     }
 
     fn serialize_f32(
         self,
-        v: f32,
+        _v: f32,
     ) -> std::result::Result<Self::Ok, Self::Error> {
         self.ser.writer.write_u8(FieldType::Float as u8)
     }
 
     fn serialize_f64(
         self,
-        v: f64,
+        _v: f64,
     ) -> std::result::Result<Self::Ok, Self::Error> {
         self.ser.writer.write_u8(FieldType::Double as u8)
     }
 
     fn serialize_str(
         self,
-        v: &str,
+        _v: &str,
     ) -> std::result::Result<Self::Ok, Self::Error> {
         self.ser.writer.write_u8(FieldType::String as u8)
     }
 
     fn serialize_bytes(
         self,
-        v: &[u8],
+        _v: &[u8],
     ) -> std::result::Result<Self::Ok, Self::Error> {
         self.ser.writer.write_u8(FieldType::ByteArray as u8)
     }
@@ -758,24 +757,24 @@ impl<'a, W, F> ser::Serializer for FieldTypeSerializer<'a, W, F>
 
     fn serialize_unit_struct(
         self,
-        name: &'static str,
+        _name: &'static str,
     ) -> std::result::Result<Self::Ok, Self::Error> {
         todo!()
     }
 
     fn serialize_unit_variant(
         self,
-        name: &'static str,
-        variant_index: u32,
-        variant: &'static str,
+        _name: &'static str,
+        _variant_index: u32,
+        _variant: &'static str,
     ) -> std::result::Result<Self::Ok, Self::Error> {
         todo!()
     }
 
     fn serialize_newtype_struct<T: ?Sized>(
         self,
-        name: &'static str,
-        value: &T,
+        _name: &'static str,
+        _value: &T,
     ) -> std::result::Result<Self::Ok, Self::Error>
         where
             T: Serialize,
@@ -785,10 +784,10 @@ impl<'a, W, F> ser::Serializer for FieldTypeSerializer<'a, W, F>
 
     fn serialize_newtype_variant<T: ?Sized>(
         self,
-        name: &'static str,
-        variant_index: u32,
-        variant: &'static str,
-        value: &T,
+        _name: &'static str,
+        _variant_index: u32,
+        _variant: &'static str,
+        _value: &T,
     ) -> std::result::Result<Self::Ok, Self::Error>
         where
             T: Serialize,
@@ -806,7 +805,7 @@ impl<'a, W, F> ser::Serializer for FieldTypeSerializer<'a, W, F>
 
     fn serialize_tuple(
         self,
-        len: usize,
+        _len: usize,
     ) -> std::result::Result<Self::SerializeTuple, Self::Error> {
         self.ser.writer.write_u8(FieldType::List as u8)?;
         Ok(self)
@@ -814,18 +813,18 @@ impl<'a, W, F> ser::Serializer for FieldTypeSerializer<'a, W, F>
 
     fn serialize_tuple_struct(
         self,
-        name: &'static str,
-        len: usize,
+        _name: &'static str,
+        _len: usize,
     ) -> std::result::Result<Self::SerializeTupleStruct, Self::Error> {
         todo!()
     }
 
     fn serialize_tuple_variant(
         self,
-        name: &'static str,
-        variant_index: u32,
-        variant: &'static str,
-        len: usize,
+        _name: &'static str,
+        _variant_index: u32,
+        _variant: &'static str,
+        _len: usize,
     ) -> std::result::Result<Self::SerializeTupleVariant, Self::Error> {
         todo!()
     }
@@ -851,10 +850,10 @@ impl<'a, W, F> ser::Serializer for FieldTypeSerializer<'a, W, F>
 
     fn serialize_struct_variant(
         self,
-        name: &'static str,
-        variant_index: u32,
-        variant: &'static str,
-        len: usize,
+        _name: &'static str,
+        _variant_index: u32,
+        _variant: &'static str,
+        _len: usize,
     ) -> std::result::Result<Self::SerializeStructVariant, Self::Error> {
         todo!()
     }
@@ -946,7 +945,7 @@ impl<'a, W, F> SerializeStruct for FieldTypeSerializer<'a, W, F>
     fn serialize_field<V>(
         &mut self,
         _key: &'static str,
-        value: &V,
+        _value: &V,
     ) -> Result<()>
         where
             V: ?Sized + Serialize,

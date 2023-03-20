@@ -2,7 +2,7 @@ use std::io::Write;
 
 use dashmap::DashMap;
 
-use util::bytes::{BinaryWrite, MutableBuffer};
+use util::bytes::MutableBuffer;
 use util::Result;
 
 use crate::Frame;

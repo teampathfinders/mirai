@@ -4,7 +4,7 @@ use serde::Deserialize;
 use serde_repr::Deserialize_repr;
 
 use util::{
-    bail, Error, Result, Serialize,
+    bail, Error, Result,
 };
 use util::bytes::{BinaryReader, BinaryWrite, MutableBuffer, SharedBuffer};
 

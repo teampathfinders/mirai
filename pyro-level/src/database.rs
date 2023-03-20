@@ -7,7 +7,6 @@ use std::{
 use std::ptr::NonNull;
 
 use util::{error, Error, Result};
-use util::bytes::{MutableBuffer, SharedBuffer};
 
 use crate::ffi;
 

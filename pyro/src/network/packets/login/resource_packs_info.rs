@@ -1,8 +1,6 @@
-use std::fmt::Write;
-
-use util::Serialize;
 use util::bytes::{BinaryWrite, MutableBuffer, VarString};
 use util::Result;
+use util::Serialize;
 
 use crate::ConnectedPacket;
 

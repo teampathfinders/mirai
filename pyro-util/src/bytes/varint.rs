@@ -2,9 +2,6 @@ use std::ops::ShrAssign;
 
 use num_traits::FromPrimitive;
 
-use crate::{bail, Result};
-use crate::bytes::{BinaryReader, SharedBuffer};
-
 /// Trait implemented for types that can be used as variable integers.
 pub trait VarInt:
 Sized + FromPrimitive + ShrAssign<Self> + PartialOrd<Self>

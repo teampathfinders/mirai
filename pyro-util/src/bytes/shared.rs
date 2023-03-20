@@ -1,16 +1,11 @@
 use std::{cmp, fmt, io};
-use std::borrow::Borrow;
 use std::fmt::Debug;
 use std::io::Read;
-use std::marker::PhantomData;
 use std::ops::{Deref, DerefMut, Index};
-use std::rc::Rc;
 use std::sync::Arc;
 
-use paste::paste;
-
-use crate::{bail, BlockPosition};
-use crate::bytes::{BinaryReader, MutableBuffer, VarInt};
+use crate::bail;
+use crate::bytes::{BinaryReader, MutableBuffer};
 use crate::Result;
 
 #[derive(Debug, Clone)]

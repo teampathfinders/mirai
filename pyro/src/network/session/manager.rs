@@ -5,7 +5,6 @@ use std::time::Duration;
 use dashmap::DashMap;
 use tokio::net::UdpSocket;
 use tokio::sync::{broadcast, mpsc, OnceCell};
-use tokio_util::sync::CancellationToken;
 
 use util::{Result, Serialize};
 use util::bytes::MutableBuffer;
@@ -184,5 +183,11 @@ impl SessionManager {
 
             interval.tick().await;
         }
+    }
+}
+
+impl Default for SessionManager {
+    fn default() -> Self {
+        Self::new()
     }
 }

@@ -1,4 +1,4 @@
-use util::{Deserialize, Result};
+use util::Result;
 use util::bytes::{BinaryReader, SharedBuffer};
 
 #[derive(Debug)]

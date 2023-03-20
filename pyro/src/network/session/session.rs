@@ -5,7 +5,6 @@ use std::sync::atomic::{
 };
 use std::time::Instant;
 
-use aes::cipher::typenum::NonZero;
 use parking_lot::{Mutex, RwLock};
 use tokio::net::UdpSocket;
 use tokio::sync::{broadcast, mpsc, OnceCell};
@@ -16,9 +15,7 @@ use util::{error, Result, Vector};
 use util::bytes::MutableBuffer;
 
 use crate::{DeviceOS, Disconnect, PermissionLevel};
-use crate::{
-    ConnectedPacket, GameMode,
-};
+use crate::GameMode;
 use crate::{BroadcastPacket, RaknetData};
 use crate::crypto::{Encryptor, IdentityData, UserData};
 use crate::level::LevelManager;

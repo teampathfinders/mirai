@@ -1,14 +1,10 @@
 use std::{fmt, io};
-use std::borrow::Cow;
 use std::fmt::Debug;
 use std::io::Write;
 use std::ops::{Deref, DerefMut};
 
-use paste::paste;
-use uuid::Uuid;
-
-use crate::{bail, BlockPosition, Result, Vector};
-use crate::bytes::{BinaryReader, BinaryWrite, SharedBuffer, VarInt};
+use crate::{Result, Vector};
+use crate::bytes::{SharedBuffer, VarInt};
 
 /// A buffer that can be read from and written to.
 /// It is the owned version of [`ReadBuffer`].

@@ -1,5 +1,5 @@
-use util::{Deserialize, Serialize};
 use util::bytes::{MutableBuffer, SharedBuffer};
+use util::Deserialize;
 use util::Result;
 
 use crate::{Ack, Nak};

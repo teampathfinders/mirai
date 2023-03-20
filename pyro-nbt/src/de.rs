@@ -1,15 +1,13 @@
-use std::any::TypeId;
-use std::fmt;
-use std::io::Read;
+
+
 use std::marker::PhantomData;
 
 use paste::paste;
 use serde::{de, Deserialize};
 use serde::de::{DeserializeSeed, MapAccess, SeqAccess, Visitor};
-use serde::de::Unexpected::Seq;
 
 use util::{bail, Error, Result};
-use util::bytes::{BinaryReader, MutableBuffer, SharedBuffer};
+use util::bytes::{BinaryReader, SharedBuffer};
 
 use crate::{
     BigEndian, FieldType, LittleEndian, Variable, Variant, VariantImpl,
@@ -34,7 +32,7 @@ macro_rules! forward_unsupported {
     ($($ty: ident),+) => {
         paste! {$(
             #[inline]
-            fn [<deserialize_ $ty>]<V>(self, visitor: V) -> util::Result<V::Value>
+            fn [<deserialize_ $ty>]<V>(self, _visitor: V) -> util::Result<V::Value>
             where
                 V: Visitor<'de>
             {
@@ -380,7 +378,7 @@ impl<'de, 'a, F> de::Deserializer<'de> for &'a mut Deserializer<'de, F>
         visitor.visit_string(string)
     }
 
-    fn deserialize_bytes<V>(self, visitor: V) -> Result<V::Value>
+    fn deserialize_bytes<V>(self, _visitor: V) -> Result<V::Value>
         where
             V: Visitor<'de>,
     {

@@ -5,8 +5,7 @@ use std::time::Instant;
 use async_recursion::async_recursion;
 
 use util::{bail, Result};
-use util::{Deserialize, Serialize};
-use util::bytes::{BinaryReader, MutableBuffer, VarInt};
+use util::bytes::{BinaryReader, MutableBuffer};
 
 use crate::{CommandRequest, SettingsCommand};
 use crate::{
@@ -112,7 +111,7 @@ impl Session {
             } else {
                 // Compound incomplete
                 Ok(())
-            }
+            };
         }
 
         // Sequenced implies ordered

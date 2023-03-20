@@ -1,7 +1,8 @@
-use crate::ConnectedPacket;
-use util::{Serialize};
+use util::Serialize;
 use util::bytes::{BinaryWrite, MutableBuffer, VarInt};
 use util::Result;
+
+use crate::ConnectedPacket;
 
 pub const ITEM_ID_SHIELD: u32 = 513;
 
@@ -85,8 +86,7 @@ impl ItemStack {
         }
 
         if self.item_type.network_id == ITEM_ID_SHIELD {
-            buffer.write_u64_be(0)?;
-            ; // Blocking tick.
+            buffer.write_u64_be(0)?; // Blocking tick.
         }
 
         Ok(())

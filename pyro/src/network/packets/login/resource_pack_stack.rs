@@ -1,6 +1,6 @@
-use util::Serialize;
 use util::bytes::{BinaryWrite, MutableBuffer, size_of_varint, VarString};
 use util::Result;
+use util::Serialize;
 
 use crate::ConnectedPacket;
 
@@ -16,7 +16,7 @@ impl ExperimentData<'_> {
     }
 
     pub fn serialize(&self, buffer: &mut MutableBuffer) -> Result<()> {
-        buffer.write_str(&self.name)?;
+        buffer.write_str(self.name)?;
         buffer.write_bool(self.enabled)
     }
 }

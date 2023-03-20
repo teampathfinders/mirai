@@ -1,8 +1,6 @@
-use std::mem;
 use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr};
 
 use paste::paste;
-use uuid::Uuid;
 
 use crate::{bail, BlockPosition, Result};
 use crate::{u24::u24, Vector};
@@ -166,8 +164,8 @@ pub trait BinaryReader<'a> {
     #[inline]
     fn read_veci<const N: usize>(&mut self) -> Result<Vector<i32, N>> {
         let mut x = [0; N];
-        for i in 0..N {
-            x[i] = self.read_var_i32()?;
+        for v in &mut x {
+            *v = self.read_var_i32()?;
         }
         Ok(Vector::from(x))
     }
@@ -175,8 +173,8 @@ pub trait BinaryReader<'a> {
     #[inline]
     fn read_vecf<const N: usize>(&mut self) -> Result<Vector<f32, N>> {
         let mut x = [0.0; N];
-        for i in 0..N {
-            x[i] = self.read_f32_le()?;
+        for v in &mut x {
+            *v = self.read_f32_le()?;
         }
         Ok(Vector::from(x))
     }

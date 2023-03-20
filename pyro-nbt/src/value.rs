@@ -319,8 +319,8 @@ impl<'de> Deserialize<'de> for Value {
 
             #[inline]
             fn visit_str<E>(self, v: &str) -> Result<Self::Value, E>
-            where
-                E: de::Error,
+                where
+                    E: de::Error,
             {
                 Ok(Value::String(v.to_owned()))
             }
@@ -394,7 +394,7 @@ fn serialize_seq<T, S>(ser: S, seq: &[T]) -> Result<S::Ok, S::Error>
 }
 
 impl Serialize for Value {
-    fn serialize<S>(&self, mut ser: S) -> Result<S::Ok, S::Error>
+    fn serialize<S>(&self, ser: S) -> Result<S::Ok, S::Error>
         where
             S: Serializer,
     {

@@ -4,8 +4,6 @@ pub use shared::*;
 pub use varint::*;
 pub use write::*;
 
-use crate::Result;
-
 mod mutable;
 mod read;
 mod shared;

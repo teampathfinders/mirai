@@ -1,8 +1,8 @@
 use util::{Deserialize, Result, Serialize};
 use util::bytes::{BinaryReader, BinaryWrite, MutableBuffer, SharedBuffer, size_of_varint};
 
-use crate::GameMode;
 use crate::ConnectedPacket;
+use crate::GameMode;
 
 /// Sets the default game mode of the world.
 #[derive(Debug, Clone)]

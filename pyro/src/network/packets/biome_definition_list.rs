@@ -1,6 +1,6 @@
 use std::io::Write;
 
-use util::bytes::{BinaryWrite, MutableBuffer};
+use util::bytes::MutableBuffer;
 use util::Result;
 use util::Serialize;
 

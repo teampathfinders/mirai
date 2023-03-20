@@ -1,9 +1,8 @@
-use base64::Engine;
 use serde_repr::Deserialize_repr;
 
-use util::Result;
 use util::bytes::{BinaryReader, SharedBuffer};
 use util::Deserialize;
+use util::Result;
 
 use crate::ConnectedPacket;
 use crate::crypto::{
@@ -60,7 +59,7 @@ impl ConnectedPacket for Login {
 
 impl Deserialize<'_> for Login {
     fn deserialize(mut buffer: SharedBuffer) -> Result<Self> {
-        let version = buffer.read_u32_be()?; // Skip protocol version, use the one in RequestNetworkSettings instead.
+        let _version = buffer.read_u32_be()?; // Skip protocol version, use the one in RequestNetworkSettings instead.
         buffer.read_var_u32()?;
 
         let identity_data = parse_identity_data(&mut buffer)?;

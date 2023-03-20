@@ -5,9 +5,9 @@ use async_recursion::async_recursion;
 use flate2::Compression;
 use flate2::write::DeflateEncoder;
 
-use util::Serialize;
-use util::bytes::{BinaryWrite, MutableBuffer, SharedBuffer};
+use util::bytes::{BinaryWrite, MutableBuffer};
 use util::Result;
+use util::Serialize;
 
 use crate::{CONNECTED_PACKET_ID, ConnectedPacket, Packet};
 use crate::{Ack, AckRecord};
@@ -40,7 +40,7 @@ impl Session {
     }
 
     /// Sends a game packet with custom reliability and priority
-    pub fn send_serialized<B>(&self, mut pk: B, config: PacketConfig) -> Result<()>
+    pub fn send_serialized<B>(&self, packet: B, config: PacketConfig) -> Result<()>
         where
             B: AsRef<[u8]>
     {
@@ -51,7 +51,7 @@ impl Session {
                 (config.compression_algorithm, config.compression_threshold)
             };
 
-            if pk.as_ref().len() > threshold as usize {
+            if packet.as_ref().len() > threshold as usize {
                 // Compress packet
                 match algorithm {
                     CompressionAlgorithm::Snappy => {
@@ -63,23 +63,23 @@ impl Session {
                             Compression::best(),
                         );
 
-                        writer.write_all(pk.as_ref())?;
+                        writer.write_all(packet.as_ref())?;
                         out = MutableBuffer::from(writer.finish()?)
                     }
                 }
             } else {
                 // Also reserve capacity for checksum even if encryption is disabled,
                 // preventing allocations.
-                out = MutableBuffer::with_capacity(1 + pk.as_ref().len() + 8);
+                out = MutableBuffer::with_capacity(1 + packet.as_ref().len() + 8);
                 out.write_u8(CONNECTED_PACKET_ID)?;
-                out.write_all(pk.as_ref())?;
+                out.write_all(packet.as_ref())?;
             }
         } else {
             // Also reserve capacity for checksum even if encryption is disabled,
             // preventing allocations.
-            out = MutableBuffer::with_capacity(1 + pk.as_ref().len() + 8);
+            out = MutableBuffer::with_capacity(1 + packet.as_ref().len() + 8);
             out.write_u8(CONNECTED_PACKET_ID)?;
-            out.write_all(pk.as_ref())?;
+            out.write_all(packet.as_ref())?;
         };
 
         if let Some(encryptor) = self.encryptor.get() {

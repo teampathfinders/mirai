@@ -1,10 +1,10 @@
 use level::Dimension;
-
 use util::{Serialize, Vector};
-use util::{Result};
-use util::{BlockPosition};
+use util::Result;
+use util::BlockPosition;
 use util::bytes::{BinaryWrite, MutableBuffer, VarInt, VarString};
-use crate::{CLIENT_VERSION_STRING, Difficulty, GameMode, ConnectedPacket, GameRule};
+
+use crate::{CLIENT_VERSION_STRING, ConnectedPacket, Difficulty, GameMode, GameRule};
 use crate::ExperimentData;
 
 const MULTIPLAYER_CORRELATION_ID: &str = "5b39a9d6-f1a1-411a-b749-b30742f81771";
