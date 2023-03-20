@@ -6,7 +6,7 @@ use serde_repr::Deserialize_repr;
 use util::{
     bail, Error, Result,
 };
-use util::bytes::{BinaryReader, BinaryWrite, MutableBuffer, SharedBuffer};
+use util::bytes::{BinaryRead, BinaryWrite, MutableBuffer, SharedBuffer};
 
 /// Size of arms of a skin.
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Deserialize)]

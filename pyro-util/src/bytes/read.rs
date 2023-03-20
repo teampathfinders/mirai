@@ -41,12 +41,17 @@ macro_rules! declare_primitive_fns {
 }
 
 /// Adds binary reading capabilities to a reader.
-pub trait BinaryReader<'a> {
+pub trait BinaryRead<'a> {
     declare_primitive_fns!(
         u16, i16, u24, u32, i32, u64, i64, u128, i128, f32, f64
     );
 
+    /// Consumes `n` bytes.
     fn advance(&mut self, n: usize) -> Result<()>;
+
+    /// Returns the amount of bytes remaining in the reader.
+    fn remaining(&self) -> usize;
+
     /// Takes `n` bytes out of the reader.
     fn take_n(&mut self, n: usize) -> Result<&'a [u8]>;
     /// Takes `N` bytes out of the reader.
@@ -208,5 +213,37 @@ pub trait BinaryReader<'a> {
                 );
             }
         })
+    }
+}
+
+impl<'a, R: BinaryRead<'a>> BinaryRead<'a> for &'a mut R {
+    #[inline]
+    fn advance(&mut self, n: usize) -> Result<()> {
+        (*self).advance(n)
+    }
+
+    #[inline]
+    fn remaining(&self) -> usize {
+        (**self).remaining()
+    }
+
+    #[inline]
+    fn take_n(&mut self, n: usize) -> Result<&'a [u8]> {
+        (*self).take_n(n)
+    }
+
+    #[inline]
+    fn take_const<const N: usize>(&mut self) -> Result<[u8; N]> {
+        (*self).take_const()
+    }
+
+    #[inline]
+    fn peek(&self, n: usize) -> Result<&[u8]> {
+        (**self).peek(n)
+    }
+
+    #[inline]
+    fn peek_const<const N: usize>(&self) -> Result<[u8; N]> {
+        (**self).peek_const()
     }
 }

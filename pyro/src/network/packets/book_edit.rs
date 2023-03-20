@@ -1,5 +1,5 @@
 use util::{bail, Deserialize, Result};
-use util::bytes::{BinaryReader, SharedBuffer};
+use util::bytes::{BinaryRead, SharedBuffer};
 
 use crate::ConnectedPacket;
 

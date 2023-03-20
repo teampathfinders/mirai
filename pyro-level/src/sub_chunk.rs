@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use serde::{Deserialize, Serialize};
 
 use util::{bail, Error, Result, Vector};
-use util::bytes::{BinaryReader, SharedBuffer};
+use util::bytes::{BinaryRead, BinaryWrite, MutableBuffer};
 
 const CHUNK_SIZE: usize = 4096;
 
@@ -105,9 +105,12 @@ impl SubLayer {
 
     /// Deserializes a single layer from the given buffer.
     #[inline]
-    fn deserialize(buffer: &mut SharedBuffer) -> Result<Self> {
+    fn deserialize<'a, R>(mut reader: R) -> Result<Self>
+    where
+        R: BinaryRead<'a> + Copy + 'a
+    {
         // Size of each index in bits.
-        let index_size = buffer.read_u8()? >> 1;
+        let index_size = reader.read_u8()? >> 1;
         if index_size == 0x7f {
             bail!(Malformed, "Invalid block bit size {index_size}");
         }
@@ -121,7 +124,7 @@ impl SubLayer {
         let mut indices = [0u16; CHUNK_SIZE];
         for i in 0..word_count {
             // println!("{i} {}", i * indices_per_word);
-            let mut word = buffer.read_u32_le()?;
+            let mut word = reader.read_u32_le()?;
 
             for j in 0..indices_per_word {
                 let index = word & mask;
@@ -134,7 +137,7 @@ impl SubLayer {
         // Padded sizes have an extra word.
         match index_size {
             3 | 5 | 6 => {
-                let mut word = buffer.read_u32_le()?;
+                let mut word = reader.read_u32_le()?;
                 let last_index =
                     (word_count - 1) * indices_per_word + indices_per_word - 1;
 
@@ -148,77 +151,75 @@ impl SubLayer {
         }
 
         // Size of the block palette.
-        let palette_size = buffer.read_u32_le()?;
+        let palette_size = reader.read_u32_le()?;
         let mut palette = Vec::with_capacity(palette_size as usize);
         // let mut palette = Vec::new();
         for _ in 0..palette_size {
-            let (entry, n) = match nbt::from_le_bytes(buffer) {
-                Ok(p) => p,
-                Err(e) => {
-                    bail!(Malformed, "{}", e.to_string())
-                }
-            };
+            let (entry, n) = nbt::from_le_bytes(reader)?;
 
             palette.push(entry);
-            buffer.advance(n);
+            reader.advance(n)?;
         }
-
-        // dbg!(&palette);
 
         Ok(Self { indices, palette })
     }
 
-    // fn serialize(&self, buffer: &mut MutableBuffer) -> Result<()> {
-    //     // Determine the required bits per index
-    //     let index_size = {
-    //         let palette_size = self.palette.len();
-    //
-    //         let mut bits_per_block = 0;
-    //         // Loop over allowed values.
-    //         for b in [1, 2, 3, 4, 5, 6, 8, 16] {
-    //             if 2usize.pow(b) >= palette_size {
-    //                 bits_per_block = b;
-    //                 break;
-    //             }
-    //         }
-    //
-    //         bits_per_block as u8
-    //     };
-    //
-    //     buffer.write_u8(index_size << 1);
-    //
-    //     // Amount of indices that fit in a single 32-bit integer.
-    //     let indices_per_word =
-    //         u32_ceil_div(u32::BITS, index_size as u32) as usize;
-    //
-    //     // Amount of words needed to encode 4096 block indices.
-    //     let word_count = {
-    //         let padding = match index_size {
-    //             3 | 5 | 6 => 1,
-    //             _ => 0,
-    //         };
-    //         CHUNK_SIZE / indices_per_word + padding
-    //     };
-    //
-    //     let mask = !(!0u32 << index_size);
-    //     for i in 0..word_count {
-    //         let mut word = 0;
-    //         for j in 0..indices_per_word {
-    //             let index =
-    //                 self.indices[i * indices_per_word + j] as u32 & mask;
-    //             word |= index;
-    //             word <<= indices_per_word;
-    //         }
-    //
-    //         buffer.write_u32_le(word);
-    //     }
-    //
-    //     buffer.write_u32_le(self.palette.len() as u32);
-    //     for entry in &self.palette {
-    //         todo!("serialize BlockProperties nbt");
-    //         // nbt::serialize_le("", entry, buffer);
-    //     }
-    // }
+    fn serialize<W>(&self, mut writer: W) -> Result<()>
+    where
+        W: BinaryWrite
+    {
+        // Determine the required bits per index
+        let index_size = {
+            let palette_size = self.palette.len();
+
+            let mut bits_per_block = 0;
+            // Loop over allowed values.
+            for b in [1, 2, 3, 4, 5, 6, 8, 16] {
+                if 2usize.pow(b) >= palette_size {
+                    bits_per_block = b;
+                    break;
+                }
+            }
+
+            bits_per_block as u8
+        };
+
+        writer.write_u8(index_size << 1)?;
+
+        // Amount of indices that fit in a single 32-bit integer.
+        let indices_per_word =
+            u32_ceil_div(u32::BITS, index_size as u32) as usize;
+
+        // Amount of words needed to encode 4096 block indices.
+        let word_count = {
+            let padding = match index_size {
+                3 | 5 | 6 => 1,
+                _ => 0,
+            };
+            CHUNK_SIZE / indices_per_word + padding
+        };
+
+        let mask = !(!0u32 << index_size);
+        for i in 0..word_count {
+            let mut word = 0;
+            for j in 0..indices_per_word {
+                let index =
+                    self.indices[i * indices_per_word + j] as u32 & mask;
+                word |= index;
+                word <<= indices_per_word;
+            }
+
+            writer.write_u32_le(word)?;
+        }
+
+        writer.write_u32_le(self.palette.len() as u32)?;
+        for entry in &self.palette {
+            todo!("serialize BlockProperties nbt");
+            // nbt::serialize_le("", entry, buffer);
+        }
+
+        Ok(())
+    }
 }
 
 impl Default for SubLayer {
@@ -294,16 +295,14 @@ impl SubChunk {
 
 impl SubChunk {
     /// Deserialize a full sub chunk from the given buffer.
-    pub(crate) fn deserialize<'a, R>(buffer: R) -> Result<Self>
-        where
-            R: Into<SharedBuffer<'a>>,
+    pub fn deserialize<'a, R>(mut reader: R) -> Result<Self>
+    where
+        R: BinaryRead<'a> + Copy + 'a,
     {
-        let mut buffer = buffer.into();
-
-        let version = SubChunkVersion::try_from(buffer.read_u8()?)?;
+        let version = SubChunkVersion::try_from(reader.read_u8()?)?;
         let layer_count = match version {
             SubChunkVersion::Legacy => 1,
-            _ => buffer.read_u8()?,
+            _ => reader.read_u8()?,
         };
 
         if layer_count == 0 || layer_count > 2 {
@@ -311,7 +310,7 @@ impl SubChunk {
         }
 
         let index = if version == SubChunkVersion::Limitless {
-            buffer.read_i8()?
+            reader.read_i8()?
         } else {
             0
         };
@@ -319,29 +318,42 @@ impl SubChunk {
         // let mut layers = SmallVec::with_capacity(layer_count as usize);
         let mut layers = Vec::with_capacity(layer_count as usize);
         for _ in 0..layer_count {
-            layers.push(SubLayer::deserialize(&mut buffer)?);
+            layers.push(SubLayer::deserialize(reader)?);
         }
 
         Ok(Self { version, index, layers })
     }
 
-    // pub fn serialize(&self, buffer: &mut MutableBuffer) -> Result<()> {
-    //     buffer.write_u8(self.version as u8);
-    //     match self.version {
-    //         SubChunkVersion::Legacy => todo!(),
-    //         _ => {
-    //             buffer.write_u8(self.layers.len() as u8);
-    //
-    //             if self.version == SubChunkVersion::Limitless {
-    //                 buffer.write_i8(self.index);
-    //             }
-    //
-    //             for storage_record in &self.layers {
-    //                 storage_record.serialize(buffer);
-    //             }
-    //         }
-    //     }
-    // }
+    /// Serialises the sub chunk into a new buffer and returns the buffer.
+    ///
+    /// Use [`serialize_in`](Self::serialize_in) to serialize into an existing writer.
+    pub fn serialize(&self) -> Result<MutableBuffer> {
+        let mut buffer = MutableBuffer::new();
+        self.serialize_in(&mut buffer)?;
+        Ok(buffer)
+    }
+
+    /// Serialises the sub chunk into the given writer.
+    pub fn serialize_in<W>(&self, mut writer: W) -> Result<()>
+    where
+        W: BinaryWrite
+    {
+        writer.write_u8(self.version as u8)?;
+        match self.version {
+            SubChunkVersion::Legacy => writer.write_u8(1),
+            _ => writer.write_u8(self.layers.len() as u8)
+        }?;
+
+        if self.version == SubChunkVersion::Limitless {
+            writer.write_i8(self.index)?;
+        }
+
+        for layer in &self.layers {
+            layer.serialize(&mut writer)?;
+        }
+
+        Ok(())
+    }
 }
 
 /// Iterator over blocks in a layer.

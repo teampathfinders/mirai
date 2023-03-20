@@ -40,9 +40,9 @@ mod test {
         let ser_le = to_le_bytes(&value).unwrap();
         let ser_be = to_be_bytes(&value).unwrap();
 
-        from_var_bytes::<Value>(&ser).unwrap();
-        from_le_bytes::<Value>(&ser_le).unwrap();
-        from_be_bytes::<Value>(&ser_be).unwrap();
+        from_var_bytes::<Value, _>(*ser.snapshot()).unwrap();
+        from_le_bytes::<Value, _>(*ser_le.snapshot()).unwrap();
+        from_be_bytes::<Value, _>(*ser_be.snapshot()).unwrap();
     }
 
     #[test]
@@ -101,7 +101,7 @@ mod test {
 
         let value: Value = from_be_bytes(BIG_TEST_NBT).unwrap().0;
         let value_encoded = to_be_bytes(&value).unwrap();
-        let _value_decoded: Value = from_be_bytes(&value_encoded).unwrap().0;
+        let _value_decoded: Value = from_be_bytes(*value_encoded.snapshot()).unwrap().0;
 
         // Checking floats for equality is a pain.
         // If the data can be decoded, it's pretty much correct
@@ -121,7 +121,7 @@ mod test {
 
         let value: Value = from_be_bytes(HELLO_WORLD_NBT).unwrap().0;
         let value_encoded = to_be_bytes(&value).unwrap();
-        let _value_decoded: Value = from_be_bytes(&value_encoded).unwrap().0;
+        let _value_decoded: Value = from_be_bytes(*value_encoded.snapshot()).unwrap().0;
     }
 
     #[ignore]
@@ -154,7 +154,7 @@ mod test {
         let value_encoded = to_be_bytes(&value).unwrap();
         // FIXME: For some reason this call fails.
         // I haven't seen failures in any other tests I've done, so I'm not sure what's causing this.
-        let _value_decoded: Value = from_be_bytes(&value_encoded).unwrap().0;
+        let _value_decoded: Value = from_be_bytes(*value_encoded.snapshot()).unwrap().0;
 
         // Checking floats for equality is a pain.
         // If the data can be decoded, it's pretty much correct

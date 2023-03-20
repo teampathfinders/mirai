@@ -4,7 +4,7 @@ use p384::pkcs8::spki;
 use uuid::Uuid;
 
 use util::{bail, error, Result};
-use util::bytes::{BinaryReader, SharedBuffer};
+use util::bytes::{BinaryRead, SharedBuffer};
 
 use crate::{DeviceOS, UiProfile};
 use crate::Skin;

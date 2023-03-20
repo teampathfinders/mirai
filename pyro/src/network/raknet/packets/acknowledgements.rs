@@ -1,7 +1,7 @@
 use std::ops::Range;
 
 use util::{Deserialize, Serialize};
-use util::bytes::{BinaryReader, BinaryWrite, MutableBuffer, SharedBuffer};
+use util::bytes::{BinaryRead, BinaryWrite, MutableBuffer, SharedBuffer};
 use util::pyassert;
 use util::Result;
 
