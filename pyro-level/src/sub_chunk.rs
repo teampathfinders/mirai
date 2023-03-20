@@ -33,22 +33,41 @@ fn u32_ceil_div(lhs: u32, rhs: u32) -> u32 {
     (lhs + rhs - 1) / rhs
 }
 
-/// Block-specific data.
-#[derive(Debug, PartialEq, Eq, Deserialize)]
-pub struct BlockStates {
-    // states, this should probably be a HashMap<String, nbt::Value>
-    pillar_axis: Option<String>,
+mod block_version {
+    use serde::{Deserialize, Deserializer, Serializer};
+
+    #[inline]
+    pub fn deserialize<'de, D>(de: D) -> Result<Option<[u8; 4]>, D::Error>
+    where
+        D: Deserializer<'de>
+    {
+        let word = Option::<i32>::deserialize(de)?;
+        Ok(word.map(|w| w.to_be_bytes()))
+    }
+
+    #[inline]
+    pub fn serialize<S>(ser: S, v: Option<[u8; 4]>) -> Result<(), S::Error>
+    where
+        S: Serializer
+    {
+        if let Some(b) = v {
+            ser.serialize_i32(i32::from_be_bytes(b))?;
+        }
+
+        Ok(())
+    }
 }
 
 /// Definition of block in the sub chunk block palette.
-#[derive(Debug, PartialEq, Eq, Deserialize)]
+#[derive(Debug, Deserialize)]
 pub struct BlockProperties {
     /// Name of the block.
     pub name: String,
     /// Version of the block.
-    pub version: Option<i32>,
+    #[serde(with = "block_version")]
+    pub version: Option<[u8; 4]>,
     /// Block-specific properties.
-    pub states: Option<BlockStates>,
+    pub states: Option<HashMap<String, nbt::Value>>,
 }
 
 /// A layer in a sub chunk.
@@ -143,6 +162,8 @@ impl SubLayer {
             palette.push(properties);
             buffer.advance(n);
         }
+
+        dbg!(&palette);
 
         Ok(Self { indices, palette })
     }
