@@ -1,9 +1,9 @@
-use std::{sync::{Arc, atomic::{AtomicU32, AtomicU16, AtomicBool}}, net::SocketAddr, time::Instant};
+use std::{net::SocketAddr, sync::{Arc, atomic::{AtomicBool, AtomicU16, AtomicU32}}, time::Instant};
 
-use parking_lot::{RwLock, Mutex};
+use parking_lot::{Mutex, RwLock};
 use tokio::net::UdpSocket;
 
-use crate::{CompoundCollector, OrderChannel, SendQueues, RecoveryQueue};
+use crate::{CompoundCollector, OrderChannel, RecoveryQueue, SendQueues};
 
 const ORDER_CHANNEL_COUNT: usize = 5;
 

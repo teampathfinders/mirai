@@ -1,5 +1,4 @@
-
-use util::{Serialize, Result, Vector};
+use util::{Result, Serialize, Vector};
 use util::bytes::{BinaryWrite, MutableBuffer, size_of_varint};
 
 use crate::ConnectedPacket;
@@ -31,7 +30,7 @@ impl ConnectedPacket for ClientBoundDebugRenderer<'_> {
     fn serialized_size(&self) -> usize {
         4 + if self.action == DebugRendererAction::AddCube {
             size_of_varint(self.text.len() as u32) + self.text.len() +
-            3 * 4 + 4 * 4 + 8
+                3 * 4 + 4 * 4 + 8
         } else {
             0
         }

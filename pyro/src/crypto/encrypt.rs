@@ -1,28 +1,27 @@
 use std::fmt::{Debug, Formatter};
 use std::io::{Read, Write};
 use std::ops::Deref;
-
 use std::sync::atomic::{AtomicU64, Ordering};
 
 use base64::Engine;
-use ctr::cipher::KeyIvInit;
 use ctr::cipher::{StreamCipher, StreamCipherSeekCore};
+use ctr::cipher::KeyIvInit;
 use flate2::read::DeflateDecoder;
-
 use jsonwebtoken::Algorithm;
-
-use crate::CONNECTED_PACKET_ID;
 use p384::ecdh::diffie_hellman;
 use p384::ecdsa::SigningKey;
 use p384::pkcs8::{DecodePublicKey, EncodePrivateKey, EncodePublicKey};
 use p384::PublicKey;
 use parking_lot::Mutex;
 use rand::distributions::Alphanumeric;
-use rand::rngs::OsRng;
 use rand::Rng;
+use rand::rngs::OsRng;
 use sha2::{Digest, Sha256};
-use util::bytes::{BinaryWrite, MutableBuffer, SharedBuffer};
+
 use util::{bail, Result};
+use util::bytes::{BinaryWrite, MutableBuffer, SharedBuffer};
+
+use crate::CONNECTED_PACKET_ID;
 
 type Aes256CtrBE = ctr::Ctr64BE<aes::Aes256>;
 

@@ -1,6 +1,6 @@
-
 use util::{Deserialize, Result};
 use util::bytes::{BinaryReader, SharedBuffer};
+
 use crate::ConnectedPacket;
 
 #[derive(Debug, Clone)]
@@ -9,7 +9,7 @@ pub struct CacheBlobStatus {
     pub misses: Vec<u64>,
     /// Hashes of the blobs that the client already possesses.
     /// These do not have to be sent by the server.
-    pub hits: Vec<u64>
+    pub hits: Vec<u64>,
 }
 
 impl ConnectedPacket for CacheBlobStatus {
@@ -32,7 +32,8 @@ impl Deserialize<'_> for CacheBlobStatus {
         }
 
         Ok(Self {
-            misses, hits
+            misses,
+            hits,
         })
     }
 }

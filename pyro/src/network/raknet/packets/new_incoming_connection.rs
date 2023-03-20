@@ -1,8 +1,7 @@
+use util::{bytes::BinaryReader, Deserialize};
 use util::bytes::SharedBuffer;
-
 use util::pyassert;
 use util::Result;
-use util::{bytes::BinaryReader, Deserialize};
 
 /// Confirms that the connection was successfully initiated.
 #[derive(Debug)]

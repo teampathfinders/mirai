@@ -1,20 +1,12 @@
-
-
-
-
-
 use util::{
     bail, Deserialize, Result,
 };
-use util::bytes::{MutableBuffer};
+use util::bytes::MutableBuffer;
 
-use crate::ParsedCommand;
 use crate::{
     CommandOutput, CommandOutputMessage, CommandOutputType, CommandRequest,
     SettingsCommand,
 };
-
-
 use crate::{
     {
         Animate, MessageType, RequestAbility,
@@ -23,6 +15,7 @@ use crate::{
     },
     Session,
 };
+use crate::ParsedCommand;
 
 impl Session {
     pub fn process_settings_command(&self, pk: MutableBuffer) -> Result<()> {

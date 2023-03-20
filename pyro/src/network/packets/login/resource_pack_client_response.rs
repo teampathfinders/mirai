@@ -1,11 +1,9 @@
-
-
+use util::{Error, Result};
+use util::bail;
+use util::bytes::{BinaryReader, SharedBuffer};
+use util::Deserialize;
 
 use crate::ConnectedPacket;
-use util::bail;
-use util::Deserialize;
-use util::{Error, Result};
-use util::bytes::{BinaryReader, SharedBuffer};
 
 /// Status contained in [`ResourcePackClientResponse`].
 #[derive(Debug, Copy, Clone)]

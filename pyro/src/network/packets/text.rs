@@ -1,6 +1,4 @@
-
-use util::{bail,  Error, Result};
-
+use util::{bail, Error, Result};
 use util::{Deserialize, Serialize};
 use util::bytes::{BinaryReader, BinaryWrite, MutableBuffer, SharedBuffer, VarInt, VarString};
 
@@ -80,7 +78,7 @@ impl<'a> ConnectedPacket for TextMessage<'a> {
             | MessageType::Whisper
             | MessageType::Announcement => {
                 self.source_name.var_len() +
-                self.message.var_len()
+                    self.message.var_len()
             }
             MessageType::Raw
             | MessageType::Tip
@@ -94,10 +92,10 @@ impl<'a> ConnectedPacket for TextMessage<'a> {
             | MessageType::Popup
             | MessageType::JukeboxPopup => {
                 self.message.var_len() +
-                (self.parameters.len() as u32).var_len() +
-                self.parameters.iter().fold(
-                    0, |acc, p| acc + p.var_len()
-                )
+                    (self.parameters.len() as u32).var_len() +
+                    self.parameters.iter().fold(
+                        0, |acc, p| acc + p.var_len(),
+                    )
             }
         } + self.xuid.var_len() + self.platform_chat_id.var_len()
     }

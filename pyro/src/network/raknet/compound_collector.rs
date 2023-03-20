@@ -1,10 +1,11 @@
 use std::io::Write;
+
 use dashmap::DashMap;
+
 use util::bytes::{BinaryWrite, MutableBuffer};
-
 use util::Result;
-use crate::{Frame};
 
+use crate::Frame;
 
 /// Keeps track of packet fragments, merging them when all fragments have been received.
 #[derive(Default, Debug)]

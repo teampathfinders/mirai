@@ -1,10 +1,11 @@
 #[cfg(test)]
 mod test {
     use std::collections::HashMap;
+
     use serde::{Deserialize, Serialize};
 
-    use crate::ser::to_be_bytes;
     use crate::{de::Deserializer, from_be_bytes, from_le_bytes, from_var_bytes, to_le_bytes, to_var_bytes, Value};
+    use crate::ser::to_be_bytes;
 
     const BIG_TEST_NBT: &[u8] = include_bytes!("../test/bigtest.nbt");
     const HELLO_WORLD_NBT: &[u8] = include_bytes!("../test/hello_world.nbt");
@@ -28,7 +29,7 @@ mod test {
                 ])),
                 Value::Compound(HashMap::from([
                     ("name".to_owned(), Value::String("Compound #2".to_owned())),
-                ]))
+                ])),
             ])),
             ("compound".to_owned(), Value::Compound(HashMap::from([
                 ("name".to_owned(), Value::String("Compound #3".to_owned())),
@@ -86,7 +87,7 @@ mod test {
             #[serde(rename = "listTest (compound)")]
             compound_list_test: (ListCompound, ListCompound),
             #[serde(
-                rename = "byteArrayTest (the first 1000 values of (n*n*255+n*7)%100, starting with n=0 (0, 62, 34, 16, 8, ...))"
+            rename = "byteArrayTest (the first 1000 values of (n*n*255+n*7)%100, starting with n=0 (0, 62, 34, 16, 8, ...))"
             )]
             byte_array_test: Vec<i8>,
             #[serde(rename = "shortTest")]
@@ -140,7 +141,7 @@ mod test {
             attack_time: i16,
             hurt_time: i16,
             fire: i16,
-            rotation: [f32; 2]
+            rotation: [f32; 2],
         }
 
         let decoded: Player = from_be_bytes(PLAYER_NAN_VALUE_NBT).unwrap().0;

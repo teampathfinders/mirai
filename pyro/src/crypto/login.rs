@@ -1,12 +1,13 @@
 use base64::Engine;
 use jsonwebtoken::{Algorithm, DecodingKey, Validation};
 use p384::pkcs8::spki;
-use util::bytes::{BinaryReader, SharedBuffer};
-use util::{bail, error, Result};
 use uuid::Uuid;
 
-use crate::Skin;
+use util::{bail, error, Result};
+use util::bytes::{BinaryReader, SharedBuffer};
+
 use crate::{DeviceOS, UiProfile};
+use crate::Skin;
 
 /// Mojang's public key.
 /// Used to verify the second token in the identity chain.

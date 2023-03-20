@@ -1,6 +1,6 @@
 use util::bytes::{BinaryReader, SharedBuffer};
-use util::pyassert;
 use util::Deserialize;
+use util::pyassert;
 use util::Result;
 
 /// Sent by the client or server to ping the other side.

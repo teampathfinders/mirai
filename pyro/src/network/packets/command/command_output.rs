@@ -1,9 +1,9 @@
-
 use uuid::Uuid;
-use util::{Serialize, Result};
-use util::bytes::{BinaryWrite, MutableBuffer};
-use crate::{ConnectedPacket};
 
+use util::{Result, Serialize};
+use util::bytes::{BinaryWrite, MutableBuffer};
+
+use crate::ConnectedPacket;
 use crate::CommandOriginType;
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
@@ -12,14 +12,14 @@ pub enum CommandOutputType {
     LastOutput,
     Silent,
     AllOutput,
-    DataSet
+    DataSet,
 }
 
 #[derive(Debug, Clone)]
 pub struct CommandOutputMessage<'a> {
     pub is_success: bool,
     pub message: &'a str,
-    pub parameters: &'a [String]
+    pub parameters: &'a [String],
 }
 
 #[derive(Debug, Clone)]
@@ -28,7 +28,7 @@ pub struct CommandOutput<'a> {
     pub request_id: &'a str,
     pub output_type: CommandOutputType,
     pub success_count: u32,
-    pub output: &'a [CommandOutputMessage<'a>]
+    pub output: &'a [CommandOutputMessage<'a>],
 }
 
 impl ConnectedPacket for CommandOutput<'_> {
@@ -44,7 +44,7 @@ impl Serialize for CommandOutput<'_> {
         match self.origin {
             CommandOriginType::Test | CommandOriginType::DevConsole => {
                 buffer.write_var_i64(0)?;
-            },
+            }
             _ => ()
         }
 

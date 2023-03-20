@@ -1,6 +1,5 @@
 use util::{Result, Vector};
 use util::bytes::{BinaryWrite, MutableBuffer, size_of_varint};
-
 use util::Serialize;
 
 use crate::ConnectedPacket;
@@ -32,10 +31,10 @@ impl ConnectedPacket for AddPainting<'_> {
 
     fn serialized_size(&self) -> usize {
         size_of_varint(self.runtime_id as i64) +
-        size_of_varint(self.runtime_id) + 3 * 4 +
-        size_of_varint(self.direction as i32) +
-        size_of_varint(self.name.len() as u32) + 
-        self.name.len()
+            size_of_varint(self.runtime_id) + 3 * 4 +
+            size_of_varint(self.direction as i32) +
+            size_of_varint(self.name.len() as u32) +
+            self.name.len()
     }
 }
 

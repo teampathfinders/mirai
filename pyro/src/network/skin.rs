@@ -1,9 +1,11 @@
 use std::io::Write;
-use util::{
-    bail, Serialize, Error, Result
-};
+
 use serde::Deserialize;
 use serde_repr::Deserialize_repr;
+
+use util::{
+    bail, Error, Result, Serialize,
+};
 use util::bytes::{BinaryReader, BinaryWrite, MutableBuffer, SharedBuffer};
 
 /// Size of arms of a skin.
@@ -148,7 +150,7 @@ impl PersonaPiece {
             piece_type,
             pack_id,
             default,
-            product_id
+            product_id,
         })
     }
 }
@@ -192,8 +194,8 @@ impl PersonaPieceTint {
 
         Ok(Self {
             piece_type,
-            colors
-        })  
+            colors,
+        })
     }
 }
 
@@ -269,7 +271,7 @@ impl SkinAnimation {
     pub fn serialize(&self, buffer: &mut MutableBuffer) -> Result<()> {
         buffer.write_u32_le(self.image_width)?;
         buffer.write_u32_le(self.image_height)?;
-        
+
         buffer.write_var_u32(self.image_data.len() as u32)?;
         buffer.write_all(&self.image_data)?;
 
@@ -289,7 +291,12 @@ impl SkinAnimation {
         let expression_type = SkinExpressionType::try_from(buffer.read_u32_le()?)?;
 
         Ok(Self {
-            image_width, image_height, image_data, animation_type, frame_count, expression_type
+            image_width,
+            image_height,
+            image_data,
+            animation_type,
+            frame_count,
+            expression_type,
         })
     }
 }
@@ -367,14 +374,15 @@ pub struct Skin {
     #[serde(skip)]
     pub full_id: String,
     #[serde(skip)]
-    pub is_primary_user: bool
+    pub is_primary_user: bool,
 }
 
 /// Serde deserializer for raw base64.
 mod base64 {
     use base64::Engine;
-    use serde::{Deserializer, Deserialize};
-    use util::bytes::{MutableBuffer};
+    use serde::{Deserialize, Deserializer};
+
+    use util::bytes::MutableBuffer;
 
     const ENGINE: base64::engine::GeneralPurpose = base64::engine::general_purpose::STANDARD;
 
@@ -389,7 +397,7 @@ mod base64 {
 /// Serde deserializer that decodes the base64 and converts it into a string.
 mod base64_string {
     use base64::Engine;
-    use serde::{Deserializer, Deserialize};
+    use serde::{Deserialize, Deserializer};
 
     const ENGINE: base64::engine::GeneralPurpose = base64::engine::general_purpose::STANDARD;
 
@@ -485,7 +493,7 @@ impl Skin {
         let skin_id = buffer.read_str()?.to_owned();
         let playfab_id = buffer.read_str()?.to_owned();
         let resource_patch = buffer.read_str()?.to_owned();
-        
+
         let image_width = buffer.read_u32_le()?;
         let image_height = buffer.read_u32_le()?;
         let image_size = buffer.read_var_u32()?;
@@ -513,7 +521,7 @@ impl Skin {
         let persona_piece_count = buffer.read_u32_le()?;
         let mut persona_pieces = Vec::with_capacity(persona_piece_count as usize);
         for _ in 0..persona_piece_count {
-            persona_pieces.push(PersonaPiece::deserialize(buffer)?);            
+            persona_pieces.push(PersonaPiece::deserialize(buffer)?);
         }
 
         let persona_tint_count = buffer.read_u32_le()?;
@@ -528,11 +536,11 @@ impl Skin {
         let is_primary_user = buffer.read_bool()?;
 
         Ok(Self {
-            skin_id, 
-            playfab_id, 
-            resource_patch, 
-            image_width, 
-            image_height, 
+            skin_id,
+            playfab_id,
+            resource_patch,
+            image_width,
+            image_height,
             image_data,
             animations,
             cape_image_width,
@@ -551,7 +559,7 @@ impl Skin {
             is_persona,
             cape_on_classic_skin,
             is_primary_user,
-            is_trusted: false
+            is_trusted: false,
         })
     }
 }

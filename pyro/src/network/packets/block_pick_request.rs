@@ -1,6 +1,6 @@
-
 use util::{Deserialize, Result, Vector};
 use util::bytes::{BinaryReader, SharedBuffer};
+
 use crate::ConnectedPacket;
 
 /// Sent by the client when the user requests a block using the block pick key.
@@ -11,7 +11,7 @@ pub struct BlockPickRequest {
     /// Whether to include the block's NBT tags.
     pub with_nbt: bool,
     /// Hot bar slot to put the item into.
-    pub hotbar_slot: u8
+    pub hotbar_slot: u8,
 }
 
 impl ConnectedPacket for BlockPickRequest {
@@ -23,11 +23,11 @@ impl Deserialize<'_> for BlockPickRequest {
         let position = buffer.read_veci()?;
         let with_nbt = buffer.read_bool()?;
         let hotbar_slot = buffer.read_u8()?;
-        
+
         Ok(Self {
             position,
             with_nbt,
-            hotbar_slot
+            hotbar_slot,
         })
     }
 }

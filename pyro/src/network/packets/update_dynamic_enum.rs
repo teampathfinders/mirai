@@ -1,7 +1,5 @@
-
-use util::{Result};
+use util::Result;
 use util::bytes::{BinaryWrite, MutableBuffer, size_of_varint};
-
 use util::Serialize;
 
 use crate::ConnectedPacket;
@@ -30,10 +28,10 @@ impl ConnectedPacket for UpdateDynamicEnum<'_> {
 
     fn serialized_size(&self) -> usize {
         size_of_varint(self.enum_id.len() as u32) + self.enum_id.len() +
-        size_of_varint(self.options.len() as u32) +
-        self.options.iter().fold(
-            0, |acc, o| acc + size_of_varint(o.len() as u32) + o.len()
-        ) + 1
+            size_of_varint(self.options.len() as u32) +
+            self.options.iter().fold(
+                0, |acc, o| acc + size_of_varint(o.len() as u32) + o.len(),
+            ) + 1
     }
 }
 

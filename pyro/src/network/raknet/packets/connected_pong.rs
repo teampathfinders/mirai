@@ -1,6 +1,6 @@
 use util::bytes::{BinaryWrite, MutableBuffer};
-use util::Serialize;
 use util::Result;
+use util::Serialize;
 
 /// Sent by the server or client in response to an [`OnlinePing`](crate::OnlinePing) packet.
 #[derive(Debug)]

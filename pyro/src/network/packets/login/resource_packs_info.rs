@@ -1,11 +1,10 @@
 use std::fmt::Write;
 
-
-
-use crate::ConnectedPacket;
-use util::{Serialize};
+use util::Serialize;
 use util::bytes::{BinaryWrite, MutableBuffer, VarString};
 use util::Result;
+
+use crate::ConnectedPacket;
 
 /// Behavior pack information.
 #[derive(Debug, Clone)]
@@ -33,11 +32,11 @@ pub struct BehaviorPack {
 impl BehaviorPack {
     fn serialized_size(&self) -> usize {
         8 + 1 +
-        self.uuid.var_len() +
-        self.version.var_len() +
-        self.content_key.var_len() +
-        self.subpack_name.var_len() +
-        self.content_identity.var_len()
+            self.uuid.var_len() +
+            self.version.var_len() +
+            self.content_key.var_len() +
+            self.subpack_name.var_len() +
+            self.content_identity.var_len()
     }
 }
 
@@ -69,18 +68,18 @@ pub struct ResourcePack {
 impl ResourcePack {
     fn serialized_size(&self) -> usize {
         8 + 1 + 1 +
-        self.uuid.var_len() +
-        self.version.var_len() +
-        self.content_key.var_len() +
-        self.subpack_name.var_len() +
-        self.content_identity.var_len()
+            self.uuid.var_len() +
+            self.version.var_len() +
+            self.content_key.var_len() +
+            self.subpack_name.var_len() +
+            self.content_identity.var_len()
     }
 }
 
 /// Contains information about the addons used by the server.
 /// This should be sent after sending the [`PlayStatus`](crate::PlayStatus) packet with a
 /// [`LoginSuccess`](crate::Status::LoginSuccess) status.
-/// 
+///
 /// If the server has no resource packs, a [`ResourcePackStack`](crate::ResourcePackStack) packet can be sent immediately after this one
 /// to prevent a client response.
 #[derive(Debug)]
@@ -102,12 +101,12 @@ impl<'a> ConnectedPacket for ResourcePacksInfo<'a> {
 
     fn serialized_size(&self) -> usize {
         1 + 1 + 1 + 2 + 2 +
-        self.behavior_info.iter().fold(
-            0, |acc, p| acc + p.serialized_size()
-        ) +
-        self.resource_info.iter().fold(
-            0, |acc, p| acc + p.serialized_size()
-        )
+            self.behavior_info.iter().fold(
+                0, |acc, p| acc + p.serialized_size(),
+            ) +
+            self.resource_info.iter().fold(
+                0, |acc, p| acc + p.serialized_size(),
+            )
     }
 }
 

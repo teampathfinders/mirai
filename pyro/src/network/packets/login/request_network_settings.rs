@@ -1,8 +1,4 @@
-
-
 use util::bytes::{BinaryReader, SharedBuffer};
-
-
 use util::Deserialize;
 use util::Result;
 

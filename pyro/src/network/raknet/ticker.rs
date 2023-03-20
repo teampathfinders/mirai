@@ -1,11 +1,11 @@
 use std::{
-    sync::{atomic::Ordering, Arc},
+    sync::{Arc, atomic::Ordering},
     time::{Duration, Instant},
 };
+
 use tokio::sync::mpsc;
-use util::bytes::{MutableBuffer};
 
-
+use util::bytes::MutableBuffer;
 use util::Result;
 
 use crate::{
@@ -85,7 +85,8 @@ impl Session {
                             }
                         }
                     }
-                };
+                }
+                ;
             }
         });
     }
@@ -93,7 +94,7 @@ impl Session {
     /// Signals to the session that it needs to close.
     pub fn on_disconnect(&self) {
         if !self.is_active() {
-            return
+            return;
         }
 
         self.initialized.store(false, Ordering::SeqCst);

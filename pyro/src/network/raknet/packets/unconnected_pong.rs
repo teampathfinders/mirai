@@ -1,9 +1,10 @@
 use std::io::Write;
-use util::bytes::{BinaryWrite, MutableBuffer};
 
-use crate::OFFLINE_MESSAGE_DATA;
+use util::bytes::{BinaryWrite, MutableBuffer};
 use util::Result;
 use util::Serialize;
+
+use crate::OFFLINE_MESSAGE_DATA;
 
 /// Response to [`OfflinePing`](crate::offline_ping::OfflinePing).
 #[derive(Debug)]

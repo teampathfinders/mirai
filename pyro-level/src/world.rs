@@ -1,5 +1,5 @@
-use util::bytes::MutableBuffer;
 use util::{Result, Serialize};
+use util::bytes::MutableBuffer;
 
 // Special keys
 
@@ -276,16 +276,16 @@ impl DatabaseKey {
     pub(crate) fn serialized_size(&self) -> usize {
         4 + 4
             + if self.dimension != Dimension::Overworld {
-                4
-            } else {
-                0
-            }
+            4
+        } else {
+            0
+        }
             + 1
             + if let KeyData::SubChunk { .. } = self.data {
-                1
-            } else {
-                0
-            }
+            1
+        } else {
+            0
+        }
     }
 
     // pub(crate) fn serialize(&self, buffer: &mut MutableBuffer) -> Result<()> {

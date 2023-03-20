@@ -1,10 +1,8 @@
-
-
-
-use crate::ConnectedPacket;
-use util::{Serialize};
+use util::Serialize;
 use util::bytes::{BinaryWrite, MutableBuffer, VarString};
 use util::Result;
+
+use crate::ConnectedPacket;
 
 pub const DISCONNECTED_NOT_AUTHENTICATED: &str =
     "disconnectionScreen.notAuthenticated";

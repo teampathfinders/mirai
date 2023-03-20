@@ -100,8 +100,8 @@ impl std::error::Error for Error {}
 impl serde::de::Error for Error {
     #[inline]
     fn custom<T>(v: T) -> Self
-    where
-        T: fmt::Display,
+        where
+            T: fmt::Display,
     {
         Self {
             kind: ErrorKind::Malformed,
@@ -114,8 +114,8 @@ impl serde::de::Error for Error {
 impl serde::ser::Error for Error {
     #[inline]
     fn custom<T>(v: T) -> Self
-    where
-        T: fmt::Display,
+        where
+            T: fmt::Display,
     {
         Self {
             kind: ErrorKind::Unsupported,

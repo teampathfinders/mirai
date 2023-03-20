@@ -1,7 +1,5 @@
-
 use util::{BlockPosition, Result};
 use util::bytes::{BinaryWrite, MutableBuffer, size_of_varint};
-
 use util::Serialize;
 
 use crate::ConnectedPacket;
@@ -17,9 +15,9 @@ impl ConnectedPacket for NetworkChunkPublisherUpdate {
 
     fn serialized_size(&self) -> usize {
         size_of_varint(self.position.x) +
-        size_of_varint(self.position.y) +
-        size_of_varint(self.position.z) +
-        size_of_varint(self.radius) + 4
+            size_of_varint(self.position.y) +
+            size_of_varint(self.position.z) +
+            size_of_varint(self.radius) + 4
     }
 }
 

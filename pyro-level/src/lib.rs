@@ -1,5 +1,15 @@
 extern crate core;
 
+use std::{sync::Arc, time::Duration};
+
+use tokio::sync::oneshot::{Receiver, Sender};
+use tokio_util::sync::CancellationToken;
+
+use database::Database;
+pub use sub_chunk::*;
+use util::Result;
+pub use world::*;
+
 #[cfg(test)]
 mod test;
 
@@ -8,15 +18,6 @@ pub mod database;
 mod ffi;
 mod sub_chunk;
 mod world;
-
-use std::{sync::Arc, time::Duration};
-
-use database::Database;
-pub use sub_chunk::*;
-use tokio::sync::oneshot::{Receiver, Sender};
-use tokio_util::sync::CancellationToken;
-use util::Result;
-pub use world::*;
 
 pub struct ChunkManager {
     /// Chunk database
@@ -69,7 +70,8 @@ impl ChunkManager {
             tokio::select! {
                 _ = interval.tick() => (),
                 _ = self.token.cancelled() => break
-            };
+            }
+            ;
         }
 
         // Save before closing.

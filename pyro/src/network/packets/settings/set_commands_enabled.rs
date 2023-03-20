@@ -1,7 +1,5 @@
-
-use util::{Result};
+use util::Result;
 use util::bytes::{BinaryWrite, MutableBuffer};
-
 use util::Serialize;
 
 use crate::ConnectedPacket;

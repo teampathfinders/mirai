@@ -1,8 +1,9 @@
-use crate::ConnectedPacket;
-use util::bail;
-use util::Deserialize;
 use util::{Error, Result};
+use util::bail;
 use util::bytes::{BinaryReader, SharedBuffer};
+use util::Deserialize;
+
+use crate::ConnectedPacket;
 
 #[derive(Debug, Copy, Clone)]
 pub enum ViolationType {

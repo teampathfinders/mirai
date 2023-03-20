@@ -1,9 +1,10 @@
 use std::cmp::Ordering;
 use std::collections::HashMap;
-
 use std::str::Split;
-use util::{Result, bail};
+
 use dashmap::DashMap;
+
+use util::{bail, Result};
 
 use crate::{Command, CommandDataType, CommandOverload};
 
@@ -11,20 +12,20 @@ use crate::{Command, CommandDataType, CommandOverload};
 pub enum CommandParseErrorKind {
     NonExistentCommand,
     MissingArgument,
-    InvalidOption
+    InvalidOption,
 }
 
 #[derive(Debug, Clone)]
 pub struct CommandParseError {
     kind: CommandParseErrorKind,
-    description: String
+    description: String,
 }
 
 #[derive(Debug)]
 pub enum ParsedArgument {
     Int(i32),
     Float(f32),
-    String(String)
+    String(String),
 }
 
 impl ParsedArgument {
@@ -40,7 +41,7 @@ impl ParsedArgument {
 #[derive(Debug)]
 pub struct ParsedCommand {
     pub name: String,
-    pub parameters: HashMap<String, ParsedArgument>
+    pub parameters: HashMap<String, ParsedArgument>,
 }
 
 impl ParsedCommand {
@@ -49,14 +50,14 @@ impl ParsedCommand {
         -> std::result::Result<Self, String>
     {
         let mut parts = raw.split(' ');
-        
+
         // Make sure the string is not empty.
         let name = if let Some(name) = parts.next() {
             let mut chars = name.chars();
             chars.next();
             chars.as_str().to_owned()
         } else {
-            return Err("Command line cannot be empty".to_owned())
+            return Err("Command line cannot be empty".to_owned());
         };
 
         // Verify the command exists and find the command's parameters.
@@ -68,8 +69,9 @@ impl ParsedCommand {
                 let parse_result = parse_overload(overload, parts.clone());
                 if let Ok(parsed) = parse_result {
                     return Ok(Self {
-                        name, parameters: parsed
-                    })
+                        name,
+                        parameters: parsed,
+                    });
                 } else {
                     let err = parse_result.unwrap_err();
 
@@ -78,11 +80,11 @@ impl ParsedCommand {
                         Ordering::Less => {
                             latest_error = err.0;
                             furthest_param = err.1 as i32
-                        },
+                        }
                         // If two overloads are equally successful, use the newest one only.
                         Ordering::Equal => {
                             latest_error = err.0;
-                        },
+                        }
                         Ordering::Greater => ()
                     }
                 }
@@ -90,14 +92,14 @@ impl ParsedCommand {
 
             return Err(format!(
                 "Syntax error: {latest_error}"
-            ))
+            ));
         } else {
-            return Err(format!("Unknown command: {name}. Please check that the command exists and you have permission to use it."))
+            return Err(format!("Unknown command: {name}. Please check that the command exists and you have permission to use it."));
         }
     }
 }
 
-fn parse_overload(overload: &CommandOverload, mut parts: Split<char>) 
+fn parse_overload(overload: &CommandOverload, mut parts: Split<char>)
     -> std::result::Result<HashMap<String, ParsedArgument>, (String, usize)>
 {
     let mut parsed = HashMap::new();
@@ -105,9 +107,9 @@ fn parse_overload(overload: &CommandOverload, mut parts: Split<char>)
         let part = if let Some(part) = parts.next() {
             part
         } else if parameter.optional {
-            return Ok(parsed)
+            return Ok(parsed);
         } else {
-            return Err((format!("Expected {} arguments, got {}", overload.parameters.len(), i), i))
+            return Err((format!("Expected {} arguments, got {}", overload.parameters.len(), i), i));
         };
 
         // Verify that the argument matches one of the predefined options.
@@ -124,7 +126,7 @@ fn parse_overload(overload: &CommandOverload, mut parts: Split<char>)
                     options_tip += "..";
                 }
 
-                return Err((format!("Option '{part}' is invalid. Help: use one of the predefined options: {options_tip}."), i))
+                return Err((format!("Option '{part}' is invalid. Help: use one of the predefined options: {options_tip}."), i));
             }
         }
 
@@ -136,7 +138,7 @@ fn parse_overload(overload: &CommandOverload, mut parts: Split<char>)
                 if let Ok(value) = result {
                     ParsedArgument::Int(value)
                 } else {
-                    return Err((format!("Failed to parse argument '{}'. Expected a valid integer.", part), i))
+                    return Err((format!("Failed to parse argument '{}'. Expected a valid integer.", part), i));
                 }
             }
             _ => todo!()

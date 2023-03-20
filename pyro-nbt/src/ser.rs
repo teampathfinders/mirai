@@ -1,16 +1,18 @@
+use std::io::Write;
+use std::marker::PhantomData;
+
 use paste::paste;
+use serde::{ser, Serialize};
 use serde::de::SeqAccess;
 use serde::ser::{
     Impossible, SerializeMap, SerializeSeq, SerializeStruct, SerializeTuple,
 };
-use serde::{ser, Serialize};
-use std::io::Write;
-use std::marker::PhantomData;
-use util::bytes::{BinaryWrite, MutableBuffer};
+
 use util::{bail, Error, Result};
+use util::bytes::{BinaryWrite, MutableBuffer};
 
 use crate::{
-    de, BigEndian, FieldType, LittleEndian, Variable, Variant, VariantImpl,
+    BigEndian, de, FieldType, LittleEndian, Variable, Variant, VariantImpl,
 };
 
 /// Serializes the given data in big endian format.
@@ -37,8 +39,8 @@ use crate::{
 /// ```
 #[inline]
 pub fn to_be_bytes<T>(v: &T) -> Result<MutableBuffer>
-where
-    T: ?Sized + Serialize,
+    where
+        T: ?Sized + Serialize,
 {
     let mut ser = Serializer::<_, BigEndian>::new(MutableBuffer::new());
 
@@ -70,8 +72,8 @@ where
 /// ```
 #[inline]
 pub fn to_le_bytes<T>(v: &T) -> Result<MutableBuffer>
-where
-    T: ?Sized + Serialize,
+    where
+        T: ?Sized + Serialize,
 {
     let mut ser = Serializer::<_, LittleEndian>::new(MutableBuffer::new());
 
@@ -103,8 +105,8 @@ where
 /// ```
 #[inline]
 pub fn to_var_bytes<T>(v: &T) -> Result<MutableBuffer>
-where
-    T: ?Sized + Serialize,
+    where
+        T: ?Sized + Serialize,
 {
     let mut ser = Serializer::<_, Variable>::new(MutableBuffer::new());
 
@@ -208,9 +210,9 @@ pub fn to_var_bytes_in<W, T>(w: W, value: &T) -> Result<()>
 /// NBT data serialiser.
 #[derive(Debug)]
 pub struct Serializer<W, F>
-where
-    W: Write,
-    F: VariantImpl,
+    where
+        W: Write,
+        F: VariantImpl,
 {
     writer: W,
     /// Whether this is the first data to be written.
@@ -222,9 +224,9 @@ where
 }
 
 impl<W, M> Serializer<W, M>
-where
-    W: Write,
-    M: VariantImpl,
+    where
+        W: Write,
+        M: VariantImpl,
 {
     /// Creates a new and empty serialiser.
     #[inline]
@@ -257,9 +259,9 @@ macro_rules! forward_unsupported {
 }
 
 impl<'a, W, M> ser::Serializer for &'a mut Serializer<W, M>
-where
-    M: VariantImpl,
-    W: Write,
+    where
+        M: VariantImpl,
+        W: Write,
 {
     type Ok = ();
     type Error = Error;
@@ -364,8 +366,8 @@ where
     }
 
     fn serialize_some<T: ?Sized>(self, value: &T) -> Result<()>
-    where
-        T: Serialize,
+        where
+            T: Serialize,
     {
         value.serialize(self)
     }
@@ -394,8 +396,8 @@ where
         name: &'static str,
         value: &T,
     ) -> Result<()>
-    where
-        T: Serialize,
+        where
+            T: Serialize,
     {
         todo!()
     }
@@ -407,8 +409,8 @@ where
         variant: &'static str,
         value: &T,
     ) -> Result<()>
-    where
-        T: Serialize,
+        where
+            T: Serialize,
     {
         todo!()
     }
@@ -491,17 +493,17 @@ where
 }
 
 impl<'a, W, F> SerializeSeq for &'a mut Serializer<W, F>
-where
-    W: Write,
-    F: VariantImpl,
+    where
+        W: Write,
+        F: VariantImpl,
 {
     type Ok = ();
     type Error = Error;
 
     #[inline]
     fn serialize_element<T>(&mut self, element: &T) -> Result<()>
-    where
-        T: ?Sized + Serialize,
+        where
+            T: ?Sized + Serialize,
     {
         if self.len != 0 {
             let ty_serializer = FieldTypeSerializer::new(self);
@@ -527,17 +529,17 @@ where
 }
 
 impl<'a, W, M> SerializeTuple for &'a mut Serializer<W, M>
-where
-    W: Write,
-    M: VariantImpl,
+    where
+        W: Write,
+        M: VariantImpl,
 {
     type Ok = ();
     type Error = Error;
 
     #[inline]
     fn serialize_element<T>(&mut self, element: &T) -> Result<()>
-    where
-        T: ?Sized + Serialize,
+        where
+            T: ?Sized + Serialize,
     {
         if self.len != 0 {
             let ty_serializer = FieldTypeSerializer::new(self);
@@ -563,31 +565,31 @@ where
 }
 
 impl<'a, W, M> SerializeMap for &'a mut Serializer<W, M>
-where
-    W: Write,
-    M: VariantImpl,
+    where
+        W: Write,
+        M: VariantImpl,
 {
     type Ok = ();
     type Error = Error;
 
     fn serialize_key<K>(&mut self, _key: &K) -> Result<()>
-    where
-        K: ?Sized + Serialize,
+        where
+            K: ?Sized + Serialize,
     {
         unimplemented!("Use MapSerializer::serialize_entry instead");
     }
 
     fn serialize_value<V>(&mut self, _value: &V) -> Result<()>
-    where
-        V: ?Sized + Serialize,
+        where
+            V: ?Sized + Serialize,
     {
         unimplemented!("Use MapSerializer::serialize_entry instead");
     }
 
     fn serialize_entry<K, V>(&mut self, key: &K, value: &V) -> Result<()>
-    where
-        K: ?Sized + Serialize,
-        V: ?Sized + Serialize,
+        where
+            K: ?Sized + Serialize,
+            V: ?Sized + Serialize,
     {
         let ty_serializer = FieldTypeSerializer::new(self);
         value.serialize(ty_serializer)?;
@@ -603,16 +605,16 @@ where
 }
 
 impl<'a, W, M> SerializeStruct for &'a mut Serializer<W, M>
-where
-    W: Write,
-    M: VariantImpl,
+    where
+        W: Write,
+        M: VariantImpl,
 {
     type Ok = ();
     type Error = Error;
 
     fn serialize_field<V>(&mut self, key: &'static str, value: &V) -> Result<()>
-    where
-        V: ?Sized + Serialize,
+        where
+            V: ?Sized + Serialize,
     {
         let ty_serializer = FieldTypeSerializer::new(self);
         value.serialize(ty_serializer)?;
@@ -639,17 +641,17 @@ where
 ///
 /// This serialiser writes the data type of the given value and does not consume it.
 struct FieldTypeSerializer<'a, W, F>
-where
-    W: Write,
-    F: VariantImpl,
+    where
+        W: Write,
+        F: VariantImpl,
 {
     ser: &'a mut Serializer<W, F>,
 }
 
 impl<'a, W, F> FieldTypeSerializer<'a, W, F>
-where
-    W: Write,
-    F: VariantImpl,
+    where
+        W: Write,
+        F: VariantImpl,
 {
     pub fn new(ser: &'a mut Serializer<W, F>) -> Self {
         Self { ser }
@@ -657,9 +659,9 @@ where
 }
 
 impl<'a, W, F> ser::Serializer for FieldTypeSerializer<'a, W, F>
-where
-    W: Write,
-    F: VariantImpl,
+    where
+        W: Write,
+        F: VariantImpl,
 {
     type Ok = ();
     type Error = Error;
@@ -744,8 +746,8 @@ where
         self,
         value: &T,
     ) -> std::result::Result<Self::Ok, Self::Error>
-    where
-        T: Serialize,
+        where
+            T: Serialize,
     {
         value.serialize(self)
     }
@@ -775,8 +777,8 @@ where
         name: &'static str,
         value: &T,
     ) -> std::result::Result<Self::Ok, Self::Error>
-    where
-        T: Serialize,
+        where
+            T: Serialize,
     {
         todo!()
     }
@@ -788,8 +790,8 @@ where
         variant: &'static str,
         value: &T,
     ) -> std::result::Result<Self::Ok, Self::Error>
-    where
-        T: Serialize,
+        where
+            T: Serialize,
     {
         todo!()
     }
@@ -859,17 +861,17 @@ where
 }
 
 impl<'a, W, F> SerializeSeq for FieldTypeSerializer<'a, W, F>
-where
-    W: Write,
-    F: VariantImpl,
+    where
+        W: Write,
+        F: VariantImpl,
 {
     type Ok = ();
     type Error = Error;
 
     #[inline]
     fn serialize_element<T>(&mut self, _element: &T) -> Result<()>
-    where
-        T: ?Sized + Serialize,
+        where
+            T: ?Sized + Serialize,
     {
         Ok(())
     }
@@ -881,17 +883,17 @@ where
 }
 
 impl<'a, W, F> SerializeTuple for FieldTypeSerializer<'a, W, F>
-where
-    W: Write,
-    F: VariantImpl,
+    where
+        W: Write,
+        F: VariantImpl,
 {
     type Ok = ();
     type Error = Error;
 
     #[inline]
     fn serialize_element<T>(&mut self, _element: &T) -> Result<()>
-    where
-        T: ?Sized + Serialize,
+        where
+            T: ?Sized + Serialize,
     {
         Ok(())
     }
@@ -903,25 +905,25 @@ where
 }
 
 impl<'a, W, F> SerializeMap for FieldTypeSerializer<'a, W, F>
-where
-    W: Write,
-    F: VariantImpl,
+    where
+        W: Write,
+        F: VariantImpl,
 {
     type Ok = ();
     type Error = Error;
 
     #[inline]
     fn serialize_key<K>(&mut self, _key: &K) -> Result<()>
-    where
-        K: ?Sized + Serialize,
+        where
+            K: ?Sized + Serialize,
     {
         Ok(())
     }
 
     #[inline]
     fn serialize_value<V>(&mut self, _value: &V) -> Result<()>
-    where
-        V: ?Sized + Serialize,
+        where
+            V: ?Sized + Serialize,
     {
         Ok(())
     }
@@ -933,9 +935,9 @@ where
 }
 
 impl<'a, W, F> SerializeStruct for FieldTypeSerializer<'a, W, F>
-where
-    W: Write,
-    F: VariantImpl,
+    where
+        W: Write,
+        F: VariantImpl,
 {
     type Ok = ();
     type Error = Error;
@@ -946,8 +948,8 @@ where
         _key: &'static str,
         value: &V,
     ) -> Result<()>
-    where
-        V: ?Sized + Serialize,
+        where
+            V: ?Sized + Serialize,
     {
         Ok(())
     }

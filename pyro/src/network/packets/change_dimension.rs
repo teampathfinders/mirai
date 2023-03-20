@@ -1,9 +1,7 @@
-
-use util::{Result, Vector};
-
-use util::Serialize;
 use level::Dimension;
+use util::{Result, Vector};
 use util::bytes::{BinaryWrite, MutableBuffer};
+use util::Serialize;
 
 use crate::ConnectedPacket;
 

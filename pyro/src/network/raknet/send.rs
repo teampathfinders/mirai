@@ -2,23 +2,21 @@ use std::io::Write;
 use std::sync::atomic::Ordering;
 
 use async_recursion::async_recursion;
-
-use flate2::write::DeflateEncoder;
 use flate2::Compression;
+use flate2::write::DeflateEncoder;
 
-use crate::SERVER_CONFIG;
-
-use crate::CompressionAlgorithm;
-use crate::{ConnectedPacket, Packet, CONNECTED_PACKET_ID};
-use crate::{Ack, AckRecord};
-use crate::Reliability;
-use crate::{Frame, FrameBatch};
-use crate::Session;
-use util::Result;
-use util::{Serialize};
+use util::Serialize;
 use util::bytes::{BinaryWrite, MutableBuffer, SharedBuffer};
+use util::Result;
 
+use crate::{CONNECTED_PACKET_ID, ConnectedPacket, Packet};
+use crate::{Ack, AckRecord};
+use crate::{Frame, FrameBatch};
+use crate::CompressionAlgorithm;
+use crate::Reliability;
 use crate::SendPriority;
+use crate::SERVER_CONFIG;
+use crate::Session;
 
 pub struct PacketConfig {
     pub reliability: Reliability,
@@ -43,8 +41,8 @@ impl Session {
 
     /// Sends a game packet with custom reliability and priority
     pub fn send_serialized<B>(&self, mut pk: B, config: PacketConfig) -> Result<()>
-    where
-        B: AsRef<[u8]>
+        where
+            B: AsRef<[u8]>
     {
         let mut out;
         if self.raknet.compression_enabled.load(Ordering::SeqCst) {
@@ -96,8 +94,8 @@ impl Session {
     /// (reliable ordered and medium priority).
     #[inline]
     pub fn send_raw_buffer<B>(&self, buffer: B)
-    where
-        B: Into<MutableBuffer>
+        where
+            B: Into<MutableBuffer>
     {
         self.send_raw_buffer_with_config(buffer, DEFAULT_SEND_CONFIG);
     }

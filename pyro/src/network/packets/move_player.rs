@@ -1,6 +1,4 @@
-
 use util::{bail, Error, Result, Vector};
-
 use util::{Deserialize, Serialize};
 use util::bytes::{BinaryReader, BinaryWrite, MutableBuffer, SharedBuffer, size_of_varint};
 
@@ -67,17 +65,17 @@ pub struct MovePlayer {
 
 impl ConnectedPacket for MovePlayer {
     const ID: u32 = 0x13;
-    
+
     fn serialized_size(&self) -> usize {
         size_of_varint(self.runtime_id) +
-        3 * 4 + 3 * 4 + 1 + 1 +
-        size_of_varint(self.ridden_runtime_id) +
-        size_of_varint(self.tick) +
-        if self.mode == MovementMode::Teleport {
-            4 + 4
-        } else {
-            0
-        }
+            3 * 4 + 3 * 4 + 1 + 1 +
+            size_of_varint(self.ridden_runtime_id) +
+            size_of_varint(self.tick) +
+            if self.mode == MovementMode::Teleport {
+                4 + 4
+            } else {
+                0
+            }
     }
 }
 

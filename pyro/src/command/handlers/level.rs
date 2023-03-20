@@ -1,13 +1,11 @@
-
-
-use util::{pyassert, Result, error};
+use util::{error, pyassert, Result};
 
 use crate::{command::ParsedCommand, level_manager::LevelManager, network::GameRule};
 
 impl LevelManager {
     pub fn execute_game_rule_command(&self, command: ParsedCommand) -> Result<String> {
         pyassert!(command.name == "gamerule");
-        
+
         let rule_name = command.parameters.get("rule")
             // Rule parameter should exist, but this is here just to be sure.
             .ok_or_else(|| error!(Malformed, "Missing game rule name."))?

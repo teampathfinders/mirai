@@ -1,11 +1,12 @@
-use crate::u24::u24;
-use crate::{BlockPosition, Vector};
-use paste::paste;
 use std::io::Write;
 use std::net::SocketAddr;
+
+use paste::paste;
 use uuid::Uuid;
 
+use crate::{BlockPosition, Vector};
 use crate::Result;
+use crate::u24::u24;
 
 macro_rules! declare_primitive_fns {
     ($($ty: ident),+) => {

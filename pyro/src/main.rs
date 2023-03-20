@@ -1,6 +1,6 @@
 use std::sync::atomic::{AtomicU16, Ordering};
 
-use clap::{crate_authors, crate_description, Command};
+use clap::{Command, crate_authors, crate_description};
 use tokio::runtime;
 
 use pyro::InstanceManager;
@@ -9,9 +9,9 @@ use util::Result;
 fn main() -> Result<()> {
     let _ = Command::new("pyro")
         .version(concat!(
-            env!("VERGEN_GIT_SHA_SHORT"),
-            " ",
-            env!("VERGEN_BUILD_TIMESTAMP")
+        env!("VERGEN_GIT_SHA_SHORT"),
+        " ",
+        env!("VERGEN_BUILD_TIMESTAMP")
         ))
         .author(crate_authors!("\n"))
         .about(crate_description!())

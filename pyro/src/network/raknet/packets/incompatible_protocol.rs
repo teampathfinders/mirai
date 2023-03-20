@@ -1,8 +1,10 @@
-use crate::{OFFLINE_MESSAGE_DATA, RAKNET_VERSION};
 use std::io::Write;
+
 use util::bytes::{BinaryWrite, MutableBuffer};
 use util::Result;
 use util::Serialize;
+
+use crate::{OFFLINE_MESSAGE_DATA, RAKNET_VERSION};
 
 /// Notifies the client that they're using a version of the Raknet protocol that is incompatible
 /// with the version used by the server ([`RAKNET_VERSION`]).

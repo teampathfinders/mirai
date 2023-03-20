@@ -1,17 +1,19 @@
-use paste::paste;
 use std::any::TypeId;
 use std::fmt;
 use std::io::Read;
 use std::marker::PhantomData;
 
+use paste::paste;
+use serde::{de, Deserialize};
+use serde::de::{DeserializeSeed, MapAccess, SeqAccess, Visitor};
+use serde::de::Unexpected::Seq;
+
+use util::{bail, Error, Result};
+use util::bytes::{BinaryReader, MutableBuffer, SharedBuffer};
+
 use crate::{
     BigEndian, FieldType, LittleEndian, Variable, Variant, VariantImpl,
 };
-use serde::de::Unexpected::Seq;
-use serde::de::{DeserializeSeed, MapAccess, SeqAccess, Visitor};
-use serde::{de, Deserialize};
-use util::bytes::{BinaryReader, MutableBuffer, SharedBuffer};
-use util::{bail, Error, Result};
 
 /// Verifies that the deserialised type is equal to the expected type.
 macro_rules! is_ty {
@@ -45,8 +47,8 @@ macro_rules! forward_unsupported {
 /// NBT deserialiser.
 #[derive(Debug)]
 pub struct Deserializer<'de, F>
-where
-    F: VariantImpl,
+    where
+        F: VariantImpl,
 {
     input: SharedBuffer<'de>,
     next_ty: FieldType,
@@ -55,8 +57,8 @@ where
 }
 
 impl<'de, F> Deserializer<'de, F>
-where
-    F: VariantImpl,
+    where
+        F: VariantImpl,
 {
     /// Creates a new deserialiser.
     #[inline]
@@ -100,9 +102,9 @@ where
 /// On success, the deserialised object and amount of bytes read from the buffer are returned.
 #[inline]
 fn from_bytes<'a, T, F>(b: &'a [u8]) -> Result<(T, usize)>
-where
-    T: Deserialize<'a>,
-    F: VariantImpl,
+    where
+        T: Deserialize<'a>,
+        F: VariantImpl,
 {
     let start = b.len();
     let mut deserializer = Deserializer::<F>::new(b)?;
@@ -137,8 +139,8 @@ where
 /// ```
 #[inline]
 pub fn from_le_bytes<'a, T>(b: &'a [u8]) -> Result<(T, usize)>
-where
-    T: Deserialize<'a>,
+    where
+        T: Deserialize<'a>,
 {
     from_bytes::<T, LittleEndian>(b)
 }
@@ -168,8 +170,8 @@ where
 /// ```
 #[inline]
 pub fn from_be_bytes<'a, T>(b: &'a [u8]) -> Result<(T, usize)>
-where
-    T: Deserialize<'a>,
+    where
+        T: Deserialize<'a>,
 {
     from_bytes::<T, BigEndian>(b)
 }
@@ -199,23 +201,23 @@ where
 /// ```
 #[inline]
 pub fn from_var_bytes<'a, T>(b: &'a [u8]) -> Result<(T, usize)>
-where
-    T: Deserialize<'a>,
+    where
+        T: Deserialize<'a>,
 {
     from_bytes::<T, Variable>(b)
 }
 
 impl<'de, 'a, F> de::Deserializer<'de> for &'a mut Deserializer<'de, F>
-where
-    F: VariantImpl,
+    where
+        F: VariantImpl,
 {
     type Error = Error;
 
     forward_unsupported!(char, u8, u16, u32, u64, i128, u128);
 
     fn deserialize_any<V>(self, visitor: V) -> Result<V::Value>
-    where
-        V: Visitor<'de>,
+        where
+            V: Visitor<'de>,
     {
         if self.is_key {
             self.deserialize_str(visitor)
@@ -243,8 +245,8 @@ where
 
     #[inline]
     fn deserialize_bool<V>(self, visitor: V) -> Result<V::Value>
-    where
-        V: Visitor<'de>,
+        where
+            V: Visitor<'de>,
     {
         is_ty!(Byte, self.next_ty);
 
@@ -254,8 +256,8 @@ where
 
     #[inline]
     fn deserialize_i8<V>(self, visitor: V) -> Result<V::Value>
-    where
-        V: Visitor<'de>,
+        where
+            V: Visitor<'de>,
     {
         is_ty!(Byte, self.next_ty);
 
@@ -265,8 +267,8 @@ where
 
     #[inline]
     fn deserialize_i16<V>(self, visitor: V) -> Result<V::Value>
-    where
-        V: Visitor<'de>,
+        where
+            V: Visitor<'de>,
     {
         is_ty!(Short, self.next_ty);
 
@@ -282,8 +284,8 @@ where
 
     #[inline]
     fn deserialize_i32<V>(self, visitor: V) -> Result<V::Value>
-    where
-        V: Visitor<'de>,
+        where
+            V: Visitor<'de>,
     {
         is_ty!(Int, self.next_ty);
 
@@ -298,8 +300,8 @@ where
 
     #[inline]
     fn deserialize_i64<V>(self, visitor: V) -> Result<V::Value>
-    where
-        V: Visitor<'de>,
+        where
+            V: Visitor<'de>,
     {
         is_ty!(Long, self.next_ty);
 
@@ -314,8 +316,8 @@ where
 
     #[inline]
     fn deserialize_f32<V>(self, visitor: V) -> Result<V::Value>
-    where
-        V: Visitor<'de>,
+        where
+            V: Visitor<'de>,
     {
         is_ty!(Float, self.next_ty);
 
@@ -329,8 +331,8 @@ where
 
     #[inline]
     fn deserialize_f64<V>(self, visitor: V) -> Result<V::Value>
-    where
-        V: Visitor<'de>,
+        where
+            V: Visitor<'de>,
     {
         is_ty!(Double, self.next_ty);
 
@@ -344,8 +346,8 @@ where
 
     #[inline]
     fn deserialize_str<V>(self, visitor: V) -> Result<V::Value>
-    where
-        V: Visitor<'de>,
+        where
+            V: Visitor<'de>,
     {
         let len = match F::AS_ENUM {
             Variant::BigEndian => self.input.read_u16_be()? as u32,
@@ -361,8 +363,8 @@ where
 
     #[inline]
     fn deserialize_string<V>(self, visitor: V) -> Result<V::Value>
-    where
-        V: Visitor<'de>,
+        where
+            V: Visitor<'de>,
     {
         is_ty!(String, self.next_ty);
 
@@ -379,15 +381,15 @@ where
     }
 
     fn deserialize_bytes<V>(self, visitor: V) -> Result<V::Value>
-    where
-        V: Visitor<'de>,
+        where
+            V: Visitor<'de>,
     {
         bail!(Unsupported, "NBT does not support borrowed byte arrays")
     }
 
     fn deserialize_byte_buf<V>(self, visitor: V) -> Result<V::Value>
-    where
-        V: Visitor<'de>,
+        where
+            V: Visitor<'de>,
     {
         is_ty!(ByteArray, self.next_ty);
 
@@ -403,8 +405,8 @@ where
 
     #[inline]
     fn deserialize_option<V>(self, visitor: V) -> Result<V::Value>
-    where
-        V: Visitor<'de>,
+        where
+            V: Visitor<'de>,
     {
         // This is only used to represent possibly missing fields.
         // If this code is reached, it means the key was found and the field exists.
@@ -413,8 +415,8 @@ where
     }
 
     fn deserialize_unit<V>(self, _visitor: V) -> Result<V::Value>
-    where
-        V: Visitor<'de>,
+        where
+            V: Visitor<'de>,
     {
         bail!(Unsupported)
     }
@@ -424,8 +426,8 @@ where
         _name: &'static str,
         _visitor: V,
     ) -> Result<V::Value>
-    where
-        V: Visitor<'de>,
+        where
+            V: Visitor<'de>,
     {
         bail!(Unsupported, "NBT does not support unit structs")
     }
@@ -435,24 +437,24 @@ where
         _name: &'static str,
         _visitor: V,
     ) -> Result<V::Value>
-    where
-        V: Visitor<'de>,
+        where
+            V: Visitor<'de>,
     {
         bail!(Unsupported, "NBT does not support newtype structs")
     }
 
     #[inline]
     fn deserialize_seq<V>(self, visitor: V) -> Result<V::Value>
-    where
-        V: Visitor<'de>,
+        where
+            V: Visitor<'de>,
     {
         self.deserialize_tuple(0, visitor)
     }
 
     #[inline]
     fn deserialize_tuple<V>(self, len: usize, visitor: V) -> Result<V::Value>
-    where
-        V: Visitor<'de>,
+        where
+            V: Visitor<'de>,
     {
         let ty = match self.next_ty {
             FieldType::ByteArray => FieldType::Byte,
@@ -471,16 +473,16 @@ where
         _len: usize,
         _visitor: V,
     ) -> Result<V::Value>
-    where
-        V: Visitor<'de>,
+        where
+            V: Visitor<'de>,
     {
         bail!(Unsupported, "NBT does not support tuple structs")
     }
 
     #[inline]
     fn deserialize_map<V>(self, visitor: V) -> Result<V::Value>
-    where
-        V: Visitor<'de>,
+        where
+            V: Visitor<'de>,
     {
         is_ty!(Compound, self.next_ty);
 
@@ -495,8 +497,8 @@ where
         _fields: &'static [&'static str],
         visitor: V,
     ) -> Result<V::Value>
-    where
-        V: Visitor<'de>,
+        where
+            V: Visitor<'de>,
     {
         self.deserialize_any(visitor)
     }
@@ -507,24 +509,24 @@ where
         _variants: &'static [&'static str],
         _visitor: V,
     ) -> Result<V::Value>
-    where
-        V: Visitor<'de>,
+        where
+            V: Visitor<'de>,
     {
         bail!(Unsupported, "NBT does not support enums")
     }
 
     #[inline]
     fn deserialize_identifier<V>(self, visitor: V) -> Result<V::Value>
-    where
-        V: Visitor<'de>,
+        where
+            V: Visitor<'de>,
     {
         self.deserialize_str(visitor)
     }
 
     #[inline]
     fn deserialize_ignored_any<V>(self, visitor: V) -> Result<V::Value>
-    where
-        V: Visitor<'de>,
+        where
+            V: Visitor<'de>,
     {
         self.deserialize_any(visitor)
     }
@@ -541,8 +543,8 @@ where
 /// [`LongArray`](FieldType::LongArray) and [`List`](FieldType::List).
 #[derive(Debug)]
 struct SeqDeserializer<'a, 'de: 'a, F>
-where
-    F: VariantImpl,
+    where
+        F: VariantImpl,
 {
     de: &'a mut Deserializer<'de, F>,
     ty: FieldType,
@@ -551,8 +553,8 @@ where
 }
 
 impl<'de, 'a, F> SeqDeserializer<'a, 'de, F>
-where
-    F: VariantImpl,
+    where
+        F: VariantImpl,
 {
     #[inline]
     pub fn new(
@@ -580,15 +582,15 @@ where
 }
 
 impl<'de, 'a, F> SeqAccess<'de> for SeqDeserializer<'a, 'de, F>
-where
-    F: VariantImpl,
+    where
+        F: VariantImpl,
 {
     type Error = Error;
 
     #[inline]
     fn next_element_seed<E>(&mut self, seed: E) -> Result<Option<E::Value>>
-    where
-        E: DeserializeSeed<'de>,
+        where
+            E: DeserializeSeed<'de>,
     {
         if self.remaining > 0 {
             self.remaining -= 1;
@@ -604,17 +606,17 @@ where
 /// Deserialises NBT compounds.
 #[derive(Debug)]
 struct MapDeserializer<'a, 'de: 'a, F>
-where
-    F: VariantImpl,
+    where
+        F: VariantImpl,
 {
     de: &'a mut Deserializer<'de, F>,
     _marker: PhantomData<F>,
 }
 
 impl<'de, 'a, F> From<&'a mut Deserializer<'de, F>>
-    for MapDeserializer<'a, 'de, F>
-where
-    F: VariantImpl,
+for MapDeserializer<'a, 'de, F>
+    where
+        F: VariantImpl,
 {
     #[inline]
     fn from(v: &'a mut Deserializer<'de, F>) -> Self {
@@ -623,15 +625,15 @@ where
 }
 
 impl<'de, 'a, F> MapAccess<'de> for MapDeserializer<'a, 'de, F>
-where
-    F: VariantImpl,
+    where
+        F: VariantImpl,
 {
     type Error = Error;
 
     #[inline]
     fn next_key_seed<K>(&mut self, seed: K) -> Result<Option<K::Value>>
-    where
-        K: DeserializeSeed<'de>,
+        where
+            K: DeserializeSeed<'de>,
     {
         self.de.is_key = true;
         self.de.next_ty = FieldType::String;
@@ -651,8 +653,8 @@ where
 
     #[inline]
     fn next_value_seed<V>(&mut self, seed: V) -> Result<V::Value>
-    where
-        V: DeserializeSeed<'de>,
+        where
+            V: DeserializeSeed<'de>,
     {
         debug_assert_ne!(self.de.next_ty, FieldType::End);
         seed.deserialize(&mut *self.de)

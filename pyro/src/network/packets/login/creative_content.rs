@@ -1,8 +1,3 @@
-
-
-
-
-
 use crate::ConnectedPacket;
 use util::{Serialize};
 use util::bytes::{BinaryWrite, MutableBuffer, VarInt};
@@ -90,7 +85,8 @@ impl ItemStack {
         }
 
         if self.item_type.network_id == ITEM_ID_SHIELD {
-            buffer.write_u64_be(0)?;; // Blocking tick.
+            buffer.write_u64_be(0)?;
+            ; // Blocking tick.
         }
 
         Ok(())
@@ -107,7 +103,7 @@ impl ConnectedPacket for CreativeContent<'_> {
 
     fn serialized_size(&self) -> usize {
         (self.items.len() as u32).var_len() +
-        self.items.iter().fold(0, |acc, s| acc + s.serialized_size())
+            self.items.iter().fold(0, |acc, s| acc + s.serialized_size())
     }
 }
 

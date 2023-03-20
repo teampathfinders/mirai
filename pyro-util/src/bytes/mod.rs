@@ -1,3 +1,9 @@
+pub use mutable::*;
+pub use read::*;
+pub use shared::*;
+pub use varint::*;
+pub use write::*;
+
 use crate::Result;
 
 mod mutable;
@@ -5,12 +11,6 @@ mod read;
 mod shared;
 mod varint;
 mod write;
-
-pub use mutable::*;
-pub use read::*;
-pub use shared::*;
-pub use varint::*;
-pub use write::*;
 
 /// Size of an IPv4 address in bytes.
 pub const IPV4_MEM_SIZE: usize = 1 + 4 + 2;

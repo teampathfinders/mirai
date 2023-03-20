@@ -1,7 +1,5 @@
-
-use util::{Result};
+use util::Result;
 use util::bytes::{BinaryWrite, MutableBuffer, size_of_varint};
-
 use util::Serialize;
 
 use crate::ConnectedPacket;
@@ -17,10 +15,10 @@ pub struct ToastRequest<'a> {
 
 impl ConnectedPacket for ToastRequest<'_> {
     const ID: u32 = 0xba;
-    
+
     fn serialized_size(&self) -> usize {
         size_of_varint(self.title.len() as u32) + self.title.len() +
-        size_of_varint(self.message.len() as u32) + self.message.len()       
+            size_of_varint(self.message.len() as u32) + self.message.len()
     }
 }
 

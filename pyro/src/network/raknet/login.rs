@@ -1,18 +1,15 @@
+use util::{Deserialize, Serialize};
+use util::bytes::MutableBuffer;
+use util::Result;
 
-
+use crate::{PacketConfig, SendPriority};
+use crate::ConnectedPing;
+use crate::ConnectedPong;
 use crate::ConnectionRequest;
 use crate::ConnectionRequestAccepted;
 use crate::NewIncomingConnection;
-
 use crate::Reliability;
 use crate::Session;
-use util::Result;
-use util::{Deserialize, Serialize};
-use util::bytes::{MutableBuffer};
-
-use crate::ConnectedPing;
-use crate::ConnectedPong;
-use crate::{PacketConfig, SendPriority};
 
 impl Session {
     /// Handles a [`ConnectionRequest`] packet.

@@ -1,10 +1,12 @@
-use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::iter::Enumerate;
 use std::mem::MaybeUninit;
+
+use serde::{Deserialize, Serialize};
+
 use nbt::{from_var_bytes, to_var_bytes};
-use util::bytes::{BinaryReader, MutableBuffer, SharedBuffer};
 use util::{bail, BlockPosition, Error, Result, Vector};
+use util::bytes::{BinaryReader, MutableBuffer, SharedBuffer};
 
 const CHUNK_SIZE: usize = 4096;
 
@@ -39,8 +41,8 @@ mod block_version {
 
     #[inline]
     pub fn deserialize<'de, D>(de: D) -> Result<Option<[u8; 4]>, D::Error>
-    where
-        D: Deserializer<'de>
+        where
+            D: Deserializer<'de>
     {
         let word = Option::<i32>::deserialize(de)?;
         Ok(word.map(|w| w.to_be_bytes()))
@@ -48,8 +50,8 @@ mod block_version {
 
     #[inline]
     pub fn serialize<S>(v: &Option<[u8; 4]>, ser: S) -> Result<S::Ok, S::Error>
-    where
-        S: Serializer
+        where
+            S: Serializer
     {
         if let Some(b) = v {
             ser.serialize_i32(i32::from_be_bytes(*b))
@@ -296,8 +298,8 @@ impl SubChunk {
 impl SubChunk {
     /// Deserialize a full sub chunk from the given buffer.
     pub(crate) fn deserialize<'a, R>(buffer: R) -> Result<Self>
-    where
-        R: Into<SharedBuffer<'a>>,
+        where
+            R: Into<SharedBuffer<'a>>,
     {
         let mut buffer = buffer.into();
 

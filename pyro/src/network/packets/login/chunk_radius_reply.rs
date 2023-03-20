@@ -1,8 +1,7 @@
-
-use util::{Result};
+use util::Result;
 use util::bytes::{BinaryWrite, MutableBuffer, VarInt};
-
 use util::Serialize;
+
 use crate::ConnectedPacket;
 
 /// Sent in response to [`ChunkRadiusRequest`](crate::ChunkRadiusRequest), to notify the client of the allowed render distance.

@@ -6,7 +6,7 @@ use crate::ConnectedPacket;
 #[derive(Debug, Clone)]
 pub struct AvailableActorIdentifiers<'a> {
     /// Serialised NBT structure containing the entities.
-    pub identifiers: SharedBuffer<'a>
+    pub identifiers: SharedBuffer<'a>,
 }
 
 impl<'a> ConnectedPacket for AvailableActorIdentifiers<'a> {

@@ -1,32 +1,26 @@
-
-
 use std::sync::atomic::Ordering;
 
-
 use level::Dimension;
+use util::{bail, BlockPosition, Deserialize, Result, Vector};
+use util::bytes::MutableBuffer;
 
 use crate::{PropertyData, SERVER_CONFIG};
-use crate::crypto::Encryptor;
-use crate::CacheStatus;
-use crate::AvailableCommands;
 use crate::{
     BroadcastIntent, ChatRestrictionLevel, ChunkRadiusReply,
-    ChunkRadiusRequest, ClientToServerHandshake, CreativeContent, Login, NetworkSettings, PermissionLevel, PlayerMovementSettings,
-    PlayerMovementType, RequestNetworkSettings, ResourcePackClientResponse,
-    ResourcePackStack, ResourcePacksInfo, ServerToClientHandshake,
-    SpawnBiomeType, StartGame, WorldGenerator, DISCONNECTED_LOGIN_FAILED, Status, PlayStatus,
+    ChunkRadiusRequest, ClientToServerHandshake, CreativeContent, DISCONNECTED_LOGIN_FAILED, Login, NetworkSettings, PermissionLevel,
+    PlayerMovementSettings, PlayerMovementType, PlayStatus,
+    RequestNetworkSettings, ResourcePackClientResponse, ResourcePacksInfo,
+    ResourcePackStack, ServerToClientHandshake, SpawnBiomeType, StartGame, Status, WorldGenerator,
 };
-
 use crate::{
-    BiomeDefinitionList, Difficulty, GameMode, MessageType,
-    SetLocalPlayerAsInitialized, TextMessage,
-    ViolationWarning, CLIENT_VERSION_STRING, NETWORK_VERSION,
+    BiomeDefinitionList, CLIENT_VERSION_STRING, Difficulty, GameMode,
+    MessageType, NETWORK_VERSION,
+    SetLocalPlayerAsInitialized, TextMessage, ViolationWarning,
 };
-
-
+use crate::AvailableCommands;
+use crate::CacheStatus;
+use crate::crypto::Encryptor;
 use crate::Session;
-use util::{bail, BlockPosition, Deserialize, Result, Vector};
-use util::bytes::{MutableBuffer};
 
 impl Session {
     /// Handles a [`ClientCacheStatus`] packet.
@@ -205,7 +199,7 @@ impl Session {
             .collect::<Vec<_>>();
 
         let available_commands =
-            AvailableCommands { commands: commands.as_slice() };            
+            AvailableCommands { commands: commands.as_slice() };
 
         self.send(available_commands)?;
 

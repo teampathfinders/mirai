@@ -1,6 +1,6 @@
-
-use util::{bail, BlockPosition, Deserialize, Serialize, Error, Result};
+use util::{bail, BlockPosition, Deserialize, Error, Result, Serialize};
 use util::bytes::{BinaryReader, BinaryWrite, MutableBuffer, SharedBuffer, size_of_varint};
+
 use crate::ConnectedPacket;
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
@@ -23,7 +23,7 @@ impl TryFrom<i32> for BlockEventType {
 pub struct BlockEvent {
     pub position: BlockPosition,
     pub event_type: BlockEventType,
-    pub event_data: i32
+    pub event_data: i32,
 }
 
 impl ConnectedPacket for BlockEvent {
@@ -31,10 +31,10 @@ impl ConnectedPacket for BlockEvent {
 
     fn serialized_size(&self) -> usize {
         size_of_varint(self.position.x) +
-        size_of_varint(self.position.y) +
-        size_of_varint(self.position.z) +
-        size_of_varint(self.event_type as i32) +
-        size_of_varint(self.event_data)
+            size_of_varint(self.position.y) +
+            size_of_varint(self.position.z) +
+            size_of_varint(self.event_type as i32) +
+            size_of_varint(self.event_data)
     }
 }
 
@@ -53,7 +53,9 @@ impl Deserialize<'_> for BlockEvent {
         let event_data = buffer.read_var_i32()?;
 
         Ok(Self {
-            position, event_type, event_data
+            position,
+            event_type,
+            event_data,
         })
     }
 }

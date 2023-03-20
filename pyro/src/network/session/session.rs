@@ -1,30 +1,28 @@
 use std::net::SocketAddr;
-
+use std::sync::Arc;
 use std::sync::atomic::{
     AtomicBool, AtomicU64, Ordering,
 };
-use std::sync::{Arc};
-use std::time::{Instant};
+use std::time::Instant;
 
 use aes::cipher::typenum::NonZero;
-
 use parking_lot::{Mutex, RwLock};
 use tokio::net::UdpSocket;
 use tokio::sync::{broadcast, mpsc, OnceCell};
 use tokio_util::sync::CancellationToken;
 use uuid::Uuid;
 
-use crate::crypto::{Encryptor, IdentityData, UserData};
+use util::{error, Result, Vector};
+use util::bytes::MutableBuffer;
 
-use crate::level_manager::LevelManager;
 use crate::{DeviceOS, Disconnect, PermissionLevel};
 use crate::{
     ConnectedPacket, GameMode,
 };
 use crate::{BroadcastPacket, RaknetData};
+use crate::crypto::{Encryptor, IdentityData, UserData};
+use crate::level_manager::LevelManager;
 use crate::Skin;
-use util::{error, Result, Vector};
-use util::bytes::MutableBuffer;
 
 static RUNTIME_ID_COUNTER: AtomicU64 = AtomicU64::new(0);
 

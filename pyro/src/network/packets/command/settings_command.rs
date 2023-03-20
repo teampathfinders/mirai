@@ -1,6 +1,6 @@
-
 use util::{Deserialize, Result};
 use util::bytes::{BinaryReader, SharedBuffer};
+
 use crate::ConnectedPacket;
 
 /// Sent by the client when changing settings that require the execution of commands.
@@ -10,7 +10,7 @@ pub struct SettingsCommand<'a> {
     /// Command the client requested to execute.
     pub command: &'a str,
     /// Whether to suppress the output of the command that was executed.
-    pub suppress_output: bool
+    pub suppress_output: bool,
 }
 
 impl<'a> ConnectedPacket for SettingsCommand<'a> {
@@ -23,7 +23,8 @@ impl<'a> Deserialize<'a> for SettingsCommand<'a> {
         let suppress_output = buffer.read_bool()?;
 
         Ok(Self {
-            command, suppress_output
+            command,
+            suppress_output,
         })
     }
 }

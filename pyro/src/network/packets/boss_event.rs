@@ -1,6 +1,6 @@
-
-use util::{Serialize, Result};
+use util::{Result, Serialize};
 use util::bytes::{BinaryWrite, MutableBuffer};
+
 use crate::ConnectedPacket;
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
@@ -11,14 +11,14 @@ pub enum BossEventColor {
     Green,
     Yellow,
     Purple,
-    White
+    White,
 }
 
 #[derive(Debug, Clone)]
 pub enum BossEventType<'a> {
     Show {
         bar_title: &'a str,
-        color: BossEventColor
+        color: BossEventColor,
     },
     RegisterPlayer {
         player_unique_id: i64
@@ -41,13 +41,13 @@ pub enum BossEventType<'a> {
     },
     Request {
         player_unique_id: i64
-    }
+    },
 }
 
 #[derive(Debug, Clone)]
 pub struct BossEvent<'a> {
     pub boss_unique_id: i64,
-    pub event: BossEventType<'a>
+    pub event: BossEventType<'a>,
 }
 
 impl ConnectedPacket for BossEvent<'_> {
@@ -68,34 +68,34 @@ impl Serialize for BossEvent<'_> {
                 buffer.write_i16_le(0)?; // ScreenDarkening is unused.
                 buffer.write_var_u32(color as u32)?;
                 buffer.write_var_u32(0)?; // Overlay is unused.
-            },
+            }
             BossEventType::RegisterPlayer {
                 player_unique_id
             } => {
                 buffer.write_var_u32(1)?; // Event type.
                 buffer.write_var_i64(player_unique_id)?;
-            },
+            }
             BossEventType::Hide => {
                 buffer.write_var_u32(2)?; // Event type.
-            },
+            }
             BossEventType::UnregisterPlayer {
                 player_unique_id
             } => {
                 buffer.write_var_u32(3)?; // Event type.
                 buffer.write_var_i64(player_unique_id)?;
-            },
+            }
             BossEventType::HealthPercentage {
                 health_percentage
             } => {
                 buffer.write_var_u32(4)?; // Event type.
                 buffer.write_f32_le(health_percentage)?;
-            },
+            }
             BossEventType::Title {
                 bar_title
             } => {
                 buffer.write_var_u32(5)?; // Event type.
                 buffer.write_str(bar_title)?;
-            },
+            }
             BossEventType::AppearanceProperties {
                 color
             } => {
@@ -103,14 +103,14 @@ impl Serialize for BossEvent<'_> {
                 buffer.write_i16_le(0)?; // ScreenDarkening is unused.
                 buffer.write_var_u32(color as u32)?;
                 buffer.write_var_u32(0)?; // Overlay is unused.
-            },
+            }
             BossEventType::Texture {
                 color
             } => {
                 buffer.write_var_u32(7)?; // Event type.
                 buffer.write_var_u32(color as u32)?;
                 buffer.write_var_u32(0)?;
-            },
+            }
             BossEventType::Request {
                 player_unique_id
             } => {

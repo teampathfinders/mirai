@@ -1,34 +1,33 @@
 use std::io::Read;
-
 use std::sync::atomic::Ordering;
 use std::time::Instant;
 
 use async_recursion::async_recursion;
 
-use crate::SERVER_CONFIG;
-use crate::Header;
-use crate::CacheStatus;
+use util::{bail, Result};
+use util::{Deserialize, Serialize};
+use util::bytes::{BinaryReader, MutableBuffer, VarInt};
+
 use crate::{CommandRequest, SettingsCommand};
 use crate::{
     ChunkRadiusRequest, ClientToServerHandshake, CompressionAlgorithm, Login,
     RequestNetworkSettings, ResourcePackClientResponse,
 };
 use crate::{
-    Animate, ConnectedPacket, Interact, MovePlayer, RequestAbility,
-    SetLocalPlayerAsInitialized, TextMessage, UpdateSkin, ViolationWarning,
-    CONNECTED_PACKET_ID,
+    Animate, CONNECTED_PACKET_ID, ConnectedPacket, Interact, MovePlayer,
+    RequestAbility, SetLocalPlayerAsInitialized, TextMessage, UpdateSkin,
+    ViolationWarning,
 };
 use crate::{
     Ack, ConnectionRequest, DisconnectNotification, Nak, NewIncomingConnection,
 };
 use crate::{BroadcastPacket, Frame, FrameBatch};
-use crate::Session;
-use util::{bail, Result};
-use util::{Deserialize, Serialize};
-use util::bytes::{BinaryReader, MutableBuffer, VarInt};
-
-use crate::DEFAULT_SEND_CONFIG;
+use crate::CacheStatus;
 use crate::ConnectedPing;
+use crate::DEFAULT_SEND_CONFIG;
+use crate::Header;
+use crate::SERVER_CONFIG;
+use crate::Session;
 
 impl Session {
     /// Processes the raw packet coming directly from the network.
@@ -93,7 +92,7 @@ impl Session {
     ) -> Result<()> {
         if frame.reliability.is_sequenced()
             && frame.sequence_index
-                < self.raknet.client_batch_number.load(Ordering::SeqCst)
+            < self.raknet.client_batch_number.load(Ordering::SeqCst)
         {
             // Discard packet
             return Ok(());
@@ -112,7 +111,7 @@ impl Session {
                 return self.process_frame(p.into(), batch_number).await;
             } else {
                 // Compound incomplete
-                return Ok(())
+                return Ok(());
             }
         }
 

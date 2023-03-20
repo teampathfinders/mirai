@@ -1,7 +1,5 @@
-
-use util::{Result};
+use util::Result;
 use util::bytes::{BinaryWrite, MutableBuffer, size_of_varint};
-
 use util::Serialize;
 
 use crate::ConnectedPacket;
@@ -20,10 +18,10 @@ impl ConnectedPacket for DeathInfo<'_> {
 
     fn serialized_size(&self) -> usize {
         size_of_varint(self.cause.len() as u32) + self.cause.len() +
-        size_of_varint(self.messages.len() as u32) + 
-        self.messages.iter().fold(
-            0, |acc, m| acc + size_of_varint(m.len() as u32) + m.len()
-        )
+            size_of_varint(self.messages.len() as u32) +
+            self.messages.iter().fold(
+                0, |acc, m| acc + size_of_varint(m.len() as u32) + m.len(),
+            )
     }
 }
 

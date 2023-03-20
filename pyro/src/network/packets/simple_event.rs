@@ -1,13 +1,13 @@
-
-use util::{bail, Deserialize, Serialize, Error, Result};
+use util::{bail, Deserialize, Error, Result, Serialize};
 use util::bytes::{BinaryReader, BinaryWrite, MutableBuffer, SharedBuffer};
+
 use crate::ConnectedPacket;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum SimpleEvent {
     CommandsEnabled = 1,
     CommandsDisabled,
-    UnlockWorldTemplateSettings
+    UnlockWorldTemplateSettings,
 }
 
 impl TryFrom<i16> for SimpleEvent {
