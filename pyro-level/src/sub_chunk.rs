@@ -1,7 +1,8 @@
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::iter::Enumerate;
 use std::mem::MaybeUninit;
+use nbt::{from_var_bytes, to_var_bytes};
 use util::bytes::{BinaryReader, MutableBuffer, SharedBuffer};
 use util::{bail, BlockPosition, Error, Result, Vector};
 
@@ -46,21 +47,21 @@ mod block_version {
     }
 
     #[inline]
-    pub fn serialize<S>(ser: S, v: Option<[u8; 4]>) -> Result<(), S::Error>
+    pub fn serialize<S>(v: &Option<[u8; 4]>, ser: S) -> Result<S::Ok, S::Error>
     where
         S: Serializer
     {
         if let Some(b) = v {
-            ser.serialize_i32(i32::from_be_bytes(b))?;
+            ser.serialize_i32(i32::from_be_bytes(*b))
+        } else {
+            ser.serialize_none()
         }
-
-        Ok(())
     }
 }
 
 /// Definition of block in the sub chunk block palette.
-#[derive(Debug, Deserialize)]
-pub struct BlockProperties {
+#[derive(Debug, Deserialize, Serialize)]
+pub struct PaletteEntry {
     /// Name of the block.
     pub name: String,
     /// Version of the block.
@@ -91,7 +92,7 @@ pub struct SubLayer {
     /// Coordinates can be converted to an offset into the array using [`to_offset`].
     indices: [u16; CHUNK_SIZE],
     /// List of all different block types in this sub chunk layer.
-    palette: Vec<BlockProperties>,
+    palette: Vec<PaletteEntry>,
 }
 
 impl SubLayer {
@@ -152,18 +153,18 @@ impl SubLayer {
         let mut palette = Vec::with_capacity(palette_size as usize);
         // let mut palette = Vec::new();
         for _ in 0..palette_size {
-            let (properties, n) = match nbt::from_le_bytes(buffer) {
+            let (entry, n) = match nbt::from_le_bytes(buffer) {
                 Ok(p) => p,
                 Err(e) => {
                     bail!(Malformed, "{}", e.to_string())
                 }
             };
 
-            palette.push(properties);
+            palette.push(entry);
             buffer.advance(n);
         }
 
-        dbg!(&palette);
+        // dbg!(&palette);
 
         Ok(Self { indices, palette })
     }
@@ -278,7 +279,7 @@ impl SubChunk {
     /// Gets a block at the specified position.
     ///
     /// See [`to_offset`] for the requirements on `position`.
-    pub fn get(&self, position: Vector<u8, 3>) -> Option<&BlockProperties> {
+    pub fn get(&self, position: Vector<u8, 3>) -> Option<&PaletteEntry> {
         let offset = to_offset(position);
         let index = self.layers[0].indices[offset];
 
@@ -350,7 +351,7 @@ pub struct LayerIter<'a> {
     /// While iterating, this is slowly consumed by `std::slice::split_at`.
     indices: &'a [u16],
     /// All possible block states in the current chunk.
-    palette: &'a [BlockProperties],
+    palette: &'a [PaletteEntry],
 }
 
 impl<'a> From<&'a SubLayer> for LayerIter<'a> {
@@ -364,7 +365,7 @@ impl<'a> From<&'a SubLayer> for LayerIter<'a> {
 }
 
 impl<'a> Iterator for LayerIter<'a> {
-    type Item = &'a BlockProperties;
+    type Item = &'a PaletteEntry;
 
     #[inline]
     fn next(&mut self) -> Option<Self::Item> {
