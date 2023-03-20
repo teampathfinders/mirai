@@ -382,7 +382,7 @@ impl<'de, 'a, F> de::Deserializer<'de> for &'a mut Deserializer<'de, F>
         where
             V: Visitor<'de>,
     {
-        bail!(Unsupported, "NBT does not support borrowed byte arrays")
+        bail!(Unsupported, "Deserializing borrowed byte arrays is not supported")
     }
 
     fn deserialize_byte_buf<V>(self, visitor: V) -> Result<V::Value>
@@ -416,7 +416,7 @@ impl<'de, 'a, F> de::Deserializer<'de> for &'a mut Deserializer<'de, F>
         where
             V: Visitor<'de>,
     {
-        bail!(Unsupported)
+        bail!(Unsupported, "Deserializing unit values is not supported")
     }
 
     fn deserialize_unit_struct<V>(
@@ -427,7 +427,7 @@ impl<'de, 'a, F> de::Deserializer<'de> for &'a mut Deserializer<'de, F>
         where
             V: Visitor<'de>,
     {
-        bail!(Unsupported, "NBT does not support unit structs")
+        bail!(Unsupported, "Deserializing unit structs is not supported")
     }
 
     fn deserialize_newtype_struct<V>(
@@ -438,7 +438,7 @@ impl<'de, 'a, F> de::Deserializer<'de> for &'a mut Deserializer<'de, F>
         where
             V: Visitor<'de>,
     {
-        bail!(Unsupported, "NBT does not support newtype structs")
+        bail!(Unsupported, "Deserializing newtype structs is not supported")
     }
 
     #[inline]
@@ -474,7 +474,7 @@ impl<'de, 'a, F> de::Deserializer<'de> for &'a mut Deserializer<'de, F>
         where
             V: Visitor<'de>,
     {
-        bail!(Unsupported, "NBT does not support tuple structs")
+        bail!(Unsupported, "Deserializing tuple structs is not supported")
     }
 
     #[inline]
@@ -510,7 +510,7 @@ impl<'de, 'a, F> de::Deserializer<'de> for &'a mut Deserializer<'de, F>
         where
             V: Visitor<'de>,
     {
-        bail!(Unsupported, "NBT does not support enums")
+        bail!(Unsupported, "Deserializing enums is not supported")
     }
 
     #[inline]
