@@ -351,6 +351,14 @@ where
         self,
         len: Option<usize>,
     ) -> std::result::Result<Self::SerializeMap, Self::Error> {
+        // nbt::Value does not distinguish between maps and structs.
+        // Therefore this is also needed here
+        if self.is_initial {
+            self.writer.write_u8(FieldType::Compound as u8)?;
+            self.serialize_str("")?;
+            self.is_initial = false;
+        }
+
         Ok(self)
     }
 
@@ -695,7 +703,6 @@ where
         self,
         len: usize,
     ) -> std::result::Result<Self::SerializeTuple, Self::Error> {
-        println!("list");
         self.ser.writer.write_u8(FieldType::List as u8)?;
         Ok(self)
     }

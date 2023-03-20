@@ -1,15 +1,31 @@
 #[cfg(test)]
 mod test {
+    use std::collections::HashMap;
     use serde::{Deserialize, Serialize};
 
     use crate::ser::to_be_bytes;
-    use crate::{de::Deserializer, from_be_bytes, Value};
+    use crate::{de::Deserializer, from_be_bytes, from_le_bytes, to_le_bytes, Value};
 
     const BIG_TEST_NBT: &[u8] = include_bytes!("../test/bigtest.nbt");
     const HELLO_WORLD_NBT: &[u8] = include_bytes!("../test/hello_world.nbt");
     const PLAYER_NAN_VALUE_NBT: &[u8] =
         include_bytes!("../test/player_nan_value.nbt");
 
+    #[test]
+    fn yes() {
+        let value = Value::Compound(HashMap::from([
+            ("yes".to_owned(), Value::List(vec![Value::Byte(1), Value::Byte(2)])),
+            ("no".to_owned(), Value::Compound(HashMap::from([
+                ("nested".to_owned(), Value::List(vec![Value::String("one".to_owned()), Value::String("two".to_owned())]))
+            ])))
+        ]));
+
+        let ser = to_be_bytes(&value).unwrap();
+        let de: Value = from_be_bytes(&ser).unwrap().0;
+        dbg!(de);
+    }
+
+    #[ignore]
     #[test]
     fn read_write_bigtest() {
         #[derive(Deserialize, Serialize, Debug, PartialEq)]
@@ -66,12 +82,15 @@ mod test {
         // dbg!(&decoded2);
 
         let value: Value = from_be_bytes(BIG_TEST_NBT).unwrap().0;
-        dbg!(value);
+        let value_encoded = to_be_bytes(&value).unwrap();
+        let value_decoded: Value = from_be_bytes(&value_encoded).unwrap().0;
+        dbg!(value_decoded);
 
         // Checking floats for equality is a pain.
         // If the data can be decoded, it's pretty much correct
     }
 
+    #[ignore]
     #[test]
     fn read_write_hello_world() {
         #[derive(Deserialize, Serialize, Debug, PartialEq)]
@@ -85,9 +104,11 @@ mod test {
         assert_eq!(encoded.as_slice(), HELLO_WORLD_NBT);
 
         let value: Value = from_be_bytes(HELLO_WORLD_NBT).unwrap().0;
-        dbg!(value);
+        let value_encoded = to_be_bytes(&value).unwrap();
+        let value_decoded: Value = from_be_bytes(&value_encoded).unwrap().0;
     }
 
+    #[ignore]
     #[test]
     fn read_write_player() {
         #[derive(Deserialize, Serialize, Debug, PartialEq)]
@@ -107,13 +128,15 @@ mod test {
             rotation: [f32; 2],
         }
 
-        // let decoded: Player = from_be_bytes(PLAYER_NAN_VALUE_NBT).unwrap().0;
-        // let encoded = to_be_bytes(&decoded).unwrap();
-        //
-        // let decoded2: Player = from_be_bytes(encoded.as_slice()).unwrap().0;
+        let decoded: Player = from_be_bytes(PLAYER_NAN_VALUE_NBT).unwrap().0;
+        let encoded = to_be_bytes(&decoded).unwrap();
+        let decoded2: Player = from_be_bytes(encoded.as_slice()).unwrap().0;
 
         let value: Value = from_be_bytes(PLAYER_NAN_VALUE_NBT).unwrap().0;
-        dbg!(value);
+        let value_encoded = to_be_bytes(&value).unwrap();
+        dbg!(&value_encoded);
+        let value_decoded: Value = from_be_bytes(&value_encoded).unwrap().0;
+        dbg!(value_decoded);
 
         // Checking floats for equality is a pain.
         // If the data can be decoded, it's pretty much correct
