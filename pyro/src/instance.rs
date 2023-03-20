@@ -5,23 +5,13 @@ use std::time::Duration;
 use parking_lot::RwLock;
 use rand::Rng;
 use tokio::net::UdpSocket;
-
 use tokio::sync::oneshot::Receiver;
-
 use tokio_util::sync::CancellationToken;
 
-use crate::level_manager::LevelManager;
-use crate::IncompatibleProtocol;
-use crate::OpenConnectionReply1;
-use crate::OpenConnectionReply2;
-use crate::OpenConnectionRequest1;
-use crate::OpenConnectionRequest2;
-use crate::RawPacket;
-use crate::SessionManager;
-use crate::UnconnectedPing;
-use crate::UnconnectedPong;
-use crate::RAKNET_VERSION;
-use crate::SERVER_CONFIG;
+use util::{Deserialize, Serialize};
+use util::bytes::MutableBuffer;
+use util::Result;
+
 use crate::{
     Command, CommandDataType, CommandEnum, CommandOverload, CommandParameter,
     CommandPermissionLevel,
@@ -30,10 +20,18 @@ use crate::{
     BOOLEAN_GAME_RULES, CLIENT_VERSION_STRING, INTEGER_GAME_RULES,
     NETWORK_VERSION,
 };
-
-use util::bytes::MutableBuffer;
-use util::Result;
-use util::{Deserialize, Serialize};
+use crate::IncompatibleProtocol;
+use crate::level::LevelManager;
+use crate::OpenConnectionReply1;
+use crate::OpenConnectionReply2;
+use crate::OpenConnectionRequest1;
+use crate::OpenConnectionRequest2;
+use crate::RAKNET_VERSION;
+use crate::RawPacket;
+use crate::SERVER_CONFIG;
+use crate::SessionManager;
+use crate::UnconnectedPing;
+use crate::UnconnectedPong;
 
 /// Local IPv4 address
 pub const IPV4_LOCAL_ADDR: Ipv4Addr = Ipv4Addr::UNSPECIFIED;
@@ -74,7 +72,7 @@ impl InstanceManager {
                 .await?,
         );
 
-        let session_manager = Arc::new(SessionManager::new(token.clone()));
+        let session_manager = Arc::new(SessionManager::new());
 
         let (level_manager, level_notifier) =
             LevelManager::new(session_manager.clone(), token.clone())?;
@@ -190,7 +188,8 @@ impl InstanceManager {
         tokio::select! {
             _ = token.cancelled() => (),
             _ = tokio::signal::ctrl_c() => ()
-        };
+        }
+        ;
 
         // then shut down all services.
         tracing::info!("Disconnecting all clients");

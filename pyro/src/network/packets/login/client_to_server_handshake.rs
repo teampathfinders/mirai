@@ -1,8 +1,8 @@
 use util::bytes::SharedBuffer;
-use crate::ConnectedPacket;
-
 use util::Deserialize;
 use util::Result;
+
+use crate::ConnectedPacket;
 
 /// Sent by the client in response to a [`ServerToClientHandshake`](crate::ServerToClientHandshake)
 /// to confirm that encryption is working.

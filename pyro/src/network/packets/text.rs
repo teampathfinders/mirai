@@ -1,6 +1,4 @@
-
-use util::{bail,  Error, Result};
-
+use util::{bail, Error, Result};
 use util::{Deserialize, Serialize};
 use util::bytes::{BinaryReader, BinaryWrite, MutableBuffer, SharedBuffer, VarInt, VarString};
 
@@ -80,7 +78,7 @@ impl<'a> ConnectedPacket for TextMessage<'a> {
             | MessageType::Whisper
             | MessageType::Announcement => {
                 self.source_name.var_len() +
-                self.message.var_len()
+                    self.message.var_len()
             }
             MessageType::Raw
             | MessageType::Tip
@@ -94,10 +92,10 @@ impl<'a> ConnectedPacket for TextMessage<'a> {
             | MessageType::Popup
             | MessageType::JukeboxPopup => {
                 self.message.var_len() +
-                (self.parameters.len() as u32).var_len() +
-                self.parameters.iter().fold(
-                    0, |acc, p| acc + p.var_len()
-                )
+                    (self.parameters.len() as u32).var_len() +
+                    self.parameters.iter().fold(
+                        0, |acc, p| acc + p.var_len(),
+                    )
             }
         } + self.xuid.var_len() + self.platform_chat_id.var_len()
     }
@@ -112,8 +110,8 @@ impl<'a> Serialize for TextMessage<'a> {
             MessageType::Chat
             | MessageType::Whisper
             | MessageType::Announcement => {
-                buffer.write_str(&self.source_name)?;
-                buffer.write_str(&self.message)?;
+                buffer.write_str(self.source_name)?;
+                buffer.write_str(self.message)?;
             }
             MessageType::Raw
             | MessageType::Tip
@@ -121,12 +119,12 @@ impl<'a> Serialize for TextMessage<'a> {
             | MessageType::Object
             | MessageType::ObjectWhisper
             | MessageType::ObjectAnnouncement => {
-                buffer.write_str(&self.message)?;
+                buffer.write_str(self.message)?;
             }
             MessageType::Translation
             | MessageType::Popup
             | MessageType::JukeboxPopup => {
-                buffer.write_str(&self.message)?;
+                buffer.write_str(self.message)?;
 
                 buffer.write_var_u32(self.parameters.len() as u32)?;
                 for param in &self.parameters {
@@ -135,8 +133,8 @@ impl<'a> Serialize for TextMessage<'a> {
             }
         }
 
-        buffer.write_str(&self.xuid)?;
-        buffer.write_str(&self.platform_chat_id)
+        buffer.write_str(self.xuid)?;
+        buffer.write_str(self.platform_chat_id)
     }
 }
 

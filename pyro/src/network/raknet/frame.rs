@@ -1,9 +1,9 @@
 use std::io::Write;
-use crate::Reliability;
-use util::pyassert;
-use util::Result;
-use util::{Deserialize, Serialize};
+
 use util::bytes::{BinaryReader, BinaryWrite, MutableBuffer, SharedBuffer};
+use util::Result;
+
+use crate::Reliability;
 
 /// Bit flag indicating that the packet is encapsulated in a frame.
 pub const CONNECTED_PEER_BIT_FLAG: u8 = 0x80;
@@ -36,8 +36,8 @@ impl FrameBatch {
     pub fn estimate_size(&self) -> usize {
         std::mem::size_of::<Self>()
             + self.frames.iter().fold(0, |acc, f| {
-                acc + std::mem::size_of::<Frame>() + f.body.len()
-            })
+            acc + std::mem::size_of::<Frame>() + f.body.len()
+        })
     }
 
     #[inline]

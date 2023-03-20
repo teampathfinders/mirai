@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 use std::fmt;
+
 use serde::{de, Deserialize, Deserializer, Serialize, Serializer};
 use serde::de::{MapAccess, SeqAccess, Visitor};
 use serde::ser::{SerializeMap, SerializeSeq};
@@ -23,7 +24,7 @@ pub enum Value {
     /// Key-value map.
     Compound(HashMap<String, Value>),
     IntArray(Vec<i32>),
-    LongArray(Vec<i64>)
+    LongArray(Vec<i64>),
 }
 
 impl Value {
@@ -247,8 +248,8 @@ impl Value {
 impl<'de> Deserialize<'de> for Value {
     #[inline]
     fn deserialize<D>(deserializer: D) -> Result<Value, D::Error>
-    where
-        D: Deserializer<'de>,
+        where
+            D: Deserializer<'de>,
     {
         struct ValueVisitor;
 
@@ -317,6 +318,14 @@ impl<'de> Deserialize<'de> for Value {
             }
 
             #[inline]
+            fn visit_str<E>(self, v: &str) -> Result<Self::Value, E>
+                where
+                    E: de::Error,
+            {
+                Ok(Value::String(v.to_owned()))
+            }
+
+            #[inline]
             fn visit_string<E>(self, v: String) -> Result<Self::Value, E>
                 where
                     E: de::Error,
@@ -373,9 +382,9 @@ impl<'de> Deserialize<'de> for Value {
 
 #[inline]
 fn serialize_seq<T, S>(ser: S, seq: &[T]) -> Result<S::Ok, S::Error>
-where
-    T: Serialize,
-    S: Serializer,
+    where
+        T: Serialize,
+        S: Serializer,
 {
     let mut seq_ser = ser.serialize_seq(Some(seq.len()))?;
     for element in seq {
@@ -385,9 +394,9 @@ where
 }
 
 impl Serialize for Value {
-    fn serialize<S>(&self, mut ser: S) -> Result<S::Ok, S::Error>
-    where
-        S: Serializer,
+    fn serialize<S>(&self, ser: S) -> Result<S::Ok, S::Error>
+        where
+            S: Serializer,
     {
         match self {
             Value::Byte(byte) => ser.serialize_i8(*byte),
@@ -405,7 +414,7 @@ impl Serialize for Value {
                     map_ser.serialize_entry(k, v)?;
                 }
                 map_ser.end()
-            },
+            }
             Value::IntArray(seq) => serialize_seq(ser, seq),
             Value::LongArray(seq) => serialize_seq(ser, seq)
         }

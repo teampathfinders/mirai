@@ -1,5 +1,5 @@
+use util::Result;
 use util::bytes::{BinaryReader, SharedBuffer};
-use util::{Deserialize, Result};
 
 #[derive(Debug)]
 pub struct Biome3d {}

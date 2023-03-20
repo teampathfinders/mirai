@@ -1,5 +1,15 @@
 extern crate core;
 
+use std::{sync::Arc, time::Duration};
+
+use tokio::sync::oneshot::{Receiver, Sender};
+use tokio_util::sync::CancellationToken;
+
+use database::Database;
+pub use sub_chunk::*;
+use util::Result;
+pub use world::*;
+
 #[cfg(test)]
 mod test;
 
@@ -8,15 +18,6 @@ pub mod database;
 mod ffi;
 mod sub_chunk;
 mod world;
-
-use std::{sync::Arc, time::Duration};
-
-use database::Database;
-pub use sub_chunk::*;
-use tokio::sync::oneshot::{Receiver, Sender};
-use tokio_util::sync::CancellationToken;
-use util::Result;
-pub use world::*;
 
 pub struct ChunkManager {
     /// Chunk database
@@ -47,7 +48,7 @@ impl ChunkManager {
     /// Internally, this uses LevelDB's WriteBatch method to perform bulk updates.
     /// These LevelDB are done synchronously to prevent data loss and the overhead is minimal due to batching.
     pub fn flush(&self) -> Result<()> {
-        Ok(())
+        todo!();
     }
 
     /// Simple job that runs [`flush`](Self::flush) on a specified interval.
@@ -69,7 +70,8 @@ impl ChunkManager {
             tokio::select! {
                 _ = interval.tick() => (),
                 _ = self.token.cancelled() => break
-            };
+            }
+            ;
         }
 
         // Save before closing.

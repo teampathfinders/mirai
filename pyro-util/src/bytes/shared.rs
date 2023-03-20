@@ -1,15 +1,11 @@
-use crate::bytes::{BinaryReader, MutableBuffer, VarInt};
-use crate::{bail, BlockPosition};
-use paste::paste;
-use std::borrow::Borrow;
+use std::{cmp, fmt, io};
 use std::fmt::Debug;
 use std::io::Read;
-use std::marker::PhantomData;
 use std::ops::{Deref, DerefMut, Index};
-use std::rc::Rc;
 use std::sync::Arc;
-use std::{cmp, fmt, io};
 
+use crate::bail;
+use crate::bytes::{BinaryReader, MutableBuffer};
 use crate::Result;
 
 #[derive(Debug, Clone)]
@@ -247,10 +243,11 @@ impl<'a> Read for SharedBuffer<'a> {
 
 #[cfg(test)]
 mod test {
-    use crate::bytes::SharedBuffer;
-    use crate::bytes::{BinaryReader, BinaryWrite, MutableBuffer};
-    use crate::u24::u24;
     use paste::paste;
+
+    use crate::bytes::{BinaryReader, BinaryWrite, MutableBuffer};
+    use crate::bytes::SharedBuffer;
+    use crate::u24::u24;
 
     macro_rules! define_test_fns {
         ($($ty: ident),+) => {

@@ -1,7 +1,7 @@
+use util::{bytes::BinaryReader, Deserialize};
 use util::bytes::SharedBuffer;
 use util::pyassert;
 use util::Result;
-use util::{bytes::BinaryReader, Deserialize};
 
 /// Sent by the client when the users joins the server.
 #[derive(Debug)]

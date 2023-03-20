@@ -1,5 +1,4 @@
 use crate::bytes::{MutableBuffer, SharedBuffer};
-
 use crate::Result;
 
 /// Trait that describes an object that can be serialised from raw bytes.
@@ -12,6 +11,6 @@ pub trait Serialize {
 pub trait Deserialize<'a> {
     /// Deserializes the given buffer, returning the object.
     fn deserialize(buffer: SharedBuffer<'a>) -> Result<Self>
-    where
-        Self: Sized;
+        where
+            Self: Sized;
 }

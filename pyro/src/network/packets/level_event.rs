@@ -1,6 +1,6 @@
-
-use util::{bail, Deserialize, Serialize, Error, Result, Vector};
+use util::{bail, Deserialize, Error, Result, Serialize, Vector};
 use util::bytes::{BinaryReader, BinaryWrite, MutableBuffer, SharedBuffer, size_of_varint};
+
 use crate::ConnectedPacket;
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
@@ -112,7 +112,7 @@ pub enum LevelEventType {
     AllPlayersSleeping = 9800,
     SleepingPlayers = 9801,
     JumpPrevented = 9810,
-    ParticlesLegacyEvent = 0x4000
+    ParticlesLegacyEvent = 0x4000,
 }
 
 impl TryFrom<i32> for LevelEventType {
@@ -122,7 +122,7 @@ impl TryFrom<i32> for LevelEventType {
         Ok(match value {
             1000 => Self::SoundClick,
             1001 => Self::SoundClickFail,
-            1002 => Self::SoundLaunch ,
+            1002 => Self::SoundLaunch,
             1003 => Self::SoundOpenDoor,
             1004 => Self::SoundFizz,
             1005 => Self::SoundFuse,
@@ -237,15 +237,15 @@ impl TryFrom<i32> for LevelEventType {
 pub struct LevelEvent {
     pub event_type: LevelEventType,
     pub position: Vector<f32, 3>,
-    pub event_data: i32
+    pub event_data: i32,
 }
 
 impl ConnectedPacket for LevelEvent {
     const ID: u32 = 0x19;
 
     fn serialized_size(&self) -> usize {
-        size_of_varint(self.event_type as i32) + 3 * 4 + 
-        size_of_varint(self.event_data)
+        size_of_varint(self.event_type as i32) + 3 * 4 +
+            size_of_varint(self.event_data)
     }
 }
 
@@ -266,7 +266,7 @@ impl Deserialize<'_> for LevelEvent {
         Ok(Self {
             event_type,
             position,
-            event_data
+            event_data,
         })
     }
 }

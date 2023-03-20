@@ -1,10 +1,9 @@
-
+use util::bytes::{MutableBuffer, SharedBuffer};
+use util::Deserialize;
+use util::Result;
 
 use crate::{Ack, Nak};
 use crate::Session;
-use util::Result;
-use util::{Deserialize, Serialize};
-use util::bytes::{MutableBuffer, SharedBuffer};
 
 impl Session {
     /// Processes an acknowledgement received from the client.
@@ -33,7 +32,7 @@ impl Session {
             self.raknet
                 .udp_socket
                 .send_to(
-                    serialized.as_ref(), self.raknet.address
+                    serialized.as_ref(), self.raknet.address,
                 )
                 .await?;
 

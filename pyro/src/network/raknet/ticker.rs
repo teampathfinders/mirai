@@ -1,11 +1,11 @@
 use std::{
-    sync::{atomic::Ordering, Arc},
+    sync::{Arc, atomic::Ordering},
     time::{Duration, Instant},
 };
+
 use tokio::sync::mpsc;
-use util::bytes::{MutableBuffer};
 
-
+use util::bytes::MutableBuffer;
 use util::Result;
 
 use crate::{
@@ -15,8 +15,6 @@ use crate::{
 
 /// Tick interval of the internal session ticker.
 const INTERNAL_TICK_INTERVAL: Duration = Duration::from_millis(1000 / 20);
-/// Tick interval for session packet processing.
-const TICK_INTERVAL: Duration = Duration::from_millis(1000 / 20);
 /// Inactivity timeout.
 ///
 /// Any sessions that do not respond within this specified timeout will be disconnect from the server.
@@ -85,7 +83,8 @@ impl Session {
                             }
                         }
                     }
-                };
+                }
+                ;
             }
         });
     }
@@ -93,7 +92,7 @@ impl Session {
     /// Signals to the session that it needs to close.
     pub fn on_disconnect(&self) {
         if !self.is_active() {
-            return
+            return;
         }
 
         self.initialized.store(false, Ordering::SeqCst);

@@ -1,5 +1,3 @@
-
-
 use util::{Result, Serialize};
 use util::bytes::{BinaryReader, BinaryWrite, MutableBuffer, SharedBuffer, size_of_varint};
 

@@ -1,6 +1,6 @@
-
-use util::{Serialize, Result, Vector};
+use util::{Result, Serialize, Vector};
 use util::bytes::{BinaryWrite, MutableBuffer, size_of_varint};
+
 use crate::ConnectedPacket;
 
 #[derive(Debug, Clone)]
@@ -8,7 +8,7 @@ pub struct ContainerOpen {
     pub window_id: u8,
     pub container_type: u8,
     pub position: Vector<i32, 3>,
-    pub container_entity_unique_id: i64
+    pub container_entity_unique_id: i64,
 }
 
 impl ConnectedPacket for ContainerOpen {

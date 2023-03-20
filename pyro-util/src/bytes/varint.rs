@@ -1,12 +1,10 @@
-use crate::bytes::{BinaryReader, SharedBuffer};
-use num_traits::FromPrimitive;
 use std::ops::ShrAssign;
 
-use crate::{bail, Result};
+use num_traits::FromPrimitive;
 
 /// Trait implemented for types that can be used as variable integers.
 pub trait VarInt:
-    Sized + FromPrimitive + ShrAssign<Self> + PartialOrd<Self>
+Sized + FromPrimitive + ShrAssign<Self> + PartialOrd<Self>
 {
     fn var_len(self) -> usize {
         size_of_varint(self)
@@ -14,8 +12,11 @@ pub trait VarInt:
 }
 
 impl VarInt for u32 {}
+
 impl VarInt for i32 {}
+
 impl VarInt for u64 {}
+
 impl VarInt for i64 {}
 
 pub fn size_of_string(value: &str) -> usize {

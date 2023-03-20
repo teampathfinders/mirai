@@ -1,10 +1,11 @@
 use std::io::Write;
 use std::net::SocketAddr;
-use util::bytes::{BinaryWrite, MutableBuffer, IPV4_MEM_SIZE, IPV6_MEM_SIZE};
 
-use crate::OFFLINE_MESSAGE_DATA;
+use util::bytes::{BinaryWrite, IPV4_MEM_SIZE, IPV6_MEM_SIZE, MutableBuffer};
 use util::Result;
 use util::Serialize;
+
+use crate::OFFLINE_MESSAGE_DATA;
 
 /// Sent in response to [`OpenConnectionRequest2`](crate::open_connection_request2::OpenConnectionRequest2).
 #[derive(Debug)]
@@ -26,10 +27,10 @@ impl OpenConnectionReply2 {
     pub fn serialized_size(&self) -> usize {
         1 + 16
             + if self.client_address.is_ipv4() {
-                IPV4_MEM_SIZE
-            } else {
-                IPV6_MEM_SIZE
-            }
+            IPV4_MEM_SIZE
+        } else {
+            IPV6_MEM_SIZE
+        }
             + 2
             + 1
     }

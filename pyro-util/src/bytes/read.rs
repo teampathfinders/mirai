@@ -1,10 +1,11 @@
+use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr};
+
+use paste::paste;
+
 use crate::{bail, BlockPosition, Result};
 use crate::{u24::u24, Vector};
-use paste::paste;
-use std::mem;
-use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr};
-use uuid::Uuid;
 
+/// Implements the read functions for integer primitives.
 macro_rules! declare_primitive_fns {
     ($($ty: ident),+) => {
         paste! {$(
@@ -161,24 +162,27 @@ pub trait BinaryReader<'a> {
         Ok(BlockPosition::new(x, y, z))
     }
 
+    /// Reads an integer vector from the buffer.
     #[inline]
     fn read_veci<const N: usize>(&mut self) -> Result<Vector<i32, N>> {
         let mut x = [0; N];
-        for i in 0..N {
-            x[i] = self.read_var_i32()?;
+        for v in &mut x {
+            *v = self.read_var_i32()?;
         }
         Ok(Vector::from(x))
     }
 
+    /// Reads a float vector from the buffer.
     #[inline]
     fn read_vecf<const N: usize>(&mut self) -> Result<Vector<f32, N>> {
         let mut x = [0.0; N];
-        for i in 0..N {
-            x[i] = self.read_f32_le()?;
+        for v in &mut x {
+            *v = self.read_f32_le()?;
         }
         Ok(Vector::from(x))
     }
 
+    /// Reads an IP address from the buffer.
     fn read_addr(&mut self) -> Result<SocketAddr> {
         let variant = self.read_u8()?;
         Ok(match variant {

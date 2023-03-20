@@ -1,6 +1,6 @@
-use crate::bytes::{BinaryWrite, MutableBuffer, VarInt};
 use std::ops::{Deref, DerefMut};
-use crate::Result;
+
+use crate::bytes::VarInt;
 
 /// Type and size independent vector type
 #[derive(Debug, Clone)]

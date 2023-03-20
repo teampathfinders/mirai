@@ -1,14 +1,12 @@
-use std::collections::{HashMap};
+use std::collections::HashMap;
 
-use util::{Result};
 use util::bytes::{BinaryWrite, MutableBuffer};
-
+use util::Result;
 use util::Serialize;
 
-use crate::ConnectedPacket;
-use crate::CommandEnum;
-
 use crate::Command;
+use crate::CommandEnum;
+use crate::ConnectedPacket;
 
 pub const COMMAND_PARAMETER_VALID: u32 = 0x100000;
 pub const COMMAND_PARAMETER_ENUM: u32 = 0x200000;
@@ -169,8 +167,8 @@ impl Serialize for AvailableCommands<'_> {
                 buffer.write_var_u32(overload.parameters.len() as u32)?;
                 for parameter in &overload.parameters {
                     let mut command_type = parameter.data_type as u32;
-                    
-                    if let Some(ref command_enum) = parameter.command_enum {                            
+
+                    if let Some(ref command_enum) = parameter.command_enum {
                         if command_enum.dynamic {
                             command_type = COMMAND_PARAMETER_SOFT_ENUM
                                 | COMMAND_PARAMETER_VALID

@@ -1,4 +1,5 @@
 use std::io::Write;
+
 use util::bytes::{BinaryWrite, MutableBuffer, SharedBuffer};
 use util::Result;
 

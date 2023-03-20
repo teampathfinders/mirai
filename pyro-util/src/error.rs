@@ -29,10 +29,6 @@ macro_rules! bail {
     ($err_type: ident, $fmt: expr) => {
         return Err($crate::Error::new($crate::ErrorKind::$err_type, format!($fmt)))
     };
-
-    ($err_type: ident) => {
-        $crate::bail!($err_type, "No description")
-    };
 }
 
 /// Creates a new [`Error`].
@@ -68,30 +64,42 @@ pub enum ErrorKind {
     NotInitialized,
     /// An operation on the database has failed.
     DatabaseFailure,
+    /// An operation was not supported.
     Unsupported,
     /// An unknown error
     Other,
 }
 
+/// General error type that contains a category, description and backtrace.
 pub struct Error {
+    /// What type of error is this?
     kind: ErrorKind,
-    msg: String,
+    /// Description of the error that occurred.
+    description: String,
+    /// Backtrace captured when the error occurred.
     backtrace: Backtrace,
 }
 
 impl Error {
+    /// Creates a new [`Error`] with the specified kind and description.
     #[inline]
     pub fn new(kind: ErrorKind, msg: String) -> Self {
         Self {
             kind,
-            msg,
+            description: msg,
             backtrace: Backtrace::capture(),
         }
     }
 
+    /// What kind of error is this?
     #[inline]
     pub const fn kind(&self) -> ErrorKind {
         self.kind
+    }
+
+    #[inline]
+    pub fn description(&self) -> &str {
+        &self.description
     }
 }
 
@@ -100,12 +108,12 @@ impl std::error::Error for Error {}
 impl serde::de::Error for Error {
     #[inline]
     fn custom<T>(v: T) -> Self
-    where
-        T: fmt::Display,
+        where
+            T: fmt::Display,
     {
         Self {
             kind: ErrorKind::Malformed,
-            msg: v.to_string(),
+            description: v.to_string(),
             backtrace: Backtrace::capture(),
         }
     }
@@ -114,12 +122,12 @@ impl serde::de::Error for Error {
 impl serde::ser::Error for Error {
     #[inline]
     fn custom<T>(v: T) -> Self
-    where
-        T: fmt::Display,
+        where
+            T: fmt::Display,
     {
         Self {
             kind: ErrorKind::Unsupported,
-            msg: v.to_string(),
+            description: v.to_string(),
             backtrace: Backtrace::capture(),
         }
     }
@@ -130,7 +138,7 @@ impl fmt::Debug for Error {
         formatter
             .debug_struct("Error")
             .field("kind", &self.kind)
-            .field("msg", &self.msg)
+            .field("msg", &self.description)
             .field("backtrace", &self.backtrace)
             .finish()
     }
@@ -141,7 +149,7 @@ impl fmt::Display for Error {
         write!(
             fmt,
             "{:?} | {}\nbacktrace: {}",
-            self.kind, self.msg, self.backtrace
+            self.kind, self.description, self.backtrace
         )
     }
 }

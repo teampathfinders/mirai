@@ -1,5 +1,4 @@
-
-use util::{Serialize, Result};
+use util::{Result, Serialize};
 use util::bytes::{BinaryWrite, MutableBuffer, size_of_varint};
 
 use crate::ConnectedPacket;
@@ -32,18 +31,18 @@ impl ConnectedPacket for SetScoreboardIdentity {
 
     fn serialized_size(&self) -> usize {
         1 + size_of_varint(self.entries.len() as u32) +
-        match self.action {
-            ScoreboardIdentityAction::Add => {
-                self.entries.iter().fold(
-                    0, |acc, e| acc + size_of_varint(e.entry_id) + size_of_varint(e.entity_unique_id)
-                )
+            match self.action {
+                ScoreboardIdentityAction::Add => {
+                    self.entries.iter().fold(
+                        0, |acc, e| acc + size_of_varint(e.entry_id) + size_of_varint(e.entity_unique_id),
+                    )
+                }
+                ScoreboardIdentityAction::Clear => {
+                    self.entries.iter().fold(
+                        0, |acc, e| acc + size_of_varint(e.entry_id),
+                    )
+                }
             }
-            ScoreboardIdentityAction::Clear => {
-                self.entries.iter().fold(
-                    0, |acc, e| acc + size_of_varint(e.entry_id)
-                )
-            }
-        }
     }
 }
 

@@ -1,11 +1,11 @@
-
-use util::{Serialize, Result};
 use uuid::Uuid;
+
+use util::{Result, Serialize};
 use util::bytes::{BinaryWrite, MutableBuffer, size_of_varint};
+
+use crate::ConnectedPacket;
 use crate::DeviceOS;
 use crate::Skin;
-
-use crate::{ConnectedPacket};
 
 #[derive(Debug, Clone)]
 pub struct PlayerListAddEntry<'a> {
@@ -26,7 +26,7 @@ pub struct PlayerListAddEntry<'a> {
 }
 
 /// Adds player(s) to the client's player list.
-/// 
+///
 /// This and [`PlayerListRemove`] are the same packet, but are separated here for optimisation reasons.
 /// This separation allows the server to remove players from the player list without having to copy over all the player data
 /// contained in [`PlayerListAddEntry`].
@@ -45,7 +45,7 @@ impl<'a> Serialize for PlayerListAdd<'a> {
         buffer.write_var_u32(self.entries.len() as u32)?;
         for entry in self.entries {
             buffer.write_uuid_le(&entry.uuid)?;
-            
+
             buffer.write_var_i64(entry.entity_id)?;
             buffer.write_str(entry.username)?;
             buffer.write_str(&entry.xuid.to_string())?;
@@ -67,7 +67,7 @@ impl<'a> Serialize for PlayerListAdd<'a> {
 /// Removes player(s) from the client's player list.
 #[derive(Debug, Clone)]
 pub struct PlayerListRemove<'a> {
-    pub entries: &'a [Uuid]
+    pub entries: &'a [Uuid],
 }
 
 impl<'a> ConnectedPacket for PlayerListRemove<'a> {

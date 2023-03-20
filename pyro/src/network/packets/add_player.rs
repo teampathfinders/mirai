@@ -1,12 +1,11 @@
-
-
-use util::{Serialize, Result, Vector};
 use uuid::Uuid;
-use util::bytes::{BinaryWrite, MutableBuffer};
-use crate::CommandPermissionLevel;
-use crate::{DeviceOS, ItemStack, PermissionLevel};
 
-use crate::{GameMode, ConnectedPacket};
+use util::{Result, Serialize, Vector};
+use util::bytes::{BinaryWrite, MutableBuffer};
+
+use crate::{DeviceOS, ItemStack, PermissionLevel};
+use crate::{ConnectedPacket, GameMode};
+use crate::CommandPermissionLevel;
 
 /// Type of an entity link.
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
@@ -16,7 +15,7 @@ pub enum EntityLinkType {
     /// Link for entities that control what they're riding.
     Rider,
     /// Link for passengers, such as in a boat.
-    Passenger
+    Passenger,
 }
 
 /// Links multiple entities together.
@@ -32,7 +31,7 @@ pub struct EntityLink {
     /// Whether to immediately unlink the entities, such as in the case of death of a horse.
     pub is_immediate: bool,
     /// Whether the link was initiated by the rider.
-    pub is_rider_initiated: bool
+    pub is_rider_initiated: bool,
 }
 
 impl EntityLink {
@@ -64,7 +63,7 @@ pub enum Ability {
     Muted = 1 << 15,
     WorldBuilder = 1 << 16,
     NoClip = 1 << 17,
-    Count = 1 << 18
+    Count = 1 << 18,
 }
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
@@ -73,7 +72,7 @@ pub enum AbilityType {
     Base,
     Spectator,
     Commands,
-    Editor
+    Editor,
 }
 
 #[derive(Debug, Clone)]
@@ -86,7 +85,7 @@ pub struct AbilityLayer {
     /// Default fly speed.
     pub fly_speed: f32,
     /// Default walk speed.
-    pub walk_speed: f32
+    pub walk_speed: f32,
 }
 
 impl AbilityLayer {
@@ -109,7 +108,7 @@ pub struct AbilityData<'a> {
     /// The command permission level is separate from the standard level.
     /// This level affects which commands the player is allowed to execute.
     pub command_permission_level: CommandPermissionLevel,
-    pub layers: &'a [AbilityLayer]
+    pub layers: &'a [AbilityLayer],
 }
 
 impl AbilityData<'_> {
@@ -158,7 +157,7 @@ pub struct AddPlayer<'a> {
     /// ID of the user's device.
     pub device_id: &'a str,
     /// Device operating system.
-    pub device_os: DeviceOS
+    pub device_os: DeviceOS,
 }
 
 impl ConnectedPacket for AddPlayer<'_> {

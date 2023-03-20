@@ -1,6 +1,5 @@
-
 use util::{Deserialize, Result};
-use util::bytes::{MutableBuffer};
+use util::bytes::MutableBuffer;
 
 use crate::{
     {

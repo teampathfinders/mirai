@@ -1,11 +1,13 @@
 use std::net::SocketAddr;
-use util::bytes::{MutableBuffer};
+
+use util::bytes::MutableBuffer;
+
 use crate::CONNECTED_PEER_BIT_FLAG;
 
 /// An unprocessed packet.
 pub struct RawPacket {
     pub buf: MutableBuffer,
-    pub addr: SocketAddr
+    pub addr: SocketAddr,
 }
 
 impl RawPacket {

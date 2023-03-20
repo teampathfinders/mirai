@@ -1,3 +1,8 @@
+pub use error::*;
+pub use traits::*;
+pub use u24::*;
+pub use vector::*;
+
 /// Shorthand for `mod module; pub use module::*;`.
 #[macro_export]
 macro_rules! glob_export {
@@ -13,7 +18,3 @@ mod traits;
 pub mod u24;
 mod vector;
 
-pub use error::*;
-pub use traits::*;
-pub use u24::*;
-pub use vector::*;

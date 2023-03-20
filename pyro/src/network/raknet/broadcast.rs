@@ -1,8 +1,7 @@
 use std::num::NonZeroU64;
 
-
-use util::{error, Serialize, Result};
-use util::bytes::{ArcBuffer};
+use util::{error, Result, Serialize};
+use util::bytes::ArcBuffer;
 
 use crate::{
     {ConnectedPacket, Packet},
@@ -40,10 +39,10 @@ impl BroadcastPacket {
         sender: Option<NonZeroU64>,
     ) -> Result<Self> {
         let packet = Packet::new(packet);
-        
+
         Ok(Self {
             sender,
-            content: ArcBuffer::from(packet.serialize()?)
+            content: ArcBuffer::from(packet.serialize()?),
         })
     }
 }

@@ -1,7 +1,7 @@
 use std::io::Write;
+
 use util::{Result, Vector};
 use util::bytes::{BinaryWrite, MutableBuffer};
-
 use util::Serialize;
 
 use crate::ConnectedPacket;

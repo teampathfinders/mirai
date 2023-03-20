@@ -1,8 +1,7 @@
-
-use util::{Result};
 use util::bytes::{BinaryReader, SharedBuffer};
-
 use util::Deserialize;
+use util::Result;
+
 use crate::ConnectedPacket;
 
 /// Sent by the client to request the maximum render distance.

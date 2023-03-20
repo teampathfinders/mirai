@@ -1,21 +1,20 @@
-use std::sync::atomic::AtomicU64;
 use std::sync::Arc;
+use std::sync::atomic::AtomicU64;
 use std::time::Duration;
 
-use dashmap::mapref::one::Ref;
 use dashmap::DashMap;
-use level::ChunkManager;
-
+use dashmap::mapref::one::Ref;
 use tokio::sync::oneshot::Receiver;
-
 use tokio_util::sync::CancellationToken;
+
+use level::ChunkManager;
 use util::Result;
 
+use crate::{
+    {GameRule, GameRulesChanged}, SessionManager,
+};
 use crate::Command;
 use crate::SERVER_CONFIG;
-use crate::{
-    SessionManager, {GameRule, GameRulesChanged},
-};
 
 /// Interval between standard Minecraft ticks.
 const LEVEL_TICK_INTERVAL: Duration = Duration::from_millis(1000 / 20);
@@ -43,7 +42,7 @@ impl LevelManager {
     ) -> Result<(Arc<Self>, Receiver<()>)> {
         let (world_path, autosave_interval) = {
             let config = SERVER_CONFIG.read();
-            (config.level_path.clone(), config.autosave_interval)
+            (config.level_path, config.autosave_interval)
         };
 
         let (chunks, chunk_notifier) =

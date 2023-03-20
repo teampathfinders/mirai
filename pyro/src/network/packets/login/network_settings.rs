@@ -1,10 +1,8 @@
-
-
 use util::bytes::{BinaryWrite, MutableBuffer};
+use util::Result;
+use util::Serialize;
 
 use crate::ConnectedPacket;
-use util::Serialize;
-use util::Result;
 
 /// Supported compression algorithms.
 ///

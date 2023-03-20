@@ -1,10 +1,10 @@
 use level::Dimension;
-
 use util::{Serialize, Vector};
-use util::{Result};
-use util::{BlockPosition};
+use util::Result;
+use util::BlockPosition;
 use util::bytes::{BinaryWrite, MutableBuffer, VarInt, VarString};
-use crate::{CLIENT_VERSION_STRING, Difficulty, GameMode, ConnectedPacket, GameRule};
+
+use crate::{CLIENT_VERSION_STRING, ConnectedPacket, Difficulty, GameMode, GameRule};
 use crate::ExperimentData;
 
 const MULTIPLAYER_CORRELATION_ID: &str = "5b39a9d6-f1a1-411a-b749-b30742f81771";
@@ -82,8 +82,8 @@ pub struct PlayerMovementSettings {
 impl PlayerMovementSettings {
     pub fn serialized_size(&self) -> usize {
         (self.movement_type as i32).var_len() +
-        self.rewind_history_size.var_len() +
-        1
+            self.rewind_history_size.var_len() +
+            1
     }
 
     pub fn serialize(&self, buffer: &mut MutableBuffer) -> Result<()> {
@@ -138,9 +138,7 @@ impl ItemEntry {
 
 #[derive(Debug, Copy, Clone, serde::Serialize)]
 #[serde(rename = "")]
-pub struct PropertyData {
-
-}
+pub struct PropertyData {}
 
 #[derive(Debug, Copy, Clone)]
 pub enum SpawnBiomeType {
@@ -293,78 +291,78 @@ impl ConnectedPacket for StartGame<'_> {
 
     fn serialized_size(&self) -> usize {
         self.entity_id.var_len() +
-        self.runtime_id.var_len() +
-        (self.game_mode as i32).var_len() +
-        3 * 4 +
-        3 * 4 +
-        8 +
-        2 +
-        self.custom_biome_name.var_len() +
-        (self.dimension as u32).var_len() +
-        (self.generator as i32).var_len() +
-        (self.world_game_mode as i32).var_len() +
-        (self.difficulty as i32).var_len() +
-        self.world_spawn.serialized_size() +
-        1 +
-        1 +
-        self.day_cycle_lock_time.var_len() +
-        0.var_len() +
-        1 +
-        "".var_len() +
-        4 +
-        4 +
-        1 +
-        1 +
-        1 +
-        (self.xbox_broadcast_intent as u32).var_len() +
-        (self.platform_broadcast_intent as u32).var_len() +
-        1 +
-        1 +
-        (self.game_rules.len() as u32).var_len() +
-        self.game_rules.iter().fold(0, |acc, r| acc + r.serialized_size()) +
-        4 +
-        self.experiments.iter().fold(0, |acc, e| acc + e.serialized_size()) +
-        1 +
-        1 +
-        1 +
-        (self.permission_level as i32).var_len() +
-        4 +
-        1 +
-        1 +
-        1 +
-        1 +
-        1 +
-        1 +
-        1 +
-        1 +
-        1 +
-        1 +
-        CLIENT_VERSION_STRING.var_len() +
-        4 +
-        4 +
-        1 +
-        "".var_len() +
-        "".var_len() +
-        1 +
-        1 +
-        1 +
-        self.level_id.var_len() +
-        self.level_name.var_len() +
-        self.template_content_identity.var_len() +
-        1 +
-        self.movement_settings.serialized_size() +
-        8 +
-        self.enchantment_seed.var_len() +
-        (self.block_properties.len() as u32).var_len() +
-        self.block_properties.iter().fold(0, |acc, p| acc + p.serialized_size()) +
-        (self.item_properties.len() as u32).var_len() +
-        self.item_properties.iter().fold(0, |acc, p| acc + p.serialized_size()) +
-        MULTIPLAYER_CORRELATION_ID.var_len() +
-        1 +
-        CLIENT_VERSION_STRING.var_len() +
-        // self.property_data.serialized_net_size("") +
-        8 +
-        16
+            self.runtime_id.var_len() +
+            (self.game_mode as i32).var_len() +
+            3 * 4 +
+            3 * 4 +
+            8 +
+            2 +
+            self.custom_biome_name.var_len() +
+            (self.dimension as u32).var_len() +
+            (self.generator as i32).var_len() +
+            (self.world_game_mode as i32).var_len() +
+            (self.difficulty as i32).var_len() +
+            self.world_spawn.serialized_size() +
+            1 +
+            1 +
+            self.day_cycle_lock_time.var_len() +
+            0.var_len() +
+            1 +
+            "".var_len() +
+            4 +
+            4 +
+            1 +
+            1 +
+            1 +
+            (self.xbox_broadcast_intent as u32).var_len() +
+            (self.platform_broadcast_intent as u32).var_len() +
+            1 +
+            1 +
+            (self.game_rules.len() as u32).var_len() +
+            self.game_rules.iter().fold(0, |acc, r| acc + r.serialized_size()) +
+            4 +
+            self.experiments.iter().fold(0, |acc, e| acc + e.serialized_size()) +
+            1 +
+            1 +
+            1 +
+            (self.permission_level as i32).var_len() +
+            4 +
+            1 +
+            1 +
+            1 +
+            1 +
+            1 +
+            1 +
+            1 +
+            1 +
+            1 +
+            1 +
+            CLIENT_VERSION_STRING.var_len() +
+            4 +
+            4 +
+            1 +
+            "".var_len() +
+            "".var_len() +
+            1 +
+            1 +
+            1 +
+            self.level_id.var_len() +
+            self.level_name.var_len() +
+            self.template_content_identity.var_len() +
+            1 +
+            self.movement_settings.serialized_size() +
+            8 +
+            self.enchantment_seed.var_len() +
+            (self.block_properties.len() as u32).var_len() +
+            self.block_properties.iter().fold(0, |acc, p| acc + p.serialized_size()) +
+            (self.item_properties.len() as u32).var_len() +
+            self.item_properties.iter().fold(0, |acc, p| acc + p.serialized_size()) +
+            MULTIPLAYER_CORRELATION_ID.var_len() +
+            1 +
+            CLIENT_VERSION_STRING.var_len() +
+            // self.property_data.serialized_net_size("") +
+            8 +
+            16
     }
 }
 

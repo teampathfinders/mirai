@@ -1,34 +1,32 @@
 use std::io::Read;
-
 use std::sync::atomic::Ordering;
 use std::time::Instant;
 
 use async_recursion::async_recursion;
 
-use crate::SERVER_CONFIG;
-use crate::Header;
-use crate::CacheStatus;
+use util::{bail, Result};
+use util::bytes::{BinaryReader, MutableBuffer};
+
 use crate::{CommandRequest, SettingsCommand};
 use crate::{
     ChunkRadiusRequest, ClientToServerHandshake, CompressionAlgorithm, Login,
     RequestNetworkSettings, ResourcePackClientResponse,
 };
 use crate::{
-    Animate, ConnectedPacket, Interact, MovePlayer, RequestAbility,
-    SetLocalPlayerAsInitialized, TextMessage, UpdateSkin, ViolationWarning,
-    CONNECTED_PACKET_ID,
+    Animate, CONNECTED_PACKET_ID, ConnectedPacket, Interact, MovePlayer,
+    RequestAbility, SetLocalPlayerAsInitialized, TextMessage, UpdateSkin,
+    ViolationWarning,
 };
 use crate::{
     Ack, ConnectionRequest, DisconnectNotification, Nak, NewIncomingConnection,
 };
 use crate::{BroadcastPacket, Frame, FrameBatch};
-use crate::Session;
-use util::{bail, Result};
-use util::{Deserialize, Serialize};
-use util::bytes::{BinaryReader, MutableBuffer, VarInt};
-
-use crate::DEFAULT_SEND_CONFIG;
+use crate::CacheStatus;
 use crate::ConnectedPing;
+use crate::DEFAULT_SEND_CONFIG;
+use crate::Header;
+use crate::SERVER_CONFIG;
+use crate::Session;
 
 impl Session {
     /// Processes the raw packet coming directly from the network.
@@ -49,7 +47,7 @@ impl Session {
             _ => self.process_frame_batch(pk).await?,
         }
 
-        return Ok(true);
+        Ok(true)
     }
 
     pub fn process_broadcast(&self, pk: BroadcastPacket) -> Result<()> {
@@ -79,7 +77,7 @@ impl Session {
             .fetch_max(batch.sequence_number, Ordering::SeqCst);
 
         for frame in batch.frames {
-            self.process_frame(frame.into(), batch.sequence_number).await?;
+            self.process_frame(frame, batch.sequence_number).await?;
         }
 
         Ok(())
@@ -93,7 +91,7 @@ impl Session {
     ) -> Result<()> {
         if frame.reliability.is_sequenced()
             && frame.sequence_index
-                < self.raknet.client_batch_number.load(Ordering::SeqCst)
+            < self.raknet.client_batch_number.load(Ordering::SeqCst)
         {
             // Discard packet
             return Ok(());
@@ -106,14 +104,14 @@ impl Session {
         }
 
         if frame.is_compound {
-            if let Some(p) =
-                self.raknet.compound_collector.insert(frame)?
-            {
-                return self.process_frame(p.into(), batch_number).await;
+            let possible_frag = self.raknet.compound_collector.insert(frame)?;
+
+            return if let Some(packet) = possible_frag {
+                self.process_frame(packet, batch_number).await
             } else {
                 // Compound incomplete
-                return Ok(())
-            }
+                Ok(())
+            };
         }
 
         // Sequenced implies ordered

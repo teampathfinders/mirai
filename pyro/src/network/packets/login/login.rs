@@ -1,16 +1,13 @@
-use base64::Engine;
-
-
 use serde_repr::Deserialize_repr;
 
-use crate::crypto::{
-    parse_identity_data, parse_user_data, IdentityData, UserData,
-};
-use crate::ConnectedPacket;
-use util::Deserialize;
-
-use util::{Result};
 use util::bytes::{BinaryReader, SharedBuffer};
+use util::Deserialize;
+use util::Result;
+
+use crate::ConnectedPacket;
+use crate::crypto::{
+    IdentityData, parse_identity_data, parse_user_data, UserData,
+};
 use crate::Skin;
 
 /// Device operating system
@@ -41,7 +38,7 @@ pub enum DeviceOS {
 #[repr(i32)]
 pub enum UiProfile {
     Classic,
-    Pocket
+    Pocket,
 }
 
 /// Packet received by the client before initiating encryption.
@@ -53,7 +50,7 @@ pub struct Login {
     /// User data (device OS, language, etc.)
     pub user_data: UserData,
     /// Skin.
-    pub skin: Skin
+    pub skin: Skin,
 }
 
 impl ConnectedPacket for Login {
@@ -62,13 +59,13 @@ impl ConnectedPacket for Login {
 
 impl Deserialize<'_> for Login {
     fn deserialize(mut buffer: SharedBuffer) -> Result<Self> {
-        let version = buffer.read_u32_be()?; // Skip protocol version, use the one in RequestNetworkSettings instead.
+        let _version = buffer.read_u32_be()?; // Skip protocol version, use the one in RequestNetworkSettings instead.
         buffer.read_var_u32()?;
 
         let identity_data = parse_identity_data(&mut buffer)?;
         let data =
             parse_user_data(&mut buffer, &identity_data.public_key)?;
-        
+
         Ok(Self {
             identity: IdentityData {
                 uuid: identity_data.client_data.uuid,
@@ -77,7 +74,7 @@ impl Deserialize<'_> for Login {
                 public_key: identity_data.public_key,
             },
             user_data: data.data,
-            skin: data.skin
+            skin: data.skin,
         })
     }
 }

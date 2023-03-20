@@ -1,8 +1,10 @@
-use crate::OFFLINE_MESSAGE_DATA;
 use std::io::Write;
+
 use util::bytes::{BinaryWrite, MutableBuffer};
 use util::Result;
 use util::Serialize;
+
+use crate::OFFLINE_MESSAGE_DATA;
 
 /// Sent in response to [`OpenConnectionRequest1`](crate::open_connection_request1::OpenConnectionRequest1).
 #[derive(Debug)]

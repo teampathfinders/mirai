@@ -1,12 +1,11 @@
-use std::ptr::NonNull;
 use std::{
     ffi::{c_void, CStr, CString},
     marker::PhantomData,
     ops::Deref,
     os::raw::{c_char, c_int},
 };
+use std::ptr::NonNull;
 
-use util::bytes::{MutableBuffer, SharedBuffer};
 use util::{error, Error, Result};
 
 use crate::ffi;
@@ -163,8 +162,8 @@ pub struct Database {
 impl Database {
     /// Opens the database at the specified path.
     pub fn open<P>(path: P) -> Result<Self>
-    where
-        P: AsRef<str>,
+        where
+            P: AsRef<str>,
     {
         let ffi_path = CString::new(path.as_ref())?;
 
@@ -192,8 +191,8 @@ impl Database {
 
     /// Loads the specified value from the database.
     pub fn get<K>(&self, key: K) -> Result<Guard>
-    where
-        K: AsRef<[u8]>,
+        where
+            K: AsRef<[u8]>,
     {
         let key = key.as_ref();
         unsafe {
@@ -241,6 +240,7 @@ impl Drop for Database {
 
 // SAFETY: All LevelDB operations are thread-safe.
 unsafe impl Send for Database {}
+
 // SAFETY: All LevelDB operations are thread-safe.
 unsafe impl Sync for Database {}
 

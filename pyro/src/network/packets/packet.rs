@@ -1,10 +1,11 @@
 use std::io::Write;
-use crate::Header;
-use crate::ConnectedPacket;
 
 use util::bytes::{BinaryWrite, MutableBuffer};
-use util::Serialize;
 use util::Result;
+use util::Serialize;
+
+use crate::ConnectedPacket;
+use crate::Header;
 
 /// A game packet.
 #[derive(Debug, Clone)]

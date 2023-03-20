@@ -1,12 +1,9 @@
-use crate::bytes::{BinaryReader, BinaryWrite, SharedBuffer, VarInt};
-use crate::{bail, BlockPosition, Result, Vector};
-use paste::paste;
-use std::borrow::Cow;
+use std::{fmt, io};
 use std::fmt::Debug;
 use std::io::Write;
 use std::ops::{Deref, DerefMut};
-use std::{fmt, io};
-use uuid::Uuid;
+
+use crate::bytes::{SharedBuffer};
 
 /// A buffer that can be read from and written to.
 /// It is the owned version of [`ReadBuffer`].
@@ -17,6 +14,9 @@ pub struct MutableBuffer {
 }
 
 impl MutableBuffer {
+    /// Creates a new empty buffer.
+    ///
+    /// This call does not allocate.
     #[inline]
     pub fn new() -> Self {
         Default::default()
