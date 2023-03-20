@@ -359,9 +359,8 @@ impl<'a, W, M> ser::Serializer for &'a mut Serializer<W, M>
         Ok(())
     }
 
-    #[inline]
     fn serialize_none(self) -> Result<()> {
-        unreachable!("None fields cannot exist, this should have been stopped by the key serializer");
+        bail!(Unsupported, "Serializing None is not supported")
     }
 
     fn serialize_some<T: ?Sized>(self, value: &T) -> Result<()>
@@ -371,14 +370,12 @@ impl<'a, W, M> ser::Serializer for &'a mut Serializer<W, M>
         value.serialize(self)
     }
 
-    #[inline]
     fn serialize_unit(self) -> Result<()> {
-        unreachable!("Unit fields cannot exist, this should have been stopped by the key serializer");
+        bail!(Unsupported, "Serializing unit is not supported")
     }
 
     fn serialize_unit_struct(self, _name: &'static str) -> Result<()> {
-        Ok(())
-        // unreachable!("Unit struct fields cannot exist, this should have been stopped by the key serializer");
+        bail!(Unsupported, "Serializing unit structs is not supported")
     }
 
     fn serialize_unit_variant(
@@ -387,7 +384,7 @@ impl<'a, W, M> ser::Serializer for &'a mut Serializer<W, M>
         _variant_index: u32,
         _variant: &'static str,
     ) -> Result<()> {
-        todo!()
+        bail!(Unsupported, "Serializing unit variants is not supported")
     }
 
     fn serialize_newtype_struct<T: ?Sized>(
@@ -398,7 +395,7 @@ impl<'a, W, M> ser::Serializer for &'a mut Serializer<W, M>
         where
             T: Serialize,
     {
-        todo!()
+        bail!(Unsupported, "Serializing newtype structs is not supported")
     }
 
     fn serialize_newtype_variant<T: ?Sized>(
@@ -411,7 +408,7 @@ impl<'a, W, M> ser::Serializer for &'a mut Serializer<W, M>
         where
             T: Serialize,
     {
-        todo!()
+        bail!(Unsupported, "Serializing newtype variants is not supported")
     }
 
     #[inline]
@@ -437,8 +434,8 @@ impl<'a, W, M> ser::Serializer for &'a mut Serializer<W, M>
         self,
         _name: &'static str,
         _len: usize,
-    ) -> std::result::Result<Self::SerializeTupleStruct, Self::Error> {
-        todo!()
+    ) -> Result<Self::SerializeTupleStruct> {
+        bail!(Unsupported, "Serializing tuple structs is not supported")
     }
 
     fn serialize_tuple_variant(
@@ -447,8 +444,8 @@ impl<'a, W, M> ser::Serializer for &'a mut Serializer<W, M>
         _variant_index: u32,
         _variant: &'static str,
         _len: usize,
-    ) -> std::result::Result<Self::SerializeTupleVariant, Self::Error> {
-        todo!()
+    ) -> Result<Self::SerializeTupleVariant> {
+        bail!(Unsupported, "Serializing tuple variants is not supported")
     }
 
     fn serialize_map(
@@ -487,7 +484,7 @@ impl<'a, W, M> ser::Serializer for &'a mut Serializer<W, M>
         _variant: &'static str,
         _len: usize,
     ) -> std::result::Result<Self::SerializeStructVariant, Self::Error> {
-        todo!()
+        bail!(Unsupported, "Serializing struct variants is not supported")
     }
 }
 
@@ -575,14 +572,14 @@ impl<'a, W, M> SerializeMap for &'a mut Serializer<W, M>
         where
             K: ?Sized + Serialize,
     {
-        unimplemented!("Use MapSerializer::serialize_entry instead");
+        bail!(Unsupported, "Use MapSerializer::serialize_entry instead")
     }
 
     fn serialize_value<V>(&mut self, _value: &V) -> Result<()>
         where
             V: ?Sized + Serialize,
     {
-        unimplemented!("Use MapSerializer::serialize_entry instead");
+        bail!(Unsupported, "Use MapSerializer::serialize_entry instead");
     }
 
     fn serialize_entry<K, V>(&mut self, key: &K, value: &V) -> Result<()>
@@ -738,7 +735,7 @@ impl<'a, W, F> ser::Serializer for FieldTypeSerializer<'a, W, F>
     }
 
     fn serialize_none(self) -> std::result::Result<Self::Ok, Self::Error> {
-        todo!();
+        bail!(Unsupported, "Serializing None is not supported")
     }
 
     fn serialize_some<T: ?Sized>(
@@ -752,14 +749,14 @@ impl<'a, W, F> ser::Serializer for FieldTypeSerializer<'a, W, F>
     }
 
     fn serialize_unit(self) -> std::result::Result<Self::Ok, Self::Error> {
-        todo!()
+        bail!(Unsupported, "Serializing unit is not supported")
     }
 
     fn serialize_unit_struct(
         self,
         _name: &'static str,
     ) -> std::result::Result<Self::Ok, Self::Error> {
-        todo!()
+        bail!(Unsupported, "Serializing unit structs is not supported")
     }
 
     fn serialize_unit_variant(
@@ -768,7 +765,7 @@ impl<'a, W, F> ser::Serializer for FieldTypeSerializer<'a, W, F>
         _variant_index: u32,
         _variant: &'static str,
     ) -> std::result::Result<Self::Ok, Self::Error> {
-        todo!()
+        bail!(Unsupported, "Serializing unit variants is not supported")
     }
 
     fn serialize_newtype_struct<T: ?Sized>(
@@ -779,7 +776,7 @@ impl<'a, W, F> ser::Serializer for FieldTypeSerializer<'a, W, F>
         where
             T: Serialize,
     {
-        todo!()
+        bail!(Unsupported, "Serializing newtype structs is not supported")
     }
 
     fn serialize_newtype_variant<T: ?Sized>(
@@ -792,7 +789,7 @@ impl<'a, W, F> ser::Serializer for FieldTypeSerializer<'a, W, F>
         where
             T: Serialize,
     {
-        todo!()
+        bail!(Unsupported, "Serializing newtype variants is not supported")
     }
 
     fn serialize_seq(
@@ -816,7 +813,7 @@ impl<'a, W, F> ser::Serializer for FieldTypeSerializer<'a, W, F>
         _name: &'static str,
         _len: usize,
     ) -> std::result::Result<Self::SerializeTupleStruct, Self::Error> {
-        todo!()
+        bail!(Unsupported, "Serializing tuple structs is not supported")
     }
 
     fn serialize_tuple_variant(
@@ -826,7 +823,7 @@ impl<'a, W, F> ser::Serializer for FieldTypeSerializer<'a, W, F>
         _variant: &'static str,
         _len: usize,
     ) -> std::result::Result<Self::SerializeTupleVariant, Self::Error> {
-        todo!()
+        bail!(Unsupported, "Serializing tuple variants is not supported")
     }
 
     #[inline]
@@ -855,7 +852,7 @@ impl<'a, W, F> ser::Serializer for FieldTypeSerializer<'a, W, F>
         _variant: &'static str,
         _len: usize,
     ) -> std::result::Result<Self::SerializeStructVariant, Self::Error> {
-        todo!()
+        bail!(Unsupported, "Serializing struct variants is not supported")
     }
 }
 
