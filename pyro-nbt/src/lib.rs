@@ -82,32 +82,32 @@ impl VariantImpl for Variable {
 #[repr(u8)]
 enum FieldType {
     /// Indicates the end of a compound tag.
-    End,
+    End = 0,
     /// A signed byte.
-    Byte,
+    Byte = 1,
     /// A signed short.
-    Short,
+    Short = 2,
     /// A signed int.
-    Int,
+    Int = 3,
     /// A signed long.
-    Long,
+    Long = 4,
     /// A float.
-    Float,
+    Float = 5,
     /// A double.
-    Double,
+    Double = 6,
     /// An array of byte tags.
-    ByteArray,
+    ByteArray = 7,
     /// A UTF-8 string.
-    String,
+    String = 8,
     /// List of tags.
     /// Every item in the list must be of the same type.
-    List,
+    List = 9,
     /// A key-value map.
-    Compound,
+    Compound = 10,
     /// An array of int tags.
-    IntArray,
+    IntArray = 11,
     /// An array of long tags.
-    LongArray,
+    LongArray = 12,
 }
 
 impl TryFrom<u8> for FieldType {

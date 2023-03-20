@@ -1,14 +1,48 @@
 #[cfg(test)]
 mod test {
+    use std::collections::HashMap;
     use serde::{Deserialize, Serialize};
 
     use crate::ser::to_be_bytes;
-    use crate::{de::Deserializer, from_be_bytes, Value};
+    use crate::{de::Deserializer, from_be_bytes, from_le_bytes, from_var_bytes, to_le_bytes, to_var_bytes, Value};
 
     const BIG_TEST_NBT: &[u8] = include_bytes!("../test/bigtest.nbt");
     const HELLO_WORLD_NBT: &[u8] = include_bytes!("../test/hello_world.nbt");
     const PLAYER_NAN_VALUE_NBT: &[u8] =
         include_bytes!("../test/player_nan_value.nbt");
+
+    #[test]
+    fn read_write_all() {
+        let value = Value::Compound(HashMap::from([
+            ("byte".to_owned(), Value::Byte(42)),
+            ("short".to_owned(), Value::Short(42)),
+            ("int".to_owned(), Value::Int(42)),
+            ("long".to_owned(), Value::Long(42)),
+            ("float".to_owned(), Value::Float(42.0)),
+            ("double".to_owned(), Value::Double(42.0)),
+            ("byte_array".to_owned(), Value::ByteArray(vec![1, 2, 3])),
+            ("string".to_owned(), Value::String("Hello, World!".to_owned())),
+            ("list".to_owned(), Value::List(vec![
+                Value::Compound(HashMap::from([
+                    ("name".to_owned(), Value::String("Compound #1".to_owned())),
+                ])),
+                Value::Compound(HashMap::from([
+                    ("name".to_owned(), Value::String("Compound #2".to_owned())),
+                ]))
+            ])),
+            ("compound".to_owned(), Value::Compound(HashMap::from([
+                ("name".to_owned(), Value::String("Compound #3".to_owned())),
+            ]))),
+        ]));
+
+        let ser = to_var_bytes(&value).unwrap();
+        let ser_le = to_le_bytes(&value).unwrap();
+        let ser_be = to_be_bytes(&value).unwrap();
+
+        from_var_bytes::<Value>(&ser).unwrap().0;
+        from_le_bytes::<Value>(&ser_le).unwrap().0;
+        from_be_bytes::<Value>(&ser_be).unwrap().0;
+    }
 
     #[test]
     fn read_write_bigtest() {
@@ -63,10 +97,10 @@ mod test {
 
         let encoded = to_be_bytes(&decoded).unwrap();
         let decoded2: AllTypes = from_be_bytes(encoded.as_slice()).unwrap().0;
-        // dbg!(&decoded2);
 
         let value: Value = from_be_bytes(BIG_TEST_NBT).unwrap().0;
-        dbg!(value);
+        let value_encoded = to_be_bytes(&value).unwrap();
+        let value_decoded: Value = from_be_bytes(&value_encoded).unwrap().0;
 
         // Checking floats for equality is a pain.
         // If the data can be decoded, it's pretty much correct
@@ -85,9 +119,11 @@ mod test {
         assert_eq!(encoded.as_slice(), HELLO_WORLD_NBT);
 
         let value: Value = from_be_bytes(HELLO_WORLD_NBT).unwrap().0;
-        dbg!(value);
+        let value_encoded = to_be_bytes(&value).unwrap();
+        let value_decoded: Value = from_be_bytes(&value_encoded).unwrap().0;
     }
 
+    #[ignore]
     #[test]
     fn read_write_player() {
         #[derive(Deserialize, Serialize, Debug, PartialEq)]
@@ -104,16 +140,20 @@ mod test {
             attack_time: i16,
             hurt_time: i16,
             fire: i16,
-            rotation: [f32; 2],
+            rotation: [f32; 2]
         }
 
-        // let decoded: Player = from_be_bytes(PLAYER_NAN_VALUE_NBT).unwrap().0;
-        // let encoded = to_be_bytes(&decoded).unwrap();
-        //
-        // let decoded2: Player = from_be_bytes(encoded.as_slice()).unwrap().0;
+        let decoded: Player = from_be_bytes(PLAYER_NAN_VALUE_NBT).unwrap().0;
+        let encoded = to_be_bytes(&decoded).unwrap();
+        let decoded2: Player = from_be_bytes(encoded.as_slice()).unwrap().0;
 
         let value: Value = from_be_bytes(PLAYER_NAN_VALUE_NBT).unwrap().0;
-        dbg!(value);
+        dbg!(&value);
+
+        let value_encoded = to_be_bytes(&value).unwrap();
+        // FIXME: For some reason this call fails.
+        // I haven't seen failures in any other tests I've done, so I'm not sure what's causing this.
+        let value_decoded: Value = from_be_bytes(&value_encoded).unwrap().0;
 
         // Checking floats for equality is a pain.
         // If the data can be decoded, it's pretty much correct

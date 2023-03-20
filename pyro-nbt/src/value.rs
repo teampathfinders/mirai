@@ -1,7 +1,8 @@
 use std::collections::HashMap;
 use std::fmt;
-use serde::{de, Deserialize, Deserializer};
+use serde::{de, Deserialize, Deserializer, Serialize, Serializer};
 use serde::de::{MapAccess, SeqAccess, Visitor};
+use serde::ser::{SerializeMap, SerializeSeq};
 
 #[derive(Debug, Clone)]
 pub enum Value {
@@ -143,5 +144,46 @@ impl<'de> Deserialize<'de> for Value {
         }
 
         deserializer.deserialize_any(ValueVisitor)
+    }
+}
+
+#[inline]
+fn serialize_seq<T, S>(ser: S, seq: &[T]) -> Result<S::Ok, S::Error>
+where
+    T: Serialize,
+    S: Serializer,
+{
+    let mut seq_ser = ser.serialize_seq(Some(seq.len()))?;
+    for element in seq {
+        seq_ser.serialize_element(element)?;
+    }
+    seq_ser.end()
+}
+
+impl Serialize for Value {
+    fn serialize<S>(&self, mut ser: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        match self {
+            Value::Byte(byte) => ser.serialize_i8(*byte),
+            Value::Short(short) => ser.serialize_i16(*short),
+            Value::Int(int) => ser.serialize_i32(*int),
+            Value::Long(long) => ser.serialize_i64(*long),
+            Value::Float(float) => ser.serialize_f32(*float),
+            Value::Double(double) => ser.serialize_f64(*double),
+            Value::ByteArray(array) => ser.serialize_bytes(array),
+            Value::String(string) => ser.serialize_str(string),
+            Value::List(seq) => serialize_seq(ser, seq),
+            Value::Compound(map) => {
+                let mut map_ser = ser.serialize_map(Some(map.len()))?;
+                for (k, v) in map {
+                    map_ser.serialize_entry(k, v)?;
+                }
+                map_ser.end()
+            },
+            Value::IntArray(seq) => serialize_seq(ser, seq),
+            Value::LongArray(seq) => serialize_seq(ser, seq)
+        }
     }
 }
