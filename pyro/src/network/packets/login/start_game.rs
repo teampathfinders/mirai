@@ -1,4 +1,5 @@
 use level::Dimension;
+use nbt::to_var_bytes_in;
 
 use util::{Serialize, Vector};
 use util::{Result};
@@ -135,6 +136,12 @@ impl ItemEntry {
     }
 }
 
+#[derive(Debug, Copy, Clone, serde::Serialize)]
+#[serde(rename = "")]
+pub struct PropertyData {
+
+}
+
 #[derive(Debug, Copy, Clone)]
 pub enum SpawnBiomeType {
     Default,
@@ -269,6 +276,7 @@ pub struct StartGame<'a> {
     pub enchantment_seed: i32,
     pub block_properties: &'a [BlockEntry],
     pub item_properties: &'a [ItemEntry],
+    pub property_data: PropertyData,
     /// Whether inventory transactions are server authoritative.
     pub server_authoritative_inventory: bool,
     /// Version of the game that the server is running.
@@ -360,8 +368,8 @@ impl ConnectedPacket for StartGame<'_> {
     }
 }
 
-impl Serialize for StartGame<'_> {
-    fn serialize(&self, buffer: &mut MutableBuffer) -> Result<()> {
+impl<'a> Serialize for StartGame<'a> {
+    fn serialize(&self, mut buffer: &mut MutableBuffer) -> Result<()> {
         buffer.write_var_i64(self.entity_id);
         buffer.write_var_u64(self.runtime_id);
         buffer.write_var_i32(self.game_mode as i32);
@@ -450,9 +458,7 @@ impl Serialize for StartGame<'_> {
         buffer.write_bool(self.server_authoritative_inventory);
         buffer.write_str(CLIENT_VERSION_STRING); // Game version
 
-        todo!();
-
-        // nbt::serialize_net("", &self.property_data, buffer);
+        to_var_bytes_in(&mut buffer, &self.property_data)?;
 
         buffer.write_u64_le(self.server_block_state_checksum);
         buffer.write_u128_le(self.world_template_id);

@@ -5,7 +5,7 @@ use std::sync::atomic::Ordering;
 
 use level::Dimension;
 
-use crate::SERVER_CONFIG;
+use crate::{PropertyData, SERVER_CONFIG};
 use crate::crypto::Encryptor;
 use crate::CacheStatus;
 use crate::AvailableCommands;
@@ -178,6 +178,7 @@ impl Session {
             enchantment_seed: 0,
             block_properties: &[],
             item_properties: &[],
+            property_data: PropertyData {},
             server_authoritative_inventory: false,
             game_version: "1.19.60",
             // property_data: nbt::Value::Compound(HashMap::new()),
