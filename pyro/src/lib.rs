@@ -1,5 +1,3 @@
-#![warn(missing_docs)]
-
 pub use level;
 pub use nbt;
 pub use util;
