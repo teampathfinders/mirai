@@ -36,9 +36,7 @@ impl Deserialize<'_> for TickSync {
 
 impl Serialize for TickSync {
     fn serialize(&self, buffer: &mut MutableBuffer) -> Result<()> {
-        buffer.write_u64_le(self.request);
-        buffer.write_u64_le(self.response);
-
-        Ok(())
+        buffer.write_u64_le(self.request)?;
+        buffer.write_u64_le(self.response)
     }
 }

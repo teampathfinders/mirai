@@ -23,8 +23,6 @@ impl<'a> ConnectedPacket for ShowProfile<'a> {
 
 impl<'a> Serialize for ShowProfile<'a> {
     fn serialize(&self, buffer: &mut MutableBuffer) -> Result<()> {
-        buffer.write_str(self.xuid);
-
-        Ok(())
+        buffer.write_str(self.xuid)
     }
 }

@@ -19,9 +19,9 @@ impl ConnectedPacket for CacheMissResponse<'_> {
 
 impl Serialize for CacheMissResponse<'_> {
     fn serialize(&self, buffer: &mut MutableBuffer) -> Result<()> {
-        buffer.write_var_u32(self.blobs.len() as u32);
+        buffer.write_var_u32(self.blobs.len() as u32)?;
         for blob in self.blobs {
-            blob.serialize(buffer);
+            blob.serialize(buffer)?;
         }
 
         Ok(())

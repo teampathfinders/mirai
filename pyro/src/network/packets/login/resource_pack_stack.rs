@@ -17,9 +17,9 @@ impl ExperimentData<'_> {
         self.name.var_len() + 1
     }
 
-    pub fn serialize(&self, buffer: &mut MutableBuffer) {
-        buffer.write_str(&self.name);
-        buffer.write_bool(self.enabled);
+    pub fn serialize(&self, buffer: &mut MutableBuffer) -> Result<()> {
+        buffer.write_str(&self.name)?;
+        buffer.write_bool(self.enabled)
     }
 }
 
@@ -37,10 +37,10 @@ impl ResourcePackStackEntry<'_> {
         self.subpack_name.var_len()
     }
 
-    pub fn serialize(&self, buffer: &mut MutableBuffer) {
-        buffer.write_str(&self.pack_id);
-        buffer.write_str(&self.pack_version);
-        buffer.write_str(&self.subpack_name);
+    pub fn serialize(&self, buffer: &mut MutableBuffer) -> Result<()> {
+        buffer.write_str(&self.pack_id)?;
+        buffer.write_str(&self.pack_version)?;
+        buffer.write_str(&self.subpack_name)
     }
 }
 
@@ -73,26 +73,25 @@ impl ConnectedPacket for ResourcePackStack<'_> {
 
 impl Serialize for ResourcePackStack<'_> {
     fn serialize(&self, buffer: &mut MutableBuffer) -> Result<()> {
-        buffer.write_bool(self.forced_to_accept);
+        buffer.write_bool(self.forced_to_accept)?;
 
-        buffer.write_var_u32(self.resource_packs.len() as u32);
+        buffer.write_var_u32(self.resource_packs.len() as u32)?;
         for pack in self.resource_packs {
-            pack.serialize(buffer);
+            pack.serialize(buffer)?;
         }
 
-        buffer.write_var_u32(self.behavior_packs.len() as u32);
+        buffer.write_var_u32(self.behavior_packs.len() as u32)?;
         for pack in self.behavior_packs {
-            pack.serialize(buffer);
+            pack.serialize(buffer)?;
         }
 
-        buffer.write_str(self.game_version);
+        buffer.write_str(self.game_version)?;
 
-        buffer.write_u32_be(self.experiments.len() as u32);
+        buffer.write_u32_be(self.experiments.len() as u32)?;
         for experiment in self.experiments {
-            experiment.serialize(buffer);
+            experiment.serialize(buffer)?;
         }
 
-        buffer.write_bool(self.experiments_previously_toggled);
-        Ok(())
+        buffer.write_bool(self.experiments_previously_toggled)
     }
 }

@@ -49,19 +49,19 @@ impl ConnectedPacket for SetScoreboardIdentity {
 
 impl Serialize for SetScoreboardIdentity {
     fn serialize(&self, buffer: &mut MutableBuffer) -> Result<()> {
-        buffer.write_u8(self.action as u8);
+        buffer.write_u8(self.action as u8)?;
         match self.action {
             ScoreboardIdentityAction::Add => {
-                buffer.write_var_u32(self.entries.len() as u32);
+                buffer.write_var_u32(self.entries.len() as u32)?;
                 for entry in &self.entries {
-                    buffer.write_var_i64(entry.entry_id);
-                    buffer.write_var_i64(entry.entity_unique_id);
+                    buffer.write_var_i64(entry.entry_id)?;
+                    buffer.write_var_i64(entry.entity_unique_id)?;
                 }
             }
             ScoreboardIdentityAction::Clear => {
-                buffer.write_var_u32(self.entries.len() as u32);
+                buffer.write_var_u32(self.entries.len() as u32)?;
                 for entry in &self.entries {
-                    buffer.write_var_i64(entry.entry_id);
+                    buffer.write_var_i64(entry.entry_id)?;
                 }
             }
         }

@@ -73,19 +73,19 @@ impl Session {
                 // Also reserve capacity for checksum even if encryption is disabled,
                 // preventing allocations.
                 out = MutableBuffer::with_capacity(1 + pk.as_ref().len() + 8);
-                out.write_u8(CONNECTED_PACKET_ID);
-                out.write_all(pk.as_ref());
+                out.write_u8(CONNECTED_PACKET_ID)?;
+                out.write_all(pk.as_ref())?;
             }
         } else {
             // Also reserve capacity for checksum even if encryption is disabled,
             // preventing allocations.
             out = MutableBuffer::with_capacity(1 + pk.as_ref().len() + 8);
-            out.write_u8(CONNECTED_PACKET_ID);
-            out.write_all(pk.as_ref());
+            out.write_u8(CONNECTED_PACKET_ID)?;
+            out.write_all(pk.as_ref())?;
         };
 
         if let Some(encryptor) = self.encryptor.get() {
-            encryptor.encrypt(&mut out);
+            encryptor.encrypt(&mut out)?;
         };
 
         self.send_raw_buffer_with_config(out, config);

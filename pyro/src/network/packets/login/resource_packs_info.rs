@@ -113,31 +113,31 @@ impl<'a> ConnectedPacket for ResourcePacksInfo<'a> {
 
 impl<'a> Serialize for ResourcePacksInfo<'a> {
     fn serialize(&self, buffer: &mut MutableBuffer) -> Result<()> {
-        buffer.write_bool(self.required);
-        buffer.write_bool(self.scripting_enabled);
-        buffer.write_bool(self.forcing_server_packs);
+        buffer.write_bool(self.required)?;
+        buffer.write_bool(self.scripting_enabled)?;
+        buffer.write_bool(self.forcing_server_packs)?;
 
-        buffer.write_u16_be(self.behavior_info.len() as u16);
+        buffer.write_u16_be(self.behavior_info.len() as u16)?;
         for pack in self.behavior_info {
-            buffer.write_str(&pack.uuid);
-            buffer.write_str(&pack.version);
-            buffer.write_u64_be(pack.size);
-            buffer.write_str(&pack.content_key);
-            buffer.write_str(&pack.subpack_name);
-            buffer.write_str(&pack.content_identity);
-            buffer.write_bool(pack.has_scripts);
+            buffer.write_str(&pack.uuid)?;
+            buffer.write_str(&pack.version)?;
+            buffer.write_u64_be(pack.size)?;
+            buffer.write_str(&pack.content_key)?;
+            buffer.write_str(&pack.subpack_name)?;
+            buffer.write_str(&pack.content_identity)?;
+            buffer.write_bool(pack.has_scripts)?;
         }
 
-        buffer.write_u16_be(self.resource_info.len() as u16);
+        buffer.write_u16_be(self.resource_info.len() as u16)?;
         for pack in self.resource_info {
-            buffer.write_str(&pack.uuid);
-            buffer.write_str(&pack.version);
-            buffer.write_u64_be(pack.size);
-            buffer.write_str(&pack.content_key);
-            buffer.write_str(&pack.subpack_name);
-            buffer.write_str(&pack.content_identity);
-            buffer.write_bool(pack.has_scripts);
-            buffer.write_bool(pack.rtx_enabled);
+            buffer.write_str(&pack.uuid)?;
+            buffer.write_str(&pack.version)?;
+            buffer.write_u64_be(pack.size)?;
+            buffer.write_str(&pack.content_key)?;
+            buffer.write_str(&pack.subpack_name)?;
+            buffer.write_str(&pack.content_identity)?;
+            buffer.write_bool(pack.has_scripts)?;
+            buffer.write_bool(pack.rtx_enabled)?;
         }
 
         Ok(())

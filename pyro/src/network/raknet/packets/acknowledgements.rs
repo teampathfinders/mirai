@@ -19,17 +19,17 @@ fn encode_records(
     buffer: &mut MutableBuffer,
     records: &[AckRecord],
 ) -> Result<()> {
-    buffer.write_i16_be(records.len() as i16);
+    buffer.write_i16_be(records.len() as i16)?;
     for record in records {
         match record {
             AckRecord::Single(id) => {
-                buffer.write_u8(1); // Is single
-                buffer.write_u24_le((*id).try_into()?);
+                buffer.write_u8(1)?; // Is single
+                buffer.write_u24_le((*id).try_into()?)?;
             }
             AckRecord::Range(range) => {
-                buffer.write_u8(0); // Is range
-                buffer.write_u24_le(range.start.try_into()?);
-                buffer.write_u24_le(range.end.try_into()?);
+                buffer.write_u8(0)?; // Is range
+                buffer.write_u24_le(range.start.try_into()?)?;
+                buffer.write_u24_le(range.end.try_into()?)?;
             }
         }
     }
@@ -79,7 +79,7 @@ impl Ack {
 
 impl Serialize for Ack {
     fn serialize(&self, buffer: &mut MutableBuffer) -> Result<()> {
-        buffer.write_u8(Self::ID);
+        buffer.write_u8(Self::ID)?;
 
         encode_records(buffer, &self.records)
     }
@@ -118,7 +118,7 @@ impl Nak {
 
 impl Serialize for Nak {
     fn serialize(&self, buffer: &mut MutableBuffer) -> Result<()> {
-        buffer.write_u8(Self::ID);
+        buffer.write_u8(Self::ID)?;
 
         encode_records(buffer, &self.records)
     }

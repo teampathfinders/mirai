@@ -19,6 +19,22 @@ use crate::{
 ///
 /// See [`to_be_bytes_in`] for an alternative that serializes into the given writer, instead
 /// of producing a new one.
+///
+/// # Example
+///
+/// ```rust
+/// # use pyro_nbt as nbt;
+/// #
+/// # fn main() {
+///  #[derive(serde::Serialize, serde::Deserialize)]
+///  struct Data {
+///     value: String
+///  }
+///
+///  let data = Data { value: "Hello, World!".to_owned() };
+///  let encoded = nbt::to_be_bytes(&data).unwrap();
+/// # }
+/// ```
 #[inline]
 pub fn to_be_bytes<T>(v: &T) -> Result<MutableBuffer>
 where
@@ -36,6 +52,22 @@ where
 ///
 /// See [`to_le_bytes_in`] for an alternative that serializes into the given writer, instead
 /// of producing a new one.
+///
+/// # Example
+///
+/// ```rust
+/// # use pyro_nbt as nbt;
+/// #
+/// # fn main() {
+///  #[derive(serde::Serialize, serde::Deserialize)]
+///  struct Data {
+///     value: String
+///  }
+///
+///  let data = Data { value: "Hello, World!".to_owned() };
+///  let encoded = nbt::to_le_bytes(&data).unwrap();
+/// # }
+/// ```
 #[inline]
 pub fn to_le_bytes<T>(v: &T) -> Result<MutableBuffer>
 where
@@ -53,6 +85,22 @@ where
 ///
 /// See [`to_var_bytes_in`] for an alternative that serializes into the given writer, instead
 /// of producing a new one.
+///
+/// # Example
+///
+/// ```rust
+/// # use pyro_nbt as nbt;
+/// #
+/// # fn main() {
+///  #[derive(serde::Serialize, serde::Deserialize)]
+///  struct Data {
+///     value: String
+///  }
+///
+///  let data = Data { value: "Hello, World!".to_owned() };
+///  let encoded = nbt::to_var_bytes(&data).unwrap();
+/// # }
+/// ```
 #[inline]
 pub fn to_var_bytes<T>(v: &T) -> Result<MutableBuffer>
 where
@@ -67,6 +115,24 @@ where
 /// Serializes the given data, into the given writer, in big endian format.
 ///
 /// This is the format used by Minecraft: Java Edition.
+///
+/// # Example
+///
+/// ```rust
+/// # use pyro_nbt as nbt;
+/// #
+/// # fn main() {
+///  #[derive(serde::Serialize, serde::Deserialize)]
+///  struct Data {
+///     value: String
+///  }
+///
+///  let data = Data { value: "Hello, World!".to_owned() };
+///  let mut writer = Vec::new();
+///
+///  nbt::to_be_bytes_in(&mut writer, &data).unwrap();
+/// # }
+/// ```
 #[inline]
 pub fn to_be_bytes_in<W, T>(w: W, v: &T) -> Result<()>
     where
@@ -80,6 +146,24 @@ pub fn to_be_bytes_in<W, T>(w: W, v: &T) -> Result<()>
 /// Serializes the given data, into the given writer, in little endian format.
 ///
 /// This is the format used by disk formats in Minecraft: Bedrock Edition.
+///
+/// # Example
+///
+/// ```rust
+/// # use pyro_nbt as nbt;
+/// #
+/// # fn main() {
+///  #[derive(serde::Serialize, serde::Deserialize)]
+///  struct Data {
+///     value: String
+///  }
+///
+///  let data = Data { value: "Hello, World!".to_owned() };
+///  let mut writer = Vec::new();
+///
+///  nbt::to_le_bytes_in(&mut writer, &data).unwrap();
+/// # }
+/// ```
 #[inline]
 pub fn to_le_bytes_in<W, T>(w: W, v: &T) -> Result<()>
     where
@@ -93,6 +177,24 @@ pub fn to_le_bytes_in<W, T>(w: W, v: &T) -> Result<()>
 /// Serializes the given data, into the given writer, in variable format.
 ///
 /// This is the format used by network formats in Minecraft: Bedrock Edition.
+///
+/// # Example
+///
+/// ```rust
+/// # use pyro_nbt as nbt;
+/// #
+/// # fn main() {
+///  #[derive(serde::Serialize, serde::Deserialize)]
+///  struct Data {
+///     value: String
+///  }
+///
+///  let data = Data { value: "Hello, World!".to_owned() };
+///  let mut writer = Vec::new();
+///
+///  nbt::to_var_bytes_in(&mut writer, &data).unwrap();
+/// # }
+/// ```
 #[inline]
 pub fn to_var_bytes_in<W, T>(w: W, value: &T) -> Result<()>
     where

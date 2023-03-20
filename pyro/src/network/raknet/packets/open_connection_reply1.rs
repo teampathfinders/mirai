@@ -26,14 +26,12 @@ impl OpenConnectionReply1 {
 
 impl Serialize for OpenConnectionReply1 {
     fn serialize(&self, buffer: &mut MutableBuffer) -> Result<()> {
-        buffer.write_u8(Self::ID);
-        buffer.write_all(OFFLINE_MESSAGE_DATA);
-        buffer.write_u64_be(self.server_guid);
+        buffer.write_u8(Self::ID)?;
+        buffer.write_all(OFFLINE_MESSAGE_DATA)?;
+        buffer.write_u64_be(self.server_guid)?;
         // Disable security, required for login sequence.
         // Encryption will be enabled later on.
-        buffer.write_u8(0);
-        buffer.write_u16_be(self.mtu);
-
-        Ok(())
+        buffer.write_u8(0)?;
+        buffer.write_u16_be(self.mtu)
     }
 }

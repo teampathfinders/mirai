@@ -83,21 +83,19 @@ impl ConnectedPacket for MovePlayer {
 
 impl Serialize for MovePlayer {
     fn serialize(&self, buffer: &mut MutableBuffer) -> Result<()> {
-        buffer.write_var_u64(self.runtime_id);
-        buffer.write_vecf(&self.position);
-        buffer.write_vecf(&self.rotation);
-        buffer.write_u8(self.mode as u8);
-        buffer.write_bool(self.on_ground);
-        buffer.write_var_u64(self.ridden_runtime_id);
+        buffer.write_var_u64(self.runtime_id)?;
+        buffer.write_vecf(&self.position)?;
+        buffer.write_vecf(&self.rotation)?;
+        buffer.write_u8(self.mode as u8)?;
+        buffer.write_bool(self.on_ground)?;
+        buffer.write_var_u64(self.ridden_runtime_id)?;
 
         if self.mode == MovementMode::Teleport {
-            buffer.write_i32_be(self.teleport_cause as i32);
-            buffer.write_i32_be(self.teleport_source_type);
+            buffer.write_i32_be(self.teleport_cause as i32)?;
+            buffer.write_i32_be(self.teleport_source_type)?;
         }
 
-        buffer.write_var_u64(self.tick);
-
-        Ok(())
+        buffer.write_var_u64(self.tick)
     }
 }
 

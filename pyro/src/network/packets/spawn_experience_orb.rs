@@ -22,9 +22,7 @@ impl ConnectedPacket for SpawnExperienceOrb {
 
 impl Serialize for SpawnExperienceOrb {
     fn serialize(&self, buffer: &mut MutableBuffer) -> Result<()> {
-        buffer.write_vecf(&self.position);
-        buffer.write_var_u32(self.amount);
-
-        Ok(())
+        buffer.write_vecf(&self.position)?;
+        buffer.write_var_u32(self.amount)
     }
 }

@@ -58,6 +58,7 @@ impl<'de, F> Deserializer<'de, F>
 where
     F: VariantImpl,
 {
+    /// Creates a new deserialiser.
     #[inline]
     pub fn new(input: &'de [u8]) -> Result<Self> {
         let mut input = SharedBuffer::from(input);
@@ -77,6 +78,7 @@ where
         Ok(de)
     }
 
+    /// Deserialise a raw UTF-8 string.
     #[inline]
     fn deserialize_raw_str(&mut self) -> Result<&str> {
         let len = match F::AS_ENUM {
@@ -91,6 +93,7 @@ where
         Ok(str)
     }
 }
+
 
 #[inline]
 fn from_bytes<'a, T, F>(b: &'a [u8]) -> Result<(T, usize)>
