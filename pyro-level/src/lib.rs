@@ -48,7 +48,7 @@ impl ChunkManager {
     /// Internally, this uses LevelDB's WriteBatch method to perform bulk updates.
     /// These LevelDB are done synchronously to prevent data loss and the overhead is minimal due to batching.
     pub fn flush(&self) -> Result<()> {
-        Ok(())
+        todo!();
     }
 
     /// Simple job that runs [`flush`](Self::flush) on a specified interval.

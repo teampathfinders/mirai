@@ -89,7 +89,7 @@ mod test {
             #[serde(
             rename = "byteArrayTest (the first 1000 values of (n*n*255+n*7)%100, starting with n=0 (0, 62, 34, 16, 8, ...))"
             )]
-            byte_array_test: Vec<u8>,
+            byte_array_test: Vec<i8>,
             #[serde(rename = "shortTest")]
             short_test: i16,
         }
