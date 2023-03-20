@@ -25,8 +25,6 @@ impl ConnectedPacket for SetCommandsEnabled {
 
 impl Serialize for SetCommandsEnabled {
     fn serialize(&self, buffer: &mut MutableBuffer) -> Result<()> {
-        buffer.write_bool(self.enabled);
-
-        Ok(())
+        buffer.write_bool(self.enabled)
     }
 }

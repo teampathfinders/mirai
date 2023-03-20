@@ -105,15 +105,15 @@ impl<'a> ConnectedPacket for TextMessage<'a> {
 
 impl<'a> Serialize for TextMessage<'a> {
     fn serialize(&self, buffer: &mut MutableBuffer) -> Result<()> {
-        buffer.write_u8(self.message_type as u8);
-        buffer.write_bool(self.needs_translation);
+        buffer.write_u8(self.message_type as u8)?;
+        buffer.write_bool(self.needs_translation)?;
 
         match self.message_type {
             MessageType::Chat
             | MessageType::Whisper
             | MessageType::Announcement => {
-                buffer.write_str(&self.source_name);
-                buffer.write_str(&self.message);
+                buffer.write_str(&self.source_name)?;
+                buffer.write_str(&self.message)?;
             }
             MessageType::Raw
             | MessageType::Tip
@@ -121,24 +121,22 @@ impl<'a> Serialize for TextMessage<'a> {
             | MessageType::Object
             | MessageType::ObjectWhisper
             | MessageType::ObjectAnnouncement => {
-                buffer.write_str(&self.message);
+                buffer.write_str(&self.message)?;
             }
             MessageType::Translation
             | MessageType::Popup
             | MessageType::JukeboxPopup => {
-                buffer.write_str(&self.message);
+                buffer.write_str(&self.message)?;
 
-                buffer.write_var_u32(self.parameters.len() as u32);
+                buffer.write_var_u32(self.parameters.len() as u32)?;
                 for param in &self.parameters {
                     buffer.write_str(param)?;
                 }
             }
         }
 
-        buffer.write_str(&self.xuid);
-        buffer.write_str(&self.platform_chat_id);
-
-        Ok(())
+        buffer.write_str(&self.xuid)?;
+        buffer.write_str(&self.platform_chat_id)
     }
 }
 

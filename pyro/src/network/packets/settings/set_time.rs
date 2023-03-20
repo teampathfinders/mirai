@@ -23,8 +23,6 @@ impl ConnectedPacket for SetTime {
 
 impl Serialize for SetTime {
     fn serialize(&self, buffer: &mut MutableBuffer) -> Result<()> {
-        buffer.write_var_i32(self.time);
-
-        Ok(())
+        buffer.write_var_i32(self.time)
     }
 }

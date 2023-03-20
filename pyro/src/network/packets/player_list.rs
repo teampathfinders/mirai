@@ -42,22 +42,22 @@ impl<'a> ConnectedPacket for PlayerListAdd<'a> {
 impl<'a> Serialize for PlayerListAdd<'a> {
     fn serialize(&self, buffer: &mut MutableBuffer) -> Result<()> {
         buffer.write_u8(0)?; // Add player.
-        buffer.write_var_u32(self.entries.len() as u32);
+        buffer.write_var_u32(self.entries.len() as u32)?;
         for entry in self.entries {
-            buffer.write_uuid_le(&entry.uuid);
+            buffer.write_uuid_le(&entry.uuid)?;
             
-            buffer.write_var_i64(entry.entity_id);
-            buffer.write_str(entry.username);
-            buffer.write_str(&entry.xuid.to_string());
-            buffer.write_str(""); // Platform chat ID.
-            buffer.write_i32_le(entry.device_os as i32);
-            entry.skin.serialize(buffer);
-            buffer.write_bool(false); // Player is not a teacher.
-            buffer.write_bool(entry.host);
+            buffer.write_var_i64(entry.entity_id)?;
+            buffer.write_str(entry.username)?;
+            buffer.write_str(&entry.xuid.to_string())?;
+            buffer.write_str("")?; // Platform chat ID.
+            buffer.write_i32_le(entry.device_os as i32)?;
+            entry.skin.serialize(buffer)?;
+            buffer.write_bool(false)?; // Player is not a teacher.
+            buffer.write_bool(entry.host)?;
         }
 
         for entry in self.entries {
-            buffer.write_bool(entry.skin.is_trusted);
+            buffer.write_bool(entry.skin.is_trusted)?;
         }
 
         Ok(())
@@ -81,9 +81,9 @@ impl<'a> ConnectedPacket for PlayerListRemove<'a> {
 impl<'a> Serialize for PlayerListRemove<'a> {
     fn serialize(&self, buffer: &mut MutableBuffer) -> Result<()> {
         buffer.write_u8(1)?; // Remove player.
-        buffer.write_var_u32(self.entries.len() as u32);
+        buffer.write_var_u32(self.entries.len() as u32)?;
         for entry in self.entries {
-            buffer.write_uuid_le(entry);
+            buffer.write_uuid_le(entry)?;
         }
 
         Ok(())

@@ -60,8 +60,8 @@ impl FrameBatch {
     }
 
     pub fn serialize(&self, buffer: &mut MutableBuffer) -> Result<()> {
-        buffer.write_u8(CONNECTED_PEER_BIT_FLAG);
-        buffer.write_u24_le(self.sequence_number.try_into()?);
+        buffer.write_u8(CONNECTED_PEER_BIT_FLAG)?;
+        buffer.write_u24_le(self.sequence_number.try_into()?)?;
 
         for frame in &self.frames {
             frame.serialize(buffer)?;
@@ -162,25 +162,25 @@ impl Frame {
             flags |= COMPOUND_BIT_FLAG;
         }
 
-        buffer.write_u8(flags);
-        buffer.write_u16_be(self.body.len() as u16 * 8);
+        buffer.write_u8(flags)?;
+        buffer.write_u16_be(self.body.len() as u16 * 8)?;
         if self.reliability.is_reliable() {
-            buffer.write_u24_le(self.reliable_index.try_into()?);
+            buffer.write_u24_le(self.reliable_index.try_into()?)?;
         }
         if self.reliability.is_sequenced() {
-            buffer.write_u24_le(self.sequence_index.try_into()?);
+            buffer.write_u24_le(self.sequence_index.try_into()?)?;
         }
         if self.reliability.is_ordered() {
-            buffer.write_u24_le(self.order_index.try_into()?);
-            buffer.write_u8(self.order_channel);
+            buffer.write_u24_le(self.order_index.try_into()?)?;
+            buffer.write_u8(self.order_channel)?;
         }
         if self.is_compound {
-            buffer.write_u32_be(self.compound_size);
-            buffer.write_u16_be(self.compound_id);
-            buffer.write_u32_be(self.compound_index);
+            buffer.write_u32_be(self.compound_size)?;
+            buffer.write_u16_be(self.compound_id)?;
+            buffer.write_u32_be(self.compound_index)?;
         }
 
-        buffer.write_all(self.body.as_ref());
+        buffer.write_all(self.body.as_ref())?;
         Ok(())
     }
 }

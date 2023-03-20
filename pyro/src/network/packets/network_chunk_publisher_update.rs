@@ -25,11 +25,10 @@ impl ConnectedPacket for NetworkChunkPublisherUpdate {
 
 impl Serialize for NetworkChunkPublisherUpdate {
     fn serialize(&self, buffer: &mut MutableBuffer) -> Result<()> {
-        buffer.write_block_pos(&self.position);
-        buffer.write_var_u32(self.radius);
+        buffer.write_block_pos(&self.position)?;
+        buffer.write_var_u32(self.radius)?;
 
         // No saved chunks.
-        buffer.write_u32_be(0)?;;
-        Ok(())
+        buffer.write_u32_be(0)
     }
 }

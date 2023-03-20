@@ -48,9 +48,7 @@ impl ConnectedPacket for SetDifficulty {
 
 impl Serialize for SetDifficulty {
     fn serialize(&self, buffer: &mut MutableBuffer) -> Result<()> {
-        buffer.write_var_i32(self.difficulty as i32);
-
-        Ok(())
+        buffer.write_var_i32(self.difficulty as i32)
     }
 }
 

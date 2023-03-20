@@ -58,14 +58,12 @@ impl ConnectedPacket for SetTitle<'_> {
 
 impl Serialize for SetTitle<'_> {
     fn serialize(&self, buffer: &mut MutableBuffer) -> Result<()> {
-        buffer.write_var_i32(self.action as i32);
-        buffer.write_str(self.text);
-        buffer.write_var_i32(self.fade_in_duration);
-        buffer.write_var_i32(self.remain_duration);
-        buffer.write_var_i32(self.fade_out_duration);
-        buffer.write_str(self.xuid);
-        buffer.write_str(self.platform_online_id);
-
-        Ok(())
+        buffer.write_var_i32(self.action as i32)?;
+        buffer.write_str(self.text)?;
+        buffer.write_var_i32(self.fade_in_duration)?;
+        buffer.write_var_i32(self.remain_duration)?;
+        buffer.write_var_i32(self.fade_out_duration)?;
+        buffer.write_str(self.xuid)?;
+        buffer.write_str(self.platform_online_id)
     }
 }

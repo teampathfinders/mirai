@@ -55,15 +55,15 @@ impl ItemStack {
     }
 
     pub fn serialize(&self, buffer: &mut MutableBuffer) -> Result<()> {
-        buffer.write_var_u32(self.item_type.network_id);
+        buffer.write_var_u32(self.item_type.network_id)?;
         if self.item_type.network_id == 0 {
             // Air has no data.
             return Ok(());
         }
 
-        buffer.write_u16_be(self.count);
-        buffer.write_var_u32(self.item_type.metadata);
-        buffer.write_var_u32(self.runtime_id);
+        buffer.write_u16_be(self.count)?;
+        buffer.write_var_u32(self.item_type.metadata)?;
+        buffer.write_var_u32(self.runtime_id)?;
 
         // if let Value::Compound(ref map) = self.nbt_data {
         //     let length = map.len();
@@ -79,12 +79,12 @@ impl ItemStack {
         //     todo!()
         // }
 
-        buffer.write_u32_be(self.can_be_placed_on.len() as u32);
+        buffer.write_u32_be(self.can_be_placed_on.len() as u32)?;
         for item in &self.can_be_placed_on {
             buffer.write_str(item)?;
         }
 
-        buffer.write_u32_be(self.can_break.len() as u32);
+        buffer.write_u32_be(self.can_break.len() as u32)?;
         for item in &self.can_break {
             buffer.write_str(item)?;
         }
@@ -113,9 +113,9 @@ impl ConnectedPacket for CreativeContent<'_> {
 
 impl Serialize for CreativeContent<'_> {
     fn serialize(&self, buffer: &mut MutableBuffer) -> Result<()> {
-        buffer.write_var_u32(self.items.len() as u32);
+        buffer.write_var_u32(self.items.len() as u32)?;
         for item in self.items {
-            item.serialize(buffer);
+            item.serialize(buffer)?;
         }
 
         Ok(())

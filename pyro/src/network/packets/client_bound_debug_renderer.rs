@@ -40,12 +40,12 @@ impl ConnectedPacket for ClientBoundDebugRenderer<'_> {
 
 impl Serialize for ClientBoundDebugRenderer<'_> {
     fn serialize(&self, buffer: &mut MutableBuffer) -> Result<()> {
-        buffer.write_i32_le(self.action as i32);
+        buffer.write_i32_le(self.action as i32)?;
         if self.action == DebugRendererAction::AddCube {
-            buffer.write_str(self.text);
-            buffer.write_vecf(&self.position);
-            buffer.write_vecf(&self.color);
-            buffer.write_i64_le(self.duration);
+            buffer.write_str(self.text)?;
+            buffer.write_vecf(&self.position)?;
+            buffer.write_vecf(&self.color)?;
+            buffer.write_i64_le(self.duration)?;
         }
 
         Ok(())

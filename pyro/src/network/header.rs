@@ -32,9 +32,7 @@ impl Serialize for Header {
             | ((self.sender_subclient as u32) << 10)
             | ((self.target_subclient as u32) << 12);
 
-        buffer.write_var_u32(value);
-
-        Ok(())
+        buffer.write_var_u32(value)
     }
 }
 
