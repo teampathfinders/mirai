@@ -130,7 +130,7 @@ impl<'a> Serialize for TextMessage<'a> {
 
                 buffer.write_var_u32(self.parameters.len() as u32);
                 for param in &self.parameters {
-                    buffer.write_str(param);
+                    buffer.write_str(param)?;
                 }
             }
         }

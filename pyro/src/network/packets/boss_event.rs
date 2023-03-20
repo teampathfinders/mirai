@@ -63,9 +63,9 @@ impl Serialize for BossEvent<'_> {
             } => {
                 buffer.write_var_u32(0); // Event type.
 
-                buffer.write_str(bar_title);
+                buffer.write_str(bar_title)?;
                 buffer.write_f32_le(0.0); // HealthPercentage is unused.
-                buffer.write_i16_le(0); // ScreenDarkening is unused.
+                buffer.write_i16_le(0)?;; // ScreenDarkening is unused.
                 buffer.write_var_u32(color as u32);
                 buffer.write_var_u32(0); // Overlay is unused.
             },
@@ -94,13 +94,13 @@ impl Serialize for BossEvent<'_> {
                 bar_title
             } => {
                 buffer.write_var_u32(5); // Event type.
-                buffer.write_str(bar_title);
+                buffer.write_str(bar_title)?;
             },
             BossEventType::AppearanceProperties {
                 color
             } => {
                 buffer.write_var_u32(6); // Event type.
-                buffer.write_i16_le(0); // ScreenDarkening is unused.
+                buffer.write_i16_le(0)?;; // ScreenDarkening is unused.
                 buffer.write_var_u32(color as u32);
                 buffer.write_var_u32(0); // Overlay is unused.
             },

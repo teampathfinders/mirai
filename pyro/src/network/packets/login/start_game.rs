@@ -425,7 +425,7 @@ impl<'a> Serialize for StartGame<'a> {
         buffer.write_bool(self.persona_disabled);
         buffer.write_bool(self.custom_skins_disabled);
         buffer.write_bool(self.emote_chat_muted);
-        buffer.write_str(CLIENT_VERSION_STRING); // Base game version
+        buffer.write_str(CLIENT_VERSION_STRING)?; // Base game version
         buffer.write_i32_le(self.limited_world_width);
         buffer.write_i32_le(self.limited_world_height);
         buffer.write_bool(true); // Use new nether
@@ -453,10 +453,10 @@ impl<'a> Serialize for StartGame<'a> {
         }
 
         // Random multiplayer correlation UUID.
-        buffer.write_str(MULTIPLAYER_CORRELATION_ID);
+        buffer.write_str(MULTIPLAYER_CORRELATION_ID)?;
 
         buffer.write_bool(self.server_authoritative_inventory);
-        buffer.write_str(CLIENT_VERSION_STRING); // Game version
+        buffer.write_str(CLIENT_VERSION_STRING)?; // Game version
 
         to_var_bytes_in(&mut buffer, &self.property_data)?;
 

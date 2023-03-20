@@ -128,12 +128,12 @@ pub struct PersonaPiece {
 }
 
 impl PersonaPiece {
-    fn serialize(&self, buffer: &mut MutableBuffer) {
-        buffer.write_str(&self.piece_id);
-        buffer.write_str(self.piece_type.name());
-        buffer.write_str(&self.pack_id);
-        buffer.write_bool(self.default);
-        buffer.write_str(&self.product_id);
+    fn serialize(&self, buffer: &mut MutableBuffer) -> Result<()> {
+        buffer.write_str(&self.piece_id)?;
+        buffer.write_str(self.piece_type.name())?;
+        buffer.write_str(&self.pack_id)?;
+        buffer.write_bool(self.default)?;
+        buffer.write_str(&self.product_id)
     }
 
     fn deserialize(buffer: &mut SharedBuffer) -> Result<Self> {
@@ -165,13 +165,15 @@ pub struct PersonaPieceTint {
 }
 
 impl PersonaPieceTint {
-    fn serialize(&self, buffer: &mut MutableBuffer) {
-        buffer.write_str(self.piece_type.name());
+    fn serialize(&self, buffer: &mut MutableBuffer) -> Result<()> {
+        buffer.write_str(self.piece_type.name())?;
 
-        buffer.write_u32_le(self.colors.len() as u32);
+        buffer.write_u32_le(self.colors.len() as u32)?;
         for color in &self.colors {
-            buffer.write_str(color);
+            buffer.write_str(color)?;
         }
+
+        Ok(())
     }
 
     fn deserialize(buffer: &mut SharedBuffer) -> Result<Self> {
@@ -264,16 +266,16 @@ pub struct SkinAnimation {
 }
 
 impl SkinAnimation {
-    pub fn serialize(&self, buffer: &mut MutableBuffer) {
-        buffer.write_u32_le(self.image_width);
-        buffer.write_u32_le(self.image_height);
+    pub fn serialize(&self, buffer: &mut MutableBuffer) -> Result<()> {
+        buffer.write_u32_le(self.image_width)?;
+        buffer.write_u32_le(self.image_height)?;
         
-        buffer.write_var_u32(self.image_data.len() as u32);
-        buffer.write_all(&self.image_data);
+        buffer.write_var_u32(self.image_data.len() as u32)?;
+        buffer.write_all(&self.image_data)?;
 
-        buffer.write_u32_le(self.animation_type as u32);
-        buffer.write_f32_le(self.frame_count);
-        buffer.write_u32_le(self.expression_type as u32);
+        buffer.write_u32_le(self.animation_type as u32)?;
+        buffer.write_f32_le(self.frame_count)?;
+        buffer.write_u32_le(self.expression_type as u32)
     }
 
     pub fn deserialize(buffer: &mut SharedBuffer) -> Result<Self> {
@@ -434,49 +436,49 @@ impl Skin {
         Ok(())
     }
 
-    pub fn serialize(&self, buffer: &mut MutableBuffer) {
-        buffer.write_str(&self.skin_id);
-        buffer.write_str(&self.playfab_id);
-        buffer.write_str(&self.resource_patch);
+    pub fn serialize(&self, buffer: &mut MutableBuffer) -> Result<()> {
+        buffer.write_str(&self.skin_id)?;
+        buffer.write_str(&self.playfab_id)?;
+        buffer.write_str(&self.resource_patch)?;
 
-        buffer.write_u32_le(self.image_width);
-        buffer.write_u32_le(self.image_height);
-        buffer.write_var_u32(self.image_data.len() as u32);
-        buffer.write_all(self.image_data.as_ref());
+        buffer.write_u32_le(self.image_width)?;
+        buffer.write_u32_le(self.image_height)?;
+        buffer.write_var_u32(self.image_data.len() as u32)?;
+        buffer.write_all(self.image_data.as_ref())?;
 
-        buffer.write_u32_le(self.animations.len() as u32);
+        buffer.write_u32_le(self.animations.len() as u32)?;
         for animation in &self.animations {
-            animation.serialize(buffer);
+            animation.serialize(buffer)?;
         }
 
-        buffer.write_u32_le(self.cape_image_width);
-        buffer.write_u32_le(self.cape_image_height);
-        buffer.write_var_u32(self.cape_image_data.len() as u32);
-        buffer.write_all(self.cape_image_data.as_ref());
+        buffer.write_u32_le(self.cape_image_width)?;
+        buffer.write_u32_le(self.cape_image_height)?;
+        buffer.write_var_u32(self.cape_image_data.len() as u32)?;
+        buffer.write_all(self.cape_image_data.as_ref())?;
 
-        buffer.write_str(&self.geometry);
-        buffer.write_str(&self.geometry_engine_version);
-        buffer.write_str(&self.animation_data);
+        buffer.write_str(&self.geometry)?;
+        buffer.write_str(&self.geometry_engine_version)?;
+        buffer.write_str(&self.animation_data)?;
 
-        buffer.write_str(&self.cape_id);
-        buffer.write_str(&self.full_id);
-        buffer.write_str(self.arm_size.name());
-        buffer.write_str(&self.color);
+        buffer.write_str(&self.cape_id)?;
+        buffer.write_str(&self.full_id)?;
+        buffer.write_str(self.arm_size.name())?;
+        buffer.write_str(&self.color)?;
 
-        buffer.write_u32_le(self.persona_pieces.len() as u32);
+        buffer.write_u32_le(self.persona_pieces.len() as u32)?;
         for piece in &self.persona_pieces {
-            piece.serialize(buffer);
+            piece.serialize(buffer)?;
         }
 
-        buffer.write_u32_le(self.persona_piece_tints.len() as u32);
+        buffer.write_u32_le(self.persona_piece_tints.len() as u32)?;
         for tint in &self.persona_piece_tints {
-            tint.serialize(buffer);
+            tint.serialize(buffer)?;
         }
 
-        buffer.write_bool(self.is_premium);
-        buffer.write_bool(self.is_persona);
-        buffer.write_bool(self.cape_on_classic_skin);
-        buffer.write_bool(self.is_primary_user);
+        buffer.write_bool(self.is_premium)?;
+        buffer.write_bool(self.is_persona)?;
+        buffer.write_bool(self.cape_on_classic_skin)?;
+        buffer.write_bool(self.is_primary_user)
     }
 
     pub fn deserialize(buffer: &mut SharedBuffer) -> Result<Self> {

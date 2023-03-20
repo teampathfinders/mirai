@@ -41,7 +41,7 @@ impl<'a> ConnectedPacket for PlayerListAdd<'a> {
 
 impl<'a> Serialize for PlayerListAdd<'a> {
     fn serialize(&self, buffer: &mut MutableBuffer) -> Result<()> {
-        buffer.write_u8(0); // Add player.
+        buffer.write_u8(0)?; // Add player.
         buffer.write_var_u32(self.entries.len() as u32);
         for entry in self.entries {
             buffer.write_uuid_le(&entry.uuid);
@@ -80,7 +80,7 @@ impl<'a> ConnectedPacket for PlayerListRemove<'a> {
 
 impl<'a> Serialize for PlayerListRemove<'a> {
     fn serialize(&self, buffer: &mut MutableBuffer) -> Result<()> {
-        buffer.write_u8(1); // Remove player.
+        buffer.write_u8(1)?; // Remove player.
         buffer.write_var_u32(self.entries.len() as u32);
         for entry in self.entries {
             buffer.write_uuid_le(entry);

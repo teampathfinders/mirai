@@ -71,7 +71,7 @@ impl ItemStack {
         //         buffer.put_i16(0); // Length
         //     } else {
         //         buffer.put_i16(-1); // Length
-        //         buffer.write_u8(1); // Version
+        //         buffer.write_u8(1)?; // Version
         //
         //         nbt::serialize_net("", &self.nbt_data, buffer);
         //     }
@@ -81,16 +81,16 @@ impl ItemStack {
 
         buffer.write_u32_be(self.can_be_placed_on.len() as u32);
         for item in &self.can_be_placed_on {
-            buffer.write_str(item);
+            buffer.write_str(item)?;
         }
 
         buffer.write_u32_be(self.can_break.len() as u32);
         for item in &self.can_break {
-            buffer.write_str(item);
+            buffer.write_str(item)?;
         }
 
         if self.item_type.network_id == ITEM_ID_SHIELD {
-            buffer.write_u64_be(0); // Blocking tick.
+            buffer.write_u64_be(0)?;; // Blocking tick.
         }
 
         Ok(())

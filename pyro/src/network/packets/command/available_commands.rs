@@ -125,12 +125,12 @@ impl Serialize for AvailableCommands<'_> {
 
         buffer.write_var_u32(values.len() as u32);
         for value in values {
-            buffer.write_str(value);
+            buffer.write_str(value)?;
         }
 
         buffer.write_var_u32(suffixes.len() as u32);
         for suffix in suffixes {
-            buffer.write_str(suffix);
+            buffer.write_str(suffix)?;
         }
 
         buffer.write_var_u32(enums.len() as u32);
@@ -160,7 +160,7 @@ impl Serialize for AvailableCommands<'_> {
 
             buffer.write_str(&command.name);
             buffer.write_str(&command.description);
-            buffer.write_u16_le(0); // Command flags. Unknown.
+            buffer.write_u16_le(0)?;; // Command flags. Unknown.
             buffer.write_u8(command.permission_level as u8);
             buffer.write_i32_le(alias);
 
@@ -201,7 +201,7 @@ impl Serialize for AvailableCommands<'_> {
             buffer.write_var_u32(dynamic_enum.options.len() as u32);
 
             for option in &dynamic_enum.options {
-                buffer.write_str(option);
+                buffer.write_str(option)?;
             }
         }
 

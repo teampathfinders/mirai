@@ -33,7 +33,7 @@ impl Serialize for DeathInfo<'_> {
 
         buffer.write_var_u32(self.messages.len() as u32);
         for message in self.messages {
-            buffer.write_str(message);
+            buffer.write_str(message)?;
         }
 
         Ok(())

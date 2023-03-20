@@ -130,7 +130,7 @@ pub trait BinaryWrite: Write {
     #[inline]
     fn write_vecf<const N: usize>(&mut self, v: &Vector<f32, N>) -> Result<()> {
         for v in v.components() {
-            self.write_f32_le(v)?;
+            self.write_f32_le(v)?;?;
         }
 
         Ok(())
@@ -147,9 +147,9 @@ pub trait BinaryWrite: Write {
                 self.write_u8(6)?;
                 self.write_u16_be(23)?; // AF_INET6 family
                 self.write_u16_be(v.port())?;
-                self.write_u32_be(0)?; // Flow information
+                self.write_u32_be(0)?;?; // Flow information
                 self.write_all(addr_v6.ip().octets().as_ref())?;
-                self.write_u32_be(0) // Scope information
+                self.write_u32_be(0)?; // Scope information
             }
         }
     }

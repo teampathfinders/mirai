@@ -29,7 +29,7 @@ impl Serialize for NetworkChunkPublisherUpdate {
         buffer.write_var_u32(self.radius);
 
         // No saved chunks.
-        buffer.write_u32_be(0);
+        buffer.write_u32_be(0)?;;
         Ok(())
     }
 }

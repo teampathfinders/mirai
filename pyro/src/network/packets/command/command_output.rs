@@ -58,7 +58,7 @@ impl Serialize for CommandOutput<'_> {
 
             buffer.write_var_u32(output.parameters.len() as u32);
             for param in output.parameters {
-                buffer.write_str(param);
+                buffer.write_str(param)?;
             }
         }
 

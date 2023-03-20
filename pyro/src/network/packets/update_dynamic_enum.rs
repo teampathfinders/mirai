@@ -42,7 +42,7 @@ impl Serialize for UpdateDynamicEnum<'_> {
         buffer.write_str(self.enum_id);
         buffer.write_var_u32(self.options.len() as u32);
         for option in self.options {
-            buffer.write_str(option);
+            buffer.write_str(option)?;
         }
         buffer.write_u8(self.action as u8);
 

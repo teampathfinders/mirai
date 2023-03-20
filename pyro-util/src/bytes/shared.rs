@@ -296,7 +296,7 @@ mod test {
 
         let mut buffer = MutableBuffer::new();
         for v in VALUES {
-            buffer.write_u8(v);
+            buffer.write_u8(v)?;
         }
 
         let mut ss = buffer.snapshot();
@@ -311,7 +311,7 @@ mod test {
 
         let mut buffer = MutableBuffer::new();
         for v in VALUES {
-            buffer.write_i8(v);
+            buffer.write_i8(v)?;
         }
 
         let mut ss = buffer.snapshot();
@@ -326,7 +326,7 @@ mod test {
     //
     //     let mut buffer = MutableBuffer::new();
     //     for v in VALUES {
-    //         buffer.write_u24_le(v);
+    //         buffer.write_u24_le(v)?;;
     //     }
     //
     //     let mut ss = buffer.snapshot();
@@ -341,7 +341,7 @@ mod test {
     //
     //     let mut buffer = MutableBuffer::new();
     //     for v in VALUES {
-    //         buffer.write_u24_be(v);
+    //         buffer.write_u24_be(v)?;;
     //     }
     //
     //     let mut ss = buffer.snapshot();
@@ -357,7 +357,7 @@ mod test {
 
         let mut buffer = MutableBuffer::new();
         for v in VALUES {
-            buffer.write_f32_le(v);
+            buffer.write_f32_le(v)?;;
         }
 
         let mut ss = buffer.snapshot();
@@ -373,7 +373,7 @@ mod test {
 
         let mut buffer = MutableBuffer::new();
         for v in VALUES {
-            buffer.write_f32_be(v);
+            buffer.write_f32_be(v)?;;
         }
 
         let mut ss = buffer.snapshot();
@@ -389,7 +389,7 @@ mod test {
 
         let mut buffer = MutableBuffer::new();
         for v in VALUES {
-            buffer.write_f64_le(v);
+            buffer.write_f64_le(v)?;;
         }
 
         let mut ss = buffer.snapshot();
@@ -405,7 +405,7 @@ mod test {
 
         let mut buffer = MutableBuffer::new();
         for v in VALUES {
-            buffer.write_f64_be(v);
+            buffer.write_f64_be(v)?;;
         }
 
         let mut ss = buffer.snapshot();

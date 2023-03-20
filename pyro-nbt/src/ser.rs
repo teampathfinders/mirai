@@ -187,9 +187,9 @@ where
     #[inline]
     fn serialize_i16(self, v: i16) -> Result<()> {
         match M::AS_ENUM {
-            Variant::BigEndian => self.writer.write_i16_be(v),
+            Variant::BigEndian => self.writer.write_i16_be(v)?;,
             Variant::LittleEndian | Variant::Variable => {
-                self.writer.write_i16_le(v)
+                self.writer.write_i16_le(v)?;
             }
         }
     }
@@ -197,8 +197,8 @@ where
     #[inline]
     fn serialize_i32(self, v: i32) -> Result<()> {
         match M::AS_ENUM {
-            Variant::BigEndian => self.writer.write_i32_be(v),
-            Variant::LittleEndian => self.writer.write_i32_le(v),
+            Variant::BigEndian => self.writer.write_i32_be(v)?;,
+            Variant::LittleEndian => self.writer.write_i32_le(v)?;,
             Variant::Variable => self.writer.write_var_i32(v),
         }
     }
@@ -206,8 +206,8 @@ where
     #[inline]
     fn serialize_i64(self, v: i64) -> Result<()> {
         match M::AS_ENUM {
-            Variant::BigEndian => self.writer.write_i64_be(v),
-            Variant::LittleEndian => self.writer.write_i64_le(v),
+            Variant::BigEndian => self.writer.write_i64_be(v)?;,
+            Variant::LittleEndian => self.writer.write_i64_le(v)?;,
             Variant::Variable => self.writer.write_var_i64(v),
         }
     }
@@ -215,9 +215,9 @@ where
     #[inline]
     fn serialize_f32(self, v: f32) -> Result<()> {
         match M::AS_ENUM {
-            Variant::BigEndian => self.writer.write_f32_be(v),
+            Variant::BigEndian => self.writer.write_f32_be(v)?;,
             Variant::LittleEndian | Variant::Variable => {
-                self.writer.write_f32_le(v)
+                self.writer.write_f32_le(v)?;
             }
         }
     }
@@ -225,9 +225,9 @@ where
     #[inline]
     fn serialize_f64(self, v: f64) -> Result<()> {
         match M::AS_ENUM {
-            Variant::BigEndian => self.writer.write_f64_be(v),
+            Variant::BigEndian => self.writer.write_f64_be(v)?;,
             Variant::LittleEndian | Variant::Variable => {
-                self.writer.write_f64_le(v)
+                self.writer.write_f64_le(v)?;
             }
         }
     }

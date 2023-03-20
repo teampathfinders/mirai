@@ -31,7 +31,7 @@ impl Serialize for OpenConnectionReply1 {
         buffer.write_u64_be(self.server_guid);
         // Disable security, required for login sequence.
         // Encryption will be enabled later on.
-        buffer.write_u8(0);
+        buffer.write_u8(0)?;
         buffer.write_u16_be(self.mtu);
 
         Ok(())
