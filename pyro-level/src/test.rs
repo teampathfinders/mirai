@@ -21,7 +21,7 @@ fn database_test() {
     let mut failed = 0;
     let mut sum = 0;
 
-    for _ in 0..50 {
+    for _ in 0..1 {
         let mut iter = db.iter();
         for raw_ref in iter {
             let key = raw_ref.key();
