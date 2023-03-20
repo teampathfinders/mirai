@@ -1,3 +1,5 @@
+#![allow(clippy::module_inception)]
+
 pub use crate::de::{
     Deserializer, from_be_bytes, from_le_bytes, from_var_bytes,
 };

@@ -4,7 +4,7 @@ mod test {
 
     use serde::{Deserialize, Serialize};
 
-    use crate::{de::Deserializer, from_be_bytes, from_le_bytes, from_var_bytes, to_le_bytes, to_var_bytes, Value};
+    use crate::{from_be_bytes, from_le_bytes, from_var_bytes, to_le_bytes, to_var_bytes, Value};
     use crate::ser::to_be_bytes;
 
     const BIG_TEST_NBT: &[u8] = include_bytes!("../test/bigtest.nbt");
@@ -40,9 +40,9 @@ mod test {
         let ser_le = to_le_bytes(&value).unwrap();
         let ser_be = to_be_bytes(&value).unwrap();
 
-        from_var_bytes::<Value>(&ser).unwrap().0;
-        from_le_bytes::<Value>(&ser_le).unwrap().0;
-        from_be_bytes::<Value>(&ser_be).unwrap().0;
+        from_var_bytes::<Value>(&ser).unwrap();
+        from_le_bytes::<Value>(&ser_le).unwrap();
+        from_be_bytes::<Value>(&ser_be).unwrap();
     }
 
     #[test]
@@ -97,11 +97,11 @@ mod test {
         let decoded: AllTypes = from_be_bytes(BIG_TEST_NBT).unwrap().0;
 
         let encoded = to_be_bytes(&decoded).unwrap();
-        let decoded2: AllTypes = from_be_bytes(encoded.as_slice()).unwrap().0;
+        let _decoded2: AllTypes = from_be_bytes(encoded.as_slice()).unwrap().0;
 
         let value: Value = from_be_bytes(BIG_TEST_NBT).unwrap().0;
         let value_encoded = to_be_bytes(&value).unwrap();
-        let value_decoded: Value = from_be_bytes(&value_encoded).unwrap().0;
+        let _value_decoded: Value = from_be_bytes(&value_encoded).unwrap().0;
 
         // Checking floats for equality is a pain.
         // If the data can be decoded, it's pretty much correct
@@ -121,7 +121,7 @@ mod test {
 
         let value: Value = from_be_bytes(HELLO_WORLD_NBT).unwrap().0;
         let value_encoded = to_be_bytes(&value).unwrap();
-        let value_decoded: Value = from_be_bytes(&value_encoded).unwrap().0;
+        let _value_decoded: Value = from_be_bytes(&value_encoded).unwrap().0;
     }
 
     #[ignore]
@@ -146,7 +146,7 @@ mod test {
 
         let decoded: Player = from_be_bytes(PLAYER_NAN_VALUE_NBT).unwrap().0;
         let encoded = to_be_bytes(&decoded).unwrap();
-        let decoded2: Player = from_be_bytes(encoded.as_slice()).unwrap().0;
+        let _decoded2: Player = from_be_bytes(encoded.as_slice()).unwrap().0;
 
         let value: Value = from_be_bytes(PLAYER_NAN_VALUE_NBT).unwrap().0;
         dbg!(&value);
@@ -154,10 +154,9 @@ mod test {
         let value_encoded = to_be_bytes(&value).unwrap();
         // FIXME: For some reason this call fails.
         // I haven't seen failures in any other tests I've done, so I'm not sure what's causing this.
-        let value_decoded: Value = from_be_bytes(&value_encoded).unwrap().0;
+        let _value_decoded: Value = from_be_bytes(&value_encoded).unwrap().0;
 
         // Checking floats for equality is a pain.
         // If the data can be decoded, it's pretty much correct
-        // assert_eq!(PLAYER_NAN_VALUE_NBT, encoded.as_slice());
     }
 }

@@ -14,6 +14,9 @@ pub struct MutableBuffer {
 }
 
 impl MutableBuffer {
+    /// Creates a new empty buffer.
+    ///
+    /// This call does not allocate.
     #[inline]
     pub fn new() -> Self {
         Default::default()
