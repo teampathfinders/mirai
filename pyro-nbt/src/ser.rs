@@ -247,8 +247,8 @@ where
     #[inline]
     fn serialize_bytes(self, v: &[u8]) -> Result<()> {
         match M::AS_ENUM {
-            Variant::BigEndian => self.writer.write_u16_be(v.len() as u16),
-            Variant::LittleEndian => self.writer.write_u16_le(v.len() as u16),
+            Variant::BigEndian => self.writer.write_i32_be(v.len() as i32),
+            Variant::LittleEndian => self.writer.write_i32_le(v.len() as i32),
             Variant::Variable => self.writer.write_var_u32(v.len() as u32),
         }?;
 
@@ -265,7 +265,7 @@ where
     where
         T: Serialize,
     {
-        todo!();
+        value.serialize(self)
     }
 
     #[inline]
@@ -644,7 +644,7 @@ where
     where
         T: Serialize,
     {
-        todo!()
+        value.serialize(self)
     }
 
     fn serialize_unit(self) -> std::result::Result<Self::Ok, Self::Error> {
