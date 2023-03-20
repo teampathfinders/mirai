@@ -95,6 +95,9 @@ where
 }
 
 
+/// Reads a single object of type `T` from the given buffer.
+///
+/// On success, the deserialised object and amount of bytes read from the buffer are returned.
 #[inline]
 fn from_bytes<'a, T, F>(b: &'a [u8]) -> Result<(T, usize)>
 where
@@ -109,6 +112,29 @@ where
     Ok((output, start - end))
 }
 
+/// Reads a single object of type `T` from the given buffer.
+///
+/// This function uses the little endian format of NBT, which is used by disk formats
+/// in Minecraft: Bedrock Edition.
+///
+/// On success, the deserialised object and amount of bytes read from the buffer are returned.
+///
+/// # Example
+///
+/// ```rust, ignore
+/// # use pyro_nbt as nbt;
+/// # fn main() {
+///  #[derive(serde::Deserialize, Debug)]
+///  struct Data {
+///     value: String
+///  }
+///
+///  let result = nbt::from_le_bytes(&buffer).unwrap();
+///  let data = result.0;
+///
+///  println!("Got {data:?}!");
+/// # }
+/// ```
 #[inline]
 pub fn from_le_bytes<'a, T>(b: &'a [u8]) -> Result<(T, usize)>
 where
@@ -117,6 +143,29 @@ where
     from_bytes::<T, LittleEndian>(b)
 }
 
+/// Reads a single object of type `T` from the given buffer.
+///
+/// This function uses the little endian format of NBT, which is used by
+/// Minecraft: Java Edition.
+///
+/// On success, the deserialised object and amount of bytes read from the buffer are returned.
+///
+/// # Example
+///
+/// ```rust, ignore
+/// # use pyro_nbt as nbt;
+/// # fn main() {
+///  #[derive(serde::Deserialize, Debug)]
+///  struct Data {
+///     value: String
+///  }
+///
+///  let result = nbt::from_le_bytes(&buffer).unwrap();
+///  let data = result.0;
+///
+///  println!("Got {data:?}!");
+/// # }
+/// ```
 #[inline]
 pub fn from_be_bytes<'a, T>(b: &'a [u8]) -> Result<(T, usize)>
 where
@@ -125,6 +174,29 @@ where
     from_bytes::<T, BigEndian>(b)
 }
 
+/// Reads a single object of type `T` from the given buffer.
+///
+/// This function uses the variable format of NBT, which is used by network formats
+/// in Minecraft: Bedrock Edition.
+///
+/// On success, the deserialised object and amount of bytes read from the buffer are returned.
+///
+/// # Example
+///
+/// ```rust, ignore
+/// # use pyro_nbt as nbt;
+/// # fn main() {
+///  #[derive(serde::Deserialize, Debug)]
+///  struct Data {
+///     value: String
+///  }
+///
+///  let result = nbt::from_le_bytes(&buffer).unwrap();
+///  let data = result.0;
+///
+///  println!("Got {data:?}!");
+/// # }
+/// ```
 #[inline]
 pub fn from_var_bytes<'a, T>(b: &'a [u8]) -> Result<(T, usize)>
 where
@@ -463,6 +535,10 @@ where
     }
 }
 
+/// Deserializes NBT sequences.
+///
+/// Sequences are in this case: [`ByteArray`](FieldType::ByteArray), [`IntArray`](FieldType::IntArray)
+/// [`LongArray`](FieldType::LongArray) and [`List`](FieldType::List).
 #[derive(Debug)]
 struct SeqDeserializer<'a, 'de: 'a, F>
 where
@@ -525,6 +601,7 @@ where
     }
 }
 
+/// Deserialises NBT compounds.
 #[derive(Debug)]
 struct MapDeserializer<'a, 'de: 'a, F>
 where
