@@ -21,7 +21,7 @@ use crate::{
 };
 use crate::{BroadcastPacket, RaknetData};
 use crate::crypto::{Encryptor, IdentityData, UserData};
-use crate::level_manager::LevelManager;
+use crate::level::LevelManager;
 use crate::Skin;
 
 static RUNTIME_ID_COUNTER: AtomicU64 = AtomicU64::new(0);

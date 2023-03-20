@@ -21,7 +21,7 @@ use crate::{
     NETWORK_VERSION,
 };
 use crate::IncompatibleProtocol;
-use crate::level_manager::LevelManager;
+use crate::level::LevelManager;
 use crate::OpenConnectionReply1;
 use crate::OpenConnectionReply2;
 use crate::OpenConnectionRequest1;
@@ -72,7 +72,7 @@ impl InstanceManager {
                 .await?,
         );
 
-        let session_manager = Arc::new(SessionManager::new(token.clone()));
+        let session_manager = Arc::new(SessionManager::new());
 
         let (level_manager, level_notifier) =
             LevelManager::new(session_manager.clone(), token.clone())?;

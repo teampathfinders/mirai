@@ -36,9 +36,9 @@ impl ResourcePackStackEntry<'_> {
     }
 
     pub fn serialize(&self, buffer: &mut MutableBuffer) -> Result<()> {
-        buffer.write_str(&self.pack_id)?;
-        buffer.write_str(&self.pack_version)?;
-        buffer.write_str(&self.subpack_name)
+        buffer.write_str(self.pack_id)?;
+        buffer.write_str(self.pack_version)?;
+        buffer.write_str(self.subpack_name)
     }
 }
 

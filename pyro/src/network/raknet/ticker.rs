@@ -15,8 +15,6 @@ use crate::{
 
 /// Tick interval of the internal session ticker.
 const INTERNAL_TICK_INTERVAL: Duration = Duration::from_millis(1000 / 20);
-/// Tick interval for session packet processing.
-const TICK_INTERVAL: Duration = Duration::from_millis(1000 / 20);
 /// Inactivity timeout.
 ///
 /// Any sessions that do not respond within this specified timeout will be disconnect from the server.

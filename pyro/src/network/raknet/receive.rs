@@ -48,7 +48,7 @@ impl Session {
             _ => self.process_frame_batch(pk).await?,
         }
 
-        return Ok(true);
+        Ok(true)
     }
 
     pub fn process_broadcast(&self, pk: BroadcastPacket) -> Result<()> {
@@ -78,7 +78,7 @@ impl Session {
             .fetch_max(batch.sequence_number, Ordering::SeqCst);
 
         for frame in batch.frames {
-            self.process_frame(frame.into(), batch.sequence_number).await?;
+            self.process_frame(frame, batch.sequence_number).await?;
         }
 
         Ok(())
@@ -105,13 +105,13 @@ impl Session {
         }
 
         if frame.is_compound {
-            if let Some(p) =
-                self.raknet.compound_collector.insert(frame)?
-            {
-                return self.process_frame(p.into(), batch_number).await;
+            let possible_frag = self.raknet.compound_collector.insert(frame)?;
+
+            return if let Some(packet) = possible_frag {
+                self.process_frame(packet, batch_number).await
             } else {
                 // Compound incomplete
-                return Ok(());
+                Ok(())
             }
         }
 

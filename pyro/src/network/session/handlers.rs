@@ -58,7 +58,7 @@ impl Session {
         let request = CommandRequest::deserialize(pk.snapshot())?;
 
         let command_list = self.level_manager.get_commands();
-        let result = ParsedCommand::parse(command_list, &request.command);
+        let result = ParsedCommand::parse(command_list, request.command);
 
         if let Ok(parsed) = result {
             let output = match parsed.name.as_str() {
@@ -71,7 +71,7 @@ impl Session {
             if let Ok(message) = output {
                 self.send(CommandOutput {
                     origin: request.origin,
-                    request_id: &request.request_id,
+                    request_id: request.request_id,
                     output_type: CommandOutputType::AllOutput,
                     success_count: 1,
                     output: &[CommandOutputMessage {
@@ -83,7 +83,7 @@ impl Session {
             } else {
                 self.send(CommandOutput {
                     origin: request.origin,
-                    request_id: &request.request_id,
+                    request_id: request.request_id,
                     output_type: CommandOutputType::AllOutput,
                     success_count: 0,
                     output: &[CommandOutputMessage {
@@ -96,7 +96,7 @@ impl Session {
         } else {
             self.send(CommandOutput {
                 origin: request.origin,
-                request_id: &request.request_id,
+                request_id: request.request_id,
                 output_type: CommandOutputType::AllOutput,
                 success_count: 0,
                 output: &[CommandOutputMessage {

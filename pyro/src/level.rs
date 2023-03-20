@@ -43,7 +43,7 @@ impl LevelManager {
     ) -> Result<(Arc<Self>, Receiver<()>)> {
         let (world_path, autosave_interval) = {
             let config = SERVER_CONFIG.read();
-            (config.level_path.clone(), config.autosave_interval)
+            (config.level_path, config.autosave_interval)
         };
 
         let (chunks, chunk_notifier) =

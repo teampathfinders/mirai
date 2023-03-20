@@ -110,8 +110,8 @@ impl<'a> Serialize for TextMessage<'a> {
             MessageType::Chat
             | MessageType::Whisper
             | MessageType::Announcement => {
-                buffer.write_str(&self.source_name)?;
-                buffer.write_str(&self.message)?;
+                buffer.write_str(self.source_name)?;
+                buffer.write_str(self.message)?;
             }
             MessageType::Raw
             | MessageType::Tip
@@ -119,12 +119,12 @@ impl<'a> Serialize for TextMessage<'a> {
             | MessageType::Object
             | MessageType::ObjectWhisper
             | MessageType::ObjectAnnouncement => {
-                buffer.write_str(&self.message)?;
+                buffer.write_str(self.message)?;
             }
             MessageType::Translation
             | MessageType::Popup
             | MessageType::JukeboxPopup => {
-                buffer.write_str(&self.message)?;
+                buffer.write_str(self.message)?;
 
                 buffer.write_var_u32(self.parameters.len() as u32)?;
                 for param in &self.parameters {
@@ -133,8 +133,8 @@ impl<'a> Serialize for TextMessage<'a> {
             }
         }
 
-        buffer.write_str(&self.xuid)?;
-        buffer.write_str(&self.platform_chat_id)
+        buffer.write_str(self.xuid)?;
+        buffer.write_str(self.platform_chat_id)
     }
 }
 

@@ -10,7 +10,7 @@ use util::bytes::MutableBuffer;
 
 use crate::{Frame, OrderChannel};
 use crate::Header;
-use crate::instance_manager::{IPV4_LOCAL_ADDR, IPV6_LOCAL_ADDR};
+use crate::instance::{IPV4_LOCAL_ADDR, IPV6_LOCAL_ADDR};
 
 #[test]
 fn read_write_header() {

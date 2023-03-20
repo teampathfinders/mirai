@@ -204,20 +204,6 @@ impl Encryptor {
         Ok(())
     }
 
-    /// Returns the packet send counter.
-    fn send_ctr(&self) -> u64 {
-        let counter = self.cipher_encrypt.lock().get_core().get_block_pos();
-
-        counter
-    }
-
-    /// Returns the packet receive counter.
-    fn recv_ctr(&self) -> u64 {
-        let counter = self.cipher_decrypt.lock().get_core().get_block_pos();
-
-        counter
-    }
-
     /// Computes the SHA-256 checksum of the packet.
     ///
     /// This checksum can be used to verify that the packet has not been modified.

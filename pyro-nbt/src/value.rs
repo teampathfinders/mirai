@@ -318,6 +318,14 @@ impl<'de> Deserialize<'de> for Value {
             }
 
             #[inline]
+            fn visit_str<E>(self, v: &str) -> Result<Self::Value, E>
+            where
+                E: de::Error,
+            {
+                Ok(Value::String(v.to_owned()))
+            }
+
+            #[inline]
             fn visit_string<E>(self, v: String) -> Result<Self::Value, E>
                 where
                     E: de::Error,

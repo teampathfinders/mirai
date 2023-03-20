@@ -1,9 +1,9 @@
 pub use command::*;
 pub use config::*;
 pub use crypto::*;
-pub use instance_manager::*;
+pub use instance::*;
 pub use level;
-pub use level_manager::*;
+pub use level::*;
 pub use nbt;
 pub use network::*;
 pub use util;
@@ -11,8 +11,8 @@ pub use util;
 mod command;
 mod config;
 mod crypto;
-mod instance_manager;
-mod level_manager;
+mod instance;
+mod level;
 mod network;
 
 #[cfg(test)]

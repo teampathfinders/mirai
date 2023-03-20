@@ -1,6 +1,6 @@
 use util::{error, pyassert, Result};
 
-use crate::{command::ParsedCommand, level_manager::LevelManager, network::GameRule};
+use crate::{command::ParsedCommand, level::LevelManager, network::GameRule};
 
 impl LevelManager {
     pub fn execute_game_rule_command(&self, command: ParsedCommand) -> Result<String> {

@@ -15,7 +15,7 @@ use crate::{
 };
 use crate::{BroadcastPacket, RawPacket};
 use crate::{config::SERVER_CONFIG, network::ConnectedPacket};
-use crate::level_manager::LevelManager;
+use crate::level::LevelManager;
 use crate::Session;
 
 const BROADCAST_CHANNEL_CAPACITY: usize = 16;
@@ -24,9 +24,6 @@ const GARBAGE_COLLECT_INTERVAL: Duration = Duration::from_secs(1);
 
 /// Keeps track of all sessions on the server.
 pub struct SessionManager {
-    /// Whether the server is running.
-    /// Once this token is cancelled, the tracker will cancel all the sessions' individual tokens.
-    global_token: CancellationToken,
     /// Map of all tracked sessions, listed by IP address.
     list: Arc<DashMap<SocketAddr, (mpsc::Sender<MutableBuffer>, Arc<Session>)>>,
     /// The level manager.
@@ -37,7 +34,7 @@ pub struct SessionManager {
 
 impl SessionManager {
     /// Creates a new session tracker.
-    pub fn new(global_token: CancellationToken) -> Self {
+    pub fn new() -> Self {
         let list = Arc::new(DashMap::new());
         {
             let list = list.clone();
@@ -48,7 +45,6 @@ impl SessionManager {
 
         let (broadcast, _) = broadcast::channel(BROADCAST_CHANNEL_CAPACITY);
         Self {
-            global_token,
             list,
             level_manager: OnceCell::new(),
             broadcast,
@@ -120,7 +116,7 @@ impl SessionManager {
                             .1
                             .get_xuid()
                             .map(|x| x.to_string())
-                            .unwrap_or("unknown".to_string());
+                            .unwrap_or_else(|_| "unknown".to_owned());
 
                         tracing::error!(
                             "It seems like session (with XUID {xuid}) is hanging. Closing it"
