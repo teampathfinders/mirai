@@ -1,5 +1,5 @@
 use util::{bail, BlockPosition, Deserialize, Error, Result, Serialize};
-use util::bytes::{BinaryReader, BinaryWrite, MutableBuffer, SharedBuffer, size_of_varint};
+use util::bytes::{BinaryRead, BinaryWrite, MutableBuffer, SharedBuffer, size_of_varint};
 
 use crate::ConnectedPacket;
 

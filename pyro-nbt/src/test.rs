@@ -12,6 +12,31 @@ mod test {
     const PLAYER_NAN_VALUE_NBT: &[u8] =
         include_bytes!("../test/player_nan_value.nbt");
 
+    // #[test]
+    // fn read_write_option() {
+    //     #[derive(Serialize, Deserialize, Debug, PartialEq)]
+    //     struct Optional {
+    //         optional: Option<i32>,
+    //         required: String
+    //     }
+    //
+    //     let some = Optional {
+    //         optional: None,
+    //         required: "This is Some".to_owned()
+    //     };
+    //
+    //     let some_ser = to_be_bytes(&some).unwrap();
+    //     dbg!(&some_ser);
+    //
+    //     let some_de: Value = from_be_bytes(*some_ser.snapshot()).unwrap().0;
+    //     dbg!(some_de);
+    //
+    //     let none = Optional {
+    //         optional: None,
+    //         required: "This is None".to_owned()
+    //     };
+    // }
+
     #[test]
     fn read_write_all() {
         let value = Value::Compound(HashMap::from([
@@ -40,9 +65,9 @@ mod test {
         let ser_le = to_le_bytes(&value).unwrap();
         let ser_be = to_be_bytes(&value).unwrap();
 
-        from_var_bytes::<Value>(&ser).unwrap();
-        from_le_bytes::<Value>(&ser_le).unwrap();
-        from_be_bytes::<Value>(&ser_be).unwrap();
+        from_var_bytes::<Value, _>(*ser.snapshot()).unwrap();
+        from_le_bytes::<Value, _>(*ser_le.snapshot()).unwrap();
+        from_be_bytes::<Value, _>(*ser_be.snapshot()).unwrap();
     }
 
     #[test]
@@ -101,10 +126,8 @@ mod test {
 
         let value: Value = from_be_bytes(BIG_TEST_NBT).unwrap().0;
         let value_encoded = to_be_bytes(&value).unwrap();
-        let _value_decoded: Value = from_be_bytes(&value_encoded).unwrap().0;
-
-        // Checking floats for equality is a pain.
-        // If the data can be decoded, it's pretty much correct
+        let value_decoded: Value = from_be_bytes(*value_encoded.snapshot()).unwrap().0;
+        assert_eq!(value, value_decoded);
     }
 
     #[test]
@@ -112,7 +135,7 @@ mod test {
         #[derive(Deserialize, Serialize, Debug, PartialEq)]
         #[serde(rename = "hello world")]
         struct HelloWorld {
-            name: String,
+            name: Value,
         }
 
         let decoded: HelloWorld = from_be_bytes(HELLO_WORLD_NBT).unwrap().0;
@@ -121,7 +144,8 @@ mod test {
 
         let value: Value = from_be_bytes(HELLO_WORLD_NBT).unwrap().0;
         let value_encoded = to_be_bytes(&value).unwrap();
-        let _value_decoded: Value = from_be_bytes(&value_encoded).unwrap().0;
+        let value_decoded: Value = from_be_bytes(*value_encoded.snapshot()).unwrap().0;
+        assert_eq!(value, value_decoded);
     }
 
     #[ignore]
@@ -146,7 +170,7 @@ mod test {
 
         let decoded: Player = from_be_bytes(PLAYER_NAN_VALUE_NBT).unwrap().0;
         let encoded = to_be_bytes(&decoded).unwrap();
-        let _decoded2: Player = from_be_bytes(encoded.as_slice()).unwrap().0;
+        let _decoded2: Player = from_be_bytes(*encoded.snapshot()).unwrap().0;
 
         let value: Value = from_be_bytes(PLAYER_NAN_VALUE_NBT).unwrap().0;
         dbg!(&value);
@@ -154,9 +178,7 @@ mod test {
         let value_encoded = to_be_bytes(&value).unwrap();
         // FIXME: For some reason this call fails.
         // I haven't seen failures in any other tests I've done, so I'm not sure what's causing this.
-        let _value_decoded: Value = from_be_bytes(&value_encoded).unwrap().0;
-
-        // Checking floats for equality is a pain.
-        // If the data can be decoded, it's pretty much correct
+        let value_decoded: Value = from_be_bytes(*value_encoded.snapshot()).unwrap().0;
+        assert_eq!(value, value_decoded);
     }
 }

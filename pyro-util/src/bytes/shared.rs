@@ -5,7 +5,7 @@ use std::ops::{Deref, DerefMut, Index};
 use std::sync::Arc;
 
 use crate::bail;
-use crate::bytes::{BinaryReader, MutableBuffer};
+use crate::bytes::{BinaryRead, MutableBuffer};
 use crate::Result;
 
 #[derive(Debug, Clone)]
@@ -62,7 +62,7 @@ impl<'a> SharedBuffer<'a> {
     }
 }
 
-impl<'a> BinaryReader<'a> for &'a [u8] {
+impl<'a> BinaryRead<'a> for &'a [u8] {
     fn advance(&mut self, n: usize) -> Result<()> {
         if self.len() < n {
             bail!(
@@ -76,6 +76,11 @@ impl<'a> BinaryReader<'a> for &'a [u8] {
         *self = b;
 
         Ok(())
+    }
+
+    #[inline]
+    fn remaining(&self) -> usize {
+        self.len()
     }
 
     /// Takes a specified amount of bytes from the buffer.
@@ -245,7 +250,7 @@ impl<'a> Read for SharedBuffer<'a> {
 mod test {
     use paste::paste;
 
-    use crate::bytes::{BinaryReader, BinaryWrite, MutableBuffer};
+    use crate::bytes::{BinaryRead, BinaryWrite, MutableBuffer};
     use crate::bytes::SharedBuffer;
     use crate::u24::u24;
 

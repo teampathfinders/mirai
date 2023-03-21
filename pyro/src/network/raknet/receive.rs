@@ -5,7 +5,7 @@ use std::time::Instant;
 use async_recursion::async_recursion;
 
 use util::{bail, Result};
-use util::bytes::{BinaryReader, MutableBuffer};
+use util::bytes::{BinaryRead, MutableBuffer};
 
 use crate::{CommandRequest, SettingsCommand};
 use crate::{

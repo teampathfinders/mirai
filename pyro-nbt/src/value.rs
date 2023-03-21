@@ -5,6 +5,8 @@ use serde::{de, Deserialize, Deserializer, Serialize, Serializer};
 use serde::de::{MapAccess, SeqAccess, Visitor};
 use serde::ser::{SerializeMap, SerializeSeq};
 
+use paste::paste;
+
 /// General NBT value type that can represent any value.
 ///
 /// In case the structure of some piece of NBT data is not known, this
@@ -242,6 +244,280 @@ impl Value {
             Value::LongArray(v) => Some(v),
             _ => None
         }
+    }
+}
+
+impl PartialEq<Value> for Value {
+    #[inline]
+    fn eq(&self, rhs: &Value) -> bool {
+        match self {
+            Value::Byte(lhs) => rhs.as_i8().map_or(false, |rhs| *lhs == rhs),
+            Value::Short(lhs) => rhs.as_i16().map_or(false, |rhs| *lhs == rhs),
+            Value::Int(lhs) => rhs.as_i32().map_or(false, |rhs| *lhs == rhs),
+            Value::Long(lhs) => rhs.as_i64().map_or(false, |rhs| *lhs == rhs),
+            Value::Float(lhs) => rhs.as_f32().map_or(false, |rhs| *lhs == rhs),
+            Value::Double(lhs) => rhs.as_f64().map_or(false, |rhs| *lhs == rhs),
+            Value::ByteArray(lhs) => rhs.as_u8_array().map_or(false, |rhs| lhs == rhs),
+            Value::String(lhs) => rhs.as_string().map_or(false, |rhs| lhs == rhs),
+            Value::List(lhs) => rhs.as_list().map_or(false, |rhs| lhs == rhs),
+            Value::Compound(lhs) => rhs.as_compound().map_or(false, |rhs| lhs == rhs),
+            Value::IntArray(lhs) => rhs.as_i32_array().map_or(false, |rhs| lhs == rhs),
+            Value::LongArray(lhs) => rhs.as_i64_array().map_or(false, |rhs| lhs == rhs),
+        }
+    }
+}
+
+impl Eq for Value {}
+
+impl PartialEq<i8> for Value {
+    #[inline]
+    fn eq(&self, rhs: &i8) -> bool {
+        self.as_i8().map_or(false, |lhs| lhs == *rhs)
+    }
+}
+
+impl<'a> PartialEq<i8> for &'a Value {
+    #[inline]
+    fn eq(&self, rhs: &i8) -> bool {
+        self.as_i8().map_or(false, |lhs| lhs == *rhs)
+    }
+}
+
+impl<'a> PartialEq<i8> for &'a mut Value {
+    #[inline]
+    fn eq(&self, rhs: &i8) -> bool {
+        self.as_i8().map_or(false, |lhs| lhs == *rhs)
+    }
+}
+
+impl PartialEq<i16> for Value {
+    #[inline]
+    fn eq(&self, rhs: &i16) -> bool {
+        self.as_i16().map_or(false, |lhs| lhs == *rhs)
+    }
+}
+
+impl<'a> PartialEq<i16> for &'a Value {
+    #[inline]
+    fn eq(&self, rhs: &i16) -> bool {
+        self.as_i16().map_or(false, |lhs| lhs == *rhs)
+    }
+}
+
+impl<'a> PartialEq<i16> for &'a mut Value {
+    #[inline]
+    fn eq(&self, rhs: &i16) -> bool {
+        self.as_i16().map_or(false, |lhs| lhs == *rhs)
+    }
+}
+
+impl PartialEq<i32> for Value {
+    #[inline]
+    fn eq(&self, rhs: &i32) -> bool {
+        self.as_i32().map_or(false, |lhs| lhs == *rhs)
+    }
+}
+
+impl<'a> PartialEq<i32> for &'a Value {
+    #[inline]
+    fn eq(&self, rhs: &i32) -> bool {
+        self.as_i32().map_or(false, |lhs| lhs == *rhs)
+    }
+}
+
+impl<'a> PartialEq<i32> for &'a mut Value {
+    #[inline]
+    fn eq(&self, rhs: &i32) -> bool {
+        self.as_i32().map_or(false, |lhs| lhs == *rhs)
+    }
+}
+
+impl PartialEq<i64> for Value {
+    #[inline]
+    fn eq(&self, rhs: &i64) -> bool {
+        self.as_i64().map_or(false, |lhs| lhs == *rhs)
+    }
+}
+
+impl<'a> PartialEq<i64> for &'a Value {
+    #[inline]
+    fn eq(&self, rhs: &i64) -> bool {
+        self.as_i64().map_or(false, |lhs| lhs == *rhs)
+    }
+}
+
+impl<'a> PartialEq<i64> for &'a mut Value {
+    #[inline]
+    fn eq(&self, rhs: &i64) -> bool {
+        self.as_i64().map_or(false, |lhs| lhs == *rhs)
+    }
+}
+
+impl PartialEq<f32> for Value {
+    #[inline]
+    fn eq(&self, rhs: &f32) -> bool {
+        self.as_f32().map_or(false, |lhs| lhs == *rhs)
+    }
+}
+
+impl<'a> PartialEq<f32> for &'a Value {
+    #[inline]
+    fn eq(&self, rhs: &f32) -> bool {
+        self.as_f32().map_or(false, |lhs| lhs == *rhs)
+    }
+}
+
+impl<'a> PartialEq<f32> for &'a mut Value {
+    #[inline]
+    fn eq(&self, rhs: &f32) -> bool {
+        self.as_f32().map_or(false, |lhs| lhs == *rhs)
+    }
+}
+
+impl PartialEq<f64> for Value {
+    #[inline]
+    fn eq(&self, rhs: &f64) -> bool {
+        self.as_f64().map_or(false, |lhs| lhs == *rhs)
+    }
+}
+
+impl<'a> PartialEq<f64> for &'a Value {
+    #[inline]
+    fn eq(&self, rhs: &f64) -> bool {
+        self.as_f64().map_or(false, |lhs| lhs == *rhs)
+    }
+}
+
+impl<'a> PartialEq<f64> for &'a mut Value {
+    #[inline]
+    fn eq(&self, rhs: &f64) -> bool {
+        self.as_f64().map_or(false, |lhs| lhs == *rhs)
+    }
+}
+
+impl PartialEq<&[u8]> for Value {
+    #[inline]
+    fn eq(&self, rhs: &&[u8]) -> bool {
+        self.as_u8_array().map_or(false, |lhs| lhs == *rhs)
+    }
+}
+
+impl PartialEq<&[u8]> for &Value {
+    #[inline]
+    fn eq(&self, rhs: &&[u8]) -> bool {
+        self.as_u8_array().map_or(false, |lhs| lhs == *rhs)
+    }
+}
+
+impl PartialEq<&[u8]> for &mut Value {
+    #[inline]
+    fn eq(&self, rhs: &&[u8]) -> bool {
+        self.as_u8_array().map_or(false, |lhs| lhs == *rhs)
+    }
+}
+
+impl PartialEq<&str> for Value {
+    #[inline]
+    fn eq(&self, rhs: &&str) -> bool {
+        self.as_string().map_or(false, |lhs| lhs == *rhs)
+    }
+}
+
+impl<'a> PartialEq<&str> for &'a Value {
+    #[inline]
+    fn eq(&self, rhs: &&str) -> bool {
+        self.as_string().map_or(false, |lhs| lhs == *rhs)
+    }
+}
+
+impl<'a> PartialEq<&str> for &'a mut Value {
+    #[inline]
+    fn eq(&self, rhs: &&str) -> bool {
+        self.as_string().map_or(false, |lhs| lhs == *rhs)
+    }
+}
+
+impl PartialEq<&[Value]> for Value {
+    #[inline]
+    fn eq(&self, rhs: &&[Value]) -> bool {
+        self.as_list().map_or(false, |lhs| lhs == *rhs)
+    }
+}
+
+impl<'a> PartialEq<&[Value]> for &'a Value {
+    #[inline]
+    fn eq(&self, rhs: &&[Value]) -> bool {
+        self.as_list().map_or(false, |lhs| lhs == *rhs)
+    }
+}
+
+impl<'a> PartialEq<&[Value]> for &'a mut Value {
+    #[inline]
+    fn eq(&self, rhs: &&[Value]) -> bool {
+        self.as_list().map_or(false, |lhs| lhs == *rhs)
+    }
+}
+
+impl PartialEq<&HashMap<String, Value>> for Value {
+    #[inline]
+    fn eq(&self, rhs: &&HashMap<String, Value>) -> bool {
+        self.as_compound().map_or(false, |lhs| lhs == *rhs)
+    }
+}
+
+impl<'a> PartialEq<&HashMap<String, Value>> for &'a Value {
+    #[inline]
+    fn eq(&self, rhs: &&HashMap<String, Value>) -> bool {
+        self.as_compound().map_or(false, |lhs| lhs == *rhs)
+    }
+}
+
+impl<'a> PartialEq<&HashMap<String, Value>> for &'a mut Value {
+    #[inline]
+    fn eq(&self, rhs: &&HashMap<String, Value>) -> bool {
+        self.as_compound().map_or(false, |lhs| lhs == *rhs)
+    }
+}
+
+impl PartialEq<&[i32]> for Value {
+    #[inline]
+    fn eq(&self, rhs: &&[i32]) -> bool {
+        self.as_i32_array().map_or(false, |lhs| lhs == *rhs)
+    }
+}
+
+impl<'a> PartialEq<&[i32]> for &'a Value {
+    #[inline]
+    fn eq(&self, rhs: &&[i32]) -> bool {
+        self.as_i32_array().map_or(false, |lhs| lhs == *rhs)
+    }
+}
+
+impl<'a> PartialEq<&[i32]> for &'a mut Value {
+    #[inline]
+    fn eq(&self, rhs: &&[i32]) -> bool {
+        self.as_i32_array().map_or(false, |lhs| lhs == *rhs)
+    }
+}
+
+impl PartialEq<&[i64]> for Value {
+    #[inline]
+    fn eq(&self, rhs: &&[i64]) -> bool {
+        self.as_i64_array().map_or(false, |lhs| lhs == *rhs)
+    }
+}
+
+impl<'a> PartialEq<&[i64]> for &'a Value {
+    #[inline]
+    fn eq(&self, rhs: &&[i64]) -> bool {
+        self.as_i64_array().map_or(false, |lhs| lhs == *rhs)
+    }
+}
+
+impl<'a> PartialEq<&[i64]> for &'a mut Value {
+    #[inline]
+    fn eq(&self, rhs: &&[i64]) -> bool {
+        self.as_i64_array().map_or(false, |lhs| lhs == *rhs)
     }
 }
 

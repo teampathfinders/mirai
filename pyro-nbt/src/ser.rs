@@ -14,6 +14,30 @@ use crate::{
     BigEndian, FieldType, LittleEndian, Variable, Variant, VariantImpl,
 };
 
+/// Returns a `not supported` error.
+macro_rules! forward_unsupported {
+    ($($ty: ident),+) => {
+        paste! {$(
+           #[inline]
+            fn [<serialize_ $ty>](self, _v: $ty) -> util::Result<()> {
+                util::bail!(Unsupported, concat!("Serialisation of `", stringify!($ty), "` is not supported"));
+            }
+        )+}
+    }
+}
+
+/// Returns a `not supported` error.
+macro_rules! forward_unsupported_field {
+    ($($ty: ident),+) => {
+        paste! {$(
+           #[inline]
+            fn [<serialize_ $ty>](self, _v: $ty) -> util::Result<bool> {
+                util::bail!(Unsupported, concat!("Serialisation of `", stringify!($ty), "` is not supported"));
+            }
+        )+}
+    }
+}
+
 /// Serializes the given data in big endian format.
 ///
 /// This is the format used by Minecraft: Java Edition.
@@ -138,7 +162,7 @@ pub fn to_var_bytes<T>(v: &T) -> Result<MutableBuffer>
 pub fn to_be_bytes_in<W, T>(w: W, v: &T) -> Result<()>
     where
         T: ?Sized + Serialize,
-        W: Write
+        W: BinaryWrite
 {
     let mut ser = Serializer::<W, BigEndian>::new(w);
     v.serialize(&mut ser)
@@ -169,7 +193,7 @@ pub fn to_be_bytes_in<W, T>(w: W, v: &T) -> Result<()>
 pub fn to_le_bytes_in<W, T>(w: W, v: &T) -> Result<()>
     where
         T: ?Sized + Serialize,
-        W: Write,
+        W: BinaryWrite,
 {
     let mut ser = Serializer::<W, LittleEndian>::new(w);
     v.serialize(&mut ser)
@@ -200,7 +224,7 @@ pub fn to_le_bytes_in<W, T>(w: W, v: &T) -> Result<()>
 pub fn to_var_bytes_in<W, T>(w: W, value: &T) -> Result<()>
     where
         T: ?Sized + Serialize,
-        W: Write
+        W: BinaryWrite
 {
     let mut ser = Serializer::<W, Variable>::new(w);
     value.serialize(&mut ser)
@@ -210,7 +234,7 @@ pub fn to_var_bytes_in<W, T>(w: W, value: &T) -> Result<()>
 #[derive(Debug)]
 pub struct Serializer<W, F>
     where
-        W: Write,
+        W: BinaryWrite,
         F: VariantImpl,
 {
     writer: W,
@@ -224,7 +248,7 @@ pub struct Serializer<W, F>
 
 impl<W, M> Serializer<W, M>
     where
-        W: Write,
+        W: BinaryWrite,
         M: VariantImpl,
 {
     /// Creates a new and empty serialiser.
@@ -245,22 +269,10 @@ impl<W, M> Serializer<W, M>
     }
 }
 
-/// Returns a `not supported` error.
-macro_rules! forward_unsupported {
-    ($($ty: ident),+) => {
-        paste! {$(
-           #[inline]
-            fn [<serialize_ $ty>](self, _v: $ty) -> util::Result<()> {
-                util::bail!(Unsupported, concat!("Serialisation of `", stringify!($ty), "` is not supported"));
-            }
-        )+}
-    }
-}
-
 impl<'a, W, M> ser::Serializer for &'a mut Serializer<W, M>
     where
         M: VariantImpl,
-        W: Write,
+        W: BinaryWrite,
 {
     type Ok = ();
     type Error = Error;
@@ -490,7 +502,7 @@ impl<'a, W, M> ser::Serializer for &'a mut Serializer<W, M>
 
 impl<'a, W, F> SerializeSeq for &'a mut Serializer<W, F>
     where
-        W: Write,
+        W: BinaryWrite,
         F: VariantImpl,
 {
     type Ok = ();
@@ -526,7 +538,7 @@ impl<'a, W, F> SerializeSeq for &'a mut Serializer<W, F>
 
 impl<'a, W, M> SerializeTuple for &'a mut Serializer<W, M>
     where
-        W: Write,
+        W: BinaryWrite,
         M: VariantImpl,
 {
     type Ok = ();
@@ -562,7 +574,7 @@ impl<'a, W, M> SerializeTuple for &'a mut Serializer<W, M>
 
 impl<'a, W, M> SerializeMap for &'a mut Serializer<W, M>
     where
-        W: Write,
+        W: BinaryWrite,
         M: VariantImpl,
 {
     type Ok = ();
@@ -602,7 +614,7 @@ impl<'a, W, M> SerializeMap for &'a mut Serializer<W, M>
 
 impl<'a, W, M> SerializeStruct for &'a mut Serializer<W, M>
     where
-        W: Write,
+        W: BinaryWrite,
         M: VariantImpl,
 {
     type Ok = ();
@@ -613,16 +625,20 @@ impl<'a, W, M> SerializeStruct for &'a mut Serializer<W, M>
             V: ?Sized + Serialize,
     {
         let ty_serializer = FieldTypeSerializer::new(self);
-        value.serialize(ty_serializer)?;
+        let should_skip = value.serialize(ty_serializer)?;
 
-        match M::AS_ENUM {
-            Variant::LittleEndian => self.writer.write_u16_le(key.len() as u16),
-            Variant::BigEndian => self.writer.write_u16_be(key.len() as u16),
-            Variant::Variable => self.writer.write_var_u32(key.len() as u32),
-        }?;
+        if !should_skip {
+            match M::AS_ENUM {
+                Variant::LittleEndian => self.writer.write_u16_le(key.len() as u16),
+                Variant::BigEndian => self.writer.write_u16_be(key.len() as u16),
+                Variant::Variable => self.writer.write_var_u32(key.len() as u32),
+            }?;
 
-        self.writer.write_all(key.as_bytes())?;
-        value.serialize(&mut **self)
+            self.writer.write_all(key.as_bytes())?;
+            value.serialize(&mut **self)
+        } else {
+            Ok(())
+        }
     }
 
     #[inline]
@@ -638,7 +654,7 @@ impl<'a, W, M> SerializeStruct for &'a mut Serializer<W, M>
 /// This serialiser writes the data type of the given value and does not consume it.
 struct FieldTypeSerializer<'a, W, F>
     where
-        W: Write,
+        W: BinaryWrite,
         F: VariantImpl,
 {
     ser: &'a mut Serializer<W, F>,
@@ -646,7 +662,7 @@ struct FieldTypeSerializer<'a, W, F>
 
 impl<'a, W, F> FieldTypeSerializer<'a, W, F>
     where
-        W: Write,
+        W: BinaryWrite,
         F: VariantImpl,
 {
     pub fn new(ser: &'a mut Serializer<W, F>) -> Self {
@@ -656,24 +672,25 @@ impl<'a, W, F> FieldTypeSerializer<'a, W, F>
 
 impl<'a, W, F> ser::Serializer for FieldTypeSerializer<'a, W, F>
     where
-        W: Write,
+        W: BinaryWrite,
         F: VariantImpl,
 {
-    type Ok = ();
+    type Ok = bool; // Whether the field should be skipped
     type Error = Error;
     type SerializeSeq = Self;
     type SerializeTuple = Self;
-    type SerializeTupleStruct = Impossible<(), Error>;
-    type SerializeTupleVariant = Impossible<(), Error>;
+    type SerializeTupleStruct = Impossible<bool, Error>;
+    type SerializeTupleVariant = Impossible<bool, Error>;
     type SerializeMap = Self;
     type SerializeStruct = Self;
-    type SerializeStructVariant = Impossible<(), Error>;
+    type SerializeStructVariant = Impossible<bool, Error>;
 
-    forward_unsupported!(char, u8, u16, u32, u64, i128);
+    forward_unsupported_field!(char, u8, u16, u32, u64, i128);
 
     #[inline]
-    fn serialize_bool(self, _v: bool) -> Result<()> {
-        self.ser.writer.write_u8(FieldType::Byte as u8)
+    fn serialize_bool(self, _v: bool) -> Result<bool> {
+        self.ser.writer.write_u8(FieldType::Byte as u8)?;
+        Ok(false)
     }
 
     #[inline]
@@ -681,7 +698,8 @@ impl<'a, W, F> ser::Serializer for FieldTypeSerializer<'a, W, F>
         self,
         _v: i8,
     ) -> std::result::Result<Self::Ok, Self::Error> {
-        self.ser.writer.write_u8(FieldType::Byte as u8)
+        self.ser.writer.write_u8(FieldType::Byte as u8)?;
+        Ok(false)
     }
 
     #[inline]
@@ -689,53 +707,60 @@ impl<'a, W, F> ser::Serializer for FieldTypeSerializer<'a, W, F>
         self,
         _v: i16,
     ) -> std::result::Result<Self::Ok, Self::Error> {
-        self.ser.writer.write_u8(FieldType::Short as u8)
+        self.ser.writer.write_u8(FieldType::Short as u8)?;
+        Ok(false)
     }
 
     fn serialize_i32(
         self,
         _v: i32,
     ) -> std::result::Result<Self::Ok, Self::Error> {
-        self.ser.writer.write_u8(FieldType::Int as u8)
+        self.ser.writer.write_u8(FieldType::Int as u8)?;
+        Ok(false)
     }
 
     fn serialize_i64(
         self,
         _v: i64,
     ) -> std::result::Result<Self::Ok, Self::Error> {
-        self.ser.writer.write_u8(FieldType::Long as u8)
+        self.ser.writer.write_u8(FieldType::Long as u8)?;
+        Ok(false)
     }
 
     fn serialize_f32(
         self,
         _v: f32,
     ) -> std::result::Result<Self::Ok, Self::Error> {
-        self.ser.writer.write_u8(FieldType::Float as u8)
+        self.ser.writer.write_u8(FieldType::Float as u8)?;
+        Ok(false)
     }
 
     fn serialize_f64(
         self,
         _v: f64,
     ) -> std::result::Result<Self::Ok, Self::Error> {
-        self.ser.writer.write_u8(FieldType::Double as u8)
+        self.ser.writer.write_u8(FieldType::Double as u8)?;
+        Ok(false)
     }
 
     fn serialize_str(
         self,
         _v: &str,
     ) -> std::result::Result<Self::Ok, Self::Error> {
-        self.ser.writer.write_u8(FieldType::String as u8)
+        self.ser.writer.write_u8(FieldType::String as u8)?;
+        Ok(false)
     }
 
     fn serialize_bytes(
         self,
         _v: &[u8],
     ) -> std::result::Result<Self::Ok, Self::Error> {
-        self.ser.writer.write_u8(FieldType::ByteArray as u8)
+        self.ser.writer.write_u8(FieldType::ByteArray as u8)?;
+        Ok(false)
     }
 
     fn serialize_none(self) -> std::result::Result<Self::Ok, Self::Error> {
-        bail!(Unsupported, "Serializing None is not supported")
+        Ok(true) // Skip field
     }
 
     fn serialize_some<T: ?Sized>(
@@ -745,7 +770,8 @@ impl<'a, W, F> ser::Serializer for FieldTypeSerializer<'a, W, F>
         where
             T: Serialize,
     {
-        value.serialize(self)
+        value.serialize(self)?;
+        Ok(false)
     }
 
     fn serialize_unit(self) -> std::result::Result<Self::Ok, Self::Error> {
@@ -858,10 +884,10 @@ impl<'a, W, F> ser::Serializer for FieldTypeSerializer<'a, W, F>
 
 impl<'a, W, F> SerializeSeq for FieldTypeSerializer<'a, W, F>
     where
-        W: Write,
+        W: BinaryWrite,
         F: VariantImpl,
 {
-    type Ok = ();
+    type Ok = bool;
     type Error = Error;
 
     #[inline]
@@ -873,17 +899,17 @@ impl<'a, W, F> SerializeSeq for FieldTypeSerializer<'a, W, F>
     }
 
     #[inline]
-    fn end(self) -> Result<()> {
-        Ok(())
+    fn end(self) -> Result<bool> {
+        Ok(false)
     }
 }
 
 impl<'a, W, F> SerializeTuple for FieldTypeSerializer<'a, W, F>
     where
-        W: Write,
+        W: BinaryWrite,
         F: VariantImpl,
 {
-    type Ok = ();
+    type Ok = bool;
     type Error = Error;
 
     #[inline]
@@ -895,17 +921,17 @@ impl<'a, W, F> SerializeTuple for FieldTypeSerializer<'a, W, F>
     }
 
     #[inline]
-    fn end(self) -> Result<()> {
-        Ok(())
+    fn end(self) -> Result<bool> {
+        Ok(false)
     }
 }
 
 impl<'a, W, F> SerializeMap for FieldTypeSerializer<'a, W, F>
     where
-        W: Write,
+        W: BinaryWrite,
         F: VariantImpl,
 {
-    type Ok = ();
+    type Ok = bool;
     type Error = Error;
 
     #[inline]
@@ -925,17 +951,17 @@ impl<'a, W, F> SerializeMap for FieldTypeSerializer<'a, W, F>
     }
 
     #[inline]
-    fn end(self) -> Result<()> {
-        Ok(())
+    fn end(self) -> Result<bool> {
+        Ok(false)
     }
 }
 
 impl<'a, W, F> SerializeStruct for FieldTypeSerializer<'a, W, F>
     where
-        W: Write,
+        W: BinaryWrite,
         F: VariantImpl,
 {
-    type Ok = ();
+    type Ok = bool;
     type Error = Error;
 
     #[inline]
@@ -951,7 +977,7 @@ impl<'a, W, F> SerializeStruct for FieldTypeSerializer<'a, W, F>
     }
 
     #[inline]
-    fn end(self) -> Result<()> {
-        Ok(())
+    fn end(self) -> Result<bool> {
+        Ok(false)
     }
 }
