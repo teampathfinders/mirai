@@ -126,10 +126,8 @@ mod test {
 
         let value: Value = from_be_bytes(BIG_TEST_NBT).unwrap().0;
         let value_encoded = to_be_bytes(&value).unwrap();
-        let _value_decoded: Value = from_be_bytes(*value_encoded.snapshot()).unwrap().0;
-
-        // Checking floats for equality is a pain.
-        // If the data can be decoded, it's pretty much correct
+        let value_decoded: Value = from_be_bytes(*value_encoded.snapshot()).unwrap().0;
+        assert_eq!(value, value_decoded);
     }
 
     #[test]
@@ -137,7 +135,7 @@ mod test {
         #[derive(Deserialize, Serialize, Debug, PartialEq)]
         #[serde(rename = "hello world")]
         struct HelloWorld {
-            name: String,
+            name: Value,
         }
 
         let decoded: HelloWorld = from_be_bytes(HELLO_WORLD_NBT).unwrap().0;
@@ -146,7 +144,8 @@ mod test {
 
         let value: Value = from_be_bytes(HELLO_WORLD_NBT).unwrap().0;
         let value_encoded = to_be_bytes(&value).unwrap();
-        let _value_decoded: Value = from_be_bytes(*value_encoded.snapshot()).unwrap().0;
+        let value_decoded: Value = from_be_bytes(*value_encoded.snapshot()).unwrap().0;
+        assert_eq!(value, value_decoded);
     }
 
     #[ignore]
@@ -171,7 +170,7 @@ mod test {
 
         let decoded: Player = from_be_bytes(PLAYER_NAN_VALUE_NBT).unwrap().0;
         let encoded = to_be_bytes(&decoded).unwrap();
-        let _decoded2: Player = from_be_bytes(encoded.as_slice()).unwrap().0;
+        let _decoded2: Player = from_be_bytes(*encoded.snapshot()).unwrap().0;
 
         let value: Value = from_be_bytes(PLAYER_NAN_VALUE_NBT).unwrap().0;
         dbg!(&value);
@@ -179,9 +178,7 @@ mod test {
         let value_encoded = to_be_bytes(&value).unwrap();
         // FIXME: For some reason this call fails.
         // I haven't seen failures in any other tests I've done, so I'm not sure what's causing this.
-        let _value_decoded: Value = from_be_bytes(*value_encoded.snapshot()).unwrap().0;
-
-        // Checking floats for equality is a pain.
-        // If the data can be decoded, it's pretty much correct
+        let value_decoded: Value = from_be_bytes(*value_encoded.snapshot()).unwrap().0;
+        assert_eq!(value, value_decoded);
     }
 }
