@@ -12,6 +12,31 @@ mod test {
     const PLAYER_NAN_VALUE_NBT: &[u8] =
         include_bytes!("../test/player_nan_value.nbt");
 
+    // #[test]
+    // fn read_write_option() {
+    //     #[derive(Serialize, Deserialize, Debug, PartialEq)]
+    //     struct Optional {
+    //         optional: Option<i32>,
+    //         required: String
+    //     }
+    //
+    //     let some = Optional {
+    //         optional: None,
+    //         required: "This is Some".to_owned()
+    //     };
+    //
+    //     let some_ser = to_be_bytes(&some).unwrap();
+    //     dbg!(&some_ser);
+    //
+    //     let some_de: Value = from_be_bytes(*some_ser.snapshot()).unwrap().0;
+    //     dbg!(some_de);
+    //
+    //     let none = Optional {
+    //         optional: None,
+    //         required: "This is None".to_owned()
+    //     };
+    // }
+
     #[test]
     fn read_write_all() {
         let value = Value::Compound(HashMap::from([

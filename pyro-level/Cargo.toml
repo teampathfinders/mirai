@@ -16,6 +16,7 @@ serde = { version = "1.0.158", features = ["derive"] }
 tokio = { version = "1.26.0", features = ["rt", "time", "macros"] }
 tokio-util = "0.7.7"
 tracing = "0.1.37"
+serde_with = "2.3.1"
 
 [build-dependencies]
 cmake = "0.1.49"
