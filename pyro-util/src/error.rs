@@ -47,8 +47,10 @@ macro_rules! error {
 /// Shorthand for `Result<T, Error>`.
 pub type Result<T> = std::result::Result<T, Error>;
 
+/// The types of errors that can occur.
 #[derive(Debug, Copy, Clone)]
 pub enum ErrorKind {
+    InvalidArgument,
     UnexpectedEof,
     /// An assertion failed.
     AssertionFailed,

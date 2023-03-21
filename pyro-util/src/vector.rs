@@ -48,6 +48,34 @@ impl<T, const N: usize> From<[T; N]> for Vector<T, N> {
     }
 }
 
+impl<T> From<(T,)> for Vector<T, 1> {
+    #[inline]
+    fn from(value: (T,)) -> Self {
+        Self { components: [value.0] }
+    }
+}
+
+impl<T> From<(T, T)> for Vector<T, 2> {
+    #[inline]
+    fn from(value: (T, T)) -> Self {
+        Self { components: [value.0, value.1] }
+    }
+}
+
+impl<T> From<(T, T, T)> for Vector<T, 3> {
+    #[inline]
+    fn from(value: (T, T, T)) -> Self {
+        Self { components: [value.0, value.1, value.2] }
+    }
+}
+
+impl<T> From<(T, T, T, T)> for Vector<T, 4> {
+    #[inline]
+    fn from(value: (T, T, T, T)) -> Self {
+        Self { components: [value.0, value.1, value.2, value.3] }
+    }
+}
+
 /// Maps a 1-vector to directly-accessible fields.
 ///
 /// Internally, [`Vector`] stores its components as an array to allow for generic size.

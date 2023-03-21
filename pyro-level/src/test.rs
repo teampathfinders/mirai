@@ -18,8 +18,7 @@ fn read_write_subchunk() {
         let key = kv.key();
         if key[key.len() - 2] == 0x2f {
             let mut subchunk = SubChunk::deserialize(&*kv.value()).unwrap();
-            let block = subchunk.layer_mut(0).unwrap().get_mut(Vector::from([0; 3])).unwrap();
-            subchunk[0][[0, 0, 0]].states.insert("hello".to_owned(), nbt::Value::String("world".to_owned()));
+            subchunk[0][(0, 0, 0)].states.insert("hello".to_owned(), nbt::Value::String("world".to_owned()));
 
             let serialized = subchunk.serialize().unwrap();
 
