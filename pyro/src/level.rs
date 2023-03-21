@@ -4,10 +4,11 @@ use std::time::Duration;
 
 use dashmap::DashMap;
 use dashmap::mapref::one::Ref;
-use tokio::sync::oneshot::Receiver;
+use parking_lot::RwLock;
+use tokio::sync::oneshot::{Receiver, Sender};
 use tokio_util::sync::CancellationToken;
 
-use level::ChunkManager;
+use level::{Level};
 use util::Result;
 
 use crate::{
@@ -21,7 +22,7 @@ const LEVEL_TICK_INTERVAL: Duration = Duration::from_millis(1000 / 20);
 
 pub struct LevelManager {
     /// Used to load world data from disk.
-    chunks: Arc<ChunkManager>,
+    level: RwLock<Level>,
     /// List of commands available in this level.
     commands: DashMap<String, Command>,
     /// Currently set game rules.
@@ -39,17 +40,17 @@ impl LevelManager {
     pub fn new(
         session_manager: Arc<SessionManager>,
         token: CancellationToken,
-    ) -> Result<(Arc<Self>, Receiver<()>)> {
-        let (world_path, autosave_interval) = {
+    ) -> Result<Arc<Self>> {
+        let (level_path, autosave_interval) = {
             let config = SERVER_CONFIG.read();
             (config.level_path, config.autosave_interval)
         };
 
-        let (chunks, chunk_notifier) =
-            ChunkManager::new(world_path, autosave_interval, token.clone())?;
+        let level = RwLock::new(Level::open(level_path)?);
+        dbg!(&level.read().dat);
 
         let manager = Arc::new(Self {
-            chunks,
+            level,
             commands: DashMap::new(),
             game_rules: DashMap::from_iter([
                 (
@@ -66,7 +67,7 @@ impl LevelManager {
             token,
         });
 
-        Ok((manager, chunk_notifier))
+        Ok(manager)
     }
 
     /// Returns the requested command
@@ -134,4 +135,43 @@ impl LevelManager {
         self.session_manager
             .broadcast(GameRulesChanged { game_rules })
     }
+
+    // /// Simple job that runs [`flush`](Self::flush) on a specified interval.
+    // async fn autosave_job(&self, sender: Sender<()>, interval: Duration) {
+    //     let mut interval = tokio::time::interval(interval);
+    //
+    //     // First tick completes immediately, prevent running autosave immediately after world has
+    //     // been opened.
+    //     interval.tick().await;
+    //
+    //     // Run until there are no more references to the chunk manager.
+    //     // (other than this job).
+    //     //
+    //     // This prevents a memory leak in case someone drops the chunk manager.
+    //     loop {
+    //         match self.flush() {
+    //             Ok(_) => (),
+    //             Err(e) => {
+    //                 tracing::error!("Failed to save level: {e}");
+    //             }
+    //         }
+    //
+    //         tokio::select! {
+    //             _ = interval.tick() => (),
+    //             _ = self.token.cancelled() => break
+    //         }
+    //     }
+    //
+    //     // Save before closing.
+    //     match self.flush() {
+    //         Ok(_) => (),
+    //         Err(e) => {
+    //             tracing::error!("Failed to save level: {e}");
+    //         }
+    //     }
+    //
+    //     // Send the signal that the level has been closed.
+    //     let _ = sender.send(());
+    //     tracing::info!("Closed level");
+    // }
 }

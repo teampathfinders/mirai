@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 use util::{Deserialize, Serialize, Vector};
 
-use crate::{biome::Biome3d, BIOME_DATA, database::Database, DatabaseKey, Dimension, KeyData, LevelData, LOCAL_PLAYER, MOB_EVENTS, OVERWORLD, PaletteEntry, SCHEDULER, SCOREBOARD, SubChunk};
+use crate::{biome::Biome3d, BIOME_DATA, database::Database, DatabaseKey, Dimension, KeyData, LevelDat, LOCAL_PLAYER, MOB_EVENTS, OVERWORLD, PaletteEntry, SCHEDULER, SCOREBOARD, SubChunk, SubChunkVersion, SubLayer};
 
 // digp [x] [z] [?dimension]
 // contains two int32
@@ -18,7 +18,7 @@ fn read_write_subchunk() {
         let key = kv.key();
         if key[key.len() - 2] == 0x2f {
             let mut subchunk = SubChunk::deserialize(&*kv.value()).unwrap();
-            subchunk[0][(0, 0, 0)].states.insert("hello".to_owned(), nbt::Value::String("world".to_owned()));
+            subchunk[0][[0, 0, 0]].states.insert("hello".to_owned(), nbt::Value::String("world".to_owned()));
 
             let serialized = subchunk.serialize().unwrap();
 
@@ -88,7 +88,7 @@ fn bench_subchunk() {
 fn load_level_dat() {
     const LEVEL_DAT: &[u8] = include_bytes!("../test/level.dat");
 
-    let _decoded: LevelData = nbt::from_le_bytes(&LEVEL_DAT[8..]).unwrap().0;
+    let _decoded: LevelDat = nbt::from_le_bytes(&LEVEL_DAT[8..]).unwrap().0;
     let _value: nbt::Value = nbt::from_le_bytes(&LEVEL_DAT[8..]).unwrap().0;
 }
 

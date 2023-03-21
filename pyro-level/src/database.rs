@@ -35,6 +35,13 @@ impl<'a> Deref for Guard<'a> {
     }
 }
 
+impl<'a> AsRef<[u8]> for Guard<'a> {
+    #[inline]
+    fn as_ref(&self) -> &[u8] {
+        self.0
+    }
+}
+
 impl<'a> Drop for Guard<'a> {
     #[inline]
     fn drop(&mut self) {
@@ -226,7 +233,7 @@ impl Database {
         }
     }
 
-    pub fn put<K, V>(&self, key: K, value: V) -> Result<()>
+    pub fn insert<K, V>(&self, key: K, value: V) -> Result<()>
     where
         K: AsRef<[u8]>,
         V: AsRef<[u8]>

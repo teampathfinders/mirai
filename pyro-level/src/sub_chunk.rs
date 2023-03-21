@@ -60,7 +60,7 @@ mod block_version {
 }
 
 /// Definition of block in the sub chunk block palette.
-#[derive(Debug, PartialEq, Deserialize, Serialize)]
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
 #[serde(rename = "")]
 pub struct PaletteEntry {
     /// Name of the block.
@@ -91,9 +91,9 @@ pub struct SubLayer {
     /// List of indices into the palette.
     ///
     /// Coordinates can be converted to an offset into the array using [`to_offset`].
-    indices: [u16; CHUNK_SIZE],
+    pub(crate) indices: [u16; CHUNK_SIZE],
     /// List of all different block types in this sub chunk layer.
-    palette: Vec<PaletteEntry>,
+    pub(crate) palette: Vec<PaletteEntry>,
 }
 
 impl SubLayer {
@@ -129,6 +129,26 @@ impl SubLayer {
         Some(&mut self.palette[index])
     }
 
+    #[inline]
+    pub fn palette(&self) -> &[PaletteEntry] {
+        &self.palette
+    }
+
+    #[inline]
+    pub fn palette_mut(&mut self) -> &mut [PaletteEntry] {
+        &mut self.palette
+    }
+
+    #[inline]
+    pub fn indices(&self) -> &[u16; 4096] {
+        &self.indices
+    }
+
+    #[inline]
+    pub fn indices_mut(&mut self) -> &mut [u16; 4096] {
+        &mut self.indices
+    }
+
     /// Deserializes a single layer from the given buffer.
     #[inline]
     fn deserialize<'a, R>(mut reader: R) -> Result<Self>
@@ -144,15 +164,22 @@ impl SubLayer {
         // Amount of indices that fit in a single 32-bit integer.
         let indices_per_word = u32::BITS as usize / index_size as usize;
         // Amount of words needed to encode 4096 block indices.
-        let word_count = CHUNK_SIZE / indices_per_word;
+        let word_count = CHUNK_SIZE / indices_per_word + match index_size {
+            3 | 5 | 6 => 1,
+            _ => 0
+        };
 
         let mask = !(!0u32 << index_size);
         let mut indices = [0u16; CHUNK_SIZE];
         for i in 0..word_count {
-            // println!("{i} {}", i * indices_per_word);
             let mut word = reader.read_u32_le()?;
 
             for j in 0..indices_per_word {
+                let offset = i * indices_per_word + j;
+                if offset == 4096 {
+                    break
+                }
+
                 let index = word & mask;
                 indices[i * indices_per_word + j] = index as u16;
 
@@ -160,21 +187,21 @@ impl SubLayer {
             }
         }
 
-        // Padded sizes have an extra word.
-        match index_size {
-            3 | 5 | 6 => {
-                let mut word = reader.read_u32_le()?;
-                let last_index =
-                    (word_count - 1) * indices_per_word + indices_per_word - 1;
-
-                let indices_left = 4096 - last_index;
-                for i in 0..indices_left {
-                    indices[last_index + i] = (word & mask) as u16;
-                    word >>= index_size;
-                }
-            }
-            _ => (),
-        }
+        // // Padded sizes have an extra word.
+        // match index_size {
+        //     3 | 5 | 6 => {
+        //         let mut word = reader.read_u32_le()?;
+        //         let last_index =
+        //             (word_count - 1) * indices_per_word + indices_per_word - 1;
+        //
+        //         let indices_left = 4096 - last_index;
+        //         for i in 0..indices_left {
+        //             indices[last_index + i] = (word & mask) as u16;
+        //             word >>= index_size;
+        //         }
+        //     }
+        //     _ => (),
+        // }
 
         // Size of the block palette.
         let palette_size = reader.read_u32_le()?;
@@ -185,8 +212,6 @@ impl SubLayer {
             palette.push(entry);
             reader.advance(n)?;
         }
-
-        // dbg!(&palette);
 
         Ok(Self { indices, palette })
     }
@@ -230,10 +255,15 @@ impl SubLayer {
         for i in 0..word_count {
             let mut word = 0;
             for j in 0..indices_per_word {
-                let index =
-                    self.indices[i * indices_per_word + j] as u32 & mask;
+                let offset = i * indices_per_word + j;
+                if offset == 4096 {
+                    break
+                }
+
+                let index = self.indices[offset] as u32 & mask;
+
                 word |= index;
-                word <<= indices_per_word;
+                word <<= index_size;
             }
 
             writer.write_u32_le(word)?;
@@ -315,20 +345,17 @@ pub struct SubChunk {
     /// Version of the sub chunk.
     ///
     /// See [`SubChunkVersion`] for more info.
-    version: SubChunkVersion,
+    pub(crate) version: SubChunkVersion,
     /// Index of the sub chunk.
     ///
     /// This specifies the vertical position of the sub chunk.
     /// It is only used if `version` is set to [`Limitless`](SubChunkVersion::Limitless)
     /// and set to 0 otherwise.
-    index: i8,
+    pub(crate) index: i8,
     /// Layers the sub chunk consists of.
     ///
     /// See [`SubLayer`] for more info.
-    ///
-    // Surprisingly using a Vec is faster than using a SmallVec.
-    // This is probably because of the expensive copy of `SubLayer::indices`
-    layers: Vec<SubLayer>,
+    pub(crate) layers: Vec<SubLayer>,
 }
 
 impl SubChunk {

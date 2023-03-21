@@ -74,10 +74,8 @@ impl InstanceManager {
 
         let session_manager = Arc::new(SessionManager::new());
 
-        let (level_manager, level_notifier) =
-            LevelManager::new(session_manager.clone(), token.clone())?;
-
-        level_manager.add_command(Command {
+        let level = LevelManager::new(session_manager.clone(), token.clone())?;
+        level.add_command(Command {
             name: "gamerule".to_owned(),
             description: "Sets or queries a game rule value.".to_owned(),
             permission_level: CommandPermissionLevel::Normal,
@@ -148,7 +146,7 @@ impl InstanceManager {
                 },
             ],
         });
-        level_manager.add_command(Command {
+        level.add_command(Command {
             name: "daylock".to_owned(),
             description: "Locks and unlocks the day-night cycle.".to_owned(),
             aliases: vec![],
@@ -169,7 +167,7 @@ impl InstanceManager {
             }],
         });
 
-        session_manager.set_level_manager(Arc::downgrade(&level_manager))?;
+        session_manager.set_level_manager(Arc::downgrade(&level))?;
 
         // UDP receiver job.
         let receiver_task = {
@@ -189,7 +187,6 @@ impl InstanceManager {
             _ = token.cancelled() => (),
             _ = tokio::signal::ctrl_c() => ()
         }
-        ;
 
         // then shut down all services.
         tracing::info!("Disconnecting all clients");
@@ -201,9 +198,9 @@ impl InstanceManager {
         token.cancel();
 
         drop(session_manager);
-        drop(level_manager);
+        // drop(level_manager);
 
-        let _ = tokio::join!(receiver_task, level_notifier);
+        let _ = tokio::join!(receiver_task/*, level_notifier*/);
 
         Ok(())
     }
