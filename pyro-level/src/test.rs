@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use util::{Deserialize, Serialize};
 
 use crate::{biome::Biome3d, BIOME_DATA, database::Database, DatabaseKey, Dimension, KeyData, LevelData, LOCAL_PLAYER, MOB_EVENTS, OVERWORLD, PaletteEntry, SCHEDULER, SCOREBOARD, SubChunk};
@@ -74,14 +75,17 @@ fn load_level_dat() {
 #[test]
 fn ser_de_palette_entry() {
     let entry = PaletteEntry {
-        name: "versionless block".to_owned(),
-        version: Some([2, 5, 13, 42]),
-        states: None
+        name: "minecraft:stone".to_owned(),
+        version: Some([1, 18, 100, 0]),
+        states: Some(HashMap::from([
+            ("stone_type".to_owned(), nbt::Value::String("andesite".to_owned()))
+        ]))
     };
 
     let ser = nbt::to_le_bytes(&entry).unwrap();
-    dbg!(&ser);
-
     let de: PaletteEntry = nbt::from_le_bytes(*ser.snapshot()).unwrap().0;
-    // assert_eq!(entry, de);
+    let de_value: nbt::Value = nbt::from_le_bytes(*ser.snapshot()).unwrap().0;
+
+    dbg!(&de, de_value);
+    assert_eq!(entry, de);
 }
