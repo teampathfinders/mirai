@@ -11,14 +11,15 @@
 #include <leveldb/status.h>
 #include <leveldb/db.h>
 
-class EmptyLogger : public leveldb::Logger {
+class NoOpLogger : public leveldb::Logger {
 public:
     void Logv(const char *fmt, va_list args) override {}
 };
 
 struct Database {
     leveldb::Options options = leveldb::Options();
-    leveldb::ReadOptions read_options = leveldb::ReadOptions();
+    leveldb::WriteOptions write_options{};
+    leveldb::ReadOptions read_options{};
     leveldb::DB *database = nullptr;
 
     ~Database()
@@ -39,49 +40,29 @@ struct Database {
 LevelResult level_open_database(const char *path) {
     LevelResult result{};
 
-    try {
-        std::unique_ptr <Database> database = std::make_unique<Database>();
+    std::unique_ptr <Database> database = std::make_unique<Database>();
 
-        database->options.filter_policy = leveldb::NewBloomFilterPolicy(10);
-        database->options.block_cache = leveldb::NewLRUCache(40 * 1024 * 1024);
-        database->options.info_log = new EmptyLogger();
-        database->options.compressors[0] = new leveldb::ZlibCompressorRaw();
-        database->options.compressors[1] = new leveldb::ZlibCompressor();
+    database->options.filter_policy = leveldb::NewBloomFilterPolicy(10);
+    database->options.block_cache = leveldb::NewLRUCache(40 * 1024 * 1024);
+    database->options.info_log = new NoOpLogger();
+    database->options.compressors[0] = new leveldb::ZlibCompressorRaw();
+    database->options.compressors[1] = new leveldb::ZlibCompressor();
+    database->read_options.decompress_allocator = new leveldb::DecompressAllocator();
 
-        database->read_options.decompress_allocator = new leveldb::DecompressAllocator();
-
-        leveldb::Status status = leveldb::DB::Open(database->options, path, &database->database);
-
-        result.is_success = status.ok();
-
-        if (!status.ok()) {
-            std::string cpp_src = status.ToString();
-            const char *src = cpp_src.c_str();
-            size_t src_size = cpp_src.size() + 1; // Make space for null terminator.
-
-            result.size = static_cast<int>(src_size);
-            result.data = new char[src_size];
-            memcpy(result.data, src, src_size);
-
-            return result;
-        }
-
+    leveldb::Status status = leveldb::DB::Open(database->options, path, &database->database);
+    if (status.ok()) {
+        result.is_success = 1;
         result.size = sizeof(Database);
         result.data = database.release();
-    } catch (const std::exception &e) {
-        result.is_success = false;
+    } else {
+        std::string cpp_src = status.ToString();
+        const char *src = cpp_src.c_str();
+        size_t src_size = cpp_src.size() + 1; // Make space for null terminator.
 
-        const char *src = e.what();
-        size_t src_size = strlen(src) + 1; // Make space for null terminator.
-
+        result.is_success = 0;
         result.size = static_cast<int>(src_size);
         result.data = new char[src_size];
         memcpy(result.data, src, src_size);
-    } catch (...) {
-        // No error message
-        result.is_success = false;
-        result.size = 0;
-        result.data = nullptr;
     }
 
     return result;
@@ -95,41 +76,81 @@ void level_close_database(void *database_ptr) {
 LevelResult level_get_key(void *database_ptr, const char *key, int key_size) {
     LevelResult result{};
 
-    try {
-        auto database = reinterpret_cast<Database *>(database_ptr);
-        std::string value;
+    auto database = reinterpret_cast<Database *>(database_ptr);
+    std::string value;
 
-        auto status = database->database->Get(database->read_options, leveldb::Slice(key, key_size), &value);
-        if (!status.ok()) {
-            std::string cpp_src = status.ToString();
-            const char *src = cpp_src.c_str();
-            size_t src_size = cpp_src.size() + 1; // Make space for null terminator.
-
-            result.size = static_cast<int>(src_size);
-            result.data = new char[src_size];
-            memcpy(result.data, src, src_size);
-
-            return result;
-        }
-
+    auto status = database->database->Get(database->read_options, leveldb::Slice(key, key_size), &value);
+    if (status.ok()) {
         result.is_success = true;
         result.size = static_cast<int>(value.size());
         result.data = new char[value.size()];
 
         memcpy(result.data, value.data(), value.size());
-    } catch (const std::exception &e) {
-        result.is_success = false;
+    } else {
+        std::string error = status.ToString();
+        const char *src = error.c_str();
+        size_t src_size = error.size() + 1; // Make space for null terminator.
 
-        const char *src = e.what();
-        size_t src_size = strlen(src) + 1; // Make space for null terminator.
-
+        result.is_success = 0;
         result.size = static_cast<int>(src_size);
         result.data = new char[src_size];
         memcpy(result.data, src, src_size);
-    } catch (...) {
-        result.is_success = false;
-        result.size = 0;
+    }
+
+    return result;
+}
+
+LevelResult level_put_key(
+    void* database_ptr, const char* key, int key_size,
+    const char* value, int value_size
+) {
+    auto database = reinterpret_cast<Database*>(database_ptr);
+    LevelResult result{};
+
+    leveldb::Slice key_slice(key, key_size);
+    leveldb::Slice value_Slice(value, value_size);
+
+    auto status = database->database->Put(database->write_options, key_slice, value_slice);
+    if(status.ok()) {
+        result.is_success = 1;
         result.data = nullptr;
+        result.size = 0;
+    } else {
+        auto error = status.ToString();
+        auto src = error.c_str();
+        size_t src_size = error.size() + 1; // Make space for null terminator.
+
+        result.is_success = 0;
+        result.size = src_size;
+        result.data = new char[src_size];
+        memcpy(result.data, src, src_size);
+    }
+
+    return result;
+}
+
+LevelResult level_delete_key(
+    void* database_ptr, const char* key, int key_size
+) {
+    auto database = reinterpret_cast<Database*>(database_ptr);
+    LevelResult result{};
+
+    leveldb::Slice key_slice(key, key_size);
+
+    auto status = database->database->Delete(database->write_options, key_slice);
+    if(status.ok()) {
+        result.is_success = 1;
+        result.data = nullptr;
+        result.size = 0;
+    } else {
+        auto error = status.ToString();
+        auto src = error.c_str();
+        size_t src_size = error.size() + 1; // Make space for null terminator.
+
+        result.is_success = 0;
+        result.size = src_size;
+        result.data = new char[src_size];
+        memcpy(result.data, src, src_size);
     }
 
     return result;

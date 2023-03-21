@@ -1,6 +1,5 @@
 use std::{
-    ffi::c_void,
-    os::raw::{c_char, c_int},
+    ffi::{c_void, c_char, c_int}
 };
 
 #[derive(Debug)]
@@ -17,11 +16,25 @@ extern "C" {
     /// Close a LevelDB database.
     /// This also frees the pointers, it must no longer be used.
     pub fn level_close_database(database: *mut c_void);
-    /// Loads a key from the database.
+    /// Loads a value from the database.
     pub fn level_get_key(
         database: *mut c_void,
         key: *const c_char,
         key_size: c_int,
+    ) -> LevelResult;
+    /// Writes a value into the database.
+    pub fn level_put_key(
+        database: *mut c_void,
+        key: *const c_char,
+        key_size: c_int,
+        value: *const c_char,
+        value_size: c_int
+    ) -> LevelResult;
+    /// Deletes a key from the database.
+    pub fn level_delete_key(
+        database: *mut c_void,
+        key: *const c_char,
+        key_size: c_int
     ) -> LevelResult;
     /// Deallocates a string previously allocated by another function.
     pub fn level_deallocate_array(array: *mut c_char);
