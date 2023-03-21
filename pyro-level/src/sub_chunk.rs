@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use std::ops::{Index, IndexMut};
 
 use serde::{Deserialize, Serialize};
 
@@ -60,6 +61,7 @@ mod block_version {
 
 /// Definition of block in the sub chunk block palette.
 #[derive(Debug, PartialEq, Deserialize, Serialize)]
+#[serde(rename = "")]
 pub struct PaletteEntry {
     /// Name of the block.
     pub name: String,
@@ -67,7 +69,7 @@ pub struct PaletteEntry {
     #[serde(with = "block_version")]
     pub version: Option<[u8; 4]>,
     /// Block-specific properties.
-    pub states: Option<HashMap<String, nbt::Value>>,
+    pub states: HashMap<String, nbt::Value>,
 }
 
 /// A layer in a sub chunk.
@@ -101,6 +103,30 @@ impl SubLayer {
     #[inline]
     pub fn iter(&self) -> LayerIter {
         LayerIter::from(self)
+    }
+
+    pub fn get(&self, pos: Vector<u8, 3>) -> Option<&PaletteEntry> {
+        if pos.x > 16 || pos.y > 16 || pos.z > 16 {
+            return None
+        }
+
+        let offset = to_offset(pos);
+        debug_assert!(offset < 4096);
+
+        let index = self.indices[offset] as usize;
+        Some(&self.palette[index])
+    }
+
+    pub fn get_mut(&mut self, pos: Vector<u8, 3>) -> Option<&mut PaletteEntry> {
+        if pos.x > 16 || pos.y > 16 || pos.z > 16 {
+            return None
+        }
+
+        let offset = to_offset(pos);
+        debug_assert!(offset < 4096);
+
+        let index = self.indices[offset] as usize;
+        Some(&mut self.palette[index])
     }
 
     /// Deserializes a single layer from the given buffer.
@@ -153,13 +179,14 @@ impl SubLayer {
         // Size of the block palette.
         let palette_size = reader.read_u32_le()?;
         let mut palette = Vec::with_capacity(palette_size as usize);
-        // let mut palette = Vec::new();
         for _ in 0..palette_size {
             let (entry, n) = nbt::from_le_bytes(reader)?;
 
             palette.push(entry);
             reader.advance(n)?;
         }
+
+        // dbg!(&palette);
 
         Ok(Self { indices, palette })
     }
@@ -214,11 +241,40 @@ impl SubLayer {
 
         writer.write_u32_le(self.palette.len() as u32)?;
         for entry in &self.palette {
-            todo!("serialize BlockProperties nbt");
-            // nbt::serialize_le("", entry, buffer);
+            nbt::to_le_bytes_in(&mut writer, entry)?;
         }
 
         Ok(())
+    }
+}
+
+impl<I> Index<I> for SubLayer
+where
+    I: Into<Vector<u8, 3>>
+{
+    type Output = PaletteEntry;
+
+    fn index(&self, position: I) -> &Self::Output {
+        let position = position.into();
+        assert!(position.x <= 16 && position.y <= 16 && position.z <= 16, "Block position out of sub chunk bounds");
+
+        let offset = to_offset(position);
+        let index = self.indices[offset] as usize;
+        &self.palette[index]
+    }
+}
+
+impl<I> IndexMut<I> for SubLayer
+where
+    I: Into<Vector<u8, 3>>
+{
+    fn index_mut(&mut self, position: I) -> &mut Self::Output {
+        let position = position.into();
+        assert!(position.x <= 16 && position.y <= 16 && position.z <= 16, "Block position out of sub chunk bounds");
+
+        let offset = to_offset(position);
+        let index = self.indices[offset] as usize;
+        &mut self.palette[index]
     }
 }
 
@@ -276,20 +332,15 @@ pub struct SubChunk {
 }
 
 impl SubChunk {
-    /// Gets a block at the specified position.
-    ///
-    /// See [`to_offset`] for the requirements on `position`.
-    pub fn get(&self, position: Vector<u8, 3>) -> Option<&PaletteEntry> {
-        let offset = to_offset(position);
-        let index = self.layers[0].indices[offset];
-
-        self.layers[0].palette.get(index as usize)
-    }
-
     /// Returns the specified layer from the sub chunk.
     #[inline]
     pub fn layer(&self, index: usize) -> Option<&SubLayer> {
         self.layers.get(index)
+    }
+
+    #[inline]
+    pub fn layer_mut(&mut self, index: usize) -> Option<&mut SubLayer> {
+        self.layers.get_mut(index)
     }
 }
 
@@ -353,6 +404,22 @@ impl SubChunk {
         }
 
         Ok(())
+    }
+}
+
+impl Index<usize> for SubChunk {
+    type Output = SubLayer;
+
+    #[inline]
+    fn index(&self, index: usize) -> &Self::Output {
+        &self.layers[index]
+    }
+}
+
+impl IndexMut<usize> for SubChunk {
+    #[inline]
+    fn index_mut(&mut self, index: usize) -> &mut Self::Output {
+        &mut self.layers[index]
     }
 }
 
