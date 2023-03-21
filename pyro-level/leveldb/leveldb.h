@@ -11,23 +11,23 @@ struct LevelResult {
 };
 
 // Open a LevelDB database.
-struct LevelResult level_open_database(const char *path);
+struct LevelResult level_open(const char *path);
 
 // Close a LevelDB database.
 // This also frees the pointers, it must no longer be used.
-void level_close_database(void *database);
+void level_close(void *database);
 
 // Loads a key from the database.
-struct LevelResult level_get_key(void *database, const char *key, int key_size);
+struct LevelResult level_get(void *database, const char *key, int key_size);
 
 /// Writes a value into the database.
-struct LevelResult level_put_key(
+struct LevelResult level_insert(
     void* database_ptr, const char* key, int key_size,
     const char* value, int value_size
 );
 
 /// Removes a key from the database.
-LevelResult level_delete_key(void* database_ptr, const char* key, int key_size);
+LevelResult level_remove(void* database_ptr, const char* key, int key_size);
 
 // Deallocates a string previously allocated by another function.
 void level_deallocate_array(char *array);

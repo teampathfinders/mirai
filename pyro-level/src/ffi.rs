@@ -12,18 +12,18 @@ pub struct LevelResult {
 
 extern "C" {
     /// Open a LevelDB database.
-    pub fn level_open_database(path: *const c_char) -> LevelResult;
+    pub fn level_open(path: *const c_char) -> LevelResult;
     /// Close a LevelDB database.
     /// This also frees the pointers, it must no longer be used.
-    pub fn level_close_database(database: *mut c_void);
+    pub fn level_close(database: *mut c_void);
     /// Loads a value from the database.
-    pub fn level_get_key(
+    pub fn level_get(
         database: *mut c_void,
         key: *const c_char,
         key_size: c_int,
     ) -> LevelResult;
     /// Writes a value into the database.
-    pub fn level_put_key(
+    pub fn level_insert(
         database: *mut c_void,
         key: *const c_char,
         key_size: c_int,
@@ -31,7 +31,7 @@ extern "C" {
         value_size: c_int
     ) -> LevelResult;
     /// Deletes a key from the database.
-    pub fn level_delete_key(
+    pub fn level_remove(
         database: *mut c_void,
         key: *const c_char,
         key_size: c_int

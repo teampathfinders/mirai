@@ -22,9 +22,7 @@ struct Database {
     leveldb::ReadOptions read_options{};
     leveldb::DB *database = nullptr;
 
-    ~Database()
-
-    noexcept {
+    ~Database() noexcept {
         delete this->database;
 
         delete this->read_options.decompress_allocator;
@@ -37,7 +35,7 @@ struct Database {
     }
 };
 
-LevelResult level_open_database(const char *path) {
+LevelResult level_open(const char *path) {
     LevelResult result{};
 
     std::unique_ptr <Database> database = std::make_unique<Database>();
@@ -68,12 +66,12 @@ LevelResult level_open_database(const char *path) {
     return result;
 }
 
-void level_close_database(void *database_ptr) {
+void level_close(void *database_ptr) {
     auto database = reinterpret_cast<Database *>(database_ptr);
     delete database;
 }
 
-LevelResult level_get_key(void *database_ptr, const char *key, int key_size) {
+LevelResult level_get(void *database_ptr, const char *key, int key_size) {
     LevelResult result{};
 
     auto database = reinterpret_cast<Database *>(database_ptr);
@@ -100,7 +98,7 @@ LevelResult level_get_key(void *database_ptr, const char *key, int key_size) {
     return result;
 }
 
-LevelResult level_put_key(
+LevelResult level_insert(
     void* database_ptr, const char* key, int key_size,
     const char* value, int value_size
 ) {
@@ -108,7 +106,7 @@ LevelResult level_put_key(
     LevelResult result{};
 
     leveldb::Slice key_slice(key, key_size);
-    leveldb::Slice value_Slice(value, value_size);
+    leveldb::Slice value_slice(value, value_size);
 
     auto status = database->database->Put(database->write_options, key_slice, value_slice);
     if(status.ok()) {
@@ -129,7 +127,7 @@ LevelResult level_put_key(
     return result;
 }
 
-LevelResult level_delete_key(
+LevelResult level_remove(
     void* database_ptr, const char* key, int key_size
 ) {
     auto database = reinterpret_cast<Database*>(database_ptr);

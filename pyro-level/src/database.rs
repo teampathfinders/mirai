@@ -170,7 +170,7 @@ impl Database {
         unsafe {
             // SAFETY: This function is guaranteed to not return exceptions.
             // It also does not modify the argument and returns a valid struct.
-            let result = ffi::level_open_database(ffi_path.as_ptr());
+            let result = ffi::level_open(ffi_path.as_ptr());
 
             if result.is_success == 1 {
                 debug_assert_ne!(result.data, std::ptr::null_mut());
@@ -200,9 +200,9 @@ impl Database {
             // It also does not throw exceptions and returns a valid struct.
             //
             // LevelDB is thread-safe, this function can be used by multiple threads.
-            let result = ffi::level_get_key(
+            let result = ffi::level_get(
                 self.ptr.as_ptr(),
-                key.as_ptr() as *mut c_char,
+                key.as_ptr() as *const c_char,
                 key.len() as c_int,
             );
 
@@ -212,7 +212,7 @@ impl Database {
                 // SAFETY: result.data is guaranteed by the caller to be a valid pointer.
                 // result.size is also guaranteed to be the size of the actual array.
                 let data = std::slice::from_raw_parts(
-                    result.data as *mut u8,
+                    result.data as *const u8,
                     result.size as usize,
                 );
 
@@ -220,6 +220,52 @@ impl Database {
                 // It is therefore also required to deallocate the data there, which is what Guard
                 // does.
                 Ok(Guard::from_slice(data))
+            } else {
+                Err(translate_ffi_error(result))
+            }
+        }
+    }
+
+    pub fn put<K, V>(&self, key: K, value: V) -> Result<()>
+    where
+        K: AsRef<[u8]>,
+        V: AsRef<[u8]>
+    {
+        let key = key.as_ref();
+        let value = value.as_ref();
+
+        unsafe {
+            let result = ffi::level_insert(
+                self.ptr.as_ptr(),
+                key.as_ptr() as *const c_char,
+                key.len() as c_int,
+                value.as_ptr() as *const c_char,
+                value.len() as c_int
+            );
+
+            if result.is_success == 1 {
+                Ok(())
+            } else {
+                Err(translate_ffi_error(result))
+            }
+        }
+    }
+
+    pub fn remove<K>(&self, key: K) -> Result<()>
+    where
+        K: AsRef<[u8]>
+    {
+        let key = key.as_ref();
+
+        unsafe {
+            let result = ffi::level_remove(
+                self.ptr.as_ptr(),
+                key.as_ptr() as *mut c_char,
+                key.len() as c_int
+            );
+
+            if result.is_success == 1 {
+                Ok(())
             } else {
                 Err(translate_ffi_error(result))
             }
@@ -233,7 +279,7 @@ impl Drop for Database {
         // Make sure to clean up the LevelDB resources when the database is dropped.
         // This can only be done by C++.
         unsafe {
-            ffi::level_close_database(self.ptr.as_ptr());
+            ffi::level_close(self.ptr.as_ptr());
         }
     }
 }
