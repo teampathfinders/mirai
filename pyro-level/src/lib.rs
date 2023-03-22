@@ -5,6 +5,8 @@ pub use key::*;
 #[cfg(test)]
 mod test;
 
+mod network;
+mod local;
 mod level_dat;
 mod biome;
 pub mod database;
