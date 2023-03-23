@@ -23,30 +23,30 @@ where
     _marker: PhantomData<(C, F)>
 }
 
-impl<C, F> IntoIterator for Req<C, F>
+impl<'a, C, F> IntoIterator for &'a Req<C, F>
 where
     C: ReqComponents,
     F: ReqFilter,
 {
-    type IntoIter = ReqIter<C, F>;
+    type IntoIter = ReqIter<'a, C, F>;
     type Item = C;
 
     fn into_iter(self) -> Self::IntoIter {
         ReqIter {
-            _marker: PhantomData
+            req: self
         }
     }   
 }
 
-pub struct ReqIter<C, F>
+pub struct ReqIter<'a, C, F>
 where
     C: ReqComponents,
     F: ReqFilter
 {
-    _marker: PhantomData<(C, F)>
+    req: &'a Req<C, F>
 }
 
-impl<C, F> Iterator for ReqIter<C, F> 
+impl<C, F> Iterator for ReqIter<'_, C, F> 
 where 
     C: ReqComponents,
     F: ReqFilter
