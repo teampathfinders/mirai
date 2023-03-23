@@ -17,12 +17,12 @@ fn read_write_subchunk() {
     for kv in iter {
         let key = kv.key();
         if key[key.len() - 2] == 0x2f {
-            let mut subchunk = SubChunk::deserialize(&*kv.value()).unwrap();
+            let mut subchunk = SubChunk::deserialize_local(&*kv.value()).unwrap();
             subchunk[0][[0, 0, 0]].states.insert("hello".to_owned(), nbt::Value::String("world".to_owned()));
 
-            let serialized = subchunk.serialize().unwrap();
+            let serialized = subchunk.serialize_local().unwrap();
 
-            let deserialized = SubChunk::deserialize(serialized.as_slice()).unwrap();
+            let deserialized = SubChunk::deserialize_local(serialized.as_slice()).unwrap();
             dbg!(deserialized);
 
             break
