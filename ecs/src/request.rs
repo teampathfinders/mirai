@@ -1,6 +1,6 @@
 use std::marker::PhantomData;
 
-use crate::{Component, filter::ReqFilter};
+use crate::{component::Component, filter::ReqFilter};
 
 pub enum AccessVariant {
     Exclusive,

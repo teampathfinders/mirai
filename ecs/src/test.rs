@@ -1,4 +1,4 @@
-use crate::{request::{Req}, Component, filter::With, system::{System, IntoSystem}};
+use crate::{request::{Req}, component::Component, filter::With, system::{System, IntoSystem}, world::World};
 
 #[derive(Debug)]
 struct Player {
@@ -13,9 +13,9 @@ struct Alive {
 
 impl Component for Alive {}
 
-fn assert_system<F, P, S: IntoSystem<F, P>>(sys: S) {
+fn assert_system<Params>(sys: impl IntoSystem<Params>) {
     let sys = sys.into_system();
-    sys.print();
+    
 }
 
 fn system(query: Req<&mut Player, With<Alive>>) {
@@ -26,5 +26,6 @@ fn system(query: Req<&mut Player, With<Alive>>) {
 
 #[test]
 fn query_test() {
-    assert_system(system);
+    let mut world = World::new();
+    world.schedule(system);
 }

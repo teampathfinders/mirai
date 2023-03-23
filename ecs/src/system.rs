@@ -3,34 +3,50 @@ use std::marker::PhantomData;
 use crate::{request::{Req, ReqComponents}, filter::ReqFilter};
 
 pub trait SysParam {
-
+    
 }
 
 impl<C, F> SysParam for Req<C, F>
 where
     C: ReqComponents,
     F: ReqFilter,
-{}
+{
+    
+}
+
+pub trait SysParamList {
+    
+}
+
+impl<S> SysParamList for S where S: SysParam {
+    
+}
 
 pub trait System {
-    fn print(&self) {
-        println!("{}", std::any::type_name::<Self>());
-    }
-}
-
-pub struct SystemContainer<F, P> {
-    sys: F,
-    _marker: PhantomData<P>
-}
-
-impl<F, P> System for SystemContainer<F, P> {
     
+}
+
+pub struct SystemContainer<F, Params>
+where
+    F: IntoSystem<Params>,
+    Params: SysParamList
+{
+    sys: F,
+    _marker: PhantomData<Params>
+}
+
+impl<F, Params> System for SystemContainer<F, Params> 
+where
+    F: IntoSystem<Params>,
+    Params: SysParamList
+{
+
 }
 
 impl<F, P1> From<F> for SystemContainer<F, P1> 
 where
-    F: Fn(P1),
-    P1: SysParam
+    F: Fn(P1) + 'static,
+    P1: SysParam + 'static 
 {
     fn from(sys: F) -> SystemContainer<F, P1> {
         SystemContainer {
@@ -39,17 +55,17 @@ where
     }
 }
 
-pub trait IntoSystem<F, P1> {
+pub trait IntoSystem<Params> {
     fn into_system(self) -> Box<dyn System>;
 }
 
-impl<F, P1> IntoSystem<F, P1> for F
+impl<Sys, Params> IntoSystem<Params> for Sys
 where
-    F: Fn(P1) + 'static,
-    P1: SysParam + 'static,
+    Sys: Fn(Params) + 'static,
+    Params: SysParam + 'static,
 {
     fn into_system(self) -> Box<dyn System> {
-        let container = SystemContainer::<F, P1>::from(self);
+        let container = SystemContainer::from(self);
         Box::new(container)
     }
 }
