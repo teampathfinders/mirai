@@ -2,6 +2,7 @@
 mod test;
 
 mod request;
+mod filter;
 
 pub trait Component {
 

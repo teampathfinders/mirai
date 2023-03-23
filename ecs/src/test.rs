@@ -1,7 +1,8 @@
-use crate::{request::{Request, With}, Component};
+use crate::{request::{Req}, Component, filter::With};
 
+#[derive(Debug)]
 struct Player {
-
+    name: &'static str
 }
 
 impl Component for Player {}
@@ -12,8 +13,10 @@ struct Alive {
 
 impl Component for Alive {}
 
-fn system(query: Request<&mut Player, With<Alive>>) {
-    // do something...
+fn system(query: Req<&mut Player, With<Alive>>) {
+    for player in &query {
+        println!("{player}");
+    }
 }
 
 #[test]

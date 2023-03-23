@@ -1,41 +1,59 @@
 use std::marker::PhantomData;
 
-use crate::Component;
+use crate::{Component, filter::ReqFilter};
 
 pub enum AccessVariant {
     Exclusive,
     Shared
 }
 
-pub struct With<C> {
-    _marker: PhantomData<C>
+pub trait ReqComponents {
+    const VARIANT: AccessVariant;
 }
 
-pub struct Without<C> {
-    _marker: PhantomData<C>
+impl<T> ReqComponents for T where T: Component {
+    const VARIANT: AccessVariant = AccessVariant::Shared;
 }
 
-pub struct Request<C, F = ()>
+pub struct Req<C, F = ()>
 where
-    C: RequestComponents,
-    F: RequestFilters,
+    C: ReqComponents,
+    F: ReqFilter,
 {
     _marker: PhantomData<(C, F)>
 }
 
-pub trait RequestComponents {
-    const VARIANT: AccessVariant;
+impl<C, F> IntoIterator for Req<C, F>
+where
+    C: ReqComponents,
+    F: ReqFilter,
+{
+    type IntoIter = ReqIter<C, F>;
+    type Item = C;
+
+    fn into_iter(self) -> Self::IntoIter {
+        ReqIter {
+            _marker: PhantomData
+        }
+    }   
 }
 
-impl<T> RequestComponents for T where T: Component {
-    const VARIANT: AccessVariant = AccessVariant::Shared;
+pub struct ReqIter<C, F>
+where
+    C: ReqComponents,
+    F: ReqFilter
+{
+    _marker: PhantomData<(C, F)>
 }
 
-pub trait RequestFilters {
+impl<C, F> Iterator for ReqIter<C, F> 
+where 
+    C: ReqComponents,
+    F: ReqFilter
+{
+    type Item = C;
 
+    fn next(&mut self) -> Option<Self::Item> {
+        todo!();
+    }   
 }
-
-impl RequestFilters for () {}
-
-impl<F> RequestFilters for With<F> where F: Component {}
-impl<F> RequestFilters for Without<F> where F: Component {}
