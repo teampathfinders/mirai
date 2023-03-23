@@ -1,4 +1,11 @@
-use crate::{system::{System, IntoSystem}, request::ReqComponents};
+use crate::{system::{System, IntoSystem}, component::ComponentCollection};
+
+pub struct EntityId(usize);
+
+pub struct Entity<'world> {
+    world: &'world mut World,
+    id: EntityId
+}
 
 pub struct Executor {
     systems: Vec<Box<dyn System>>
@@ -31,7 +38,7 @@ impl World {
         World::default()
     }
 
-    pub fn spawn<Components>(&mut self, components: impl ReqComponents) -> Entity {
+    pub fn spawn(&mut self, components: impl ComponentCollection) -> Entity {
         todo!();
     }
 

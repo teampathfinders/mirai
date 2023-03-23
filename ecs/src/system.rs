@@ -1,6 +1,6 @@
 use std::marker::PhantomData;
 
-use crate::{request::{Req, ReqComponents}, filter::ReqFilter};
+use crate::{request::{Req}, filter::FilterCollection, component::ComponentCollection};
 
 pub trait SysParam {
     
@@ -8,8 +8,8 @@ pub trait SysParam {
 
 impl<C, F> SysParam for Req<C, F>
 where
-    C: ReqComponents,
-    F: ReqFilter,
+    C: ComponentCollection,
+    F: FilterCollection,
 {
     
 }

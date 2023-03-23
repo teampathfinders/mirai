@@ -7,9 +7,7 @@ struct Player {
 
 impl Component for Player {}
 
-struct Alive {
-
-}
+struct Alive; 
 
 impl Component for Alive {}
 
@@ -27,5 +25,7 @@ fn system(query: Req<&mut Player, With<Alive>>) {
 #[test]
 fn query_test() {
     let mut world = World::new();
+    let entity = world.spawn((Player { name: "player" }, Alive));
+    
     world.schedule(system);
 }
