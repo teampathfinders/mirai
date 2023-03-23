@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 use util::{Deserialize, Serialize, Vector};
 
-use crate::{biome::Biome3d, BIOME_DATA, database::Database, DatabaseKey, Dimension, KeyData, LevelDat, LOCAL_PLAYER, MOB_EVENTS, OVERWORLD, PaletteEntry, SCHEDULER, SCOREBOARD, SubChunk, SubChunkVersion, SubLayer};
+use crate::{biome::Biome3d, BIOME_DATA, database::Database, DatabaseKey, Dimension, KeyData, LOCAL_PLAYER, MOB_EVENTS, OVERWORLD, PaletteEntry, SCHEDULER, SCOREBOARD, SubChunk, SubChunkVersion, SubLayer, level_dat::LevelDat};
 
 // digp [x] [z] [?dimension]
 // contains two int32
@@ -46,7 +46,7 @@ fn bench_subchunk() {
 
             if key[key.len() - 2] == 0x2f {
                 let start = std::time::Instant::now();
-                let subchunk = SubChunk::deserialize(raw_ref.value().as_ref());
+                let subchunk = SubChunk::deserialize_local(raw_ref.value().as_ref());
                 let end = start.elapsed();
 
                 if subchunk.is_ok() {
