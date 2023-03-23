@@ -8,6 +8,6 @@ license = "Apache-2.0"
 rust-version = "1.65.0"
 
 [dependencies]
-util = { package = "pyro-util", path = "../pyro-util" }
+util = { package = "pyro-util", path = "../util" }
 serde = { version = "1.0.158", features = ["derive"] }
 paste = "1.0.12"

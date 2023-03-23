@@ -1,10 +1,10 @@
 [workspace]
 resolver = "2"
 members = [
-    "pyro",
-    "pyro-nbt",
-    "pyro-util",
-    "pyro-level"
+    "core",
+    "level",
+    "util",
+    "nbt"
 ]
 
 [profile.release]

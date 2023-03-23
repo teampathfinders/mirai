@@ -10,8 +10,8 @@ build = "build.rs"
 rust-version = "1.66.0"
 
 [dependencies]
-util = { package = "pyro-util", path = "../pyro-util" }
-nbt = { package = "pyro-nbt", path = "../pyro-nbt" }
+util = { package = "pyro-util", path = "../util" }
+nbt = { package = "pyro-nbt", path = "../nbt" }
 serde = { version = "1.0.158", features = ["derive"] }
 tokio-util = "0.7.7"
 tracing = "0.1.37"
