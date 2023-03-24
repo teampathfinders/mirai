@@ -1,6 +1,6 @@
 use std::marker::PhantomData;
 
-use crate::{request::{Req}, filter::FilterCollection, component::{Insertable, Requestable}};
+use crate::{request::{Req}, filter::FilterCollection, component::{Spawnable, Requestable}};
 
 pub trait SysParam {
     

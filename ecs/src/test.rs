@@ -26,6 +26,9 @@ fn system(query: Req<&mut Player, With<Alive>>) {
 fn query_test() {
     let mut world = World::new();
     let entity = world.spawn((Player { name: "player" }, Alive));
+    dbg!(entity.id());
+    let entity = world.spawn((Player { name: "player" }, Alive));
+    dbg!(entity.id());
     
-    world.schedule(system);
+    world.system(system);
 }

@@ -1,6 +1,6 @@
 use std::marker::PhantomData;
 
-use crate::{component::{Component, Insertable, Requestable}, filter::FilterCollection};
+use crate::{component::{Component, Spawnable, Requestable}, filter::FilterCollection};
 
 pub struct Req<C, F = ()>
 where
