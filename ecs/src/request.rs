@@ -1,10 +1,10 @@
 use std::marker::PhantomData;
 
-use crate::{component::{Component, ComponentCollection}, filter::FilterCollection};
+use crate::{component::{Component, Insertable, Requestable}, filter::FilterCollection};
 
 pub struct Req<C, F = ()>
 where
-    C: ComponentCollection,
+    C: Requestable,
     F: FilterCollection,
 {
     _marker: PhantomData<(C, F)>
@@ -12,7 +12,7 @@ where
 
 impl<'a, C, F> IntoIterator for &'a Req<C, F>
 where
-    C: ComponentCollection,
+    C: Requestable,
     F: FilterCollection,
 {
     type IntoIter = ReqIter<'a, C, F>;
@@ -27,7 +27,7 @@ where
 
 pub struct ReqIter<'a, C, F>
 where
-    C: ComponentCollection,
+    C: Requestable,
     F: FilterCollection
 {
     req: &'a Req<C, F>
@@ -35,7 +35,7 @@ where
 
 impl<C, F> Iterator for ReqIter<'_, C, F> 
 where 
-    C: ComponentCollection,
+    C: Requestable,
     F: FilterCollection
 {
     type Item = C;
