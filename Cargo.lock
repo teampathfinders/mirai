@@ -1240,6 +1240,10 @@ dependencies = [
 ]
 
 [[package]]
+name = "pyro-ecs"
+version = "0.1.0"
+
+[[package]]
 name = "pyro-level"
 version = "0.1.0"
 dependencies = [

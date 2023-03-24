@@ -4,7 +4,8 @@ members = [
     "core",
     "level",
     "util",
-    "nbt"
+    "nbt",
+    "ecs"
 ]
 
 [profile.release]
