@@ -46,4 +46,4 @@ uuid = { version = "1.3.0", features = ["serde"], default-features = false }
 clap = { version = "4.1.9", features = ["cargo", "std"], default-features = false }
 
 [build-dependencies]
-vergen = "7.5.1"
+vergen = "8.0.0"
