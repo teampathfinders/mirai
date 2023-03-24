@@ -24,6 +24,7 @@ impl Default for Executor {
     }
 }
 
+#[derive(Default)]
 pub struct World {
     entities: EntityStore,
     components: ComponentStore,
@@ -39,6 +40,8 @@ impl World {
         let entity_id = self.entities.acquire();
         components.store_all(entity_id, &mut self.components);
 
+        println!("{:?}", self.components);
+
         // components.store_all(&mut self.components);
         Entity {
             id: EntityId(entity_id),
@@ -46,18 +49,13 @@ impl World {
         }
     }
 
+    pub fn despawn(&mut self, entity: EntityId) {
+        self.components.release_entity(entity.0);
+        self.entities.release(entity.0);
+    }
+
     pub fn system<Params>(&mut self, system: impl IntoSystem<Params>) {
         let system = system.into_system();
         self.executor.schedule(system);
-    }
-}
-
-impl Default for World {
-    fn default() -> World {
-        World {
-            entities: EntityStore::default(),
-            components: ComponentStore::default(),
-            executor: Executor::default()
-        }
     }
 }

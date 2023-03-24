@@ -11,8 +11,8 @@ pub struct Entity<'world> {
 
 impl<'world> Entity<'world> {
     #[inline]
-    pub fn id(&self) -> &EntityId {
-        &self.id
+    pub fn id(self) -> EntityId {
+        self.id
     }
 }
 
@@ -26,19 +26,21 @@ impl EntityStore {
     }
 
     pub fn acquire(&mut self) -> usize {
-        let idx = self.mapping
-            .iter()
+        self.mapping
+            .iter_mut()
             .enumerate()
-            .find_map(|(i, b)| if *b { None } else { Some(i) });
-
-        if let Some(idx) = idx {
-            self.mapping[idx] = true;
-            idx
-        } else {
-            let idx = self.mapping.len();
-            self.mapping.push(true);
-            idx
-        }
+            .find_map(|(i, v)| if *v {
+                None
+            } else {
+                *v = true;
+                Some(i)
+            })
+            .or_else(|| {
+                let idx = self.mapping.len();
+                self.mapping.push(true);
+                Some(idx)
+            })
+            .unwrap()
     }    
 
     pub fn release(&mut self, idx: usize) {

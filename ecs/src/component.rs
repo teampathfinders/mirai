@@ -2,7 +2,7 @@ use std::{collections::HashMap, any::{TypeId, Any}};
 
 use crate::EntityId;
 
-pub trait Component {
+pub trait Component: std::fmt::Debug {
 
 }
 
@@ -52,11 +52,13 @@ where
 
 }
 
-trait Store {
+trait Store: std::fmt::Debug {
     fn as_any_mut(&mut self) -> &mut dyn Any;
+    fn release_entity(&mut self, entity: usize);
 }
 
-pub struct SpecificStore<T>
+#[derive(Debug)]
+pub struct SpecializedStore<T>
 where
     T: Component
 {
@@ -64,49 +66,53 @@ where
     storage: Vec<Option<T>>
 }
 
-impl<T> SpecificStore<T>
+impl<T> SpecializedStore<T>
 where
     T: Component,
 {
     pub fn insert(&mut self, owner: usize, component: T) {
-        let gap = self.storage
-            .iter()
-            .enumerate()
-            .find_map(|(i, o)| if o.is_none() { Some(i) } else { None });
-
-        if let Some(idx) = gap {
-            // Fill in gaps to keep array as packed as possible.
-            self.mapping.insert(owner, idx);
-            self.storage[idx] = Some(component);
-        } else {
-            let idx = self.storage.len();
-            self.mapping.insert(owner, idx);
-            self.storage.push(Some(component));
+        for (i, s) in self.storage.iter_mut().enumerate() {
+            if s.is_none() {
+                *s = Some(component);
+                self.mapping.insert(owner, i);
+                return
+            }
         }
+
+        let idx = self.storage.len();
+        self.mapping.insert(owner, idx);
+        self.storage.push(Some(component));
     }
 }
 
-impl<T> Store for SpecificStore<T> 
+impl<T> Store for SpecializedStore<T> 
 where
     T: Component + 'static
 {
     fn as_any_mut(&mut self) -> &mut dyn Any {
         self
     }
+
+    fn release_entity(&mut self, entity: usize) {
+        if let Some(idx) = self.mapping.remove(&entity) {
+            self.storage[idx] = None;
+        }
+    }
 }
 
-impl<T> Default for SpecificStore<T> 
+impl<T> Default for SpecializedStore<T> 
 where
     T: Component
 {
-    fn default() -> SpecificStore<T> {
-        SpecificStore {
+    fn default() -> SpecializedStore<T> {
+        SpecializedStore {
             mapping: HashMap::new(),
             storage: Vec::new()
         }
     }
 }
 
+#[derive(Debug)]
 pub struct ComponentStore {
     storage: HashMap<TypeId, Box<dyn Store>>
 }
@@ -122,10 +128,14 @@ impl ComponentStore {
     {
         let ty = TypeId::of::<T>();
         let entry = self.storage.entry(ty)
-            .or_insert_with(|| Box::new(SpecificStore::<T>::default()));
+            .or_insert_with(|| Box::new(SpecializedStore::<T>::default()));
 
-        let downcast: &mut SpecificStore<T> = entry.as_any_mut().downcast_mut().unwrap();
+        let downcast: &mut SpecializedStore<T> = entry.as_any_mut().downcast_mut().unwrap();
         downcast.insert(owner, data);
+    }
+
+    pub fn release_entity(&mut self, entity: usize) {
+        self.storage.iter_mut().for_each(|(_, v)| v.release_entity(entity));
     }
 }
 

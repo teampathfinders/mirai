@@ -7,14 +7,10 @@ struct Player {
 
 impl Component for Player {}
 
+#[derive(Debug)]
 struct Alive; 
 
 impl Component for Alive {}
-
-fn assert_system<Params>(sys: impl IntoSystem<Params>) {
-    let sys = sys.into_system();
-    
-}
 
 fn system(query: Req<&mut Player, With<Alive>>) {
     for player in &query {
@@ -25,10 +21,19 @@ fn system(query: Req<&mut Player, With<Alive>>) {
 #[test]
 fn query_test() {
     let mut world = World::new();
-    let entity = world.spawn((Player { name: "player" }, Alive));
-    dbg!(entity.id());
-    let entity = world.spawn((Player { name: "player" }, Alive));
-    dbg!(entity.id());
+    let entity = world.spawn((Player { name: "one" }, Alive));
+    let id1 = entity.id();
+    dbg!(&id1);
+
+    let entity2 = world.spawn((Player { name: "two" }, Alive));
+    dbg!(entity2.id());
+    world.despawn(id1);
+
+    let entity3 = world.spawn((Player { name: "three" }));
+    dbg!(entity3.id());
+
+    let entity4 = world.spawn((Player { name: "four" }, Alive));
+    dbg!(entity4.id());
     
     world.system(system);
 }
