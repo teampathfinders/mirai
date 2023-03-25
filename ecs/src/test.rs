@@ -36,5 +36,6 @@ fn query_test() {
     let id = world.spawn(Alive).id();   
     
     world.system(empty_system);
-    world.system(shared_system);
+    // world.system(shared_system);
+    world.run_all();
 }

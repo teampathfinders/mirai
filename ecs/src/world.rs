@@ -15,6 +15,7 @@ impl World {
 
     pub fn spawn(&mut self, spawnable: impl Spawnable) -> Entity {
         let entity = self.entities.acquire();
+        spawnable.store_all(entity, &mut self.components);
 
         Entity {
             id: EntityId(entity),
@@ -31,6 +32,10 @@ impl World {
     }
 
     pub fn system<S, P: SystemParam>(&mut self, system: impl IntoSystem<S, P>) {
+        self.executor.add_system(system);
+    }
 
+    pub(crate) fn run_all(&self) {
+        self.executor.run_all();
     }
 }
