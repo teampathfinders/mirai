@@ -14,6 +14,13 @@ pub trait SysParam<'w>: Sized {
     }
 }
 
+impl<'w> SysParam<'w> for () {
+    const SHAREABLE: bool = true;
+
+    fn fetch(_world: &'w World<'w>) -> Self {}
+    fn fetch_mut(_world: &'w mut World<'w>) -> Self {}
+}
+
 impl<'w, C, F> SysParam<'w> for Req<'w, C, F>
 where
     C: Requestable,
@@ -37,11 +44,11 @@ where
 }
 
 pub trait SysParamList {
-    
+    const SHAREABLE: bool;
 }
 
 impl<'w, S> SysParamList for S where S: SysParam<'w> {
-    
+    const SHAREABLE: bool = <S as SysParam>::SHAREABLE;
 }
 
 pub trait System<'w> {
@@ -111,21 +118,19 @@ where
     }
 }
 
-pub trait IntoSystem<'w, Sys, Params> 
-where
-    Sys: SharedSystem<'w, Params>
-{
-    fn into_system(self) -> SharedContainer<'w, Sys, Params>;
+pub trait IntoSystem<'w, Sys, Params> {
+    fn into_boxed(self) -> Box<dyn System<'w> + 'w>;
 }
 
 impl<'w, Sys, Params> IntoSystem<'w, Sys, Params> for Sys
 where
-    Sys: Fn(Params) + 'static,
-    Params: SysParam<'w> + 'static,
+    Sys: Fn(Params) + 'w,
+    Params: SysParam<'w> + 'w,
 {
-    fn into_system(self) -> SharedContainer<'w, Sys, Params> {
+    fn into_boxed(self) -> Box<dyn System<'w> + 'w> {
         if Params::SHAREABLE {
-            SharedContainer::new(self)
+            let container = SharedContainer::new(self);
+            Box::new(container)
         } else {
             todo!();
         }
@@ -136,7 +141,7 @@ where
 }
 
 pub struct Executor<'w> {
-    systems: Vec<Box<dyn System<'w>>>
+    shared: Vec<Box<dyn System<'w> + 'w>>
 }
 
 impl<'w> Executor<'w> {
@@ -144,12 +149,20 @@ impl<'w> Executor<'w> {
         Executor::default()
     }
 
-    pub fn schedule(&mut self, system: Box<dyn System<'w>>) {
-        self.systems.push(system);
+    pub fn add_system<Sys, Params>(&mut self, system: impl IntoSystem<'w, Sys, Params>) 
+    where
+        Params: SysParamList
+    {
+        let boxed = system.into_boxed();
+        if Params::SHAREABLE {
+            self.shared.push(boxed);
+        } else {
+            todo!();
+        }
     }
 
-    pub fn execute(&self, world: &'w World<'w>) {
-        for sys in &self.systems {
+    pub fn execute(&self, world: &World<'w>) {
+        for sys in &self.shared {
             sys.run(world);
         }
     }
@@ -158,7 +171,7 @@ impl<'w> Executor<'w> {
 impl<'w> Default for Executor<'w> {
     fn default() -> Executor<'w> {
         Executor {
-            systems: Vec::new()
+            shared: Vec::new()
         }
     }
 }

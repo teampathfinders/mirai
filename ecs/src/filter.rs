@@ -21,14 +21,14 @@ impl FilterCollection for () {
     }
 }
 
-impl<F> FilterCollection for With<F> where F: Component {
+impl<'t, F> FilterCollection for With<F> where F: Component<'t> {
     fn filter() -> bool {
         println!("Filtering with {}", std::any::type_name::<Self>());
         true
     }
 }
 
-impl<F> FilterCollection for Without<F> where F: Component {
+impl<'t, F> FilterCollection for Without<F> where F: Component<'t> {
     fn filter() -> bool {
         true
     }

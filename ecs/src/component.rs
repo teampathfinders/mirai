@@ -1,8 +1,11 @@
 use std::{collections::HashMap, any::{TypeId, Any}, marker::PhantomData};
+use better_any::TidAble;
+
+use better_any::Tid;
 
 use crate::EntityId;
 
-pub trait Component {
+pub trait Component<'t>: Tid<'t> {
 
 }
 
@@ -10,16 +13,16 @@ pub trait RefComponent {
     const SHAREABLE: bool;
 }
 
-impl<T> RefComponent for &T 
+impl<'t, T> RefComponent for &T 
 where
-    T: Component
+    T: Component<'t>
 {
     const SHAREABLE: bool = true;
 }
 
-impl<T> RefComponent for &mut T 
+impl<'t, T> RefComponent for &mut T 
 where
-    T: Component
+    T: Component<'t>
 {
     const SHAREABLE: bool = false;
 }
@@ -28,19 +31,19 @@ pub trait Spawnable<'w> {
     fn store_all(self, owner: usize, store: &mut ComponentStore<'w>);
 }
 
-impl<'w, T> Spawnable<'w> for T 
+impl<'t, 'w, T> Spawnable<'w> for T 
 where 
-    T: Component
+    T: Component<'t>
 {
     fn store_all(self, owner: usize, store: &mut ComponentStore<'w>) {
         store.insert(self, owner);
     }
 }
 
-impl<'w, T0, T1> Spawnable<'w> for (T0, T1) 
+impl<'t, 'w, T0, T1> Spawnable<'w> for (T0, T1) 
 where 
-    T0: Component,
-    T1: Component
+    T0: Component<'t>,
+    T1: Component<'t>
 {
     fn store_all(self, owner: usize, store: &mut ComponentStore<'w>) {
         store.insert(self.0, owner);
@@ -53,18 +56,18 @@ trait Store<'w> {
     fn release_entity(&mut self, entity: usize);
 }
 
-pub struct SpecializedStore<'w, T>
+pub struct SpecializedStore<'w, 't, T>
 where
-    T: Component + 'w
+    T: Component<'t> + 't
 {
     mapping: HashMap<usize, usize>,
     storage: Vec<Option<T>>,
-    _marker: PhantomData<&'w ()>
+    _marker: PhantomData<(&'w (), &'t ())>
 }
 
-impl<'w, T> SpecializedStore<'w, T>
+impl<'w, 't, T> SpecializedStore<'w, 't, T>
 where
-    T: Component + 'w,
+    T: Component<'t> + 'w,
 {
     pub fn insert(&mut self, owner: usize, component: T) {
         for (i, s) in self.storage.iter_mut().enumerate() {
@@ -81,9 +84,9 @@ where
     }
 }
 
-impl<'w, T> Store<'w> for SpecializedStore<'w, T> 
+impl<'w, 't, T> Store<'w> for SpecializedStore<'w, 't, T> 
 where
-    T: Component + 'w
+    T: Component<'t> + 'w
 {
     fn release_entity(&mut self, entity: usize) {
         if let Some(idx) = self.mapping.remove(&entity) {
@@ -92,11 +95,11 @@ where
     }
 }
 
-impl<'w, T> Default for SpecializedStore<'w, T> 
+impl<'w, 't, T> Default for SpecializedStore<'w, 't, T> 
 where
-    T: Component
+    T: Component<'t>
 {
-    fn default() -> SpecializedStore<'w, T> {
+    fn default() -> SpecializedStore<'w, 't, T> {
         SpecializedStore {
             mapping: HashMap::new(),
             storage: Vec::new(),
@@ -109,14 +112,14 @@ pub struct ComponentStore<'w> {
     storage: HashMap<TypeId, Box<dyn Store<'w>>>
 }
 
-impl<'c, 'w> ComponentStore<'w> {
+impl<'t, 'w> ComponentStore<'w> {
     pub fn new() -> ComponentStore<'w> {
         ComponentStore::default()
     }
 
     pub fn insert<T>(&mut self, data: T, owner: usize) 
     where
-        T: Component
+        T: Component<'t>
     {
         // let ty = TypeId::of::<T>();
         // let entry = self.storage.entry(ty)

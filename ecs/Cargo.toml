@@ -4,3 +4,4 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
+better_any = { version = "0.2.0", features = ["derive"] }

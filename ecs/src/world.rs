@@ -1,6 +1,6 @@
 use std::{collections::HashMap, any::{TypeId, Any}, hash::Hash};
 
-use crate::{system::{System, IntoSystem, Executor, SharedSystem}, component::{Spawnable, Component, ComponentStore}, Entity, entity::EntityStore, EntityId};
+use crate::{system::{System, IntoSystem, Executor, SharedSystem}, component::{Spawnable, Component, ComponentStore}, Entity, entity::EntityStore, EntityId, SysParamList};
 
 #[derive(Default)]
 pub struct World<'w> {
@@ -28,15 +28,13 @@ impl<'w> World<'w> {
 
     pub fn system<Sys, Params>(&mut self, system: impl IntoSystem<'w, Sys, Params>)
     where
-        Sys: SharedSystem<'w, Params>,
-        Params: 'w
+        Params: SysParamList
     {
-        let system = system.into_system();
-        todo!();
+        self.executor.add_system(system);
         // self.executor.schedule(system);
     }
 
-    pub(crate) fn execute(&'w mut self) {
+    pub(crate) fn execute(&mut self) {
         self.executor.execute(self);
     }
 }
