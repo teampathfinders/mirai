@@ -1,6 +1,6 @@
 use better_any::{Tid, tid};
 
-use crate::{request::{Req}, component::Component, filter::With, system::{System, IntoSystem}, world::World};
+use crate::{Component, request::Req, With, World, Without};
 
 #[derive(Debug)]
 struct Player {
@@ -16,10 +16,14 @@ struct Alive;
 tid!(Alive);
 impl<'t> Component<'t> for Alive {}
 
-fn system(query: Req<&mut Player, With<Alive>>) {
-    for player in &query {
-        println!("{player:?}");
-    }
+fn exclusive_system(query: Req<&mut Player, With<Alive>>) {
+    // for player in &query {
+    //     println!("{player:?}");
+    // }
+}
+
+fn shared_system(req: Req<&Player, Without<Alive>>) {
+
 }
 
 fn empty_system(_: ()) {
@@ -29,23 +33,8 @@ fn empty_system(_: ()) {
 #[test]
 fn query_test() {
     let mut world = World::new();
-    world.spawn(Alive);   
-    world.system(empty_system);
-    world.execute();
-
-    // let entity = world.spawn((Player { name: "one" }, Alive));
-    // dbg!(entity);
-
-    // let entity2 = world.spawn((Player { name: "two" }, Alive));
-    // dbg!(entity2);
-    // world.despawn(entity2);
-
-    // let entity3 = world.spawn((Player { name: "three" }));
-    // dbg!(entity3);
-
-    // let entity4 = world.spawn((Player { name: "four" }, Alive));
-    // dbg!(entity4);
+    let id = world.spawn(Alive).id();   
     
-    // world.system(empty_system);
-    // world.execute();
+    world.system(empty_system);
+    world.system(shared_system);
 }

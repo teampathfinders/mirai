@@ -4,15 +4,25 @@ use crate::World;
 #[repr(transparent)]
 pub struct EntityId(pub(crate) usize);
 
+impl From<Entity<'_>> for EntityId {
+    fn from(entity: Entity) -> Self {
+        entity.id()
+    }
+}
+
 pub struct Entity<'w> {
-    pub(crate) world: &'w mut World<'w>,
+    pub(crate) world: &'w mut World,
     pub(crate) id: EntityId
 }
 
-impl<'world> Entity<'world> {
+impl<'w> Entity<'w> {
     #[inline]
     pub fn id(self) -> EntityId {
         self.id
+    }
+
+    pub fn despawn(self) {
+        self.world.despawn(self.id);
     }
 }
 
