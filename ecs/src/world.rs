@@ -1,28 +1,6 @@
 use std::{collections::HashMap, any::{TypeId, Any}, hash::Hash};
 
-use crate::{system::{System, IntoSystem}, component::{Spawnable, Component, ComponentStore}, Entity, entity::EntityStore, EntityId};
-
-pub struct Executor {
-    systems: Vec<Box<dyn System>>
-}
-
-impl Executor {
-    pub fn new() -> Executor {
-        Executor::default()
-    }
-
-    pub fn schedule(&mut self, system: Box<dyn System>) {
-        self.systems.push(system);
-    }
-}
-
-impl Default for Executor {
-    fn default() -> Executor {
-        Executor {
-            systems: Vec::new()
-        }
-    }
-}
+use crate::{system::{System, IntoSystem, Executor}, component::{Spawnable, Component, ComponentStore}, Entity, entity::EntityStore, EntityId};
 
 #[derive(Default)]
 pub struct World {
@@ -57,5 +35,9 @@ impl World {
     pub fn system<Params>(&mut self, system: impl IntoSystem<Params>) {
         let system = system.into_system();
         self.executor.schedule(system);
+    }
+
+    pub(crate) fn execute(&mut self) {
+        self.executor.execute(self);
     }
 }

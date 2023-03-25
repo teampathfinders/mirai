@@ -12,10 +12,14 @@ struct Alive;
 
 impl Component for Alive {}
 
-fn system(query: Req<&mut Player, With<Alive>>) {
-    for player in &query {
-        println!("{player:?}");
-    }
+// fn system(query: Req<&mut Player, With<Alive>>) {
+//     for player in &query {
+//         println!("{player:?}");
+//     }
+// }
+
+fn empty_system(req: Req<&Player, With<Alive>>) {
+    println!("I am an empty system");
 }
 
 #[test]
@@ -35,5 +39,6 @@ fn query_test() {
     let entity4 = world.spawn((Player { name: "four" }, Alive));
     dbg!(entity4.id());
     
-    world.system(system);
+    world.system(empty_system);
+    world.execute();
 }
