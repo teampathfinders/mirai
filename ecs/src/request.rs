@@ -1,6 +1,6 @@
 use std::marker::PhantomData;
 
-use crate::{component::{Component, Spawnable, RefComponent}, filter::FilterCollection};
+use crate::{component::{Component, Spawnable, RefComponent}, filter::FilterCollection, World};
 
 pub trait Requestable {
     const SHAREABLE: bool;
@@ -21,20 +21,26 @@ where
     const SHAREABLE: bool = T0::SHAREABLE && T1::SHAREABLE;
 }
 
-pub struct Req<C, F = ()>
-where
-    C: Requestable,
-    F: FilterCollection,
-{
-    _marker: PhantomData<(C, F)>
+pub enum WorldReference<'w> {
+    Shared(&'w World<'w>),
+    Exclusive(&'w mut World<'w>)
 }
 
-impl<'a, C, F> IntoIterator for &'a Req<C, F>
+pub struct Req<'w, C, F = ()>
 where
     C: Requestable,
     F: FilterCollection,
 {
-    type IntoIter = ReqIter<'a, C, F>;
+    pub(crate) world: WorldReference<'w>,
+    pub(crate) _marker: PhantomData<(C, F)>
+}
+
+impl<'r, 'w, C, F> IntoIterator for &'r Req<'w, C, F>
+where
+    C: Requestable,
+    F: FilterCollection,
+{
+    type IntoIter = ReqIter<'r, 'w, C, F>;
     type Item = C;
 
     fn into_iter(self) -> Self::IntoIter {
@@ -44,15 +50,15 @@ where
     }   
 }
 
-pub struct ReqIter<'a, C, F>
+pub struct ReqIter<'r, 'w, C, F>
 where
     C: Requestable,
     F: FilterCollection
 {
-    req: &'a Req<C, F>
+    req: &'r Req<'w, C, F>
 }
 
-impl<C, F> Iterator for ReqIter<'_, C, F> 
+impl<'r, 'w, C, F> Iterator for ReqIter<'r, 'w, C, F> 
 where 
     C: Requestable,
     F: FilterCollection

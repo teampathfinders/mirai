@@ -1,41 +1,43 @@
 use std::{collections::HashMap, any::{TypeId, Any}, hash::Hash};
 
-use crate::{system::{System, IntoSystem, Executor}, component::{Spawnable, Component, ComponentStore}, Entity, entity::EntityStore, EntityId};
+use crate::{system::{System, IntoSystem, Executor, SharedSystem}, component::{Spawnable, Component, ComponentStore}, Entity, entity::EntityStore, EntityId};
 
 #[derive(Default)]
-pub struct World {
+pub struct World<'w> {
     entities: EntityStore,
-    components: ComponentStore,
-    executor: Executor
+    components: ComponentStore<'w>,
+    executor: Executor<'w>
 }
 
-impl World {
-    pub fn new() -> World {
+impl<'w> World<'w> {
+    pub fn new() -> World<'w> {
         World::default()
     }
 
-    pub fn spawn(&mut self, components: impl Spawnable) -> Entity {
+    pub fn spawn(&'w mut self, components: impl Spawnable<'w>) -> EntityId
+    {
         let entity_id = self.entities.acquire();
         components.store_all(entity_id, &mut self.components);
 
-        // components.store_all(&mut self.components);
-        Entity {
-            id: EntityId(entity_id),
-            world: self
-        }
+        EntityId(entity_id)
     }
 
-    pub fn despawn(&mut self, entity: EntityId) {
+    pub fn despawn(&'w mut self, entity: EntityId) {
         self.components.release_entity(entity.0);
         self.entities.release(entity.0);
     }
 
-    pub fn system<Params>(&mut self, system: impl IntoSystem<Params>) {
+    pub fn system<Sys, Params>(&'w mut self, system: impl IntoSystem<'w, Sys, Params>)
+    where
+        Sys: SharedSystem<'w, Params>,
+        Params: 'w
+    {
         let system = system.into_system();
-        self.executor.schedule(system);
+        todo!();
+        // self.executor.schedule(system);
     }
 
-    pub(crate) fn execute(&mut self) {
+    pub(crate) fn execute(&'w mut self) {
         self.executor.execute(self);
     }
 }

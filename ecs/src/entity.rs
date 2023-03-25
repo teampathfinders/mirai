@@ -4,8 +4,8 @@ use crate::World;
 #[repr(transparent)]
 pub struct EntityId(pub(crate) usize);
 
-pub struct Entity<'world> {
-    pub(crate) world: &'world mut World,
+pub struct Entity<'w> {
+    pub(crate) world: &'w mut World<'w>,
     pub(crate) id: EntityId
 }
 
