@@ -24,25 +24,27 @@ where
     const SHAREABLE: bool = false;
 }
 
-pub trait Spawnable<'w> {
-    fn store_all(self, owner: usize, store: &'w mut ComponentStore<'w>);
+pub trait Spawnable<'a, 'w> {
+    fn store_all(self, owner: usize, store: &'a mut ComponentStore<'w>);
 }
 
-impl<'w, T> Spawnable<'w> for T 
+impl<'a, 'w, T> Spawnable<'a, 'w> for T 
 where 
-    T: Component + 'w 
+    'w: 'a,
+    T: Component + 'a
 {
-    fn store_all(self, owner: usize, store: &'w mut ComponentStore<'w>) {
+    fn store_all(self, owner: usize, store: &'a mut ComponentStore<'w>) {
         store.insert(self, owner);
     }
 }
 
-impl<'w, T0, T1> Spawnable<'w> for (T0, T1) 
+impl<'a, 'w, T0, T1> Spawnable<'a, 'w> for (T0, T1) 
 where 
-    T0: Component + 'w,
-    T1: Component + 'w
+    'a: 'w,
+    T0: Component + 'a,
+    T1: Component + 'a
 {
-    fn store_all(self, owner: usize, store: &'w mut ComponentStore<'w>) {
+    fn store_all(self, owner: usize, store: &'a mut ComponentStore<'w>) {
         store.insert(self.0, owner);
         store.insert(self.1, owner);
     }
@@ -109,14 +111,14 @@ pub struct ComponentStore<'w> {
     storage: HashMap<TypeId, Box<dyn Store<'w>>>
 }
 
-impl<'w> ComponentStore<'w> {
+impl<'c, 'w> ComponentStore<'w> {
     pub fn new() -> ComponentStore<'w> {
         ComponentStore::default()
     }
 
     pub fn insert<T>(&mut self, data: T, owner: usize) 
     where
-        T: Component + 'w
+        T: Component
     {
         // let ty = TypeId::of::<T>();
         // let entry = self.storage.entry(ty)

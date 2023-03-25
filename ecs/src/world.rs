@@ -14,12 +14,10 @@ impl<'w> World<'w> {
         World::default()
     }
 
-    pub fn spawn(&'w mut self, components: impl Spawnable<'w>) -> EntityId
-    {
-        let entity_id = self.entities.acquire();
-        components.store_all(entity_id, &mut self.components);
+    pub fn spawn<'a>(&mut self, spawnable: impl Spawnable<'a, 'w>) -> EntityId {
+        let id = self.entities.acquire();
 
-        EntityId(entity_id)
+        EntityId(id)
     }
 
     pub fn despawn(&'w mut self, entity: EntityId) {
@@ -27,7 +25,7 @@ impl<'w> World<'w> {
         self.entities.release(entity.0);
     }
 
-    pub fn system<Sys, Params>(&'w mut self, system: impl IntoSystem<'w, Sys, Params>)
+    pub fn system<Sys, Params>(&mut self, system: impl IntoSystem<'w, Sys, Params>)
     where
         Sys: SharedSystem<'w, Params>,
         Params: 'w

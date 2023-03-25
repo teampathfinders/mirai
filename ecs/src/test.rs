@@ -25,8 +25,11 @@ fn empty_system(req: Req<&Player, With<Alive>>) {
 #[test]
 fn query_test() {
     let mut world = World::new();
-    let entity = world.spawn((Player { name: "one" }, Alive));
-    dbg!(entity);
+    world.spawn(Alive);   
+    world.system(system);
+
+    // let entity = world.spawn((Player { name: "one" }, Alive));
+    // dbg!(entity);
 
     // let entity2 = world.spawn((Player { name: "two" }, Alive));
     // dbg!(entity2);
