@@ -14,8 +14,9 @@ impl<'w> World<'w> {
         World::default()
     }
 
-    pub fn spawn<'a>(&mut self, spawnable: impl Spawnable<'a, 'w>) -> EntityId {
+    pub fn spawn(&mut self, spawnable: impl Spawnable<'w>) -> EntityId {
         let id = self.entities.acquire();
+        spawnable.store_all(id, &mut self.components);
 
         EntityId(id)
     }

@@ -24,27 +24,25 @@ where
     const SHAREABLE: bool = false;
 }
 
-pub trait Spawnable<'a, 'w> {
-    fn store_all(self, owner: usize, store: &'a mut ComponentStore<'w>);
+pub trait Spawnable<'w> {
+    fn store_all(self, owner: usize, store: &mut ComponentStore<'w>);
 }
 
-impl<'a, 'w, T> Spawnable<'a, 'w> for T 
+impl<'w, T> Spawnable<'w> for T 
 where 
-    'w: 'a,
-    T: Component + 'a
+    T: Component
 {
-    fn store_all(self, owner: usize, store: &'a mut ComponentStore<'w>) {
+    fn store_all(self, owner: usize, store: &mut ComponentStore<'w>) {
         store.insert(self, owner);
     }
 }
 
-impl<'a, 'w, T0, T1> Spawnable<'a, 'w> for (T0, T1) 
+impl<'w, T0, T1> Spawnable<'w> for (T0, T1) 
 where 
-    'a: 'w,
-    T0: Component + 'a,
-    T1: Component + 'a
+    T0: Component,
+    T1: Component
 {
-    fn store_all(self, owner: usize, store: &'a mut ComponentStore<'w>) {
+    fn store_all(self, owner: usize, store: &mut ComponentStore<'w>) {
         store.insert(self.0, owner);
         store.insert(self.1, owner);
     }
@@ -124,7 +122,6 @@ impl<'c, 'w> ComponentStore<'w> {
         // let entry = self.storage.entry(ty)
         //     .or_insert_with(|| Box::new(SpecializedStore::<T>::default()));
 
-        todo!();
         // let downcast: &mut SpecializedStore<T> = entry.as_any_mut().downcast_mut().unwrap();
         // downcast.insert(owner, data);
     }
