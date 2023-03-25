@@ -1,6 +1,25 @@
 use std::marker::PhantomData;
 
-use crate::{component::{Component, Spawnable, Requestable}, filter::FilterCollection};
+use crate::{component::{Component, Spawnable, RefComponent}, filter::FilterCollection};
+
+pub trait Requestable {
+    const SHAREABLE: bool;
+}
+
+impl<T> Requestable for T
+where
+    T: RefComponent,
+{
+    const SHAREABLE: bool = T::SHAREABLE;
+}
+
+impl<T0, T1> Requestable for (T0, T1)
+where
+    T0: RefComponent,
+    T1: RefComponent,
+{
+    const SHAREABLE: bool = T0::SHAREABLE && T1::SHAREABLE;
+}
 
 pub struct Req<C, F = ()>
 where

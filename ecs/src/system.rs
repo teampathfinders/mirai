@@ -1,8 +1,10 @@
 use std::marker::PhantomData;
 
-use crate::{request::{Req}, filter::FilterCollection, component::{Spawnable, Requestable}, World};
+use crate::{request::{Req}, filter::FilterCollection, component::{Spawnable}, World, Requestable};
 
 pub trait SysParam {
+    const SHAREABLE: bool;
+
     fn fetch(w: &World) -> Self;
 }
 
@@ -11,6 +13,8 @@ where
     C: Requestable,
     F: FilterCollection,
 {
+    const SHAREABLE: bool = C::SHAREABLE;
+
     fn fetch(_w: &World) -> Self {
         todo!();
     }
@@ -58,35 +62,32 @@ where
     }
 }
 
-pub struct SystemContainer<F, P>
+pub struct SharedContainer<F, P> 
 where
-    F: SharedSystem<P>,
-    P: SysParamList,
+    F: SharedSystem<P>
 {
-    sys: F,
+    shared: F,
     _marker: PhantomData<P>
 }
 
-impl<F, P> SystemContainer<F, P>
+impl<F, P> SharedContainer<F, P>
 where
     F: SharedSystem<P>,
-    P: SysParamList,
 {
-    pub fn new(sys: F) -> Self {
+    pub fn new(shared: F) -> Self {
         Self {
-            sys,
+            shared,
             _marker: PhantomData
         }
     }
 }
 
-impl<F, P> System for SystemContainer<F, P>
+impl<F, P> System for SharedContainer<F, P>
 where
     F: SharedSystem<P>,
-    P: SysParamList,
 {
     fn run(&self, world: &World) {
-        self.sys.run(world);
+        self.shared.run(world);
     }
 }
 
@@ -100,8 +101,14 @@ where
     Params: SysParam + 'static,
 {
     fn into_system(self) -> Box<dyn System> {
-        let container = SystemContainer::new(self);
-        Box::new(container)
+        if Params::SHAREABLE {
+            Box::new(SharedContainer::new(self))
+        } else {
+            todo!();
+        }
+
+        // let container = ::new(self);
+        // Box::new(container)
     }
 }
 

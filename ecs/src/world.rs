@@ -18,8 +18,6 @@ impl World {
         let entity_id = self.entities.acquire();
         components.store_all(entity_id, &mut self.components);
 
-        println!("{:?}", self.components);
-
         // components.store_all(&mut self.components);
         Entity {
             id: EntityId(entity_id),

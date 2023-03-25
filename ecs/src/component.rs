@@ -2,12 +2,27 @@ use std::{collections::HashMap, any::{TypeId, Any}};
 
 use crate::EntityId;
 
-pub trait Component: std::fmt::Debug {
+pub trait Component {
 
 }
 
-impl<T> Component for &T where T: Component {}
-impl<T> Component for &mut T where T: Component {}
+pub trait RefComponent {
+    const SHAREABLE: bool;
+}
+
+impl<T> RefComponent for &T 
+where
+    T: Component
+{
+    const SHAREABLE: bool = true;
+}
+
+impl<T> RefComponent for &mut T 
+where
+    T: Component
+{
+    const SHAREABLE: bool = false;
+}
 
 pub trait Spawnable {
     fn store_all(self, owner: usize, store: &mut ComponentStore);
@@ -33,31 +48,11 @@ where
     }
 }
 
-pub trait Requestable {
-    
-}
-
-impl<T> Requestable for T
-where
-    T: Component,
-{
-
-}
-
-impl<T0, T1> Requestable for (T0, T1)
-where
-    T0: Component,
-    T1: Component,
-{
-
-}
-
-trait Store: std::fmt::Debug {
+trait Store {
     fn as_any_mut(&mut self) -> &mut dyn Any;
     fn release_entity(&mut self, entity: usize);
 }
 
-#[derive(Debug)]
 pub struct SpecializedStore<T>
 where
     T: Component
@@ -112,7 +107,6 @@ where
     }
 }
 
-#[derive(Debug)]
 pub struct ComponentStore {
     storage: HashMap<TypeId, Box<dyn Store>>
 }
