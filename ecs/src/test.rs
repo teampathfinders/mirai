@@ -1,4 +1,4 @@
-use crate::world::{Component, Req, With};
+use crate::world::{Component, Req, With, World};
 
 #[derive(Debug)]
 struct Player;
@@ -17,5 +17,9 @@ fn immutable_system(req: Req<&Player, With<Alive>>) {
 
 #[tokio::test]
 async fn test() {
+    let mut world = World::new();
 
+    world.spawn((Player, Alive));
+    world.system(immutable_system);
+    world.run_all();
 }

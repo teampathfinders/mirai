@@ -1,15 +1,18 @@
-use std::{sync::Arc, marker::PhantomData};
+use std::{sync::Arc, marker::PhantomData, any::{TypeId, Any}, collections::HashMap};
+
+use dashmap::DashMap;
+use parking_lot::RwLock;
 
 pub struct EntityId(usize);
 
 pub struct Entity<'a> {
-    world: Arc<World<'a>>,
+    world_state: Arc<WorldState>,
     id: EntityId,
     _marker: PhantomData<&'a ()>
 }
 
 pub trait Spawnable {
-    
+    fn insert_all(self, storage: &Components, entity: usize);
 }
 
 pub trait RefComponent {
@@ -56,8 +59,17 @@ pub trait Component {
 
 }
 
-impl<T: Component> Spawnable for T {}
-impl<T0: Component, T1: Component> Spawnable for (T0, T1) {}
+impl<T: Component + 'static> Spawnable for T {
+    fn insert_all(self, storage: &Components, entity: usize) {
+        storage.insert(self, entity);
+    }
+}
+impl<T0: Component + 'static, T1: Component + 'static> Spawnable for (T0, T1) {
+    fn insert_all(self, storage: &Components, entity: usize) {
+        storage.insert(self.0, entity);
+        storage.insert(self.1, entity);
+    }
+}
 
 pub trait SystemParam {
     const MUTABLE: bool;
@@ -73,7 +85,7 @@ impl<S: Requestable, F: Filters> SystemParam for Req<S, F> {
     type Item<'q> = Req<S, F>;
 
     fn fetch<'q>(state: &'q WorldState) -> Self::Item<'q> {
-
+        todo!();
     }
 }
 
@@ -190,27 +202,147 @@ where
     }
 }
 
+#[derive(Default)]
+pub struct Entities {
+    mapping: RwLock<Vec<bool>>
+}
+
+impl Entities {
+    pub fn new() -> Self {
+        Self::default()
+    }
+
+    pub fn acquire(&self) -> usize {
+        let mut lock = self.mapping.write();
+        lock
+            .iter_mut()
+            .enumerate()
+            .find_map(|(i, v)| {
+                if *v {
+                    None
+                } else {
+                    *v = true;
+                    Some(i)
+                }
+            })
+            .or_else(|| {
+                let len = lock.len();
+                lock.push(true);
+                Some(len)
+            })
+            .unwrap()
+    }
+
+    pub fn release(&self, entity: usize) {
+        self.mapping.write()[entity] = false;
+    }
+}
+
+pub trait Store {
+    fn as_any_mut(&mut self) -> &mut dyn Any;
+}
+
+pub struct SpecializedStore<T: Component> {
+    mapping: HashMap<usize, usize>,
+    storage: Vec<Option<T>>
+}
+
+impl<T: Component> SpecializedStore<T> {
+    pub fn new() -> Self {
+        Self::default()
+    }
+
+    pub fn insert(&mut self, component: T, entity: usize) {
+        let index = self.storage
+            .iter_mut()
+            .enumerate()
+            .find_map(|(i, v)| if v.is_none() {
+                Some(i)
+            } else {
+                None
+            });
+
+        if let Some(index) = index {
+            self.mapping.insert(entity, index);
+            self.storage[index] = Some(component);
+        } else {
+            let len = self.storage.len();
+            self.mapping.insert(entity, len);
+            self.storage.push(Some(component));
+        }
+    }
+}
+
+impl<T: Component> Default for SpecializedStore<T> {
+    fn default() -> Self {
+        Self {
+            mapping: HashMap::new(),
+            storage: Vec::new()
+        }
+    }
+}
+
+impl<T: Component + 'static> Store for SpecializedStore<T> {
+    fn as_any_mut(&mut self) -> &mut dyn Any {
+        self
+    }
+}
+
+#[derive(Default)]
+pub struct Components {
+    storage: DashMap<TypeId, Box<dyn Store>>
+}
+
+impl Components {
+    pub fn new() -> Self {
+        Self::default()
+    }
+
+    pub fn insert<T: Component + 'static>(&self, component: T, entity: usize) {
+        let mut entry = self.storage
+            .entry(TypeId::of::<T>())
+            .or_insert_with(|| {
+                Box::new(SpecializedStore::<T>::new())
+            });
+
+        let storage = entry.value_mut();
+        let downcast = storage.as_any_mut().downcast_mut::<SpecializedStore<T>>().unwrap();
+        downcast.insert(component, entity);
+    }
+}
+
+#[derive(Default)]
 pub struct WorldState {
     entities: Entities,
     components: Components
 }
 
 #[derive(Default)]
-pub struct World<'a> {
-    state: RwLock<WorldState>,
-    _marker: PhantomData<&'a ()>
+pub struct World {
+    state: Arc<WorldState>
 }
 
-impl<'a> World<'a> {
+impl World {
     pub fn new() -> Self {
         Self::default()
     }
     
     pub fn spawn(&self, spawnable: impl Spawnable) -> Entity {
-        todo!();
+        let entity_id = self.state.entities.acquire();
+        spawnable.insert_all(&self.state.components, entity_id);
+
+        Entity {
+            id: EntityId(entity_id),
+            world_state: self.state.clone(),
+            _marker: PhantomData
+        }
     }
 
-    pub fn system<S, P: SystemParams>(&self, systems: impl IntoSystem<'a, S, P>) {
+    pub fn system<'a, S, P: SystemParams>(&'a self, systems: impl IntoSystem<'a, S, P>) {
+        
+    }
+
+    pub fn run_all(&self) {
 
     }
 }
