@@ -2,8 +2,10 @@ use std::marker::PhantomData;
 
 use crate::{component::{Component, Spawnable, RefComponent, ComponentStore}, filter::FilterCollection, World};
 
-pub trait Requestable {
+pub trait Requestable: Sized {
     const PARALLEL: bool;
+
+    fn fetch(entity: usize, store: &StoreReference) -> Option<Self>;
 }
 
 impl<T> Requestable for T
@@ -11,6 +13,11 @@ where
     T: RefComponent,
 {
     const PARALLEL: bool = T::SHAREABLE;
+
+    fn fetch(entity: usize, store: &StoreReference) -> Option<Self> {
+        debug_assert_eq!(Self::PARALLEL, store.is_immutable());
+        todo!();
+    }
 }
 
 impl<T0, T1> Requestable for (T0, T1)
@@ -19,10 +26,20 @@ where
     T1: RefComponent,
 {
     const PARALLEL: bool = T0::SHAREABLE && T1::SHAREABLE;
+
+    fn fetch(entity: usize, store: &StoreReference) -> Option<Self> {
+        todo!();
+    }
 }
 
-enum StoreReference<'r> {
+pub enum StoreReference<'r> {
     Immutable(&'r ComponentStore)
+}
+
+impl StoreReference<'_> {
+    pub fn is_immutable(&self) -> bool {
+        matches!(self, Self::Immutable(_))
+    }
 }
 
 pub struct Req<'r, R, F = ()> 
@@ -67,7 +84,10 @@ where
     R: Requestable,
     F: FilterCollection
 {
-    req: &'r Req<'r, R, F>,
+    index: usize,
+    entities: &'r [bool],
+    store: &'r StoreReference<'r>,
+    _marker: PhantomData<(R, F)>
 }
 
 impl<'r, R, F> Iterator for ReqIter<'r, R, F> 
@@ -78,7 +98,18 @@ where
     type Item = R;
 
     fn next(&mut self) -> Option<R> {
-        todo!();
+        let (nth, requested) = self.entities  
+            .iter()
+            .enumerate()
+            .find_map(|(i, v)| if !*v {
+                None
+            } else {
+                let r = R::fetch(self.index + i, self.store)?;
+                Some((i, r))
+            })?;
+
+        self.index += nth;
+        Some(requested)
     }
 }
 
@@ -89,7 +120,10 @@ where
 {
     fn from(req: &'r Req<'r, R, F>) -> Self {
         Self {
-            req
+            index: 0,
+            entities: req.entities,
+            store: &req.store,
+            _marker: PhantomData
         }
     }
 }
