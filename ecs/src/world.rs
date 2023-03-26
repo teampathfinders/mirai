@@ -1,7 +1,9 @@
 use std::{sync::Arc, marker::PhantomData, any::{TypeId, Any}, collections::HashMap};
 
 use dashmap::DashMap;
+use futures::stream::FuturesUnordered;
 use parking_lot::RwLock;
+use tokio::task::JoinSet;
 
 pub struct EntityId(usize);
 
@@ -169,16 +171,16 @@ impl<'q, S: Requestable, F: Filters> Iterator for ReqIter<'q, S, F> {
     }
 }
 
-pub trait IntoSystem<'a, S, Params> {
-    fn into_boxed(self) -> Box<dyn System + 'a>;
+pub trait IntoSystem<S, Params> {
+    fn into_boxed(self) -> Box<dyn System>;
 }
 
-impl<'a, S, P> IntoSystem<'a, S, P> for S 
+impl<S, P> IntoSystem<S, P> for S 
 where
-    S: Fn(P) + 'a,
-    P: SystemParam + 'a
+    S: Fn(P) + 'static,
+    P: SystemParam + 'static
 {
-    fn into_boxed(self) -> Box<dyn System + 'a> {
+    fn into_boxed(self) -> Box<dyn System> {
         if P::MUTABLE {
             todo!();
         } else {
@@ -187,13 +189,13 @@ where
     }
 }
 
-impl<'a, S, P0, P1> IntoSystem<'a, S, (P0, P1)> for S 
+impl<S, P0, P1> IntoSystem<S, (P0, P1)> for S 
 where
-    S: Fn(P0, P1) + 'a,
-    P0: SystemParam + 'a,
-    P1: SystemParam + 'a
+    S: Fn(P0, P1) + 'static,
+    P0: SystemParam + 'static,
+    P1: SystemParam + 'static
 {
-    fn into_boxed(self) -> Box<dyn System + 'a> {
+    fn into_boxed(self) -> Box<dyn System> {
         if <(P0, P1)>::MUTABLE {
             todo!();
         } else {
@@ -312,6 +314,40 @@ impl Components {
 }
 
 #[derive(Default)]
+pub struct Systems {
+    parallel: RwLock<Vec<Box<dyn System>>>,
+    sequential: RwLock<Vec<Box<dyn System>>>
+}
+
+impl Systems {
+    pub fn new() -> Self {
+        Self::default()
+    }
+
+    pub fn insert<S, P: SystemParams>(&self, system: impl IntoSystem<S, P>) {
+        if P::MUTABLE {
+            todo!();
+        } else {
+            self.parallel.write().push(system.into_boxed());
+        }
+    }
+
+    pub async fn run_all(&self, state: &Arc<WorldState>) {
+        let mut task_set = JoinSet::new();
+        let lock = self.parallel.read();
+        
+        for system in &*lock {
+            let state = Arc::clone(state);
+            task_set.spawn(async move {
+                system.run(state);
+            });
+        }
+
+        while let Some(_) = task_set.join_next().await {}
+    }
+}
+
+#[derive(Default)]
 pub struct WorldState {
     entities: Entities,
     components: Components
@@ -319,7 +355,8 @@ pub struct WorldState {
 
 #[derive(Default)]
 pub struct World {
-    state: Arc<WorldState>
+    state: Arc<WorldState>,
+    systems: Systems
 }
 
 impl World {
@@ -338,11 +375,11 @@ impl World {
         }
     }
 
-    pub fn system<'a, S, P: SystemParams>(&'a self, systems: impl IntoSystem<'a, S, P>) {
-        
+    pub fn system<S, P: SystemParams>(&self, system: impl IntoSystem<S, P>) {
+        self.systems.insert(system);
     }
 
     pub fn run_all(&self) {
-
+        self.systems.run_all(&self.state);
     }
 }
