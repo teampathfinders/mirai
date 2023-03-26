@@ -1,24 +1,26 @@
 use std::marker::PhantomData;
 
-use crate::{request::{Req, Requestable}, FilterCollection};
+use crate::{request::{Req, Requestable}, FilterCollection, World, component::ComponentStore};
 
 pub trait SystemParam: Sized {
     const PARALLEL: bool;
 
-    fn fetch() -> Self;
+    fn fetch(components: &ComponentStore) -> Self;
 }
 
 impl SystemParam for () {
     const PARALLEL: bool = true;
 
-    fn fetch() {}
+    fn fetch(_components: &ComponentStore) {}
 }
 
 impl<'r, R: Requestable, F: FilterCollection> SystemParam for Req<'r, R, F> {
     const PARALLEL: bool = R::PARALLEL;
 
-    fn fetch() -> Self {
-        todo!();
+    fn fetch(components: &ComponentStore) -> Self {
+        Req::from(unsafe {
+            &*(components as *const ComponentStore)
+        })
     }
 }
 
@@ -31,7 +33,7 @@ impl<P: SystemParam> SystemParams for P {
 }
 
 pub trait System {
-    fn run(&self);
+    fn run(&self, store: &ComponentStore);
 }
 
 pub struct ParallelContainer<S, P: SystemParams> {
@@ -52,13 +54,13 @@ where
     }
 }
 
-impl<S, P> System for ParallelContainer<S, P> 
+impl<'r, S, P> System for ParallelContainer<S, P> 
 where
     S: Fn(P),
     P: SystemParam
 {
-    fn run(&self) {
-        (self.runnable)(P::fetch());
+    fn run(&self, store: &ComponentStore) {
+        (self.runnable)(P::fetch(store));
     }
 }
 
@@ -69,7 +71,7 @@ where
     fn into_boxed(self) -> Box<dyn System>;
 }
 
-impl<S: Fn(P) + 'static, P: SystemParam + 'static> IntoSystem<S, P> for S {
+impl<'r, S: Fn(P) + 'static, P: SystemParam + 'static> IntoSystem<S, P> for S {
     fn into_boxed(self) -> Box<dyn System> {
         if P::PARALLEL {
             let container: ParallelContainer<S, P> = ParallelContainer::new(self);
@@ -102,9 +104,9 @@ impl Executor {
         }
     }
 
-    pub fn run_all(&self) {
+    pub fn run_all(&self, store: &ComponentStore) {
         for sys in &self.parallel {
-            sys.run();
+            sys.run(store);
         }
     }
 }

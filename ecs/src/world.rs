@@ -39,6 +39,6 @@ impl World {
     }
 
     pub fn run_all(&self) {
-        self.executor.run_all();
+        self.executor.run_all(&self.components);
     }
 }

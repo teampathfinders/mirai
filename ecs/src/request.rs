@@ -1,6 +1,6 @@
 use std::marker::PhantomData;
 
-use crate::{component::{Component, Spawnable, RefComponent}, filter::FilterCollection, World};
+use crate::{component::{Component, Spawnable, RefComponent, ComponentStore}, filter::FilterCollection, World};
 
 pub trait Requestable {
     const PARALLEL: bool;
@@ -21,9 +21,8 @@ where
     const PARALLEL: bool = T0::SHAREABLE && T1::SHAREABLE;
 }
 
-enum WorldReference<'r> {
-    Shared(&'r World),
-    Exclusive(&'r mut World)
+enum StoreReference<'r> {
+    Immutable(&'r ComponentStore)
 }
 
 pub struct Req<'r, R, F = ()> 
@@ -31,7 +30,19 @@ where
     R: Requestable,
     F: FilterCollection
 {
-    world: WorldReference<'r>,
+    store: StoreReference<'r>,
     _marker: PhantomData<(R, F)>
 }
 
+impl<'r, R, F> From<&'r ComponentStore> for Req<'r, R, F> 
+where
+    R: Requestable,
+    F: FilterCollection
+{
+    fn from(value: &'r ComponentStore) -> Self {
+        Self {
+            store: StoreReference::Immutable(value),
+            _marker: PhantomData
+        }
+    }
+}

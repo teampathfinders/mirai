@@ -23,7 +23,9 @@ fn exclusive_system(query: Req<&mut Player, With<Alive>>) {
 }
 
 fn shared_system(req: Req<&Player, Without<Alive>>) {
-
+    for player in &query {
+        
+    }
 }
 
 fn empty_system(_: ()) {
@@ -36,6 +38,6 @@ fn query_test() {
     let id = world.spawn(Alive).id();   
     
     world.system(empty_system);
+    world.system(shared_system);
     world.run_all();
-    // world.system(shared_system);
 }
