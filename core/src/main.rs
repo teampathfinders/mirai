@@ -7,16 +7,6 @@ use pyro::InstanceManager;
 use util::Result;
 
 fn main() -> Result<()> {
-    let _ = Command::new("pyro")
-        .version(concat!(
-        env!("VERGEN_GIT_SHA_SHORT"),
-        " ",
-        env!("VERGEN_BUILD_TIMESTAMP")
-        ))
-        .author(crate_authors!("\n"))
-        .about(crate_description!())
-        .get_matches();
-
     init_logging();
     init_runtime()
 }
