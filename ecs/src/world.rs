@@ -4,6 +4,10 @@ use dashmap::DashMap;
 use parking_lot::{RwLock, RwLockReadGuard, RawRwLock};
 use tokio::task::JoinSet;
 
+mod private {
+    pub trait Sealed {}
+}
+
 #[derive(Debug)]
 pub struct EntityId(usize);
 
@@ -11,6 +15,8 @@ pub struct Entity {
     world_state: Arc<WorldState>,
     id: EntityId,
 }
+
+impl private::Sealed for Entity {}
 
 impl Entity {
     pub fn id(&self) -> &EntityId {
@@ -33,6 +39,9 @@ pub trait Spawnable {
 pub trait RefComponent {
     const MUTABLE: bool;    
 }
+
+impl<T: RefComponent> private::Sealed for T {}
+impl<T0: RefComponent, T1: RefComponent> private::Sealed for (T0, T1) {}
 
 impl<T: Component> RefComponent for &T {
     const MUTABLE: bool = false;
@@ -72,24 +81,24 @@ pub struct Without<T: Component> {
     _marker: PhantomData<T>
 }
 
-pub trait Requestable {
+pub unsafe trait Requestable: private::Sealed {
     /// This is here because ReqIter logic requires checking whether the requestable is an entity.
     /// It cannot be done using TypeId as that requires a static lifetime, which we do not have.
     const IS_ENTITY: bool;
     const MUTABLE: bool;
 }
 
-impl<T: RefComponent> Requestable for T {
+unsafe impl<T: RefComponent> Requestable for T {
     const IS_ENTITY: bool = false;
     const MUTABLE: bool = T::MUTABLE;
 }
 
-impl<T0: RefComponent, T1: RefComponent> Requestable for (T0, T1) {
+unsafe impl<T0: RefComponent, T1: RefComponent> Requestable for (T0, T1) {
     const IS_ENTITY: bool = false;
     const MUTABLE: bool = T0::MUTABLE || T1::MUTABLE;
 }
 
-impl Requestable for Entity {
+unsafe impl Requestable for Entity {
     const IS_ENTITY: bool = true;
     const MUTABLE: bool = false;
 }
@@ -116,11 +125,11 @@ pub trait SystemParam {
     fn fetch(state: Arc<WorldState>) -> Self;
 }   
 
-impl<S: Requestable, F: Filters> SystemParam for Req<S, F> {
+impl<S: Requestable, F: Filters> SystemParam for Request<S, F> {
     const MUTABLE: bool = S::MUTABLE;
 
     fn fetch(state: Arc<WorldState>) -> Self {
-        Req::new(state)
+        Request::new(state)
     }
 }
 
@@ -171,7 +180,7 @@ impl<S: Fn(P0, P1), P0: SystemParam, P1: SystemParam> System for ParallelSystem<
     }
 }
 
-pub struct Req<S, F = ()>
+pub struct Request<S, F = ()>
 where
     S: Requestable,
     F: Filters,
@@ -180,7 +189,7 @@ where
     _marker: PhantomData<(S, F)>
 }
 
-impl<S, F> Req<S, F> 
+impl<S, F> Request<S, F> 
 where
     S: Requestable,
     F: Filters
@@ -192,7 +201,7 @@ where
     }
 }
 
-impl<'q, S, F> IntoIterator for &'q Req<S, F> 
+impl<'q, S, F> IntoIterator for &'q Request<S, F> 
 where
     S: Requestable,
     F: Filters
@@ -240,6 +249,7 @@ impl<'q, S: Requestable, F: Filters> Iterator for ReqIter<'q, S, F> {
                 id: EntityId(entity_id)
             };
 
+            // This is safe because S is guaranteed to be of type Entity.
             let transmuted = unsafe {
                 std::mem::transmute_copy(&entity)
             };
