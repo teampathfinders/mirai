@@ -1,43 +1,21 @@
-use better_any::{Tid, tid};
-
-use crate::{Component, request::Req, With, World, Without};
+use crate::world::{Component, Req, With};
 
 #[derive(Debug)]
-struct Player {
-    name: &'static str
-}
+struct Player;
 
-tid!(Player);
-impl<'t> Component<'t> for Player {}
+impl Component for Player {}
 
-#[derive(Debug)]
-struct Alive; 
+struct Alive;
 
-tid!(Alive);
-impl<'t> Component<'t> for Alive {}
+impl Component for Alive {}
 
-fn exclusive_system(query: Req<&mut Player, With<Alive>>) {
-    // for player in &query {
-    //     println!("{player:?}");
-    // }
-}
-
-fn shared_system(req: Req<&Player, Without<Alive>>) {
+fn immutable_system(req: Req<&Player, With<Alive>>) {
     for player in &req {
-
+        dbg!(player);
     }
 }
 
-fn empty_system(_: ()) {
-    println!("I am an empty system");
-}
+#[tokio::test]
+async fn test() {
 
-#[test]
-fn query_test() {
-    let mut world = World::new();
-    let id = world.spawn(Alive).id();   
-    
-    world.system(empty_system);
-    world.system(shared_system);
-    world.run_all();
 }

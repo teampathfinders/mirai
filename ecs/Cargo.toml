@@ -5,3 +5,4 @@ edition = "2021"
 
 [dependencies]
 better_any = { version = "0.2.0", features = ["derive"] }
+tokio = { version = "1.26.0", features = ["macros", "rt", "rt-multi-thread"] }
