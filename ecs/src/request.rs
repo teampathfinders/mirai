@@ -30,18 +30,20 @@ where
     R: Requestable,
     F: FilterCollection
 {
+    entities: &'r [bool],
     store: StoreReference<'r>,
     _marker: PhantomData<(R, F)>
 }
 
-impl<'r, R, F> From<&'r ComponentStore> for Req<'r, R, F> 
+impl<'r, R, F> Req<'r, R, F> 
 where
     R: Requestable,
     F: FilterCollection
 {
-    fn from(value: &'r ComponentStore) -> Self {
+    pub fn new(entities: &'r [bool], store: &'r ComponentStore) -> Self {
         Self {
-            store: StoreReference::Immutable(value),
+            entities,
+            store: StoreReference::Immutable(store),
             _marker: PhantomData
         }
     }

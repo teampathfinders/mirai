@@ -5,22 +5,25 @@ use crate::{request::{Req, Requestable}, FilterCollection, World, component::Com
 pub trait SystemParam: Sized {
     const PARALLEL: bool;
 
-    fn fetch(components: &ComponentStore) -> Self;
+    fn fetch(entities: &[bool], bcomponents: &ComponentStore) -> Self;
 }
 
 impl SystemParam for () {
     const PARALLEL: bool = true;
 
-    fn fetch(_components: &ComponentStore) {}
+    fn fetch(_entities: &[bool], _components: &ComponentStore) {}
 }
 
 impl<'r, R: Requestable, F: FilterCollection> SystemParam for Req<'r, R, F> {
     const PARALLEL: bool = R::PARALLEL;
 
-    fn fetch(components: &ComponentStore) -> Self {
-        Req::from(unsafe {
-            &*(components as *const ComponentStore)
-        })
+    fn fetch(entities: &[bool], components: &ComponentStore) -> Self {
+        unsafe {
+            Req::new(
+                &*(entities as *const [bool]),
+                &*(components as *const ComponentStore)
+            )
+        }
     }
 }
 
@@ -33,7 +36,7 @@ impl<P: SystemParam> SystemParams for P {
 }
 
 pub trait System {
-    fn run(&self, store: &ComponentStore);
+    fn run(&self, entities: &[bool], store: &ComponentStore);
 }
 
 pub struct ParallelContainer<S, P: SystemParams> {
@@ -59,8 +62,8 @@ where
     S: Fn(P),
     P: SystemParam
 {
-    fn run(&self, store: &ComponentStore) {
-        (self.runnable)(P::fetch(store));
+    fn run(&self, entities: &[bool], store: &ComponentStore) {
+        (self.runnable)(P::fetch(entities, store));
     }
 }
 
@@ -104,9 +107,9 @@ impl Executor {
         }
     }
 
-    pub fn run_all(&self, store: &ComponentStore) {
+    pub fn run_all(&self, entities: &[bool], store: &ComponentStore) {
         for sys in &self.parallel {
-            sys.run(store);
+            sys.run(entities, store);
         }
     }
 }
