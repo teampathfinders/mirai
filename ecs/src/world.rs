@@ -1,16 +1,24 @@
 use std::{sync::Arc, marker::PhantomData, any::{TypeId, Any}, collections::HashMap};
 
 use dashmap::DashMap;
-use futures::stream::FuturesUnordered;
-use parking_lot::RwLock;
+use parking_lot::{RwLock, RwLockReadGuard, RawRwLock};
 use tokio::task::JoinSet;
 
 pub struct EntityId(usize);
 
-pub struct Entity<'a> {
+pub struct Entity {
     world_state: Arc<WorldState>,
     id: EntityId,
-    _marker: PhantomData<&'a ()>
+}
+
+impl Entity {
+    pub fn despawn(self) {
+        todo!();
+    }
+
+    pub fn has_component<T: Component + 'static>(&self) -> bool {
+        self.world_state.components.has_entity::<T>(self.id.0)
+    }
 }
 
 pub trait Spawnable {
@@ -30,12 +38,26 @@ impl<T: Component> RefComponent for &mut T {
 }
 
 pub trait Filters {
-
+    fn filter(entity: &Entity) -> bool;
 }
 
-impl Filters for () {}
-impl<T: Component> Filters for With<T> {}
-impl<T: Component> Filters for Without<T> {}
+impl Filters for () {
+    fn filter(_entity: &Entity) -> bool {
+        true
+    }
+}
+
+impl<T: Component + 'static> Filters for With<T> {
+    fn filter(entity: &Entity) -> bool {
+        entity.has_component::<T>()
+    }
+}
+
+impl<T: Component + 'static> Filters for Without<T> {
+    fn filter(entity: &Entity) -> bool {
+        !entity.has_component::<T>()
+    }
+}
 
 pub struct With<T: Component> {
     _marker: PhantomData<T>
@@ -57,7 +79,11 @@ impl<T0: RefComponent, T1: RefComponent> Requestable for (T0, T1) {
     const MUTABLE: bool = T0::MUTABLE || T1::MUTABLE;
 }
 
-pub trait Component {
+impl Requestable for Entity {
+    const MUTABLE: bool = true;
+}
+
+pub trait Component: Send + Sync {
 
 }
 
@@ -76,18 +102,14 @@ impl<T0: Component + 'static, T1: Component + 'static> Spawnable for (T0, T1) {
 pub trait SystemParam {
     const MUTABLE: bool;
 
-    type Item<'q>;
-
-    fn fetch<'q>(state: &'q WorldState) -> Self::Item<'q>;
+    fn fetch(state: Arc<WorldState>) -> Self;
 }   
 
 impl<S: Requestable, F: Filters> SystemParam for Req<S, F> {
     const MUTABLE: bool = S::MUTABLE;
 
-    type Item<'q> = Req<S, F>;
-
-    fn fetch<'q>(state: &'q WorldState) -> Self::Item<'q> {
-        todo!();
+    fn fetch(state: Arc<WorldState>) -> Self {
+        Req::new(state)
     }
 }
 
@@ -104,7 +126,7 @@ impl<P0: SystemParam, P1: SystemParam> SystemParams for (P0, P1) {
 }
 
 pub trait System {
-    fn call(&self);
+    fn call(&self, state: Arc<WorldState>);
 }
 
 pub struct ParallelSystem<S, P: SystemParams> 
@@ -127,14 +149,14 @@ where
 }
 
 impl<S: Fn(P), P: SystemParam> System for ParallelSystem<S, P> {
-    fn call(&self) {
-        // (self.f)();
+    fn call(&self, state: Arc<WorldState>) {
+        (self.f)(P::fetch(state));
     }
 }
 
 impl<S: Fn(P0, P1), P0: SystemParam, P1: SystemParam> System for ParallelSystem<S, (P0, P1)> {
-    fn call(&self) {
-
+    fn call(&self, state: Arc<WorldState>) {
+        (self.f)(P0::fetch(state.clone()), P1::fetch(state));
     }
 }
 
@@ -142,8 +164,21 @@ pub struct Req<S, F = ()>
 where
     S: Requestable,
     F: Filters,
-{
+{   
+    world_state: Arc<WorldState>,
     _marker: PhantomData<(S, F)>
+}
+
+impl<S, F> Req<S, F> 
+where
+    S: Requestable,
+    F: Filters
+{
+    pub fn new(world_state: Arc<WorldState>) -> Self {
+        Self {
+            world_state, _marker: PhantomData
+        }
+    }
 }
 
 impl<'q, S, F> IntoIterator for &'q Req<S, F> 
@@ -155,7 +190,9 @@ where
     type Item = S;
 
     fn into_iter(self) -> Self::IntoIter {
-        ReqIter { req: self }
+        ReqIter { 
+            req: self 
+        }
     }
 }
 
@@ -172,34 +209,34 @@ impl<'q, S: Requestable, F: Filters> Iterator for ReqIter<'q, S, F> {
 }
 
 pub trait IntoSystem<S, Params> {
-    fn into_boxed(self) -> Box<dyn System>;
+    fn into_boxed(self) -> Arc<dyn System + Send + Sync>;
 }
 
 impl<S, P> IntoSystem<S, P> for S 
 where
-    S: Fn(P) + 'static,
-    P: SystemParam + 'static
+    S: Fn(P) + Send + Sync + 'static,
+    P: SystemParam + Send + Sync + 'static
 {
-    fn into_boxed(self) -> Box<dyn System> {
+    fn into_boxed(self) -> Arc<dyn System + Send + Sync> {
         if P::MUTABLE {
             todo!();
         } else {
-            Box::new(ParallelSystem::new(self))
+            Arc::new(ParallelSystem::new(self))
         }
     }
 }
 
 impl<S, P0, P1> IntoSystem<S, (P0, P1)> for S 
 where
-    S: Fn(P0, P1) + 'static,
-    P0: SystemParam + 'static,
-    P1: SystemParam + 'static
+    S: Fn(P0, P1) + Send + Sync + 'static,
+    P0: SystemParam + Send + Sync + 'static,
+    P1: SystemParam + Send + Sync + 'static
 {
-    fn into_boxed(self) -> Box<dyn System> {
+    fn into_boxed(self) -> Arc<dyn System + Send + Sync> {
         if <(P0, P1)>::MUTABLE {
             todo!();
         } else {
-            Box::new(ParallelSystem::new(self))
+            Arc::new(ParallelSystem::new(self))
         }
     }
 }
@@ -241,6 +278,7 @@ impl Entities {
 }
 
 pub trait Store {
+    fn as_any(&self) -> &dyn Any;
     fn as_any_mut(&mut self) -> &mut dyn Any;
 }
 
@@ -285,6 +323,10 @@ impl<T: Component> Default for SpecializedStore<T> {
 }
 
 impl<T: Component + 'static> Store for SpecializedStore<T> {
+    fn as_any(&self) -> &dyn Any {
+        self
+    }
+
     fn as_any_mut(&mut self) -> &mut dyn Any {
         self
     }
@@ -292,7 +334,7 @@ impl<T: Component + 'static> Store for SpecializedStore<T> {
 
 #[derive(Default)]
 pub struct Components {
-    storage: DashMap<TypeId, Box<dyn Store>>
+    storage: DashMap<TypeId, Box<dyn Store + Send + Sync>>
 }
 
 impl Components {
@@ -311,12 +353,22 @@ impl Components {
         let downcast = storage.as_any_mut().downcast_mut::<SpecializedStore<T>>().unwrap();
         downcast.insert(component, entity);
     }
+
+    pub fn has_entity<T: Component + 'static>(&self, entity: usize) -> bool {
+        if let Some(upcasted) = self.storage.get(&TypeId::of::<T>()) {
+            if let Some(store) = upcasted.value().as_any().downcast_ref::<SpecializedStore<T>>() {
+                return store.mapping.contains_key(&entity)
+            }
+        }
+
+        false
+    }
 }
 
 #[derive(Default)]
 pub struct Systems {
-    parallel: RwLock<Vec<Box<dyn System>>>,
-    sequential: RwLock<Vec<Box<dyn System>>>
+    parallel: RwLock<Vec<Arc<dyn System + Send + Sync>>>,
+    sequential: RwLock<Vec<Arc<dyn System + Send + Sync>>>
 }
 
 impl Systems {
@@ -338,8 +390,9 @@ impl Systems {
         
         for system in &*lock {
             let state = Arc::clone(state);
+            let clone = Arc::clone(system);
             task_set.spawn(async move {
-                system.run(state);
+                clone.call(state);
             });
         }
 
@@ -370,8 +423,7 @@ impl World {
 
         Entity {
             id: EntityId(entity_id),
-            world_state: self.state.clone(),
-            _marker: PhantomData
+            world_state: self.state.clone()
         }
     }
 
@@ -379,7 +431,7 @@ impl World {
         self.systems.insert(system);
     }
 
-    pub fn run_all(&self) {
-        self.systems.run_all(&self.state);
+    pub async fn run_all(&self) {
+        self.systems.run_all(&self.state).await;
     }
 }
