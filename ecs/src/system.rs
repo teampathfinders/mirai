@@ -65,11 +65,23 @@ impl<S: Fn(P) + 'static, P: SystemParam + 'static> IntoSystem<S, P> for S {
 
 #[derive(Default)]
 pub struct Executor {
-    
+    shared: Vec<Box<dyn System>>
 }
 
 impl Executor {
     pub fn new() -> Self {
         Self::default()
+    }
+
+    pub fn add_system<S, P>(&mut self, system: impl IntoSystem<S, P>) 
+    where
+        P: SystemParams
+    {
+        if P::PARALLEL {
+            let boxed = system.into_boxed();
+            self.shared.push(boxed);
+        } else {
+            todo!();
+        }
     }
 }
