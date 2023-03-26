@@ -2,16 +2,24 @@ use std::marker::PhantomData;
 
 use crate::{request::{Req, Requestable}, FilterCollection};
 
-pub trait SystemParam {
+pub trait SystemParam: Sized {
     const PARALLEL: bool;
+
+    fn fetch() -> Self;
 }
 
 impl SystemParam for () {
     const PARALLEL: bool = true;
+
+    fn fetch() {}
 }
 
 impl<'r, R: Requestable, F: FilterCollection> SystemParam for Req<'r, R, F> {
     const PARALLEL: bool = R::PARALLEL;
+
+    fn fetch() -> Self {
+        todo!();
+    }
 }
 
 pub trait SystemParams {
@@ -23,7 +31,7 @@ impl<P: SystemParam> SystemParams for P {
 }
 
 pub trait System {
-
+    fn run(&self);
 }
 
 pub struct ParallelContainer<S, P: SystemParams> {
@@ -31,7 +39,10 @@ pub struct ParallelContainer<S, P: SystemParams> {
     _marker: PhantomData<P>
 }
 
-impl<S, P: SystemParams> ParallelContainer<S, P> {
+impl<S, P> ParallelContainer<S, P> 
+where
+    P: SystemParams
+{
     pub fn new(runnable: S) -> Self {
         debug_assert!(P::PARALLEL, "Cannot create ParallelContainer from exclusive system");
         Self {
@@ -41,8 +52,14 @@ impl<S, P: SystemParams> ParallelContainer<S, P> {
     }
 }
 
-impl<S, P: SystemParam> System for ParallelContainer<S, P> {
-    
+impl<S, P> System for ParallelContainer<S, P> 
+where
+    S: Fn(P),
+    P: SystemParam
+{
+    fn run(&self) {
+        (self.runnable)(P::fetch());
+    }
 }
 
 pub trait IntoSystem<S, P> 
@@ -65,7 +82,7 @@ impl<S: Fn(P) + 'static, P: SystemParam + 'static> IntoSystem<S, P> for S {
 
 #[derive(Default)]
 pub struct Executor {
-    shared: Vec<Box<dyn System>>
+    parallel: Vec<Box<dyn System>>
 }
 
 impl Executor {
@@ -79,9 +96,15 @@ impl Executor {
     {
         if P::PARALLEL {
             let boxed = system.into_boxed();
-            self.shared.push(boxed);
+            self.parallel.push(boxed);
         } else {
             todo!();
+        }
+    }
+
+    pub fn run_all(&self) {
+        for sys in &self.parallel {
+            sys.run();
         }
     }
 }
