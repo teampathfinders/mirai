@@ -4,6 +4,7 @@ use dashmap::DashMap;
 use parking_lot::{RwLock, RwLockReadGuard, RawRwLock};
 use tokio::task::JoinSet;
 
+#[derive(Debug)]
 pub struct EntityId(usize);
 
 pub struct Entity {
@@ -12,6 +13,10 @@ pub struct Entity {
 }
 
 impl Entity {
+    pub fn id(&self) -> &EntityId {
+        &self.id
+    }
+
     pub fn despawn(self) {
         todo!();
     }
@@ -38,24 +43,24 @@ impl<T: Component> RefComponent for &mut T {
 }
 
 pub trait Filters {
-    fn filter(entity: &Entity) -> bool;
+    fn filter(entity: usize, state: &WorldState) -> bool;
 }
 
 impl Filters for () {
-    fn filter(_entity: &Entity) -> bool {
+    fn filter(_entity: usize, _state: &WorldState) -> bool {
         true
     }
 }
 
 impl<T: Component + 'static> Filters for With<T> {
-    fn filter(entity: &Entity) -> bool {
-        entity.has_component::<T>()
+    fn filter(entity: usize, state: &WorldState) -> bool {
+        state.components.has_entity::<T>(entity)
     }
 }
 
 impl<T: Component + 'static> Filters for Without<T> {
-    fn filter(entity: &Entity) -> bool {
-        !entity.has_component::<T>()
+    fn filter(entity: usize, state: &WorldState) -> bool {
+        !state.components.has_entity::<T>(entity)
     }
 }
 
@@ -68,19 +73,25 @@ pub struct Without<T: Component> {
 }
 
 pub trait Requestable {
+    /// This is here because ReqIter logic requires checking whether the requestable is an entity.
+    /// It cannot be done using TypeId as that requires a static lifetime, which we do not have.
+    const IS_ENTITY: bool;
     const MUTABLE: bool;
 }
 
 impl<T: RefComponent> Requestable for T {
+    const IS_ENTITY: bool = false;
     const MUTABLE: bool = T::MUTABLE;
 }
 
 impl<T0: RefComponent, T1: RefComponent> Requestable for (T0, T1) {
+    const IS_ENTITY: bool = false;
     const MUTABLE: bool = T0::MUTABLE || T1::MUTABLE;
 }
 
 impl Requestable for Entity {
-    const MUTABLE: bool = true;
+    const IS_ENTITY: bool = true;
+    const MUTABLE: bool = false;
 }
 
 pub trait Component: Send + Sync {
@@ -191,20 +202,53 @@ where
 
     fn into_iter(self) -> Self::IntoIter {
         ReqIter { 
-            req: self 
+            next_index: 0,
+            state: &self.world_state,
+            _marker: PhantomData
         }
     }
 }
 
 pub struct ReqIter<'q, S: Requestable, F: Filters> {
-    req: &'q Req<S, F>
+    next_index: usize,
+    state: &'q Arc<WorldState>,
+    _marker: PhantomData<(S, F)>
 }
 
 impl<'q, S: Requestable, F: Filters> Iterator for ReqIter<'q, S, F> {
     type Item = S;
 
     fn next(&mut self) -> Option<S> {
-        todo!();
+        let entity_id = self.state.entities.mapping.read()[self.next_index..]
+            .iter()
+            .enumerate()
+            .find_map(|(i, v)| if *v {
+                let entity_id = self.next_index + i;
+                if F::filter(entity_id, self.state) {
+                    Some(entity_id)
+                } else {
+                    None
+                }
+            } else {
+                None
+            })?;
+
+        self.next_index = entity_id + 1;
+        if S::IS_ENTITY {
+            let entity = Entity {
+                world_state: Arc::clone(self.state),
+                id: EntityId(entity_id)
+            };
+
+            let transmuted = unsafe {
+                std::mem::transmute_copy(&entity)
+            };
+            std::mem::forget(entity);
+
+            Some(transmuted)
+        } else {
+            None
+        }
     }
 }
 
