@@ -46,3 +46,48 @@ where
         }
     }
 }
+
+impl<'r, R, F> IntoIterator for &'r Req<'r, R, F>
+where
+    R: Requestable + 'r,
+    F: FilterCollection + 'r,
+{
+    type IntoIter = ReqIter<'r, R, F>;
+    type Item = R;
+
+    fn into_iter(self) -> Self::IntoIter {
+        ReqIter::from(self)
+    }
+}
+
+pub struct ReqIter<'r, R, F> 
+where
+    R: Requestable,
+    F: FilterCollection
+{
+    req: &'r Req<'r, R, F>,
+}
+
+impl<'r, R, F> Iterator for ReqIter<'r, R, F> 
+where
+    R: Requestable,
+    F: FilterCollection
+{
+    type Item = R;
+
+    fn next(&mut self) -> Option<R> {
+        todo!();
+    }
+}
+
+impl<'r, R, F> From<&'r Req<'r, R, F>> for ReqIter<'r, R, F> 
+where
+    R: Requestable,
+    F: FilterCollection
+{
+    fn from(req: &'r Req<'r, R, F>) -> Self {
+        Self {
+            req
+        }
+    }
+}

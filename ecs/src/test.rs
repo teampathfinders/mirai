@@ -23,8 +23,8 @@ fn exclusive_system(query: Req<&mut Player, With<Alive>>) {
 }
 
 fn shared_system(req: Req<&Player, Without<Alive>>) {
-    for player in &query {
-        
+    for player in &req {
+
     }
 }
 
