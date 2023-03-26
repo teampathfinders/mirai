@@ -1,4 +1,4 @@
-use crate::{entity::EntityStore, component::ComponentStore, system::{Executor, IntoSystem, SystemParam}, Spawnable, EntityId, Entity};
+use crate::{entity::EntityStore, component::ComponentStore, system::{Executor, IntoSystem, SystemParam, SystemParams}, Spawnable, EntityId, Entity};
 
 
 #[derive(Default)]
@@ -31,11 +31,14 @@ impl World {
         self.entities.release(id);
     }
 
-    pub fn system<S, P: SystemParam>(&mut self, system: impl IntoSystem<S, P>) {
+    pub fn system<S, P>(&mut self, system: impl IntoSystem<S, P>) 
+    where
+        P: SystemParams
+    {
         self.executor.add_system(system);
     }
 
-    pub(crate) fn run_all(&self) {
-        self.executor.run_all();
+    pub fn run_all(&self) {
+        self.executor.run_all(self.entities.as_ref(), &self.components);
     }
 }

@@ -58,6 +58,12 @@ impl EntityStore {
     }
 }
 
+impl AsRef<[bool]> for EntityStore {
+    fn as_ref(&self) -> &[bool] {
+        &self.mapping
+    }
+}
+
 impl Default for EntityStore {
     fn default() -> EntityStore {
         EntityStore {

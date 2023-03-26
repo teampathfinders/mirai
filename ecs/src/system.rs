@@ -1,24 +1,29 @@
 use std::marker::PhantomData;
 
-use crate::{request::{Req, Requestable}, FilterCollection};
+use crate::{request::{Req, Requestable}, FilterCollection, World, component::ComponentStore};
 
 pub trait SystemParam: Sized {
     const PARALLEL: bool;
 
-    fn fetch() -> Self;
+    fn fetch(entities: &[bool], bcomponents: &ComponentStore) -> Self;
 }
 
 impl SystemParam for () {
     const PARALLEL: bool = true;
 
-    fn fetch() -> Self {}
+    fn fetch(_entities: &[bool], _components: &ComponentStore) {}
 }
 
 impl<'r, R: Requestable, F: FilterCollection> SystemParam for Req<'r, R, F> {
     const PARALLEL: bool = R::PARALLEL;
 
-    fn fetch() -> Self {
-        todo!();
+    fn fetch(entities: &[bool], components: &ComponentStore) -> Self {
+        unsafe {
+            Req::new(
+                &*(entities as *const [bool]),
+                &*(components as *const ComponentStore)
+            )
+        }
     }
 }
 
@@ -31,7 +36,7 @@ impl<P: SystemParam> SystemParams for P {
 }
 
 pub trait System {
-    fn run(&self);
+    fn run(&self, entities: &[bool], store: &ComponentStore);
 }
 
 pub struct ParallelContainer<S, P: SystemParams> {
@@ -39,7 +44,10 @@ pub struct ParallelContainer<S, P: SystemParams> {
     _marker: PhantomData<P>
 }
 
-impl<S, P: SystemParams> ParallelContainer<S, P> {
+impl<S, P> ParallelContainer<S, P> 
+where
+    P: SystemParams
+{
     pub fn new(runnable: S) -> Self {
         debug_assert!(P::PARALLEL, "Cannot create ParallelContainer from exclusive system");
         Self {
@@ -49,9 +57,13 @@ impl<S, P: SystemParams> ParallelContainer<S, P> {
     }
 }
 
-impl<S: Fn(P), P: SystemParam> System for ParallelContainer<S, P> {
-    fn run(&self) {
-        (self.runnable)(P::fetch());
+impl<'r, S, P> System for ParallelContainer<S, P> 
+where
+    S: Fn(P),
+    P: SystemParam
+{
+    fn run(&self, entities: &[bool], store: &ComponentStore) {
+        (self.runnable)(P::fetch(entities, store));
     }
 }
 
@@ -62,7 +74,7 @@ where
     fn into_boxed(self) -> Box<dyn System>;
 }
 
-impl<S: Fn(P) + 'static, P: SystemParam + 'static> IntoSystem<S, P> for S {
+impl<'r, S: Fn(P) + 'static, P: SystemParam + 'static> IntoSystem<S, P> for S {
     fn into_boxed(self) -> Box<dyn System> {
         if P::PARALLEL {
             let container: ParallelContainer<S, P> = ParallelContainer::new(self);
@@ -83,17 +95,21 @@ impl Executor {
         Self::default()
     }
 
-    pub fn add_system<S, P: SystemParam>(&mut self, system: impl IntoSystem<S, P>) {
+    pub fn add_system<S, P>(&mut self, system: impl IntoSystem<S, P>) 
+    where
+        P: SystemParams
+    {
         if P::PARALLEL {
-            self.parallel.push(system.into_boxed())
+            let boxed = system.into_boxed();
+            self.parallel.push(boxed);
         } else {
             todo!();
         }
     }
 
-    pub fn run_all(&self) {
+    pub fn run_all(&self, entities: &[bool], store: &ComponentStore) {
         for sys in &self.parallel {
-            sys.run();
+            sys.run(entities, store);
         }
     }
 }
