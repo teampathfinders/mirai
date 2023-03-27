@@ -1,5 +1,7 @@
 use std::sync::Arc;
 
+use parking_lot::RwLock;
+
 use crate::{entity::{Entities, Entity, EntityId}, component::{Components, Component, Spawnable}, system::{Systems, SystemParams, IntoSystem}};
 
 #[derive(Default)]
@@ -17,7 +19,7 @@ impl WorldState {
 
 #[derive(Default)]
 pub struct World {
-    state: Arc<WorldState>,
+    state: Arc<RwLock<WorldState>>,
     systems: Systems
 }
 
@@ -27,8 +29,8 @@ impl World {
     }
     
     pub fn spawn(&self, spawnable: impl Spawnable) -> Entity {
-        let entity_id = self.state.entities.acquire();
-        spawnable.insert_all(&self.state.components, entity_id);
+        let entity_id = self.state.read().entities.acquire();
+        spawnable.insert_all(&mut self.state.write().components, entity_id);
 
         Entity {
             id: EntityId(entity_id),

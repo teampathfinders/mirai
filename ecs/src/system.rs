@@ -8,14 +8,15 @@ use crate::{world::WorldState, request::{Requestable, Filters, Request}};
 pub trait SystemParam {
     const MUTABLE: bool;
 
-    fn fetch(state: Arc<WorldState>) -> Self;
+    fn fetch(state: Arc<RwLock<WorldState>>) -> Self;
 }   
 
-impl<S: Requestable, F: Filters> SystemParam for Request<S, F> {
+impl<S: Requestable, F: Filters> SystemParam for Request<'_, S, F> {
     const MUTABLE: bool = S::MUTABLE;
 
-    fn fetch(state: Arc<WorldState>) -> Self {
-        Request::new(state)
+    fn fetch(state: Arc<RwLock<WorldState>>) -> Self {
+        todo!()
+        // Request::new(state)
     }
 }
 
@@ -32,7 +33,7 @@ impl<P0: SystemParam, P1: SystemParam> SystemParams for (P0, P1) {
 }
 
 pub trait System {
-    fn call(&self, state: Arc<WorldState>);
+    fn call(&self, state: Arc<RwLock<WorldState>>);
 }
 
 pub struct ParallelSystem<S, P: SystemParams> 
@@ -55,13 +56,13 @@ where
 }
 
 impl<S: Fn(P), P: SystemParam> System for ParallelSystem<S, P> {
-    fn call(&self, state: Arc<WorldState>) {
+    fn call(&self, state: Arc<RwLock<WorldState>>) {
         (self.f)(P::fetch(state));
     }
 }
 
 impl<S: Fn(P0, P1), P0: SystemParam, P1: SystemParam> System for ParallelSystem<S, (P0, P1)> {
-    fn call(&self, state: Arc<WorldState>) {
+    fn call(&self, state: Arc<RwLock<WorldState>>) {
         (self.f)(P0::fetch(state.clone()), P1::fetch(state));
     }
 }
@@ -118,7 +119,7 @@ impl Systems {
         }
     }
 
-    pub async fn run_all(&self, state: &Arc<WorldState>) {
+    pub async fn run_all(&self, state: &Arc<RwLock<WorldState>>) {
         let mut task_set = JoinSet::new();
         let lock = self.parallel.read();
         

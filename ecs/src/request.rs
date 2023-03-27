@@ -1,33 +1,8 @@
-use std::{sync::Arc, marker::PhantomData};
+use std::{sync::{Arc}, marker::PhantomData, pin::Pin};
 
-use crate::{private, component::Component, entity::{Entity, EntityId}, world::WorldState};
+use parking_lot::{RwLock, RwLockReadGuard};
 
-pub trait RefComponent: Sized {
-    type NonRef: Component + 'static;
-
-    const MUTABLE: bool;    
-}
-
-impl<T: RefComponent> private::Sealed for T {}
-impl<T0: RefComponent, T1: RefComponent> private::Sealed for (T0, T1) {}
-
-impl<T> RefComponent for &T 
-where
-    T: Component + 'static
-{
-    type NonRef = T;
-
-    const MUTABLE: bool = false;
-}
-
-impl<T> RefComponent for &mut T 
-where
-    T: Component + 'static,
-{
-    type NonRef = T;
-
-    const MUTABLE: bool = true;
-}
+use crate::{private, component::{Component, Components}, entity::{Entity, EntityId, Entities}, world::WorldState};
 
 pub trait Filters {
     fn filter(entity: usize, state: &WorldState) -> bool;
@@ -64,150 +39,96 @@ pub struct Without<T: Component> {
 /// [`Request`] relies on this trait correctly being implemented.
 /// The [`IS_ENTITY`](Requestable::IS_ENTITY) associated constant *must* only be true for [`Entity`].
 pub unsafe trait Requestable: Sized + private::Sealed {
-    type Item<'a>;
+    type Fetch<'state>;
 
     /// This is here because ReqIter logic requires checking whether the requestable is an entity.
     /// It cannot be done using TypeId as that requires a static lifetime, which we do not have.
     const IS_ENTITY: bool;
     const MUTABLE: bool;
-
-    fn fetch<'a>(entity: usize, state: &'a WorldState) -> Option<Self::Item<'a>> {
-        unimplemented!()
-    }
-
-    fn matches(entity: usize, state: &WorldState) -> bool;
 }
 
-unsafe impl<T> Requestable for T 
+impl<T> private::Sealed for &T where T: Component {}
+
+unsafe impl<T> Requestable for &T 
 where
-    T: RefComponent,
-{  
-    type Item<'s> = &'s T::NonRef;
+    T: Component + 'static
+{
+    type Fetch<'state> = &'state T;
 
     const IS_ENTITY: bool = false;
-    const MUTABLE: bool = T::MUTABLE;
-
-    fn fetch<'s>(entity: usize, state: &'s WorldState) -> Option<Self::Item<'s>> {
-        todo!();
-        // <T as RefComponent>::fetch(entity, state)
-    }
-
-    fn matches(entity: usize, state: &WorldState) -> bool {
-        state.entity_has::<T::NonRef>(entity)
-    }
+    const MUTABLE: bool = false;
 }
 
-// unsafe impl<T0, T1> Requestable for (T0, T1) 
-// where
-//     T0: RefComponent,
-//     T1: RefComponent,
-// {
-//     type Item =
+// unsafe impl Requestable for Entity {
+//     type Fetch<'s> = Entity;
 
-//     const IS_ENTITY: bool = false;
-//     const MUTABLE: bool = T0::MUTABLE || T1::MUTABLE;
+//     const IS_ENTITY: bool = true;
+//     const MUTABLE: bool = false;
 
 //     fn matches(entity: usize, state: &WorldState) -> bool {
-//         state.entity_has::<T0::NonRef>(entity) && state.entity_has::<T1::NonRef>(entity)
+//         true
 //     }
 // }
 
-unsafe impl Requestable for Entity {
-    type Item<'s> = Entity;
-
-    const IS_ENTITY: bool = true;
-    const MUTABLE: bool = false;
-
-    fn matches(entity: usize, state: &WorldState) -> bool {
-        true
-    }
-}
-
-pub struct Request<S, F = ()>
+pub struct Request<'state, S, F = ()>
 where
     S: Requestable,
     F: Filters,
 {   
-    world_state: Arc<WorldState>,
+    entities: &'state Entities,
+    components: &'state Components,
     _marker: PhantomData<(S, F)>
 }
 
-impl<S, F> Request<S, F> 
+impl<'state, S, F> Request<'state, S, F> 
 where
     S: Requestable,
     F: Filters
 {
-    pub fn new(world_state: Arc<WorldState>) -> Self {
+    pub fn new(state: &'state WorldState) -> Self {
         Self {
-            world_state, _marker: PhantomData
-        }
-    }
-}
-
-impl<'q, S, F> IntoIterator for &'q Request<S, F> 
-where
-    S: Requestable,
-    F: Filters
-{
-    type IntoIter = ReqIter<'q, S, F>;
-    type Item = S::Item<'q>;
-
-    fn into_iter(self) -> Self::IntoIter {
-        ReqIter { 
-            next_index: 0,
-            state: &self.world_state,
+            entities: &state.entities,
+            components: &state.components,
             _marker: PhantomData
         }
     }
 }
 
-pub struct ReqIter<'q, S: Requestable, F: Filters> {
-    next_index: usize,
-    state: &'q Arc<WorldState>,
+impl<'state, S, F> IntoIterator for &Request<'state, S, F> 
+where
+    S: Requestable + 'state,
+    F: Filters + 'state
+{
+    type IntoIter = RequestIter<'state, S, F>;
+    type Item = S::Fetch<'state>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        RequestIter {
+            entities: self.entities,
+            components: self.components,
+            _marker: PhantomData
+        }
+    }
+}
+
+pub struct RequestIter<'state, S, F> 
+where
+    S: Requestable,
+    F: Filters
+{
+    entities: &'state Entities,
+    components: &'state Components,
     _marker: PhantomData<(S, F)>
 }
 
-impl<'q, S: Requestable, F: Filters> Iterator for ReqIter<'q, S, F> {
-    type Item = S::Item<'q>;
+impl<'state, S, F> Iterator for RequestIter<'state, S, F> 
+where
+    S: Requestable,
+    F: Filters
+{
+    type Item = S::Fetch<'state>;
 
     fn next(&mut self) -> Option<Self::Item> {
-        let entity_id = self.state.entities.mapping.read()[self.next_index..]
-            .iter()
-            .enumerate()
-            .find_map(|(i, v)| if *v {
-                let entity_id = self.next_index + i;
-                if S::matches(entity_id, self.state) && F::filter(entity_id, self.state) {
-                    Some(entity_id)
-                } else {
-                    None
-                }
-            } else {
-                None
-            })?;
-
-        self.next_index = entity_id + 1;
-        if S::IS_ENTITY {
-            let entity = Entity {
-                world_state: Arc::clone(self.state),
-                id: EntityId(entity_id)
-            };
-
-            // This would probably benefit from specialisation of the `S` generic, which is currently
-            // unstable.
-            // SAFETY: This is safe because `S` is guaranteed to be of type `Entity`.
-            // The caller has to make sure that `IS_ENTITY` is only true for `Entity`.
-            let transmuted = unsafe {
-                std::mem::transmute_copy(&entity)
-            };
-            std::mem::forget(entity);
-
-            Some(transmuted)
-        } else {
-            if S::MUTABLE {
-                todo!();
-            } else {
-                S::fetch(entity_id, &self.state)
-            }
-        }
+        todo!()
     }
 }

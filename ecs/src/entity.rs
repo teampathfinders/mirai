@@ -8,7 +8,7 @@ use crate::{private, world::WorldState, component::Component};
 pub struct EntityId(pub(crate) usize);
 
 pub struct Entity {
-    pub(crate) world_state: Arc<WorldState>,
+    pub(crate) world_state: Arc<RwLock<WorldState>>,
     pub(crate) id: EntityId,
 }
 
@@ -25,7 +25,7 @@ impl Entity {
 
     #[inline]
     pub fn has_component<T: Component + 'static>(&self) -> bool {
-        self.world_state.components.entity_has::<T>(self.id.0)
+        self.world_state.read().components.entity_has::<T>(self.id.0)
     }
 }
 
