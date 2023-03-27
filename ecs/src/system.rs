@@ -1,22 +1,24 @@
 use std::{marker::PhantomData, sync::Arc};
 
 use parking_lot::RwLock;
-use tokio::task::JoinSet;
 
 use crate::{world::WorldState, request::{Requestable, Filters, Request}};
 
-pub trait SystemParam {
+pub unsafe trait SystemParam {
     const MUTABLE: bool;
 
-    fn fetch(state: Arc<RwLock<WorldState>>) -> Self;
+    type Target<'state>;
+
+    fn fetch<'state>(state: &'state WorldState) -> Self::Target<'state>;
 }   
 
-impl<S: Requestable, F: Filters> SystemParam for Request<'_, S, F> {
+unsafe impl<S: Requestable, F: Filters> SystemParam for Request<'_, S, F> {
     const MUTABLE: bool = S::MUTABLE;
 
-    fn fetch(state: Arc<RwLock<WorldState>>) -> Self {
-        todo!()
-        // Request::new(state)
+    type Target<'state> = Request<'state, S, F>;
+
+    fn fetch<'state>(state: &'state WorldState) -> Self::Target<'state> {
+        Request::new(state)
     }
 }
 
@@ -24,16 +26,15 @@ pub trait SystemParams {
     const MUTABLE: bool;
 }
 
-impl<P: SystemParam> SystemParams for P {
+impl<P> SystemParams for P 
+where
+    P: SystemParam
+{
     const MUTABLE: bool = P::MUTABLE;
 }
 
-impl<P0: SystemParam, P1: SystemParam> SystemParams for (P0, P1) {
-    const MUTABLE: bool = P0::MUTABLE || P1::MUTABLE;
-}
-
 pub trait System {
-    fn call(&self, state: Arc<RwLock<WorldState>>);
+    fn call(&self, state: &WorldState);
 }
 
 pub struct ParallelSystem<S, P: SystemParams> 
@@ -55,15 +56,19 @@ where
     }
 }
 
-impl<S: Fn(P), P: SystemParam> System for ParallelSystem<S, P> {
-    fn call(&self, state: Arc<RwLock<WorldState>>) {
-        (self.f)(P::fetch(state));
-    }
-}
+impl<S, P> System for ParallelSystem<S, P> 
+where
+    S: Fn(P),
+    P: SystemParam
+{
+    fn call(&self, state: &WorldState) {
+        let fetched = P::fetch(state);
+        let transmuted = unsafe {
+            std::mem::transmute_copy(&fetched)
+        };
+        std::mem::forget(fetched);
 
-impl<S: Fn(P0, P1), P0: SystemParam, P1: SystemParam> System for ParallelSystem<S, (P0, P1)> {
-    fn call(&self, state: Arc<RwLock<WorldState>>) {
-        (self.f)(P0::fetch(state.clone()), P1::fetch(state));
+        (self.f)(transmuted);
     }
 }
 
@@ -78,21 +83,6 @@ where
 {
     fn into_boxed(self) -> Arc<dyn System + Send + Sync> {
         if P::MUTABLE {
-            todo!();
-        } else {
-            Arc::new(ParallelSystem::new(self))
-        }
-    }
-}
-
-impl<S, P0, P1> IntoSystem<S, (P0, P1)> for S 
-where
-    S: Fn(P0, P1) + Send + Sync + 'static,
-    P0: SystemParam + Send + Sync + 'static,
-    P1: SystemParam + Send + Sync + 'static
-{
-    fn into_boxed(self) -> Arc<dyn System + Send + Sync> {
-        if <(P0, P1)>::MUTABLE {
             todo!();
         } else {
             Arc::new(ParallelSystem::new(self))
@@ -119,19 +109,13 @@ impl Systems {
         }
     }
 
-    pub async fn run_all(&self, state: &Arc<RwLock<WorldState>>) {
-        let mut task_set = JoinSet::new();
+    pub async fn run_all(&self, state: &WorldState) {
         let lock = self.parallel.read();
-        
         for system in &*lock {
-            let state = Arc::clone(state);
-            let clone = Arc::clone(system);
-            task_set.spawn(async move {
-                clone.call(state);
-            });
+            system.call(state);
         }
 
         // Wait for all systems to finish running
-        while task_set.join_next().await.is_some() {}
+        // while task_set.join_next().await.is_some() {}
     }
 }

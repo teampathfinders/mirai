@@ -19,7 +19,7 @@ impl WorldState {
 
 #[derive(Default)]
 pub struct World {
-    state: Arc<RwLock<WorldState>>,
+    state: RwLock<WorldState>,
     systems: Systems
 }
 
@@ -28,14 +28,16 @@ impl World {
         Self::default()
     }
     
-    pub fn spawn(&self, spawnable: impl Spawnable) -> Entity {
+    pub fn spawn(&self, spawnable: impl Spawnable) -> EntityId {
         let entity_id = self.state.read().entities.acquire();
         spawnable.insert_all(&mut self.state.write().components, entity_id);
 
-        Entity {
-            id: EntityId(entity_id),
-            world_state: self.state.clone()
-        }
+        EntityId(entity_id)
+
+        // Entity {
+        //     id: EntityId(entity_id),
+        //     world_state: self.state.clone()
+        // }
     }
 
     pub fn system<S, P: SystemParams>(&self, system: impl IntoSystem<S, P>) {
@@ -43,6 +45,6 @@ impl World {
     }
 
     pub async fn run_all(&self) {
-        self.systems.run_all(&self.state).await;
+        self.systems.run_all(&self.state.read()).await;
     }
 }

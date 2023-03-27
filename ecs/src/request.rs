@@ -45,6 +45,8 @@ pub unsafe trait Requestable: Sized + private::Sealed {
     /// It cannot be done using TypeId as that requires a static lifetime, which we do not have.
     const IS_ENTITY: bool;
     const MUTABLE: bool;
+
+    fn is_viable(entity: usize, components: &Components) -> bool;
 }
 
 impl<T> private::Sealed for &T where T: Component {}
@@ -57,18 +59,11 @@ where
 
     const IS_ENTITY: bool = false;
     const MUTABLE: bool = false;
+
+    fn is_viable(entity: usize, components: &Components) -> bool {
+        components.entity_has::<T>(entity)
+    }
 }
-
-// unsafe impl Requestable for Entity {
-//     type Fetch<'s> = Entity;
-
-//     const IS_ENTITY: bool = true;
-//     const MUTABLE: bool = false;
-
-//     fn matches(entity: usize, state: &WorldState) -> bool {
-//         true
-//     }
-// }
 
 pub struct Request<'state, S, F = ()>
 where
@@ -104,6 +99,7 @@ where
 
     fn into_iter(self) -> Self::IntoIter {
         RequestIter {
+            last_entity: 0,
             entities: self.entities,
             components: self.components,
             _marker: PhantomData
@@ -116,6 +112,7 @@ where
     S: Requestable,
     F: Filters
 {
+    last_entity: usize,
     entities: &'state Entities,
     components: &'state Components,
     _marker: PhantomData<(S, F)>
@@ -129,6 +126,26 @@ where
     type Item = S::Fetch<'state>;
 
     fn next(&mut self) -> Option<Self::Item> {
-        todo!()
+        let lock = self.entities.mapping.read();
+
+        // Find the next matching entity
+        let entity = lock
+            .iter()
+            .enumerate()
+            .find_map(|(index, entity)| {
+                if *entity {
+                    // Verify that entity has requested components 
+                    if S::is_viable(self.last_entity + index, self.components) {
+                        return None
+                    }
+
+                    None
+                } else {
+                    // Entity ID is not in use
+                    None
+                }
+            })?;
+
+        todo!();
     }
 }
