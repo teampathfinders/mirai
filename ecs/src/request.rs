@@ -2,25 +2,33 @@ use std::{sync::Arc, marker::PhantomData};
 
 use crate::{private, component::Component, entity::{Entity, EntityId}, world::WorldState};
 
-pub trait RefComponent {
+pub trait RefComponent<'a>: Sized {
     type NonRef: Component + 'static;
 
     const MUTABLE: bool;    
+
+    fn fetch(entity: usize, state: &'a WorldState) -> Self {
+        unimplemented!()
+    }
 }
 
-impl<T: RefComponent> private::Sealed for T {}
-impl<T0: RefComponent, T1: RefComponent> private::Sealed for (T0, T1) {}
+impl<'a, T: RefComponent<'a>> private::Sealed for T {}
+impl<'a, T0: RefComponent<'a>, T1: RefComponent<'a>> private::Sealed for (T0, T1) {}
 
-impl<T> RefComponent for &T 
+impl<'a, T> RefComponent<'a> for &'a T 
 where
     T: Component + 'static
 {
     type NonRef = T;
 
     const MUTABLE: bool = false;
+
+    fn fetch(entity: usize, state: &WorldState) -> Self {
+        state.components.get(entity)
+    }
 }
 
-impl<T> RefComponent for &mut T 
+impl<'a, T> RefComponent<'a> for &'a mut T 
 where
     T: Component + 'static,
 {
@@ -63,39 +71,49 @@ pub struct Without<T: Component> {
 /// 
 /// [`Request`] relies on this trait correctly being implemented.
 /// The [`IS_ENTITY`](Requestable::IS_ENTITY) associated constant *must* only be true for [`Entity`].
-pub unsafe trait Requestable: private::Sealed {
+pub unsafe trait Requestable<'a>: Sized + private::Sealed {
     /// This is here because ReqIter logic requires checking whether the requestable is an entity.
     /// It cannot be done using TypeId as that requires a static lifetime, which we do not have.
     const IS_ENTITY: bool;
     const MUTABLE: bool;
 
+    fn fetch(entity: usize, state: &WorldState) -> Self {
+        unimplemented!()
+    }
+
     fn matches(entity: usize, state: &WorldState) -> bool;
 }
 
-unsafe impl<T> Requestable for T 
+unsafe impl<'a, T> Requestable for T 
 where
-    T: RefComponent,
-{
+    T: RefComponent<'a>,
+{  
     const IS_ENTITY: bool = false;
     const MUTABLE: bool = T::MUTABLE;
+
+    fn fetch(entity: usize, state: &WorldState) -> Self {
+        <T as RefComponent>::fetch(entity, state)
+    }
 
     fn matches(entity: usize, state: &WorldState) -> bool {
         state.entity_has::<T::NonRef>(entity)
     }
 }
 
-unsafe impl<T0, T1> Requestable for (T0, T1) 
-where
-    T0: RefComponent,
-    T1: RefComponent,
-{
-    const IS_ENTITY: bool = false;
-    const MUTABLE: bool = T0::MUTABLE || T1::MUTABLE;
+// unsafe impl<T0, T1> Requestable for (T0, T1) 
+// where
+//     T0: RefComponent,
+//     T1: RefComponent,
+// {
+//     type Item =
 
-    fn matches(entity: usize, state: &WorldState) -> bool {
-        state.entity_has::<T0::NonRef>(entity) && state.entity_has::<T1::NonRef>(entity)
-    }
-}
+//     const IS_ENTITY: bool = false;
+//     const MUTABLE: bool = T0::MUTABLE || T1::MUTABLE;
+
+//     fn matches(entity: usize, state: &WorldState) -> bool {
+//         state.entity_has::<T0::NonRef>(entity) && state.entity_has::<T1::NonRef>(entity)
+//     }
+// }
 
 unsafe impl Requestable for Entity {
     const IS_ENTITY: bool = true;
@@ -186,7 +204,12 @@ impl<'q, S: Requestable, F: Filters> Iterator for ReqIter<'q, S, F> {
 
             Some(transmuted)
         } else {
-            todo!();
+            if S::MUTABLE {
+                todo!();
+            } else {
+                let out = S::fetch(entity_id, self.state);
+                Some(out)
+            }
         }
     }
 }

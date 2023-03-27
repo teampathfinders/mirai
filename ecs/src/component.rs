@@ -108,4 +108,8 @@ impl Components {
 
         false
     }
+
+    pub fn get<T: Component + 'static>(&self, entity: usize) -> &T {
+        todo!();
+    }
 }
