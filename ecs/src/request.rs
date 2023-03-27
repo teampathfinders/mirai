@@ -3,17 +3,29 @@ use std::{sync::Arc, marker::PhantomData};
 use crate::{private, component::Component, entity::{Entity, EntityId}, world::WorldState};
 
 pub trait RefComponent {
+    type NonRef: Component + 'static;
+
     const MUTABLE: bool;    
 }
 
 impl<T: RefComponent> private::Sealed for T {}
 impl<T0: RefComponent, T1: RefComponent> private::Sealed for (T0, T1) {}
 
-impl<T: Component> RefComponent for &T {
+impl<T> RefComponent for &T 
+where
+    T: Component + 'static
+{
+    type NonRef = T;
+
     const MUTABLE: bool = false;
 }
 
-impl<T: Component> RefComponent for &mut T {
+impl<T> RefComponent for &mut T 
+where
+    T: Component + 'static,
+{
+    type NonRef = T;
+
     const MUTABLE: bool = true;
 }
 
@@ -47,26 +59,51 @@ pub struct Without<T: Component> {
     _marker: PhantomData<T>
 }
 
+/// # Safety
+/// 
+/// [`Request`] relies on this trait correctly being implemented.
+/// The [`IS_ENTITY`](Requestable::IS_ENTITY) associated constant *must* only be true for [`Entity`].
 pub unsafe trait Requestable: private::Sealed {
     /// This is here because ReqIter logic requires checking whether the requestable is an entity.
     /// It cannot be done using TypeId as that requires a static lifetime, which we do not have.
     const IS_ENTITY: bool;
     const MUTABLE: bool;
+
+    fn matches(entity: usize, state: &WorldState) -> bool;
 }
 
-unsafe impl<T: RefComponent> Requestable for T {
+unsafe impl<T> Requestable for T 
+where
+    T: RefComponent,
+{
     const IS_ENTITY: bool = false;
     const MUTABLE: bool = T::MUTABLE;
+
+    fn matches(entity: usize, state: &WorldState) -> bool {
+        state.entity_has::<T::NonRef>(entity)
+    }
 }
 
-unsafe impl<T0: RefComponent, T1: RefComponent> Requestable for (T0, T1) {
+unsafe impl<T0, T1> Requestable for (T0, T1) 
+where
+    T0: RefComponent,
+    T1: RefComponent,
+{
     const IS_ENTITY: bool = false;
     const MUTABLE: bool = T0::MUTABLE || T1::MUTABLE;
+
+    fn matches(entity: usize, state: &WorldState) -> bool {
+        state.entity_has::<T0::NonRef>(entity) && state.entity_has::<T1::NonRef>(entity)
+    }
 }
 
 unsafe impl Requestable for Entity {
     const IS_ENTITY: bool = true;
     const MUTABLE: bool = false;
+
+    fn matches(entity: usize, state: &WorldState) -> bool {
+        true
+    }
 }
 
 pub struct Request<S, F = ()>
@@ -122,7 +159,7 @@ impl<'q, S: Requestable, F: Filters> Iterator for ReqIter<'q, S, F> {
             .enumerate()
             .find_map(|(i, v)| if *v {
                 let entity_id = self.next_index + i;
-                if F::filter(entity_id, self.state) {
+                if S::matches(entity_id, self.state) && F::filter(entity_id, self.state) {
                     Some(entity_id)
                 } else {
                     None
@@ -149,7 +186,7 @@ impl<'q, S: Requestable, F: Filters> Iterator for ReqIter<'q, S, F> {
 
             Some(transmuted)
         } else {
-            None
+            todo!();
         }
     }
 }
