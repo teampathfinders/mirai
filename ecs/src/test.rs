@@ -1,4 +1,8 @@
-use crate::{component::Component, request::{Request, Without, With}, entity::Entity, world::World};
+use std::time::Duration;
+
+use parking_lot::RwLock;
+
+use crate::{component::Component, request::{Request, Without, With}, entity::{Entity, EntityMut}, world::World};
 
 
 
@@ -14,7 +18,7 @@ struct Alive;
 
 impl Component for Alive {}
 
-fn immutable_system(req: Request<&'static Player, With<Alive>>) {
+fn immutable_system(req: Request<&Player, With<Alive>>) {
     for player in &req {
         dbg!(player);
     }

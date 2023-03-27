@@ -1,11 +1,11 @@
-use std::{marker::PhantomData, sync::Arc};
+use std::{marker::PhantomData, sync::Arc, mem};
 
 use parking_lot::RwLock;
 
 use crate::{world::WorldState, request::{Requestable, Filters, Request}};
 
 pub unsafe trait SystemParam {
-    const MUTABLE: bool;
+    const READONLY: bool;
 
     type Target<'state>;
 
@@ -13,7 +13,7 @@ pub unsafe trait SystemParam {
 }   
 
 unsafe impl<S: Requestable, F: Filters> SystemParam for Request<'_, S, F> {
-    const MUTABLE: bool = S::MUTABLE;
+    const READONLY: bool = S::READONLY;
 
     type Target<'state> = Request<'state, S, F>;
 
@@ -23,18 +23,24 @@ unsafe impl<S: Requestable, F: Filters> SystemParam for Request<'_, S, F> {
 }
 
 pub trait SystemParams {
-    const MUTABLE: bool;
+    const READONLY: bool;
 }
 
 impl<P> SystemParams for P 
 where
     P: SystemParam
 {
-    const MUTABLE: bool = P::MUTABLE;
+    const READONLY: bool = P::READONLY;
 }
 
 pub trait System {
-    fn call(&self, state: &WorldState);
+    fn call(&self, state: &WorldState) {
+        unimplemented!()
+    }
+
+    fn call_mut(&self, state: &mut WorldState) {
+        unimplemented!()
+    }
 }
 
 pub struct ParallelSystem<S, P: SystemParams> 
@@ -45,8 +51,9 @@ where
     _marker: PhantomData<P>
 }
 
-impl<S, P: SystemParams> ParallelSystem<S, P> 
+impl<S, P> ParallelSystem<S, P> 
 where
+    P: SystemParams,
     ParallelSystem<S, P>: System
 {
     pub fn new(f: S) -> Self {
@@ -61,14 +68,44 @@ where
     S: Fn(P),
     P: SystemParam
 {
-    fn call(&self, state: &WorldState) {
+    fn call<'state>(&self, state: &'state WorldState) {
         let fetched = P::fetch(state);
+        // (self.f)(fetched);
+
+        // FIXME: state lifetime can be casted to static here, allowing use after free
         let transmuted = unsafe {
             std::mem::transmute_copy(&fetched)
         };
         std::mem::forget(fetched);
 
         (self.f)(transmuted);
+    }
+}
+
+pub struct SequentialSystem<S, P> {
+    f: S,
+    _marker: PhantomData<P>
+}
+
+impl<S, P> SequentialSystem<S, P> 
+where
+    P: SystemParams,
+    SequentialSystem<S, P>: System
+{
+    pub fn new(f: S) -> Self {
+        Self {
+            f, _marker: PhantomData
+        }
+    }
+}
+
+impl<S, P> System for SequentialSystem<S, P>
+where
+    S: Fn(P),
+    P: SystemParam,
+{
+    fn call_mut(&self, state: &mut WorldState) {
+        todo!();
     }
 }
 
@@ -82,10 +119,10 @@ where
     P: SystemParam + Send + Sync + 'static
 {
     fn into_boxed(self) -> Arc<dyn System + Send + Sync> {
-        if P::MUTABLE {
-            todo!();
-        } else {
+        if P::READONLY {
             Arc::new(ParallelSystem::new(self))
+        } else {
+            Arc::new(SequentialSystem::new(self))
         }
     }
 }
@@ -102,10 +139,11 @@ impl Systems {
     }
 
     pub fn insert<S, P: SystemParams>(&self, system: impl IntoSystem<S, P>) {
-        if P::MUTABLE {
-            todo!();
-        } else {
+        if P::READONLY {
             self.parallel.write().push(system.into_boxed());
+        } else {
+            self.sequential.write().push(system.into_boxed());
+            todo!();
         }
     }
 

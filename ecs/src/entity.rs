@@ -1,31 +1,38 @@
-use std::sync::Arc;
+use std::{sync::Arc, ops::Deref};
 
 use parking_lot::RwLock;
 
-use crate::{private, world::WorldState, component::Component};
+use crate::{private, world::WorldState, component::{Component, Components}};
 
 #[derive(Debug, PartialEq, Eq, Hash)]
 pub struct EntityId(pub(crate) usize);
 
-pub struct Entity {
-    pub(crate) world_state: Arc<RwLock<WorldState>>,
+pub struct EntityMut<'state> {
+    pub(crate) entities: &'state mut Entities,
+    pub(crate) components: &'state mut Components,
+    pub(crate) id: EntityId
+}
+
+impl EntityMut<'_> {
+    pub fn despawn(self) {
+        todo!();
+    }
+}
+
+pub struct Entity<'state> {
+    pub(crate) entities: &'state Entities,
+    pub(crate) components: &'state Components,
     pub(crate) id: EntityId,
 }
 
-impl private::Sealed for Entity {}
-
-impl Entity {
+impl Entity<'_> {
     pub fn id(&self) -> &EntityId {
         &self.id
     }
 
-    pub fn despawn(self) {
-        todo!();
-    }
-
     #[inline]
     pub fn has_component<T: Component + 'static>(&self) -> bool {
-        self.world_state.read().components.entity_has::<T>(self.id.0)
+        self.components.entity_has::<T>(self.id.0)
     }
 }
 
