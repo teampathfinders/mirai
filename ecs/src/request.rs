@@ -2,33 +2,25 @@ use std::{sync::Arc, marker::PhantomData};
 
 use crate::{private, component::Component, entity::{Entity, EntityId}, world::WorldState};
 
-pub trait RefComponent<'a>: Sized {
+pub trait RefComponent: Sized {
     type NonRef: Component + 'static;
 
     const MUTABLE: bool;    
-
-    fn fetch(entity: usize, state: &'a WorldState) -> Self {
-        unimplemented!()
-    }
 }
 
-impl<'a, T: RefComponent<'a>> private::Sealed for T {}
-impl<'a, T0: RefComponent<'a>, T1: RefComponent<'a>> private::Sealed for (T0, T1) {}
+impl<T: RefComponent> private::Sealed for T {}
+impl<T0: RefComponent, T1: RefComponent> private::Sealed for (T0, T1) {}
 
-impl<'a, T> RefComponent<'a> for &'a T 
+impl<T> RefComponent for &T 
 where
     T: Component + 'static
 {
     type NonRef = T;
 
     const MUTABLE: bool = false;
-
-    fn fetch(entity: usize, state: &WorldState) -> Self {
-        state.components.get(entity)
-    }
 }
 
-impl<'a, T> RefComponent<'a> for &'a mut T 
+impl<T> RefComponent for &mut T 
 where
     T: Component + 'static,
 {
@@ -71,28 +63,33 @@ pub struct Without<T: Component> {
 /// 
 /// [`Request`] relies on this trait correctly being implemented.
 /// The [`IS_ENTITY`](Requestable::IS_ENTITY) associated constant *must* only be true for [`Entity`].
-pub unsafe trait Requestable<'a>: Sized + private::Sealed {
+pub unsafe trait Requestable: Sized + private::Sealed {
+    type Item<'a>;
+
     /// This is here because ReqIter logic requires checking whether the requestable is an entity.
     /// It cannot be done using TypeId as that requires a static lifetime, which we do not have.
     const IS_ENTITY: bool;
     const MUTABLE: bool;
 
-    fn fetch(entity: usize, state: &WorldState) -> Self {
+    fn fetch<'a>(entity: usize, state: &'a WorldState) -> Option<Self::Item<'a>> {
         unimplemented!()
     }
 
     fn matches(entity: usize, state: &WorldState) -> bool;
 }
 
-unsafe impl<'a, T> Requestable for T 
+unsafe impl<T> Requestable for T 
 where
-    T: RefComponent<'a>,
+    T: RefComponent,
 {  
+    type Item<'s> = &'s T::NonRef;
+
     const IS_ENTITY: bool = false;
     const MUTABLE: bool = T::MUTABLE;
 
-    fn fetch(entity: usize, state: &WorldState) -> Self {
-        <T as RefComponent>::fetch(entity, state)
+    fn fetch<'s>(entity: usize, state: &'s WorldState) -> Option<Self::Item<'s>> {
+        todo!();
+        // <T as RefComponent>::fetch(entity, state)
     }
 
     fn matches(entity: usize, state: &WorldState) -> bool {
@@ -116,6 +113,8 @@ where
 // }
 
 unsafe impl Requestable for Entity {
+    type Item<'s> = Entity;
+
     const IS_ENTITY: bool = true;
     const MUTABLE: bool = false;
 
@@ -151,7 +150,7 @@ where
     F: Filters
 {
     type IntoIter = ReqIter<'q, S, F>;
-    type Item = S;
+    type Item = S::Item<'q>;
 
     fn into_iter(self) -> Self::IntoIter {
         ReqIter { 
@@ -169,9 +168,9 @@ pub struct ReqIter<'q, S: Requestable, F: Filters> {
 }
 
 impl<'q, S: Requestable, F: Filters> Iterator for ReqIter<'q, S, F> {
-    type Item = S;
+    type Item = S::Item<'q>;
 
-    fn next(&mut self) -> Option<S> {
+    fn next(&mut self) -> Option<Self::Item> {
         let entity_id = self.state.entities.mapping.read()[self.next_index..]
             .iter()
             .enumerate()
@@ -207,8 +206,7 @@ impl<'q, S: Requestable, F: Filters> Iterator for ReqIter<'q, S, F> {
             if S::MUTABLE {
                 todo!();
             } else {
-                let out = S::fetch(entity_id, self.state);
-                Some(out)
+                S::fetch(entity_id, &self.state)
             }
         }
     }
