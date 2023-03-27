@@ -1,6 +1,12 @@
 #[cfg(test)]
 mod test;
 
+mod component;
+mod entity;
+mod system;
 mod world;
+mod request;
 
-pub use world::*;
+mod private {
+    pub trait Sealed {}
+}
