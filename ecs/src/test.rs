@@ -2,7 +2,7 @@ use std::time::Duration;
 
 use parking_lot::RwLock;
 
-use crate::{component::Component, request::{Request, Without, With}, entity::{Entity, EntityMut}, world::World};
+use crate::{component::Component, request::{Request, Without, With}, entity::{Entity}, world::World};
 
 
 
@@ -18,8 +18,14 @@ struct Alive;
 
 impl Component for Alive {}
 
-fn immutable_system(req: Request<'static, &'static Player, With<Alive>>) {
-    for player in &req {
+fn alive_system(mut req: Request<Entity, With<Alive>>) {
+    while let Some(entity) = req.next() {
+        dbg!(entity.id());
+    }
+}
+
+fn player_system(mut req: Request<&'static Player, With<Alive>>) {
+    while let Some(player) = req.next() {
         dbg!(player);
     }
 }
@@ -40,7 +46,8 @@ async fn test() {
         name: "Eve"
     }, Alive));
 
-    world.system(immutable_system);
+    world.system(alive_system);
+    world.system(player_system);
 
     world.run_all().await;
 }

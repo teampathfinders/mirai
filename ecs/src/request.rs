@@ -1,8 +1,8 @@
-use std::{sync::{Arc}, marker::PhantomData, pin::Pin, mem};
+use std::{ops::{Deref, DerefMut}, marker::PhantomData, sync::Arc, mem};
 
-use parking_lot::{RwLock, RwLockReadGuard};
+use parking_lot::RwLock;
 
-use crate::{private, component::{Component, Components}, entity::{Entity, EntityId, Entities, EntityMut}, world::WorldState};
+use crate::{component::{Components, Component}, private, entity::{Entity, EntityId}, world::WorldState};
 
 pub trait Filters {
     fn filter(entity: usize, components: &Components) -> bool;
@@ -38,8 +38,9 @@ pub struct Without<T: Component> {
 /// 
 /// [`Request`] relies on this trait correctly being implemented.
 /// The [`IS_ENTITY`](Requestable::IS_ENTITY) associated constant *must* only be true for [`Entity`].
-pub unsafe trait Requestable: Sized + private::Sealed {
-    type Fetch<'state>;
+pub unsafe trait Requestable<'f>: Sized + private::Sealed {
+    type Fetch: Component + 'static;
+    type Item: Requestable<'f>;
 
     /// This is here because ReqIter logic requires checking whether the requestable is an entity.
     /// It cannot be done using TypeId as that requires a static lifetime, which we do not have.
@@ -48,18 +49,19 @@ pub unsafe trait Requestable: Sized + private::Sealed {
 
     fn is_viable(entity: usize, components: &Components) -> bool;
 
-    fn fetch<'state>(entity: usize, components: &'state Components) -> Option<Self::Fetch<'state>> {
+    fn fetch(entity: usize, components: &'f Components) -> Option<Self::Item> {
         unimplemented!()
     }
 }
 
 impl<T> private::Sealed for &T where T: Component {}
 
-unsafe impl<T> Requestable for &T 
+unsafe impl<'f, T> Requestable<'f> for &T 
 where
     T: Component + 'static
 {
-    type Fetch<'state> = &'state T;
+    type Fetch = T;
+    type Item = &'f T;
 
     const IS_ENTITY: bool = false;
     const READONLY: bool = true;
@@ -69,15 +71,16 @@ where
         components.entity_has::<T>(entity)
     }
 
-    fn fetch<'state>(entity: usize, components: &'state Components) -> Option<Self::Fetch<'state>> {
+    fn fetch(entity: usize, components: &'f Components) -> Option<Self::Item> {
         components.get(entity)
     }
 }
 
-impl private::Sealed for Entity<'_> {}
+impl private::Sealed for Entity {}
 
-unsafe impl Requestable for Entity<'_> {
-    type Fetch<'state> = Entity<'state>;
+unsafe impl<'f> Requestable<'f> for Entity {
+    type Fetch = ();
+    type Item = Entity;
 
     const IS_ENTITY: bool = true;
     const READONLY: bool = true;
@@ -88,131 +91,82 @@ unsafe impl Requestable for Entity<'_> {
     }
 }
 
-impl private::Sealed for EntityMut<'_> {}
-
-unsafe impl Requestable for EntityMut<'_> {
-    type Fetch<'state> = EntityMut<'state>;
-
-    const IS_ENTITY: bool = true;
-    const READONLY: bool = false;
-
-    #[inline]
-    fn is_viable(entity: usize, components: &Components) -> bool {
-        true
-    }
-}
-
-pub struct Request<'state, S, F = ()>
+pub struct Request<'f, S, F = ()> 
 where
-    S: Requestable,
-    F: Filters,
-{   
-    entities: &'state Entities,
-    components: &'state Components,
-    _marker: PhantomData<(S, F)>
-}
-
-impl<'state, S, F> Request<'state, S, F> 
-where
-    S: Requestable,
-    F: Filters
-{
-    pub fn new(state: &'state WorldState) -> Self {
-        Self {
-            entities: &state.entities,
-            components: &state.components,
-            _marker: PhantomData
-        }
-    }
-}
-
-impl<'state, S, F> IntoIterator for &Request<'state, S, F> 
-where
-    S: Requestable + 'state,
-    F: Filters + 'state
-{
-    type IntoIter = RequestIter<'state, S, F>;
-    type Item = S::Fetch<'state>;
-
-    fn into_iter(self) -> Self::IntoIter {
-        RequestIter {
-            next_entity: 0,
-            entities: self.entities,
-            components: self.components,
-            _marker: PhantomData
-        }
-    }
-}
-
-pub struct RequestIter<'state, S, F> 
-where
-    S: Requestable,
+    S: Requestable<'f>,
     F: Filters
 {
     next_entity: usize,
-    entities: &'state Entities,
-    components: &'state Components,
-    _marker: PhantomData<(S, F)>
+    state: Arc<RwLock<WorldState>>,
+    _marker: PhantomData<&'f (S, F)>
 }
 
-impl<'state, S, F> Iterator for RequestIter<'state, S, F> 
+pub trait RequestCheck {}
+
+impl RequestCheck for (Entity, &()) {}
+impl<A> RequestCheck for (A, A) {}
+
+impl<'f, S, F> Request<'f, S, F> 
 where
-    S: Requestable,
-    F: Filters
+    S: Requestable<'f>,
+    F: Filters,
 {
-    type Item = S::Fetch<'state>;
+    pub fn new(state: Arc<RwLock<WorldState>>) -> Self {
+        Self {
+            next_entity: 0,
+            state, _marker: PhantomData
+        }
+    }
 
-    fn next(&mut self) -> Option<Self::Item> {
-        let mapping = &self.entities.mapping.read()[self.next_entity..];
-
-        // Find the next matching entity
-        let entity_id = mapping
-            .iter()
-            .enumerate()
-            .find_map(|(index, entity)| {
-                if *entity {
-                    let curr = self.next_entity + index;
-
-                    // Verify that entity has requested components 
-                    if S::is_viable(curr, self.components) && F::filter(curr, self.components) {
-                        return Some(curr)
-                    }
-
+    pub fn next(&mut self) -> Option<S::Item> {
+        let lock = self.state.read();
+        let entity = {
+            let entities = &lock.entities.mapping.read()[self.next_entity..];
+            let entity = entities
+                .iter()
+                .enumerate()
+                .find_map(|(index, entity)| {
+                    if *entity {
+                        let curr = self.next_entity + index;
+                        if S::is_viable(curr, &lock.components) && F::filter(curr, &lock.components) {
+                            return Some(curr)
+                        }
+                    }   
+    
                     None
-                } else {
-                    // Entity ID is not in use
-                    None
-                }
-            })?;
+                })?;
+    
+            self.next_entity = entity + 1;
+            entity
+        };
 
-        self.next_entity = entity_id + 1;
         if S::IS_ENTITY {
-            // S is Entity
-            if S::READONLY {
-                let entity = Entity {
-                    entities: self.entities,
-                    components: self.components,
-                    id: EntityId(entity_id)
-                };
-    
-                let transmuted = unsafe {
-                    mem::transmute_copy(&entity)
-                };
-                mem::forget(entity);
-    
-                return Some(transmuted)
-            } 
-            
-            // S is EntityMut
-            else {
-                todo!();
-            }
+            let out = Entity {
+                state: self.state.clone(),
+                id: EntityId(entity)
+            };
+
+            // SAFETY: The `S` generic and `Entity` type are guaranteed to be equal due to the IS_ENTITY check.
+            let cast = unsafe {
+                mem::transmute_copy(&out)
+            };
+            mem::forget(out);
+
+            Some(cast)
+        } else if S::READONLY {
+            lock.components.get::<S::Fetch>(entity)
+
+            // // SAFETY: The `S` generic and the type of `out` are guaranteed to be equal.
+            // let cast = unsafe {
+            //     mem::transmute_copy(&out)
+            // };
+
+            // s
         } else {
-            if S::READONLY {
-                S::fetch(entity_id, self.components)
-            } else {
-                todo!();
-            }
+            todo!();
         }
     }
 }
+
+
+

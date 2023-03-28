@@ -24,7 +24,7 @@ where
 impl<S, P> Sys for SequentialSystem<S, P>
 where
     S: Fn(P), 
-    P: Param,
+    P: Param
 {
     fn call_mut(&self, state: &mut WorldState) {
         todo!();

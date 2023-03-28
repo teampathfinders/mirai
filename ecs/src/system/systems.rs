@@ -7,7 +7,7 @@ use crate::{world::WorldState, request::{Requestable, Filters, Request}};
 use super::{param::ParamSet, into::IntoSys};
 
 pub trait Sys {
-    fn call(&self, state: &WorldState) {
+    fn call(&self, state: Arc<RwLock<WorldState>>) {
         unimplemented!()
     }
 
@@ -36,10 +36,10 @@ impl Systems {
         }
     }
 
-    pub async fn run_all(&self, state: &WorldState) {
+    pub async fn run_all(&self, state: Arc<RwLock<WorldState>>) {
         let lock = self.parallel.read();
         for system in &*lock {
-            system.call(state);
+            system.call(state.clone());
         }
 
         // Wait for all systems to finish running

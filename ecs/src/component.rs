@@ -10,6 +10,8 @@ pub trait Component: Send + Sync {
 
 }
 
+impl Component for () {}
+
 impl<T: Component + 'static> Spawnable for T {
     fn insert_all(self, storage: &mut Components, entity: usize) {
         storage.insert(self, entity);

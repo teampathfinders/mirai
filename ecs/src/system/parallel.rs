@@ -1,4 +1,6 @@
-use std::marker::PhantomData;
+use std::{marker::PhantomData, sync::Arc};
+
+use parking_lot::RwLock;
 
 use crate::world::WorldState;
 
@@ -29,16 +31,16 @@ where
     S: Fn(P),
     P: Param
 {
-    fn call<'state>(&self, state: &'state WorldState) {
+    fn call(&self, state: Arc<RwLock<WorldState>>) {
         let fetched = P::fetch(state);
-        // (self.f)(fetched);
+        (self.f)(fetched);
 
-        // FIXME: state lifetime can be casted to static here, allowing use after free
-        let transmuted = unsafe {
-            std::mem::transmute_copy(&fetched)
-        };
-        std::mem::forget(fetched);
+        // // FIXME: state lifetime can be casted to static here, allowing use after free
+        // let transmuted = unsafe {
+        //     std::mem::transmute_copy(&fetched)
+        // };
+        // std::mem::forget(fetched);
 
-        (self.f)(transmuted);
+        // (self.f)(transmuted);
     }
 }

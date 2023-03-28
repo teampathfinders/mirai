@@ -19,7 +19,7 @@ impl WorldState {
 
 #[derive(Default)]
 pub struct World {
-    state: RwLock<WorldState>,
+    state: Arc<RwLock<WorldState>>,
     systems: Systems
 }
 
@@ -45,6 +45,6 @@ impl World {
     }
 
     pub async fn run_all(&self) {
-        self.systems.run_all(&self.state.read()).await;
+        self.systems.run_all(self.state.clone()).await;
     }
 }

@@ -1,19 +1,19 @@
-use crate::{world::WorldState, request::{Request, Filters, Requestable}};
+use std::sync::Arc;
+
+use parking_lot::RwLock;
+
+use crate::{world::WorldState, request::{Request, Filters, Requestable, RequestCheck}};
 
 pub trait Param {
     const READONLY: bool;
 
-    type Target<'state>;
-
-    fn fetch<'state>(state: &'state WorldState) -> Self::Target<'state>;
+    fn fetch(state: Arc<RwLock<WorldState>>) -> Self;
 }   
 
-impl<S: Requestable, F: Filters> Param for Request<'_, S, F> {
+impl<'a, S: Requestable<'a>, F: Filters> Param for Request<'a, S, F> {
     const READONLY: bool = S::READONLY;
 
-    type Target<'state> = Request<'state, S, F>;
-
-    fn fetch<'state>(state: &'state WorldState) -> Self::Target<'state> {
+    fn fetch(state: Arc<RwLock<WorldState>>) -> Self {
         Request::new(state)
     }
 }
