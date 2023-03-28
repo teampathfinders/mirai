@@ -17,4 +17,4 @@ tokio-util = "0.7.7"
 tracing = "0.1.37"
 
 [build-dependencies]
-cmake = "0.1.49"
+cmake = "0.1.50"
