@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use parking_lot::RwLock;
 
-use crate::{entity::{Entities, Entity, EntityId}, component::{Components, Component, Spawnable}, system::{Systems, SystemParams, IntoSystem}};
+use crate::{entity::{Entities, Entity, EntityId}, component::{Components, Component, Spawnable}, system::{systems::Systems, into::IntoSys, param::ParamSet}};
 
 #[derive(Default)]
 pub struct WorldState {
@@ -40,7 +40,7 @@ impl World {
         // }
     }
 
-    pub fn system<S, P: SystemParams>(&self, system: impl IntoSystem<S, P>) {
+    pub fn system<S, P: ParamSet>(&self, system: impl IntoSys<S, P>) {
         self.systems.insert(system);
     }
 

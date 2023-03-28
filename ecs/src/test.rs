@@ -18,7 +18,7 @@ struct Alive;
 
 impl Component for Alive {}
 
-fn immutable_system(req: Request<&Player, With<Alive>>) {
+fn immutable_system(req: Request<'static, &'static Player, With<Alive>>) {
     for player in &req {
         dbg!(player);
     }
