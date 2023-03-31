@@ -49,6 +49,6 @@ lazy_static! {
         server_name: "Pathfinders",
         allowed_render_distance: 16,
         autosave_interval: Duration::from_secs(60),
-        level_path: "pyro-level/test"
+        level_path: "level/test"
     });
 }

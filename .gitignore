@@ -2,3 +2,5 @@
 /.idea
 /build
 /target
+/cache
+/plugins

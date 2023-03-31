@@ -47,8 +47,6 @@ impl LevelManager {
         };
 
         let level = RwLock::new(Level::open(level_path)?);
-        dbg!(&level.read().dat);
-
         let manager = Arc::new(Self {
             level,
             commands: DashMap::new(),

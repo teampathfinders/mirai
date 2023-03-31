@@ -29,6 +29,7 @@ use crate::network::OpenConnectionRequest2;
 use crate::network::RAKNET_VERSION;
 use crate::network::RawPacket;
 use crate::config::SERVER_CONFIG;
+use crate::extension::VirtualMachine;
 use crate::network::SessionManager;
 use crate::network::UnconnectedPing;
 use crate::network::UnconnectedPong;
@@ -56,11 +57,15 @@ pub struct InstanceManager {
     /// Channel that the LevelManager sends a message to when it has fully shutdown.
     /// This is to make sure that the world has been saved and safely shut down before shutting down the server.
     level_notifier: Receiver<()>,
+    /// Virtual machine that runs and compiles the extensions.
+    extensions: VirtualMachine
 }
 
 impl InstanceManager {
     /// Creates a new server.
     pub async fn run() -> Result<()> {
+        let extensions = VirtualMachine::new()?;
+
         let (ipv4_port, _ipv6_port) = {
             let lock = SERVER_CONFIG.read();
             (lock.ipv4_port, lock.ipv6_port)
