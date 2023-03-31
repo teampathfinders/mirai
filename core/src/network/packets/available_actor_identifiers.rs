@@ -1,6 +1,6 @@
 use util::bytes::SharedBuffer;
 
-use crate::ConnectedPacket;
+use crate::network::ConnectedPacket;
 
 /// Lets the client know about the entities available on the server.
 #[derive(Debug, Clone)]

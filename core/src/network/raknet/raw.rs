@@ -2,7 +2,7 @@ use std::net::SocketAddr;
 
 use util::bytes::MutableBuffer;
 
-use crate::CONNECTED_PEER_BIT_FLAG;
+use crate::network::CONNECTED_PEER_BIT_FLAG;
 
 /// An unprocessed packet.
 pub struct RawPacket {

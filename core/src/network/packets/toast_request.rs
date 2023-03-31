@@ -2,7 +2,7 @@ use util::bytes::{BinaryWrite, MutableBuffer, size_of_varint};
 use util::Result;
 use util::Serialize;
 
-use crate::ConnectedPacket;
+use crate::network::ConnectedPacket;
 
 /// Displays a notification at the top of the screen.
 #[derive(Debug, Clone)]

@@ -2,7 +2,7 @@ use util::{bail, Error, Result, Vector};
 use util::bytes::{BinaryRead, SharedBuffer};
 use util::Deserialize;
 
-use crate::ConnectedPacket;
+use crate::network::ConnectedPacket;
 
 /// All types of interaction.
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]

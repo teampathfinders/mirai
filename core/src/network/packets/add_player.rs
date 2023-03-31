@@ -3,9 +3,9 @@ use uuid::Uuid;
 use util::{Result, Serialize, Vector};
 use util::bytes::{BinaryWrite, MutableBuffer};
 
-use crate::{DeviceOS, ItemStack, PermissionLevel};
-use crate::{ConnectedPacket, GameMode};
-use crate::CommandPermissionLevel;
+use crate::network::{DeviceOS, ItemStack, PermissionLevel};
+use crate::network::{ConnectedPacket, GameMode};
+use crate::command::CommandPermissionLevel;
 
 /// Type of an entity link.
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]

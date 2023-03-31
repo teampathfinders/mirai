@@ -9,14 +9,14 @@ use util::bytes::{BinaryWrite, MutableBuffer};
 use util::Result;
 use util::Serialize;
 
-use crate::{CONNECTED_PACKET_ID, ConnectedPacket, Packet};
-use crate::{Ack, AckRecord};
-use crate::{Frame, FrameBatch};
-use crate::CompressionAlgorithm;
-use crate::Reliability;
-use crate::SendPriority;
-use crate::SERVER_CONFIG;
-use crate::Session;
+use crate::network::{CONNECTED_PACKET_ID, ConnectedPacket, Packet};
+use crate::network::{Ack, AckRecord};
+use crate::network::{Frame, FrameBatch};
+use crate::network::CompressionAlgorithm;
+use crate::network::Reliability;
+use crate::network::SendPriority;
+use crate::config::SERVER_CONFIG;
+use crate::network::Session;
 
 pub struct PacketConfig {
     pub reliability: Reliability,

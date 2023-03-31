@@ -2,7 +2,7 @@ use util::bytes::{BinaryWrite, MutableBuffer, size_of_varint, VarString};
 use util::Result;
 use util::Serialize;
 
-use crate::ConnectedPacket;
+use crate::network::ConnectedPacket;
 
 #[derive(Debug, Clone)]
 pub struct ExperimentData<'a> {

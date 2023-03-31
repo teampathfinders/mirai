@@ -4,8 +4,8 @@ use util::Result;
 use util::BlockPosition;
 use util::bytes::{BinaryWrite, MutableBuffer, VarInt, VarString};
 
-use crate::{CLIENT_VERSION_STRING, ConnectedPacket, Difficulty, GameMode, GameRule};
-use crate::ExperimentData;
+use crate::network::{CLIENT_VERSION_STRING, ConnectedPacket, Difficulty, GameMode, GameRule};
+use crate::network::ExperimentData;
 
 const MULTIPLAYER_CORRELATION_ID: &str = "5b39a9d6-f1a1-411a-b749-b30742f81771";
 

@@ -4,7 +4,7 @@ use util::bytes::{BinaryWrite, MutableBuffer};
 use util::Result;
 use util::Serialize;
 
-use crate::OFFLINE_MESSAGE_DATA;
+use crate::network::OFFLINE_MESSAGE_DATA;
 
 /// Response to [`OfflinePing`](crate::offline_ping::OfflinePing).
 #[derive(Debug)]

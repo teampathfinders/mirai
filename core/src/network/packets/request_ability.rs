@@ -2,7 +2,7 @@ use util::{bail, Result};
 use util::bytes::{BinaryRead, SharedBuffer};
 use util::Deserialize;
 
-use crate::ConnectedPacket;
+use crate::network::ConnectedPacket;
 
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub enum Ability {

@@ -1,7 +1,7 @@
 use util::{Result, Serialize};
 use util::bytes::{BinaryWrite, MutableBuffer, size_of_varint};
 
-use crate::ConnectedPacket;
+use crate::network::ConnectedPacket;
 
 /// Connects the client to a Websocket server.
 #[derive(Debug, Clone)]

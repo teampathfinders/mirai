@@ -2,7 +2,7 @@ use util::bytes::{BinaryRead, SharedBuffer};
 use util::Deserialize;
 use util::Result;
 
-use crate::ConnectedPacket;
+use crate::network::ConnectedPacket;
 
 /// Sent during login to let the server know whether the client supports caching.
 #[derive(Debug, Clone)]

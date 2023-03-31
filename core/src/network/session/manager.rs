@@ -9,13 +9,13 @@ use tokio::sync::{broadcast, mpsc, OnceCell};
 use util::{Result, Serialize};
 use util::bytes::MutableBuffer;
 
-use crate::{
+use crate::network::{
     Disconnect, DISCONNECTED_TIMEOUT,
 };
-use crate::{BroadcastPacket, RawPacket};
+use crate::network::{BroadcastPacket, RawPacket};
 use crate::{config::SERVER_CONFIG, network::ConnectedPacket};
 use crate::level::LevelManager;
-use crate::Session;
+use crate::network::Session;
 
 const BROADCAST_CHANNEL_CAPACITY: usize = 16;
 const FORWARD_TIMEOUT: Duration = Duration::from_millis(20);

@@ -4,8 +4,8 @@ use util::bytes::{BinaryWrite, MutableBuffer};
 use util::Result;
 use util::Serialize;
 
-use crate::ConnectedPacket;
-use crate::Header;
+use crate::network::ConnectedPacket;
+use crate::network::Header;
 
 /// A game packet.
 #[derive(Debug, Clone)]

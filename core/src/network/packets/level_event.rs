@@ -1,7 +1,7 @@
 use util::{bail, Deserialize, Error, Result, Serialize, Vector};
 use util::bytes::{BinaryRead, BinaryWrite, MutableBuffer, SharedBuffer, size_of_varint};
 
-use crate::ConnectedPacket;
+use crate::network::ConnectedPacket;
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum LevelEventType {

@@ -1,9 +1,9 @@
-mod command;
-mod config;
-mod crypto;
-mod instance;
-mod level;
-mod network;
+pub mod command;
+pub mod config;
+pub mod crypto;
+pub mod instance;
+pub mod level;
+pub mod network;
 
 #[cfg(test)]
 mod test;

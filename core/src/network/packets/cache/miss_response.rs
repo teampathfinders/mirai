@@ -1,7 +1,7 @@
 use util::{Result, Serialize};
 use util::bytes::{BinaryWrite, MutableBuffer};
 
-use crate::ConnectedPacket;
+use crate::network::ConnectedPacket;
 use crate::network::cache_blob::CacheBlob;
 
 #[derive(Debug, Clone)]

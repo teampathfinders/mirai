@@ -7,26 +7,26 @@ use async_recursion::async_recursion;
 use util::{bail, Result};
 use util::bytes::{BinaryRead, MutableBuffer};
 
-use crate::{CommandRequest, SettingsCommand};
-use crate::{
+use crate::network::{CommandRequest, SettingsCommand};
+use crate::network::{
     ChunkRadiusRequest, ClientToServerHandshake, CompressionAlgorithm, Login,
     RequestNetworkSettings, ResourcePackClientResponse,
 };
-use crate::{
+use crate::network::{
     Animate, CONNECTED_PACKET_ID, ConnectedPacket, Interact, MovePlayer,
     RequestAbility, SetLocalPlayerAsInitialized, TextMessage, UpdateSkin,
     ViolationWarning,
 };
-use crate::{
+use crate::network::{
     Ack, ConnectionRequest, DisconnectNotification, Nak, NewIncomingConnection,
 };
-use crate::{BroadcastPacket, Frame, FrameBatch};
-use crate::CacheStatus;
-use crate::ConnectedPing;
-use crate::DEFAULT_SEND_CONFIG;
-use crate::Header;
-use crate::SERVER_CONFIG;
-use crate::Session;
+use crate::network::{BroadcastPacket, Frame, FrameBatch};
+use crate::network::CacheStatus;
+use crate::network::ConnectedPing;
+use crate::network::DEFAULT_SEND_CONFIG;
+use crate::network::Header;
+use crate::config::SERVER_CONFIG;
+use crate::network::Session;
 
 impl Session {
     /// Processes the raw packet coming directly from the network.

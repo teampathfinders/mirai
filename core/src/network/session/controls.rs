@@ -1,7 +1,7 @@
 use util::{Deserialize, Result};
 use util::bytes::MutableBuffer;
 
-use crate::{
+use crate::network::{
     {
         Interact, MovePlayer,
     },

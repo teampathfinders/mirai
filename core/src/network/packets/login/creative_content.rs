@@ -2,7 +2,7 @@ use util::Serialize;
 use util::bytes::{BinaryWrite, MutableBuffer, VarInt};
 use util::Result;
 
-use crate::ConnectedPacket;
+use crate::network::ConnectedPacket;
 
 pub const ITEM_ID_SHIELD: u32 = 513;
 

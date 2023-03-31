@@ -3,7 +3,7 @@ use util::{Result, Vector};
 use util::bytes::{BinaryWrite, MutableBuffer};
 use util::Serialize;
 
-use crate::ConnectedPacket;
+use crate::network::ConnectedPacket;
 
 /// Used to transfer the client to another dimension.
 #[derive(Debug, Clone)]

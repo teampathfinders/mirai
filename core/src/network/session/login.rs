@@ -4,23 +4,24 @@ use level::Dimension;
 use util::{bail, BlockPosition, Deserialize, Result, Vector};
 use util::bytes::MutableBuffer;
 
-use crate::{PropertyData, SERVER_CONFIG};
-use crate::{
+use crate::config::SERVER_CONFIG;
+use crate::network::{PropertyData};
+use crate::network::{
     BroadcastIntent, ChatRestrictionLevel, ChunkRadiusReply,
     ChunkRadiusRequest, ClientToServerHandshake, CreativeContent, DISCONNECTED_LOGIN_FAILED, Login, NetworkSettings, PermissionLevel,
     PlayerMovementSettings, PlayerMovementType, PlayStatus,
     RequestNetworkSettings, ResourcePackClientResponse, ResourcePacksInfo,
     ResourcePackStack, ServerToClientHandshake, SpawnBiomeType, StartGame, Status, WorldGenerator,
 };
-use crate::{
+use crate::network::{
     BiomeDefinitionList, CLIENT_VERSION_STRING, Difficulty, GameMode,
     MessageType, NETWORK_VERSION,
     SetLocalPlayerAsInitialized, TextMessage, ViolationWarning,
 };
-use crate::AvailableCommands;
-use crate::CacheStatus;
+use crate::network::AvailableCommands;
+use crate::network::CacheStatus;
 use crate::crypto::Encryptor;
-use crate::Session;
+use crate::network::Session;
 
 impl Session {
     /// Handles a [`ClientCacheStatus`] packet.

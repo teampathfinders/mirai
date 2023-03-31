@@ -2,7 +2,7 @@ use util::{Result, Vector};
 use util::bytes::{BinaryWrite, MutableBuffer, size_of_varint};
 use util::Serialize;
 
-use crate::ConnectedPacket;
+use crate::network::ConnectedPacket;
 
 /// Directions a painting can face.
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]

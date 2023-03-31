@@ -3,7 +3,7 @@ use std::sync::atomic::{AtomicU16, Ordering};
 use clap::{Command, crate_authors, crate_description};
 use tokio::runtime;
 
-use pyro::InstanceManager;
+use pyro::instance::InstanceManager;
 use util::Result;
 
 fn main() -> Result<()> {
