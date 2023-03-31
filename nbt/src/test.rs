@@ -4,7 +4,7 @@ mod test {
 
     use serde::{Deserialize, Serialize};
 
-    use crate::network::{from_be_bytes, from_le_bytes, from_var_bytes, to_le_bytes, to_var_bytes, Value};
+    use crate::{from_be_bytes, from_le_bytes, from_var_bytes, to_le_bytes, to_var_bytes, Value};
     use crate::ser::to_be_bytes;
 
     const BIG_TEST_NBT: &[u8] = include_bytes!("../test/bigtest.nbt");

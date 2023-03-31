@@ -252,7 +252,7 @@ mod test {
 
     use crate::bytes::{BinaryRead, BinaryWrite, MutableBuffer};
     use crate::bytes::SharedBuffer;
-    use crate::network::u24::u24;
+    use crate::u24::u24;
 
     macro_rules! define_test_fns {
         ($($ty: ident),+) => {
