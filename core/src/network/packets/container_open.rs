@@ -1,7 +1,7 @@
 use util::{Result, Serialize, Vector};
 use util::bytes::{BinaryWrite, MutableBuffer, size_of_varint};
 
-use crate::ConnectedPacket;
+use crate::network::ConnectedPacket;
 
 #[derive(Debug, Clone)]
 pub struct ContainerOpen {

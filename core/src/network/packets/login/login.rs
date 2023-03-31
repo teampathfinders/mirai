@@ -4,11 +4,11 @@ use util::bytes::{BinaryRead, SharedBuffer};
 use util::Deserialize;
 use util::Result;
 
-use crate::ConnectedPacket;
+use crate::network::ConnectedPacket;
 use crate::crypto::{
     IdentityData, parse_identity_data, parse_user_data, UserData,
 };
-use crate::Skin;
+use crate::network::Skin;
 
 /// Device operating system
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Deserialize_repr)]

@@ -5,7 +5,7 @@ use dashmap::DashMap;
 use util::bytes::MutableBuffer;
 use util::Result;
 
-use crate::Frame;
+use crate::network::Frame;
 
 /// Keeps track of packet fragments, merging them when all fragments have been received.
 #[derive(Default, Debug)]

@@ -2,7 +2,7 @@ use util::{bail, Error, Result};
 use util::{Deserialize, Serialize};
 use util::bytes::{BinaryRead, BinaryWrite, MutableBuffer, SharedBuffer, VarInt, VarString};
 
-use crate::ConnectedPacket;
+use crate::network::ConnectedPacket;
 
 /// Type of message.
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]

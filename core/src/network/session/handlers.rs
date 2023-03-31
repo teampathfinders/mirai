@@ -3,11 +3,11 @@ use util::{
 };
 use util::bytes::MutableBuffer;
 
-use crate::{
+use crate::network::{
     CommandOutput, CommandOutputMessage, CommandOutputType, CommandRequest,
     SettingsCommand,
 };
-use crate::{
+use crate::network::{
     {
         Animate, MessageType, RequestAbility,
         TextMessage,
@@ -15,7 +15,7 @@ use crate::{
     },
     Session,
 };
-use crate::ParsedCommand;
+use crate::command::ParsedCommand;
 
 impl Session {
     pub fn process_settings_command(&self, pk: MutableBuffer) -> Result<()> {

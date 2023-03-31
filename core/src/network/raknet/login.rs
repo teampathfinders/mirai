@@ -2,14 +2,14 @@ use util::{Deserialize, Serialize};
 use util::bytes::MutableBuffer;
 use util::Result;
 
-use crate::{PacketConfig, SendPriority};
-use crate::ConnectedPing;
-use crate::ConnectedPong;
-use crate::ConnectionRequest;
-use crate::ConnectionRequestAccepted;
-use crate::NewIncomingConnection;
-use crate::Reliability;
-use crate::Session;
+use crate::network::{PacketConfig, SendPriority};
+use crate::network::ConnectedPing;
+use crate::network::ConnectedPong;
+use crate::network::ConnectionRequest;
+use crate::network::ConnectionRequestAccepted;
+use crate::network::NewIncomingConnection;
+use crate::network::Reliability;
+use crate::network::Session;
 
 impl Session {
     /// Handles a [`ConnectionRequest`] packet.

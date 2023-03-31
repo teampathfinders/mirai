@@ -4,7 +4,7 @@ use util::bytes::{BinaryWrite, MutableBuffer, size_of_varint};
 use util::Result;
 use util::Serialize;
 
-use crate::ConnectedPacket;
+use crate::network::ConnectedPacket;
 
 /// Transfers the client to another server.
 /// The client does this by first returning to the main menu and then connecting to the selected server.

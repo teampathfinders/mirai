@@ -1,7 +1,7 @@
 use util::{Deserialize, Result};
 use util::bytes::{BinaryRead, SharedBuffer};
 
-use crate::ConnectedPacket;
+use crate::network::ConnectedPacket;
 
 /// Sent by the client when changing settings that require the execution of commands.
 /// For instance, when the showcoordinates game rule is changed.

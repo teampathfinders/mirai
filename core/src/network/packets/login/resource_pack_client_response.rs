@@ -3,7 +3,7 @@ use util::bail;
 use util::bytes::{BinaryRead, SharedBuffer};
 use util::Deserialize;
 
-use crate::ConnectedPacket;
+use crate::network::ConnectedPacket;
 
 /// Status contained in [`ResourcePackClientResponse`].
 #[derive(Debug, Copy, Clone)]

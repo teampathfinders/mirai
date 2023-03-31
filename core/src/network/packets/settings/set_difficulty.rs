@@ -2,7 +2,7 @@ use util::{bail, Error, Result};
 use util::{Deserialize, Serialize};
 use util::bytes::{BinaryRead, BinaryWrite, MutableBuffer, SharedBuffer, size_of_varint};
 
-use crate::ConnectedPacket;
+use crate::network::ConnectedPacket;
 
 /// The Minecraft difficulties.
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]

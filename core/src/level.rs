@@ -11,11 +11,11 @@ use tokio_util::sync::CancellationToken;
 use level::{Level};
 use util::Result;
 
-use crate::{
+use crate::network::{
     {GameRule, GameRulesChanged}, SessionManager,
 };
-use crate::Command;
-use crate::SERVER_CONFIG;
+use crate::command::Command;
+use crate::config::SERVER_CONFIG;
 
 /// Interval between standard Minecraft ticks.
 const LEVEL_TICK_INTERVAL: Duration = Duration::from_millis(1000 / 20);
@@ -47,8 +47,6 @@ impl LevelManager {
         };
 
         let level = RwLock::new(Level::open(level_path)?);
-        dbg!(&level.read().dat);
-
         let manager = Arc::new(Self {
             level,
             commands: DashMap::new(),

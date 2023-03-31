@@ -2,7 +2,7 @@ use util::bytes::{BinaryWrite, MutableBuffer, VarString};
 use util::Result;
 use util::Serialize;
 
-use crate::ConnectedPacket;
+use crate::network::ConnectedPacket;
 
 /// Behavior pack information.
 #[derive(Debug, Clone)]

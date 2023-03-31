@@ -12,26 +12,27 @@ use util::{Deserialize, Serialize};
 use util::bytes::MutableBuffer;
 use util::Result;
 
-use crate::{
+use crate::command::{
     Command, CommandDataType, CommandEnum, CommandOverload, CommandParameter,
     CommandPermissionLevel,
 };
-use crate::{
+use crate::network::{
     BOOLEAN_GAME_RULES, CLIENT_VERSION_STRING, INTEGER_GAME_RULES,
     NETWORK_VERSION,
 };
-use crate::IncompatibleProtocol;
+use crate::network::IncompatibleProtocol;
 use crate::level::LevelManager;
-use crate::OpenConnectionReply1;
-use crate::OpenConnectionReply2;
-use crate::OpenConnectionRequest1;
-use crate::OpenConnectionRequest2;
-use crate::RAKNET_VERSION;
-use crate::RawPacket;
-use crate::SERVER_CONFIG;
-use crate::SessionManager;
-use crate::UnconnectedPing;
-use crate::UnconnectedPong;
+use crate::network::OpenConnectionReply1;
+use crate::network::OpenConnectionReply2;
+use crate::network::OpenConnectionRequest1;
+use crate::network::OpenConnectionRequest2;
+use crate::network::RAKNET_VERSION;
+use crate::network::RawPacket;
+use crate::config::SERVER_CONFIG;
+use crate::extension::VirtualMachine;
+use crate::network::SessionManager;
+use crate::network::UnconnectedPing;
+use crate::network::UnconnectedPong;
 
 /// Local IPv4 address
 pub const IPV4_LOCAL_ADDR: Ipv4Addr = Ipv4Addr::UNSPECIFIED;
@@ -56,11 +57,15 @@ pub struct InstanceManager {
     /// Channel that the LevelManager sends a message to when it has fully shutdown.
     /// This is to make sure that the world has been saved and safely shut down before shutting down the server.
     level_notifier: Receiver<()>,
+    /// Virtual machine that runs and compiles the extensions.
+    extensions: VirtualMachine
 }
 
 impl InstanceManager {
     /// Creates a new server.
     pub async fn run() -> Result<()> {
+        let extensions = VirtualMachine::new()?;
+
         let (ipv4_port, _ipv6_port) = {
             let lock = SERVER_CONFIG.read();
             (lock.ipv4_port, lock.ipv6_port)

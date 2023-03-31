@@ -2,7 +2,7 @@ use util::bytes::{BinaryWrite, MutableBuffer, VarString};
 use util::Result;
 use util::Serialize;
 
-use crate::ConnectedPacket;
+use crate::network::ConnectedPacket;
 
 /// Sent by the server to initiate encryption.
 /// The client responds with a [`ClientToServerHandshake`](crate::ClientToServerHandshake) to

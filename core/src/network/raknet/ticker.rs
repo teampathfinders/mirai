@@ -8,7 +8,7 @@ use tokio::sync::mpsc;
 use util::bytes::MutableBuffer;
 use util::Result;
 
-use crate::{
+use crate::network::{
     {MessageType, PlayerListRemove, TextMessage},
     Session,
 };

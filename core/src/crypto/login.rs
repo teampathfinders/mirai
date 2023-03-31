@@ -6,8 +6,8 @@ use uuid::Uuid;
 use util::{bail, error, Result};
 use util::bytes::{BinaryRead, SharedBuffer};
 
-use crate::{DeviceOS, UiProfile};
-use crate::Skin;
+use crate::network::{DeviceOS, UiProfile};
+use crate::network::Skin;
 
 /// Mojang's public key.
 /// Used to verify the second token in the identity chain.

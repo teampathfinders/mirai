@@ -3,7 +3,7 @@ use std::num::NonZeroU64;
 use util::{error, Result, Serialize};
 use util::bytes::ArcBuffer;
 
-use crate::{
+use crate::network::{
     {ConnectedPacket, Packet},
     Session,
 };

@@ -14,12 +14,12 @@ use uuid::Uuid;
 use util::{error, Result, Vector};
 use util::bytes::MutableBuffer;
 
-use crate::{DeviceOS, Disconnect, PermissionLevel};
-use crate::GameMode;
-use crate::{BroadcastPacket, RaknetData};
+use crate::network::{DeviceOS, Disconnect, PermissionLevel};
+use crate::network::GameMode;
+use crate::network::{BroadcastPacket, RaknetData};
 use crate::crypto::{Encryptor, IdentityData, UserData};
 use crate::level::LevelManager;
-use crate::Skin;
+use crate::network::Skin;
 
 static RUNTIME_ID_COUNTER: AtomicU64 = AtomicU64::new(0);
 

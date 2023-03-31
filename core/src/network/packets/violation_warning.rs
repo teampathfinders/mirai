@@ -3,7 +3,7 @@ use util::bail;
 use util::bytes::{BinaryRead, SharedBuffer};
 use util::Deserialize;
 
-use crate::ConnectedPacket;
+use crate::network::ConnectedPacket;
 
 #[derive(Debug, Copy, Clone)]
 pub enum ViolationType {

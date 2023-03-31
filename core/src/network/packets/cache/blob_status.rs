@@ -1,7 +1,7 @@
 use util::{Deserialize, Result};
 use util::bytes::{BinaryRead, SharedBuffer};
 
-use crate::ConnectedPacket;
+use crate::network::ConnectedPacket;
 
 #[derive(Debug, Clone)]
 pub struct CacheBlobStatus {

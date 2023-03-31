@@ -1,7 +1,7 @@
 use util::{Result, Serialize};
 use util::bytes::{BinaryWrite, MutableBuffer, size_of_varint};
 
-use crate::ConnectedPacket;
+use crate::network::ConnectedPacket;
 
 /// Adds a fog to the client's fog stack.
 #[derive(Debug, Clone)]

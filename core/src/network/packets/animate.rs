@@ -2,7 +2,7 @@ use util::{bail, Error, Result};
 use util::bytes::{BinaryRead, SharedBuffer};
 use util::Deserialize;
 
-use crate::ConnectedPacket;
+use crate::network::ConnectedPacket;
 
 /// Type of animation to perform.
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]

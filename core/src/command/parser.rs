@@ -6,7 +6,7 @@ use dashmap::DashMap;
 
 use util::{bail, Result};
 
-use crate::{Command, CommandDataType, CommandOverload};
+use crate::command::{Command, CommandDataType, CommandOverload};
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum CommandParseErrorKind {

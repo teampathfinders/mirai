@@ -2,7 +2,7 @@ use util::bytes::{BinaryWrite, MutableBuffer, size_of_varint};
 use util::Result;
 use util::Serialize;
 
-use crate::ConnectedPacket;
+use crate::network::ConnectedPacket;
 
 /// Information about a player's death.
 #[derive(Debug, Clone)]

@@ -2,8 +2,8 @@ use util::bytes::{MutableBuffer, SharedBuffer};
 use util::Deserialize;
 use util::Result;
 
-use crate::{Ack, Nak};
-use crate::Session;
+use crate::network::{Ack, Nak};
+use crate::network::Session;
 
 impl Session {
     /// Processes an acknowledgement received from the client.

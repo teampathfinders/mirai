@@ -2,7 +2,7 @@ use util::{Deserialize, Serialize};
 use util::bytes::{BinaryRead, BinaryWrite, MutableBuffer, SharedBuffer};
 use util::Result;
 
-use crate::ConnectedPacket;
+use crate::network::ConnectedPacket;
 
 /// Synchronises the current tick.
 ///

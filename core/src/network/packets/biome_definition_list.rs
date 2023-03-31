@@ -4,7 +4,7 @@ use util::bytes::MutableBuffer;
 use util::Result;
 use util::Serialize;
 
-use crate::ConnectedPacket;
+use crate::network::ConnectedPacket;
 
 const DEFINITIONS: &[u8] = include_bytes!("../../../included/biomes.nbt");
 

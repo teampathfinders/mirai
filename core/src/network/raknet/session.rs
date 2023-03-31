@@ -3,7 +3,7 @@ use std::{net::SocketAddr, sync::{Arc, atomic::{AtomicBool, AtomicU16, AtomicU32
 use parking_lot::{Mutex, RwLock};
 use tokio::net::UdpSocket;
 
-use crate::{CompoundCollector, OrderChannel, RecoveryQueue, SendQueues};
+use crate::network::{CompoundCollector, OrderChannel, RecoveryQueue, SendQueues};
 
 const ORDER_CHANNEL_COUNT: usize = 5;
 

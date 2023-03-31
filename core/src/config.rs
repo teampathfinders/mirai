@@ -3,7 +3,7 @@ use std::time::Duration;
 use lazy_static::lazy_static;
 use parking_lot::RwLock;
 
-use crate::{ClientThrottleSettings, CompressionAlgorithm};
+use crate::network::{ClientThrottleSettings, CompressionAlgorithm};
 
 /// Global service that contains all configuration settings
 pub struct ServerConfig {
@@ -49,6 +49,6 @@ lazy_static! {
         server_name: "Pathfinders",
         allowed_render_distance: 16,
         autosave_interval: Duration::from_secs(60),
-        level_path: "pyro-level/test"
+        level_path: "level/test"
     });
 }

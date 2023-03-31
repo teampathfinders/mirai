@@ -1,7 +1,7 @@
 use util::{bail, Deserialize, Error, Result, Serialize};
 use util::bytes::{BinaryRead, BinaryWrite, MutableBuffer, SharedBuffer};
 
-use crate::ConnectedPacket;
+use crate::network::ConnectedPacket;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum SimpleEvent {
