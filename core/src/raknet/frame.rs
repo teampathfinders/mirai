@@ -3,7 +3,7 @@ use std::io::Write;
 use util::bytes::{BinaryRead, BinaryWrite, MutableBuffer, SharedBuffer};
 use util::Result;
 
-use crate::network::Reliability;
+use crate::raknet::Reliability;
 
 /// Bit flag indicating that the packet is encapsulated in a frame.
 pub const CONNECTED_PEER_BIT_FLAG: u8 = 0x80;

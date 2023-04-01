@@ -24,7 +24,7 @@ impl ModuleCache {
     /// If the module was found in the cache, it will be returned immediately.
     /// If there was no precompiled module, it will be compiled, stored in the cache and returned.
     ///
-    /// `name` is the name of the module. The cache will look for a file with this name in [`ASSEMBLY_DIRECTORY].
+    /// `name` is the name of the module. The cache will look for a file with this name in [`ASSEMBLY_DIRECTORY`].
     pub fn load<I>(&mut self, engine: &Engine, store: &Store, name: I) -> Result<Module>
     where
         I: AsRef<str>

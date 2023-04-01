@@ -16,7 +16,7 @@ use util::bytes::MutableBuffer;
 
 use crate::network::{DeviceOS, Disconnect, PermissionLevel};
 use crate::network::GameMode;
-use crate::network::{BroadcastPacket, RaknetData};
+use crate::raknet::{BroadcastPacket, RaknetData};
 use crate::crypto::{Encryptor, IdentityData, UserData};
 use crate::level::LevelManager;
 use crate::network::Skin;

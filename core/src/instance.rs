@@ -1,3 +1,5 @@
+//! Contains the server instance.
+
 use std::net::{Ipv4Addr, Ipv6Addr, SocketAddrV4};
 use std::sync::Arc;
 use std::time::Duration;
@@ -20,19 +22,19 @@ use crate::network::{
     BOOLEAN_GAME_RULES, CLIENT_VERSION_STRING, INTEGER_GAME_RULES,
     NETWORK_VERSION,
 };
-use crate::network::IncompatibleProtocol;
+use crate::raknet::IncompatibleProtocol;
 use crate::level::LevelManager;
-use crate::network::OpenConnectionReply1;
-use crate::network::OpenConnectionReply2;
-use crate::network::OpenConnectionRequest1;
-use crate::network::OpenConnectionRequest2;
-use crate::network::RAKNET_VERSION;
-use crate::network::RawPacket;
+use crate::raknet::OpenConnectionReply1;
+use crate::raknet::OpenConnectionReply2;
+use crate::raknet::OpenConnectionRequest1;
+use crate::raknet::OpenConnectionRequest2;
+use crate::raknet::RAKNET_VERSION;
+use crate::raknet::RawPacket;
 use crate::config::SERVER_CONFIG;
 use crate::extension::VirtualMachine;
 use crate::network::SessionManager;
-use crate::network::UnconnectedPing;
-use crate::network::UnconnectedPong;
+use crate::raknet::UnconnectedPing;
+use crate::raknet::UnconnectedPong;
 
 /// Local IPv4 address
 pub const IPV4_LOCAL_ADDR: Ipv4Addr = Ipv4Addr::UNSPECIFIED;

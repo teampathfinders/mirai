@@ -13,6 +13,8 @@ pub struct VirtualMachine {
 
 impl VirtualMachine {
     pub fn new() -> Result<Self> {
+        tracing::info!("Initialising VM and compiling extensions...");
+
         let mut cranelift = Cranelift::new();
         cranelift.opt_level(CraneliftOptLevel::Speed);
 

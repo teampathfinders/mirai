@@ -4,7 +4,7 @@ use util::bytes::{BinaryWrite, MutableBuffer};
 use util::Result;
 use util::Serialize;
 
-use crate::network::{OFFLINE_MESSAGE_DATA, RAKNET_VERSION};
+use crate::raknet::{OFFLINE_MESSAGE_DATA, RAKNET_VERSION};
 
 /// Notifies the client that they're using a version of the Raknet protocol that is incompatible
 /// with the version used by the server ([`RAKNET_VERSION`]).
