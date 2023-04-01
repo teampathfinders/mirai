@@ -17,13 +17,13 @@ use crate::network::{
     RequestAbility, SetLocalPlayerAsInitialized, TextMessage, UpdateSkin,
     ViolationWarning,
 };
-use crate::network::{
+use crate::raknet::{
     Ack, ConnectionRequest, DisconnectNotification, Nak, NewIncomingConnection,
 };
-use crate::network::{BroadcastPacket, Frame, FrameBatch};
+use crate::raknet::{BroadcastPacket, Frame, FrameBatch};
 use crate::network::CacheStatus;
-use crate::network::ConnectedPing;
-use crate::network::DEFAULT_SEND_CONFIG;
+use crate::raknet::ConnectedPing;
+use crate::raknet::DEFAULT_SEND_CONFIG;
 use crate::network::Header;
 use crate::config::SERVER_CONFIG;
 use crate::network::Session;

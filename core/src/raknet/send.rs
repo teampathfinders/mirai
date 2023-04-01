@@ -10,11 +10,11 @@ use util::Result;
 use util::Serialize;
 
 use crate::network::{CONNECTED_PACKET_ID, ConnectedPacket, Packet};
-use crate::network::{Ack, AckRecord};
-use crate::network::{Frame, FrameBatch};
+use crate::raknet::{Ack, AckRecord};
+use crate::raknet::{Frame, FrameBatch};
 use crate::network::CompressionAlgorithm;
-use crate::network::Reliability;
-use crate::network::SendPriority;
+use crate::raknet::Reliability;
+use crate::raknet::SendPriority;
 use crate::config::SERVER_CONFIG;
 use crate::network::Session;
 

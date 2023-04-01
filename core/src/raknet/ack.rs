@@ -1,8 +1,7 @@
 use util::bytes::{MutableBuffer, SharedBuffer};
-use util::Deserialize;
-use util::Result;
+use util::{Deserialize, Result};
 
-use crate::network::{Ack, Nak};
+use crate::raknet::{Ack, Nak};
 use crate::network::Session;
 
 impl Session {

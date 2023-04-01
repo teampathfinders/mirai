@@ -12,7 +12,7 @@ use util::bytes::MutableBuffer;
 use crate::network::{
     Disconnect, DISCONNECTED_TIMEOUT,
 };
-use crate::network::{BroadcastPacket, RawPacket};
+use crate::raknet::{BroadcastPacket, RawPacket};
 use crate::{config::SERVER_CONFIG, network::ConnectedPacket};
 use crate::level::LevelManager;
 use crate::network::Session;

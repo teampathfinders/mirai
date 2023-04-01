@@ -5,7 +5,7 @@ use util::bytes::{BinaryWrite, IPV4_MEM_SIZE, IPV6_MEM_SIZE, MutableBuffer};
 use util::Result;
 use util::Serialize;
 
-use crate::network::OFFLINE_MESSAGE_DATA;
+use crate::raknet::OFFLINE_MESSAGE_DATA;
 
 /// Sent in response to [`OpenConnectionRequest2`](crate::open_connection_request2::OpenConnectionRequest2).
 #[derive(Debug)]

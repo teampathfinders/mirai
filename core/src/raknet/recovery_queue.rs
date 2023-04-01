@@ -1,7 +1,7 @@
 use dashmap::DashMap;
 
-use crate::network::AckRecord;
-use crate::network::FrameBatch;
+use crate::raknet::AckRecord;
+use crate::raknet::FrameBatch;
 
 /// Holds previously sent packets to be able to recover them when packet loss occurs.
 ///
