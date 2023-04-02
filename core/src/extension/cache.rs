@@ -11,7 +11,7 @@ use wasmtime::{Engine, Module};
 use super::ASSEMBLY_DIRECTORY;
 
 /// Manages a filesystem cache of compiled modules.
-/// 
+///
 /// Each extension is stored as a separate file in the cache directory.
 /// The name of the cache file corresponds to a SHA-256 hash of the extension's contents.
 /// Additionally, each cache file is also compressed with Zlib.
@@ -22,12 +22,12 @@ pub struct CompilationCache {
 
 impl CompilationCache {
     /// Initialises a new compilation cache.
-    /// 
+    ///
     /// This function creates a directory at the location specified in `cache_dir`
     /// if it does not exist.
-    /// 
+    ///
     /// # Errors
-    /// 
+    ///
     /// An error will be returned if any of the file operations fail.
     pub fn new<P>(cache_dir: P) -> anyhow::Result<Self>
     where
@@ -42,11 +42,11 @@ impl CompilationCache {
     }
 
     /// Attemps to load a cached module.
-    /// 
+    ///
     /// If a cache entry does not exist, the module will first be compiled and then cached.
-    /// 
+    ///
     /// # Errors
-    /// 
+    ///
     /// This function will return an error if filesystem I/O operations fail,
     /// if the file is an invalid Zlib stream or if the module is malformed.
     pub fn load(&self, engine: &Engine, file_name: &str) -> anyhow::Result<Module> {
@@ -76,15 +76,14 @@ impl CompilationCache {
 
             // Load cache
             Ok(unsafe { Module::deserialize(engine, cache_bytecode)? })
-        } 
-        
+        }
         // ...and compile it if it doesn't.
         else {
             tracing::info!("Precompiling extension module '{file_name}'");
 
             let module = Module::new(engine, bytecode)?;
             let serialized = module.serialize()?;
-            
+
             let mut encoder = ZlibEncoder::new(Vec::new(), Compression::best());
             encoder.write_all(&serialized)?;
             let compressed = encoder.finish()?;
