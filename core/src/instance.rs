@@ -1,7 +1,7 @@
 //! Contains the server instance.
 
 use anyhow::Context;
-use ext::Runtime;
+use ext::PluginRuntime;
 use std::net::{Ipv4Addr, Ipv6Addr, SocketAddrV4};
 use std::sync::Arc;
 use std::time::Duration;
@@ -55,13 +55,13 @@ pub struct InstanceManager {
     /// This is to make sure that the world has been saved and safely shut down before shutting down the server.
     level_notifier: Receiver<()>,
     /// Virtual machine that runs and compiles the extensions.
-    extensions: Runtime,
+    extensions: PluginRuntime,
 }
 
 impl InstanceManager {
     /// Creates a new server.
     pub async fn run() -> anyhow::Result<()> {
-        let extensions = Runtime::new().context("Failed to start extension runtime")?;
+        let extensions = PluginRuntime::new().context("Failed to start extension runtime")?;
 
         let (ipv4_port, _ipv6_port) = {
             let lock = SERVER_CONFIG.read();
