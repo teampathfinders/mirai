@@ -1,12 +1,13 @@
+use std::ffi::{OsStr, OsString};
 use std::path::{Path, PathBuf};
 use anyhow::Context;
 use wasmtime::{Config, Engine, Instance, Module, Store};
-use crate::extension::{ASSEMBLY_DIRECTORY, Extension};
+use crate::extension::{ASSEMBLY_DIRECTORY, CACHE_DIRECTORY, CompilationCache, Extension};
 
 pub struct Runtime {
     engine: Engine,
     store: Store<()>,
-    modules: Vec<Extension>
+    extensions: Vec<Extension>
 }
 
 impl Runtime {
@@ -17,14 +18,39 @@ impl Runtime {
         let engine = Engine::new(&config)
             .context("Failed to create engine")?;
 
+        let cache = CompilationCache::new(CACHE_DIRECTORY)?;
+        let module_paths = std::fs::read_dir(ASSEMBLY_DIRECTORY)?
+            .filter_map(|entry| {
+                // Load only .wasm files
+                if let Ok(entry) = entry {
+                    if let Ok(metadata) = entry.metadata() {
+                        if metadata.is_file() && entry.path().extension() == Some(&OsStr::new("wasm")) {
+                            return entry.file_name().into_string().ok()
+                        }
+                    }
+                }
+
+                None
+            })
+            .collect::<Vec<_>>();
+
         let mut store = Store::new(&engine, ());
-        let module = Module::from_file(&engine, "ext/rust.wasm")
-            .context("Failed to compile module")?;
+        let mut extensions = Vec::with_capacity(module_paths.len());
+        for path in &module_paths {
+            let module = cache.load(&engine, path)
+                .context(format!("Failed to compile extension {path}"))?;
 
-        let instance = Instance::new(&mut store, &module, &[])?;
+            let instance = Instance::new(&mut store, &module, &[])?;
+            let extension = Extension::new(instance, &mut store)?;
 
-        let extension = Extension::new(&instance, &mut store)?;
+            extensions.push(extension);
+        }
 
-        todo!()
+        dbg!(&extensions);
+
+        tracing::info!("Extension runtime initialised");
+        Ok(Self {
+            engine, store, extensions
+        })
     }
 }

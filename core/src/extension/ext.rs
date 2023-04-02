@@ -1,3 +1,5 @@
+use std::fmt::{Debug, Formatter, self};
+
 use anyhow::{anyhow, Context};
 use wasmtime::{Instance, Module, Store, TypedFunc};
 
@@ -10,11 +12,12 @@ struct ExtensionFnPointers {
 pub struct Extension {
     name: String,
     version: [u8; 4],
+    instance: Instance,
     fn_pointers: ExtensionFnPointers
 }
 
 impl Extension {
-    pub fn new(instance: &Instance, mut store: &mut Store<()>) -> anyhow::Result<Self> {
+    pub fn new(instance: Instance, mut store: &mut Store<()>) -> anyhow::Result<Self> {
         let alloc_fn = instance.get_typed_func::<u32, i32>(&mut store, "__pyro_alloc")?;
         let dealloc_fn = instance.get_typed_func::<(i32, u32), ()>(&mut store, "__pyro_dealloc")?;
         let realloc_fn = instance.get_typed_func::<(i32, u32, u32), i32>(&mut store, "__pyro_realloc")?;
@@ -49,7 +52,7 @@ impl Extension {
         };
 
         Ok(Self {
-            name, version,
+            name, version, instance,
             fn_pointers: ExtensionFnPointers {
                 alloc_fn, dealloc_fn, realloc_fn
             }
@@ -64,5 +67,18 @@ impl Extension {
     #[inline]
     pub const fn version(&self) -> [u8; 4] {
         self.version
+    }
+}
+
+impl Debug for Extension {
+    fn fmt(&self, fmt: &mut Formatter) -> fmt::Result {
+        // Iterator::intersperse is unstable, so this is a manual implementation.
+        let mut version = self.version.iter().map(|n| n.to_string() + ".").collect::<String>();
+        version.truncate(version.len() - 1);
+
+        fmt.debug_struct("Extension")
+            .field("name", &self.name)
+            .field("version", &version)
+            .finish_non_exhaustive()
     }
 }

@@ -25,7 +25,6 @@ fn init_runtime() -> anyhow::Result<()> {
         .build()
         .expect("Failed to build runtime");
 
-    tracing::info!("Starting server...");
     runtime.block_on(InstanceManager::run())
 }
 
