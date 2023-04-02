@@ -1,6 +1,4 @@
-use std::{
-    ffi::{c_void, c_char, c_int}
-};
+use std::ffi::{c_char, c_int, c_void};
 
 #[derive(Debug)]
 #[repr(C)]
@@ -17,25 +15,11 @@ extern "C" {
     /// This also frees the pointers, it must no longer be used.
     pub fn level_close(database: *mut c_void);
     /// Loads a value from the database.
-    pub fn level_get(
-        database: *mut c_void,
-        key: *const c_char,
-        key_size: c_int,
-    ) -> LevelResult;
+    pub fn level_get(database: *mut c_void, key: *const c_char, key_size: c_int) -> LevelResult;
     /// Writes a value into the database.
-    pub fn level_insert(
-        database: *mut c_void,
-        key: *const c_char,
-        key_size: c_int,
-        value: *const c_char,
-        value_size: c_int
-    ) -> LevelResult;
+    pub fn level_insert(database: *mut c_void, key: *const c_char, key_size: c_int, value: *const c_char, value_size: c_int) -> LevelResult;
     /// Deletes a key from the database.
-    pub fn level_remove(
-        database: *mut c_void,
-        key: *const c_char,
-        key_size: c_int
-    ) -> LevelResult;
+    pub fn level_remove(database: *mut c_void, key: *const c_char, key_size: c_int) -> LevelResult;
     /// Deallocates a string previously allocated by another function.
     pub fn level_deallocate_array(array: *mut c_char);
     /// Creates an iterator over the database keys.

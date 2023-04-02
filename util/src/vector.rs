@@ -72,7 +72,9 @@ impl<T> From<(T, T, T)> for Vector<T, 3> {
 impl<T> From<(T, T, T, T)> for Vector<T, 4> {
     #[inline]
     fn from(value: (T, T, T, T)) -> Self {
-        Self { components: [value.0, value.1, value.2, value.3] }
+        Self {
+            components: [value.0, value.1, value.2, value.3],
+        }
     }
 }
 

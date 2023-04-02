@@ -1,7 +1,7 @@
 use std::io::Write;
 use std::net::SocketAddr;
 
-use util::bytes::{BinaryWrite, IPV4_MEM_SIZE, IPV6_MEM_SIZE, MutableBuffer};
+use util::bytes::{BinaryWrite, MutableBuffer, IPV4_MEM_SIZE, IPV6_MEM_SIZE};
 use util::Result;
 use util::Serialize;
 
@@ -25,14 +25,7 @@ impl OpenConnectionReply2 {
     pub const ID: u8 = 0x08;
 
     pub fn serialized_size(&self) -> usize {
-        1 + 16
-            + if self.client_address.is_ipv4() {
-            IPV4_MEM_SIZE
-        } else {
-            IPV6_MEM_SIZE
-        }
-            + 2
-            + 1
+        1 + 16 + if self.client_address.is_ipv4() { IPV4_MEM_SIZE } else { IPV6_MEM_SIZE } + 2 + 1
     }
 }
 

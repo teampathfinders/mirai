@@ -1,6 +1,6 @@
 use std::sync::atomic::{AtomicU16, Ordering};
 
-use clap::{Command, crate_authors, crate_description};
+use clap::{crate_authors, crate_description, Command};
 use tokio::runtime;
 
 use pyro::instance::InstanceManager;
@@ -17,10 +17,7 @@ fn init_runtime() -> anyhow::Result<()> {
         .enable_time()
         .thread_name_fn(|| {
             static ATOMIC_THREAD_COUNTER: AtomicU16 = AtomicU16::new(0);
-            format!(
-                "async-thread-{}",
-                ATOMIC_THREAD_COUNTER.fetch_add(1, Ordering::Relaxed)
-            )
+            format!("async-thread-{}", ATOMIC_THREAD_COUNTER.fetch_add(1, Ordering::Relaxed))
         })
         .build()
         .expect("Failed to build runtime");
@@ -50,10 +47,7 @@ fn init_logging() {
 
     let fmt = tracing_subscriber::fmt::layer().with_target(false);
 
-    tracing_subscriber::registry()
-        .with(console_layer)
-        .with(fmt)
-        .init();
+    tracing_subscriber::registry().with(console_layer).with(fmt).init();
 
     disable_wasmer_log();
     tracing::info!("Tokio console enabled");

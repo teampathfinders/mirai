@@ -1,9 +1,9 @@
-use std::{fmt, io};
 use std::fmt::Debug;
 use std::io::Write;
 use std::ops::{Deref, DerefMut};
+use std::{fmt, io};
 
-use crate::bytes::{SharedBuffer};
+use crate::bytes::SharedBuffer;
 
 /// A buffer that can be read from and written to.
 /// It is the owned version of [`ReadBuffer`].

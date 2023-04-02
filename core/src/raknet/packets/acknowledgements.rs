@@ -1,9 +1,9 @@
 use std::ops::Range;
 
-use util::{Deserialize, Serialize};
 use util::bytes::{BinaryRead, BinaryWrite, MutableBuffer, SharedBuffer};
 use util::pyassert;
 use util::Result;
+use util::{Deserialize, Serialize};
 
 /// Record containing IDs of confirmed packets.
 #[derive(Debug, Clone)]
@@ -15,10 +15,7 @@ pub enum AckRecord {
 }
 
 /// Encodes a list of acknowledgement records.
-fn encode_records(
-    buffer: &mut MutableBuffer,
-    records: &[AckRecord],
-) -> anyhow::Result<()> {
+fn encode_records(buffer: &mut MutableBuffer, records: &[AckRecord]) -> anyhow::Result<()> {
     buffer.write_i16_be(records.len() as i16)?;
     for record in records {
         match record {
@@ -45,9 +42,7 @@ fn decode_records(mut buffer: SharedBuffer) -> anyhow::Result<Vec<AckRecord>> {
     for _ in 0..record_count {
         let is_range = buffer.read_u8()? == 0;
         if is_range {
-            records.push(AckRecord::Range(
-                buffer.read_u24_le()?.into()..buffer.read_u24_le()?.into(),
-            ));
+            records.push(AckRecord::Range(buffer.read_u24_le()?.into()..buffer.read_u24_le()?.into()));
         } else {
             records.push(AckRecord::Single(buffer.read_u24_le()?.into()));
         }

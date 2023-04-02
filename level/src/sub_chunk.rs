@@ -3,8 +3,8 @@ use std::ops::{Index, IndexMut};
 
 use serde::{Deserialize, Serialize};
 
-use util::{bail, Error, Result, Vector};
 use util::bytes::{BinaryRead, BinaryWrite, MutableBuffer};
+use util::{bail, Error, Result, Vector};
 
 const CHUNK_SIZE: usize = 4096;
 
@@ -33,8 +33,8 @@ mod block_version {
 
     #[inline]
     pub fn deserialize<'de, D>(de: D) -> anyhow::Result<Option<[u8; 4]>, D::Error>
-        where
-            D: Deserializer<'de>
+    where
+        D: Deserializer<'de>,
     {
         let word = Option::<i32>::deserialize(de)?;
         Ok(word.map(|w| w.to_be_bytes()))
@@ -42,8 +42,8 @@ mod block_version {
 
     #[inline]
     pub fn serialize<S>(v: &Option<[u8; 4]>, ser: S) -> anyhow::Result<S::Ok, S::Error>
-        where
-            S: Serializer
+    where
+        S: Serializer,
     {
         if let Some(b) = v {
             ser.serialize_i32(i32::from_be_bytes(*b))
@@ -101,7 +101,7 @@ impl SubLayer {
 
     pub fn get(&self, pos: Vector<u8, 3>) -> Option<&PaletteEntry> {
         if pos.x > 16 || pos.y > 16 || pos.z > 16 {
-            return None
+            return None;
         }
 
         let offset = to_offset(pos);
@@ -113,7 +113,7 @@ impl SubLayer {
 
     pub fn get_mut(&mut self, pos: Vector<u8, 3>) -> Option<&mut PaletteEntry> {
         if pos.x > 16 || pos.y > 16 || pos.z > 16 {
-            return None
+            return None;
         }
 
         let offset = to_offset(pos);
@@ -142,19 +142,20 @@ impl SubLayer {
     pub fn indices_mut(&mut self) -> &mut [u16; 4096] {
         &mut self.indices
     }
-
-
 }
 
 impl<I> Index<I> for SubLayer
 where
-    I: Into<Vector<u8, 3>>
+    I: Into<Vector<u8, 3>>,
 {
     type Output = PaletteEntry;
 
     fn index(&self, position: I) -> &Self::Output {
         let position = position.into();
-        assert!(position.x <= 16 && position.y <= 16 && position.z <= 16, "Block position out of sub chunk bounds");
+        assert!(
+            position.x <= 16 && position.y <= 16 && position.z <= 16,
+            "Block position out of sub chunk bounds"
+        );
 
         let offset = to_offset(position);
         let index = self.indices[offset] as usize;
@@ -164,11 +165,14 @@ where
 
 impl<I> IndexMut<I> for SubLayer
 where
-    I: Into<Vector<u8, 3>>
+    I: Into<Vector<u8, 3>>,
 {
     fn index_mut(&mut self, position: I) -> &mut Self::Output {
         let position = position.into();
-        assert!(position.x <= 16 && position.y <= 16 && position.z <= 16, "Block position out of sub chunk bounds");
+        assert!(
+            position.x <= 16 && position.y <= 16 && position.z <= 16,
+            "Block position out of sub chunk bounds"
+        );
 
         let offset = to_offset(position);
         let index = self.indices[offset] as usize;
@@ -188,9 +192,7 @@ impl Default for SubLayer {
 /// These coordinates should be in the range [0, 16) for each component.
 #[inline]
 pub fn to_offset(position: Vector<u8, 3>) -> usize {
-    16 * 16 * position.x as usize
-        + 16 * position.z as usize
-        + position.y as usize
+    16 * 16 * position.x as usize + 16 * position.z as usize + position.y as usize
 }
 
 /// Converts an offset back to coordinates.
@@ -198,11 +200,7 @@ pub fn to_offset(position: Vector<u8, 3>) -> usize {
 /// This offset should be in the range [0, 4096).
 #[inline]
 pub fn from_offset(offset: usize) -> Vector<u8, 3> {
-    Vector::from([
-        (offset >> 8) as u8 & 0xf,
-        offset as u8 & 0xf,
-        (offset >> 4) as u8 & 0xf,
-    ])
+    Vector::from([(offset >> 8) as u8 & 0xf, offset as u8 & 0xf, (offset >> 4) as u8 & 0xf])
 }
 
 /// A Minecraft sub chunk.
@@ -239,9 +237,7 @@ impl SubChunk {
     }
 }
 
-impl SubChunk {
-
-}
+impl SubChunk {}
 
 impl Index<usize> for SubChunk {
     type Output = SubLayer;

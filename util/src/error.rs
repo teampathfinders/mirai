@@ -12,10 +12,7 @@ macro_rules! pyassert {
     };
 
     ($expression: expr) => {
-        pyassert!(
-            $expression,
-            format!("Assertion failed: {}", stringify!($expression))
-        );
+        pyassert!($expression, format!("Assertion failed: {}", stringify!($expression)));
     };
 }
 
@@ -110,8 +107,8 @@ impl std::error::Error for Error {}
 impl serde::de::Error for Error {
     #[inline]
     fn custom<T>(v: T) -> Self
-        where
-            T: fmt::Display,
+    where
+        T: fmt::Display,
     {
         Self {
             kind: ErrorKind::Malformed,
@@ -124,8 +121,8 @@ impl serde::de::Error for Error {
 impl serde::ser::Error for Error {
     #[inline]
     fn custom<T>(v: T) -> Self
-        where
-            T: fmt::Display,
+    where
+        T: fmt::Display,
     {
         Self {
             kind: ErrorKind::Unsupported,
@@ -148,11 +145,7 @@ impl fmt::Debug for Error {
 
 impl fmt::Display for Error {
     fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
-        write!(
-            fmt,
-            "{:?} | {}\nbacktrace: {}",
-            self.kind, self.description, self.backtrace
-        )
+        write!(fmt, "{:?} | {}\nbacktrace: {}", self.kind, self.description, self.backtrace)
     }
 }
 
@@ -165,18 +158,10 @@ impl<T> From<tokio::sync::SetError<T>> for Error {
 impl From<std::io::Error> for Error {
     fn from(value: std::io::Error) -> Self {
         match value.kind() {
-            std::io::ErrorKind::InvalidData => {
-                Self::new(ErrorKind::Malformed, value.to_string())
-            }
-            std::io::ErrorKind::AlreadyExists => {
-                Self::new(ErrorKind::AlreadyInitialized, value.to_string())
-            }
-            std::io::ErrorKind::NotConnected => {
-                Self::new(ErrorKind::NotAuthenticated, value.to_string())
-            }
-            std::io::ErrorKind::UnexpectedEof => {
-                Self::new(ErrorKind::UnexpectedEof, value.to_string())
-            }
+            std::io::ErrorKind::InvalidData => Self::new(ErrorKind::Malformed, value.to_string()),
+            std::io::ErrorKind::AlreadyExists => Self::new(ErrorKind::AlreadyInitialized, value.to_string()),
+            std::io::ErrorKind::NotConnected => Self::new(ErrorKind::NotAuthenticated, value.to_string()),
+            std::io::ErrorKind::UnexpectedEof => Self::new(ErrorKind::UnexpectedEof, value.to_string()),
             _ => Self::new(ErrorKind::Other, value.to_string()),
         }
     }
@@ -190,9 +175,7 @@ impl From<jsonwebtoken::errors::Error> for Error {
             | jsonwebtoken::errors::ErrorKind::InvalidEcdsaKey
             | jsonwebtoken::errors::ErrorKind::Base64(_)
             | jsonwebtoken::errors::ErrorKind::Json(_)
-            | jsonwebtoken::errors::ErrorKind::Utf8(_) => {
-                Self::new(ErrorKind::Malformed, value.to_string())
-            }
+            | jsonwebtoken::errors::ErrorKind::Utf8(_) => Self::new(ErrorKind::Malformed, value.to_string()),
             _ => Self::new(ErrorKind::Other, value.to_string()),
         }
     }
@@ -230,10 +213,7 @@ impl<T> From<snap::write::IntoInnerError<T>> for Error {
 
 impl From<dashmap::TryReserveError> for Error {
     fn from(_: dashmap::TryReserveError) -> Self {
-        Self::new(
-            ErrorKind::Other,
-            "Failed to reserve Dashmap space".to_owned(),
-        )
+        Self::new(ErrorKind::Other, "Failed to reserve Dashmap space".to_owned())
     }
 }
 

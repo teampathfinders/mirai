@@ -1,11 +1,11 @@
+use anyhow::anyhow;
+use std::ptr::NonNull;
 use std::{
     ffi::{c_void, CStr, CString},
     marker::PhantomData,
     ops::Deref,
     os::raw::{c_char, c_int},
 };
-use std::ptr::NonNull;
-use anyhow::anyhow;
 
 use util::{error, Error, Result};
 
@@ -70,10 +70,7 @@ impl<'a> KvRef<'a> {
             let result = ffi::level_iter_key(self.iter.as_ptr());
             debug_assert_eq!(result.is_success, 1);
 
-            Guard::from_slice(std::slice::from_raw_parts(
-                result.data as *const u8,
-                result.size as usize,
-            ))
+            Guard::from_slice(std::slice::from_raw_parts(result.data as *const u8, result.size as usize))
         }
     }
 
@@ -85,10 +82,7 @@ impl<'a> KvRef<'a> {
             let result = ffi::level_iter_value(self.iter.as_ptr());
             debug_assert_eq!(result.is_success, 1);
 
-            Guard::from_slice(std::slice::from_raw_parts(
-                result.data as *const u8,
-                result.size as usize,
-            ))
+            Guard::from_slice(std::slice::from_raw_parts(result.data as *const u8, result.size as usize))
         }
     }
 }
@@ -170,8 +164,8 @@ pub struct Database {
 impl Database {
     /// Opens the database at the specified path.
     pub fn open<P>(path: P) -> anyhow::Result<Self>
-        where
-            P: AsRef<str>,
+    where
+        P: AsRef<str>,
     {
         let ffi_path = CString::new(path.as_ref())?;
 
@@ -199,8 +193,8 @@ impl Database {
 
     /// Loads the specified value from the database.
     pub fn get<K>(&self, key: K) -> anyhow::Result<Guard>
-        where
-            K: AsRef<[u8]>,
+    where
+        K: AsRef<[u8]>,
     {
         let key = key.as_ref();
         unsafe {
@@ -208,21 +202,14 @@ impl Database {
             // It also does not throw exceptions and returns a valid struct.
             //
             // LevelDB is thread-safe, this function can be used by multiple threads.
-            let result = ffi::level_get(
-                self.ptr.as_ptr(),
-                key.as_ptr() as *const c_char,
-                key.len() as c_int,
-            );
+            let result = ffi::level_get(self.ptr.as_ptr(), key.as_ptr() as *const c_char, key.len() as c_int);
 
             if result.is_success == 1 {
                 debug_assert_ne!(result.data, std::ptr::null_mut());
 
                 // SAFETY: result.data is guaranteed by the caller to be a valid pointer.
                 // result.size is also guaranteed to be the size of the actual array.
-                let data = std::slice::from_raw_parts(
-                    result.data as *const u8,
-                    result.size as usize,
-                );
+                let data = std::slice::from_raw_parts(result.data as *const u8, result.size as usize);
 
                 // SAFETY: The data passed into the Guard has been allocated in the leveldb FFI code.
                 // It is therefore also required to deallocate the data there, which is what Guard
@@ -237,7 +224,7 @@ impl Database {
     pub fn insert<K, V>(&self, key: K, value: V) -> anyhow::Result<()>
     where
         K: AsRef<[u8]>,
-        V: AsRef<[u8]>
+        V: AsRef<[u8]>,
     {
         let key = key.as_ref();
         let value = value.as_ref();
@@ -248,7 +235,7 @@ impl Database {
                 key.as_ptr() as *const c_char,
                 key.len() as c_int,
                 value.as_ptr() as *const c_char,
-                value.len() as c_int
+                value.len() as c_int,
             );
 
             if result.is_success == 1 {
@@ -261,16 +248,12 @@ impl Database {
 
     pub fn remove<K>(&self, key: K) -> anyhow::Result<()>
     where
-        K: AsRef<[u8]>
+        K: AsRef<[u8]>,
     {
         let key = key.as_ref();
 
         unsafe {
-            let result = ffi::level_remove(
-                self.ptr.as_ptr(),
-                key.as_ptr() as *mut c_char,
-                key.len() as c_int
-            );
+            let result = ffi::level_remove(self.ptr.as_ptr(), key.as_ptr() as *mut c_char, key.len() as c_int);
 
             if result.is_success == 1 {
                 Ok(())

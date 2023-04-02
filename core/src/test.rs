@@ -5,12 +5,12 @@ use std::sync::Arc;
 use base64::Engine;
 use flate2::read::DeflateDecoder;
 
-use util::{Result, Serialize};
 use util::bytes::MutableBuffer;
+use util::{Result, Serialize};
 
-use crate::raknet::{Frame, OrderChannel};
-use crate::network::Header;
 use crate::instance::{IPV4_LOCAL_ADDR, IPV6_LOCAL_ADDR};
+use crate::network::Header;
+use crate::raknet::{Frame, OrderChannel};
 
 #[test]
 fn read_write_header() {

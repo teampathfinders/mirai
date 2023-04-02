@@ -1,5 +1,5 @@
-use util::{bail, Error, Result};
 use util::bytes::{BinaryRead, BinaryWrite};
+use util::{bail, Error, Result};
 
 pub const AUTONOMOUS_ENTITIES: &[u8] = "AutonomousEntities".as_bytes();
 pub const BIOME_DATA: &[u8] = "BiomeData".as_bytes();
@@ -67,23 +67,12 @@ pub struct DatabaseKey {
 
 impl DatabaseKey {
     pub(crate) fn serialized_size(&self) -> usize {
-        4 + 4
-            + if self.dimension != Dimension::Overworld {
-            4
-        } else {
-            0
-        }
-            + 1
-            + if let KeyData::SubChunk { .. } = self.data {
-            1
-        } else {
-            0
-        }
+        4 + 4 + if self.dimension != Dimension::Overworld { 4 } else { 0 } + 1 + if let KeyData::SubChunk { .. } = self.data { 1 } else { 0 }
     }
 
     pub(crate) fn serialize<W>(&self, mut writer: W) -> anyhow::Result<()>
-        where
-            W: BinaryWrite
+    where
+        W: BinaryWrite,
     {
         writer.write_i32_le(self.x)?;
         writer.write_i32_le(self.z)?;
@@ -101,8 +90,8 @@ impl DatabaseKey {
     }
 
     pub(crate) fn deserialize<'a, R>(mut reader: R) -> anyhow::Result<Self>
-        where
-            R: BinaryRead<'a> + 'a,
+    where
+        R: BinaryRead<'a> + 'a,
     {
         let x = reader.read_i32_le()?;
         let z = reader.read_i32_le()?;
@@ -115,9 +104,7 @@ impl DatabaseKey {
 
         let key_ty = reader.read_u8()?;
         let data = match key_ty {
-            0x2f => KeyData::SubChunk {
-                index: reader.read_i8()?
-            },
+            0x2f => KeyData::SubChunk { index: reader.read_i8()? },
             0x2b => KeyData::Biome3d,
             0x2c => KeyData::ChunkVersion,
             0x2d => KeyData::HeightMap,
@@ -130,12 +117,10 @@ impl DatabaseKey {
             0x38 => KeyData::BorderBlocks,
             0x39 => KeyData::HardCodedSpawnAreas,
             0x3a => KeyData::RandomTicks,
-            _ => bail!(Malformed, "Invalid key type: {key_ty:x?}")
+            _ => bail!(Malformed, "Invalid key type: {key_ty:x?}"),
         };
 
-        Ok(Self {
-            x, z, dimension, data
-        })
+        Ok(Self { x, z, dimension, data })
     }
 }
 
@@ -159,7 +144,7 @@ impl TryFrom<u32> for Dimension {
             0 => Self::Overworld,
             1 => Self::Nether,
             2 => Self::End,
-            _ => bail!(Malformed, "Invalid dimension")
+            _ => bail!(Malformed, "Invalid dimension"),
         })
     }
 }

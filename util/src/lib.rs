@@ -17,4 +17,3 @@ mod error;
 mod traits;
 pub mod u24;
 mod vector;
-

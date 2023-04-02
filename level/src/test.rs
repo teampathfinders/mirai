@@ -1,7 +1,10 @@
 use std::collections::HashMap;
 use util::{Deserialize, Serialize, Vector};
 
-use crate::{biome::Biome3d, BIOME_DATA, database::Database, DatabaseKey, Dimension, KeyData, LOCAL_PLAYER, MOB_EVENTS, OVERWORLD, PaletteEntry, SCHEDULER, SCOREBOARD, SubChunk, SubChunkVersion, SubLayer, level_dat::LevelDat};
+use crate::{
+    biome::Biome3d, database::Database, level_dat::LevelDat, DatabaseKey, Dimension, KeyData, PaletteEntry, SubChunk, SubChunkVersion, SubLayer,
+    BIOME_DATA, LOCAL_PLAYER, MOB_EVENTS, OVERWORLD, SCHEDULER, SCOREBOARD,
+};
 
 // digp [x] [z] [?dimension]
 // contains two int32
@@ -18,14 +21,16 @@ fn read_write_subchunk() {
         let key = kv.key();
         if key[key.len() - 2] == 0x2f {
             let mut subchunk = SubChunk::deserialize_local(&*kv.value()).unwrap();
-            subchunk[0][[0, 0, 0]].states.insert("hello".to_owned(), nbt::Value::String("world".to_owned()));
+            subchunk[0][[0, 0, 0]]
+                .states
+                .insert("hello".to_owned(), nbt::Value::String("world".to_owned()));
 
             let serialized = subchunk.serialize_local().unwrap();
 
             let deserialized = SubChunk::deserialize_local(serialized.as_slice()).unwrap();
             dbg!(deserialized);
 
-            break
+            break;
         }
     }
 }
@@ -62,11 +67,7 @@ fn bench_subchunk() {
     let avg = sum as f64 / count as f64;
     println!("average: {avg}μs");
     println!("total chunks: {}", count as f64 / 1.0f64);
-    println!(
-        "failed: {} ({}%)",
-        failed,
-        failed as f64 / (count + failed) as f64
-    );
+    println!("failed: {} ({}%)", failed, failed as f64 / (count + failed) as f64);
 
     // let mut buffer = OwnedBuffer::new();
     // DatabaseKey {
@@ -97,9 +98,7 @@ fn ser_de_palette_entry() {
     let entry = PaletteEntry {
         name: "minecraft:stone".to_owned(),
         version: Some([1, 18, 100, 0]),
-        states: HashMap::from([
-            ("stone_type".to_owned(), nbt::Value::String("andesite".to_owned()))
-        ])
+        states: HashMap::from([("stone_type".to_owned(), nbt::Value::String("andesite".to_owned()))]),
     };
 
     let ser = nbt::to_le_bytes(&entry).unwrap();

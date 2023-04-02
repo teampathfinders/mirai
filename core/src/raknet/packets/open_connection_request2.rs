@@ -1,6 +1,6 @@
 use util::bytes::{BinaryRead, SharedBuffer};
-use util::Deserialize;
 use util::pyassert;
+use util::Deserialize;
 use util::Result;
 
 /// Sent by the client, in response to [`OpenConnectionReply2`](crate::open_connection_reply2::OpenConnectionReply2).

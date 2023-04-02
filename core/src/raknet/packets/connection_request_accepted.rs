@@ -1,6 +1,6 @@
 use std::net::{Ipv4Addr, SocketAddr, SocketAddrV4};
 
-use util::bytes::{BinaryWrite, IPV4_MEM_SIZE, IPV6_MEM_SIZE, MutableBuffer};
+use util::bytes::{BinaryWrite, MutableBuffer, IPV4_MEM_SIZE, IPV6_MEM_SIZE};
 use util::Result;
 use util::Serialize;
 
@@ -28,8 +28,7 @@ impl Serialize for ConnectionRequestAccepted {
         buffer.write_addr(&self.client_address)?;
         buffer.write_u16_be(0)?; // System index
 
-        let null_addr =
-            SocketAddr::V4(SocketAddrV4::new(Ipv4Addr::new(0, 0, 0, 0), 19132));
+        let null_addr = SocketAddr::V4(SocketAddrV4::new(Ipv4Addr::new(0, 0, 0, 0), 19132));
         for _ in 0..20 {
             // 20 internal IDs
             buffer.write_addr(&null_addr)?;

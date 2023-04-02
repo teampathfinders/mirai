@@ -1,14 +1,10 @@
 #![allow(clippy::module_inception)]
 
-use std::fmt::{Debug, Display, Formatter};
-use anyhow::anyhow;
-pub use crate::de::{
-    Deserializer, from_be_bytes, from_le_bytes, from_var_bytes,
-};
-pub use crate::ser::{
-    Serializer, to_be_bytes, to_be_bytes_in, to_le_bytes, to_le_bytes_in, to_var_bytes, to_var_bytes_in,
-};
+pub use crate::de::{from_be_bytes, from_le_bytes, from_var_bytes, Deserializer};
+pub use crate::ser::{to_be_bytes, to_be_bytes_in, to_le_bytes, to_le_bytes_in, to_var_bytes, to_var_bytes_in, Serializer};
 pub use crate::value::Value;
+use anyhow::anyhow;
+use std::fmt::{Debug, Display, Formatter};
 
 #[cfg(test)]
 mod test;
@@ -175,13 +171,19 @@ impl Display for NbtError {
 impl std::error::Error for NbtError {}
 
 impl serde::de::Error for NbtError {
-    fn custom<T>(msg: T) -> Self where T: Display {
+    fn custom<T>(msg: T) -> Self
+    where
+        T: Display,
+    {
         Self(anyhow!(msg.to_string()))
     }
 }
 
 impl serde::ser::Error for NbtError {
-    fn custom<T>(msg: T) -> Self where T: Display {
+    fn custom<T>(msg: T) -> Self
+    where
+        T: Display,
+    {
         Self(anyhow!(msg.to_string()))
     }
 }

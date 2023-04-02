@@ -1,22 +1,66 @@
-use std::fmt::{Debug, Formatter, self};
+use std::fmt::{self, Debug, Formatter};
 
 use anyhow::{anyhow, Context};
-use wasmtime::{Instance, Module, Store, TypedFunc};
+use wasmtime::{Instance, Store, TypedFunc};
 
+/// Contains commonly used functions.
 struct ExtensionFnPointers {
+    /// Allocates a block of memory in WebAssembly linear memory.
+    ///
+    /// The argument passed into this function determines the size of the allocation in bytes.
     alloc_fn: TypedFunc<u32, i32>,
+    /// Deallocates a block of memory previously allocated with [`alloc_fn`](Self::alloc_fn).
+    ///
+    /// The first argument is a pointer to the start of the allocation while the second argument is the
+    /// size of the allocation.
+    /// The size passed into this function must be equal to the size previously used in [`alloc_fn`](Self::alloc_fn).
     dealloc_fn: TypedFunc<(i32, u32), ()>,
-    realloc_fn: TypedFunc<(i32, u32, u32), i32>
+    /// Resizes a block of memory previously allocated with [`alloc_fn`](Self::alloc_fn).
+    ///
+    /// The first argument is a pointer to the start of the allocation,
+    /// the second argument is the current size of the allocation,
+    /// and the third argument is the requested size of the new allocation.
+    realloc_fn: TypedFunc<(i32, u32, u32), i32>,
 }
 
+/// A WebAssembly server extension.
 pub struct Extension {
+    /// Name of the extension
+    ///
+    /// This name is retrieved using the `_pyro_ext_name` and `__pyro_ext_name_len` exports.
     name: String,
+    /// Version of this extension.
+    ///
+    /// Retrieved using the `__pyro_ext_version` export.
     version: [u8; 4],
+    /// The instantiated module.
     instance: Instance,
-    fn_pointers: ExtensionFnPointers
+    /// Pointers to several functions exported by all extensions.
+    fn_pointers: ExtensionFnPointers,
 }
 
 impl Extension {
+    /// Creates a new extension using the given instance and store.
+    ///
+    /// This function loads all the required function exports and then loads the extension name and version.
+    ///
+    /// Firstly, the `__pyro_ext_name_len` function is called, which returns the length of the name in bytes.
+    /// The runtime then allocates a buffer of the specified size using `__pyro_alloc`,
+    /// which is populated using `__pyro_ext_name`.
+    /// This UTF-8 buffer is converted into a Rust string and then deallocated with `__pyro_dealloc`.
+    ///
+    /// Secondly, the extension version is simply retrieved using `__pyro_ext_version`.
+    /// The version is encoded as an unsigned little-endian 32-bit integer. Each of the bytes in the integer
+    /// is a component of the 4-component SemVer version.
+    ///
+    /// # Errors
+    ///
+    /// This function can fail if a required export is not found or if the given name
+    /// is not valid UTF-8.
+    ///
+    /// # Panics
+    ///
+    /// This function panics if the instance was not created with the specified store.
     pub fn new(instance: Instance, mut store: &mut Store<()>) -> anyhow::Result<Self> {
         let alloc_fn = instance.get_typed_func::<u32, i32>(&mut store, "__pyro_alloc")?;
         let dealloc_fn = instance.get_typed_func::<(i32, u32), ()>(&mut store, "__pyro_dealloc")?;
@@ -30,16 +74,14 @@ impl Extension {
             let name_ptr = alloc_fn.call(&mut store, len)?;
             name_fn.call(&mut store, name_ptr)?;
 
-            let linear_mem = instance.get_memory(&mut store, "memory").ok_or_else(||
-                anyhow!("Memory export 'memory' not found")
-                    .context("Failed to load extension name")
-            )?;
+            let linear_mem = instance
+                .get_memory(&mut store, "memory")
+                .ok_or_else(|| anyhow!("Memory export 'memory' not found").context("Failed to load extension name"))?;
 
             let mut utf8_buffer = vec![0; len as usize];
             linear_mem.read(&mut store, name_ptr as usize, &mut utf8_buffer)?;
 
-            let name = String::from_utf8(utf8_buffer)
-                .context("Failed to read extension name")?;
+            let name = String::from_utf8(utf8_buffer).context("Failed to read extension name")?;
 
             dealloc_fn.call(&mut store, (name_ptr, len))?;
 
@@ -52,18 +94,24 @@ impl Extension {
         };
 
         Ok(Self {
-            name, version, instance,
-            fn_pointers: ExtensionFnPointers {
-                alloc_fn, dealloc_fn, realloc_fn
-            }
+            name,
+            version,
+            instance,
+            fn_pointers: ExtensionFnPointers { alloc_fn, dealloc_fn, realloc_fn },
         })
     }
 
+    /// Returns the name of this extension.
+    ///
+    /// See [`new`](Self::new) for an explanation of how this name is determined.
     #[inline]
     pub fn name(&self) -> &str {
         &self.name
     }
 
+    /// Returns the version of this extension.
+    ///
+    /// See [`new`](Self::new) for an explanation of how this version is determined.
     #[inline]
     pub const fn version(&self) -> [u8; 4] {
         self.version
