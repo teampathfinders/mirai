@@ -16,7 +16,7 @@ pub enum CreditsStatus {
 impl TryFrom<i32> for CreditsStatus {
     type Error = Error;
 
-    fn try_from(value: i32) -> Result<Self> {
+    fn try_from(value: i32) -> anyhow::Result<Self> {
         Ok(match value {
             0 => Self::Start,
             1 => Self::End,
@@ -42,14 +42,14 @@ impl ConnectedPacket for CreditsUpdate {
 }
 
 impl Serialize for CreditsUpdate {
-    fn serialize(&self, buffer: &mut MutableBuffer) -> Result<()> {
+    fn serialize(&self, buffer: &mut MutableBuffer) -> anyhow::Result<()> {
         buffer.write_var_u64(self.runtime_id)?;
         buffer.write_var_i32(self.status as i32)
     }
 }
 
 impl Deserialize<'_> for CreditsUpdate {
-    fn deserialize(mut buffer: SharedBuffer) -> Result<Self> {
+    fn deserialize(mut buffer: SharedBuffer) -> anyhow::Result<Self> {
         let runtime_id = buffer.read_var_u64()?;
         let status = CreditsStatus::try_from(buffer.read_var_i32()?)?;
 

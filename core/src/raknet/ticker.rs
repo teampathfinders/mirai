@@ -118,7 +118,7 @@ impl Session {
     }
 
     /// Performs tasks not related to packet processing
-    pub async fn tick(&self) -> Result<()> {
+    pub async fn tick(&self) -> anyhow::Result<()> {
         let _current_tick = self.current_tick.fetch_add(1, Ordering::SeqCst);
 
         // Session has timed out

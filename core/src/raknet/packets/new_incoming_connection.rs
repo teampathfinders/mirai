@@ -13,7 +13,7 @@ impl NewIncomingConnection {
 }
 
 impl Deserialize<'_> for NewIncomingConnection {
-    fn deserialize(mut buffer: SharedBuffer) -> Result<Self> {
+    fn deserialize(mut buffer: SharedBuffer) -> anyhow::Result<Self> {
         pyassert!(buffer.read_u8()? == Self::ID);
 
         // No data in this packet is used, there is no point in decoding it

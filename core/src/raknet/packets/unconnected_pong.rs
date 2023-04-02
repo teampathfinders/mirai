@@ -30,7 +30,7 @@ impl UnconnectedPong<'_> {
 }
 
 impl Serialize for UnconnectedPong<'_> {
-    fn serialize(&self, buffer: &mut MutableBuffer) -> Result<()> {
+    fn serialize(&self, buffer: &mut MutableBuffer) -> anyhow::Result<()> {
         buffer.write_u8(Self::ID)?;
         buffer.write_u64_be(self.time)?;
         buffer.write_u64_be(self.server_guid)?;

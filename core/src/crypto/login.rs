@@ -94,7 +94,7 @@ pub struct UserDataTokenPayload {
 /// First token in the chain holds the client's self-signed public key in the X5U.
 /// It is extracted from the header of the token and used to verify its signature.
 /// The payload of the token contains a new key which is used to verify the next token.
-fn parse_initial_token(token: &str) -> Result<String> {
+fn parse_initial_token(token: &str) -> anyhow::Result<String> {
     // Decode JWT header to get X5U.
     let header = jsonwebtoken::decode_header(token)?;
     let base64 = header.x5u.ok_or_else(|| {
@@ -127,7 +127,7 @@ fn parse_initial_token(token: &str) -> Result<String> {
 /// The second token in the chain can be verified using Mojang's public key
 /// (or the identityPublicKey from the previous token).
 /// This token contains another identityPublicKey which is the public key for the third token.
-fn parse_mojang_token(token: &str, key: &str) -> Result<String> {
+fn parse_mojang_token(token: &str, key: &str) -> anyhow::Result<String> {
     let bytes = BASE64_ENGINE.decode(key)?;
     let public_key =
         match spki::SubjectPublicKeyInfoRef::try_from(bytes.as_ref()) {
@@ -158,7 +158,7 @@ fn parse_mojang_token(token: &str, key: &str) -> Result<String> {
 fn parse_identity_token(
     token: &str,
     key: &str,
-) -> Result<IdentityTokenPayload> {
+) -> anyhow::Result<IdentityTokenPayload> {
     let bytes = BASE64_ENGINE.decode(key)?;
     let public_key =
         match spki::SubjectPublicKeyInfoRef::try_from(bytes.as_ref()) {
@@ -186,7 +186,7 @@ fn parse_identity_token(
 fn parse_user_data_token(
     token: &str,
     key: &str,
-) -> Result<UserDataTokenPayload> {
+) -> anyhow::Result<UserDataTokenPayload> {
     let bytes = BASE64_ENGINE.decode(key)?;
     let public_key =
         match spki::SubjectPublicKeyInfoRef::try_from(bytes.as_ref()) {
@@ -215,7 +215,7 @@ fn parse_user_data_token(
 /// This contains such as the XUID, display name and public key.
 pub fn parse_identity_data(
     buffer: &mut SharedBuffer,
-) -> Result<IdentityTokenPayload> {
+) -> anyhow::Result<IdentityTokenPayload> {
     let token_length = buffer.read_u32_le()?;
     let token_chain = buffer.take_n(token_length as usize)?;
 
@@ -255,7 +255,7 @@ pub fn parse_identity_data(
 pub fn parse_user_data(
     buffer: &mut SharedBuffer,
     public_key: &str,
-) -> Result<UserDataTokenPayload> {
+) -> anyhow::Result<UserDataTokenPayload> {
     let token_length = buffer.read_u32_le()?;
     let token = buffer.take_n(token_length as usize)?;
     let token_string = String::from_utf8_lossy(token);

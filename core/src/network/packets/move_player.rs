@@ -15,7 +15,7 @@ pub enum MovementMode {
 impl TryFrom<u8> for MovementMode {
     type Error = Error;
 
-    fn try_from(value: u8) -> Result<Self> {
+    fn try_from(value: u8) -> anyhow::Result<Self> {
         Ok(match value {
             0 => Self::Normal,
             1 => Self::Reset,
@@ -38,7 +38,7 @@ pub enum TeleportCause {
 impl TryFrom<i32> for TeleportCause {
     type Error = Error;
 
-    fn try_from(value: i32) -> Result<Self> {
+    fn try_from(value: i32) -> anyhow::Result<Self> {
         Ok(match value {
             0 => Self::Unknown,
             1 => Self::Projectile,
@@ -80,7 +80,7 @@ impl ConnectedPacket for MovePlayer {
 }
 
 impl Serialize for MovePlayer {
-    fn serialize(&self, buffer: &mut MutableBuffer) -> Result<()> {
+    fn serialize(&self, buffer: &mut MutableBuffer) -> anyhow::Result<()> {
         buffer.write_var_u64(self.runtime_id)?;
         buffer.write_vecf(&self.position)?;
         buffer.write_vecf(&self.rotation)?;
@@ -98,7 +98,7 @@ impl Serialize for MovePlayer {
 }
 
 impl Deserialize<'_> for MovePlayer {
-    fn deserialize(mut buffer: SharedBuffer) -> Result<Self> {
+    fn deserialize(mut buffer: SharedBuffer) -> anyhow::Result<Self> {
         let runtime_id = buffer.read_var_u64()?;
         let position = buffer.read_vecf()?;
         let rotation = buffer.read_vecf()?;

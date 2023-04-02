@@ -37,7 +37,7 @@ impl BroadcastPacket {
     pub fn new<T: ConnectedPacket + Serialize>(
         packet: T,
         sender: Option<NonZeroU64>,
-    ) -> Result<Self> {
+    ) -> anyhow::Result<Self> {
         let packet = Packet::new(packet);
 
         Ok(Self {
@@ -52,7 +52,7 @@ impl Session {
     pub fn broadcast<P: ConnectedPacket + Serialize + Clone>(
         &self,
         pk: P,
-    ) -> Result<()> {
+    ) -> anyhow::Result<()> {
         self.broadcast.send(BroadcastPacket::new(pk, None)?)?;
         Ok(())
     }
@@ -61,7 +61,7 @@ impl Session {
     pub fn broadcast_others<P: ConnectedPacket + Serialize + Clone>(
         &self,
         pk: P,
-    ) -> Result<()> {
+    ) -> anyhow::Result<()> {
         self.broadcast.send(BroadcastPacket::new(
             pk,
             Some(

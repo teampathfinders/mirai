@@ -18,7 +18,7 @@ pub enum GameMode {
 impl TryFrom<i32> for GameMode {
     type Error = Error;
 
-    fn try_from(value: i32) -> Result<Self> {
+    fn try_from(value: i32) -> anyhow::Result<Self> {
         Ok(match value {
             0 => Self::Survival,
             1 => Self::Creative,
@@ -46,13 +46,13 @@ impl ConnectedPacket for SetPlayerGameMode {
 }
 
 impl Serialize for SetPlayerGameMode {
-    fn serialize(&self, buffer: &mut MutableBuffer) -> Result<()> {
+    fn serialize(&self, buffer: &mut MutableBuffer) -> anyhow::Result<()> {
         buffer.write_var_i32(self.game_mode as i32)
     }
 }
 
 impl Deserialize<'_> for SetPlayerGameMode {
-    fn deserialize(mut buffer: SharedBuffer) -> Result<Self> {
+    fn deserialize(mut buffer: SharedBuffer) -> anyhow::Result<Self> {
         let game_mode = GameMode::try_from(buffer.read_var_i32()?)?;
 
         Ok(Self { game_mode })

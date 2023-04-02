@@ -28,7 +28,7 @@ pub enum CommandOriginType {
 impl TryFrom<u32> for CommandOriginType {
     type Error = Error;
 
-    fn try_from(value: u32) -> Result<Self> {
+    fn try_from(value: u32) -> anyhow::Result<Self> {
         Ok(match value {
             0 => Self::Player,
             1 => Self::Block,
@@ -72,7 +72,7 @@ impl<'a> ConnectedPacket for CommandRequest<'a> {
 }
 
 impl<'a> Deserialize<'a> for CommandRequest<'a> {
-    fn deserialize(mut buffer: SharedBuffer<'a>) -> Result<Self> {
+    fn deserialize(mut buffer: SharedBuffer<'a>) -> anyhow::Result<Self> {
         let command = buffer.read_str()?;
         let origin = CommandOriginType::try_from(buffer.read_var_u32()?)?;
         buffer.advance(16);

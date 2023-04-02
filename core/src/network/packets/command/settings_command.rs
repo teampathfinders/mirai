@@ -18,7 +18,7 @@ impl<'a> ConnectedPacket for SettingsCommand<'a> {
 }
 
 impl<'a> Deserialize<'a> for SettingsCommand<'a> {
-    fn deserialize(mut buffer: SharedBuffer<'a>) -> Result<Self> {
+    fn deserialize(mut buffer: SharedBuffer<'a>) -> anyhow::Result<Self> {
         let command = buffer.read_str()?;
         let suppress_output = buffer.read_bool()?;
 

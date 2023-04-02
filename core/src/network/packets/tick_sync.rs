@@ -24,7 +24,7 @@ impl ConnectedPacket for TickSync {
 }
 
 impl Deserialize<'_> for TickSync {
-    fn deserialize(mut buffer: SharedBuffer) -> Result<Self> {
+    fn deserialize(mut buffer: SharedBuffer) -> anyhow::Result<Self> {
         let request = buffer.read_u64_le()?;
         let response = buffer.read_u64_le()?;
 
@@ -33,7 +33,7 @@ impl Deserialize<'_> for TickSync {
 }
 
 impl Serialize for TickSync {
-    fn serialize(&self, buffer: &mut MutableBuffer) -> Result<()> {
+    fn serialize(&self, buffer: &mut MutableBuffer) -> anyhow::Result<()> {
         buffer.write_u64_le(self.request)?;
         buffer.write_u64_le(self.response)
     }

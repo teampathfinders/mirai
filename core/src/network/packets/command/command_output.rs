@@ -36,7 +36,7 @@ impl ConnectedPacket for CommandOutput<'_> {
 }
 
 impl Serialize for CommandOutput<'_> {
-    fn serialize(&self, buffer: &mut MutableBuffer) -> Result<()> {
+    fn serialize(&self, buffer: &mut MutableBuffer) -> anyhow::Result<()> {
         buffer.write_var_u32(self.origin as u32)?;
         buffer.write_uuid_le(&Uuid::nil())?;
         buffer.write_str(self.request_id)?;

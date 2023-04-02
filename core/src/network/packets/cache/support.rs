@@ -16,7 +16,7 @@ impl ConnectedPacket for CacheStatus {
 }
 
 impl Deserialize<'_> for CacheStatus {
-    fn deserialize(mut buffer: SharedBuffer) -> Result<Self> {
+    fn deserialize(mut buffer: SharedBuffer) -> anyhow::Result<Self> {
         let support = buffer.read_bool()?;
 
         Ok(Self { supports_cache: support })

@@ -24,7 +24,7 @@ pub enum ResourcePackStatus {
 impl TryFrom<u8> for ResourcePackStatus {
     type Error = Error;
 
-    fn try_from(value: u8) -> Result<Self> {
+    fn try_from(value: u8) -> anyhow::Result<Self> {
         Ok(match value {
             0 => Self::None,
             1 => Self::Refused,
@@ -52,7 +52,7 @@ impl<'a> ConnectedPacket for ResourcePackClientResponse<'a> {
 }
 
 impl<'a> Deserialize<'a> for ResourcePackClientResponse<'a> {
-    fn deserialize(mut buffer: SharedBuffer<'a>) -> Result<Self> {
+    fn deserialize(mut buffer: SharedBuffer<'a>) -> anyhow::Result<Self> {
         let status = ResourcePackStatus::try_from(buffer.read_u8()?)?;
         let length = buffer.read_u16_be()?;
 

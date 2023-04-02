@@ -11,7 +11,7 @@ pub enum BlockEventType {
 impl TryFrom<i32> for BlockEventType {
     type Error = Error;
 
-    fn try_from(value: i32) -> Result<Self> {
+    fn try_from(value: i32) -> anyhow::Result<Self> {
         Ok(match value {
             0 => Self::ChangeChestState,
             _ => bail!(Malformed, "Invalid block event type {value}")
@@ -39,7 +39,7 @@ impl ConnectedPacket for BlockEvent {
 }
 
 impl Serialize for BlockEvent {
-    fn serialize(&self, buffer: &mut MutableBuffer) -> Result<()> {
+    fn serialize(&self, buffer: &mut MutableBuffer) -> anyhow::Result<()> {
         buffer.write_block_pos(&self.position)?;
         buffer.write_var_i32(self.event_type as i32)?;
         buffer.write_var_i32(self.event_data)
@@ -47,7 +47,7 @@ impl Serialize for BlockEvent {
 }
 
 impl Deserialize<'_> for BlockEvent {
-    fn deserialize(mut buffer: SharedBuffer) -> Result<Self> {
+    fn deserialize(mut buffer: SharedBuffer) -> anyhow::Result<Self> {
         let position = buffer.read_block_pos()?;
         let event_type = BlockEventType::try_from(buffer.read_var_i32()?)?;
         let event_data = buffer.read_var_i32()?;

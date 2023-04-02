@@ -20,7 +20,7 @@ impl ConnectedPacket for SetDefaultGameMode {
 }
 
 impl Deserialize<'_> for SetDefaultGameMode {
-    fn deserialize(mut buffer: SharedBuffer) -> Result<Self> {
+    fn deserialize(mut buffer: SharedBuffer) -> anyhow::Result<Self> {
         let game_mode = GameMode::try_from(buffer.read_var_i32()?)?;
 
         Ok(Self { game_mode })
@@ -28,7 +28,7 @@ impl Deserialize<'_> for SetDefaultGameMode {
 }
 
 impl Serialize for SetDefaultGameMode {
-    fn serialize(&self, buffer: &mut MutableBuffer) -> Result<()> {
+    fn serialize(&self, buffer: &mut MutableBuffer) -> anyhow::Result<()> {
         buffer.write_var_i32(self.game_mode as i32)
     }
 }

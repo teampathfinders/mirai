@@ -24,7 +24,7 @@ impl UnconnectedPing {
 }
 
 impl Deserialize<'_> for UnconnectedPing {
-    fn deserialize(mut buffer: SharedBuffer) -> Result<Self> {
+    fn deserialize(mut buffer: SharedBuffer) -> anyhow::Result<Self> {
         pyassert!(buffer.read_u8()? == Self::ID);
 
         let time = buffer.read_u64_be()?;

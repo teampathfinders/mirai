@@ -25,7 +25,7 @@ impl Header {
 
 impl Serialize for Header {
     /// Encodes the header.
-    fn serialize(&self, buffer: &mut MutableBuffer) -> Result<()> {
+    fn serialize(&self, buffer: &mut MutableBuffer) -> anyhow::Result<()> {
         let value = self.id
             | ((self.sender_subclient as u32) << 10)
             | ((self.target_subclient as u32) << 12);
@@ -36,7 +36,7 @@ impl Serialize for Header {
 
 impl Header {
     /// Decodes the header.
-    pub fn deserialize(buffer: &mut SharedBuffer) -> Result<Self> {
+    pub fn deserialize(buffer: &mut SharedBuffer) -> anyhow::Result<Self> {
         let value = buffer.read_var_u32()?;
 
         let id = value & 0x3ff;

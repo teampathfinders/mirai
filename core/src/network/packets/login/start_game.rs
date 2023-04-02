@@ -21,7 +21,7 @@ pub enum WorldGenerator {
 
 impl WorldGenerator {
     #[inline]
-    pub fn serialize(&self, buffer: &mut MutableBuffer) -> Result<()> {
+    pub fn serialize(&self, buffer: &mut MutableBuffer) -> anyhow::Result<()> {
         buffer.write_var_i32(*self as i32)
     }
 }
@@ -43,7 +43,7 @@ pub struct EducationResourceURI {
 
 impl EducationResourceURI {
     #[inline]
-    pub fn serialize(&self, buffer: &mut MutableBuffer) -> Result<()> {
+    pub fn serialize(&self, buffer: &mut MutableBuffer) -> anyhow::Result<()> {
         buffer.write_str(&self.button_name)?;
         buffer.write_str(&self.link_uri)
     }
@@ -59,7 +59,7 @@ pub enum ChatRestrictionLevel {
 
 impl ChatRestrictionLevel {
     #[inline]
-    pub fn serialize(&self, buffer: &mut MutableBuffer) -> Result<()> {
+    pub fn serialize(&self, buffer: &mut MutableBuffer) -> anyhow::Result<()> {
         buffer.write_u8(*self as u8)
     }
 }
@@ -86,7 +86,7 @@ impl PlayerMovementSettings {
             1
     }
 
-    pub fn serialize(&self, buffer: &mut MutableBuffer) -> Result<()> {
+    pub fn serialize(&self, buffer: &mut MutableBuffer) -> anyhow::Result<()> {
         buffer.write_var_i32(self.movement_type as i32)?;
         buffer.write_var_i32(self.rewind_history_size)?;
         buffer.write_bool(self.server_authoritative_breaking)
@@ -107,7 +107,7 @@ impl BlockEntry {
         // self.name.var_len() //+ self.properties.serialized_net_size("")
     }
 
-    pub fn serialize(&self, mut buffer: &mut MutableBuffer) -> Result<()> {
+    pub fn serialize(&self, mut buffer: &mut MutableBuffer) -> anyhow::Result<()> {
         buffer.write_str(&self.name)?;
         nbt::to_var_bytes_in(&mut buffer, &self.properties)
     }
@@ -129,7 +129,7 @@ impl ItemEntry {
         self.name.var_len() + 2 + 1
     }
 
-    pub fn serialize(&self, buffer: &mut MutableBuffer) -> Result<()> {
+    pub fn serialize(&self, buffer: &mut MutableBuffer) -> anyhow::Result<()> {
         buffer.write_str(&self.name)?;
         buffer.write_u16_le(self.runtime_id)?;
         buffer.write_bool(self.component_based)
@@ -157,7 +157,7 @@ pub enum BroadcastIntent {
 }
 
 impl BroadcastIntent {
-    pub fn serialize(&self, buffer: &mut MutableBuffer) -> Result<()> {
+    pub fn serialize(&self, buffer: &mut MutableBuffer) -> anyhow::Result<()> {
         buffer.write_var_u32(*self as u32)
     }
 }
@@ -367,7 +367,7 @@ impl ConnectedPacket for StartGame<'_> {
 }
 
 impl<'a> Serialize for StartGame<'a> {
-    fn serialize(&self, mut buffer: &mut MutableBuffer) -> Result<()> {
+    fn serialize(&self, mut buffer: &mut MutableBuffer) -> anyhow::Result<()> {
         buffer.write_var_i64(self.entity_id)?;
         buffer.write_var_u64(self.runtime_id)?;
         buffer.write_var_i32(self.game_mode as i32)?;

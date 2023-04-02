@@ -33,7 +33,7 @@ impl Session {
     ///
     /// If a packet is an ACK or NACK type, it will be responded to accordingly (using [`Session::process_ack`] and [`Session::process_nak`]).
     /// Frame batches are processed by [`Session::process_frame_batch`].
-    pub async fn process_raw_packet(&self, pk: MutableBuffer) -> Result<bool> {
+    pub async fn process_raw_packet(&self, pk: MutableBuffer) -> anyhow::Result<bool> {
         *self.raknet.last_update.write() = Instant::now();
 
         if pk.is_empty() {
@@ -50,7 +50,7 @@ impl Session {
         Ok(true)
     }
 
-    pub fn process_broadcast(&self, pk: BroadcastPacket) -> Result<()> {
+    pub fn process_broadcast(&self, pk: BroadcastPacket) -> anyhow::Result<()> {
         if let Ok(xuid) = self.get_xuid() {
             if let Some(sender) = pk.sender {
                 if sender.get() == xuid {
@@ -70,7 +70,7 @@ impl Session {
     /// * Inserting packets into the compound collector
     /// * Discarding old sequenced frames
     /// * Acknowledging reliable packets
-    async fn process_frame_batch(&self, pk: MutableBuffer) -> Result<()> {
+    async fn process_frame_batch(&self, pk: MutableBuffer) -> anyhow::Result<()> {
         let batch = FrameBatch::deserialize(pk.snapshot())?;
         self.raknet
             .client_batch_number
@@ -88,7 +88,7 @@ impl Session {
         &self,
         frame: Frame,
         batch_number: u32,
-    ) -> Result<()> {
+    ) -> anyhow::Result<()> {
         if frame.reliability.is_sequenced()
             && frame.sequence_index
             < self.raknet.client_batch_number.load(Ordering::SeqCst)
@@ -132,7 +132,7 @@ impl Session {
     }
 
     /// Processes an unencapsulated game packet.
-    async fn process_frame_data(&self, pk: MutableBuffer) -> Result<()> {
+    async fn process_frame_data(&self, pk: MutableBuffer) -> anyhow::Result<()> {
         let packet_id = *pk.first().expect("Game packet buffer was empty");
         match packet_id {
             CONNECTED_PACKET_ID => self.process_connected_packet(pk).await?,
@@ -148,7 +148,7 @@ impl Session {
         Ok(())
     }
 
-    async fn process_connected_packet(&self, mut pk: MutableBuffer) -> Result<()> {
+    async fn process_connected_packet(&self, mut pk: MutableBuffer) -> anyhow::Result<()> {
         // dbg!(&pk);
 
         // Remove 0xfe packet ID.
@@ -205,7 +205,7 @@ impl Session {
     async fn process_decompressed_packet(
         &self,
         mut pk: MutableBuffer,
-    ) -> Result<()> {
+    ) -> anyhow::Result<()> {
         let mut snapshot = pk.snapshot();
         let start_len = snapshot.len();
         let _length = snapshot.read_var_u32()?;

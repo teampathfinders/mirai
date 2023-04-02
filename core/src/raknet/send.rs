@@ -32,7 +32,7 @@ impl Session {
     /// Sends a game packet with default settings
     /// (reliable ordered and medium priority)
     #[inline]
-    pub fn send<T: ConnectedPacket + Serialize>(&self, pk: T) -> Result<()> {
+    pub fn send<T: ConnectedPacket + Serialize>(&self, pk: T) -> anyhow::Result<()> {
         let pk = Packet::new(pk);
         let serialized = pk.serialize()?;
 
@@ -40,7 +40,7 @@ impl Session {
     }
 
     /// Sends a game packet with custom reliability and priority
-    pub fn send_serialized<B>(&self, packet: B, config: PacketConfig) -> Result<()>
+    pub fn send_serialized<B>(&self, packet: B, config: PacketConfig) -> anyhow::Result<()>
         where
             B: AsRef<[u8]>
     {
@@ -114,7 +114,7 @@ impl Session {
     }
 
     /// Flushes the send queue.
-    pub async fn flush(&self) -> Result<()> {
+    pub async fn flush(&self) -> anyhow::Result<()> {
         let tick = self.current_tick.load(Ordering::SeqCst);
 
         if let Some(frames) = self.raknet.send_queue.flush(SendPriority::High) {
@@ -146,7 +146,7 @@ impl Session {
         Ok(())
     }
 
-    pub async fn flush_all(&self) -> Result<()> {
+    pub async fn flush_all(&self) -> anyhow::Result<()> {
         if let Some(frames) = self.raknet.send_queue.flush(SendPriority::High) {
             self.send_raw_frames(frames).await?;
         }
@@ -164,7 +164,7 @@ impl Session {
         Ok(())
     }
 
-    pub async fn flush_acknowledgements(&self) -> Result<()> {
+    pub async fn flush_acknowledgements(&self) -> anyhow::Result<()> {
         let mut confirmed = {
             let mut lock = self.raknet.confirmed_packets.lock();
             if lock.is_empty() {
@@ -208,7 +208,7 @@ impl Session {
     }
 
     #[async_recursion]
-    async fn send_raw_frames(&self, frames: Vec<Frame>) -> Result<()> {
+    async fn send_raw_frames(&self, frames: Vec<Frame>) -> anyhow::Result<()> {
         let mut serialized = MutableBuffer::new();
 
         // Process fragments first to prevent sequence number duplication.

@@ -13,7 +13,7 @@ pub enum SimpleEvent {
 impl TryFrom<i16> for SimpleEvent {
     type Error = Error;
 
-    fn try_from(value: i16) -> Result<Self> {
+    fn try_from(value: i16) -> anyhow::Result<Self> {
         Ok(match value {
             1 => Self::CommandsEnabled,
             2 => Self::CommandsDisabled,
@@ -32,13 +32,13 @@ impl ConnectedPacket for SimpleEvent {
 }
 
 impl Serialize for SimpleEvent {
-    fn serialize(&self, buffer: &mut MutableBuffer) -> Result<()> {
+    fn serialize(&self, buffer: &mut MutableBuffer) -> anyhow::Result<()> {
         buffer.write_i16_le(*self as i16)
     }
 }
 
 impl Deserialize<'_> for SimpleEvent {
-    fn deserialize(mut buffer: SharedBuffer) -> Result<Self> {
+    fn deserialize(mut buffer: SharedBuffer) -> anyhow::Result<Self> {
         Self::try_from(buffer.read_i16_le()?)
     }
 }

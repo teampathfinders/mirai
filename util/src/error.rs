@@ -23,11 +23,11 @@ macro_rules! pyassert {
 #[macro_export]
 macro_rules! bail {
     ($err_type: ident, $fmt: expr, $($args:expr),+) => {
-        return Err($crate::Error::new($crate::ErrorKind::$err_type, format!($fmt, $($args),+)))
+        return Err($crate::Error::new($crate::ErrorKind::$err_type, format!($fmt, $($args),+)).into())
     };
 
     ($err_type: ident, $fmt: expr) => {
-        return Err($crate::Error::new($crate::ErrorKind::$err_type, format!($fmt)))
+        return Err($crate::Error::new($crate::ErrorKind::$err_type, format!($fmt)).into())
     };
 }
 
@@ -36,11 +36,11 @@ macro_rules! bail {
 #[macro_export]
 macro_rules! error {
     ($err_type: ident, $fmt: expr, $($args:expr),+) => {
-        $crate::Error::new($crate::ErrorKind::$err_type, format!($fmt, $($args),+))
+        $crate::Error::new($crate::ErrorKind::$err_type, format!($fmt, $($args),+)).into()
     };
 
     ($err_type: ident, $fmt: expr) => {
-        $crate::Error::new($crate::ErrorKind::$err_type, $fmt.to_string())
+        $crate::Error::new($crate::ErrorKind::$err_type, $fmt.to_string()).into()
     };
 }
 

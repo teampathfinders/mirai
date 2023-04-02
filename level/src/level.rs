@@ -14,7 +14,7 @@ pub struct Level {
 }
 
 impl Level {
-    pub fn open<P>(path: P) -> Result<Level>
+    pub fn open<P>(path: P) -> anyhow::Result<Level>
     where
         P: AsRef<Path>
     {
@@ -36,7 +36,7 @@ impl Level {
         })
     }
 
-    pub fn flush(&self) -> Result<()> {
+    pub fn flush(&self) -> anyhow::Result<()> {
         todo!();
     }
 }

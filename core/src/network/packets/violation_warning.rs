@@ -58,7 +58,7 @@ impl<'a> ConnectedPacket for ViolationWarning<'a> {
 }
 
 impl<'a> Deserialize<'a> for ViolationWarning<'a> {
-    fn deserialize(mut buffer: SharedBuffer<'a>) -> Result<Self> {
+    fn deserialize(mut buffer: SharedBuffer<'a>) -> anyhow::Result<Self> {
         let warning_type = ViolationType::try_from(buffer.read_var_i32()?)?;
         let severity = ViolationSeverity::try_from(buffer.read_var_i32()?)?;
         let packet_id = buffer.read_var_i32()?;

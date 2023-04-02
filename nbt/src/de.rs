@@ -4,12 +4,10 @@ use paste::paste;
 use serde::{de, Deserialize};
 use serde::de::{DeserializeSeed, MapAccess, SeqAccess, Visitor};
 
-use util::{bail, Error, Result};
+use util::{bail, Error};
 use util::bytes::{BinaryRead, SharedBuffer};
 
-use crate::{
-    BigEndian, FieldType, LittleEndian, Variable, Variant, VariantImpl,
-};
+use crate::{BigEndian, FieldType, LittleEndian, NbtError, Variable, Variant, VariantImpl};
 
 /// Verifies that the deserialised type is equal to the expected type.
 macro_rules! is_ty {
@@ -30,7 +28,7 @@ macro_rules! forward_unsupported {
     ($($ty: ident),+) => {
         paste! {$(
             #[inline]
-            fn [<deserialize_ $ty>]<V>(self, _visitor: V) -> util::Result<V::Value>
+            fn [<deserialize_ $ty>]<V>(self, _visitor: V) -> Result<V::Value, Self::Error>
             where
                 V: Visitor<'de>
             {
@@ -60,7 +58,7 @@ impl<'de, F, R> Deserializer<'de, F, R>
 {
     /// Creates a new deserialiser.
     #[inline]
-    pub fn new(mut input: R) -> Result<Self> {
+    pub fn new(mut input: R) -> anyhow::Result<Self> {
         let next_ty = FieldType::try_from(input.read_u8()?)?;
         if next_ty != FieldType::Compound {
             bail!(Malformed, "Expected compound tag as root");
@@ -79,7 +77,7 @@ impl<'de, F, R> Deserializer<'de, F, R>
 
     /// Deserialise a raw UTF-8 string.
     #[inline]
-    fn deserialize_raw_str(&mut self) -> Result<&str> {
+    fn deserialize_raw_str(&mut self) -> anyhow::Result<&str> {
         let len = match F::AS_ENUM {
             Variant::BigEndian => self.input.read_u16_be()? as u32,
             Variant::LittleEndian => self.input.read_u16_le()? as u32,
@@ -98,7 +96,7 @@ impl<'de, F, R> Deserializer<'de, F, R>
 ///
 /// On success, the deserialised object and amount of bytes read from the buffer are returned.
 #[inline]
-fn from_bytes<'a, F, R, T>(reader: R) -> Result<(T, usize)>
+fn from_bytes<'a, F, R, T>(reader: R) -> anyhow::Result<(T, usize)>
     where
         R: BinaryRead<'a> + 'a,
         T: Deserialize<'a>,
@@ -136,7 +134,7 @@ fn from_bytes<'a, F, R, T>(reader: R) -> Result<(T, usize)>
 /// # }
 /// ```
 #[inline]
-pub fn from_le_bytes<'a, T, R>(reader: R) -> Result<(T, usize)>
+pub fn from_le_bytes<'a, T, R>(reader: R) -> anyhow::Result<(T, usize)>
     where
         R: BinaryRead<'a> + 'a,
         T: Deserialize<'a>,
@@ -168,7 +166,7 @@ pub fn from_le_bytes<'a, T, R>(reader: R) -> Result<(T, usize)>
 /// # }
 /// ```
 #[inline]
-pub fn from_be_bytes<'a, T, R>(reader: R) -> Result<(T, usize)>
+pub fn from_be_bytes<'a, T, R>(reader: R) -> anyhow::Result<(T, usize)>
     where
         R: BinaryRead<'a> + 'a,
         T: Deserialize<'a>,
@@ -200,7 +198,7 @@ pub fn from_be_bytes<'a, T, R>(reader: R) -> Result<(T, usize)>
 /// # }
 /// ```
 #[inline]
-pub fn from_var_bytes<'a, T, R>(reader: R) -> Result<(T, usize)>
+pub fn from_var_bytes<'a, T, R>(reader: R) -> anyhow::Result<(T, usize)>
     where
         R: BinaryRead<'a> + 'a,
         T: Deserialize<'a>,
@@ -213,11 +211,11 @@ impl<'de, 'a, F, R> de::Deserializer<'de> for &'a mut Deserializer<'de, F, R>
         R: BinaryRead<'de>,
         F: VariantImpl + 'a,
 {
-    type Error = Error;
+    type Error = NbtError;
 
     forward_unsupported!(char, u8, u16, u32, u64, i128, u128);
 
-    fn deserialize_any<V>(self, visitor: V) -> Result<V::Value>
+    fn deserialize_any<V>(self, visitor: V) -> Result<V::Value, NbtError>
         where
             V: Visitor<'de>,
     {
@@ -246,7 +244,7 @@ impl<'de, 'a, F, R> de::Deserializer<'de> for &'a mut Deserializer<'de, F, R>
     }
 
     #[inline]
-    fn deserialize_bool<V>(self, visitor: V) -> Result<V::Value>
+    fn deserialize_bool<V>(self, visitor: V) -> Result<V::Value, NbtError>
         where
             V: Visitor<'de>,
     {
@@ -257,7 +255,7 @@ impl<'de, 'a, F, R> de::Deserializer<'de> for &'a mut Deserializer<'de, F, R>
     }
 
     #[inline]
-    fn deserialize_i8<V>(self, visitor: V) -> Result<V::Value>
+    fn deserialize_i8<V>(self, visitor: V) -> Result<V::Value, NbtError>
         where
             V: Visitor<'de>,
     {
@@ -268,7 +266,7 @@ impl<'de, 'a, F, R> de::Deserializer<'de> for &'a mut Deserializer<'de, F, R>
     }
 
     #[inline]
-    fn deserialize_i16<V>(self, visitor: V) -> Result<V::Value>
+    fn deserialize_i16<V>(self, visitor: V) -> Result<V::Value, NbtError>
         where
             V: Visitor<'de>,
     {
@@ -285,7 +283,7 @@ impl<'de, 'a, F, R> de::Deserializer<'de> for &'a mut Deserializer<'de, F, R>
     }
 
     #[inline]
-    fn deserialize_i32<V>(self, visitor: V) -> Result<V::Value>
+    fn deserialize_i32<V>(self, visitor: V) -> Result<V::Value, NbtError>
         where
             V: Visitor<'de>,
     {
@@ -301,7 +299,7 @@ impl<'de, 'a, F, R> de::Deserializer<'de> for &'a mut Deserializer<'de, F, R>
     }
 
     #[inline]
-    fn deserialize_i64<V>(self, visitor: V) -> Result<V::Value>
+    fn deserialize_i64<V>(self, visitor: V) -> Result<V::Value, NbtError>
         where
             V: Visitor<'de>,
     {
@@ -317,7 +315,7 @@ impl<'de, 'a, F, R> de::Deserializer<'de> for &'a mut Deserializer<'de, F, R>
     }
 
     #[inline]
-    fn deserialize_f32<V>(self, visitor: V) -> Result<V::Value>
+    fn deserialize_f32<V>(self, visitor: V) -> Result<V::Value, NbtError>
         where
             V: Visitor<'de>,
     {
@@ -332,7 +330,7 @@ impl<'de, 'a, F, R> de::Deserializer<'de> for &'a mut Deserializer<'de, F, R>
     }
 
     #[inline]
-    fn deserialize_f64<V>(self, visitor: V) -> Result<V::Value>
+    fn deserialize_f64<V>(self, visitor: V) -> Result<V::Value, NbtError>
         where
             V: Visitor<'de>,
     {
@@ -347,7 +345,7 @@ impl<'de, 'a, F, R> de::Deserializer<'de> for &'a mut Deserializer<'de, F, R>
     }
 
     #[inline]
-    fn deserialize_str<V>(self, visitor: V) -> Result<V::Value>
+    fn deserialize_str<V>(self, visitor: V) -> Result<V::Value, NbtError>
         where
             V: Visitor<'de>,
     {
@@ -364,7 +362,7 @@ impl<'de, 'a, F, R> de::Deserializer<'de> for &'a mut Deserializer<'de, F, R>
     }
 
     #[inline]
-    fn deserialize_string<V>(self, visitor: V) -> Result<V::Value>
+    fn deserialize_string<V>(self, visitor: V) -> Result<V::Value, NbtError>
         where
             V: Visitor<'de>,
     {
@@ -382,14 +380,14 @@ impl<'de, 'a, F, R> de::Deserializer<'de> for &'a mut Deserializer<'de, F, R>
         visitor.visit_string(string)
     }
 
-    fn deserialize_bytes<V>(self, _visitor: V) -> Result<V::Value>
+    fn deserialize_bytes<V>(self, _visitor: V) -> Result<V::Value, NbtError>
         where
             V: Visitor<'de>,
     {
         bail!(Unsupported, "Deserializing borrowed byte arrays is not supported")
     }
 
-    fn deserialize_byte_buf<V>(self, visitor: V) -> Result<V::Value>
+    fn deserialize_byte_buf<V>(self, visitor: V) -> Result<V::Value, NbtError>
         where
             V: Visitor<'de>,
     {
@@ -406,7 +404,7 @@ impl<'de, 'a, F, R> de::Deserializer<'de> for &'a mut Deserializer<'de, F, R>
     }
 
     #[inline]
-    fn deserialize_option<V>(self, visitor: V) -> Result<V::Value>
+    fn deserialize_option<V>(self, visitor: V) -> Result<V::Value, NbtError>
         where
             V: Visitor<'de>,
     {
@@ -416,7 +414,7 @@ impl<'de, 'a, F, R> de::Deserializer<'de> for &'a mut Deserializer<'de, F, R>
         visitor.visit_some(self)
     }
 
-    fn deserialize_unit<V>(self, _visitor: V) -> Result<V::Value>
+    fn deserialize_unit<V>(self, _visitor: V) -> Result<V::Value, NbtError>
         where
             V: Visitor<'de>,
     {
@@ -427,7 +425,7 @@ impl<'de, 'a, F, R> de::Deserializer<'de> for &'a mut Deserializer<'de, F, R>
         self,
         _name: &'static str,
         _visitor: V,
-    ) -> Result<V::Value>
+    ) -> Result<V::Value, NbtError>
         where
             V: Visitor<'de>,
     {
@@ -438,7 +436,7 @@ impl<'de, 'a, F, R> de::Deserializer<'de> for &'a mut Deserializer<'de, F, R>
         self,
         _name: &'static str,
         _visitor: V,
-    ) -> Result<V::Value>
+    ) -> Result<V::Value, NbtError>
         where
             V: Visitor<'de>,
     {
@@ -446,7 +444,7 @@ impl<'de, 'a, F, R> de::Deserializer<'de> for &'a mut Deserializer<'de, F, R>
     }
 
     #[inline]
-    fn deserialize_seq<V>(self, visitor: V) -> Result<V::Value>
+    fn deserialize_seq<V>(self, visitor: V) -> Result<V::Value, NbtError>
         where
             V: Visitor<'de>,
     {
@@ -454,7 +452,7 @@ impl<'de, 'a, F, R> de::Deserializer<'de> for &'a mut Deserializer<'de, F, R>
     }
 
     #[inline]
-    fn deserialize_tuple<V>(self, len: usize, visitor: V) -> Result<V::Value>
+    fn deserialize_tuple<V>(self, len: usize, visitor: V) -> Result<V::Value, NbtError>
         where
             V: Visitor<'de>,
     {
@@ -474,7 +472,7 @@ impl<'de, 'a, F, R> de::Deserializer<'de> for &'a mut Deserializer<'de, F, R>
         _name: &'static str,
         _len: usize,
         _visitor: V,
-    ) -> Result<V::Value>
+    ) -> Result<V::Value, NbtError>
         where
             V: Visitor<'de>,
     {
@@ -482,7 +480,7 @@ impl<'de, 'a, F, R> de::Deserializer<'de> for &'a mut Deserializer<'de, F, R>
     }
 
     #[inline]
-    fn deserialize_map<V>(self, visitor: V) -> Result<V::Value>
+    fn deserialize_map<V>(self, visitor: V) -> Result<V::Value, NbtError>
         where
             V: Visitor<'de>,
     {
@@ -498,7 +496,7 @@ impl<'de, 'a, F, R> de::Deserializer<'de> for &'a mut Deserializer<'de, F, R>
         _name: &'static str,
         _fields: &'static [&'static str],
         visitor: V,
-    ) -> Result<V::Value>
+    ) -> Result<V::Value, NbtError>
         where
             V: Visitor<'de>,
     {
@@ -510,7 +508,7 @@ impl<'de, 'a, F, R> de::Deserializer<'de> for &'a mut Deserializer<'de, F, R>
         _name: &'static str,
         _variants: &'static [&'static str],
         _visitor: V,
-    ) -> Result<V::Value>
+    ) -> Result<V::Value, NbtError>
         where
             V: Visitor<'de>,
     {
@@ -518,7 +516,7 @@ impl<'de, 'a, F, R> de::Deserializer<'de> for &'a mut Deserializer<'de, F, R>
     }
 
     #[inline]
-    fn deserialize_identifier<V>(self, visitor: V) -> Result<V::Value>
+    fn deserialize_identifier<V>(self, visitor: V) -> Result<V::Value, NbtError>
         where
             V: Visitor<'de>,
     {
@@ -526,7 +524,7 @@ impl<'de, 'a, F, R> de::Deserializer<'de> for &'a mut Deserializer<'de, F, R>
     }
 
     #[inline]
-    fn deserialize_ignored_any<V>(self, visitor: V) -> Result<V::Value>
+    fn deserialize_ignored_any<V>(self, visitor: V) -> Result<V::Value, NbtError>
         where
             V: Visitor<'de>,
     {
@@ -564,7 +562,7 @@ impl<'de, 'a, F, R> SeqDeserializer<'a, 'de, F, R>
         de: &'a mut Deserializer<'de, F, R>,
         ty: FieldType,
         expected_len: u32,
-    ) -> Result<Self> {
+    ) -> anyhow::Result<Self> {
         debug_assert_ne!(ty, FieldType::End);
 
         // ty is not read in here because the x_array types don't have a type prefix.
@@ -589,10 +587,10 @@ impl<'de, 'a, F, R> SeqAccess<'de> for SeqDeserializer<'a, 'de, F, R>
         R: BinaryRead<'de>,
         F: VariantImpl,
 {
-    type Error = Error;
+    type Error = NbtError;
 
     #[inline]
-    fn next_element_seed<E>(&mut self, seed: E) -> Result<Option<E::Value>>
+    fn next_element_seed<E>(&mut self, seed: E) -> Result<Option<E::Value>, NbtError>
         where
             E: DeserializeSeed<'de>,
     {
@@ -633,10 +631,10 @@ impl<'de, 'a, F, R> MapAccess<'de> for MapDeserializer<'a, 'de, F, R>
         R: BinaryRead<'de>,
         F: VariantImpl,
 {
-    type Error = Error;
+    type Error = NbtError;
 
     #[inline]
-    fn next_key_seed<K>(&mut self, seed: K) -> Result<Option<K::Value>>
+    fn next_key_seed<K>(&mut self, seed: K) -> Result<Option<K::Value>, NbtError>
         where
             K: DeserializeSeed<'de>,
     {
@@ -657,7 +655,7 @@ impl<'de, 'a, F, R> MapAccess<'de> for MapDeserializer<'a, 'de, F, R>
     }
 
     #[inline]
-    fn next_value_seed<V>(&mut self, seed: V) -> Result<V::Value>
+    fn next_value_seed<V>(&mut self, seed: V) -> Result<V::Value, NbtError>
         where
             V: DeserializeSeed<'de>,
     {

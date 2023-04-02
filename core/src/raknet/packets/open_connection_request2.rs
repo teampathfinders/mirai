@@ -18,7 +18,7 @@ impl OpenConnectionRequest2 {
 }
 
 impl Deserialize<'_> for OpenConnectionRequest2 {
-    fn deserialize(mut buffer: SharedBuffer) -> Result<Self> {
+    fn deserialize(mut buffer: SharedBuffer) -> anyhow::Result<Self> {
         pyassert!(buffer.read_u8()? == Self::ID);
 
         buffer.advance(16); // Skip magic

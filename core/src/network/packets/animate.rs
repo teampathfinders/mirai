@@ -18,7 +18,7 @@ pub enum AnimateAction {
 impl TryFrom<i32> for AnimateAction {
     type Error = Error;
 
-    fn try_from(value: i32) -> Result<Self> {
+    fn try_from(value: i32) -> anyhow::Result<Self> {
         Ok(match value {
             1 => Self::SwingArm,
             3 => Self::StopSleep,
@@ -52,7 +52,7 @@ impl ConnectedPacket for Animate {
 }
 
 impl Deserialize<'_> for Animate {
-    fn deserialize(mut buffer: SharedBuffer) -> Result<Self> {
+    fn deserialize(mut buffer: SharedBuffer) -> anyhow::Result<Self> {
         let action_type = AnimateAction::try_from(buffer.read_var_i32()?)?;
         let runtime_id = buffer.read_var_u64()?;
 

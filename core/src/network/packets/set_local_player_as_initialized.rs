@@ -16,7 +16,7 @@ impl ConnectedPacket for SetLocalPlayerAsInitialized {
 }
 
 impl Deserialize<'_> for SetLocalPlayerAsInitialized {
-    fn deserialize(mut buffer: SharedBuffer) -> Result<Self> {
+    fn deserialize(mut buffer: SharedBuffer) -> anyhow::Result<Self> {
         Ok(Self { runtime_id: buffer.read_var_u64()? })
     }
 }

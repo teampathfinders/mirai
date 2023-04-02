@@ -29,7 +29,7 @@ pub enum ParsedArgument {
 }
 
 impl ParsedArgument {
-    pub fn read_str(&self) -> Result<&str> {
+    pub fn read_str(&self) -> anyhow::Result<&str> {
         if let Self::String(ref value) = self {
             Ok(value)
         } else {

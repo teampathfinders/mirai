@@ -22,7 +22,7 @@ impl<'a> ConnectedPacket for ServerToClientHandshake<'a> {
 }
 
 impl<'a> Serialize for ServerToClientHandshake<'a> {
-    fn serialize(&self, buffer: &mut MutableBuffer) -> Result<()> {
+    fn serialize(&self, buffer: &mut MutableBuffer) -> anyhow::Result<()> {
         buffer.write_str(self.jwt)
     }
 }

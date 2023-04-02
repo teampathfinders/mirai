@@ -19,7 +19,7 @@ impl ConnectedPacket for BlockPickRequest {
 }
 
 impl Deserialize<'_> for BlockPickRequest {
-    fn deserialize(mut buffer: SharedBuffer) -> Result<Self> {
+    fn deserialize(mut buffer: SharedBuffer) -> anyhow::Result<Self> {
         let position = buffer.read_veci()?;
         let with_nbt = buffer.read_bool()?;
         let hotbar_slot = buffer.read_u8()?;

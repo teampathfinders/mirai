@@ -220,7 +220,7 @@ impl InstanceManager {
         pk: RawPacket,
         server_guid: u64,
         metadata: &str,
-    ) -> Result<RawPacket> {
+    ) -> anyhow::Result<RawPacket> {
         let ping = UnconnectedPing::deserialize(pk.buf.snapshot())?;
         let pong = UnconnectedPong { time: ping.time, server_guid, metadata };
 
@@ -238,7 +238,7 @@ impl InstanceManager {
     fn process_open_connection_request1(
         mut pk: RawPacket,
         server_guid: u64,
-    ) -> Result<RawPacket> {
+    ) -> anyhow::Result<RawPacket> {
         let request = OpenConnectionRequest1::deserialize(pk.buf.snapshot())?;
 
         pk.buf.clear();
@@ -268,7 +268,7 @@ impl InstanceManager {
         udp_socket: Arc<UdpSocket>,
         sess_manager: Arc<SessionManager>,
         server_guid: u64,
-    ) -> Result<RawPacket> {
+    ) -> anyhow::Result<RawPacket> {
         let request = OpenConnectionRequest2::deserialize(pk.buf.snapshot())?;
         let reply = OpenConnectionReply2 {
             server_guid,

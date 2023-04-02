@@ -55,7 +55,7 @@ impl<'a> ConnectedPacket for BookEdit<'a> {
 }
 
 impl<'a> Deserialize<'a> for BookEdit<'a> {
-    fn deserialize(mut buffer: SharedBuffer<'a>) -> Result<Self> {
+    fn deserialize(mut buffer: SharedBuffer<'a>) -> anyhow::Result<Self> {
         let action = buffer.read_u8()?;
         let inventory_slot = buffer.read_u8()?;
 

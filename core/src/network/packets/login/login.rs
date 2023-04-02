@@ -58,7 +58,7 @@ impl ConnectedPacket for Login {
 }
 
 impl Deserialize<'_> for Login {
-    fn deserialize(mut buffer: SharedBuffer) -> Result<Self> {
+    fn deserialize(mut buffer: SharedBuffer) -> anyhow::Result<Self> {
         let _version = buffer.read_u32_be()?; // Skip protocol version, use the one in RequestNetworkSettings instead.
         buffer.read_var_u32()?;
 

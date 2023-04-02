@@ -1429,6 +1429,7 @@ dependencies = [
 name = "pyro-nbt"
 version = "0.1.0"
 dependencies = [
+ "anyhow",
  "paste",
  "pyro-util",
  "serde",
@@ -1438,6 +1439,7 @@ dependencies = [
 name = "pyro-util"
 version = "0.1.0"
 dependencies = [
+ "anyhow",
  "base64 0.21.0",
  "cipher",
  "dashmap",

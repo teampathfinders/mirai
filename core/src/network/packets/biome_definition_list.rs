@@ -21,7 +21,7 @@ impl ConnectedPacket for BiomeDefinitionList {
 }
 
 impl Serialize for BiomeDefinitionList {
-    fn serialize(&self, buffer: &mut MutableBuffer) -> Result<()> {
+    fn serialize(&self, buffer: &mut MutableBuffer) -> anyhow::Result<()> {
         buffer.write_all(DEFINITIONS)?;
 
         Ok(())

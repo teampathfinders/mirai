@@ -93,9 +93,9 @@ impl fmt::Debug for u24 {
 }
 
 impl TryFrom<u32> for u24 {
-    type Error = Error;
+    type Error = anyhow::Error;
 
-    fn try_from(value: u32) -> Result<Self> {
+    fn try_from(value: u32) -> anyhow::Result<Self> {
         if value > Self::MAX_U32 {
             bail!(Other, "value {value} is too big to fit in u24");
         }

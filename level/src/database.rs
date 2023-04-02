@@ -168,7 +168,7 @@ pub struct Database {
 
 impl Database {
     /// Opens the database at the specified path.
-    pub fn open<P>(path: P) -> Result<Self>
+    pub fn open<P>(path: P) -> anyhow::Result<Self>
         where
             P: AsRef<str>,
     {
@@ -197,7 +197,7 @@ impl Database {
     }
 
     /// Loads the specified value from the database.
-    pub fn get<K>(&self, key: K) -> Result<Guard>
+    pub fn get<K>(&self, key: K) -> anyhow::Result<Guard>
         where
             K: AsRef<[u8]>,
     {
@@ -233,7 +233,7 @@ impl Database {
         }
     }
 
-    pub fn insert<K, V>(&self, key: K, value: V) -> Result<()>
+    pub fn insert<K, V>(&self, key: K, value: V) -> anyhow::Result<()>
     where
         K: AsRef<[u8]>,
         V: AsRef<[u8]>
@@ -258,7 +258,7 @@ impl Database {
         }
     }
 
-    pub fn remove<K>(&self, key: K) -> Result<()>
+    pub fn remove<K>(&self, key: K) -> anyhow::Result<()>
     where
         K: AsRef<[u8]>
     {

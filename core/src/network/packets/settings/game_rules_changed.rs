@@ -198,7 +198,7 @@ impl GameRule {
         }
     }
 
-    pub fn from_parsed(name: &str, value: &ParsedArgument) -> Result<GameRule> {
+    pub fn from_parsed(name: &str, value: &ParsedArgument) -> anyhow::Result<GameRule> {
         if let ParsedArgument::String(str_boolean) = value {
             let rule_value = match str_boolean.as_str() {
                 "true" => true,
@@ -248,7 +248,7 @@ impl GameRule {
         }
     }
 
-    pub fn serialize(&self, buffer: &mut MutableBuffer) -> Result<()> {
+    pub fn serialize(&self, buffer: &mut MutableBuffer) -> anyhow::Result<()> {
         buffer.write_str(self.name())?;
         buffer.write_bool(true)?; // Player can modify. Doesn't seem to do anything.
 
@@ -349,7 +349,7 @@ impl ConnectedPacket for GameRulesChanged<'_> {
 }
 
 impl Serialize for GameRulesChanged<'_> {
-    fn serialize(&self, buffer: &mut MutableBuffer) -> Result<()> {
+    fn serialize(&self, buffer: &mut MutableBuffer) -> anyhow::Result<()> {
         buffer.write_var_u32(self.game_rules.len() as u32)?;
         for game_rule in self.game_rules {
             game_rule.serialize(buffer)?;

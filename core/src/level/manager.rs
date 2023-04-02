@@ -42,7 +42,7 @@ impl LevelManager {
     pub fn new(
         session_manager: Arc<SessionManager>,
         token: CancellationToken,
-    ) -> Result<Arc<Self>> {
+    ) -> anyhow::Result<Arc<Self>> {
         let (level_path, autosave_interval) = {
             let config = SERVER_CONFIG.read();
             (config.level_path, config.autosave_interval)
@@ -115,7 +115,7 @@ impl LevelManager {
     pub fn set_game_rule(
         &self,
         game_rule: GameRule,
-    ) -> Result<Option<GameRule>> {
+    ) -> anyhow::Result<Option<GameRule>> {
         let name = game_rule.name();
 
         self.session_manager
@@ -126,7 +126,7 @@ impl LevelManager {
     /// Modifies multiple game rules at the same time.
     /// This function also notifies all the clients of the change.
     #[inline]
-    pub fn set_game_rules(&self, game_rules: &[GameRule]) -> Result<()> {
+    pub fn set_game_rules(&self, game_rules: &[GameRule]) -> anyhow::Result<()> {
         for game_rule in game_rules {
             let name = game_rule.name();
             self.game_rules.insert(name.to_owned(), *game_rule);

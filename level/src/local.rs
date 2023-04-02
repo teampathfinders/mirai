@@ -12,7 +12,7 @@ const fn u32_ceil_div(lhs: u32, rhs: u32) -> u32 {
 impl SubLayer {
     /// Deserializes a single layer from the given buffer.
     #[inline]
-    fn deserialize_network<'a, R>(mut reader: R) -> Result<Self>
+    fn deserialize_network<'a, R>(mut reader: R) -> anyhow::Result<Self>
         where
             R: BinaryRead<'a> + Copy + 'a
     {
@@ -61,7 +61,7 @@ impl SubLayer {
         Ok(Self { indices, palette })
     }
 
-    fn serialize_network<W>(&self, mut writer: W) -> Result<()>
+    fn serialize_network<W>(&self, mut writer: W) -> anyhow::Result<()>
         where
             W: BinaryWrite
     {
@@ -125,7 +125,7 @@ impl SubLayer {
 
 impl SubChunk {
     /// Deserialize a full sub chunk from the given buffer.
-    pub fn deserialize_local<'a, R>(mut reader: R) -> Result<Self>
+    pub fn deserialize_local<'a, R>(mut reader: R) -> anyhow::Result<Self>
         where
             R: BinaryRead<'a> + Copy + 'a,
     {
@@ -157,14 +157,14 @@ impl SubChunk {
     /// Serialises the sub chunk into a new buffer and returns the buffer.
     ///
     /// Use [`serialize_local_in`](Self::serialize_local_in) to serialize into an existing writer.
-    pub fn serialize_local(&self) -> Result<MutableBuffer> {
+    pub fn serialize_local(&self) -> anyhow::Result<MutableBuffer> {
         let mut buffer = MutableBuffer::new();
         self.serialize_local_in(&mut buffer)?;
         Ok(buffer)
     }
 
     /// Serialises the sub chunk into the given writer.
-    pub fn serialize_local_in<W>(&self, mut writer: W) -> Result<()>
+    pub fn serialize_local_in<W>(&self, mut writer: W) -> anyhow::Result<()>
         where
             W: BinaryWrite
     {
