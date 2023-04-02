@@ -1,6 +1,6 @@
 use util::bytes::{BinaryRead, SharedBuffer};
-use util::Deserialize;
 use util::pyassert;
+use util::Deserialize;
 use util::Result;
 
 /// Sent by the client to initiate a full connection.

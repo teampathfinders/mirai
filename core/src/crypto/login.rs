@@ -4,19 +4,18 @@ use jsonwebtoken::{Algorithm, DecodingKey, Validation};
 use p384::pkcs8::spki;
 use uuid::Uuid;
 
-use util::{bail, error, Result};
 use util::bytes::{BinaryRead, SharedBuffer};
+use util::{bail, error, Result};
 
-use crate::network::{DeviceOS, UiProfile};
 use crate::network::Skin;
+use crate::network::{DeviceOS, UiProfile};
 
 /// Mojang's public key.
 /// Used to verify the second token in the identity chain.
 pub const MOJANG_PUBLIC_KEY: &str = "MHYwEAYHKoZIzj0CAQYFK4EEACIDYgAE8ELkixyLcwlZryUQcu1TvPOmI2B7vX83ndnWRUaXm74wFfa5f/lwQNTfrLVHa2PmenpGI6JhIMUJaWZrjmMj90NoKNFSNBuKdm8rYiXsfaz3K36x/1U26HpG0ZxK/V1V";
 
 /// Use the default Base64 format with no padding.
-const BASE64_ENGINE: base64::engine::GeneralPurpose =
-    base64::engine::general_purpose::STANDARD_NO_PAD;
+const BASE64_ENGINE: base64::engine::GeneralPurpose = base64::engine::general_purpose::STANDARD_NO_PAD;
 
 /// Data contained in the identity token chain.
 #[derive(Debug, Clone)]
@@ -98,30 +97,22 @@ pub struct UserDataTokenPayload {
 fn parse_initial_token(token: &str) -> anyhow::Result<String> {
     // Decode JWT header to get X5U.
     let header = jsonwebtoken::decode_header(token)?;
-    let base64 = header.x5u.ok_or_else(|| {
-        anyhow!("Missing X.509 certificate URL (x5u)")
-    })?;
+    let base64 = header.x5u.ok_or_else(|| anyhow!("Missing X.509 certificate URL (x5u)"))?;
 
     let bytes = BASE64_ENGINE.decode(base64)?;
 
     // Public key that can be used to verify the token.
-    let public_key =
-        match spki::SubjectPublicKeyInfoRef::try_from(bytes.as_ref()) {
-            Ok(p) => p,
-            Err(e) => bail!(Malformed, "Invalid client public key: {e}"),
-        };
+    let public_key = match spki::SubjectPublicKeyInfoRef::try_from(bytes.as_ref()) {
+        Ok(p) => p,
+        Err(e) => bail!(Malformed, "Invalid client public key: {e}"),
+    };
 
-    let decoding_key =
-        DecodingKey::from_ec_der(public_key.subject_public_key.raw_bytes());
+    let decoding_key = DecodingKey::from_ec_der(public_key.subject_public_key.raw_bytes());
     let mut validation = Validation::new(Algorithm::ES384);
     validation.validate_exp = true;
     validation.validate_nbf = true;
 
-    let payload = jsonwebtoken::decode::<KeyTokenPayload>(
-        token,
-        &decoding_key,
-        &validation,
-    )?;
+    let payload = jsonwebtoken::decode::<KeyTokenPayload>(token, &decoding_key, &validation)?;
     Ok(payload.claims.public_key)
 }
 
@@ -130,24 +121,18 @@ fn parse_initial_token(token: &str) -> anyhow::Result<String> {
 /// This token contains another identityPublicKey which is the public key for the third token.
 fn parse_mojang_token(token: &str, key: &str) -> anyhow::Result<String> {
     let bytes = BASE64_ENGINE.decode(key)?;
-    let public_key =
-        match spki::SubjectPublicKeyInfoRef::try_from(bytes.as_ref()) {
-            Ok(p) => p,
-            Err(e) => bail!(Malformed, "Invalid client public key: {e}"),
-        };
+    let public_key = match spki::SubjectPublicKeyInfoRef::try_from(bytes.as_ref()) {
+        Ok(p) => p,
+        Err(e) => bail!(Malformed, "Invalid client public key: {e}"),
+    };
 
-    let decoding_key =
-        DecodingKey::from_ec_der(public_key.subject_public_key.raw_bytes());
+    let decoding_key = DecodingKey::from_ec_der(public_key.subject_public_key.raw_bytes());
     let mut validation = Validation::new(Algorithm::ES384);
     validation.set_issuer(&["Mojang"]);
     validation.validate_nbf = true;
     validation.validate_exp = true;
 
-    let payload = jsonwebtoken::decode::<KeyTokenPayload>(
-        token,
-        &decoding_key,
-        &validation,
-    )?;
+    let payload = jsonwebtoken::decode::<KeyTokenPayload>(token, &decoding_key, &validation)?;
 
     Ok(payload.claims.public_key)
 }
@@ -156,57 +141,39 @@ fn parse_mojang_token(token: &str, key: &str) -> anyhow::Result<String> {
 /// The extraData field contains the XUID, client identity (UUID) and the display name.
 ///
 /// Just like the second one, this token can be verified using the identityPublicKey from the last token.
-fn parse_identity_token(
-    token: &str,
-    key: &str,
-) -> anyhow::Result<IdentityTokenPayload> {
+fn parse_identity_token(token: &str, key: &str) -> anyhow::Result<IdentityTokenPayload> {
     let bytes = BASE64_ENGINE.decode(key)?;
-    let public_key =
-        match spki::SubjectPublicKeyInfoRef::try_from(bytes.as_ref()) {
-            Ok(p) => p,
-            Err(e) => bail!(Malformed, "Invalid client public key: {e}"),
-        };
+    let public_key = match spki::SubjectPublicKeyInfoRef::try_from(bytes.as_ref()) {
+        Ok(p) => p,
+        Err(e) => bail!(Malformed, "Invalid client public key: {e}"),
+    };
 
-    let decoding_key =
-        DecodingKey::from_ec_der(public_key.subject_public_key.raw_bytes());
+    let decoding_key = DecodingKey::from_ec_der(public_key.subject_public_key.raw_bytes());
     let mut validation = Validation::new(Algorithm::ES384);
     validation.set_issuer(&["Mojang"]);
     validation.validate_nbf = true;
     validation.validate_exp = true;
 
-    let payload = jsonwebtoken::decode::<IdentityTokenPayload>(
-        token,
-        &decoding_key,
-        &validation,
-    )?;
+    let payload = jsonwebtoken::decode::<IdentityTokenPayload>(token, &decoding_key, &validation)?;
 
     Ok(payload.claims)
 }
 
 /// Verifies and decodes the user data token.
-fn parse_user_data_token(
-    token: &str,
-    key: &str,
-) -> anyhow::Result<UserDataTokenPayload> {
+fn parse_user_data_token(token: &str, key: &str) -> anyhow::Result<UserDataTokenPayload> {
     let bytes = BASE64_ENGINE.decode(key)?;
-    let public_key =
-        match spki::SubjectPublicKeyInfoRef::try_from(bytes.as_ref()) {
-            Ok(p) => p,
-            Err(e) => bail!(Malformed, "Invalid client public key: {e}"),
-        };
+    let public_key = match spki::SubjectPublicKeyInfoRef::try_from(bytes.as_ref()) {
+        Ok(p) => p,
+        Err(e) => bail!(Malformed, "Invalid client public key: {e}"),
+    };
 
-    let decoding_key =
-        DecodingKey::from_ec_der(public_key.subject_public_key.raw_bytes());
+    let decoding_key = DecodingKey::from_ec_der(public_key.subject_public_key.raw_bytes());
     let mut validation = Validation::new(Algorithm::ES384);
 
     // No special header data included in this token, don't verify anything.
     validation.required_spec_claims.clear();
 
-    let payload = jsonwebtoken::decode::<UserDataTokenPayload>(
-        token,
-        &decoding_key,
-        &validation,
-    )?;
+    let payload = jsonwebtoken::decode::<UserDataTokenPayload>(token, &decoding_key, &validation)?;
 
     Ok(payload.claims)
 }
@@ -214,9 +181,7 @@ fn parse_user_data_token(
 /// Parses the identification data contained in the first token chain.
 ///
 /// This contains such as the XUID, display name and public key.
-pub fn parse_identity_data(
-    buffer: &mut SharedBuffer,
-) -> anyhow::Result<IdentityTokenPayload> {
+pub fn parse_identity_data(buffer: &mut SharedBuffer) -> anyhow::Result<IdentityTokenPayload> {
     let token_length = buffer.read_u32_le()?;
     let token_chain = buffer.take_n(token_length as usize)?;
 
@@ -224,10 +189,7 @@ pub fn parse_identity_data(
     let identity_data = match tokens.chain.len() {
         1 => {
             // Client is not signed into Xbox.
-            bail!(
-                NotAuthenticated,
-                "User must be authenticated with Microsoft services."
-            );
+            bail!(NotAuthenticated, "User must be authenticated with Microsoft services.");
         }
         3 => {
             // Verify the first token and decode the public key for the next token.
@@ -241,11 +203,7 @@ pub fn parse_identity_data(
             key = parse_mojang_token(&tokens.chain[1], &key)?;
             parse_identity_token(&tokens.chain[2], &key)?
         }
-        _ => bail!(
-            Malformed,
-            "Unexpected token count {}, expected 3",
-            tokens.chain.len()
-        ),
+        _ => bail!(Malformed, "Unexpected token count {}, expected 3", tokens.chain.len()),
     };
 
     Ok(identity_data)
@@ -253,10 +211,7 @@ pub fn parse_identity_data(
 
 /// Parses the user data token from the login packet.
 /// This token contains the user's operating system, language, skin, etc.
-pub fn parse_user_data(
-    buffer: &mut SharedBuffer,
-    public_key: &str,
-) -> anyhow::Result<UserDataTokenPayload> {
+pub fn parse_user_data(buffer: &mut SharedBuffer, public_key: &str) -> anyhow::Result<UserDataTokenPayload> {
     let token_length = buffer.read_u32_le()?;
     let token = buffer.take_n(token_length as usize)?;
     let token_string = String::from_utf8_lossy(token);

@@ -1,5 +1,5 @@
-use util::{bail, Result};
 use util::bytes::{BinaryRead, BinaryWrite, MutableBuffer};
+use util::{bail, Result};
 
 use crate::{SubChunk, SubChunkVersion, SubLayer};
 
@@ -13,8 +13,8 @@ impl SubLayer {
     /// Deserializes a single layer from the given buffer.
     #[inline]
     fn deserialize_network<'a, R>(mut reader: R) -> anyhow::Result<Self>
-        where
-            R: BinaryRead<'a> + Copy + 'a
+    where
+        R: BinaryRead<'a> + Copy + 'a,
     {
         // Size of each index in bits.
         let index_size = reader.read_u8()? >> 1;
@@ -25,10 +25,11 @@ impl SubLayer {
         // Amount of indices that fit in a single 32-bit integer.
         let indices_per_word = u32::BITS as usize / index_size as usize;
         // Amount of words needed to encode 4096 block indices.
-        let word_count = 4096 / indices_per_word + match index_size {
-            3 | 5 | 6 => 1,
-            _ => 0
-        };
+        let word_count = 4096 / indices_per_word
+            + match index_size {
+                3 | 5 | 6 => 1,
+                _ => 0,
+            };
 
         let mask = !(!0u32 << index_size);
         let mut indices = [0u16; 4096];
@@ -38,7 +39,7 @@ impl SubLayer {
             for j in 0..indices_per_word {
                 let offset = i * indices_per_word + j;
                 if offset == 4096 {
-                    break
+                    break;
                 }
 
                 let index = word & mask;
@@ -62,8 +63,8 @@ impl SubLayer {
     }
 
     fn serialize_network<W>(&self, mut writer: W) -> anyhow::Result<()>
-        where
-            W: BinaryWrite
+    where
+        W: BinaryWrite,
     {
         // Determine the required bits per index
         let index_size = {
@@ -84,8 +85,7 @@ impl SubLayer {
         writer.write_u8(index_size << 1)?;
 
         // Amount of indices that fit in a single 32-bit integer.
-        let indices_per_word =
-            u32_ceil_div(u32::BITS, index_size as u32) as usize;
+        let indices_per_word = u32_ceil_div(u32::BITS, index_size as u32) as usize;
 
         // Amount of words needed to encode 4096 block indices.
         let word_count = {
@@ -102,7 +102,7 @@ impl SubLayer {
             for j in 0..indices_per_word {
                 let offset = i * indices_per_word + j;
                 if offset == 4096 {
-                    break
+                    break;
                 }
 
                 let index = self.indices[offset] as u32 & mask;
@@ -126,8 +126,8 @@ impl SubLayer {
 impl SubChunk {
     /// Deserialize a full sub chunk from the given buffer.
     pub fn deserialize_local<'a, R>(mut reader: R) -> anyhow::Result<Self>
-        where
-            R: BinaryRead<'a> + Copy + 'a,
+    where
+        R: BinaryRead<'a> + Copy + 'a,
     {
         let version = SubChunkVersion::try_from(reader.read_u8()?)?;
         let layer_count = match version {
@@ -139,11 +139,7 @@ impl SubChunk {
             bail!(Malformed, "Sub chunk must have 1 or 2 layers");
         }
 
-        let index = if version == SubChunkVersion::Limitless {
-            reader.read_i8()?
-        } else {
-            0
-        };
+        let index = if version == SubChunkVersion::Limitless { reader.read_i8()? } else { 0 };
 
         // let mut layers = SmallVec::with_capacity(layer_count as usize);
         let mut layers = Vec::with_capacity(layer_count as usize);
@@ -165,13 +161,13 @@ impl SubChunk {
 
     /// Serialises the sub chunk into the given writer.
     pub fn serialize_local_in<W>(&self, mut writer: W) -> anyhow::Result<()>
-        where
-            W: BinaryWrite
+    where
+        W: BinaryWrite,
     {
         writer.write_u8(self.version as u8)?;
         match self.version {
             SubChunkVersion::Legacy => writer.write_u8(1),
-            _ => writer.write_u8(self.layers.len() as u8)
+            _ => writer.write_u8(self.layers.len() as u8),
         }?;
 
         if self.version == SubChunkVersion::Limitless {

@@ -1,12 +1,12 @@
 //! This module contains code used to run extensions/plugins.
 
 mod cache;
-mod runtime;
 mod ext;
+mod runtime;
 
-pub use runtime::*;
 pub use cache::*;
 pub use ext::*;
+pub use runtime::*;
 
 /// Location of the WebAssembly modules.
 pub const ASSEMBLY_DIRECTORY: &str = "ext";

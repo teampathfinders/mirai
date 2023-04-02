@@ -1,4 +1,4 @@
-use std::fmt::{Debug, Formatter, self};
+use std::fmt::{self, Debug, Formatter};
 
 use anyhow::{anyhow, Context};
 use wasmtime::{Instance, Module, Store, TypedFunc};
@@ -6,14 +6,14 @@ use wasmtime::{Instance, Module, Store, TypedFunc};
 struct ExtensionFnPointers {
     alloc_fn: TypedFunc<u32, i32>,
     dealloc_fn: TypedFunc<(i32, u32), ()>,
-    realloc_fn: TypedFunc<(i32, u32, u32), i32>
+    realloc_fn: TypedFunc<(i32, u32, u32), i32>,
 }
 
 pub struct Extension {
     name: String,
     version: [u8; 4],
     instance: Instance,
-    fn_pointers: ExtensionFnPointers
+    fn_pointers: ExtensionFnPointers,
 }
 
 impl Extension {
@@ -30,16 +30,14 @@ impl Extension {
             let name_ptr = alloc_fn.call(&mut store, len)?;
             name_fn.call(&mut store, name_ptr)?;
 
-            let linear_mem = instance.get_memory(&mut store, "memory").ok_or_else(||
-                anyhow!("Memory export 'memory' not found")
-                    .context("Failed to load extension name")
-            )?;
+            let linear_mem = instance
+                .get_memory(&mut store, "memory")
+                .ok_or_else(|| anyhow!("Memory export 'memory' not found").context("Failed to load extension name"))?;
 
             let mut utf8_buffer = vec![0; len as usize];
             linear_mem.read(&mut store, name_ptr as usize, &mut utf8_buffer)?;
 
-            let name = String::from_utf8(utf8_buffer)
-                .context("Failed to read extension name")?;
+            let name = String::from_utf8(utf8_buffer).context("Failed to read extension name")?;
 
             dealloc_fn.call(&mut store, (name_ptr, len))?;
 
@@ -52,10 +50,10 @@ impl Extension {
         };
 
         Ok(Self {
-            name, version, instance,
-            fn_pointers: ExtensionFnPointers {
-                alloc_fn, dealloc_fn, realloc_fn
-            }
+            name,
+            version,
+            instance,
+            fn_pointers: ExtensionFnPointers { alloc_fn, dealloc_fn, realloc_fn },
         })
     }
 

@@ -1,9 +1,9 @@
 use std::collections::HashMap;
 use std::fmt;
 
-use serde::{de, Deserialize, Deserializer, Serialize, Serializer};
 use serde::de::{MapAccess, SeqAccess, Visitor};
 use serde::ser::{SerializeMap, SerializeSeq};
+use serde::{de, Deserialize, Deserializer, Serialize, Serializer};
 
 use paste::paste;
 
@@ -143,7 +143,7 @@ impl Value {
     pub fn as_i8(&self) -> Option<i8> {
         match self {
             Value::Byte(v) => Some(*v),
-            _ => None
+            _ => None,
         }
     }
 
@@ -152,7 +152,7 @@ impl Value {
     pub fn as_i16(&self) -> Option<i16> {
         match self {
             Value::Short(v) => Some(*v),
-            _ => None
+            _ => None,
         }
     }
 
@@ -161,7 +161,7 @@ impl Value {
     pub fn as_i32(&self) -> Option<i32> {
         match self {
             Value::Int(v) => Some(*v),
-            _ => None
+            _ => None,
         }
     }
 
@@ -170,7 +170,7 @@ impl Value {
     pub fn as_i64(&self) -> Option<i64> {
         match self {
             Value::Long(v) => Some(*v),
-            _ => None
+            _ => None,
         }
     }
 
@@ -179,7 +179,7 @@ impl Value {
     pub fn as_f32(&self) -> Option<f32> {
         match self {
             Value::Float(v) => Some(*v),
-            _ => None
+            _ => None,
         }
     }
 
@@ -188,7 +188,7 @@ impl Value {
     pub fn as_f64(&self) -> Option<f64> {
         match self {
             Value::Double(v) => Some(*v),
-            _ => None
+            _ => None,
         }
     }
 
@@ -197,7 +197,7 @@ impl Value {
     pub fn as_u8_array(&self) -> Option<&[u8]> {
         match self {
             Value::ByteArray(v) => Some(v),
-            _ => None
+            _ => None,
         }
     }
 
@@ -206,7 +206,7 @@ impl Value {
     pub fn as_string(&self) -> Option<&str> {
         match self {
             Value::String(v) => Some(v),
-            _ => None
+            _ => None,
         }
     }
 
@@ -215,7 +215,7 @@ impl Value {
     pub fn as_list(&self) -> Option<&[Value]> {
         match self {
             Value::List(v) => Some(v),
-            _ => None
+            _ => None,
         }
     }
 
@@ -224,7 +224,7 @@ impl Value {
     pub fn as_compound(&self) -> Option<&HashMap<String, Value>> {
         match self {
             Value::Compound(v) => Some(v),
-            _ => None
+            _ => None,
         }
     }
 
@@ -233,7 +233,7 @@ impl Value {
     pub fn as_i32_array(&self) -> Option<&[i32]> {
         match self {
             Value::IntArray(v) => Some(v),
-            _ => None
+            _ => None,
         }
     }
 
@@ -242,7 +242,7 @@ impl Value {
     pub fn as_i64_array(&self) -> Option<&[i64]> {
         match self {
             Value::LongArray(v) => Some(v),
-            _ => None
+            _ => None,
         }
     }
 }
@@ -524,8 +524,8 @@ impl<'a> PartialEq<&[i64]> for &'a mut Value {
 impl<'de> Deserialize<'de> for Value {
     #[inline]
     fn deserialize<D>(deserializer: D) -> anyhow::Result<Value, D::Error>
-        where
-            D: Deserializer<'de>,
+    where
+        D: Deserializer<'de>,
     {
         struct ValueVisitor;
 
@@ -539,88 +539,88 @@ impl<'de> Deserialize<'de> for Value {
 
             #[inline]
             fn visit_bool<E>(self, v: bool) -> anyhow::Result<Self::Value, E>
-                where
-                    E: de::Error
+            where
+                E: de::Error,
             {
                 Ok(Value::Byte(v as i8))
             }
 
             #[inline]
             fn visit_i8<E>(self, v: i8) -> anyhow::Result<Self::Value, E>
-                where
-                    E: de::Error
+            where
+                E: de::Error,
             {
                 Ok(Value::Byte(v))
             }
 
             #[inline]
             fn visit_i16<E>(self, v: i16) -> anyhow::Result<Self::Value, E>
-                where
-                    E: de::Error,
+            where
+                E: de::Error,
             {
                 Ok(Value::Short(v))
             }
 
             #[inline]
             fn visit_i32<E>(self, v: i32) -> anyhow::Result<Self::Value, E>
-                where
-                    E: de::Error,
+            where
+                E: de::Error,
             {
                 Ok(Value::Int(v))
             }
 
             #[inline]
             fn visit_i64<E>(self, v: i64) -> anyhow::Result<Self::Value, E>
-                where
-                    E: de::Error
+            where
+                E: de::Error,
             {
                 Ok(Value::Long(v))
             }
 
             #[inline]
             fn visit_f32<E>(self, v: f32) -> anyhow::Result<Self::Value, E>
-                where
-                    E: de::Error,
+            where
+                E: de::Error,
             {
                 Ok(Value::Float(v))
             }
 
             #[inline]
             fn visit_f64<E>(self, v: f64) -> anyhow::Result<Self::Value, E>
-                where
-                    E: de::Error,
+            where
+                E: de::Error,
             {
                 Ok(Value::Double(v))
             }
 
             #[inline]
             fn visit_str<E>(self, v: &str) -> anyhow::Result<Self::Value, E>
-                where
-                    E: de::Error,
+            where
+                E: de::Error,
             {
                 Ok(Value::String(v.to_owned()))
             }
 
             #[inline]
             fn visit_string<E>(self, v: String) -> anyhow::Result<Self::Value, E>
-                where
-                    E: de::Error,
+            where
+                E: de::Error,
             {
                 Ok(Value::String(v))
             }
 
             #[inline]
             fn visit_byte_buf<E>(self, v: Vec<u8>) -> anyhow::Result<Self::Value, E>
-                where
-                    E: de::Error,
+            where
+                E: de::Error,
             {
                 Ok(Value::ByteArray(v))
             }
 
             #[inline]
             fn visit_seq<A>(self, mut seq: A) -> anyhow::Result<Self::Value, A::Error>
-                where
-                    A: SeqAccess<'de>
+            where
+                A: SeqAccess<'de>,
             {
                 let mut out = Vec::new();
                 if let Some(hint) = seq.size_hint() {
@@ -636,8 +636,8 @@ impl<'de> Deserialize<'de> for Value {
 
             #[inline]
             fn visit_map<A>(self, mut map: A) -> anyhow::Result<Self::Value, A::Error>
-                where
-                    A: MapAccess<'de>,
+            where
+                A: MapAccess<'de>,
             {
                 let mut out: HashMap<String, Value> = HashMap::new();
                 if let Some(hint) = map.size_hint() {
@@ -658,9 +658,9 @@ impl<'de> Deserialize<'de> for Value {
 
 #[inline]
 fn serialize_seq<T, S>(ser: S, seq: &[T]) -> anyhow::Result<S::Ok, S::Error>
-    where
-        T: Serialize,
-        S: Serializer,
+where
+    T: Serialize,
+    S: Serializer,
 {
     let mut seq_ser = ser.serialize_seq(Some(seq.len()))?;
     for element in seq {
@@ -671,8 +671,8 @@ fn serialize_seq<T, S>(ser: S, seq: &[T]) -> anyhow::Result<S::Ok, S::Error>
 
 impl Serialize for Value {
     fn serialize<S>(&self, ser: S) -> anyhow::Result<S::Ok, S::Error>
-        where
-            S: Serializer,
+    where
+        S: Serializer,
     {
         match self {
             Value::Byte(byte) => ser.serialize_i8(*byte),
@@ -692,7 +692,7 @@ impl Serialize for Value {
                 map_ser.end()
             }
             Value::IntArray(seq) => serialize_seq(ser, seq),
-            Value::LongArray(seq) => serialize_seq(ser, seq)
+            Value::LongArray(seq) => serialize_seq(ser, seq),
         }
     }
 }

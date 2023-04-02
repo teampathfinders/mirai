@@ -4,9 +4,9 @@ use std::net::SocketAddr;
 use paste::paste;
 use uuid::Uuid;
 
-use crate::{BlockPosition, Vector};
-use crate::Result;
 use crate::u24::u24;
+use crate::Result;
+use crate::{BlockPosition, Vector};
 
 macro_rules! declare_primitive_fns {
     ($($ty: ident),+) => {
@@ -31,9 +31,7 @@ macro_rules! declare_primitive_fns {
 }
 
 pub trait BinaryWrite: Write {
-    declare_primitive_fns!(
-        u16, i16, u24, u32, i32, u64, i64, u128, i128, f32, f64
-    );
+    declare_primitive_fns!(u16, i16, u24, u32, i32, u64, i64, u128, i128, f32, f64);
 
     #[inline]
     fn write_bool(&mut self, v: bool) -> anyhow::Result<()> {

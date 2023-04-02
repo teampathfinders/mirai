@@ -2,14 +2,9 @@
 fn main() {
     println!("cargo:rerun-if-env-changed=skip-leveldb");
 
-    let dst = cmake::Config::new("leveldb")
-        .profile("Release")
-        .build();
+    let dst = cmake::Config::new("leveldb").profile("Release").build();
 
-    println!(
-        "cargo:rustc-link-search=native={}/build/out",
-        dst.display()
-    );
+    println!("cargo:rustc-link-search=native={}/build/out", dst.display());
     println!("cargo:rustc-link-lib=static=leveldb-wrapper");
     println!("cargo:rustc-link-lib=static=leveldb-mcpe");
 

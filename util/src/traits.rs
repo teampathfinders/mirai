@@ -11,6 +11,6 @@ pub trait Serialize {
 pub trait Deserialize<'a> {
     /// Deserializes the given buffer, returning the object.
     fn deserialize(buffer: SharedBuffer<'a>) -> anyhow::Result<Self>
-        where
-            Self: Sized;
+    where
+        Self: Sized;
 }

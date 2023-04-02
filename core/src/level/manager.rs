@@ -1,23 +1,21 @@
-
-
-use std::sync::Arc;
 use std::sync::atomic::AtomicU64;
+use std::sync::Arc;
 use std::time::Duration;
 
-use dashmap::DashMap;
 use dashmap::mapref::one::Ref;
+use dashmap::DashMap;
 use parking_lot::RwLock;
 use tokio::sync::oneshot::{Receiver, Sender};
 use tokio_util::sync::CancellationToken;
 
-use level::{Level};
+use level::Level;
 use util::Result;
 
-use crate::network::{
-    {GameRule, GameRulesChanged}, SessionManager,
-};
 use crate::command::Command;
 use crate::config::SERVER_CONFIG;
+use crate::network::{
+    SessionManager, {GameRule, GameRulesChanged},
+};
 
 /// Interval between standard Minecraft ticks.
 const LEVEL_TICK_INTERVAL: Duration = Duration::from_millis(1000 / 20);
@@ -39,10 +37,7 @@ pub struct LevelManager {
 }
 
 impl LevelManager {
-    pub fn new(
-        session_manager: Arc<SessionManager>,
-        token: CancellationToken,
-    ) -> anyhow::Result<Arc<Self>> {
+    pub fn new(session_manager: Arc<SessionManager>, token: CancellationToken) -> anyhow::Result<Arc<Self>> {
         let (level_path, autosave_interval) = {
             let config = SERVER_CONFIG.read();
             (config.level_path, config.autosave_interval)
@@ -53,14 +48,8 @@ impl LevelManager {
             level,
             commands: DashMap::new(),
             game_rules: DashMap::from_iter([
-                (
-                    "showcoordinates".to_owned(),
-                    GameRule::ShowCoordinates(false),
-                ),
-                (
-                    "naturalregeneration".to_owned(),
-                    GameRule::NaturalRegeneration(false),
-                ),
+                ("showcoordinates".to_owned(), GameRule::ShowCoordinates(false)),
+                ("naturalregeneration".to_owned(), GameRule::NaturalRegeneration(false)),
             ]),
             session_manager,
             tick: AtomicU64::new(0),
@@ -104,22 +93,15 @@ impl LevelManager {
     /// Returns a list of currently applied game rules.
     #[inline]
     pub fn get_game_rules(&self) -> Vec<GameRule> {
-        self.game_rules
-            .iter()
-            .map(|kv| *kv.value())
-            .collect::<Vec<_>>()
+        self.game_rules.iter().map(|kv| *kv.value()).collect::<Vec<_>>()
     }
 
     /// Sets the value of a game rule, returning the old value if there was one.
     #[inline]
-    pub fn set_game_rule(
-        &self,
-        game_rule: GameRule,
-    ) -> anyhow::Result<Option<GameRule>> {
+    pub fn set_game_rule(&self, game_rule: GameRule) -> anyhow::Result<Option<GameRule>> {
         let name = game_rule.name();
 
-        self.session_manager
-            .broadcast(GameRulesChanged { game_rules: &[game_rule] })?;
+        self.session_manager.broadcast(GameRulesChanged { game_rules: &[game_rule] })?;
         Ok(self.game_rules.insert(name.to_owned(), game_rule))
     }
 
@@ -132,8 +114,7 @@ impl LevelManager {
             self.game_rules.insert(name.to_owned(), *game_rule);
         }
 
-        self.session_manager
-            .broadcast(GameRulesChanged { game_rules })
+        self.session_manager.broadcast(GameRulesChanged { game_rules })
     }
 
     // /// Simple job that runs [`flush`](Self::flush) on a specified interval.

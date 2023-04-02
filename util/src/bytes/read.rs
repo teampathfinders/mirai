@@ -42,9 +42,7 @@ macro_rules! declare_primitive_fns {
 
 /// Adds binary reading capabilities to a reader.
 pub trait BinaryRead<'a> {
-    declare_primitive_fns!(
-        u16, i16, u24, u32, i32, u64, i64, u128, i128, f32, f64
-    );
+    declare_primitive_fns!(u16, i16, u24, u32, i32, u64, i64, u128, i128, f32, f64);
 
     /// Consumes `n` bytes.
     fn advance(&mut self, n: usize) -> anyhow::Result<()>;
@@ -95,10 +93,7 @@ pub trait BinaryRead<'a> {
             i += 7;
         }
 
-        bail!(
-            Malformed,
-            "variable 32-bit integer did not end after 5 bytes"
-        )
+        bail!(Malformed, "variable 32-bit integer did not end after 5 bytes")
     }
 
     /// Reads a variable size [`i32`] from the reader.
@@ -117,10 +112,7 @@ pub trait BinaryRead<'a> {
             i += 7;
         }
 
-        bail!(
-            Malformed,
-            "variable 64-bit integer did not end after 10 bytes"
-        )
+        bail!(Malformed, "variable 64-bit integer did not end after 10 bytes")
     }
 
     /// Reads a variable size [`u64`] from the reader.
@@ -207,10 +199,7 @@ pub trait BinaryRead<'a> {
                 SocketAddr::new(addr, port)
             }
             _ => {
-                bail!(
-                    Malformed,
-                    "Invalid IP type {variant}, expected either 4 or 6"
-                );
+                bail!(Malformed, "Invalid IP type {variant}, expected either 4 or 6");
             }
         })
     }
