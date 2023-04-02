@@ -1,7 +1,10 @@
 use std::fs::File;
-use std::io::{Read, Write};
+use std::io::{Read, Write, BufReader};
 use std::path::{Path, PathBuf};
 use anyhow::{anyhow, Context};
+use flate2::Compression;
+use flate2::bufread::ZlibDecoder;
+use flate2::write::ZlibEncoder;
 use sha2::{Sha256, Digest};
 use wasmtime::{Engine, Module};
 
@@ -44,9 +47,15 @@ impl CompilationCache {
         if cache_path.try_exists()? {
             tracing::info!("Loading cached '{file_name}' module");
 
+            let cache_file = BufReader::new(File::open(cache_path)?);
+            let mut decoder = ZlibDecoder::new(cache_file);
+            
+            let mut cache_bytecode = Vec::new();
+            decoder.read_to_end(&mut cache_bytecode)?;
+
             // Load cache
             Ok(unsafe {
-                Module::deserialize_file(engine, cache_path)?
+                Module::deserialize(engine, cache_bytecode)?
             })
         } else {
             tracing::info!("Precompiling extension module '{file_name}'");
@@ -54,7 +63,11 @@ impl CompilationCache {
             let module = Module::new(engine, bytecode)?;
             let serialized = module.serialize()?;
 
-            File::create(cache_path)?.write_all(&serialized)?;
+            let mut encoder = ZlibEncoder::new(Vec::new(), Compression::best());
+            encoder.write_all(&serialized)?;
+            let compressed = encoder.finish()?;
+
+            File::create(cache_path)?.write_all(&compressed)?;
 
             Ok(module)
         }
