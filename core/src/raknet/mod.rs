@@ -1,3 +1,5 @@
+//! Rust implementation of the RakNet protocol.
+
 pub use packets::*;
 use util::glob_export;
 
