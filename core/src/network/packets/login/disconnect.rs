@@ -31,7 +31,7 @@ impl ConnectedPacket for Disconnect<'_> {
 }
 
 impl Serialize for Disconnect<'_> {
-    fn serialize(&self, buffer: &mut MutableBuffer) -> Result<()> {
+    fn serialize(&self, buffer: &mut MutableBuffer) -> anyhow::Result<()> {
         buffer.write_bool(self.hide_message)?;
         buffer.write_str(self.message)
     }

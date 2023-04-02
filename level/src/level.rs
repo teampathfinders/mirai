@@ -3,6 +3,7 @@
 use std::io::{Read, SeekFrom};
 use std::fs::File;
 use std::path::Path;
+use anyhow::anyhow;
 use util::{bail, Error, error, Result};
 use util::bytes::{BinaryRead, BinaryWrite};
 use crate::database::Database;
@@ -14,7 +15,7 @@ pub struct Level {
 }
 
 impl Level {
-    pub fn open<P>(path: P) -> Result<Level>
+    pub fn open<P>(path: P) -> anyhow::Result<Level>
     where
         P: AsRef<Path>
     {
@@ -28,7 +29,7 @@ impl Level {
                 .as_ref()
                 .join("db")
                 .to_str()
-                .ok_or_else(|| error!(Malformed, "Invalid level path"))?
+                .ok_or_else(|| anyhow!("Invalid level path"))?
         )?;
 
         Ok(Level {
@@ -36,7 +37,7 @@ impl Level {
         })
     }
 
-    pub fn flush(&self) -> Result<()> {
+    pub fn flush(&self) -> anyhow::Result<()> {
         todo!();
     }
 }

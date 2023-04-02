@@ -92,7 +92,7 @@ impl SessionManager {
     pub fn set_level_manager(
         &self,
         level_manager: Weak<LevelManager>,
-    ) -> Result<()> {
+    ) -> anyhow::Result<()> {
         self.level_manager.set(level_manager)?;
         Ok(())
     }
@@ -135,14 +135,14 @@ impl SessionManager {
     pub fn broadcast<P: ConnectedPacket + Serialize + Clone>(
         &self,
         pk: P,
-    ) -> Result<()> {
+    ) -> anyhow::Result<()> {
         self.broadcast.send(BroadcastPacket::new(pk, None)?)?;
         Ok(())
     }
 
     /// Kicks all sessions from the server, displaying the given message.
     /// This function also waits for all sessions to be destroyed.
-    pub async fn kick_all<S: AsRef<str>>(&self, message: S) -> Result<()> {
+    pub async fn kick_all<S: AsRef<str>>(&self, message: S) -> anyhow::Result<()> {
         self.broadcast.send(BroadcastPacket::new(
             Disconnect {
                 hide_message: false,

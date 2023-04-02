@@ -45,7 +45,7 @@ impl FrameBatch {
         self.frames.is_empty()
     }
 
-    pub fn deserialize(mut buffer: SharedBuffer) -> Result<Self> {
+    pub fn deserialize(mut buffer: SharedBuffer) -> anyhow::Result<Self> {
         debug_assert_ne!(buffer.read_u8()? & 0x80, 0);
 
         let batch_number = buffer.read_u24_le()?;
@@ -59,7 +59,7 @@ impl FrameBatch {
         Ok(Self { sequence_number: batch_number.into(), frames })
     }
 
-    pub fn serialize(&self, buffer: &mut MutableBuffer) -> Result<()> {
+    pub fn serialize(&self, buffer: &mut MutableBuffer) -> anyhow::Result<()> {
         buffer.write_u8(CONNECTED_PEER_BIT_FLAG)?;
         buffer.write_u24_le(self.sequence_number.try_into()?)?;
 
@@ -105,7 +105,7 @@ impl Frame {
 
     /// Decodes the frame.
     #[allow(clippy::useless_let_if_seq)]
-    fn deserialize(buffer: &mut SharedBuffer) -> Result<Self> {
+    fn deserialize(buffer: &mut SharedBuffer) -> anyhow::Result<Self> {
         let flags = buffer.read_u8()?;
 
         let reliability = Reliability::try_from(flags >> 5)?;
@@ -156,7 +156,7 @@ impl Frame {
     }
 
     /// Encodes the frame.
-    fn serialize(&self, buffer: &mut MutableBuffer) -> Result<()> {
+    fn serialize(&self, buffer: &mut MutableBuffer) -> anyhow::Result<()> {
         let mut flags = (self.reliability as u8) << 5;
         if self.is_compound {
             flags |= COMPOUND_BIT_FLAG;

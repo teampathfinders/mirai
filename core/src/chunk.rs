@@ -15,7 +15,7 @@ impl ChunkManager {
         path: P,
         autosave_interval: Duration,
         token: CancellationToken,
-    ) -> Result<(Arc<Self>, Receiver<()>)> {
+    ) -> anyhow::Result<(Arc<Self>, Receiver<()>)> {
         tracing::info!("Loading level {}...", path.as_ref());
 
         let manager = Arc::new(Self {
@@ -36,7 +36,7 @@ impl ChunkManager {
     /// Writes the current level state to the disk.
     /// Internally, this uses LevelDB's WriteBatch method to perform bulk updates.
     /// These LevelDB are done synchronously to prevent data loss and the overhead is minimal due to batching.
-    pub fn flush(&self) -> Result<()> {
+    pub fn flush(&self) -> anyhow::Result<()> {
         Ok(())
         // todo!();
     }

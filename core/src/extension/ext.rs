@@ -1,3 +1,4 @@
+use anyhow::{anyhow, Context};
 use wasmtime::{Instance, Module, Store, TypedFunc};
 
 struct ExtensionFnPointers {
@@ -7,13 +8,13 @@ struct ExtensionFnPointers {
 }
 
 pub struct Extension {
-    pub name: String,
-    pub version: [u8; 4],
+    name: String,
+    version: [u8; 4],
     fn_pointers: ExtensionFnPointers
 }
 
 impl Extension {
-    pub fn new(instance: &Instance, mut store: &mut Store<()>) -> wasmtime::Result<Self> {
+    pub fn new(instance: &Instance, mut store: &mut Store<()>) -> anyhow::Result<Self> {
         let alloc_fn = instance.get_typed_func::<u32, i32>(&mut store, "__pyro_alloc")?;
         let dealloc_fn = instance.get_typed_func::<(i32, u32), ()>(&mut store, "__pyro_dealloc")?;
         let realloc_fn = instance.get_typed_func::<(i32, u32, u32), i32>(&mut store, "__pyro_realloc")?;
@@ -27,15 +28,15 @@ impl Extension {
             name_fn.call(&mut store, name_ptr)?;
 
             let linear_mem = instance.get_memory(&mut store, "memory").ok_or_else(||
-                wasmtime::Error::msg("Unable to retrieve extension name")
-                    .context("linear memory block 'memory' was not found")
+                anyhow!("Memory export 'memory' not found")
+                    .context("Failed to load extension name")
             )?;
 
             let mut utf8_buffer = vec![0; len as usize];
             linear_mem.read(&mut store, name_ptr as usize, &mut utf8_buffer)?;
 
-            // FIXME: Add proper error handling
-            let name = String::from_utf8(utf8_buffer).unwrap();
+            let name = String::from_utf8(utf8_buffer)
+                .context("Failed to read extension name")?;
 
             dealloc_fn.call(&mut store, (name_ptr, len))?;
 
@@ -53,5 +54,15 @@ impl Extension {
                 alloc_fn, dealloc_fn, realloc_fn
             }
         })
+    }
+
+    #[inline]
+    pub fn name(&self) -> &str {
+        &self.name
+    }
+
+    #[inline]
+    pub const fn version(&self) -> [u8; 4] {
+        self.version
     }
 }

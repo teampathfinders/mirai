@@ -50,7 +50,7 @@ impl ItemStack {
         // }
     }
 
-    pub fn serialize(&self, buffer: &mut MutableBuffer) -> Result<()> {
+    pub fn serialize(&self, buffer: &mut MutableBuffer) -> anyhow::Result<()> {
         buffer.write_var_u32(self.item_type.network_id)?;
         if self.item_type.network_id == 0 {
             // Air has no data.
@@ -108,7 +108,7 @@ impl ConnectedPacket for CreativeContent<'_> {
 }
 
 impl Serialize for CreativeContent<'_> {
-    fn serialize(&self, buffer: &mut MutableBuffer) -> Result<()> {
+    fn serialize(&self, buffer: &mut MutableBuffer) -> anyhow::Result<()> {
         buffer.write_var_u32(self.items.len() as u32)?;
         for item in self.items {
             item.serialize(buffer)?;

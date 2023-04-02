@@ -30,9 +30,9 @@ impl ArmSize {
 }
 
 impl TryFrom<&str> for ArmSize {
-    type Error = Error;
+    type Error = anyhow::Error;
 
-    fn try_from(value: &str) -> Result<Self> {
+    fn try_from(value: &str) -> anyhow::Result<Self> {
         Ok(match value {
             "slim" => Self::Slim,
             "wide" => Self::Wide,
@@ -88,9 +88,9 @@ impl PersonaPieceType {
 }
 
 impl TryFrom<&str> for PersonaPieceType {
-    type Error = Error;
+    type Error = anyhow::Error;
 
-    fn try_from(value: &str) -> Result<Self> {
+    fn try_from(value: &str) -> anyhow::Result<Self> {
         Ok(match value {
             "persona_skeleton" => Self::Skeleton,
             "persona_body" => Self::Body,
@@ -130,7 +130,7 @@ pub struct PersonaPiece {
 }
 
 impl PersonaPiece {
-    fn serialize(&self, buffer: &mut MutableBuffer) -> Result<()> {
+    fn serialize(&self, buffer: &mut MutableBuffer) -> anyhow::Result<()> {
         buffer.write_str(&self.piece_id)?;
         buffer.write_str(self.piece_type.name())?;
         buffer.write_str(&self.pack_id)?;
@@ -138,7 +138,7 @@ impl PersonaPiece {
         buffer.write_str(&self.product_id)
     }
 
-    fn deserialize(buffer: &mut SharedBuffer) -> Result<Self> {
+    fn deserialize(buffer: &mut SharedBuffer) -> anyhow::Result<Self> {
         let piece_id = buffer.read_str()?.to_owned();
         let piece_type = PersonaPieceType::try_from(buffer.read_str()?)?;
         let pack_id = buffer.read_str()?.to_owned();
@@ -167,7 +167,7 @@ pub struct PersonaPieceTint {
 }
 
 impl PersonaPieceTint {
-    fn serialize(&self, buffer: &mut MutableBuffer) -> Result<()> {
+    fn serialize(&self, buffer: &mut MutableBuffer) -> anyhow::Result<()> {
         buffer.write_str(self.piece_type.name())?;
 
         buffer.write_u32_le(self.colors.len() as u32)?;
@@ -178,7 +178,7 @@ impl PersonaPieceTint {
         Ok(())
     }
 
-    fn deserialize(buffer: &mut SharedBuffer) -> Result<Self> {
+    fn deserialize(buffer: &mut SharedBuffer) -> anyhow::Result<Self> {
         let piece_type = PersonaPieceType::try_from(buffer.read_str()?)?;
 
         let color_count = buffer.read_u32_le()?;
@@ -210,9 +210,9 @@ pub enum SkinAnimationType {
 }
 
 impl TryFrom<u32> for SkinAnimationType {
-    type Error = Error;
+    type Error = anyhow::Error;
 
-    fn try_from(value: u32) -> Result<Self> {
+    fn try_from(value: u32) -> anyhow::Result<Self> {
         Ok(match value {
             0 => Self::None,
             1 => Self::Head,
@@ -232,9 +232,9 @@ pub enum SkinExpressionType {
 }
 
 impl TryFrom<u32> for SkinExpressionType {
-    type Error = Error;
+    type Error = anyhow::Error;
 
-    fn try_from(value: u32) -> Result<Self> {
+    fn try_from(value: u32) -> anyhow::Result<Self> {
         Ok(match value {
             0 => Self::Linear,
             1 => Self::Blinking,
@@ -268,7 +268,7 @@ pub struct SkinAnimation {
 }
 
 impl SkinAnimation {
-    pub fn serialize(&self, buffer: &mut MutableBuffer) -> Result<()> {
+    pub fn serialize(&self, buffer: &mut MutableBuffer) -> anyhow::Result<()> {
         buffer.write_u32_le(self.image_width)?;
         buffer.write_u32_le(self.image_height)?;
 
@@ -280,7 +280,7 @@ impl SkinAnimation {
         buffer.write_u32_le(self.expression_type as u32)
     }
 
-    pub fn deserialize(buffer: &mut SharedBuffer) -> Result<Self> {
+    pub fn deserialize(buffer: &mut SharedBuffer) -> anyhow::Result<Self> {
         let image_width = buffer.read_u32_le()?;
         let image_height = buffer.read_u32_le()?;
         let image_size = buffer.read_var_u32()?;
@@ -386,7 +386,7 @@ mod base64 {
 
     const ENGINE: base64::engine::GeneralPurpose = base64::engine::general_purpose::STANDARD;
 
-    pub fn deserialize<'de, D: Deserializer<'de>>(d: D) -> Result<MutableBuffer, D::Error> {
+    pub fn deserialize<'de, D: Deserializer<'de>>(d: D) -> anyhow::Result<MutableBuffer, D::Error> {
         let base64 = String::deserialize(d)?;
 
         let bytes = ENGINE.decode(base64).map_err(serde::de::Error::custom)?;
@@ -401,7 +401,7 @@ mod base64_string {
 
     const ENGINE: base64::engine::GeneralPurpose = base64::engine::general_purpose::STANDARD;
 
-    pub fn deserialize<'de, D: Deserializer<'de>>(d: D) -> Result<String, D::Error> {
+    pub fn deserialize<'de, D: Deserializer<'de>>(d: D) -> anyhow::Result<String, D::Error> {
         let base64 = String::deserialize(d)?;
         let bytes = ENGINE.decode(base64).map_err(serde::de::Error::custom)?;
 
@@ -411,7 +411,7 @@ mod base64_string {
 
 impl Skin {
     /// Validates skin dimensions.
-    pub fn validate(&self) -> Result<()> {
+    pub fn validate(&self) -> anyhow::Result<()> {
         if self.image_width * self.image_height * 4
             != self.image_data.len() as u32
         {
@@ -444,7 +444,7 @@ impl Skin {
         Ok(())
     }
 
-    pub fn serialize(&self, buffer: &mut MutableBuffer) -> Result<()> {
+    pub fn serialize(&self, buffer: &mut MutableBuffer) -> anyhow::Result<()> {
         buffer.write_str(&self.skin_id)?;
         buffer.write_str(&self.playfab_id)?;
         buffer.write_str(&self.resource_patch)?;
@@ -489,7 +489,7 @@ impl Skin {
         buffer.write_bool(self.is_primary_user)
     }
 
-    pub fn deserialize(buffer: &mut SharedBuffer) -> Result<Self> {
+    pub fn deserialize(buffer: &mut SharedBuffer) -> anyhow::Result<Self> {
         let skin_id = buffer.read_str()?.to_owned();
         let playfab_id = buffer.read_str()?.to_owned();
         let resource_patch = buffer.read_str()?.to_owned();

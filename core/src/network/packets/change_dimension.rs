@@ -26,7 +26,7 @@ impl ConnectedPacket for ChangeDimension {
 }
 
 impl Serialize for ChangeDimension {
-    fn serialize(&self, buffer: &mut MutableBuffer) -> Result<()> {
+    fn serialize(&self, buffer: &mut MutableBuffer) -> anyhow::Result<()> {
         buffer.write_var_i32(self.dimension as i32)?;
         buffer.write_vecf(&self.position)?;
         buffer.write_bool(self.respawn)

@@ -16,9 +16,9 @@ pub enum SubChunkVersion {
 }
 
 impl TryFrom<u8> for SubChunkVersion {
-    type Error = Error;
+    type Error = anyhow::Error;
 
-    fn try_from(v: u8) -> Result<Self> {
+    fn try_from(v: u8) -> anyhow::Result<Self> {
         Ok(match v {
             1 => Self::Legacy,
             8 => Self::Limited,
@@ -32,7 +32,7 @@ mod block_version {
     use serde::{Deserialize, Deserializer, Serializer};
 
     #[inline]
-    pub fn deserialize<'de, D>(de: D) -> Result<Option<[u8; 4]>, D::Error>
+    pub fn deserialize<'de, D>(de: D) -> anyhow::Result<Option<[u8; 4]>, D::Error>
         where
             D: Deserializer<'de>
     {
@@ -41,7 +41,7 @@ mod block_version {
     }
 
     #[inline]
-    pub fn serialize<S>(v: &Option<[u8; 4]>, ser: S) -> Result<S::Ok, S::Error>
+    pub fn serialize<S>(v: &Option<[u8; 4]>, ser: S) -> anyhow::Result<S::Ok, S::Error>
         where
             S: Serializer
     {

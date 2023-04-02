@@ -9,13 +9,13 @@ use crate::network::{
 };
 
 impl Session {
-    pub fn process_interaction(&self, pk: MutableBuffer) -> Result<()> {
+    pub fn process_interaction(&self, pk: MutableBuffer) -> anyhow::Result<()> {
         let _request = Interact::deserialize(pk.snapshot())?;
 
         Ok(())
     }
 
-    pub fn process_move_player(&self, pk: MutableBuffer) -> Result<()> {
+    pub fn process_move_player(&self, pk: MutableBuffer) -> anyhow::Result<()> {
         let request = MovePlayer::deserialize(pk.snapshot())?;
         self.broadcast_others(request)?;
 

@@ -1,5 +1,7 @@
 #![allow(clippy::module_inception)]
 
+use std::fmt::{Debug, Display, Formatter};
+use anyhow::anyhow;
 pub use crate::de::{
     Deserializer, from_be_bytes, from_le_bytes, from_var_bytes,
 };
@@ -115,9 +117,9 @@ enum FieldType {
 }
 
 impl TryFrom<u8> for FieldType {
-    type Error = util::Error;
+    type Error = anyhow::Error;
 
-    fn try_from(v: u8) -> util::Result<Self> {
+    fn try_from(v: u8) -> anyhow::Result<Self> {
         const LAST_DISC: u8 = FieldType::LongArray as u8;
         if v > LAST_DISC {
             util::bail!(Other, "NBT field type discriminant out of range");
@@ -127,5 +129,59 @@ impl TryFrom<u8> for FieldType {
         // with a `u8` discriminant as its first field. Additionally, the raw discriminant is verified
         // to be in the enum's range.
         Ok(unsafe { std::mem::transmute::<u8, FieldType>(v) })
+    }
+}
+
+#[derive(Debug)]
+#[repr(transparent)]
+pub struct NbtError(anyhow::Error);
+
+impl From<anyhow::Error> for NbtError {
+    fn from(value: anyhow::Error) -> Self {
+        Self(value)
+    }
+}
+
+impl From<util::Error> for NbtError {
+    fn from(value: util::Error) -> Self {
+        Self(value.into())
+    }
+}
+
+impl From<std::io::Error> for NbtError {
+    fn from(value: std::io::Error) -> Self {
+        Self(value.into())
+    }
+}
+
+impl From<std::string::FromUtf8Error> for NbtError {
+    fn from(value: std::string::FromUtf8Error) -> Self {
+        Self(value.into())
+    }
+}
+
+impl From<std::str::Utf8Error> for NbtError {
+    fn from(value: std::str::Utf8Error) -> Self {
+        Self(value.into())
+    }
+}
+
+impl Display for NbtError {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        std::fmt::Display::fmt(&self.0, f)
+    }
+}
+
+impl std::error::Error for NbtError {}
+
+impl serde::de::Error for NbtError {
+    fn custom<T>(msg: T) -> Self where T: Display {
+        Self(anyhow!(msg.to_string()))
+    }
+}
+
+impl serde::ser::Error for NbtError {
+    fn custom<T>(msg: T) -> Self where T: Display {
+        Self(anyhow!(msg.to_string()))
     }
 }

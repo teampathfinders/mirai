@@ -1,3 +1,4 @@
+use anyhow::anyhow;
 use util::{bail, Error, Result};
 use util::bytes::{BinaryRead, SharedBuffer};
 use util::Deserialize;
@@ -26,9 +27,9 @@ pub enum CommandOriginType {
 }
 
 impl TryFrom<u32> for CommandOriginType {
-    type Error = Error;
+    type Error = anyhow::Error;
 
-    fn try_from(value: u32) -> Result<Self> {
+    fn try_from(value: u32) -> anyhow::Result<Self> {
         Ok(match value {
             0 => Self::Player,
             1 => Self::Block,
@@ -46,7 +47,7 @@ impl TryFrom<u32> for CommandOriginType {
             13 => Self::GameDirectorEntityServer,
             14 => Self::Script,
             15 => Self::Executor,
-            _ => bail!(Malformed, "Invalid command origin {value}"),
+            _ => return Err(anyhow!("Invalid command origin {value}")),
         })
     }
 }
@@ -72,7 +73,7 @@ impl<'a> ConnectedPacket for CommandRequest<'a> {
 }
 
 impl<'a> Deserialize<'a> for CommandRequest<'a> {
-    fn deserialize(mut buffer: SharedBuffer<'a>) -> Result<Self> {
+    fn deserialize(mut buffer: SharedBuffer<'a>) -> anyhow::Result<Self> {
         let command = buffer.read_str()?;
         let origin = CommandOriginType::try_from(buffer.read_var_u32()?)?;
         buffer.advance(16);

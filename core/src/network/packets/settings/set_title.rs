@@ -53,7 +53,7 @@ impl ConnectedPacket for SetTitle<'_> {
 }
 
 impl Serialize for SetTitle<'_> {
-    fn serialize(&self, buffer: &mut MutableBuffer) -> Result<()> {
+    fn serialize(&self, buffer: &mut MutableBuffer) -> anyhow::Result<()> {
         buffer.write_var_i32(self.action as i32)?;
         buffer.write_str(self.text)?;
         buffer.write_var_i32(self.fade_in_duration)?;

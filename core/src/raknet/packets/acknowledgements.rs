@@ -18,7 +18,7 @@ pub enum AckRecord {
 fn encode_records(
     buffer: &mut MutableBuffer,
     records: &[AckRecord],
-) -> Result<()> {
+) -> anyhow::Result<()> {
     buffer.write_i16_be(records.len() as i16)?;
     for record in records {
         match record {
@@ -38,7 +38,7 @@ fn encode_records(
 }
 
 /// Decodes a list of acknowledgement records.
-fn decode_records(mut buffer: SharedBuffer) -> Result<Vec<AckRecord>> {
+fn decode_records(mut buffer: SharedBuffer) -> anyhow::Result<Vec<AckRecord>> {
     let record_count = buffer.read_u16_be()?;
     let mut records = Vec::with_capacity(record_count as usize);
 
@@ -78,7 +78,7 @@ impl Ack {
 }
 
 impl Serialize for Ack {
-    fn serialize(&self, buffer: &mut MutableBuffer) -> Result<()> {
+    fn serialize(&self, buffer: &mut MutableBuffer) -> anyhow::Result<()> {
         buffer.write_u8(Self::ID)?;
 
         encode_records(buffer, &self.records)
@@ -86,7 +86,7 @@ impl Serialize for Ack {
 }
 
 impl Deserialize<'_> for Ack {
-    fn deserialize(mut buffer: SharedBuffer) -> Result<Self> {
+    fn deserialize(mut buffer: SharedBuffer) -> anyhow::Result<Self> {
         pyassert!(buffer.read_u8()? == Self::ID);
 
         let records = decode_records(buffer)?;
@@ -117,7 +117,7 @@ impl Nak {
 }
 
 impl Serialize for Nak {
-    fn serialize(&self, buffer: &mut MutableBuffer) -> Result<()> {
+    fn serialize(&self, buffer: &mut MutableBuffer) -> anyhow::Result<()> {
         buffer.write_u8(Self::ID)?;
 
         encode_records(buffer, &self.records)
@@ -125,7 +125,7 @@ impl Serialize for Nak {
 }
 
 impl Deserialize<'_> for Nak {
-    fn deserialize(mut buffer: SharedBuffer) -> Result<Self> {
+    fn deserialize(mut buffer: SharedBuffer) -> anyhow::Result<Self> {
         pyassert!(buffer.read_u8()? == Self::ID);
 
         let records = decode_records(buffer)?;

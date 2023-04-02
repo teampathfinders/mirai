@@ -35,7 +35,7 @@ pub struct EntityLink {
 }
 
 impl EntityLink {
-    pub fn encode(&self, buffer: &mut MutableBuffer) -> Result<()> {
+    pub fn encode(&self, buffer: &mut MutableBuffer) -> anyhow::Result<()> {
         buffer.write_var_i64(self.ridden_entity_id)?;
         buffer.write_var_i64(self.rider_entity_id)?;
         buffer.write_u8(self.link_type as u8)?;
@@ -89,7 +89,7 @@ pub struct AbilityLayer {
 }
 
 impl AbilityLayer {
-    pub fn encode(&self, buffer: &mut MutableBuffer) -> Result<()> {
+    pub fn encode(&self, buffer: &mut MutableBuffer) -> anyhow::Result<()> {
         buffer.write_u16_le(self.ability_type as u16)?;
         buffer.write_u32_le(self.abilities)?;
         buffer.write_u32_le(self.values)?;
@@ -112,7 +112,7 @@ pub struct AbilityData<'a> {
 }
 
 impl AbilityData<'_> {
-    pub fn encode(&self, buffer: &mut MutableBuffer) -> Result<()> {
+    pub fn encode(&self, buffer: &mut MutableBuffer) -> anyhow::Result<()> {
         buffer.write_i64_le(self.entity_id)?; // For some reason this isn't a varint64.
         buffer.write_u8(self.permission_level as u8)?;
         buffer.write_u8(self.command_permission_level as u8)?;
@@ -165,7 +165,7 @@ impl ConnectedPacket for AddPlayer<'_> {
 }
 
 impl Serialize for AddPlayer<'_> {
-    fn serialize(&self, buffer: &mut MutableBuffer) -> Result<()> {
+    fn serialize(&self, buffer: &mut MutableBuffer) -> anyhow::Result<()> {
         buffer.write_uuid_le(&self.uuid)?;
         buffer.write_str(self.username)?;
         buffer.write_var_u64(self.runtime_id)?;

@@ -63,7 +63,7 @@ impl<'a> SharedBuffer<'a> {
 }
 
 impl<'a> BinaryRead<'a> for &'a [u8] {
-    fn advance(&mut self, n: usize) -> Result<()> {
+    fn advance(&mut self, n: usize) -> anyhow::Result<()> {
         if self.len() < n {
             bail!(
                 UnexpectedEof,
@@ -91,7 +91,7 @@ impl<'a> BinaryRead<'a> for &'a [u8] {
     /// # Errors
     /// Returns [`UnexpectedEof`](Error::UnexpectedEof) if the read exceeds the buffer length.
     #[inline]
-    fn take_n(&mut self, n: usize) -> Result<&'a [u8]> {
+    fn take_n(&mut self, n: usize) -> anyhow::Result<&'a [u8]> {
         if self.len() < n {
             bail!(
                 UnexpectedEof,
@@ -117,7 +117,7 @@ impl<'a> BinaryRead<'a> for &'a [u8] {
     /// # Errors
     /// Returns [`UnexpectedEof`](Error::UnexpectedEof) if the read exceeds the buffer length.
     #[inline]
-    fn take_const<const N: usize>(&mut self) -> Result<[u8; N]> {
+    fn take_const<const N: usize>(&mut self) -> anyhow::Result<[u8; N]> {
         if self.len() < N {
             bail!(
                 UnexpectedEof,
@@ -141,7 +141,7 @@ impl<'a> BinaryRead<'a> for &'a [u8] {
     /// # Errors
     /// Returns [`UnexpectedEof`](Error::UnexpectedEof) if the read exceeds the buffer length.
     #[inline]
-    fn peek(&self, n: usize) -> Result<&[u8]> {
+    fn peek(&self, n: usize) -> anyhow::Result<&[u8]> {
         if self.len() < n {
             bail!(
                 UnexpectedEof,
@@ -164,7 +164,7 @@ impl<'a> BinaryRead<'a> for &'a [u8] {
     /// # Errors
     /// Returns [`UnexpectedEof`](Error::UnexpectedEof) if the read exceeds the buffer length.
     #[inline]
-    fn peek_const<const N: usize>(&self) -> Result<[u8; N]> {
+    fn peek_const<const N: usize>(&self) -> anyhow::Result<[u8; N]> {
         if self.len() < N {
             bail!(
                 UnexpectedEof,

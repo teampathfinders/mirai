@@ -523,7 +523,7 @@ impl<'a> PartialEq<&[i64]> for &'a mut Value {
 
 impl<'de> Deserialize<'de> for Value {
     #[inline]
-    fn deserialize<D>(deserializer: D) -> Result<Value, D::Error>
+    fn deserialize<D>(deserializer: D) -> anyhow::Result<Value, D::Error>
         where
             D: Deserializer<'de>,
     {
@@ -538,7 +538,7 @@ impl<'de> Deserialize<'de> for Value {
             }
 
             #[inline]
-            fn visit_bool<E>(self, v: bool) -> Result<Self::Value, E>
+            fn visit_bool<E>(self, v: bool) -> anyhow::Result<Self::Value, E>
                 where
                     E: de::Error
             {
@@ -546,7 +546,7 @@ impl<'de> Deserialize<'de> for Value {
             }
 
             #[inline]
-            fn visit_i8<E>(self, v: i8) -> Result<Self::Value, E>
+            fn visit_i8<E>(self, v: i8) -> anyhow::Result<Self::Value, E>
                 where
                     E: de::Error
             {
@@ -554,7 +554,7 @@ impl<'de> Deserialize<'de> for Value {
             }
 
             #[inline]
-            fn visit_i16<E>(self, v: i16) -> Result<Self::Value, E>
+            fn visit_i16<E>(self, v: i16) -> anyhow::Result<Self::Value, E>
                 where
                     E: de::Error,
             {
@@ -562,7 +562,7 @@ impl<'de> Deserialize<'de> for Value {
             }
 
             #[inline]
-            fn visit_i32<E>(self, v: i32) -> Result<Self::Value, E>
+            fn visit_i32<E>(self, v: i32) -> anyhow::Result<Self::Value, E>
                 where
                     E: de::Error,
             {
@@ -570,7 +570,7 @@ impl<'de> Deserialize<'de> for Value {
             }
 
             #[inline]
-            fn visit_i64<E>(self, v: i64) -> Result<Self::Value, E>
+            fn visit_i64<E>(self, v: i64) -> anyhow::Result<Self::Value, E>
                 where
                     E: de::Error
             {
@@ -578,7 +578,7 @@ impl<'de> Deserialize<'de> for Value {
             }
 
             #[inline]
-            fn visit_f32<E>(self, v: f32) -> Result<Self::Value, E>
+            fn visit_f32<E>(self, v: f32) -> anyhow::Result<Self::Value, E>
                 where
                     E: de::Error,
             {
@@ -586,7 +586,7 @@ impl<'de> Deserialize<'de> for Value {
             }
 
             #[inline]
-            fn visit_f64<E>(self, v: f64) -> Result<Self::Value, E>
+            fn visit_f64<E>(self, v: f64) -> anyhow::Result<Self::Value, E>
                 where
                     E: de::Error,
             {
@@ -594,7 +594,7 @@ impl<'de> Deserialize<'de> for Value {
             }
 
             #[inline]
-            fn visit_str<E>(self, v: &str) -> Result<Self::Value, E>
+            fn visit_str<E>(self, v: &str) -> anyhow::Result<Self::Value, E>
                 where
                     E: de::Error,
             {
@@ -602,7 +602,7 @@ impl<'de> Deserialize<'de> for Value {
             }
 
             #[inline]
-            fn visit_string<E>(self, v: String) -> Result<Self::Value, E>
+            fn visit_string<E>(self, v: String) -> anyhow::Result<Self::Value, E>
                 where
                     E: de::Error,
             {
@@ -610,7 +610,7 @@ impl<'de> Deserialize<'de> for Value {
             }
 
             #[inline]
-            fn visit_byte_buf<E>(self, v: Vec<u8>) -> Result<Self::Value, E>
+            fn visit_byte_buf<E>(self, v: Vec<u8>) -> anyhow::Result<Self::Value, E>
                 where
                     E: de::Error,
             {
@@ -618,7 +618,7 @@ impl<'de> Deserialize<'de> for Value {
             }
 
             #[inline]
-            fn visit_seq<A>(self, mut seq: A) -> Result<Self::Value, A::Error>
+            fn visit_seq<A>(self, mut seq: A) -> anyhow::Result<Self::Value, A::Error>
                 where
                     A: SeqAccess<'de>
             {
@@ -635,7 +635,7 @@ impl<'de> Deserialize<'de> for Value {
             }
 
             #[inline]
-            fn visit_map<A>(self, mut map: A) -> Result<Self::Value, A::Error>
+            fn visit_map<A>(self, mut map: A) -> anyhow::Result<Self::Value, A::Error>
                 where
                     A: MapAccess<'de>,
             {
@@ -657,7 +657,7 @@ impl<'de> Deserialize<'de> for Value {
 }
 
 #[inline]
-fn serialize_seq<T, S>(ser: S, seq: &[T]) -> Result<S::Ok, S::Error>
+fn serialize_seq<T, S>(ser: S, seq: &[T]) -> anyhow::Result<S::Ok, S::Error>
     where
         T: Serialize,
         S: Serializer,
@@ -670,7 +670,7 @@ fn serialize_seq<T, S>(ser: S, seq: &[T]) -> Result<S::Ok, S::Error>
 }
 
 impl Serialize for Value {
-    fn serialize<S>(&self, ser: S) -> Result<S::Ok, S::Error>
+    fn serialize<S>(&self, ser: S) -> anyhow::Result<S::Ok, S::Error>
         where
             S: Serializer,
     {

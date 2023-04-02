@@ -23,7 +23,7 @@ impl OpenConnectionRequest1 {
 }
 
 impl Deserialize<'_> for OpenConnectionRequest1 {
-    fn deserialize(mut buffer: SharedBuffer) -> Result<Self> {
+    fn deserialize(mut buffer: SharedBuffer) -> anyhow::Result<Self> {
         let mtu = buffer.len() as u16 + 28;
 
         pyassert!(buffer.read_u8()? == Self::ID);

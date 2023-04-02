@@ -5,7 +5,7 @@ use util::bytes::{BinaryRead, SharedBuffer};
 pub struct Biome3d {}
 
 impl Biome3d {
-    pub(crate) fn deserialize(mut buffer: SharedBuffer) -> Result<Self> {
+    pub(crate) fn deserialize(mut buffer: SharedBuffer) -> anyhow::Result<Self> {
         let index_size = buffer.read_u8()? >> 1;
         println!("is {index_size}");
 

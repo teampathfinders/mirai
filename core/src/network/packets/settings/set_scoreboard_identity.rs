@@ -47,7 +47,7 @@ impl ConnectedPacket for SetScoreboardIdentity {
 }
 
 impl Serialize for SetScoreboardIdentity {
-    fn serialize(&self, buffer: &mut MutableBuffer) -> Result<()> {
+    fn serialize(&self, buffer: &mut MutableBuffer) -> anyhow::Result<()> {
         buffer.write_u8(self.action as u8)?;
         match self.action {
             ScoreboardIdentityAction::Add => {

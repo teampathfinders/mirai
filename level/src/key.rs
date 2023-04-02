@@ -81,7 +81,7 @@ impl DatabaseKey {
         }
     }
 
-    pub(crate) fn serialize<W>(&self, mut writer: W) -> Result<()>
+    pub(crate) fn serialize<W>(&self, mut writer: W) -> anyhow::Result<()>
         where
             W: BinaryWrite
     {
@@ -100,7 +100,7 @@ impl DatabaseKey {
         Ok(())
     }
 
-    pub(crate) fn deserialize<'a, R>(mut reader: R) -> Result<Self>
+    pub(crate) fn deserialize<'a, R>(mut reader: R) -> anyhow::Result<Self>
         where
             R: BinaryRead<'a> + 'a,
     {
@@ -152,9 +152,9 @@ pub enum Dimension {
 }
 
 impl TryFrom<u32> for Dimension {
-    type Error = Error;
+    type Error = anyhow::Error;
 
-    fn try_from(value: u32) -> Result<Self> {
+    fn try_from(value: u32) -> anyhow::Result<Self> {
         Ok(match value {
             0 => Self::Overworld,
             1 => Self::Nether,

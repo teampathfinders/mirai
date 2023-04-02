@@ -16,7 +16,7 @@ impl ConnectedPacket for ChunkRadiusRequest {
 }
 
 impl Deserialize<'_> for ChunkRadiusRequest {
-    fn deserialize(mut buffer: SharedBuffer) -> Result<Self> {
+    fn deserialize(mut buffer: SharedBuffer) -> anyhow::Result<Self> {
         let radius = buffer.read_var_i32()?;
 
         Ok(Self { radius })

@@ -20,7 +20,7 @@ impl ConnectedPacket for UpdateFogStack<'_> {
 }
 
 impl Serialize for UpdateFogStack<'_> {
-    fn serialize(&self, buffer: &mut MutableBuffer) -> Result<()> {
+    fn serialize(&self, buffer: &mut MutableBuffer) -> anyhow::Result<()> {
         buffer.write_var_u32(self.stack.len() as u32)?;
         for fog in self.stack {
             buffer.write_str(fog)?;

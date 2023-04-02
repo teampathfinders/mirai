@@ -25,7 +25,7 @@ pub enum MessageType {
 }
 
 impl TryFrom<u8> for MessageType {
-    type Error = Error;
+    type Error = anyhow::Error;
 
     fn try_from(value: u8) -> std::result::Result<Self, Self::Error> {
         Ok(match value {
@@ -102,7 +102,7 @@ impl<'a> ConnectedPacket for TextMessage<'a> {
 }
 
 impl<'a> Serialize for TextMessage<'a> {
-    fn serialize(&self, buffer: &mut MutableBuffer) -> Result<()> {
+    fn serialize(&self, buffer: &mut MutableBuffer) -> anyhow::Result<()> {
         buffer.write_u8(self.message_type as u8)?;
         buffer.write_bool(self.needs_translation)?;
 
@@ -139,7 +139,7 @@ impl<'a> Serialize for TextMessage<'a> {
 }
 
 impl<'a> Deserialize<'a> for TextMessage<'a> {
-    fn deserialize(mut buffer: SharedBuffer<'a>) -> Result<Self> {
+    fn deserialize(mut buffer: SharedBuffer<'a>) -> anyhow::Result<Self> {
         let message_type = MessageType::try_from(buffer.read_u8()?)?;
         let needs_translation = buffer.read_bool()?;
         let message;

@@ -39,7 +39,7 @@ impl ConnectedPacket for AddPainting<'_> {
 }
 
 impl Serialize for AddPainting<'_> {
-    fn serialize(&self, buffer: &mut MutableBuffer) -> Result<()> {
+    fn serialize(&self, buffer: &mut MutableBuffer) -> anyhow::Result<()> {
         buffer.write_var_i64(self.runtime_id as i64)?; // Unique entity ID.
         buffer.write_var_u64(self.runtime_id)?;
         buffer.write_vecf(&self.position)?;

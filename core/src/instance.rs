@@ -3,6 +3,7 @@
 use std::net::{Ipv4Addr, Ipv6Addr, SocketAddrV4};
 use std::sync::Arc;
 use std::time::Duration;
+use anyhow::Context;
 
 use parking_lot::RwLock;
 use rand::Rng;
@@ -65,8 +66,9 @@ pub struct InstanceManager {
 
 impl InstanceManager {
     /// Creates a new server.
-    pub async fn run() -> Result<()> {
-        let extensions = Runtime::new().unwrap();
+    pub async fn run() -> anyhow::Result<()> {
+        let extensions = Runtime::new()
+            .context("Failed to start extension runtime")?;
 
         let (ipv4_port, _ipv6_port) = {
             let lock = SERVER_CONFIG.read();
@@ -218,7 +220,7 @@ impl InstanceManager {
         pk: RawPacket,
         server_guid: u64,
         metadata: &str,
-    ) -> Result<RawPacket> {
+    ) -> anyhow::Result<RawPacket> {
         let ping = UnconnectedPing::deserialize(pk.buf.snapshot())?;
         let pong = UnconnectedPong { time: ping.time, server_guid, metadata };
 
@@ -236,7 +238,7 @@ impl InstanceManager {
     fn process_open_connection_request1(
         mut pk: RawPacket,
         server_guid: u64,
-    ) -> Result<RawPacket> {
+    ) -> anyhow::Result<RawPacket> {
         let request = OpenConnectionRequest1::deserialize(pk.buf.snapshot())?;
 
         pk.buf.clear();
@@ -266,7 +268,7 @@ impl InstanceManager {
         udp_socket: Arc<UdpSocket>,
         sess_manager: Arc<SessionManager>,
         server_guid: u64,
-    ) -> Result<RawPacket> {
+    ) -> anyhow::Result<RawPacket> {
         let request = OpenConnectionRequest2::deserialize(pk.buf.snapshot())?;
         let reply = OpenConnectionReply2 {
             server_guid,

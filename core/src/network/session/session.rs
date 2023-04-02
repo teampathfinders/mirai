@@ -4,6 +4,7 @@ use std::sync::atomic::{
     AtomicBool, AtomicU64, Ordering,
 };
 use std::time::Instant;
+use anyhow::anyhow;
 
 use parking_lot::{Mutex, RwLock};
 use tokio::net::UdpSocket;
@@ -137,14 +138,14 @@ impl Session {
     }
 
     #[inline]
-    pub fn get_identity_data(&self) -> Result<&IdentityData> {
+    pub fn get_identity_data(&self) -> anyhow::Result<&IdentityData> {
         self.identity.get().ok_or_else(|| {
             error!(NotInitialized, "Identity data has not been initialised yet")
         })
     }
 
     #[inline]
-    pub fn get_user_data(&self) -> Result<&UserData> {
+    pub fn get_user_data(&self) -> anyhow::Result<&UserData> {
         self.user_data.get().ok_or_else(|| {
             error!(NotInitialized, "User data has not been initialised yet")
         })
@@ -172,10 +173,9 @@ impl Session {
 
     /// Retrieves the identity of the client.
     #[inline]
-    pub fn get_uuid(&self) -> Result<&Uuid> {
+    pub fn get_uuid(&self) -> anyhow::Result<&Uuid> {
         let identity = self.identity.get().ok_or_else(|| {
-            error!(
-                NotInitialized,
+            anyhow!(
                 "Identity ID data has not been initialised yet"
             )
         })?;
@@ -184,19 +184,18 @@ impl Session {
 
     /// Retrieves the XUID of the client.
     #[inline]
-    pub fn get_xuid(&self) -> Result<u64> {
+    pub fn get_xuid(&self) -> anyhow::Result<u64> {
         let identity = self.identity.get().ok_or_else(|| {
-            error!(NotInitialized, "XUID data has not been initialised yet")
+            anyhow!("XUID data has not been initialised yet")
         })?;
         Ok(identity.xuid)
     }
 
     /// Retrieves the display name of the client.
     #[inline]
-    pub fn get_display_name(&self) -> Result<&str> {
+    pub fn get_display_name(&self) -> anyhow::Result<&str> {
         let identity = self.identity.get().ok_or_else(|| {
-            error!(
-                NotInitialized,
+            anyhow!(
                 "Display name data has not been initialised yet"
             )
         })?;
@@ -204,17 +203,16 @@ impl Session {
     }
 
     #[inline]
-    pub fn get_encryptor(&self) -> Result<&Encryptor> {
+    pub fn get_encryptor(&self) -> anyhow::Result<&Encryptor> {
         self.encryptor.get().ok_or_else(|| {
-            error!(NotInitialized, "Encryption has not been initialised yet")
+            anyhow!("Encryption has not been initialised yet")
         })
     }
 
     #[inline]
-    pub fn get_device_os(&self) -> Result<DeviceOS> {
+    pub fn get_device_os(&self) -> anyhow::Result<DeviceOS> {
         let data = self.user_data.get().ok_or_else(|| {
-            error!(
-                NotInitialized,
+            anyhow!(
                 "Device OS data has not been initialised yet"
             )
         })?;
@@ -228,7 +226,7 @@ impl Session {
     }
 
     /// Kicks the session from the server, displaying the given menu.
-    pub fn kick<S: AsRef<str>>(&self, message: S) -> Result<()> {
+    pub fn kick<S: AsRef<str>>(&self, message: S) -> anyhow::Result<()> {
         let disconnect_packet = Disconnect {
             message: message.as_ref(),
             hide_message: false,

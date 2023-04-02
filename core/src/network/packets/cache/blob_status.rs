@@ -17,7 +17,7 @@ impl ConnectedPacket for CacheBlobStatus {
 }
 
 impl Deserialize<'_> for CacheBlobStatus {
-    fn deserialize(mut buffer: SharedBuffer) -> Result<Self> {
+    fn deserialize(mut buffer: SharedBuffer) -> anyhow::Result<Self> {
         let miss_count = buffer.read_var_u32()?;
         let hit_count = buffer.read_var_u32()?;
 

@@ -67,7 +67,7 @@ impl Encryptor {
     ///
     /// This shared secret is hashed using with SHA-256 and the salt contained in the JWT.
     /// The produced hash can then be used to encrypt packets.
-    pub fn new(client_public_key_der: &str) -> Result<(Self, String)> {
+    pub fn new(client_public_key_der: &str) -> anyhow::Result<(Self, String)> {
         // Generate a random salt using a cryptographically secure generator.
         let salt = (0..16)
             .map(|_| OsRng.sample(Alphanumeric) as char)
@@ -157,7 +157,7 @@ impl Encryptor {
     ///
     /// If the checksum does not match, a [`BadPacket`](util::ErrorKind::Malformed) error is returned.
     /// The client must be disconnected if this fails, because the data has probably been tampered with.
-    pub fn decrypt(&self, buffer: &mut MutableBuffer) -> Result<()> {
+    pub fn decrypt(&self, buffer: &mut MutableBuffer) -> anyhow::Result<()> {
         if buffer.len() < 9 {
             bail!(
                 Malformed,
@@ -187,7 +187,7 @@ impl Encryptor {
     }
 
     /// Encrypts a packet and appends the computed checksum.
-    pub fn encrypt(&self, buffer: &mut MutableBuffer) -> Result<()> {
+    pub fn encrypt(&self, buffer: &mut MutableBuffer) -> anyhow::Result<()> {
         let counter = self.send_counter.fetch_add(1, Ordering::SeqCst);
         // Exclude 0xfe header from checksum calculations.
         let checksum = self.compute_checksum(&buffer.as_ref()[1..], counter);

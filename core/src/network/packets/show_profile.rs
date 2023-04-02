@@ -20,7 +20,7 @@ impl<'a> ConnectedPacket for ShowProfile<'a> {
 }
 
 impl<'a> Serialize for ShowProfile<'a> {
-    fn serialize(&self, buffer: &mut MutableBuffer) -> Result<()> {
+    fn serialize(&self, buffer: &mut MutableBuffer) -> anyhow::Result<()> {
         buffer.write_str(self.xuid)
     }
 }

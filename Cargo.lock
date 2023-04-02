@@ -1385,6 +1385,7 @@ name = "pyro"
 version = "0.1.0"
 dependencies = [
  "aes",
+ "anyhow",
  "async-recursion",
  "base64 0.21.0",
  "clap",
@@ -1416,6 +1417,7 @@ dependencies = [
 name = "pyro-level"
 version = "0.1.0"
 dependencies = [
+ "anyhow",
  "cmake",
  "pyro-nbt",
  "pyro-util",
@@ -1428,6 +1430,7 @@ dependencies = [
 name = "pyro-nbt"
 version = "0.1.0"
 dependencies = [
+ "anyhow",
  "paste",
  "pyro-util",
  "serde",
@@ -1437,6 +1440,7 @@ dependencies = [
 name = "pyro-util"
 version = "0.1.0"
 dependencies = [
+ "anyhow",
  "base64 0.21.0",
  "cipher",
  "dashmap",

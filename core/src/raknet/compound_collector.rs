@@ -23,7 +23,7 @@ impl CompoundCollector {
     ///
     /// If this fragment makes the compound complete, all fragments will be merged
     /// and the completed packet will be returned.
-    pub fn insert(&self, frame: Frame) -> Result<Option<Frame>> {
+    pub fn insert(&self, frame: Frame) -> anyhow::Result<Option<Frame>> {
         // Save compound_id, because the frame will be moved.
         let compound_id = frame.compound_id;
         let is_completed = {

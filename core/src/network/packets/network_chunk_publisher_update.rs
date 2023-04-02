@@ -22,7 +22,7 @@ impl ConnectedPacket for NetworkChunkPublisherUpdate {
 }
 
 impl Serialize for NetworkChunkPublisherUpdate {
-    fn serialize(&self, buffer: &mut MutableBuffer) -> Result<()> {
+    fn serialize(&self, buffer: &mut MutableBuffer) -> anyhow::Result<()> {
         buffer.write_block_pos(&self.position)?;
         buffer.write_var_u32(self.radius)?;
 

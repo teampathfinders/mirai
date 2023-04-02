@@ -15,7 +15,7 @@ impl RequestNetworkSettings {
 }
 
 impl Deserialize<'_> for RequestNetworkSettings {
-    fn deserialize(mut buffer: SharedBuffer) -> Result<Self> {
+    fn deserialize(mut buffer: SharedBuffer) -> anyhow::Result<Self> {
         let protocol_version = buffer.read_u32_be()?;
 
         Ok(Self { protocol_version })

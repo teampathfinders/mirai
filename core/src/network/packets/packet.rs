@@ -40,7 +40,7 @@ impl<T: ConnectedPacket + Serialize> Packet<T> {
         self.header.serialized_size() + self.content.serialized_size()
     }
 
-    pub fn serialize(&self) -> Result<MutableBuffer> {
+    pub fn serialize(&self) -> anyhow::Result<MutableBuffer> {
         let expected_size = self.header.serialized_size() + self.content.serialized_size();
         let capacity = 5 + expected_size;
 

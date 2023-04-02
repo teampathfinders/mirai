@@ -14,9 +14,9 @@ pub enum InteractAction {
 }
 
 impl TryFrom<u8> for InteractAction {
-    type Error = Error;
+    type Error = anyhow::Error;
 
-    fn try_from(value: u8) -> Result<Self> {
+    fn try_from(value: u8) -> anyhow::Result<Self> {
         Ok(match value {
             3 => Self::LeaveVehicle,
             4 => Self::MouseOverEntity,
@@ -42,7 +42,7 @@ impl ConnectedPacket for Interact {
 }
 
 impl Deserialize<'_> for Interact {
-    fn deserialize(mut buffer: SharedBuffer) -> Result<Self> {
+    fn deserialize(mut buffer: SharedBuffer) -> anyhow::Result<Self> {
         let action = InteractAction::try_from(buffer.read_u8()?)?;
         let target_runtime_id = buffer.read_var_u64()?;
 

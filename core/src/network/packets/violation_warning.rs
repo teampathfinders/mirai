@@ -11,7 +11,7 @@ pub enum ViolationType {
 }
 
 impl TryFrom<i32> for ViolationType {
-    type Error = Error;
+    type Error = anyhow::Error;
 
     fn try_from(value: i32) -> std::result::Result<Self, Self::Error> {
         Ok(match value {
@@ -29,7 +29,7 @@ pub enum ViolationSeverity {
 }
 
 impl TryFrom<i32> for ViolationSeverity {
-    type Error = Error;
+    type Error = anyhow::Error;
 
     fn try_from(value: i32) -> std::result::Result<Self, Self::Error> {
         Ok(match value {
@@ -58,7 +58,7 @@ impl<'a> ConnectedPacket for ViolationWarning<'a> {
 }
 
 impl<'a> Deserialize<'a> for ViolationWarning<'a> {
-    fn deserialize(mut buffer: SharedBuffer<'a>) -> Result<Self> {
+    fn deserialize(mut buffer: SharedBuffer<'a>) -> anyhow::Result<Self> {
         let warning_type = ViolationType::try_from(buffer.read_var_i32()?)?;
         let severity = ViolationSeverity::try_from(buffer.read_var_i32()?)?;
         let packet_id = buffer.read_var_i32()?;

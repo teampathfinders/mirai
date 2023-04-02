@@ -23,7 +23,7 @@ impl ConnectionRequestAccepted {
 }
 
 impl Serialize for ConnectionRequestAccepted {
-    fn serialize(&self, buffer: &mut MutableBuffer) -> Result<()> {
+    fn serialize(&self, buffer: &mut MutableBuffer) -> anyhow::Result<()> {
         buffer.write_u8(Self::ID)?;
         buffer.write_addr(&self.client_address)?;
         buffer.write_u16_be(0)?; // System index

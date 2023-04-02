@@ -13,7 +13,7 @@ macro_rules! declare_primitive_fns {
         paste! {$(
             #[doc = concat!("Writes a little endian [`", stringify!($ty), "'] to the writer")]
             #[inline]
-            fn [<write_ $ty _le>](&mut self, v: $ty) -> $crate::Result<()> {
+            fn [<write_ $ty _le>](&mut self, v: $ty) -> anyhow::Result<()> {
                 let bytes = v.to_le_bytes();
                 self.write_all(&bytes)?;
                 Ok(())
@@ -21,7 +21,7 @@ macro_rules! declare_primitive_fns {
 
             #[doc = concat!("Writes a big endian [`", stringify!($ty), "'] to the writer")]
             #[inline]
-            fn [<write_ $ty _be>](&mut self, v: $ty) -> $crate::Result<()> {
+            fn [<write_ $ty _be>](&mut self, v: $ty) -> anyhow::Result<()> {
                 let bytes = v.to_be_bytes();
                 self.write_all(&bytes)?;
                 Ok(())
@@ -36,25 +36,25 @@ pub trait BinaryWrite: Write {
     );
 
     #[inline]
-    fn write_bool(&mut self, v: bool) -> Result<()> {
+    fn write_bool(&mut self, v: bool) -> anyhow::Result<()> {
         self.write_all(&[v as u8])?;
         Ok(())
     }
 
     #[inline]
-    fn write_u8(&mut self, v: u8) -> Result<()> {
+    fn write_u8(&mut self, v: u8) -> anyhow::Result<()> {
         self.write_all(&[v])?;
         Ok(())
     }
 
     #[inline]
-    fn write_i8(&mut self, v: i8) -> Result<()> {
+    fn write_i8(&mut self, v: i8) -> anyhow::Result<()> {
         self.write_all(&[v as u8])?;
         Ok(())
     }
 
     #[inline]
-    fn write_var_u32(&mut self, mut v: u32) -> Result<()> {
+    fn write_var_u32(&mut self, mut v: u32) -> anyhow::Result<()> {
         while v >= 0x80 {
             self.write_u8((v as u8) | 0x80)?;
             v >>= 7;
@@ -63,7 +63,7 @@ pub trait BinaryWrite: Write {
     }
 
     #[inline]
-    fn write_var_u64(&mut self, mut v: u64) -> Result<()> {
+    fn write_var_u64(&mut self, mut v: u64) -> anyhow::Result<()> {
         while v >= 0x80 {
             self.write_u8((v as u8) | 0x80)?;
             v >>= 7;
@@ -72,7 +72,7 @@ pub trait BinaryWrite: Write {
     }
 
     #[inline]
-    fn write_var_i32(&mut self, v: i32) -> Result<()> {
+    fn write_var_i32(&mut self, v: i32) -> anyhow::Result<()> {
         let mut ux = (v as u32) << 1;
         if v < 0 {
             ux = !ux;
@@ -82,7 +82,7 @@ pub trait BinaryWrite: Write {
     }
 
     #[inline]
-    fn write_var_i64(&mut self, v: i64) -> Result<()> {
+    fn write_var_i64(&mut self, v: i64) -> anyhow::Result<()> {
         let mut ux = (v as u64) << 1;
         if v < 0 {
             ux = !ux;
@@ -92,35 +92,35 @@ pub trait BinaryWrite: Write {
     }
 
     #[inline]
-    fn write_str(&mut self, v: &str) -> Result<()> {
+    fn write_str(&mut self, v: &str) -> anyhow::Result<()> {
         self.write_var_u32(v.len() as u32)?;
         self.write_all(v.as_bytes())?;
         Ok(())
     }
 
     #[inline]
-    fn write_uuid_le(&mut self, v: &Uuid) -> Result<()> {
+    fn write_uuid_le(&mut self, v: &Uuid) -> anyhow::Result<()> {
         let (most, least) = v.as_u64_pair();
         self.write_u64_le(most)?;
         self.write_u64_le(least)
     }
 
     #[inline]
-    fn write_uuid_be(&mut self, v: &Uuid) -> Result<()> {
+    fn write_uuid_be(&mut self, v: &Uuid) -> anyhow::Result<()> {
         let (most, least) = v.as_u64_pair();
         self.write_u64_be(most)?;
         self.write_u64_be(least)
     }
 
     #[inline]
-    fn write_block_pos(&mut self, v: &BlockPosition) -> Result<()> {
+    fn write_block_pos(&mut self, v: &BlockPosition) -> anyhow::Result<()> {
         self.write_var_i32(v.x)?;
         self.write_var_u32(v.y)?;
         self.write_var_i32(v.z)
     }
 
     #[inline]
-    fn write_veci<const N: usize>(&mut self, v: &Vector<i32, N>) -> Result<()> {
+    fn write_veci<const N: usize>(&mut self, v: &Vector<i32, N>) -> anyhow::Result<()> {
         for v in v.components() {
             self.write_var_i32(v)?;
         }
@@ -129,7 +129,7 @@ pub trait BinaryWrite: Write {
     }
 
     #[inline]
-    fn write_vecf<const N: usize>(&mut self, v: &Vector<f32, N>) -> Result<()> {
+    fn write_vecf<const N: usize>(&mut self, v: &Vector<f32, N>) -> anyhow::Result<()> {
         for v in v.components() {
             self.write_f32_le(v)?;
         }
@@ -137,7 +137,7 @@ pub trait BinaryWrite: Write {
         Ok(())
     }
 
-    fn write_addr(&mut self, v: &SocketAddr) -> Result<()> {
+    fn write_addr(&mut self, v: &SocketAddr) -> anyhow::Result<()> {
         match v {
             SocketAddr::V4(addr_v4) => {
                 self.write_u8(4)?;

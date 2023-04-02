@@ -14,9 +14,9 @@ pub enum Difficulty {
 }
 
 impl TryFrom<i32> for Difficulty {
-    type Error = Error;
+    type Error = anyhow::Error;
 
-    fn try_from(value: i32) -> Result<Self> {
+    fn try_from(value: i32) -> anyhow::Result<Self> {
         Ok(match value {
             0 => Self::Peaceful,
             1 => Self::Easy,
@@ -45,13 +45,13 @@ impl ConnectedPacket for SetDifficulty {
 }
 
 impl Serialize for SetDifficulty {
-    fn serialize(&self, buffer: &mut MutableBuffer) -> Result<()> {
+    fn serialize(&self, buffer: &mut MutableBuffer) -> anyhow::Result<()> {
         buffer.write_var_i32(self.difficulty as i32)
     }
 }
 
 impl Deserialize<'_> for SetDifficulty {
-    fn deserialize(mut buffer: SharedBuffer) -> Result<Self> {
+    fn deserialize(mut buffer: SharedBuffer) -> anyhow::Result<Self> {
         let difficulty = Difficulty::try_from(buffer.read_var_i32()?)?;
 
         Ok(Self { difficulty })

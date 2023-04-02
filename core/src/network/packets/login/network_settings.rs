@@ -56,7 +56,7 @@ impl ConnectedPacket for NetworkSettings {
 }
 
 impl Serialize for NetworkSettings {
-    fn serialize(&self, buffer: &mut MutableBuffer) -> Result<()> {
+    fn serialize(&self, buffer: &mut MutableBuffer) -> anyhow::Result<()> {
         buffer.write_u16_be(self.compression_threshold)?;
         buffer.write_u16_be(self.compression_algorithm as u16)?;
         buffer.write_bool(self.client_throttle.enabled)?;

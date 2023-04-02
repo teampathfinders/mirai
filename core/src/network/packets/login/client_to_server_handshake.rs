@@ -17,7 +17,7 @@ impl ConnectedPacket for ClientToServerHandshake {
 }
 
 impl Deserialize<'_> for ClientToServerHandshake {
-    fn deserialize(_buffer: SharedBuffer) -> Result<Self> {
+    fn deserialize(_buffer: SharedBuffer) -> anyhow::Result<Self> {
         Ok(Self)
     }
 }

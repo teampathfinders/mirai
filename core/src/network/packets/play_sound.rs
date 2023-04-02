@@ -27,7 +27,7 @@ impl<'a> ConnectedPacket for PlaySound<'a> {
 }
 
 impl<'a> Serialize for PlaySound<'a> {
-    fn serialize(&self, buffer: &mut MutableBuffer) -> Result<()> {
+    fn serialize(&self, buffer: &mut MutableBuffer) -> anyhow::Result<()> {
         buffer.write_str(self.name)?;
         buffer.write_veci(&self.position)?;
         buffer.write_f32_le(self.volume)?;

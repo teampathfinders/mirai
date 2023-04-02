@@ -116,9 +116,9 @@ pub enum LevelEventType {
 }
 
 impl TryFrom<i32> for LevelEventType {
-    type Error = Error;
+    type Error = anyhow::Error;
 
-    fn try_from(value: i32) -> Result<Self> {
+    fn try_from(value: i32) -> anyhow::Result<Self> {
         Ok(match value {
             1000 => Self::SoundClick,
             1001 => Self::SoundClickFail,
@@ -250,7 +250,7 @@ impl ConnectedPacket for LevelEvent {
 }
 
 impl Serialize for LevelEvent {
-    fn serialize(&self, buffer: &mut MutableBuffer) -> Result<()> {
+    fn serialize(&self, buffer: &mut MutableBuffer) -> anyhow::Result<()> {
         buffer.write_var_i32(self.event_type as i32)?;
         buffer.write_vecf(&self.position)?;
         buffer.write_var_i32(self.event_data)
@@ -258,7 +258,7 @@ impl Serialize for LevelEvent {
 }
 
 impl Deserialize<'_> for LevelEvent {
-    fn deserialize(mut buffer: SharedBuffer) -> Result<Self> {
+    fn deserialize(mut buffer: SharedBuffer) -> anyhow::Result<Self> {
         let event_type = LevelEventType::try_from(buffer.read_var_i32()?)?;
         let position = buffer.read_vecf()?;
         let event_data = buffer.read_var_i32()?;
