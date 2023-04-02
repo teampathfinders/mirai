@@ -3,6 +3,7 @@
 mod cache;
 mod extension;
 mod runtime;
+mod stdio;
 
 pub use cache::*;
 pub use extension::*;
