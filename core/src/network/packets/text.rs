@@ -25,7 +25,7 @@ pub enum MessageType {
 }
 
 impl TryFrom<u8> for MessageType {
-    type Error = Error;
+    type Error = anyhow::Error;
 
     fn try_from(value: u8) -> std::result::Result<Self, Self::Error> {
         Ok(match value {

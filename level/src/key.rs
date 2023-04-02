@@ -152,7 +152,7 @@ pub enum Dimension {
 }
 
 impl TryFrom<u32> for Dimension {
-    type Error = Error;
+    type Error = anyhow::Error;
 
     fn try_from(value: u32) -> anyhow::Result<Self> {
         Ok(match value {

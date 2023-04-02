@@ -13,7 +13,7 @@ pub enum MovementMode {
 }
 
 impl TryFrom<u8> for MovementMode {
-    type Error = Error;
+    type Error = anyhow::Error;
 
     fn try_from(value: u8) -> anyhow::Result<Self> {
         Ok(match value {
@@ -36,7 +36,7 @@ pub enum TeleportCause {
 }
 
 impl TryFrom<i32> for TeleportCause {
-    type Error = Error;
+    type Error = anyhow::Error;
 
     fn try_from(value: i32) -> anyhow::Result<Self> {
         Ok(match value {

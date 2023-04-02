@@ -157,13 +157,15 @@ pub fn to_var_bytes<T>(v: &T) -> anyhow::Result<MutableBuffer>
 /// # }
 /// ```
 #[inline]
-pub fn to_be_bytes_in<W, T>(w: W, v: &T) -> Result<(), NbtError>
+pub fn to_be_bytes_in<W, T>(w: W, v: &T) -> anyhow::Result<()>
     where
         T: ?Sized + Serialize,
         W: BinaryWrite
 {
     let mut ser = Serializer::<W, BigEndian>::new(w);
-    v.serialize(&mut ser)
+    v.serialize(&mut ser)?;
+
+    Ok(())
 }
 
 /// Serializes the given data, into the given writer, in little endian format.
@@ -188,13 +190,15 @@ pub fn to_be_bytes_in<W, T>(w: W, v: &T) -> Result<(), NbtError>
 /// # }
 /// ```
 #[inline]
-pub fn to_le_bytes_in<W, T>(w: W, v: &T) -> Result<(), NbtError>
+pub fn to_le_bytes_in<W, T>(w: W, v: &T) -> anyhow::Result<()>
     where
         T: ?Sized + Serialize,
         W: BinaryWrite,
 {
     let mut ser = Serializer::<W, LittleEndian>::new(w);
-    v.serialize(&mut ser)
+    v.serialize(&mut ser)?;
+
+    Ok(())
 }
 
 /// Serializes the given data, into the given writer, in variable format.
@@ -219,13 +223,15 @@ pub fn to_le_bytes_in<W, T>(w: W, v: &T) -> Result<(), NbtError>
 /// # }
 /// ```
 #[inline]
-pub fn to_var_bytes_in<W, T>(w: W, value: &T) -> Result<(), NbtError>
+pub fn to_var_bytes_in<W, T>(w: W, value: &T) -> anyhow::Result<()>
     where
         T: ?Sized + Serialize,
         W: BinaryWrite
 {
     let mut ser = Serializer::<W, Variable>::new(w);
-    value.serialize(&mut ser)
+    value.serialize(&mut ser)?;
+
+    Ok(())
 }
 
 /// NBT data serialiser.

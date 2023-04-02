@@ -4,6 +4,7 @@ use std::sync::atomic::{
     AtomicBool, AtomicU64, Ordering,
 };
 use std::time::Instant;
+use anyhow::anyhow;
 
 use parking_lot::{Mutex, RwLock};
 use tokio::net::UdpSocket;
@@ -174,8 +175,7 @@ impl Session {
     #[inline]
     pub fn get_uuid(&self) -> anyhow::Result<&Uuid> {
         let identity = self.identity.get().ok_or_else(|| {
-            error!(
-                NotInitialized,
+            anyhow!(
                 "Identity ID data has not been initialised yet"
             )
         })?;
@@ -186,7 +186,7 @@ impl Session {
     #[inline]
     pub fn get_xuid(&self) -> anyhow::Result<u64> {
         let identity = self.identity.get().ok_or_else(|| {
-            error!(NotInitialized, "XUID data has not been initialised yet")
+            anyhow!("XUID data has not been initialised yet")
         })?;
         Ok(identity.xuid)
     }
@@ -195,8 +195,7 @@ impl Session {
     #[inline]
     pub fn get_display_name(&self) -> anyhow::Result<&str> {
         let identity = self.identity.get().ok_or_else(|| {
-            error!(
-                NotInitialized,
+            anyhow!(
                 "Display name data has not been initialised yet"
             )
         })?;
@@ -206,15 +205,14 @@ impl Session {
     #[inline]
     pub fn get_encryptor(&self) -> anyhow::Result<&Encryptor> {
         self.encryptor.get().ok_or_else(|| {
-            error!(NotInitialized, "Encryption has not been initialised yet")
+            anyhow!("Encryption has not been initialised yet")
         })
     }
 
     #[inline]
     pub fn get_device_os(&self) -> anyhow::Result<DeviceOS> {
         let data = self.user_data.get().ok_or_else(|| {
-            error!(
-                NotInitialized,
+            anyhow!(
                 "Device OS data has not been initialised yet"
             )
         })?;

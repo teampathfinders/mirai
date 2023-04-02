@@ -11,7 +11,7 @@ pub enum ViolationType {
 }
 
 impl TryFrom<i32> for ViolationType {
-    type Error = Error;
+    type Error = anyhow::Error;
 
     fn try_from(value: i32) -> std::result::Result<Self, Self::Error> {
         Ok(match value {
@@ -29,7 +29,7 @@ pub enum ViolationSeverity {
 }
 
 impl TryFrom<i32> for ViolationSeverity {
-    type Error = Error;
+    type Error = anyhow::Error;
 
     fn try_from(value: i32) -> std::result::Result<Self, Self::Error> {
         Ok(match value {

@@ -11,7 +11,7 @@ pub enum SimpleEvent {
 }
 
 impl TryFrom<i16> for SimpleEvent {
-    type Error = Error;
+    type Error = anyhow::Error;
 
     fn try_from(value: i16) -> anyhow::Result<Self> {
         Ok(match value {

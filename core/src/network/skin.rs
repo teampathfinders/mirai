@@ -30,7 +30,7 @@ impl ArmSize {
 }
 
 impl TryFrom<&str> for ArmSize {
-    type Error = Error;
+    type Error = anyhow::Error;
 
     fn try_from(value: &str) -> anyhow::Result<Self> {
         Ok(match value {
@@ -88,7 +88,7 @@ impl PersonaPieceType {
 }
 
 impl TryFrom<&str> for PersonaPieceType {
-    type Error = Error;
+    type Error = anyhow::Error;
 
     fn try_from(value: &str) -> anyhow::Result<Self> {
         Ok(match value {
@@ -210,7 +210,7 @@ pub enum SkinAnimationType {
 }
 
 impl TryFrom<u32> for SkinAnimationType {
-    type Error = Error;
+    type Error = anyhow::Error;
 
     fn try_from(value: u32) -> anyhow::Result<Self> {
         Ok(match value {
@@ -232,7 +232,7 @@ pub enum SkinExpressionType {
 }
 
 impl TryFrom<u32> for SkinExpressionType {
-    type Error = Error;
+    type Error = anyhow::Error;
 
     fn try_from(value: u32) -> anyhow::Result<Self> {
         Ok(match value {

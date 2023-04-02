@@ -28,7 +28,7 @@ pub enum Reliability {
 
 /// Converts a byte to reliability.
 impl TryFrom<u8> for Reliability {
-    type Error = Error;
+    type Error = anyhow::Error;
 
     fn try_from(value: u8) -> std::result::Result<Self, Self::Error> {
         Ok(match value {

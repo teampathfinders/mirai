@@ -57,7 +57,7 @@ impl Extension {
     }
 
     #[inline]
-    pub const fn name(&self) -> &str {
+    pub fn name(&self) -> &str {
         &self.name
     }
 

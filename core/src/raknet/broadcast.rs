@@ -1,4 +1,5 @@
 use std::num::NonZeroU64;
+use anyhow::anyhow;
 
 use util::{error, Result, Serialize};
 use util::bytes::ArcBuffer;
@@ -66,7 +67,7 @@ impl Session {
             pk,
             Some(
                 NonZeroU64::new(self.get_xuid()?)
-                    .ok_or_else(|| error!(NotInitialized, "XUID was 0"))?,
+                    .ok_or_else(|| anyhow!("XUID was 0"))?,
             ),
         )?)?;
 

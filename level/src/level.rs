@@ -3,6 +3,7 @@
 use std::io::{Read, SeekFrom};
 use std::fs::File;
 use std::path::Path;
+use anyhow::anyhow;
 use util::{bail, Error, error, Result};
 use util::bytes::{BinaryRead, BinaryWrite};
 use crate::database::Database;
@@ -28,7 +29,7 @@ impl Level {
                 .as_ref()
                 .join("db")
                 .to_str()
-                .ok_or_else(|| error!(Malformed, "Invalid level path"))?
+                .ok_or_else(|| anyhow!("Invalid level path"))?
         )?;
 
         Ok(Level {

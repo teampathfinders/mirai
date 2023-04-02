@@ -5,6 +5,7 @@ use std::{
     os::raw::{c_char, c_int},
 };
 use std::ptr::NonNull;
+use anyhow::anyhow;
 
 use util::{error, Error, Result};
 
@@ -298,7 +299,7 @@ unsafe impl Send for Database {}
 unsafe impl Sync for Database {}
 
 /// Translates an error received from the FFI, into an [`Error`].
-unsafe fn translate_ffi_error(result: ffi::LevelResult) -> Error {
+unsafe fn translate_ffi_error(result: ffi::LevelResult) -> anyhow::Error {
     debug_assert_eq!(result.is_success, 0);
 
     // SAFETY: This string is guaranteed to have a null termination character,
@@ -311,5 +312,5 @@ unsafe fn translate_ffi_error(result: ffi::LevelResult) -> Error {
     // It is therefore safe to deallocate.
     ffi::level_deallocate_array(result.data as *mut c_char);
 
-    error!(DatabaseFailure, str.to_string())
+    anyhow!(str)
 }

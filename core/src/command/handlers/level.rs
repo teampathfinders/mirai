@@ -1,3 +1,4 @@
+use anyhow::anyhow;
 use util::{error, pyassert, Result};
 
 use crate::{command::ParsedCommand, level::LevelManager, network::GameRule};
@@ -8,7 +9,7 @@ impl LevelManager {
 
         let rule_name = command.parameters.get("rule")
             // Rule parameter should exist, but this is here just to be sure.
-            .ok_or_else(|| error!(Malformed, "Missing game rule name."))?
+            .ok_or_else(|| anyhow!("Missing game rule name"))?
             .read_str()?;
 
         // Command has value parameter, store the game rule value.

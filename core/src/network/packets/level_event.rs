@@ -116,7 +116,7 @@ pub enum LevelEventType {
 }
 
 impl TryFrom<i32> for LevelEventType {
-    type Error = Error;
+    type Error = anyhow::Error;
 
     fn try_from(value: i32) -> anyhow::Result<Self> {
         Ok(match value {

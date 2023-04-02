@@ -14,7 +14,7 @@ pub enum CreditsStatus {
 }
 
 impl TryFrom<i32> for CreditsStatus {
-    type Error = Error;
+    type Error = anyhow::Error;
 
     fn try_from(value: i32) -> anyhow::Result<Self> {
         Ok(match value {

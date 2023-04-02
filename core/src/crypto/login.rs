@@ -1,3 +1,4 @@
+use anyhow::anyhow;
 use base64::Engine;
 use jsonwebtoken::{Algorithm, DecodingKey, Validation};
 use p384::pkcs8::spki;
@@ -98,7 +99,7 @@ fn parse_initial_token(token: &str) -> anyhow::Result<String> {
     // Decode JWT header to get X5U.
     let header = jsonwebtoken::decode_header(token)?;
     let base64 = header.x5u.ok_or_else(|| {
-        error!(Malformed, "Missing X.509 certificate URL (x5u)")
+        anyhow!("Missing X.509 certificate URL (x5u)")
     })?;
 
     let bytes = BASE64_ENGINE.decode(base64)?;

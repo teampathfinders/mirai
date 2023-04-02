@@ -16,7 +16,7 @@ pub enum SubChunkVersion {
 }
 
 impl TryFrom<u8> for SubChunkVersion {
-    type Error = Error;
+    type Error = anyhow::Error;
 
     fn try_from(v: u8) -> anyhow::Result<Self> {
         Ok(match v {

@@ -1,3 +1,4 @@
+use anyhow::anyhow;
 use util::{bail, Error, Result};
 use util::bytes::{BinaryRead, SharedBuffer};
 use util::Deserialize;
@@ -26,7 +27,7 @@ pub enum CommandOriginType {
 }
 
 impl TryFrom<u32> for CommandOriginType {
-    type Error = Error;
+    type Error = anyhow::Error;
 
     fn try_from(value: u32) -> anyhow::Result<Self> {
         Ok(match value {
@@ -46,7 +47,7 @@ impl TryFrom<u32> for CommandOriginType {
             13 => Self::GameDirectorEntityServer,
             14 => Self::Script,
             15 => Self::Executor,
-            _ => bail!(Malformed, "Invalid command origin {value}"),
+            _ => return Err(anyhow!("Invalid command origin {value}")),
         })
     }
 }
