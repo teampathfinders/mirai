@@ -2,6 +2,7 @@ use std::fmt::{self, Debug, Formatter};
 
 use anyhow::{anyhow, Context};
 use wasmtime::{Instance, Store, TypedFunc};
+use wasmtime_wasi::WasiCtx;
 
 /// Contains commonly used functions.
 struct ExtensionFnPointers {
@@ -51,7 +52,7 @@ impl Extension {
     ///
     /// Secondly, the extension version is simply retrieved using `__pyro_ext_version`.
     /// The version is encoded as an unsigned little-endian 32-bit integer. Each of the bytes in the integer
-    /// is a component of the 4-component SemVer version.
+    /// is a component of the 4-component Semver version.
     ///
     /// # Errors
     ///
@@ -61,7 +62,7 @@ impl Extension {
     /// # Panics
     ///
     /// This function panics if the instance was not created with the specified store.
-    pub fn new(instance: Instance, mut store: &mut Store<()>) -> anyhow::Result<Self> {
+    pub fn new(instance: Instance, mut store: &mut Store<WasiCtx>) -> anyhow::Result<Self> {
         let alloc_fn = instance.get_typed_func::<u32, i32>(&mut store, "__pyro_alloc")?;
         let dealloc_fn = instance.get_typed_func::<(i32, u32), ()>(&mut store, "__pyro_dealloc")?;
         let realloc_fn = instance.get_typed_func::<(i32, u32, u32), i32>(&mut store, "__pyro_realloc")?;
@@ -90,8 +91,11 @@ impl Extension {
 
         let version = {
             let version_fn = instance.get_typed_func::<(), u32>(&mut store, "__pyro_ext_version")?;
-            version_fn.call(store, ())?.to_le_bytes()
+            version_fn.call(&mut store, ())?.to_le_bytes()
         };
+
+        let on_enable_fn = instance.get_typed_func::<(), ()>(&mut store, "on_enable")?;
+        on_enable_fn.call(store, ())?;
 
         Ok(Self {
             name,
@@ -116,17 +120,22 @@ impl Extension {
     pub const fn version(&self) -> [u8; 4] {
         self.version
     }
+    
+    /// Returns the version as a string in x.y.z format.
+    #[inline]
+    pub fn version_string(&self) -> String {
+        // Iterator::intersperse is unstable, so this is a manual implementation.
+        let mut version = self.version.iter().map(|n| n.to_string() + ".").collect::<String>();
+        version.truncate(version.len() - 1);
+        version
+    }
 }
 
 impl Debug for Extension {
     fn fmt(&self, fmt: &mut Formatter) -> fmt::Result {
-        // Iterator::intersperse is unstable, so this is a manual implementation.
-        let mut version = self.version.iter().map(|n| n.to_string() + ".").collect::<String>();
-        version.truncate(version.len() - 1);
-
         fmt.debug_struct("Extension")
             .field("name", &self.name)
-            .field("version", &version)
+            .field("version", &self.version)
             .finish_non_exhaustive()
     }
 }

@@ -1,10 +1,8 @@
 use std::sync::atomic::{AtomicU16, Ordering};
 
-use clap::{crate_authors, crate_description, Command};
 use tokio::runtime;
 
 use pyro::instance::InstanceManager;
-use util::Result;
 
 fn main() -> anyhow::Result<()> {
     init_logging();

@@ -1,11 +1,11 @@
 //! The runtime and compiler used for server extensions.
 
 mod cache;
-mod ext;
+mod extension;
 mod runtime;
 
 pub use cache::*;
-pub use ext::*;
+pub use extension::*;
 pub use runtime::*;
 
 /// Location of the WebAssembly modules.
