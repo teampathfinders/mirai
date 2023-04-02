@@ -31,7 +31,7 @@ use crate::raknet::OpenConnectionRequest2;
 use crate::raknet::RAKNET_VERSION;
 use crate::raknet::RawPacket;
 use crate::config::SERVER_CONFIG;
-use crate::extension::VirtualMachine;
+use crate::extension::Runtime;
 use crate::network::SessionManager;
 use crate::raknet::UnconnectedPing;
 use crate::raknet::UnconnectedPong;
@@ -60,13 +60,13 @@ pub struct InstanceManager {
     /// This is to make sure that the world has been saved and safely shut down before shutting down the server.
     level_notifier: Receiver<()>,
     /// Virtual machine that runs and compiles the extensions.
-    extensions: VirtualMachine
+    extensions: Runtime
 }
 
 impl InstanceManager {
     /// Creates a new server.
     pub async fn run() -> Result<()> {
-        let extensions = VirtualMachine::new()?;
+        let extensions = Runtime::new().unwrap();
 
         let (ipv4_port, _ipv6_port) = {
             let lock = SERVER_CONFIG.read();

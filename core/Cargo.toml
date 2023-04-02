@@ -43,5 +43,4 @@ aes = "0.8.2"
 serde_repr = "0.1.11"
 uuid = { version = "1.3.0", features = ["serde"], default-features = false }
 clap = { version = "4.2.1", features = ["cargo", "std"], default-features = false }
-wasmer = "3.1.1"
-wasmer-cache = "3.1.1"
+wasmtime = { version = "7.0.0", features = ["cranelift", "parallel-compilation"], default-features = false }
