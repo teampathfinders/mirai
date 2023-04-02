@@ -154,6 +154,18 @@ impl From<std::io::Error> for NbtError {
     }
 }
 
+impl From<std::string::FromUtf8Error> for NbtError {
+    fn from(value: std::string::FromUtf8Error) -> Self {
+        Self(value.into())
+    }
+}
+
+impl From<std::str::Utf8Error> for NbtError {
+    fn from(value: std::str::Utf8Error) -> Self {
+        Self(value.into())
+    }
+}
+
 impl Display for NbtError {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         std::fmt::Display::fmt(&self.0, f)

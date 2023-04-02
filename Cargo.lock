@@ -1417,6 +1417,7 @@ dependencies = [
 name = "pyro-level"
 version = "0.1.0"
 dependencies = [
+ "anyhow",
  "cmake",
  "pyro-nbt",
  "pyro-util",
