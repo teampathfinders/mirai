@@ -15,7 +15,7 @@ impl CompilationCache {
         }
     }
 
-    pub fn load<I>(&self, engine: &Engine, file_name: I) -> wasmtime::Result<Module>
+    pub fn load<I>(&self, engine: &Engine, file_name: I) -> anyhow::Result<Module>
     where
         I: for<'a> Into<&'a Path>
     {

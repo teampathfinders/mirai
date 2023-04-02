@@ -6,12 +6,12 @@ use tokio::runtime;
 use pyro::instance::InstanceManager;
 use util::Result;
 
-fn main() -> Result<()> {
+fn main() -> anyhow::Result<()> {
     init_logging();
     init_runtime()
 }
 
-fn init_runtime() -> Result<()> {
+fn init_runtime() -> anyhow::Result<()> {
     let runtime = runtime::Builder::new_multi_thread()
         .enable_io()
         .enable_time()

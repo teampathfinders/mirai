@@ -3,6 +3,7 @@
 use std::net::{Ipv4Addr, Ipv6Addr, SocketAddrV4};
 use std::sync::Arc;
 use std::time::Duration;
+use anyhow::Context;
 
 use parking_lot::RwLock;
 use rand::Rng;
@@ -65,8 +66,9 @@ pub struct InstanceManager {
 
 impl InstanceManager {
     /// Creates a new server.
-    pub async fn run() -> Result<()> {
-        let extensions = Runtime::new().unwrap();
+    pub async fn run() -> anyhow::Result<()> {
+        let extensions = Runtime::new()
+            .context("Failed to start extension runtime")?;
 
         let (ipv4_port, _ipv6_port) = {
             let lock = SERVER_CONFIG.read();
