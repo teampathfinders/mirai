@@ -7,7 +7,7 @@ use crate::extension::{ASSEMBLY_DIRECTORY, CACHE_DIRECTORY, CompilationCache, Ex
 pub struct Runtime {
     engine: Engine,
     store: Store<()>,
-    modules: Vec<Extension>
+    extensions: Vec<Extension>
 }
 
 impl Runtime {
@@ -34,16 +34,23 @@ impl Runtime {
             })
             .collect::<Vec<_>>();
 
-        let mut modules = Vec::with_capacity(module_paths.len());
+        let mut store = Store::new(&engine, ());
+        let mut extensions = Vec::with_capacity(module_paths.len());
         for path in &module_paths {
             let module = cache.load(&engine, path)
                 .context(format!("Failed to compile extension {path}"))?;
 
-            modules.push(module);
+            let instance = Instance::new(&mut store, &module, &[])?;
+            let extension = Extension::new(instance, &mut store)?;
+
+            extensions.push(extension);
         }
 
-        let mut store = Store::new(&engine, ());
+        dbg!(&extensions);
 
-        todo!()
+        tracing::info!("Extension runtime initialised");
+        Ok(Self {
+            engine, store, extensions
+        })
     }
 }
