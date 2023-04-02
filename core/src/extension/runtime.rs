@@ -16,11 +16,10 @@ impl Runtime {
         let engine = Engine::new(&config)?;
         let mut store = Store::new(&engine, ());
 
-        let module = Module::from_file(&engine, "ext/program.wasm")?;
+        let module = Module::from_file(&engine, "ext/rust.wasm")?;
         let instance = Instance::new(&mut store, &module, &[])?;
 
         let extension = Extension::new(&instance, &mut store)?;
-        dbg!(&extension.name);
 
         todo!()
     }
