@@ -1,6 +1,7 @@
 //! Contains the server instance.
 
 use anyhow::Context;
+use ext::PluginRuntime;
 use std::net::{Ipv4Addr, Ipv6Addr, SocketAddrV4};
 use std::sync::Arc;
 use std::time::Duration;
@@ -17,7 +18,6 @@ use util::{Deserialize, Serialize};
 
 use crate::command::{Command, CommandDataType, CommandEnum, CommandOverload, CommandParameter, CommandPermissionLevel};
 use crate::config::SERVER_CONFIG;
-use crate::extension::Runtime;
 use crate::level::LevelManager;
 use crate::network::SessionManager;
 use crate::network::{BOOLEAN_GAME_RULES, CLIENT_VERSION_STRING, INTEGER_GAME_RULES, NETWORK_VERSION};
@@ -55,13 +55,13 @@ pub struct InstanceManager {
     /// This is to make sure that the world has been saved and safely shut down before shutting down the server.
     level_notifier: Receiver<()>,
     /// Virtual machine that runs and compiles the extensions.
-    extensions: Runtime,
+    extensions: PluginRuntime,
 }
 
 impl InstanceManager {
     /// Creates a new server.
     pub async fn run() -> anyhow::Result<()> {
-        let extensions = Runtime::new().context("Failed to start extension runtime")?;
+        let extensions = PluginRuntime::new().context("Failed to start extension runtime")?;
 
         let (ipv4_port, _ipv6_port) = {
             let lock = SERVER_CONFIG.read();

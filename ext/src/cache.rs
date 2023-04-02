@@ -10,7 +10,7 @@ use wasmtime::{Engine, Module};
 
 use super::ASSEMBLY_DIRECTORY;
 
-/// Manages a filesystem cache of compiled modules.
+/// Manages a filesystem cache of compiled plugins.
 ///
 /// Each extension is stored as a separate file in the cache directory.
 /// The name of the cache file corresponds to a SHA-256 hash of the extension's contents.
@@ -41,22 +41,22 @@ impl CompilationCache {
         Ok(Self { cache_dir })
     }
 
-    /// Attemps to load a cached module.
+    /// Attemps to load a cached plugin.
     ///
-    /// If a cache entry does not exist, the module will first be compiled and then cached.
+    /// If a cache entry does not exist, the plugin will first be compiled and then cached.
     ///
     /// # Errors
     ///
     /// This function will return an error if filesystem I/O operations fail,
-    /// if the file is an invalid Zlib stream or if the module is malformed.
+    /// if the file is an invalid Zlib stream or if the plugin is malformed.
     pub fn load(&self, engine: &Engine, file_name: &str) -> anyhow::Result<Module> {
         let assembly_path = Path::new(ASSEMBLY_DIRECTORY).join(file_name);
         let mut bytecode = Vec::new();
         File::open(&assembly_path)
-            .context(format!("Could not find extension assembly {}", assembly_path.display()))?
+            .context(format!("Could not find plugin assembly {}", assembly_path.display()))?
             .read_to_end(&mut bytecode)?;
 
-        // Cache names are SHA-256 hashes of the module's source.
+        // Cache names are SHA-256 hashes of the plugin's source.
         let mut hasher = Sha256::new();
         hasher.update(&bytecode);
         let hash = hasher.finalize();
@@ -66,7 +66,7 @@ impl CompilationCache {
 
         // Load the cache file if it exists...
         if cache_path.try_exists()? {
-            tracing::info!("Loading cached '{file_name}' module");
+            tracing::info!("Loading cached '{file_name}' plugin");
 
             let cache_file = BufReader::new(File::open(cache_path)?);
             let mut decoder = ZlibDecoder::new(cache_file);
@@ -79,10 +79,10 @@ impl CompilationCache {
         }
         // ...and compile it if it doesn't.
         else {
-            tracing::info!("Precompiling extension module '{file_name}'");
+            tracing::info!("Precompiling plugin module '{file_name}'");
 
-            let module = Module::new(engine, bytecode)?;
-            let serialized = module.serialize()?;
+            let plugin = Module::new(engine, bytecode)?;
+            let serialized = plugin.serialize()?;
 
             let mut encoder = ZlibEncoder::new(Vec::new(), Compression::best());
             encoder.write_all(&serialized)?;
@@ -90,7 +90,7 @@ impl CompilationCache {
 
             File::create(cache_path)?.write_all(&compressed)?;
 
-            Ok(module)
+            Ok(plugin)
         }
     }
 }

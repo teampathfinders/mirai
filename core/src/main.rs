@@ -1,10 +1,8 @@
 use std::sync::atomic::{AtomicU16, Ordering};
 
-use clap::{crate_authors, crate_description, Command};
 use tokio::runtime;
 
 use pyro::instance::InstanceManager;
-use util::Result;
 
 fn main() -> anyhow::Result<()> {
     init_logging();
@@ -59,8 +57,9 @@ fn init_logging() {
     tracing_subscriber::fmt()
         .with_target(false)
         .with_max_level(tracing::Level::DEBUG)
-        .with_file(true)
-        .with_line_number(true)
+        // .with_file(true)
+        // .with_line_number(true)
+        .pretty()
         .init();
 
     disable_wasmer_log();
