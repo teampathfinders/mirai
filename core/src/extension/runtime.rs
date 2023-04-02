@@ -1,16 +1,28 @@
 use crate::extension::{CompilationCache, Extension, ASSEMBLY_DIRECTORY, CACHE_DIRECTORY};
 use anyhow::Context;
-use std::ffi::{OsStr, OsString};
-use std::path::{Path, PathBuf};
-use wasmtime::{Config, Engine, Instance, Module, Store};
+use std::ffi::OsStr;
+use wasmtime::{Config, Engine, Instance, Store};
 
+/// The extension runtime.
+/// 
+/// This runtime takes care of compiling extensions and executing them.
 pub struct Runtime {
+    /// WebAssembly compiler engine.
     engine: Engine,
+    /// Contains all module data.
     store: Store<()>,
+    /// List of extensions that the runtime is tracking.
     extensions: Vec<Extension>,
 }
 
 impl Runtime {
+    /// Creates a new extension runtime.
+    /// 
+    /// This function checks the [`ASSEMBLY_DIRECTORY`] path for extensions to compile.
+    /// The modules can either be compiled or loaded from cache, see [`CompilationCache`] and [`CompilationCache::load`] for more
+    /// information. 
+    /// 
+    /// After compiling a module, it will be registered as an extension. See [`Extension`] for more information.
     pub fn new() -> anyhow::Result<Self> {
         let mut config = Config::new();
         config.parallel_compilation(true);

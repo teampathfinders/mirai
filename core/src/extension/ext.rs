@@ -1,7 +1,7 @@
 use std::fmt::{self, Debug, Formatter};
 
 use anyhow::{anyhow, Context};
-use wasmtime::{Instance, Module, Store, TypedFunc};
+use wasmtime::{Instance, Store, TypedFunc};
 
 /// Contains commonly used functions.
 struct ExtensionFnPointers {
