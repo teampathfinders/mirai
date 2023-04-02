@@ -1,6 +1,7 @@
 //! Contains the server instance.
 
 use anyhow::Context;
+use ext::Runtime;
 use std::net::{Ipv4Addr, Ipv6Addr, SocketAddrV4};
 use std::sync::Arc;
 use std::time::Duration;
@@ -17,7 +18,6 @@ use util::{Deserialize, Serialize};
 
 use crate::command::{Command, CommandDataType, CommandEnum, CommandOverload, CommandParameter, CommandPermissionLevel};
 use crate::config::SERVER_CONFIG;
-use crate::extension::Runtime;
 use crate::level::LevelManager;
 use crate::network::SessionManager;
 use crate::network::{BOOLEAN_GAME_RULES, CLIENT_VERSION_STRING, INTEGER_GAME_RULES, NETWORK_VERSION};

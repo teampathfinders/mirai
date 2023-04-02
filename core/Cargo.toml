@@ -17,6 +17,7 @@ path = "src/lib.rs"
 tokio-console = ["console-subscriber"]
 
 [dependencies]
+ext = { package = "pyro-extensions", path = "../ext" }
 nbt = { package = "pyro-nbt", path = "../nbt" }
 util = { package = "pyro-util", path = "../util" }
 level = { package = "pyro-level", path = "../level" }
@@ -43,9 +44,4 @@ aes = "0.8.2"
 serde_repr = "0.1.11"
 uuid = { version = "1.3.0", features = ["serde"], default-features = false }
 clap = { version = "4.2.1", features = ["cargo", "std"], default-features = false }
-wasmtime = { version = "7.0.0", features = ["cranelift", "parallel-compilation"], default-features = false }
 anyhow = "1.0.70"
-wasmtime-wasi = "7.0.0"
-wasi-common = "7.0.0"
-is-terminal = "0.4.6"
-async-trait = "0.1.68"

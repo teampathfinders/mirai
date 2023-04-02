@@ -1,4 +1,6 @@
-use crate::extension::{CompilationCache, Extension, ASSEMBLY_DIRECTORY, CACHE_DIRECTORY};
+use crate::cache::CompilationCache;
+use crate::{ASSEMBLY_DIRECTORY, CACHE_DIRECTORY};
+use crate::extension::Extension;
 use anyhow::Context;
 use wasmtime_wasi::{WasiCtxBuilder, WasiCtx};
 use std::ffi::OsStr;
