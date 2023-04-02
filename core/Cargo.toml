@@ -6,7 +6,7 @@ edition = "2021"
 authors = ["Ruben Adema"]
 repository = "https://github.com/teampathfinders/pyro"
 license = "Apache-2.0"
-rust-version = "1.66.0"
+rust-version = "1.68.0"
 
 [lib]
 name = "pyro"
