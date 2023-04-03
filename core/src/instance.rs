@@ -167,8 +167,8 @@ impl InstanceManager {
 
             tokio::spawn(async move { Self::udp_recv_job(token, udp_socket, session_manager).await })
         };
-
-        tracing::info!("Server started");
+        
+        tracing::info!("Ready!");
 
         // Wait for either Ctrl-C or token cancel...
         tokio::select! {
@@ -178,13 +178,11 @@ impl InstanceManager {
 
         extensions.shutdown();
 
-        // then shut down all services.
-        tracing::info!("Disconnecting all clients");
+        // ...then shut down all services.
         if let Err(e) = session_manager.kick_all("Server closed").await {
             tracing::error!("Failed to kick remaining sessions: {e}");
         }
 
-        tracing::info!("Waiting for services to shut down...");
         token.cancel();
 
         drop(session_manager);

@@ -18,7 +18,7 @@ glob_export!(reliability);
 glob_export!(send_queue);
 glob_export!(send);
 glob_export!(session);
-glob_export!(ticker);
+glob_export!(tick);
 
 /// Version of Raknet that this server uses.
 pub const RAKNET_VERSION: u8 = 11;

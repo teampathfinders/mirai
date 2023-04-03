@@ -69,7 +69,10 @@ impl PluginRuntime {
             plugins.push(plugin);
         }
 
-        tracing::info!("Extension runtime initialised");
+        if plugins.len() > 0 {
+            tracing::info!("Initialised {} plugins", plugins.len());
+        }
+
         Ok(Self { engine, plugins })
     }
 

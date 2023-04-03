@@ -127,7 +127,7 @@ impl Session {
 
         // Start processing jobs.
         // These jobs run in separate tasks, therefore the session has to be cloned.
-        session.clone().start_ticker_job();
+        session.clone().start_tick_job();
         session.clone().start_packet_job(receiver);
         session
     }

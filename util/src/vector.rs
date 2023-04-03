@@ -10,6 +10,16 @@ pub struct Vector<T, const N: usize> {
     components: [T; N],
 }
 
+impl<T, const N: usize> Default for Vector<T, N>
+where
+    [T; N]: Default
+{
+    #[inline]
+    fn default() -> Self {
+        Self { components: <[T; N]>::default() }
+    }
+}
+
 impl<T: PartialEq, const N: usize> PartialEq for Vector<T, N> {
     #[inline]
     fn eq(&self, other: &Self) -> bool {
@@ -298,7 +308,7 @@ impl<T> DerefMut for Vector<T, 4> {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Default, Clone, PartialEq, Eq)]
 pub struct BlockPosition {
     pub x: i32,
     pub y: u32,

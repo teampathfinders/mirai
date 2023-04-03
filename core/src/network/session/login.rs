@@ -49,8 +49,7 @@ impl Session {
     pub fn process_local_initialized(&self, pk: MutableBuffer) -> anyhow::Result<()> {
         let _request = SetLocalPlayerAsInitialized::deserialize(pk.snapshot())?;
 
-        // Add player to other's player lists.
-        tracing::info!("{} has connected", self.get_display_name()?);
+        // Add player to other's player lists
 
         // Tell rest of server that this client has joined...
         {
@@ -258,6 +257,8 @@ impl Session {
 
         self.send(ServerToClientHandshake { jwt: &jwt })?;
         self.encryptor.set(encryptor)?;
+
+        tracing::info!("`{}` has connected", self.get_display_name()?);
 
         Ok(())
     }

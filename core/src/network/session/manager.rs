@@ -143,13 +143,15 @@ impl SessionManager {
     /// Kicks all sessions from the server, displaying the given message.
     /// This function also waits for all sessions to be destroyed.
     pub async fn kick_all<S: AsRef<str>>(&self, message: S) -> anyhow::Result<()> {
-        self.broadcast.send(BroadcastPacket::new(
+        // Ignore result because it can only fail if there are no receivers remaining.
+        // In that case this shouldn't do anything anyways.
+        let _ = self.broadcast.send(BroadcastPacket::new(
             Disconnect {
                 hide_message: false,
                 message: message.as_ref(),
             },
             None,
-        )?)?;
+        )?);
 
         for session in self.list.iter() {
             session.value().1.cancelled().await;

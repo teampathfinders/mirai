@@ -13,7 +13,7 @@ use crate::network::{
     Session,
 };
 
-/// Tick interval of the internal session ticker.
+/// Tick interval of the internal session tick.
 const INTERNAL_TICK_INTERVAL: Duration = Duration::from_millis(1000 / 20);
 /// Inactivity timeout.
 ///
@@ -24,7 +24,7 @@ const INTERNAL_TICK_INTERVAL: Duration = Duration::from_millis(1000 / 20);
 const SESSION_TIMEOUT: Duration = Duration::from_secs(5);
 
 impl Session {
-    pub fn start_ticker_job(self: Arc<Self>) {
+    pub fn start_tick_job(self: Arc<Self>) {
         tokio::spawn(async move {
             let mut interval = tokio::time::interval(INTERNAL_TICK_INTERVAL);
 
@@ -99,7 +99,7 @@ impl Session {
 
         if let Ok(display_name) = self.get_display_name() {
             if let Ok(uuid) = self.get_uuid() {
-                tracing::info!("{display_name} has disconnected");
+                tracing::info!("`{display_name}` has disconnected");
                 let _ = self.broadcast_others(TextMessage {
                     message: &format!("§e{display_name} has left the server."),
                     message_type: MessageType::System,

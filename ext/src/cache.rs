@@ -66,8 +66,6 @@ impl CompilationCache {
 
         // Load the cache file if it exists...
         if cache_path.try_exists()? {
-            tracing::info!("Loading cached '{file_name}' plugin");
-
             let cache_file = BufReader::new(File::open(cache_path)?);
             let mut decoder = ZlibDecoder::new(cache_file);
 
@@ -79,8 +77,6 @@ impl CompilationCache {
         }
         // ...and compile it if it doesn't.
         else {
-            tracing::info!("Precompiling plugin module '{file_name}'");
-
             let plugin = Module::new(engine, bytecode)?;
             let serialized = plugin.serialize()?;
 
