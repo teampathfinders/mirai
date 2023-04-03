@@ -26,6 +26,8 @@ static RUNTIME_ID_COUNTER: AtomicU64 = AtomicU64::new(0);
 
 #[derive(Debug)]
 pub struct PlayerData {
+    /// Whether the player's inventory is currently open.
+    pub is_inventory_open: bool,
     /// Position of the player.
     pub position: Vector<f32, 3>,
     /// Rotation of the player.
@@ -98,6 +100,7 @@ impl Session {
 
             current_tick: AtomicU64::new(0),
             player: RwLock::new(PlayerData {
+                is_inventory_open: false,
                 position: Vector::from([23.0, 23.0, 2.0]),
                 rotation: Vector::from([0.0; 3]),
                 runtime_id: RUNTIME_ID_COUNTER.fetch_add(1, Ordering::SeqCst),

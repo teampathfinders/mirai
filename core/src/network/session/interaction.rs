@@ -13,11 +13,17 @@ impl Session {
     pub fn process_interaction(&self, packet: MutableBuffer) -> anyhow::Result<()> {
         let request = Interact::deserialize(packet.snapshot())?;
         if request.action == InteractAction::OpenInventory {
-            self.send(ContainerOpen {
-                window_id: INVENTORY_WINDOW_ID,
-                container_type: ContainerType::Inventory,
-                ..Default::default()
-            })?;
+            let mut lock = self.player.write();
+            if !lock.is_inventory_open {
+                lock.is_inventory_open = true;
+                drop(lock);
+
+                self.send(ContainerOpen {
+                    window_id: INVENTORY_WINDOW_ID,
+                    container_type: ContainerType::Inventory,
+                    ..Default::default()
+                })?;
+            }
         }
 
         Ok(())
@@ -27,6 +33,11 @@ impl Session {
         let request = ContainerClose::deserialize(packet.snapshot())?;
         if request.window_id == INVENTORY_WINDOW_ID {
             // Player closed inventory
+            self.player.write().is_inventory_open = false;
+            self.send(ContainerClose {
+                window_id: INVENTORY_WINDOW_ID,
+                ..Default::default()
+            })?;
         }
 
         Ok(())

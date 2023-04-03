@@ -3,7 +3,7 @@ use util::bytes::{BinaryWrite, MutableBuffer, SharedBuffer, BinaryRead};
 
 use crate::network::ConnectedPacket;
 
-#[derive(Debug, Clone)]
+#[derive(Default, Debug, Clone)]
 pub struct ContainerClose {
     /// Equal to the window ID sent in the [`ContainerOpen`](crate::ContainerOpen) packet.
     pub window_id: u8,
