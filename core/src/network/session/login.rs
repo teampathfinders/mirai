@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use std::sync::atomic::Ordering;
 
 use level::Dimension;
@@ -5,7 +6,7 @@ use util::{bail, BlockPosition, Deserialize, Result, Vector};
 use util::bytes::MutableBuffer;
 
 use crate::config::SERVER_CONFIG;
-use crate::network::{PropertyData};
+use crate::network::{PropertyData, ItemEntry, BlockEntry};
 use crate::network::{
     BroadcastIntent, ChatRestrictionLevel, ChunkRadiusReply,
     ChunkRadiusRequest, ClientToServerHandshake, CreativeContent, DISCONNECTED_LOGIN_FAILED, Login, NetworkSettings, PermissionLevel,
@@ -26,15 +27,15 @@ use crate::network::Session;
 impl Session {
     /// Handles a [`ClientCacheStatus`] packet.
     /// This stores the result in the [`Session::cache_support`] field.
-    pub fn process_cache_status(&self, pk: MutableBuffer) -> anyhow::Result<()> {
-        let request = CacheStatus::deserialize(pk.snapshot())?;
+    pub fn process_cache_status(&self, packet: MutableBuffer) -> anyhow::Result<()> {
+        let request = CacheStatus::deserialize(packet.snapshot())?;
         self.cache_support.set(request.supports_cache)?;
 
         Ok(())
     }
 
-    pub fn process_violation_warning(&self, pk: MutableBuffer) -> anyhow::Result<()> {
-        let request = ViolationWarning::deserialize(pk.snapshot())?;
+    pub fn process_violation_warning(&self, packet: MutableBuffer) -> anyhow::Result<()> {
+        let request = ViolationWarning::deserialize(packet.snapshot())?;
         tracing::error!("Received violation warning: {request:?}");
 
         self.kick("Violation warning")?;
@@ -46,8 +47,8 @@ impl Session {
     ///
     /// All connected sessions are notified of the new player
     /// and the new player gets a list of all current players.
-    pub fn process_local_initialized(&self, pk: MutableBuffer) -> anyhow::Result<()> {
-        let _request = SetLocalPlayerAsInitialized::deserialize(pk.snapshot())?;
+    pub fn process_local_initialized(&self, packet: MutableBuffer) -> anyhow::Result<()> {
+        let _request = SetLocalPlayerAsInitialized::deserialize(packet.snapshot())?;
 
         // Add player to other's player lists
 
@@ -97,8 +98,8 @@ impl Session {
     }
 
     /// Handles a [`ChunkRadiusRequest`] packet by returning the maximum allowed render distance.
-    pub fn process_radius_request(&self, pk: MutableBuffer) -> anyhow::Result<()> {
-        let _request = ChunkRadiusRequest::deserialize(pk.snapshot())?;
+    pub fn process_radius_request(&self, packet: MutableBuffer) -> anyhow::Result<()> {
+        let _request = ChunkRadiusRequest::deserialize(packet.snapshot())?;
         self.send(ChunkRadiusReply {
             allowed_radius: SERVER_CONFIG.read().allowed_render_distance,
         })
@@ -106,9 +107,9 @@ impl Session {
 
     pub fn process_pack_client_response(
         &self,
-        pk: MutableBuffer,
+        packet: MutableBuffer,
     ) -> anyhow::Result<()> {
-        let _request = ResourcePackClientResponse::deserialize(pk.snapshot())?;
+        let _request = ResourcePackClientResponse::deserialize(packet.snapshot())?;
 
         // TODO: Implement resource packs.
 
@@ -170,8 +171,21 @@ impl Session {
             },
             time: 0,
             enchantment_seed: 0,
-            block_properties: &[],
-            item_properties: &[],
+            block_properties: &[
+                BlockEntry {
+                    name: "minecraft:bedrock".to_owned(),
+                    properties: HashMap::from([
+                        ("infiniburn_bit".to_owned(), nbt::Value::Byte(0))
+                    ]),
+                }
+            ],
+            item_properties: &[
+//                ItemEntry {
+//                    name: "minecraft:bedrock".to_owned(),
+//                    runtime_id: 2,
+//                    component_based: false
+//                }
+            ],
             property_data: PropertyData {},
             server_authoritative_inventory: false,
             game_version: "1.19.60",
@@ -206,8 +220,8 @@ impl Session {
         Ok(())
     }
 
-    pub fn process_cts_handshake(&self, pk: MutableBuffer) -> anyhow::Result<()> {
-        ClientToServerHandshake::deserialize(pk.snapshot())?;
+    pub fn process_cts_handshake(&self, packet: MutableBuffer) -> anyhow::Result<()> {
+        ClientToServerHandshake::deserialize(packet.snapshot())?;
 
         let response = PlayStatus { status: Status::LoginSuccess };
         self.send(response)?;
@@ -236,8 +250,8 @@ impl Session {
     }
 
     /// Handles a [`Login`] packet.
-    pub async fn process_login(&self, pk: MutableBuffer) -> anyhow::Result<()> {
-        let request = Login::deserialize(pk.snapshot());
+    pub async fn process_login(&self, packet: MutableBuffer) -> anyhow::Result<()> {
+        let request = Login::deserialize(packet.snapshot());
         let request = match request {
             Ok(r) => r,
             Err(e) => {
@@ -264,8 +278,8 @@ impl Session {
     }
 
     /// Handles a [`RequestNetworkSettings`] packet.
-    pub fn process_network_settings_request(&self, pk: MutableBuffer) -> anyhow::Result<()> {
-        let request = RequestNetworkSettings::deserialize(pk.snapshot())?;
+    pub fn process_network_settings_request(&self, packet: MutableBuffer) -> anyhow::Result<()> {
+        let request = RequestNetworkSettings::deserialize(packet.snapshot())?;
         if request.protocol_version != NETWORK_VERSION {
             if request.protocol_version > NETWORK_VERSION {
                 let response = PlayStatus { status: Status::FailedServer };

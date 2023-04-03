@@ -5,8 +5,6 @@ use serde::de::{MapAccess, SeqAccess, Visitor};
 use serde::ser::{SerializeMap, SerializeSeq};
 use serde::{de, Deserialize, Deserializer, Serialize, Serializer};
 
-use paste::paste;
-
 /// General NBT value type that can represent any value.
 ///
 /// In case the structure of some piece of NBT data is not known, this

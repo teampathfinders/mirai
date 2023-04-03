@@ -18,14 +18,14 @@ pub struct Packet<T: ConnectedPacket> {
 
 impl<T: ConnectedPacket + Serialize> Packet<T> {
     /// Creates a new packet.
-    pub const fn new(pk: T) -> Self {
+    pub const fn new(packet: T) -> Self {
         Self {
             header: Header {
                 id: T::ID,
                 target_subclient: 0,
                 sender_subclient: 0,
             },
-            content: pk,
+            content: packet,
         }
     }
 

@@ -1,13 +1,13 @@
 use crate::cache::CompilationCache;
 
-use crate::{ASSEMBLY_DIRECTORY, CACHE_DIRECTORY, plugin::Plugin};
+use crate::{plugin::Plugin, ASSEMBLY_DIRECTORY, CACHE_DIRECTORY};
 use anyhow::Context;
-use wasmtime_wasi::{stdio::stdout, WasiCtxBuilder, WasiCtx};
 use std::ffi::OsStr;
-use wasmtime::{Config, Engine, Instance, Store, Linker};
+use wasmtime::{Config, Engine, Linker, Store};
+use wasmtime_wasi::WasiCtxBuilder;
 
 /// The extension runtime.
-/// 
+///
 /// This runtime takes care of compiling plugins and executing them.
 pub struct PluginRuntime {
     /// WebAssembly compiler engine.
@@ -18,11 +18,11 @@ pub struct PluginRuntime {
 
 impl PluginRuntime {
     /// Creates a new plugin runtime.
-    /// 
+    ///
     /// This function checks the [`ASSEMBLY_DIRECTORY`] path for plugins to compile.
     /// The modules can either be compiled or loaded from cache, see [`CompilationCache`] and [`CompilationCache::load`] for more
-    /// information. 
-    /// 
+    /// information.
+    ///
     /// After compiling a module, it will be registered as a plugin. See [`Extension`] for more information.
     pub fn new() -> anyhow::Result<Self> {
         let mut config = Config::new();
@@ -38,7 +38,7 @@ impl PluginRuntime {
                 // Load only .wasm files
                 if let Ok(entry) = entry {
                     if let Ok(metadata) = entry.metadata() {
-                        if metadata.is_file() && entry.path().extension() == Some(&OsStr::new("wasm")) {
+                        if metadata.is_file() && entry.path().extension() == Some(OsStr::new("wasm")) {
                             return entry.file_name().into_string().ok();
                         }
                     }
@@ -50,26 +50,25 @@ impl PluginRuntime {
 
         let mut plugins = Vec::with_capacity(module_paths.len());
         for path in module_paths {
-            let wasi = WasiCtxBuilder::new()
-                .inherit_stdio()
-                .build();
+            let wasi = WasiCtxBuilder::new().inherit_stdio().build();
             let mut store = Store::new(&engine, wasi);
 
             let module = cache.load(&engine, &path).context(format!("Failed to compile module `{path}`"))?;
-            linker.module(&mut store, &path, &module)
+            linker
+                .module(&mut store, &path, &module)
                 .context(format!("Failed to link module `{path}`"))?;
 
-            let instance = linker.instantiate(&mut store, &module)
+            let instance = linker
+                .instantiate(&mut store, &module)
                 .context(format!("Failed to instantiate module `{path}`"))?;
 
             let path_clone = path.clone();
-            let plugin = Plugin::new(path, instance, store)
-                .context(format!("Failed to initialize module `{path_clone}`"))?;
+            let plugin = Plugin::new(path, instance, store).context(format!("Failed to initialize module `{path_clone}`"))?;
 
             plugins.push(plugin);
         }
 
-        if plugins.len() > 0 {
+        if !plugins.is_empty() {
             tracing::info!("Initialised {} plugins", plugins.len());
         }
 
@@ -78,9 +77,10 @@ impl PluginRuntime {
 
     /// Calls the shutdown callback for every plugin and drops all plugins.
     pub fn shutdown(self) {
-        self.plugins
-            .into_iter()
-            .map(Plugin::on_shutdown)
-            .for_each(|r| if let Err(err) = r { tracing::error!("{err}"); });
+        self.plugins.into_iter().map(Plugin::on_shutdown).for_each(|r| {
+            if let Err(err) = r {
+                tracing::error!("{err}");
+            }
+        });
     }
 }

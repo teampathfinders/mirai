@@ -18,15 +18,15 @@ use crate::network::{
 use crate::command::ParsedCommand;
 
 impl Session {
-    pub fn process_settings_command(&self, pk: MutableBuffer) -> anyhow::Result<()> {
-        let request = SettingsCommand::deserialize(pk.snapshot())?;
+    pub fn process_settings_command(&self, packet: MutableBuffer) -> anyhow::Result<()> {
+        let request = SettingsCommand::deserialize(packet.snapshot())?;
         tracing::info!("{request:?}");
 
         Ok(())
     }
 
-    pub fn process_text_message(&self, pk: MutableBuffer) -> anyhow::Result<()> {
-        let request = TextMessage::deserialize(pk.snapshot())?;
+    pub fn process_text_message(&self, packet: MutableBuffer) -> anyhow::Result<()> {
+        let request = TextMessage::deserialize(packet.snapshot())?;
         if request.message_type != MessageType::Chat {
             bail!(Malformed, "Client is only allowed to send chat messages, received {:?} instead", request.message_type)
         }
@@ -36,26 +36,26 @@ impl Session {
         self.broadcast(request)
     }
 
-    pub fn process_skin_update(&self, pk: MutableBuffer) -> anyhow::Result<()> {
-        let request = UpdateSkin::deserialize(pk.snapshot())?;
+    pub fn process_skin_update(&self, packet: MutableBuffer) -> anyhow::Result<()> {
+        let request = UpdateSkin::deserialize(packet.snapshot())?;
         self.broadcast(request)
     }
 
-    pub fn process_ability_request(&self, pk: MutableBuffer) -> anyhow::Result<()> {
-        let request = RequestAbility::deserialize(pk.snapshot())?;
+    pub fn process_ability_request(&self, packet: MutableBuffer) -> anyhow::Result<()> {
+        let request = RequestAbility::deserialize(packet.snapshot())?;
         tracing::info!("{request:?}");
 
         Ok(())
     }
 
-    pub fn process_animation(&self, pk: MutableBuffer) -> anyhow::Result<()> {
-        let _request = Animate::deserialize(pk.snapshot())?;
+    pub fn process_animation(&self, packet: MutableBuffer) -> anyhow::Result<()> {
+        let _request = Animate::deserialize(packet.snapshot())?;
 
         Ok(())
     }
 
-    pub fn process_command_request(&self, pk: MutableBuffer) -> anyhow::Result<()> {
-        let request = CommandRequest::deserialize(pk.snapshot())?;
+    pub fn process_command_request(&self, packet: MutableBuffer) -> anyhow::Result<()> {
+        let request = CommandRequest::deserialize(packet.snapshot())?;
 
         let command_list = self.level_manager.get_commands();
         let result = ParsedCommand::parse(command_list, request.command);

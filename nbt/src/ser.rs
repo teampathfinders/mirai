@@ -1,4 +1,3 @@
-use std::io::Write;
 use std::marker::PhantomData;
 
 use paste::paste;
@@ -6,7 +5,6 @@ use serde::ser::{Impossible, SerializeMap, SerializeSeq, SerializeStruct, Serial
 use serde::{ser, Serialize};
 
 use util::bytes::{BinaryWrite, MutableBuffer};
-use util::{bail, Error};
 
 use crate::{BigEndian, FieldType, LittleEndian, NbtError, Variable, Variant, VariantImpl};
 
@@ -16,7 +14,7 @@ macro_rules! forward_unsupported {
         paste! {$(
            #[inline]
             fn [<serialize_ $ty>](self, _v: $ty) -> Result<(), NbtError> {
-                util::bail!(Unsupported, concat!("Serialisation of `", stringify!($ty), "` is not supported"));
+               Err(anyhow::anyhow!(concat!("Serialisation of `", stringify!($ty), "` is not supported")).into())
             }
         )+}
     }
@@ -28,7 +26,7 @@ macro_rules! forward_unsupported_field {
         paste! {$(
            #[inline]
             fn [<serialize_ $ty>](self, _v: $ty) -> Result<bool, NbtError> {
-                util::bail!(Unsupported, concat!("Serialisation of `", stringify!($ty), "` is not supported"));
+               Err(anyhow::anyhow!(concat!("Serialisation of `", stringify!($ty), "` is not supported")).into())
             }
         )+}
     }
@@ -378,7 +376,7 @@ where
     }
 
     fn serialize_none(self) -> Result<(), NbtError> {
-        bail!(Unsupported, "Serializing None is not supported")
+        Err(anyhow::anyhow!("Serializing None is not supported").into())
     }
 
     fn serialize_some<T: ?Sized>(self, value: &T) -> Result<(), NbtError>
@@ -389,22 +387,22 @@ where
     }
 
     fn serialize_unit(self) -> Result<(), NbtError> {
-        bail!(Unsupported, "Serializing unit is not supported")
+        Err(anyhow::anyhow!("Serializing unit is not supported").into())
     }
 
     fn serialize_unit_struct(self, _name: &'static str) -> Result<(), NbtError> {
-        bail!(Unsupported, "Serializing unit structs is not supported")
+        Err(anyhow::anyhow!("Serializing unit structs is not supported").into())
     }
 
     fn serialize_unit_variant(self, _name: &'static str, _variant_index: u32, _variant: &'static str) -> Result<(), NbtError> {
-        bail!(Unsupported, "Serializing unit variants is not supported")
+        Err(anyhow::anyhow!("Serializing unit variants is not supported").into())
     }
 
     fn serialize_newtype_struct<T: ?Sized>(self, _name: &'static str, _value: &T) -> Result<(), NbtError>
     where
         T: Serialize,
     {
-        bail!(Unsupported, "Serializing newtype structs is not supported")
+        Err(anyhow::anyhow!("Serializing newtype structs is not supported").into())
     }
 
     fn serialize_newtype_variant<T: ?Sized>(
@@ -417,7 +415,7 @@ where
     where
         T: Serialize,
     {
-        bail!(Unsupported, "Serializing newtype variants is not supported")
+        Err(anyhow::anyhow!("Serializing newtype variants is not supported").into())
     }
 
     #[inline]
@@ -426,7 +424,7 @@ where
             self.len = len;
             Ok(self)
         } else {
-            bail!(Unsupported, "Sequences with a size not known upfront are not supported");
+            Err(anyhow::anyhow!("Sequences with a size not known upfront are not supported").into())
         }
     }
 
@@ -437,7 +435,7 @@ where
     }
 
     fn serialize_tuple_struct(self, _name: &'static str, _len: usize) -> Result<Self::SerializeTupleStruct, Self::Error> {
-        bail!(Unsupported, "Serializing tuple structs is not supported")
+        Err(anyhow::anyhow!("Serializing tuple structs is not supported").into())
     }
 
     fn serialize_tuple_variant(
@@ -447,7 +445,7 @@ where
         _variant: &'static str,
         _len: usize,
     ) -> Result<Self::SerializeTupleVariant, Self::Error> {
-        bail!(Unsupported, "Serializing tuple variants is not supported")
+        Err(anyhow::anyhow!("Serializing tuple variants is not supported").into())
     }
 
     fn serialize_map(self, _len: Option<usize>) -> Result<Self::SerializeMap, Self::Error> {
@@ -462,7 +460,7 @@ where
         Ok(self)
     }
 
-    fn serialize_struct(self, name: &'static str, _len: usize) -> std::result::Result<Self::SerializeStruct, Self::Error> {
+    fn serialize_struct(self, name: &'static str, _len: usize) -> Result<Self::SerializeStruct, Self::Error> {
         if self.is_initial {
             self.writer.write_u8(FieldType::Compound as u8)?;
             self.serialize_str(name)?;
@@ -478,8 +476,8 @@ where
         _variant_index: u32,
         _variant: &'static str,
         _len: usize,
-    ) -> std::result::Result<Self::SerializeStructVariant, Self::Error> {
-        bail!(Unsupported, "Serializing struct variants is not supported")
+    ) -> Result<Self::SerializeStructVariant, Self::Error> {
+        Err(anyhow::anyhow!("Serializing struct variants is not supported").into())
     }
 }
 
@@ -563,14 +561,14 @@ where
     where
         K: ?Sized + Serialize,
     {
-        bail!(Unsupported, "Use MapSerializer::serialize_entry instead")
+        Err(anyhow::anyhow!("Use MapSerializer::serialize_entry instead").into())
     }
 
     fn serialize_value<V>(&mut self, _value: &V) -> Result<(), NbtError>
     where
         V: ?Sized + Serialize,
     {
-        bail!(Unsupported, "Use MapSerializer::serialize_entry instead");
+        Err(anyhow::anyhow!("Use MapSerializer::serialize_entry instead").into())
     }
 
     fn serialize_entry<K, V>(&mut self, key: &K, value: &V) -> Result<(), NbtError>
@@ -675,52 +673,52 @@ where
     }
 
     #[inline]
-    fn serialize_i8(self, _v: i8) -> std::result::Result<Self::Ok, Self::Error> {
+    fn serialize_i8(self, _v: i8) -> Result<Self::Ok, Self::Error> {
         self.ser.writer.write_u8(FieldType::Byte as u8)?;
         Ok(false)
     }
 
     #[inline]
-    fn serialize_i16(self, _v: i16) -> std::result::Result<Self::Ok, Self::Error> {
+    fn serialize_i16(self, _v: i16) -> Result<Self::Ok, Self::Error> {
         self.ser.writer.write_u8(FieldType::Short as u8)?;
         Ok(false)
     }
 
-    fn serialize_i32(self, _v: i32) -> std::result::Result<Self::Ok, Self::Error> {
+    fn serialize_i32(self, _v: i32) -> Result<Self::Ok, Self::Error> {
         self.ser.writer.write_u8(FieldType::Int as u8)?;
         Ok(false)
     }
 
-    fn serialize_i64(self, _v: i64) -> std::result::Result<Self::Ok, Self::Error> {
+    fn serialize_i64(self, _v: i64) -> Result<Self::Ok, Self::Error> {
         self.ser.writer.write_u8(FieldType::Long as u8)?;
         Ok(false)
     }
 
-    fn serialize_f32(self, _v: f32) -> std::result::Result<Self::Ok, Self::Error> {
+    fn serialize_f32(self, _v: f32) -> Result<Self::Ok, Self::Error> {
         self.ser.writer.write_u8(FieldType::Float as u8)?;
         Ok(false)
     }
 
-    fn serialize_f64(self, _v: f64) -> std::result::Result<Self::Ok, Self::Error> {
+    fn serialize_f64(self, _v: f64) -> Result<Self::Ok, Self::Error> {
         self.ser.writer.write_u8(FieldType::Double as u8)?;
         Ok(false)
     }
 
-    fn serialize_str(self, _v: &str) -> std::result::Result<Self::Ok, Self::Error> {
+    fn serialize_str(self, _v: &str) -> Result<Self::Ok, Self::Error> {
         self.ser.writer.write_u8(FieldType::String as u8)?;
         Ok(false)
     }
 
-    fn serialize_bytes(self, _v: &[u8]) -> std::result::Result<Self::Ok, Self::Error> {
+    fn serialize_bytes(self, _v: &[u8]) -> Result<Self::Ok, Self::Error> {
         self.ser.writer.write_u8(FieldType::ByteArray as u8)?;
         Ok(false)
     }
 
-    fn serialize_none(self) -> std::result::Result<Self::Ok, Self::Error> {
+    fn serialize_none(self) -> Result<Self::Ok, Self::Error> {
         Ok(true) // Skip field
     }
 
-    fn serialize_some<T: ?Sized>(self, value: &T) -> std::result::Result<Self::Ok, Self::Error>
+    fn serialize_some<T: ?Sized>(self, value: &T) -> Result<Self::Ok, Self::Error>
     where
         T: Serialize,
     {
@@ -728,23 +726,23 @@ where
         Ok(false)
     }
 
-    fn serialize_unit(self) -> std::result::Result<Self::Ok, Self::Error> {
-        bail!(Unsupported, "Serializing unit is not supported")
+    fn serialize_unit(self) -> Result<Self::Ok, Self::Error> {
+        Err(anyhow::anyhow!("Serializing unit is not supported").into())
     }
 
-    fn serialize_unit_struct(self, _name: &'static str) -> std::result::Result<Self::Ok, Self::Error> {
-        bail!(Unsupported, "Serializing unit structs is not supported")
+    fn serialize_unit_struct(self, _name: &'static str) -> Result<Self::Ok, Self::Error> {
+        Err(anyhow::anyhow!("Serializing unit structs is not supported").into())
     }
 
-    fn serialize_unit_variant(self, _name: &'static str, _variant_index: u32, _variant: &'static str) -> std::result::Result<Self::Ok, Self::Error> {
-        bail!(Unsupported, "Serializing unit variants is not supported")
+    fn serialize_unit_variant(self, _name: &'static str, _variant_index: u32, _variant: &'static str) -> Result<Self::Ok, Self::Error> {
+        Err(anyhow::anyhow!("Serializing unit variants is not supported").into())
     }
 
-    fn serialize_newtype_struct<T: ?Sized>(self, _name: &'static str, _value: &T) -> std::result::Result<Self::Ok, Self::Error>
+    fn serialize_newtype_struct<T: ?Sized>(self, _name: &'static str, _value: &T) -> Result<Self::Ok, Self::Error>
     where
         T: Serialize,
     {
-        bail!(Unsupported, "Serializing newtype structs is not supported")
+        Err(anyhow::anyhow!("Serializing newtype structs is not supported").into())
     }
 
     fn serialize_newtype_variant<T: ?Sized>(
@@ -753,25 +751,25 @@ where
         _variant_index: u32,
         _variant: &'static str,
         _value: &T,
-    ) -> std::result::Result<Self::Ok, Self::Error>
+    ) -> Result<Self::Ok, Self::Error>
     where
         T: Serialize,
     {
-        bail!(Unsupported, "Serializing newtype variants is not supported")
+        Err(anyhow::anyhow!("Serializing newtype variants is not supported").into())
     }
 
-    fn serialize_seq(self, _len: Option<usize>) -> std::result::Result<Self::SerializeSeq, Self::Error> {
+    fn serialize_seq(self, _len: Option<usize>) -> Result<Self::SerializeSeq, Self::Error> {
         self.ser.writer.write_u8(FieldType::List as u8)?;
         Ok(self)
     }
 
-    fn serialize_tuple(self, _len: usize) -> std::result::Result<Self::SerializeTuple, Self::Error> {
+    fn serialize_tuple(self, _len: usize) -> Result<Self::SerializeTuple, Self::Error> {
         self.ser.writer.write_u8(FieldType::List as u8)?;
         Ok(self)
     }
 
-    fn serialize_tuple_struct(self, _name: &'static str, _len: usize) -> std::result::Result<Self::SerializeTupleStruct, Self::Error> {
-        bail!(Unsupported, "Serializing tuple structs is not supported")
+    fn serialize_tuple_struct(self, _name: &'static str, _len: usize) -> Result<Self::SerializeTupleStruct, Self::Error> {
+        Err(anyhow::anyhow!("Serializing tuple structs is not supported").into())
     }
 
     fn serialize_tuple_variant(
@@ -780,18 +778,18 @@ where
         _variant_index: u32,
         _variant: &'static str,
         _len: usize,
-    ) -> std::result::Result<Self::SerializeTupleVariant, Self::Error> {
-        bail!(Unsupported, "Serializing tuple variants is not supported")
+    ) -> Result<Self::SerializeTupleVariant, Self::Error> {
+        Err(anyhow::anyhow!("Serializing tuple variants is not supported").into())
     }
 
     #[inline]
-    fn serialize_map(self, _len: Option<usize>) -> std::result::Result<Self::SerializeMap, Self::Error> {
+    fn serialize_map(self, _len: Option<usize>) -> Result<Self::SerializeMap, Self::Error> {
         self.ser.writer.write_u8(FieldType::Compound as u8)?;
         Ok(self)
     }
 
     #[inline]
-    fn serialize_struct(self, _name: &'static str, _len: usize) -> std::result::Result<Self::SerializeStruct, Self::Error> {
+    fn serialize_struct(self, _name: &'static str, _len: usize) -> Result<Self::SerializeStruct, Self::Error> {
         self.ser.writer.write_u8(FieldType::Compound as u8)?;
         Ok(self)
     }
@@ -802,8 +800,8 @@ where
         _variant_index: u32,
         _variant: &'static str,
         _len: usize,
-    ) -> std::result::Result<Self::SerializeStructVariant, Self::Error> {
-        bail!(Unsupported, "Serializing struct variants is not supported")
+    ) -> Result<Self::SerializeStructVariant, Self::Error> {
+        Err(anyhow::anyhow!("Serializing struct variants is not supported").into())
     }
 }
 

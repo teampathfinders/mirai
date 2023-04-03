@@ -3,6 +3,8 @@ use util::bytes::{BinaryWrite, MutableBuffer, size_of_varint};
 
 use crate::network::ConnectedPacket;
 
+pub const INVENTORY_WINDOW_ID: u8 = 0xff;
+
 #[derive(Debug, Default, Copy, Clone, PartialEq, Eq, Hash)]
 #[repr(u8)]
 pub enum ContainerType {

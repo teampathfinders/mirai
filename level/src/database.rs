@@ -7,8 +7,6 @@ use std::{
     os::raw::{c_char, c_int},
 };
 
-use util::{error, Error, Result};
-
 use crate::ffi;
 
 /// Wraps a LevelDB buffer, ensuring the buffer is deallocated after use.

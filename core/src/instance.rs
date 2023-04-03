@@ -167,7 +167,7 @@ impl InstanceManager {
 
             tokio::spawn(async move { Self::udp_recv_job(token, udp_socket, session_manager).await })
         };
-        
+
         tracing::info!("Ready!");
 
         // Wait for either Ctrl-C or token cancel...
@@ -195,39 +195,39 @@ impl InstanceManager {
 
     /// Generates a response to the [`OfflinePing`] packet with [`OfflinePong`].
     #[inline]
-    fn process_unconnected_ping(pk: RawPacket, server_guid: u64, metadata: &str) -> anyhow::Result<RawPacket> {
-        let ping = UnconnectedPing::deserialize(pk.buf.snapshot())?;
+    fn process_unconnected_ping(packet: RawPacket, server_guid: u64, metadata: &str) -> anyhow::Result<RawPacket> {
+        let ping = UnconnectedPing::deserialize(packet.buf.snapshot())?;
         let pong = UnconnectedPong { time: ping.time, server_guid, metadata };
 
         let mut serialized = MutableBuffer::with_capacity(pong.serialized_size());
         pong.serialize(&mut serialized)?;
 
-        let pk = RawPacket { buf: serialized, addr: pk.addr };
+        let packet = RawPacket { buf: serialized, addr: packet.addr };
 
-        Ok(pk)
+        Ok(packet)
     }
 
     /// Generates a response to the [`OpenConnectionRequest1`] packet with [`OpenConnectionReply1`].
     #[inline]
-    fn process_open_connection_request1(mut pk: RawPacket, server_guid: u64) -> anyhow::Result<RawPacket> {
-        let request = OpenConnectionRequest1::deserialize(pk.buf.snapshot())?;
+    fn process_open_connection_request1(mut packet: RawPacket, server_guid: u64) -> anyhow::Result<RawPacket> {
+        let request = OpenConnectionRequest1::deserialize(packet.buf.snapshot())?;
 
-        pk.buf.clear();
+        packet.buf.clear();
         if request.protocol_version != RAKNET_VERSION {
             let reply = IncompatibleProtocol { server_guid };
 
-            pk.buf.clear();
-            pk.buf.reserve_to(reply.serialized_size());
-            reply.serialize(&mut pk.buf)?;
+            packet.buf.clear();
+            packet.buf.reserve_to(reply.serialized_size());
+            reply.serialize(&mut packet.buf)?;
         } else {
             let reply = OpenConnectionReply1 { mtu: request.mtu, server_guid };
 
-            pk.buf.clear();
-            pk.buf.reserve_to(reply.serialized_size());
-            reply.serialize(&mut pk.buf)?;
+            packet.buf.clear();
+            packet.buf.reserve_to(reply.serialized_size());
+            reply.serialize(&mut packet.buf)?;
         }
 
-        Ok(pk)
+        Ok(packet)
     }
 
     /// Responds to the [`OpenConnectionRequest2`] packet with [`OpenConnectionReply2`].
@@ -235,25 +235,25 @@ impl InstanceManager {
     /// From this point, all packets are encoded in a [`Frame`](crate::Frame).
     #[inline]
     fn process_open_connection_request2(
-        mut pk: RawPacket,
+        mut packet: RawPacket,
         udp_socket: Arc<UdpSocket>,
         sess_manager: Arc<SessionManager>,
         server_guid: u64,
     ) -> anyhow::Result<RawPacket> {
-        let request = OpenConnectionRequest2::deserialize(pk.buf.snapshot())?;
+        let request = OpenConnectionRequest2::deserialize(packet.buf.snapshot())?;
         let reply = OpenConnectionReply2 {
             server_guid,
             mtu: request.mtu,
-            client_address: pk.addr,
+            client_address: packet.addr,
         };
 
-        pk.buf.clear();
-        pk.buf.reserve_to(reply.serialized_size());
-        reply.serialize(&mut pk.buf)?;
+        packet.buf.clear();
+        packet.buf.reserve_to(reply.serialized_size());
+        reply.serialize(&mut packet.buf)?;
 
-        sess_manager.add_session(udp_socket, pk.addr, request.mtu, request.client_guid);
+        sess_manager.add_session(udp_socket, packet.addr, request.mtu, request.client_guid);
 
-        Ok(pk)
+        Ok(packet)
     }
 
     /// Receives packets from IPv4 clients and adds them to the receive queue
@@ -280,18 +280,18 @@ impl InstanceManager {
                 _ = token.cancelled() => break
             };
 
-            let pk = RawPacket {
+            let packet = RawPacket {
                 buf: MutableBuffer::from(recv_buf[..n].to_vec()),
                 addr: address,
             };
 
-            if pk.is_unconnected() {
+            if packet.is_unconnected() {
                 let udp_socket = udp_socket.clone();
                 let session_manager = sess_manager.clone();
                 let metadata = metadata.clone();
 
                 tokio::spawn(async move {
-                    let id = if let Some(id) = pk.packet_id() {
+                    let id = if let Some(id) = packet.packet_id() {
                         id
                     } else {
                         tracing::error!("Unconnected packet was empty");
@@ -299,9 +299,11 @@ impl InstanceManager {
                     };
 
                     let pk_result = match id {
-                        UnconnectedPing::ID => Self::process_unconnected_ping(pk, server_guid, &metadata),
-                        OpenConnectionRequest1::ID => Self::process_open_connection_request1(pk, server_guid),
-                        OpenConnectionRequest2::ID => Self::process_open_connection_request2(pk, udp_socket.clone(), session_manager, server_guid),
+                        UnconnectedPing::ID => Self::process_unconnected_ping(packet, server_guid, &metadata),
+                        OpenConnectionRequest1::ID => Self::process_open_connection_request1(packet, server_guid),
+                        OpenConnectionRequest2::ID => {
+                            Self::process_open_connection_request2(packet, udp_socket.clone(), session_manager, server_guid)
+                        }
                         _ => {
                             tracing::error!("Invalid unconnected packet ID: {id:x}");
                             return;
@@ -309,7 +311,7 @@ impl InstanceManager {
                     };
 
                     match pk_result {
-                        Ok(pk) => match udp_socket.send_to(pk.buf.as_ref(), pk.addr).await {
+                        Ok(packet) => match udp_socket.send_to(packet.buf.as_ref(), packet.addr).await {
                             Ok(_) => (),
                             Err(e) => {
                                 tracing::error!("Unable to send unconnected packet to client: {e}");
@@ -321,7 +323,7 @@ impl InstanceManager {
                     }
                 });
             } else {
-                sess_manager.forward_packet(pk);
+                sess_manager.forward_packet(packet);
             }
         }
 

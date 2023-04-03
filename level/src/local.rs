@@ -1,5 +1,4 @@
 use util::bytes::{BinaryRead, BinaryWrite, MutableBuffer};
-use util::{bail, Result};
 
 use crate::{SubChunk, SubChunkVersion, SubLayer};
 
@@ -19,7 +18,7 @@ impl SubLayer {
         // Size of each index in bits.
         let index_size = reader.read_u8()? >> 1;
         if index_size == 0x7f {
-            bail!(Malformed, "Invalid block bit size {index_size}");
+            anyhow::bail!(format!("Invalid block bit size {index_size}"));
         }
 
         // Amount of indices that fit in a single 32-bit integer.
@@ -136,7 +135,7 @@ impl SubChunk {
         };
 
         if layer_count == 0 || layer_count > 2 {
-            bail!(Malformed, "Sub chunk must have 1 or 2 layers");
+            anyhow::bail!("Sub chunk must have 1 or 2 layers");
         }
 
         let index = if version == SubChunkVersion::Limitless { reader.read_i8()? } else { 0 };

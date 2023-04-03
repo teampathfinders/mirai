@@ -1,3 +1,5 @@
+#![allow(unused)]
+
 pub mod command;
 pub mod config;
 pub mod crypto;

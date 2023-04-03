@@ -4,10 +4,10 @@ const ASSEMBLY_DIRECTORY: &str = "plugins";
 const CACHE_DIRECTORY: &str = "cache";
 
 mod cache;
+mod def;
 mod plugin;
 mod runtime;
 mod stdio;
-mod def;
 
-pub use runtime::*;
 pub use plugin::*;
+pub use runtime::*;

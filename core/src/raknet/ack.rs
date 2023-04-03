@@ -8,8 +8,8 @@ impl Session {
     /// Processes an acknowledgement received from the client.
     ///
     /// This function unregisters the specified packet IDs from the recovery queue.
-    pub fn process_ack(&self, pk: SharedBuffer<'_>) -> anyhow::Result<()> {
-        let ack = Ack::deserialize(pk)?;
+    pub fn process_ack(&self, packet: SharedBuffer<'_>) -> anyhow::Result<()> {
+        let ack = Ack::deserialize(packet)?;
         self.raknet.recovery_queue.confirm(&ack.records);
 
         Ok(())
@@ -19,8 +19,8 @@ impl Session {
     ///
     /// This function makes sure the packet is retrieved from the recovery queue and sent to the
     /// client again.
-    pub async fn process_nak(&self, pk: SharedBuffer<'_>) -> anyhow::Result<()> {
-        let nack = Nak::deserialize(pk)?;
+    pub async fn process_nak(&self, packet: SharedBuffer<'_>) -> anyhow::Result<()> {
+        let nack = Nak::deserialize(packet)?;
         let frame_batches = self.raknet.recovery_queue.recover(&nack.records);
         tracing::info!("Recovered packets: {:?}", nack.records);
 

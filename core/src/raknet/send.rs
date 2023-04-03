@@ -32,9 +32,9 @@ impl Session {
     /// Sends a game packet with default settings
     /// (reliable ordered and medium priority)
     #[inline]
-    pub fn send<T: ConnectedPacket + Serialize>(&self, pk: T) -> anyhow::Result<()> {
-        let pk = Packet::new(pk);
-        let serialized = pk.serialize()?;
+    pub fn send<T: ConnectedPacket + Serialize>(&self, packet: T) -> anyhow::Result<()> {
+        let packet = Packet::new(packet);
+        let serialized = packet.serialize()?;
 
         self.send_serialized(serialized, DEFAULT_SEND_CONFIG)
     }
