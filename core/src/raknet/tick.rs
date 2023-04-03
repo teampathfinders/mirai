@@ -8,8 +8,8 @@ use tokio::sync::mpsc;
 use util::bytes::MutableBuffer;
 
 use crate::network::{
-    {MessageType, PlayerListRemove, TextMessage},
-    Session,
+    {PlayerListRemove, TextMessage},
+    Session, TextData,
 };
 
 /// Tick interval of the internal session tick.
@@ -99,14 +99,14 @@ impl Session {
         if let Ok(display_name) = self.get_display_name() {
             if let Ok(uuid) = self.get_uuid() {
                 tracing::info!("`{display_name}` has disconnected");
+
                 let _ = self.broadcast_others(TextMessage {
-                    message: &format!("§e{display_name} has left the server."),
-                    message_type: MessageType::System,
                     needs_translation: false,
-                    parameters: vec![],
-                    platform_chat_id: "",
-                    source_name: "",
                     xuid: "",
+                    platform_chat_id: "",
+                    data: TextData::System {
+                        message: &format!("§e{display_name} has left the server.")
+                    }
                 });
 
                 let _ = self
