@@ -4,6 +4,62 @@ use util::bytes::{BinaryRead, BinaryWrite, MutableBuffer, SharedBuffer, VarInt, 
 
 use crate::network::ConnectedPacket;
 
+#[repr(u8)]
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum TextData<'a> {
+    Raw {
+        message: &'a str
+    } = 0,
+    Chat {
+        source: &'a str,
+        message: &'a str
+    } = 1,
+    Translation {
+        message: &'a str,
+        parameters: Vec<&'a str>
+    } = 2,
+    Popup {
+        message: &'a str,
+        parameters: Vec<&'a str>
+    } = 3,
+    JukeboxPopup {
+        message: &'a str,
+        parameters: Vec<&'a str>
+    } = 4,
+    Tip {
+        message: &'a str
+    } = 5,
+    System {
+        message: &'a str
+    } = 6,
+    Whisper {
+        source: &'a str,
+        message: &'a str
+    } = 7,
+    Announcement {
+        source: &'a str,
+        message: &'a str
+    } = 8,
+    ObjectWhisper {
+        message: &'a str
+    } = 9,
+    Object {
+        message: &'a str
+    } = 10,
+    ObjectAnnouncement {
+        message: &'a str
+    } = 11
+}
+
+impl<'a> TextData<'a> {
+    #[inline]
+    pub fn discriminant(&self) -> u8 {
+        // SAFETY: This is safe due to the `repr(u8)` attribute on the enum.
+        // This means the enum is prefixed with a u8 tag.
+        unsafe { *(self as *const Self as *const u8) }
+    }
+}
+
 /// Type of message.
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum MessageType {
@@ -46,146 +102,63 @@ impl TryFrom<u8> for MessageType {
     }
 }
 
-/// Displays text messages.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct TextMessage<'a> {
-    /// Type of the message.
-    pub message_type: MessageType,
-    /// Whether the message requires translation.
-    /// This translation can be performed with messages containing %.
+    pub data: TextData<'a>,
     pub needs_translation: bool,
-    /// Source of the message
-    pub source_name: &'a str,
-    /// Message to display.
-    pub message: &'a str,
-    /// A list of parameters that are filled into the message. These parameters are only
-    /// written if the type of the packet is [`Translation`](MessageType::Translation),
-    /// [`Tip`](MessageType::Tip), [`Popup`](MessageType::Popup) or [`JukeboxPopup`](MessageType::JukeboxPopup).
-    pub parameters: Vec<&'a str>,
-    /// XUID of the sender.
-    /// This is only set if the type of the packet is [`Chat`](MessageType::Chat).
     pub xuid: &'a str,
-    /// Identifier set for specific platforms that determines whether clients are able to chat with each other.
-    pub platform_chat_id: &'a str,
+    pub platform_chat_id: &'a str
 }
 
 impl<'a> ConnectedPacket for TextMessage<'a> {
     const ID: u32 = 0x09;
 
     fn serialized_size(&self) -> usize {
-        1 + 1 + match self.message_type {
-            MessageType::Chat
-            | MessageType::Whisper
-            | MessageType::Announcement => {
-                self.source_name.var_len() +
-                    self.message.var_len()
-            }
-            MessageType::Raw
-            | MessageType::Tip
-            | MessageType::System
-            | MessageType::Object
-            | MessageType::ObjectWhisper
-            | MessageType::ObjectAnnouncement => {
-                self.message.var_len()
-            }
-            MessageType::Translation
-            | MessageType::Popup
-            | MessageType::JukeboxPopup => {
-                self.message.var_len() +
-                    (self.parameters.len() as u32).var_len() +
-                    self.parameters.iter().fold(
-                        0, |acc, p| acc + p.var_len(),
-                    )
-            }
-        } + self.xuid.var_len() + self.platform_chat_id.var_len()
+        todo!();
     }
 }
 
 impl<'a> Serialize for TextMessage<'a> {
     fn serialize(&self, buffer: &mut MutableBuffer) -> anyhow::Result<()> {
-        buffer.write_u8(self.message_type as u8)?;
+        buffer.write_u8(self.data.discriminant())?;
         buffer.write_bool(self.needs_translation)?;
 
-        match self.message_type {
-            MessageType::Chat
-            | MessageType::Whisper
-            | MessageType::Announcement => {
-                buffer.write_str(self.source_name)?;
-                buffer.write_str(self.message)?;
-            }
-            MessageType::Raw
-            | MessageType::Tip
-            | MessageType::System
-            | MessageType::Object
-            | MessageType::ObjectWhisper
-            | MessageType::ObjectAnnouncement => {
-                buffer.write_str(self.message)?;
-            }
-            MessageType::Translation
-            | MessageType::Popup
-            | MessageType::JukeboxPopup => {
-                buffer.write_str(self.message)?;
+        match &self.data {
+            TextData::Chat { source, message } |
+            TextData::Whisper { source, message } |
+            TextData::Announcement { source, message } => {
+                buffer.write_str(source)?;
+                buffer.write_str(message)?;
+            },
+            TextData::Raw { message } |
+            TextData::Tip { message } |
+            TextData::System { message }  |
+            TextData::Object { message } |
+            TextData::ObjectWhisper { message } |
+            TextData::ObjectAnnouncement { message } => {
+                buffer.write_str(message)?;
+            },
+            TextData::Translation { message, parameters } |
+            TextData::Popup { message, parameters } |
+            TextData::JukeboxPopup { message, parameters } => {
+                buffer.write_str(message)?;
+                buffer.write_var_u32(parameters.len() as u32)?;
 
-                buffer.write_var_u32(self.parameters.len() as u32)?;
-                for param in &self.parameters {
+                for param in parameters {
                     buffer.write_str(param)?;
                 }
             }
         }
 
         buffer.write_str(self.xuid)?;
-        buffer.write_str(self.platform_chat_id)
+        buffer.write_str(self.platform_chat_id)?;
+
+        Ok(())
     }
 }
 
 impl<'a> Deserialize<'a> for TextMessage<'a> {
     fn deserialize(mut buffer: SharedBuffer<'a>) -> anyhow::Result<Self> {
-        let message_type = MessageType::try_from(buffer.read_u8()?)?;
-        let needs_translation = buffer.read_bool()?;
-        let message;
-        let mut source_name = "";
-        let mut parameters = Vec::new();
-
-        match message_type {
-            MessageType::Chat
-            | MessageType::Whisper
-            | MessageType::Announcement => {
-                source_name = buffer.read_str()?;
-                message = buffer.read_str()?;
-            }
-            MessageType::Raw
-            | MessageType::Tip
-            | MessageType::System
-            | MessageType::Object
-            | MessageType::ObjectWhisper
-            | MessageType::ObjectAnnouncement => {
-                message = buffer.read_str()?;
-            }
-            MessageType::Translation
-            | MessageType::Popup
-            | MessageType::JukeboxPopup => {
-                message = buffer.read_str()?;
-
-                let count = buffer.read_var_u32()?;
-                parameters.reserve(count as usize);
-
-                for _ in 0..count {
-                    parameters.push(buffer.read_str()?);
-                }
-            }
-        }
-
-        let xuid = buffer.read_str()?;
-        let platform_chat_id = buffer.read_str()?;
-
-        Ok(Self {
-            message_type,
-            needs_translation,
-            source_name,
-            message,
-            parameters,
-            xuid,
-            platform_chat_id,
-        })
+        todo!();
     }
 }

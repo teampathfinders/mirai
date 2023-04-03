@@ -6,7 +6,7 @@ use util::{bail, BlockPosition, Deserialize, Result, Vector};
 use util::bytes::MutableBuffer;
 
 use crate::config::SERVER_CONFIG;
-use crate::network::{PropertyData, ItemEntry, BlockEntry};
+use crate::network::{PropertyData, ItemEntry, BlockEntry, TextData};
 use crate::network::{
     BroadcastIntent, ChatRestrictionLevel, ChunkRadiusReply,
     ChunkRadiusRequest, ClientToServerHandshake, CreativeContent, DISCONNECTED_LOGIN_FAILED, Login, NetworkSettings, PermissionLevel,
@@ -77,16 +77,15 @@ impl Session {
             // })?;
 
             self.broadcast_others(TextMessage {
-                message: &format!(
-                    "§e{} has joined the server.",
-                    identity_data.display_name
-                ),
+                data: TextData::System {
+                    message: &format!(
+                        "§e{} has joined the server.",
+                        identity_data.display_name
+                    )
+                },
                 needs_translation: false,
-                parameters: vec![],
-                source_name: "",
-                platform_chat_id: "",
-                message_type: MessageType::System,
                 xuid: "",
+                platform_chat_id: ""
             })?;
         }
         self.initialized.store(true, Ordering::SeqCst);

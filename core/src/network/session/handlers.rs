@@ -5,7 +5,7 @@ use util::bytes::MutableBuffer;
 
 use crate::network::{
     CommandOutput, CommandOutputMessage, CommandOutputType, CommandRequest,
-    SettingsCommand,
+    SettingsCommand, TextData,
 };
 use crate::network::{
     {
@@ -27,8 +27,8 @@ impl Session {
 
     pub fn process_text_message(&self, packet: MutableBuffer) -> anyhow::Result<()> {
         let request = TextMessage::deserialize(packet.snapshot())?;
-        if request.message_type != MessageType::Chat {
-            bail!(Malformed, "Client is only allowed to send chat messages, received {:?} instead", request.message_type)
+        if matches!(request.data, TextData::Chat {..}) {
+            anyhow::bail!("Client is only allowed to send chat messages");
         }
 
         // We must also return the packet to the client that sent it.
