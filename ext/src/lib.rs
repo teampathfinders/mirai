@@ -7,6 +7,7 @@ mod cache;
 mod plugin;
 mod runtime;
 mod stdio;
+mod def;
 
 pub use runtime::*;
 pub use plugin::*;

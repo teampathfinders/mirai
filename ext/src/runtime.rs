@@ -1,10 +1,8 @@
 use crate::cache::CompilationCache;
-use crate::stdio::ExtensionStdout;
-use crate::{ASSEMBLY_DIRECTORY, CACHE_DIRECTORY};
-use crate::plugin::Plugin;
+
+use crate::{ASSEMBLY_DIRECTORY, CACHE_DIRECTORY, plugin::Plugin};
 use anyhow::Context;
-use wasmtime_wasi::stdio::stdout;
-use wasmtime_wasi::{WasiCtxBuilder, WasiCtx};
+use wasmtime_wasi::{stdio::stdout, WasiCtxBuilder, WasiCtx};
 use std::ffi::OsStr;
 use wasmtime::{Config, Engine, Instance, Store, Linker};
 
@@ -14,8 +12,6 @@ use wasmtime::{Config, Engine, Instance, Store, Linker};
 pub struct PluginRuntime {
     /// WebAssembly compiler engine.
     engine: Engine,
-    // /// Contains all module data.
-    // store: Store<WasiCtx>,
     /// List of plugins that the runtime is tracking.
     plugins: Vec<Plugin>,
 }
@@ -53,25 +49,35 @@ impl PluginRuntime {
             .collect::<Vec<_>>();
 
         let mut plugins = Vec::with_capacity(module_paths.len());
-        for path in &module_paths {
+        for path in module_paths {
             let wasi = WasiCtxBuilder::new()
                 .inherit_stdio()
                 .build();
             let mut store = Store::new(&engine, wasi);
 
-            let module = cache.load(&engine, path).context(format!("Failed to compile module {path}"))?;
-            linker.module(&mut store, path, &module)
-                .context(format!("Failed to link module {path}"))?;
+            let module = cache.load(&engine, &path).context(format!("Failed to compile module `{path}`"))?;
+            linker.module(&mut store, &path, &module)
+                .context(format!("Failed to link module `{path}`"))?;
 
             let instance = linker.instantiate(&mut store, &module)
-                .context("Failed to instantiate module")?;
-            let plugin = Plugin::new(instance, store)
-                .context("Failed to retrieve module data")?;
+                .context(format!("Failed to instantiate module `{path}`"))?;
+
+            let path_clone = path.clone();
+            let plugin = Plugin::new(path, instance, store)
+                .context(format!("Failed to initialize module `{path_clone}`"))?;
 
             plugins.push(plugin);
         }
 
         tracing::info!("Extension runtime initialised");
         Ok(Self { engine, plugins })
+    }
+
+    /// Calls the shutdown callback for every plugin and drops all plugins.
+    pub fn shutdown(self) {
+        self.plugins
+            .into_iter()
+            .map(Plugin::on_shutdown)
+            .for_each(|r| if let Err(err) = r { tracing::error!("{err}"); });
     }
 }
