@@ -16,7 +16,7 @@ use crate::network::{
 };
 use crate::network::{
     BiomeDefinitionList, CLIENT_VERSION_STRING, Difficulty, GameMode,
-    MessageType, NETWORK_VERSION,
+    NETWORK_VERSION,
     SetLocalPlayerAsInitialized, TextMessage, ViolationWarning,
 };
 use crate::network::AvailableCommands;

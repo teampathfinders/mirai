@@ -9,7 +9,7 @@ use crate::network::{
 };
 use crate::network::{
     {
-        Animate, MessageType, RequestAbility,
+        Animate, RequestAbility,
         TextMessage,
         UpdateSkin,
     },
@@ -27,7 +27,7 @@ impl Session {
 
     pub fn process_text_message(&self, packet: MutableBuffer) -> anyhow::Result<()> {
         let request = TextMessage::deserialize(packet.snapshot())?;
-        if matches!(request.data, TextData::Chat {..}) {
+        if !matches!(request.data, TextData::Chat { .. }) {
             anyhow::bail!("Client is only allowed to send chat messages");
         }
 

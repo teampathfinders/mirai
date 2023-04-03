@@ -60,48 +60,6 @@ impl<'a> TextData<'a> {
     }
 }
 
-/// Type of message.
-#[derive(Debug, Copy, Clone, PartialEq, Eq)]
-pub enum MessageType {
-    Raw,
-    /// A chat message.
-    Chat,
-    Translation,
-    Popup,
-    JukeboxPopup,
-    Tip,
-    /// Used for messages such as a skin change or a player that joined.
-    /// This type indicates a message from the server itself.
-    System,
-    Whisper,
-    Announcement,
-    ObjectWhisper,
-    Object,
-    ObjectAnnouncement,
-}
-
-impl TryFrom<u8> for MessageType {
-    type Error = anyhow::Error;
-
-    fn try_from(value: u8) -> std::result::Result<Self, Self::Error> {
-        Ok(match value {
-            0 => Self::Raw,
-            1 => Self::Chat,
-            2 => Self::Translation,
-            3 => Self::Popup,
-            4 => Self::JukeboxPopup,
-            5 => Self::Tip,
-            6 => Self::System,
-            7 => Self::Whisper,
-            8 => Self::Announcement,
-            9 => Self::ObjectWhisper,
-            10 => Self::Object,
-            11 => Self::ObjectAnnouncement,
-            _ => bail!(Malformed, "Invalid text message type"),
-        })
-    }
-}
-
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct TextMessage<'a> {
     pub data: TextData<'a>,
@@ -114,7 +72,28 @@ impl<'a> ConnectedPacket for TextMessage<'a> {
     const ID: u32 = 0x09;
 
     fn serialized_size(&self) -> usize {
-        todo!();
+        1 + 1 + self.xuid.var_len() + self.platform_chat_id.var_len() + match &self.data {
+            TextData::Chat { source, message } |
+            TextData::Whisper { source, message } |
+            TextData::Announcement { source, message } => {
+                source.var_len() + message.var_len()
+            },
+            TextData::Raw { message } |
+            TextData::Tip { message } |
+            TextData::System { message }  |
+            TextData::Object { message } |
+            TextData::ObjectWhisper { message } |
+            TextData::ObjectAnnouncement { message } => {
+                message.var_len()
+            },
+            TextData::Translation { message, parameters } |
+            TextData::Popup { message, parameters } |
+            TextData::JukeboxPopup { message, parameters } => {
+                message.var_len()
+                    + (parameters.len() as u32).var_len()
+                    + parameters.iter().fold(0, |acc, p| acc + p.var_len())
+            }
+        }
     }
 }
 
@@ -159,6 +138,87 @@ impl<'a> Serialize for TextMessage<'a> {
 
 impl<'a> Deserialize<'a> for TextMessage<'a> {
     fn deserialize(mut buffer: SharedBuffer<'a>) -> anyhow::Result<Self> {
-        todo!();
+        let message_type = buffer.read_u8()?;
+        let needs_translation = buffer.read_bool()?;
+
+        let data = match message_type {
+            0 => TextData::Raw {
+                message: buffer.read_str()?
+            },
+            1 => TextData::Chat {
+                source: buffer.read_str()?,
+                message: buffer.read_str()?
+            },
+            2 => TextData::Translation {
+                message: buffer.read_str()?,
+                parameters: {
+                    let count = buffer.read_var_u32()?;
+                    let mut params = Vec::with_capacity(count as usize);
+                    for _ in 0..count {
+                        params.push(buffer.read_str()?);
+                    }
+
+                    params
+                }
+            },
+            3 => TextData::Popup {
+                message: buffer.read_str()?,
+                parameters: {
+                    let count = buffer.read_var_u32()?;
+                    let mut params = Vec::with_capacity(count as usize);
+                    for _ in 0..count {
+                        params.push(buffer.read_str()?);
+                    }
+
+                    params
+                }
+            },
+            4 => TextData::JukeboxPopup {
+                message: buffer.read_str()?,
+                parameters: {
+                    let count = buffer.read_var_u32()?;
+                    let mut params = Vec::with_capacity(count as usize);
+                    for _ in 0..count {
+                        params.push(buffer.read_str()?);
+                    }
+
+                    params
+                }
+            },
+            5 => TextData::Tip {
+                message: buffer.read_str()?
+            },
+            6 => TextData::System {
+                message: buffer.read_str()?
+            },
+            7 => TextData::Whisper {
+                source: buffer.read_str()?,
+                message: buffer.read_str()?
+            },
+            8 => TextData::Announcement {
+                source: buffer.read_str()?,
+                message: buffer.read_str()?
+            },
+            9 => TextData::ObjectWhisper {
+                message: buffer.read_str()?
+            },
+            10 => TextData::Object {
+                message: buffer.read_str()?
+            },
+            11 => TextData::ObjectAnnouncement {
+                message: buffer.read_str()?
+            },
+            _ => anyhow::bail!("Invalid message type")
+        };
+
+        let xuid = buffer.read_str()?;
+        let platform_chat_id = buffer.read_str()?;
+
+        Ok(Self {
+            data,
+            needs_translation,
+            xuid,
+            platform_chat_id
+        })
     }
 }
