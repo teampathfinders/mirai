@@ -33,7 +33,8 @@ impl PluginRuntime {
         wasmtime_wasi::add_to_linker(&mut linker, |s| s)?;
 
         let cache = CompilationCache::new(CACHE_DIRECTORY)?;
-        let module_paths = std::fs::read_dir(ASSEMBLY_DIRECTORY)?
+        let module_paths = std::fs::read_dir(ASSEMBLY_DIRECTORY)
+            .context(format!("Failed to read `{ASSEMBLY_DIRECTORY}` directory, please make sure the plugin directory exists."))?
             .filter_map(|entry| {
                 // Load only .wasm files
                 if let Ok(entry) = entry {
@@ -69,8 +70,16 @@ impl PluginRuntime {
         }
 
         if !plugins.is_empty() {
-            tracing::info!("Initialised {} plugins", plugins.len());
+            tracing::info!("Initialised {} plugin(s)", plugins.len());
         }
+
+        // Run startup function for each plugin.
+        plugins
+            .iter_mut()
+            .map(Plugin::on_startup)
+            .for_each(|result| if let Err(err) = result {
+                tracing::error!("{err:?}");
+            });
 
         Ok(Self { engine, plugins })
     }
@@ -79,7 +88,7 @@ impl PluginRuntime {
     pub fn shutdown(self) {
         self.plugins.into_iter().map(Plugin::on_shutdown).for_each(|r| {
             if let Err(err) = r {
-                tracing::error!("{err}");
+                tracing::error!("{err:?}");
             }
         });
     }

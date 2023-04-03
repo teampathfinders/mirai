@@ -4,12 +4,12 @@ use tokio::runtime;
 
 use pyro::instance::InstanceManager;
 
-fn main() -> anyhow::Result<()> {
+fn main() {
     init_logging();
-    init_runtime()
+    init_runtime();
 }
 
-fn init_runtime() -> anyhow::Result<()> {
+fn init_runtime() {
     let runtime = runtime::Builder::new_multi_thread()
         .enable_io()
         .enable_time()
@@ -20,16 +20,18 @@ fn init_runtime() -> anyhow::Result<()> {
         .build()
         .expect("Failed to build runtime");
 
-    runtime.block_on(InstanceManager::run())
-}
-
-/// The Cranelift compiler inside of Wasmer logs verbose things to the console when the level is set
-/// to info. This function disables that.
-fn disable_wasmer_log() {
-    if std::env::var_os("RUST_LOG").is_none() {
-        std::env::set_var("RUST_LOG", "info,wasmer_compiler_cranelift=warn");
+    if let Err(error) = runtime.block_on(InstanceManager::run()) {
+        tracing::error!("Fatal error: {error:?}");
     }
 }
+
+// /// The Cranelift compiler inside of Wasmer logs verbose things to the console when the level is set
+// /// to info. This function disables that.
+// fn disable_wasmer_log() {
+//     if std::env::var_os("RUST_LOG").is_none() {
+//         std::env::set_var("RUST_LOG", "info,wasmer_compiler_cranelift=warn");
+//     }
+// }
 
 /// Initialises logging with tokio-console.
 #[cfg(feature = "tokio-console")]
@@ -47,7 +49,6 @@ fn init_logging() {
 
     tracing_subscriber::registry().with(console_layer).with(fmt).init();
 
-    disable_wasmer_log();
     tracing::info!("Tokio console enabled");
 }
 
@@ -57,10 +58,6 @@ fn init_logging() {
     tracing_subscriber::fmt()
         .with_target(false)
         .with_max_level(tracing::Level::DEBUG)
-        // .with_file(true)
-        // .with_line_number(true)
         .pretty()
         .init();
-
-    disable_wasmer_log();
 }

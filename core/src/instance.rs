@@ -326,8 +326,6 @@ impl InstanceManager {
                 sess_manager.forward_packet(packet);
             }
         }
-
-        tracing::info!("UDP service shut down");
     }
 
     /// Generates a new metadata string using the given description and new player count.
