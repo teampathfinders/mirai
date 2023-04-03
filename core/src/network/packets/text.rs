@@ -4,54 +4,86 @@ use util::bytes::{BinaryRead, BinaryWrite, MutableBuffer, SharedBuffer, VarInt, 
 
 use crate::network::ConnectedPacket;
 
+/// Text message data.
 #[repr(u8)]
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum TextData<'a> {
+    /// A simple message without any extra information.
     Raw {
+        /// Message to display.
         message: &'a str
     } = 0,
+    /// A player chat message.
     Chat {
+        /// Player who sent the message.
         source: &'a str,
+        /// Message to display.
         message: &'a str
     } = 1,
+    /// A message that should be translated.
     Translation {
+        /// Message to display.
         message: &'a str,
+        /// Extra information used in translations.
         parameters: Vec<&'a str>
     } = 2,
+    /// A popup.
     Popup {
+        /// Message to display.
         message: &'a str,
+        /// Extra information used in the popup.
         parameters: Vec<&'a str>
     } = 3,
+    /// Popup shown when a disc is played.
     JukeboxPopup {
+        /// Message to display.
         message: &'a str,
+        /// Extra information used in the popup.
         parameters: Vec<&'a str>
     } = 4,
+    /// A tip.
     Tip {
+        /// Message to display.
         message: &'a str
     } = 5,
+    /// Used for server messages such as a changed skin or joining/leaving player.
     System {
+        /// Message to display.
         message: &'a str
     } = 6,
+    /// Player to player whispering.
     Whisper {
+        /// Who sent the whisper (usually a player).
         source: &'a str,
+        /// Message to display.
         message: &'a str
     } = 7,
+    /// An announcement.
     Announcement {
+        /// Source of this message (usually a player).
         source: &'a str,
+        /// Message to display.
         message: &'a str
     } = 8,
+    /// Whispers from an object such as a command block.
     ObjectWhisper {
+        /// Message to display.
         message: &'a str
     } = 9,
+    /// Message from an object such as a command block.
     Object {
+        /// Message to display.
         message: &'a str
     } = 10,
+    /// Announcement from an object such as a command block.
     ObjectAnnouncement {
+        /// Message to display.
         message: &'a str
     } = 11
 }
 
 impl<'a> TextData<'a> {
+    /// Returns the enum discriminant of `self`.
     #[inline]
     pub fn discriminant(&self) -> u8 {
         // SAFETY: This is safe due to the `repr(u8)` attribute on the enum.
@@ -60,11 +92,16 @@ impl<'a> TextData<'a> {
     }
 }
 
+/// Displays messages in chat.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct TextMessage<'a> {
+    /// Data contained in the message.
     pub data: TextData<'a>,
+    /// Whether strings containing `%` should be translated by the client.
     pub needs_translation: bool,
+    /// XUID of the source.
     pub xuid: &'a str,
+    /// Platform chat ID of the source.
     pub platform_chat_id: &'a str
 }
 
