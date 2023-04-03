@@ -52,19 +52,19 @@ impl Session {
     /// Sends a packet to all initialised sessions including self.
     pub fn broadcast<P: ConnectedPacket + Serialize + Clone>(
         &self,
-        pk: P,
+        packet: P,
     ) -> anyhow::Result<()> {
-        self.broadcast.send(BroadcastPacket::new(pk, None)?)?;
+        self.broadcast.send(BroadcastPacket::new(packet, None)?)?;
         Ok(())
     }
 
     /// Sends a packet to all initialised sessions other than self.
     pub fn broadcast_others<P: ConnectedPacket + Serialize + Clone>(
         &self,
-        pk: P,
+        packet: P,
     ) -> anyhow::Result<()> {
         self.broadcast.send(BroadcastPacket::new(
-            pk,
+            packet,
             Some(
                 NonZeroU64::new(self.get_xuid()?)
                     .ok_or_else(|| anyhow!("XUID was 0"))?,

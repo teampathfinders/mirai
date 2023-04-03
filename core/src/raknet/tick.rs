@@ -67,17 +67,17 @@ impl Session {
 
             while !self.active.is_cancelled() {
                 tokio::select! {
-                    pk = receiver.recv() => {
-                        if let Some(pk) = pk {
-                            match self.process_raw_packet(pk).await {
+                    packet = receiver.recv() => {
+                        if let Some(packet) = packet {
+                            match self.process_raw_packet(packet).await {
                                 Ok(_) => (),
                                 Err(e) => tracing::error!("{e}"),
                             }
                         }
                     },
-                    pk = broadcast_recv.recv() => {
-                        if let Ok(pk) = pk {
-                            match self.process_broadcast(pk) {
+                    packet = broadcast_recv.recv() => {
+                        if let Ok(packet) = packet {
+                            match self.process_broadcast(packet) {
                                 Ok(_) => (),
                                 Err(e) => tracing::error!("{e}"),
                             }

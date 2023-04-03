@@ -98,14 +98,14 @@ impl SessionManager {
     }
 
     /// Forwards a packet from the network service to the correct session.
-    pub fn forward_packet(&self, pk: RawPacket) {
+    pub fn forward_packet(&self, packet: RawPacket) {
         // Spawn a new task so that the UDP receiver isn't interrupted
         // if forwarding takes a long amount time.
 
         let list = self.list.clone();
         tokio::spawn(async move {
-            if let Some(session) = list.get(&pk.addr) {
-                match session.0.send_timeout(pk.buf, FORWARD_TIMEOUT).await {
+            if let Some(session) = list.get(&packet.addr) {
+                match session.0.send_timeout(packet.buf, FORWARD_TIMEOUT).await {
                     Ok(_) => (),
                     Err(_) => {
                         // Session incoming queue is full.
@@ -134,9 +134,9 @@ impl SessionManager {
     /// Sends the given packet to every session.
     pub fn broadcast<P: ConnectedPacket + Serialize + Clone>(
         &self,
-        pk: P,
+        packet: P,
     ) -> anyhow::Result<()> {
-        self.broadcast.send(BroadcastPacket::new(pk, None)?)?;
+        self.broadcast.send(BroadcastPacket::new(packet, None)?)?;
         Ok(())
     }
 

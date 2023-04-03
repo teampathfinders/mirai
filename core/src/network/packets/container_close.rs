@@ -1,5 +1,5 @@
-use util::{Result, Serialize};
-use util::bytes::{BinaryWrite, MutableBuffer};
+use util::{Result, Serialize, Deserialize};
+use util::bytes::{BinaryWrite, MutableBuffer, SharedBuffer, BinaryRead};
 
 use crate::network::ConnectedPacket;
 
@@ -16,6 +16,17 @@ impl ConnectedPacket for ContainerClose {
 
     fn serialized_size(&self) -> usize {
         2
+    }
+}
+
+impl<'a> Deserialize<'a> for ContainerClose {
+    fn deserialize(mut buffer: SharedBuffer<'a>) -> anyhow::Result<Self> {
+        let window_id = buffer.read_u8()?;
+        let server_initiated = buffer.read_bool()?;
+
+        Ok(Self {
+            window_id, server_initiated
+        })
     }
 }
 

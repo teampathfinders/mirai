@@ -7,7 +7,7 @@ use async_recursion::async_recursion;
 use util::{bail, Result};
 use util::bytes::{BinaryRead, MutableBuffer};
 
-use crate::network::{CommandRequest, SettingsCommand};
+use crate::network::{CommandRequest, SettingsCommand, ContainerClose};
 use crate::network::{
     ChunkRadiusRequest, ClientToServerHandshake, CompressionAlgorithm, Login,
     RequestNetworkSettings, ResourcePackClientResponse,
@@ -33,26 +33,26 @@ impl Session {
     ///
     /// If a packet is an ACK or NACK type, it will be responded to accordingly (using [`Session::process_ack`] and [`Session::process_nak`]).
     /// Frame batches are processed by [`Session::process_frame_batch`].
-    pub async fn process_raw_packet(&self, pk: MutableBuffer) -> anyhow::Result<bool> {
+    pub async fn process_raw_packet(&self, packet: MutableBuffer) -> anyhow::Result<bool> {
         *self.raknet.last_update.write() = Instant::now();
 
-        if pk.is_empty() {
+        if packet.is_empty() {
             bail!(Malformed, "Packet is empty");
         }
 
-        let pk_id = *pk.first().unwrap();
+        let pk_id = *packet.first().unwrap();
         match pk_id {
-            Ack::ID => self.process_ack(pk.snapshot())?,
-            Nak::ID => self.process_nak(pk.snapshot()).await?,
-            _ => self.process_frame_batch(pk).await?,
+            Ack::ID => self.process_ack(packet.snapshot())?,
+            Nak::ID => self.process_nak(packet.snapshot()).await?,
+            _ => self.process_frame_batch(packet).await?,
         }
 
         Ok(true)
     }
 
-    pub fn process_broadcast(&self, pk: BroadcastPacket) -> anyhow::Result<()> {
+    pub fn process_broadcast(&self, packet: BroadcastPacket) -> anyhow::Result<()> {
         if let Ok(xuid) = self.get_xuid() {
-            if let Some(sender) = pk.sender {
+            if let Some(sender) = packet.sender {
                 if sender.get() == xuid {
                     // Source is self, do not send.
                     return Ok(());
@@ -60,7 +60,7 @@ impl Session {
             }
         }
 
-        self.send_serialized(pk.content, DEFAULT_SEND_CONFIG)
+        self.send_serialized(packet.content, DEFAULT_SEND_CONFIG)
     }
 
     /// Processes a batch of frames.
@@ -70,8 +70,8 @@ impl Session {
     /// * Inserting packets into the compound collector
     /// * Discarding old sequenced frames
     /// * Acknowledging reliable packets
-    async fn process_frame_batch(&self, pk: MutableBuffer) -> anyhow::Result<()> {
-        let batch = FrameBatch::deserialize(pk.snapshot())?;
+    async fn process_frame_batch(&self, packet: MutableBuffer) -> anyhow::Result<()> {
+        let batch = FrameBatch::deserialize(packet.snapshot())?;
         self.raknet
             .client_batch_number
             .fetch_max(batch.sequence_number, Ordering::SeqCst);
@@ -132,27 +132,27 @@ impl Session {
     }
 
     /// Processes an unencapsulated game packet.
-    async fn process_frame_data(&self, pk: MutableBuffer) -> anyhow::Result<()> {
-        let packet_id = *pk.first().expect("Game packet buffer was empty");
+    async fn process_frame_data(&self, packet: MutableBuffer) -> anyhow::Result<()> {
+        let packet_id = *packet.first().expect("Game packet buffer was empty");
         match packet_id {
-            CONNECTED_PACKET_ID => self.process_connected_packet(pk).await?,
+            CONNECTED_PACKET_ID => self.process_connected_packet(packet).await?,
             DisconnectNotification::ID => self.on_disconnect(),
-            ConnectionRequest::ID => self.process_connection_request(pk)?,
+            ConnectionRequest::ID => self.process_connection_request(packet)?,
             NewIncomingConnection::ID => {
-                self.process_new_incoming_connection(pk)?
+                self.process_new_incoming_connection(packet)?
             }
-            ConnectedPing::ID => self.process_online_ping(pk)?,
+            ConnectedPing::ID => self.process_online_ping(packet)?,
             id => bail!(Malformed, "Invalid Raknet packet ID: {}", id),
         }
 
         Ok(())
     }
 
-    async fn process_connected_packet(&self, mut pk: MutableBuffer) -> anyhow::Result<()> {
-        // dbg!(&pk);
+    async fn process_connected_packet(&self, mut packet: MutableBuffer) -> anyhow::Result<()> {
+        // dbg!(&packet);
 
         // Remove 0xfe packet ID.
-        pk.advance_cursor(1);
+        packet.advance_cursor(1);
 
         // Decrypt packet
         if self.encryptor.initialized() {
@@ -162,7 +162,7 @@ impl Session {
                 .get()
                 .expect("Encryptor was destroyed while it was in use");
 
-            match encryptor.decrypt(&mut pk) {
+            match encryptor.decrypt(&mut packet) {
                 Ok(_) => (),
                 Err(e) => {
                     return Err(e);
@@ -177,7 +177,7 @@ impl Session {
 
         if compression_enabled
             && compression_threshold != 0
-            && pk.len() > compression_threshold as usize
+            && packet.len() > compression_threshold as usize
         {
             let alg = SERVER_CONFIG.read().compression_algorithm;
 
@@ -188,7 +188,7 @@ impl Session {
                 }
                 CompressionAlgorithm::Deflate => {
                     let mut reader =
-                        flate2::read::DeflateDecoder::new(pk.as_slice());
+                        flate2::read::DeflateDecoder::new(packet.as_slice());
 
                     let mut decompressed = Vec::new();
                     reader.read_to_end(&mut decompressed)?;
@@ -198,48 +198,49 @@ impl Session {
                 }
             }
         } else {
-            self.process_decompressed_packet(pk).await
+            self.process_decompressed_packet(packet).await
         }
     }
 
     async fn process_decompressed_packet(
         &self,
-        mut pk: MutableBuffer,
+        mut packet: MutableBuffer,
     ) -> anyhow::Result<()> {
-        let mut snapshot = pk.snapshot();
+        let mut snapshot = packet.snapshot();
         let start_len = snapshot.len();
         let _length = snapshot.read_var_u32()?;
 
         let header = Header::deserialize(&mut snapshot)?;
 
         // Advance past the header.
-        pk.advance_cursor(start_len - snapshot.len());
+        packet.advance_cursor(start_len - snapshot.len());
 
         match header.id {
             RequestNetworkSettings::ID => {
-                self.process_network_settings_request(pk)
+                self.process_network_settings_request(packet)
             }
-            Login::ID => self.process_login(pk).await,
+            Login::ID => self.process_login(packet).await,
             ClientToServerHandshake::ID => {
-                self.process_cts_handshake(pk)
+                self.process_cts_handshake(packet)
             }
-            CacheStatus::ID => self.process_cache_status(pk),
+            CacheStatus::ID => self.process_cache_status(packet),
             ResourcePackClientResponse::ID => {
-                self.process_pack_client_response(pk)
+                self.process_pack_client_response(packet)
             }
-            ViolationWarning::ID => self.process_violation_warning(pk),
-            ChunkRadiusRequest::ID => self.process_radius_request(pk),
-            Interact::ID => self.process_interaction(pk),
-            TextMessage::ID => self.process_text_message(pk),
+            ViolationWarning::ID => self.process_violation_warning(packet),
+            ChunkRadiusRequest::ID => self.process_radius_request(packet),
+            Interact::ID => self.process_interaction(packet),
+            TextMessage::ID => self.process_text_message(packet),
             SetLocalPlayerAsInitialized::ID => {
-                self.process_local_initialized(pk)
+                self.process_local_initialized(packet)
             }
-            MovePlayer::ID => self.process_move_player(pk),
-            RequestAbility::ID => self.process_ability_request(pk),
-            Animate::ID => self.process_animation(pk),
-            CommandRequest::ID => self.process_command_request(pk),
-            UpdateSkin::ID => self.process_skin_update(pk),
-            SettingsCommand::ID => self.process_settings_command(pk),
+            MovePlayer::ID => self.process_move_player(packet),
+            RequestAbility::ID => self.process_ability_request(packet),
+            Animate::ID => self.process_animation(packet),
+            CommandRequest::ID => self.process_command_request(packet),
+            UpdateSkin::ID => self.process_skin_update(packet),
+            SettingsCommand::ID => self.process_settings_command(packet),
+            ContainerClose::ID => self.process_container_close(packet),
             id => bail!(Malformed, "Invalid game packet: {id:#04x}"),
         }
     }
