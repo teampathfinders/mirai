@@ -54,8 +54,8 @@ pub struct InstanceManager {
     /// Channel that the LevelManager sends a message to when it has fully shutdown.
     /// This is to make sure that the world has been saved and safely shut down before shutting down the server.
     level_notifier: Receiver<()>,
-    /// Virtual machine that runs and compiles the extensions.
-    extensions: PluginRuntime,
+    /// Virtual machine that runs and compiles the plugins.
+    plugins: PluginRuntime,
 }
 
 impl InstanceManager {
@@ -175,6 +175,8 @@ impl InstanceManager {
             _ = token.cancelled() => (),
             _ = tokio::signal::ctrl_c() => ()
         }
+
+        extensions.shutdown();
 
         // then shut down all services.
         tracing::info!("Disconnecting all clients");
