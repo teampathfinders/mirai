@@ -6,7 +6,6 @@ use std::{
 use tokio::sync::mpsc;
 
 use util::bytes::MutableBuffer;
-use util::Result;
 
 use crate::network::{
     {MessageType, PlayerListRemove, TextMessage},

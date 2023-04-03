@@ -12,7 +12,7 @@ pub struct Vector<T, const N: usize> {
 
 impl<T, const N: usize> Default for Vector<T, N>
 where
-    [T; N]: Default
+    [T; N]: Default,
 {
     #[inline]
     fn default() -> Self {

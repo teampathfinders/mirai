@@ -1,25 +1,18 @@
 use std::{any::Any, io};
 
-use wasi_common::{WasiFile, file::{FileType, FdFlags}, Error, ErrorExt, SystemTimeSpec};
-
-#[cfg(windows)]
-use io_extras::os::windows::{AsRawHandleOrSocket, RawHandleOrSocket};
-#[cfg(unix)]
-use io_lifetimes::{AsFd, BorrowedFd};
-#[cfg(windows)]
-use io_lifetimes::{AsHandle, BorrowedHandle};
-use tracing::{Level, Metadata, Span};
-use tracing::field::FieldSet;
-use wasmtime_wasi::file::File;
+use wasi_common::{
+    file::{FdFlags, FileType},
+    Error, ErrorExt, SystemTimeSpec, WasiFile,
+};
 
 pub struct ExtensionStdout {
     pub prefix: String,
-    pub stdout: wasmtime_wasi::sync::stdio::Stdout
+    pub stdout: wasmtime_wasi::sync::stdio::Stdout,
 }
 
 #[async_trait::async_trait]
 impl WasiFile for ExtensionStdout {
-    fn as_any(&self) ->  &dyn Any {
+    fn as_any(&self) -> &dyn Any {
         self
     }
 
@@ -42,24 +35,20 @@ impl WasiFile for ExtensionStdout {
     }
 
     async fn write_vectored<'a>(&self, bufs: &[io::IoSlice<'a>]) -> Result<u64, Error> {
-        let span = tracing::span!(Level::INFO, "plugin", name = self.prefix);
+        let span = tracing::span!(tracing::Level::INFO, "plugin", name = self.prefix);
         let _guard = span.enter();
 
         let mut written = 0;
         for buf in bufs {
             // AssemblyScript prints a single newline in a completely new buffer?
             if buf.as_ref() == [10] {
-                continue
+                continue;
             }
 
-            let mut as_str = std::str::from_utf8(&buf)
-                .map_err(|_| Error::invalid_argument())?;
+            let as_str = std::str::from_utf8(buf).map_err(|_| Error::invalid_argument())?;
 
             // Strip trailing newline because tracing also adds one.
-            let stripped = as_str
-                .strip_suffix("\n")
-                .or(as_str.strip_suffix("\r\n"))
-                .unwrap_or(as_str);
+            let stripped = as_str.strip_suffix('\n').or(as_str.strip_suffix("\r\n")).unwrap_or(as_str);
 
             tracing::info!("{stripped}");
             written += buf.len();
@@ -67,9 +56,7 @@ impl WasiFile for ExtensionStdout {
         Ok(written as u64)
     }
 
-    async fn write_vectored_at<'a>(
-        &self, _bufs: &[io::IoSlice<'a>], _offset: u64
-    ) -> Result<u64, Error> {
+    async fn write_vectored_at<'a>(&self, _bufs: &[io::IoSlice<'a>], _offset: u64) -> Result<u64, Error> {
         Err(Error::seek_pipe())
     }
 
@@ -77,9 +64,7 @@ impl WasiFile for ExtensionStdout {
         Err(Error::seek_pipe())
     }
 
-    async fn set_times(
-        &self, atime: Option<SystemTimeSpec>, mtime: Option<SystemTimeSpec>
-    ) -> Result<(), Error> {
+    async fn set_times(&self, atime: Option<SystemTimeSpec>, mtime: Option<SystemTimeSpec>) -> Result<(), Error> {
         self.stdout.set_times(atime, mtime).await
     }
 

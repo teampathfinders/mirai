@@ -4,10 +4,8 @@ use crate::database::Database;
 use crate::level_dat::LevelDat;
 use anyhow::anyhow;
 use std::fs::File;
-use std::io::{Read, SeekFrom};
+use std::io::Read;
 use std::path::Path;
-use util::bytes::{BinaryRead, BinaryWrite};
-use util::{bail, error, Error, Result};
 
 pub struct Level {
     pub dat: LevelDat,

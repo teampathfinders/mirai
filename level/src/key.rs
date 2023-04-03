@@ -1,5 +1,4 @@
 use util::bytes::{BinaryRead, BinaryWrite};
-use util::{bail, Error, Result};
 
 pub const AUTONOMOUS_ENTITIES: &[u8] = "AutonomousEntities".as_bytes();
 pub const BIOME_DATA: &[u8] = "BiomeData".as_bytes();
@@ -117,7 +116,7 @@ impl DatabaseKey {
             0x38 => KeyData::BorderBlocks,
             0x39 => KeyData::HardCodedSpawnAreas,
             0x3a => KeyData::RandomTicks,
-            _ => bail!(Malformed, "Invalid key type: {key_ty:x?}"),
+            _ => anyhow::bail!(format!("Invalid key type: {key_ty:x?}")),
         };
 
         Ok(Self { x, z, dimension, data })
@@ -144,7 +143,7 @@ impl TryFrom<u32> for Dimension {
             0 => Self::Overworld,
             1 => Self::Nether,
             2 => Self::End,
-            _ => bail!(Malformed, "Invalid dimension"),
+            _ => anyhow::bail!("Invalid dimension"),
         })
     }
 }

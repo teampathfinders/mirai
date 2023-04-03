@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use std::sync::atomic::Ordering;
 
 use level::Dimension;
@@ -5,7 +6,7 @@ use util::{bail, BlockPosition, Deserialize, Result, Vector};
 use util::bytes::MutableBuffer;
 
 use crate::config::SERVER_CONFIG;
-use crate::network::{PropertyData};
+use crate::network::{PropertyData, ItemEntry, BlockEntry};
 use crate::network::{
     BroadcastIntent, ChatRestrictionLevel, ChunkRadiusReply,
     ChunkRadiusRequest, ClientToServerHandshake, CreativeContent, DISCONNECTED_LOGIN_FAILED, Login, NetworkSettings, PermissionLevel,
@@ -170,8 +171,21 @@ impl Session {
             },
             time: 0,
             enchantment_seed: 0,
-            block_properties: &[],
-            item_properties: &[],
+            block_properties: &[
+                BlockEntry {
+                    name: "minecraft:bedrock".to_owned(),
+                    properties: HashMap::from([
+                        ("infiniburn_bit".to_owned(), nbt::Value::Byte(0))
+                    ]),
+                }
+            ],
+            item_properties: &[
+//                ItemEntry {
+//                    name: "minecraft:bedrock".to_owned(),
+//                    runtime_id: 2,
+//                    component_based: false
+//                }
+            ],
             property_data: PropertyData {},
             server_authoritative_inventory: false,
             game_version: "1.19.60",

@@ -1697,8 +1697,6 @@ dependencies = [
  "async-trait",
  "flate2",
  "io-extras",
- "io-lifetimes",
- "is-terminal",
  "rustix 0.37.6",
  "sha2",
  "tracing",

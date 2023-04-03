@@ -32,8 +32,9 @@ impl Session {
     pub fn process_container_close(&self, packet: MutableBuffer) -> anyhow::Result<()> {
         let request = ContainerClose::deserialize(packet.snapshot())?;
         if request.window_id == INVENTORY_WINDOW_ID {
-            // Player closed inventory
             self.player.write().is_inventory_open = false;
+
+            // The server also needs to send a container close packet back.
             self.send(ContainerClose {
                 window_id: INVENTORY_WINDOW_ID,
                 ..Default::default()

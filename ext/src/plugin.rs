@@ -1,10 +1,10 @@
 use std::fmt::{self, Debug, Formatter};
 
+use crate::stdio::ExtensionStdout;
 use anyhow::{anyhow, Context};
 use wasmtime::{Instance, Store, TypedFunc};
 use wasmtime_wasi::stdio::stdout;
 use wasmtime_wasi::WasiCtx;
-use crate::stdio::ExtensionStdout;
 
 use crate::def;
 
@@ -130,10 +130,9 @@ impl Plugin {
             version_fn.call(&mut store, ())?.to_le_bytes()
         };
 
-        store.data_mut().set_stdout(Box::new(ExtensionStdout {
-            prefix: name.clone(),
-            stdout: stdout()
-        }));
+        store
+            .data_mut()
+            .set_stdout(Box::new(ExtensionStdout { prefix: name.clone(), stdout: stdout() }));
 
         Ok(Self {
             name,

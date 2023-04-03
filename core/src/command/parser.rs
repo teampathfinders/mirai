@@ -90,11 +90,11 @@ impl ParsedCommand {
                 }
             }
 
-            return Err(format!(
+            Err(format!(
                 "Syntax error: {latest_error}"
-            ));
+            ))
         } else {
-            return Err(format!("Unknown command: {name}. Please check that the command exists and you have permission to use it."));
+            Err(format!("Unknown command: {name}. Please check that the command exists and you have permission to use it."))
         }
     }
 }

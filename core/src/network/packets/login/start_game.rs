@@ -1,8 +1,10 @@
+use std::collections::HashMap;
+
 use level::Dimension;
 use util::{Serialize, Vector};
 use util::Result;
 use util::BlockPosition;
-use util::bytes::{BinaryWrite, MutableBuffer, VarInt, VarString};
+use util::bytes::{BinaryWrite, MutableBuffer, VarInt, VarString, BinaryRead};
 
 use crate::network::{CLIENT_VERSION_STRING, ConnectedPacket, Difficulty, GameMode, GameRule};
 use crate::network::ExperimentData;
@@ -98,7 +100,7 @@ pub struct BlockEntry {
     /// Name of the block.
     pub name: String,
     // NBT compound containing properties.
-    pub properties: nbt::Value,
+    pub properties: HashMap<String, nbt::Value>,
 }
 
 impl BlockEntry {
@@ -108,6 +110,18 @@ impl BlockEntry {
     }
 
     pub fn serialize(&self, mut buffer: &mut MutableBuffer) -> anyhow::Result<()> {
+        {
+            let mut buf2 = MutableBuffer::new();
+            buf2.write_str(&self.name)?;
+            nbt::to_var_bytes_in(&mut buf2, &self.properties)?;
+
+            let mut ss = buf2.snapshot();
+            let name = ss.read_str()?;
+            let (properties, _): (nbt::Value, usize) = nbt::from_var_bytes(*ss)?;
+
+            dbg!(name, properties);
+        }
+
         buffer.write_str(&self.name)?;
         nbt::to_var_bytes_in(&mut buffer, &self.properties)
     }

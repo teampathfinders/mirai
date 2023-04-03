@@ -93,18 +93,12 @@ impl Session {
             encryptor: OnceCell::new(),
             cache_support: OnceCell::new(),
             initialized: AtomicBool::new(false),
-            broadcast,
-            level_manager,
-
-            active: CancellationToken::new(),
-
-            current_tick: AtomicU64::new(0),
             player: RwLock::new(PlayerData {
                 is_inventory_open: false,
                 position: Vector::from([23.0, 23.0, 2.0]),
                 rotation: Vector::from([0.0; 3]),
                 runtime_id: RUNTIME_ID_COUNTER.fetch_add(1, Ordering::SeqCst),
-                game_mode: GameMode::Survival,
+                game_mode: GameMode::Creative,
                 permission_level: PermissionLevel::Member,
                 skin: None,
             }),
@@ -126,6 +120,10 @@ impl Session {
                 address,
                 recovery_queue: Default::default(),
             },
+            broadcast,
+            level_manager,
+            active: CancellationToken::new(),
+            current_tick: AtomicU64::new(0),
         });
 
         // Start processing jobs.

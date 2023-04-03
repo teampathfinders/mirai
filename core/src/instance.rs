@@ -167,7 +167,7 @@ impl InstanceManager {
 
             tokio::spawn(async move { Self::udp_recv_job(token, udp_socket, session_manager).await })
         };
-        
+
         tracing::info!("Ready!");
 
         // Wait for either Ctrl-C or token cancel...
@@ -301,7 +301,9 @@ impl InstanceManager {
                     let pk_result = match id {
                         UnconnectedPing::ID => Self::process_unconnected_ping(packet, server_guid, &metadata),
                         OpenConnectionRequest1::ID => Self::process_open_connection_request1(packet, server_guid),
-                        OpenConnectionRequest2::ID => Self::process_open_connection_request2(packet, udp_socket.clone(), session_manager, server_guid),
+                        OpenConnectionRequest2::ID => {
+                            Self::process_open_connection_request2(packet, udp_socket.clone(), session_manager, server_guid)
+                        }
                         _ => {
                             tracing::error!("Invalid unconnected packet ID: {id:x}");
                             return;
