@@ -3,14 +3,10 @@ use std::ops::{Index, IndexMut};
 
 use serde::{Deserialize, Serialize};
 
-use util::bytes::{BinaryRead, MutableBuffer, BinaryWrite};
+use util::bytes::{BinaryRead, BinaryWrite, MutableBuffer};
 use util::{bail, Vector};
 
-/// Performs ceiling division on two u32s.
-#[inline]
-const fn u32_ceil_div(lhs: u32, rhs: u32) -> u32 {
-    (lhs + rhs - 1) / rhs
-}
+use crate::ceil_div;
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum SubChunkVersion {
@@ -157,9 +153,6 @@ impl SubLayer {
     {
         // Size of each index in bits.
         let index_size = reader.read_u8()? >> 1;
-        if index_size == 0x7f {
-            anyhow::bail!(format!("Invalid block bit size {index_size}"));
-        }
 
         // Amount of indices that fit in a single 32-bit integer.
         let indices_per_word = u32::BITS as usize / index_size as usize;
@@ -224,7 +217,7 @@ impl SubLayer {
         writer.write_u8(index_size << 1)?;
 
         // Amount of indices that fit in a single 32-bit integer.
-        let indices_per_word = u32_ceil_div(u32::BITS, index_size as u32) as usize;
+        let per_word = ceil_div(u32::BITS, index_size as u32) as usize;
 
         // Amount of words needed to encode 4096 block indices.
         let word_count = {
@@ -232,14 +225,14 @@ impl SubLayer {
                 3 | 5 | 6 => 1,
                 _ => 0,
             };
-            4096 / indices_per_word + padding
+            4096 / per_word + padding
         };
 
         let mask = !(!0u32 << index_size);
         for i in 0..word_count {
             let mut word = 0;
-            for j in 0..indices_per_word {
-                let offset = i * indices_per_word + j;
+            for j in 0..per_word {
+                let offset = i * per_word + j;
                 if offset == 4096 {
                     break;
                 }
