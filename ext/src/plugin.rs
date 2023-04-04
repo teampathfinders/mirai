@@ -1,32 +1,12 @@
+use std::ffi::CStr;
 use std::fmt::{self, Debug, Formatter};
 
 use crate::stdio::ExtensionStdout;
-use anyhow::{anyhow, Context};
 use wasmtime::{Instance, Store, TypedFunc};
 use wasmtime_wasi::stdio::stdout;
 use wasmtime_wasi::WasiCtx;
 
 use crate::def;
-
-/// Contains commonly used functions.
-struct PluginFns {
-    /// Allocates a block of memory in WebAssembly linear memory.
-    ///
-    /// The argument passed into this function determines the size of the allocation in bytes.
-    alloc_fn: TypedFunc<u32, i32>,
-    /// Deallocates a block of memory previously allocated with [`alloc_fn`](Self::alloc_fn).
-    ///
-    /// The first argument is a pointer to the start of the allocation while the second argument is the
-    /// size of the allocation.
-    /// The size passed into this function must be equal to the size previously used in [`alloc_fn`](Self::alloc_fn).
-    dealloc_fn: TypedFunc<(i32, u32), ()>,
-    /// Resizes a block of memory previously allocated with [`alloc_fn`](Self::alloc_fn).
-    ///
-    /// The first argument is a pointer to the start of the allocation,
-    /// the second argument is the current size of the allocation,
-    /// and the third argument is the requested size of the new allocation.
-    realloc_fn: TypedFunc<(i32, u32, u32), i32>,
-}
 
 #[inline]
 fn to_version_string(version: [u8; 4]) -> String {
@@ -40,7 +20,7 @@ fn to_version_string(version: [u8; 4]) -> String {
 pub struct Plugin {
     /// Name of the plugin
     ///
-    /// This name is retrieved using the `_pyro_ext_name` and `__pyro_ext_name_len` exports.
+    /// This name is retrieved using the `_pyro_ext_name` export.
     name: String,
     /// Name of the WebAssemby file.
     file: String,
@@ -50,9 +30,8 @@ pub struct Plugin {
     version: [u8; 4],
     /// The instantiated plugin.
     instance: Instance,
+    /// Contains all plugin imports and exports.
     store: Store<WasiCtx>,
-    /// Pointers to several functions exported by all plugins.
-    fn_pointers: PluginFns,
 }
 
 impl Plugin {
@@ -65,10 +44,8 @@ impl Plugin {
     /// Firstly, the `__pyro_initialize` function runs, which should be used to initialise runtime resources
     /// such as a garbage collector.
     ///
-    /// Secondly, the `__pyro_ext_name_len` function is called, which returns the length of the name in bytes.
-    /// The runtime then allocates a buffer of the specified size using `__pyro_alloc`,
-    /// which is populated using `__pyro_ext_name`.
-    /// This UTF-8 buffer is converted into a Rust string and then deallocated with `__pyro_dealloc`.
+    /// Secondly, the `__pyro_ext_name` function is called to retrieve the plugin name.
+    /// This function should return a pointer to a null-terminated string.
     ///
     /// Lastly, the plugin version is simply retrieved using `__pyro_ext_version`.
     /// The version is encoded as an unsigned little-endian 32-bit integer. Each of the bytes in the integer
@@ -99,30 +76,16 @@ impl Plugin {
             }
         }
 
-        let alloc_fn = instance.get_typed_func::<u32, i32>(&mut store, def::IMPL_ALLOC_FN)?;
-        let dealloc_fn = instance.get_typed_func::<(i32, u32), ()>(&mut store, def::IMPL_DEALLOC_FN)?;
-        let realloc_fn = instance.get_typed_func::<(i32, u32, u32), i32>(&mut store, def::IMPL_REALLOC_FN)?;
-
         let name = {
-            let name_len_fn = instance.get_typed_func::<(), u32>(&mut store, def::IMPL_EXT_NAME_LEN_FN)?;
-            let len = name_len_fn.call(&mut store, ())?;
+            let name_fn = instance.get_typed_func::<(), i32>(&mut store, def::IMPL_EXT_NAME_FN)?;
+            let ptr = name_fn.call(&mut store, ())?;
 
-            let name_fn = instance.get_typed_func::<i32, ()>(&mut store, def::IMPL_EXT_NAME_FN)?;
-            let name_ptr = alloc_fn.call(&mut store, len)?;
-            name_fn.call(&mut store, name_ptr)?;
-
-            let linear_mem = instance
+            let memory = instance
                 .get_memory(&mut store, "memory")
-                .ok_or_else(|| anyhow!("Memory export 'memory' not found").context("Failed to load plugin name"))?;
+                .ok_or_else(|| anyhow::anyhow!("Could not find memory"))?;
+            let cstr = unsafe { CStr::from_ptr(memory.data_ptr(&store).add(ptr as usize) as *const i8) };
 
-            let mut utf8_buffer = vec![0; len as usize];
-            linear_mem.read(&mut store, name_ptr as usize, &mut utf8_buffer)?;
-
-            let name = String::from_utf8(utf8_buffer).context("Failed to read plugin name")?;
-
-            dealloc_fn.call(&mut store, (name_ptr, len))?;
-
-            name
+            cstr.to_str()?.to_owned()
         };
 
         let version = {
@@ -134,14 +97,7 @@ impl Plugin {
             .data_mut()
             .set_stdout(Box::new(ExtensionStdout { prefix: name.clone(), stdout: stdout() }));
 
-        Ok(Self {
-            name,
-            file,
-            version,
-            instance,
-            store,
-            fn_pointers: PluginFns { alloc_fn, dealloc_fn, realloc_fn },
-        })
+        Ok(Self { name, file, version, instance, store })
     }
 
     /// Calls the optional startup function in the plugin.

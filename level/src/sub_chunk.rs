@@ -3,7 +3,10 @@ use std::ops::{Index, IndexMut};
 
 use serde::{Deserialize, Serialize};
 
+use util::bytes::{BinaryRead, BinaryWrite, MutableBuffer};
 use util::{bail, Vector};
+
+use crate::ceil_div;
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum SubChunkVersion {
@@ -82,7 +85,7 @@ pub struct SubLayer {
     /// List of indices into the palette.
     ///
     /// Coordinates can be converted to an offset into the array using [`to_offset`].
-    pub(crate) indices: [u16; 4096],
+    pub(crate) indices: Box<[u16; 4096]>,
     /// List of all different block types in this sub chunk layer.
     pub(crate) palette: Vec<PaletteEntry>,
 }
@@ -141,6 +144,93 @@ impl SubLayer {
     }
 }
 
+impl SubLayer {
+    /// Deserializes a single layer from the given buffer.
+    #[inline]
+    fn deserialize_local<'a, R>(mut reader: R) -> anyhow::Result<Self>
+    where
+        R: BinaryRead<'a> + Copy + 'a,
+    {
+        let indices = crate::deserialize_packed_array(&mut reader)?
+            .ok_or_else(|| anyhow::anyhow!("Sub chunk index size cannot be 0"))?;
+
+        let len = reader.read_u32_le()? as usize;
+        let mut palette = Vec::with_capacity(len);
+
+        for _ in 0..len {
+            let (entry, n) = nbt::from_le_bytes(reader)?;
+
+            palette.push(entry);
+            reader.advance(n)?;
+        }
+
+        Ok(Self {
+            indices, palette
+        })
+    }
+
+    #[inline]
+    fn serialize_local<W>(&self, mut writer: W) -> anyhow::Result<()>
+    where
+        W: BinaryWrite,
+    {
+        // Determine the required bits per index
+        let index_size = {
+            let palette_size = self.palette.len();
+
+            let mut bits_per_block = 0;
+            // Loop over allowed values.
+            for b in [1, 2, 3, 4, 5, 6, 8, 16] {
+                if 2usize.pow(b) >= palette_size {
+                    bits_per_block = b;
+                    break;
+                }
+            }
+
+            bits_per_block as u8
+        };
+
+        writer.write_u8(index_size << 1)?;
+
+        // Amount of indices that fit in a single 32-bit integer.
+        let per_word = ceil_div(u32::BITS, index_size as u32) as usize;
+
+        // Amount of words needed to encode 4096 block indices.
+        let word_count = {
+            let padding = match index_size {
+                3 | 5 | 6 => 1,
+                _ => 0,
+            };
+            4096 / per_word + padding
+        };
+
+        let mask = !(!0u32 << index_size);
+        for i in 0..word_count {
+            let mut word = 0;
+            for j in 0..per_word {
+                let offset = i * per_word + j;
+                if offset == 4096 {
+                    break;
+                }
+
+                let index = self.indices[offset] as u32 & mask;
+
+                word |= index;
+                word <<= index_size;
+            }
+
+            writer.write_u32_le(word)?;
+        }
+
+        writer.write_u32_le(self.palette.len() as u32)?;
+        for entry in &self.palette {
+            nbt::to_le_bytes_in(&mut writer, entry)?;
+        }
+
+        Ok(())
+    }
+}
+
 impl<I> Index<I> for SubLayer
 where
     I: Into<Vector<u8, 3>>,
@@ -180,7 +270,7 @@ where
 impl Default for SubLayer {
     // Std using const generics for arrays would be really nice...
     fn default() -> Self {
-        Self { indices: [0; 4096], palette: Vec::new() }
+        Self { indices: Box::new([0; 4096]), palette: Vec::new() }
     }
 }
 
@@ -234,7 +324,64 @@ impl SubChunk {
     }
 }
 
-impl SubChunk {}
+impl SubChunk {
+    /// Deserialize a full sub chunk from the given buffer.
+    pub fn deserialize_local<'a, R>(mut reader: R) -> anyhow::Result<Self>
+    where
+        R: BinaryRead<'a> + Copy + 'a,
+    {
+        let version = SubChunkVersion::try_from(reader.read_u8()?)?;
+        let layer_count = match version {
+            SubChunkVersion::Legacy => 1,
+            _ => reader.read_u8()?,
+        };
+
+        if layer_count == 0 || layer_count > 2 {
+            anyhow::bail!("Sub chunk must have 1 or 2 layers");
+        }
+
+        let index = if version == SubChunkVersion::Limitless { reader.read_i8()? } else { 0 };
+
+        // let mut layers = SmallVec::with_capacity(layer_count as usize);
+        let mut layers = Vec::with_capacity(layer_count as usize);
+        for _ in 0..layer_count {
+            layers.push(SubLayer::deserialize_local(reader)?);
+        }
+
+        Ok(Self { version, index, layers })
+    }
+
+    /// Serialises the sub chunk into a new buffer and returns the buffer.
+    ///
+    /// Use [`serialize_local_in`](Self::serialize_local_in) to serialize into an existing writer.
+    pub fn serialize_local(&self) -> anyhow::Result<MutableBuffer> {
+        let mut buffer = MutableBuffer::new();
+        self.serialize_local_in(&mut buffer)?;
+        Ok(buffer)
+    }
+
+    /// Serialises the sub chunk into the given writer.
+    pub fn serialize_local_in<W>(&self, mut writer: W) -> anyhow::Result<()>
+    where
+        W: BinaryWrite,
+    {
+        writer.write_u8(self.version as u8)?;
+        match self.version {
+            SubChunkVersion::Legacy => writer.write_u8(1),
+            _ => writer.write_u8(self.layers.len() as u8),
+        }?;
+
+        if self.version == SubChunkVersion::Limitless {
+            writer.write_i8(self.index)?;
+        }
+
+        for layer in &self.layers {
+            layer.serialize_local(&mut writer)?;
+        }
+
+        Ok(())
+    }
+}
 
 impl Index<usize> for SubChunk {
     type Output = SubLayer;
@@ -265,7 +412,7 @@ impl<'a> From<&'a SubLayer> for LayerIter<'a> {
     #[inline]
     fn from(value: &'a SubLayer) -> Self {
         Self {
-            indices: &value.indices,
+            indices: value.indices.as_ref(),
             palette: value.palette.as_ref(),
         }
     }

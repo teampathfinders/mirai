@@ -35,7 +35,7 @@ impl WasiFile for ExtensionStdout {
     }
 
     async fn write_vectored<'a>(&self, bufs: &[io::IoSlice<'a>]) -> Result<u64, Error> {
-        let span = tracing::span!(tracing::Level::INFO, "plugin", name = self.prefix);
+        let span = tracing::span!(tracing::Level::INFO, "plugin", id = self.prefix);
         let _guard = span.enter();
 
         let mut written = 0;

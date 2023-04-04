@@ -21,9 +21,7 @@ mod private {
     pub trait Sealed {}
 
     impl Sealed for LittleEndian {}
-
     impl Sealed for BigEndian {}
-
     impl Sealed for Variable {}
 }
 
@@ -53,7 +51,7 @@ pub enum Variant {
 
 /// Used by Bedrock for data saved to disk.
 /// Every data type is written in little endian format.
-pub struct LittleEndian;
+pub enum LittleEndian {}
 
 impl VariantImpl for LittleEndian {
     const AS_ENUM: Variant = Variant::LittleEndian;
@@ -61,7 +59,7 @@ impl VariantImpl for LittleEndian {
 
 /// Used by Java.
 /// Every data types is written in big endian format.
-pub struct BigEndian;
+pub enum BigEndian {}
 
 impl VariantImpl for BigEndian {
     const AS_ENUM: Variant = Variant::BigEndian;
@@ -71,7 +69,7 @@ impl VariantImpl for BigEndian {
 /// This format is the same as [`LittleEndian`], except that type lengths
 /// (such as for strings or lists), are varints instead of shorts.
 /// The integer and long types are also varints.
-pub struct Variable;
+pub enum Variable {}
 
 impl VariantImpl for Variable {
     const AS_ENUM: Variant = Variant::Variable;
