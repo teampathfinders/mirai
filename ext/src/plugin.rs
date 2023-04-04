@@ -2,7 +2,6 @@ use std::ffi::CStr;
 use std::fmt::{self, Debug, Formatter};
 
 use crate::stdio::ExtensionStdout;
-use anyhow::{anyhow, Context};
 use wasmtime::{Instance, Store, TypedFunc};
 use wasmtime_wasi::stdio::stdout;
 use wasmtime_wasi::WasiCtx;
@@ -81,12 +80,10 @@ impl Plugin {
             let name_fn = instance.get_typed_func::<(), i32>(&mut store, def::IMPL_EXT_NAME_FN)?;
             let ptr = name_fn.call(&mut store, ())?;
 
-            let memory = instance.get_memory(&mut store, "memory").ok_or_else(|| anyhow!("Could not find memory"))?;
-            let cstr = unsafe {
-                CStr::from_ptr(
-                    memory.data_ptr(&store).add(ptr as usize) as *const i8
-                )
-            };
+            let memory = instance
+                .get_memory(&mut store, "memory")
+                .ok_or_else(|| anyhow::anyhow!("Could not find memory"))?;
+            let cstr = unsafe { CStr::from_ptr(memory.data_ptr(&store).add(ptr as usize) as *const i8) };
 
             cstr.to_str()?.to_owned()
         };
@@ -100,13 +97,7 @@ impl Plugin {
             .data_mut()
             .set_stdout(Box::new(ExtensionStdout { prefix: name.clone(), stdout: stdout() }));
 
-        Ok(Self {
-            name,
-            file,
-            version,
-            instance,
-            store
-        })
+        Ok(Self { name, file, version, instance, store })
     }
 
     /// Calls the optional startup function in the plugin.
