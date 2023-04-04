@@ -2,7 +2,7 @@ use std::collections::HashMap;
 use util::{Deserialize, Serialize, Vector};
 
 use crate::{
-    biome::Biome3d, database::Database, level_dat::LevelDat, DatabaseKey, Dimension, KeyData, PaletteEntry, SubChunk, SubChunkVersion, SubLayer,
+    biome::Biome, database::Database, level_dat::LevelDat, DatabaseKey, Dimension, KeyData, PaletteEntry, SubChunk, SubChunkVersion, SubLayer,
     BIOME_DATA, LOCAL_PLAYER, MOB_EVENTS, OVERWORLD, SCHEDULER, SCOREBOARD,
 };
 

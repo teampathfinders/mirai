@@ -234,8 +234,6 @@ impl SubChunk {
     }
 }
 
-impl SubChunk {}
-
 impl Index<usize> for SubChunk {
     type Output = SubLayer;
 
