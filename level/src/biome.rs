@@ -64,7 +64,7 @@ impl Biome {
         let mut indices = [0u16; 4096];
         let mask = !(!0u32 << index_size);
         let mut offset = 0;
-
+        
         for _ in 0..word_count {
             let mut word = buffer.read_u32_le()?;
             for _ in 0..per_word {

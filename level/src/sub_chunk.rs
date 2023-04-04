@@ -147,54 +147,92 @@ impl SubLayer {
 impl SubLayer {
     /// Deserializes a single layer from the given buffer.
     #[inline]
-    fn deserialize_network<'a, R>(mut reader: R) -> anyhow::Result<Self>
+    fn deserialize_local<'a, R>(mut reader: R) -> anyhow::Result<Self>
     where
         R: BinaryRead<'a> + Copy + 'a,
     {
-        // Size of each index in bits.
         let index_size = reader.read_u8()? >> 1;
-
-        // Amount of indices that fit in a single 32-bit integer.
-        let indices_per_word = u32::BITS as usize / index_size as usize;
-        // Amount of words needed to encode 4096 block indices.
-        let word_count = 4096 / indices_per_word
-            + match index_size {
-                3 | 5 | 6 => 1,
-                _ => 0,
-            };
-
+        let per_word = u32::BITS / index_size as u32;
+        let word_count = ceil_div(4096, per_word as u32);
         let mask = !(!0u32 << index_size);
-        let mut indices = [0u16; 4096];
-        for i in 0..word_count {
+
+        let mut indices = [0u16; 4096]; // TODO: Possibly Box this?
+        let mut offset = 0;
+
+        for _ in 0..word_count {
             let mut word = reader.read_u32_le()?;
 
-            for j in 0..indices_per_word {
-                let offset = i * indices_per_word + j;
+            for _ in 0..per_word {
                 if offset == 4096 {
-                    break;
+                    break
                 }
 
-                let index = word & mask;
-                indices[i * indices_per_word + j] = index as u16;
-
+                indices[offset] = (word & mask) as u16;
                 word >>= index_size;
+
+                offset += 1;
             }
         }
 
-        // Size of the block palette.
-        let palette_size = reader.read_u32_le()?;
-        let mut palette = Vec::with_capacity(palette_size as usize);
-        for _ in 0..palette_size {
+        let len = reader.read_u32_le()? as usize;
+        let mut palette = Vec::with_capacity(len);
+
+        for _ in 0..len {
             let (entry, n) = nbt::from_le_bytes(reader)?;
 
             palette.push(entry);
             reader.advance(n)?;
         }
 
-        Ok(Self { indices, palette })
+        Ok(Self {
+            indices, palette
+        })
+
+        // // Size of each index in bits.
+        // let index_size = reader.read_u8()? >> 1;
+
+        // // Amount of indices that fit in a single 32-bit integer.
+        // let indices_per_word = u32::BITS as usize / index_size as usize;
+        // // Amount of words needed to encode 4096 block indices.
+        // let word_count = 4096 / indices_per_word
+        //     + match index_size {
+        //         3 | 5 | 6 => 1,
+        //         _ => 0,
+        //     };
+
+        // let mask = !(!0u32 << index_size);
+        // let mut indices = [0u16; 4096];
+        // for i in 0..word_count {
+        //     let mut word = reader.read_u32_le()?;
+
+        //     for j in 0..indices_per_word {
+        //         let offset = i * indices_per_word + j;
+        //         if offset == 4096 {
+        //             break;
+        //         }
+
+        //         let index = word & mask;
+        //         indices[i * indices_per_word + j] = index as u16;
+
+        //         word >>= index_size;
+        //     }
+        // }
+
+        // // Size of the block palette.
+        // let palette_size = reader.read_u32_le()?;
+        // let mut palette = Vec::with_capacity(palette_size as usize);
+        // for _ in 0..palette_size {
+        //     let (entry, n) = nbt::from_le_bytes(reader)?;
+
+        //     palette.push(entry);
+        //     reader.advance(n)?;
+        // }
+
+        // Ok(Self { indices, palette })
     }
 
-    fn serialize_network<W>(&self, mut writer: W) -> anyhow::Result<()>
+    #[inline]
+    fn serialize_local<W>(&self, mut writer: W) -> anyhow::Result<()>
     where
         W: BinaryWrite,
     {
@@ -369,7 +407,7 @@ impl SubChunk {
         // let mut layers = SmallVec::with_capacity(layer_count as usize);
         let mut layers = Vec::with_capacity(layer_count as usize);
         for _ in 0..layer_count {
-            layers.push(SubLayer::deserialize_network(reader)?);
+            layers.push(SubLayer::deserialize_local(reader)?);
         }
 
         Ok(Self { version, index, layers })
@@ -400,7 +438,7 @@ impl SubChunk {
         }
 
         for layer in &self.layers {
-            layer.serialize_network(&mut writer)?;
+            layer.serialize_local(&mut writer)?;
         }
 
         Ok(())
