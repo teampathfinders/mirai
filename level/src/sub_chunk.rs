@@ -85,7 +85,7 @@ pub struct SubLayer {
     /// List of indices into the palette.
     ///
     /// Coordinates can be converted to an offset into the array using [`to_offset`].
-    pub(crate) indices: [u16; 4096],
+    pub(crate) indices: Box<[u16; 4096]>,
     /// List of all different block types in this sub chunk layer.
     pub(crate) palette: Vec<PaletteEntry>,
 }
@@ -151,28 +151,8 @@ impl SubLayer {
     where
         R: BinaryRead<'a> + Copy + 'a,
     {
-        let index_size = reader.read_u8()? >> 1;
-        let per_word = u32::BITS / index_size as u32;
-        let word_count = ceil_div(4096, per_word as u32);
-        let mask = !(!0u32 << index_size);
-
-        let mut indices = [0u16; 4096]; // TODO: Possibly Box this?
-        let mut offset = 0;
-
-        for _ in 0..word_count {
-            let mut word = reader.read_u32_le()?;
-
-            for _ in 0..per_word {
-                if offset == 4096 {
-                    break
-                }
-
-                indices[offset] = (word & mask) as u16;
-                word >>= index_size;
-
-                offset += 1;
-            }
-        }
+        let indices = crate::deserialize_packed_array(&mut reader)?
+            .ok_or_else(|| anyhow::anyhow!("Sub chunk index size cannot be 0"))?;
 
         let len = reader.read_u32_le()? as usize;
         let mut palette = Vec::with_capacity(len);
@@ -187,48 +167,6 @@ impl SubLayer {
         Ok(Self {
             indices, palette
         })
-
-        // // Size of each index in bits.
-        // let index_size = reader.read_u8()? >> 1;
-
-        // // Amount of indices that fit in a single 32-bit integer.
-        // let indices_per_word = u32::BITS as usize / index_size as usize;
-        // // Amount of words needed to encode 4096 block indices.
-        // let word_count = 4096 / indices_per_word
-        //     + match index_size {
-        //         3 | 5 | 6 => 1,
-        //         _ => 0,
-        //     };
-
-        // let mask = !(!0u32 << index_size);
-        // let mut indices = [0u16; 4096];
-        // for i in 0..word_count {
-        //     let mut word = reader.read_u32_le()?;
-
-        //     for j in 0..indices_per_word {
-        //         let offset = i * indices_per_word + j;
-        //         if offset == 4096 {
-        //             break;
-        //         }
-
-        //         let index = word & mask;
-        //         indices[i * indices_per_word + j] = index as u16;
-
-        //         word >>= index_size;
-        //     }
-        // }
-
-        // // Size of the block palette.
-        // let palette_size = reader.read_u32_le()?;
-        // let mut palette = Vec::with_capacity(palette_size as usize);
-        // for _ in 0..palette_size {
-        //     let (entry, n) = nbt::from_le_bytes(reader)?;
-
-        //     palette.push(entry);
-        //     reader.advance(n)?;
-        // }
-
-        // Ok(Self { indices, palette })
     }
 
     #[inline]
@@ -332,7 +270,7 @@ where
 impl Default for SubLayer {
     // Std using const generics for arrays would be really nice...
     fn default() -> Self {
-        Self { indices: [0; 4096], palette: Vec::new() }
+        Self { indices: Box::new([0; 4096]), palette: Vec::new() }
     }
 }
 
@@ -474,7 +412,7 @@ impl<'a> From<&'a SubLayer> for LayerIter<'a> {
     #[inline]
     fn from(value: &'a SubLayer) -> Self {
         Self {
-            indices: &value.indices,
+            indices: value.indices.as_ref(),
             palette: value.palette.as_ref(),
         }
     }

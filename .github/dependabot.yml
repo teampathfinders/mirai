@@ -7,7 +7,7 @@ updates:
     assignees:
       - "RadiatedMonkey"
     labels:
-      - "scope: dependencies"
+      - "A-deps"
     commit-message:
       prefix: "cargo"
       include: "scope"

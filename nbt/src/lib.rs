@@ -21,9 +21,7 @@ mod private {
     pub trait Sealed {}
 
     impl Sealed for LittleEndian {}
-
     impl Sealed for BigEndian {}
-
     impl Sealed for Variable {}
 }
 
