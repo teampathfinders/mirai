@@ -1,7 +1,7 @@
 pub use key::*;
 pub use level::*;
 pub use sub_chunk::*;
-use util::bytes::BinaryRead;
+use util::bytes::{BinaryRead, BinaryWrite};
 
 #[cfg(target_endian = "big")]
 compile_error!("Big endian architectures are not supported");
@@ -17,6 +17,60 @@ enum PackedArrayReturn {
     Empty,
     ReferBack,
     Data(Box<[u16; 4096]>),
+}
+
+#[inline(always)]
+fn serialize_packed_array<W>(writer: &mut W, array: &[u16; 4096], max_index: usize) -> anyhow::Result<()>
+where
+    W: BinaryWrite,
+{
+    // Determine the required bits per index
+    let index_size = {
+        let mut bits_per_block = 0;
+        // Loop over allowed values.
+        for b in [1, 2, 3, 4, 5, 6, 8, 16] {
+            if 2usize.pow(b) >= max_index {
+                bits_per_block = b;
+                break;
+            }
+        }
+
+        bits_per_block as u8
+    };
+
+    writer.write_u8(index_size << 1)?;
+
+    // Amount of indices that fit in a single 32-bit integer.
+    let per_word = ceil_div(u32::BITS, index_size as u32) as usize;
+
+    // Amount of words needed to encode 4096 block indices.
+    let word_count = {
+        let padding = match index_size {
+            3 | 5 | 6 => 1,
+            _ => 0,
+        };
+        4096 / per_word + padding
+    };
+
+    let mask = !(!0u32 << index_size);
+    for i in 0..word_count {
+        let mut word = 0;
+        for j in 0..per_word {
+            let offset = i * per_word + j;
+            if offset == 4096 {
+                break;
+            }
+
+            let index = array[offset] as u32 & mask;
+
+            word |= index;
+            word <<= index_size;
+        }
+
+        writer.write_u32_le(word)?;
+    }
+
+    Ok(())
 }
 
 #[inline(always)]

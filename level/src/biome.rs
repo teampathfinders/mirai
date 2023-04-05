@@ -1,8 +1,10 @@
 use std::mem;
 
-use util::bytes::{BinaryRead, SharedBuffer};
+use util::bytes::{BinaryRead, BinaryWrite, SharedBuffer};
 
 use crate::{ceil_div, PackedArrayReturn};
+
+const HEIGHTMAP_SIZE: usize = 512; // 16x16 u16 array
 
 #[derive(Debug)]
 pub struct PalettedBiome {
@@ -28,9 +30,7 @@ impl Biome {
     where
         R: BinaryRead<'a>,
     {
-        const HM_BYTE_SIZE: usize = 512; // 16x16 u16 array
-
-        let heightmap: Box<[[u16; 16]; 16]> = Box::new(bytemuck::cast(reader.take_const::<HM_BYTE_SIZE>()?));
+        let heightmap: Box<[[u16; 16]; 16]> = Box::new(bytemuck::cast(reader.take_const::<HEIGHTMAP_SIZE>()?));
 
         let mut fragments = Vec::new();
         while !reader.eof() {
@@ -53,5 +53,17 @@ impl Biome {
         }
 
         Ok(Self { heightmap, fragments })
+    }
+
+    pub(crate) fn serialize<W>(&self, mut writer: W) -> anyhow::Result<()>
+    where
+        W: BinaryWrite,
+    {
+        let cast = bytemuck::cast_slice(self.heightmap.as_ref());
+        writer.write_all(cast)?;
+
+        for fragment in &self.fragments {}
+
+        Ok(())
     }
 }

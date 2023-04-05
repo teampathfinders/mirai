@@ -27,7 +27,6 @@ fn read_write_biomes() {
     }
 }
 
-#[ignore]
 #[test]
 fn read_write_subchunk() {
     let database = Database::open("test/db").unwrap();
