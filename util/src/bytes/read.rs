@@ -50,6 +50,11 @@ pub trait BinaryRead<'a> {
     /// Returns the amount of bytes remaining in the reader.
     fn remaining(&self) -> usize;
 
+    /// Whether the end of the reader has been reached.
+    fn eof(&self) -> bool {
+        self.remaining() == 0
+    }
+
     /// Takes `n` bytes out of the reader.
     fn take_n(&mut self, n: usize) -> anyhow::Result<&'a [u8]>;
     /// Takes `N` bytes out of the reader.
