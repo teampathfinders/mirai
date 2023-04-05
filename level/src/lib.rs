@@ -12,14 +12,25 @@ const fn ceil_div(lhs: u32, rhs: u32) -> u32 {
     (lhs + rhs - 1) / rhs
 }
 
+#[derive(Debug, PartialEq, Eq)]
+enum PackedArrayReturn {
+    Empty,
+    ReferBack,
+    Data(Box<[u16; 4096]>),
+}
+
 #[inline(always)]
-fn deserialize_packed_array<'a, R>(reader: &mut R) -> anyhow::Result<Option<Box<[u16; 4096]>>> 
+fn deserialize_packed_array<'a, R>(reader: &mut R) -> anyhow::Result<PackedArrayReturn>
 where
-    R: BinaryRead<'a>
+    R: BinaryRead<'a>,
 {
     let index_size = reader.read_u8()? >> 1;
     if index_size == 0 {
-        return Ok(None)
+        return Ok(PackedArrayReturn::Empty);
+    } else if index_size == 0x7f {
+        return Ok(PackedArrayReturn::ReferBack);
+    } else if ![1, 2, 3, 4, 5, 6, 8, 16].contains(&index_size) {
+        anyhow::bail!(format!("Invalid index size: {index_size}"));
     }
 
     let per_word = u32::BITS / index_size as u32;
@@ -34,7 +45,7 @@ where
 
         for _ in 0..per_word {
             if offset == 4096 {
-                break
+                break;
             }
 
             indices[offset] = (word & mask) as u16;
@@ -44,7 +55,7 @@ where
         }
     }
 
-    Ok(Some(indices))
+    Ok(PackedArrayReturn::Data(indices))
 }
 
 #[cfg(test)]

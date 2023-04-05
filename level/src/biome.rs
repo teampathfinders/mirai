@@ -2,53 +2,56 @@ use std::mem;
 
 use util::bytes::{BinaryRead, SharedBuffer};
 
-use crate::ceil_div;
+use crate::{ceil_div, PackedArrayReturn};
 
-pub enum BiomeReturn {
-    Empty,
-    ReferBack,
-    Data(Biome)
+#[derive(Debug)]
+pub struct PalettedBiome {
+    indices: Box<[u16; 4096]>,
+    palette: Vec<u32>,
+}
+
+#[derive(Debug)]
+pub enum BiomeFragment {
+    Referral(u8),
+    Single(u32),
+    Paletted(PalettedBiome),
 }
 
 #[derive(Debug)]
 pub struct Biome {
-    heightmap: [[u16; 16]; 16]
+    heightmap: Box<[[u16; 16]; 16]>,
+    fragments: Vec<BiomeFragment>,
 }
 
 impl Biome {
-    pub fn deserialize<'a, R>(mut reader: R) -> anyhow::Result<BiomeReturn> 
+    pub(crate) fn deserialize<'a, R>(mut reader: R) -> anyhow::Result<Self>
     where
-        R: BinaryRead<'a>
+        R: BinaryRead<'a>,
     {
         const HM_BYTE_SIZE: usize = 512; // 16x16 u16 array
-    
-        let heightmap: [[u16; 16]; 16] = bytemuck::cast(reader.take_const::<HM_BYTE_SIZE>()?);
 
-        let mut y_index = 0;
-        loop {
-            let array = crate::deserialize_packed_array(&mut reader)?;
-            if let Some(indices) = array {
-                anyhow::bail!("Index size was 0");
+        let heightmap: Box<[[u16; 16]; 16]> = Box::new(bytemuck::cast(reader.take_const::<HM_BYTE_SIZE>()?));
+
+        let mut fragments = Vec::new();
+        while !reader.eof() {
+            let packed_array = crate::deserialize_packed_array(&mut reader)?;
+            if let PackedArrayReturn::Data(indices) = packed_array {
+                let len = reader.read_u32_le()? as usize;
+
+                let mut palette = Vec::with_capacity(len);
+                for _ in 0..len {
+                    palette.push(reader.read_u32_le()?);
+                }
+
+                fragments.push(BiomeFragment::Paletted(PalettedBiome { indices, palette }));
+            } else if PackedArrayReturn::Empty == packed_array {
+                let single = reader.read_u32_le()?;
+                fragments.push(BiomeFragment::Single(single));
             } else {
-                let len = reader.read_u32_le()? * 4;
-            
-                println!("{:?}", reader.take_n(len as usize)?);
-
-                // let indices = reader
-                //     .take_n(len as usize)?
-                //     .windows(4)
-                //     .map(|w| u32::from_be_bytes(w.try_into().unwrap()))
-                //     .collect::<Vec<u32>>();
-                
-
-                // println!("v{indices:?}");
-
-                break
+                fragments.push(BiomeFragment::Referral(fragments.len() as u8 - 1));
             }
-            
-            y_index += 1;
         }
 
-        todo!();
+        Ok(Self { heightmap, fragments })
     }
 }

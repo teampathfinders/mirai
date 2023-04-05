@@ -22,7 +22,7 @@ fn read_write_biomes() {
         let key = kv.key();
         if *key.last().unwrap() == KeyData::Biome3d.discriminant() {
             let biome = Biome::deserialize(&*kv.value());
-            // dbg!(biome);
+            println!("{biome:?}");
         }
     }
 }

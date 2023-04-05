@@ -6,7 +6,7 @@ use serde::{Deserialize, Serialize};
 use util::bytes::{BinaryRead, BinaryWrite, MutableBuffer};
 use util::{bail, Vector};
 
-use crate::ceil_div;
+use crate::{ceil_div, PackedArrayReturn};
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum SubChunkVersion {
@@ -151,8 +151,11 @@ impl SubLayer {
     where
         R: BinaryRead<'a> + Copy + 'a,
     {
-        let indices = crate::deserialize_packed_array(&mut reader)?
-            .ok_or_else(|| anyhow::anyhow!("Sub chunk index size cannot be 0"))?;
+        let indices = match crate::deserialize_packed_array(&mut reader)? {
+            PackedArrayReturn::Data(data) => data,
+            PackedArrayReturn::Empty => anyhow::bail!("Sub layer packed array index size cannot be 0"),
+            PackedArrayReturn::ReferBack => anyhow::bail!("Sub layer packed array does not support biome referral"),
+        };
 
         let len = reader.read_u32_le()? as usize;
         let mut palette = Vec::with_capacity(len);
@@ -164,9 +167,7 @@ impl SubLayer {
             reader.advance(n)?;
         }
 
-        Ok(Self {
-            indices, palette
-        })
+        Ok(Self { indices, palette })
     }
 
     #[inline]
@@ -270,7 +271,10 @@ where
 impl Default for SubLayer {
     // Std using const generics for arrays would be really nice...
     fn default() -> Self {
-        Self { indices: Box::new([0; 4096]), palette: Vec::new() }
+        Self {
+            indices: Box::new([0; 4096]),
+            palette: Vec::new(),
+        }
     }
 }
 
@@ -326,7 +330,7 @@ impl SubChunk {
 
 impl SubChunk {
     /// Deserialize a full sub chunk from the given buffer.
-    pub fn deserialize_local<'a, R>(mut reader: R) -> anyhow::Result<Self>
+    pub(crate) fn deserialize_local<'a, R>(mut reader: R) -> anyhow::Result<Self>
     where
         R: BinaryRead<'a> + Copy + 'a,
     {
@@ -354,7 +358,7 @@ impl SubChunk {
     /// Serialises the sub chunk into a new buffer and returns the buffer.
     ///
     /// Use [`serialize_local_in`](Self::serialize_local_in) to serialize into an existing writer.
-    pub fn serialize_local(&self) -> anyhow::Result<MutableBuffer> {
+    pub(crate) fn serialize_local(&self) -> anyhow::Result<MutableBuffer> {
         let mut buffer = MutableBuffer::new();
         self.serialize_local_in(&mut buffer)?;
         Ok(buffer)
