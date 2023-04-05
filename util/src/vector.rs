@@ -1,3 +1,4 @@
+use std::hash::{Hash, Hasher};
 use std::ops::{Deref, DerefMut};
 
 use crate::bytes::VarInt;
@@ -8,6 +9,19 @@ use crate::bytes::VarInt;
 pub struct Vector<T, const N: usize> {
     /// Generically-sized array of components of type `T` and size `N`.
     components: [T; N],
+}
+
+impl<T, const N: usize> Hash for Vector<T, N>
+where
+    [T; N]: Hash,
+{
+    #[inline]
+    fn hash<H>(&self, state: &mut H)
+    where
+        H: Hasher,
+    {
+        self.components.hash(state);
+    }
 }
 
 impl<T, const N: usize> Default for Vector<T, N>

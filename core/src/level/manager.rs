@@ -9,10 +9,11 @@ use tokio::sync::oneshot::{Receiver, Sender};
 use tokio_util::sync::CancellationToken;
 
 use level::Level;
-use util::Result;
+use util::{Result, Vector};
 
 use crate::command::Command;
 use crate::config::SERVER_CONFIG;
+use crate::network::LevelChunk;
 use crate::network::{
     SessionManager, {GameRule, GameRulesChanged},
 };
@@ -78,7 +79,7 @@ impl LevelManager {
     }
 
     #[inline]
-    pub fn add_many_commands(&self, commands: &[Command]) {
+    pub fn add_commands(&self, commands: &[Command]) {
         commands.iter().for_each(|cmd| {
             self.commands.insert(cmd.name.clone(), cmd.clone());
         });
@@ -116,6 +117,8 @@ impl LevelManager {
 
         self.session_manager.broadcast(GameRulesChanged { game_rules })
     }
+
+    pub fn request_chunk(&self, position: Vector<i32, 2>) -> anyhow::Result<LevelChunk> {}
 
     // /// Simple job that runs [`flush`](Self::flush) on a specified interval.
     // async fn autosave_job(&self, sender: Sender<()>, interval: Duration) {

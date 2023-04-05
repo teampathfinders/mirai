@@ -2,7 +2,7 @@ use std::collections::HashMap;
 use util::{bytes::MutableBuffer, Deserialize, Serialize, Vector};
 
 use crate::{
-    biome::Biome, database::Database, level_dat::LevelDat, DatabaseKey, Dimension, KeyData, PaletteEntry, SubChunk, SubChunkVersion, SubLayer,
+    biome::Biome, database::Database, level_dat::LevelSettings, DatabaseKey, Dimension, KeyData, PaletteEntry, SubChunk, SubChunkVersion, SubLayer,
     BIOME_DATA, LOCAL_PLAYER, MOB_EVENTS, OVERWORLD, SCHEDULER, SCOREBOARD,
 };
 
@@ -13,7 +13,6 @@ use crate::{
 
 // palette: [Compound({"states": Compound({"pillar_axis": String("y")}), "version": Int(17959425), "name": String("minecraft:deepslate")}), Compound({"states": Compound({"stone_type": String("stone")}), "version": Int(17959425), "name": String("minecraft:stone")}), Compound({"states": Compound({}), "name": String("minecraft:iron_ore"), "version": Int(17959425)}), Compound({"name": String("minecraft:gravel"), "states": Compound({}), "version": Int(17959425)}), Compound({"states": Compound({}), "name": String("minecraft:deepslate_iron_ore"), "version": Int(17959425)}), Compound({"states": Compound({"stone_type": String("diorite")}), "version": Int(17959425), "name": String("minecraft:stone")}), Compound({"name": String("minecraft:dirt"), "states": Compound({"dirt_type": String("normal")}), "version": Int(17959425)}), Compound({"states": Compound({}), "version": Int(17959425), "name": String("minecraft:deepslate_redstone_ore")}), Compound({"version": Int(17959425), "states": Compound({}), "name": String("minecraft:deepslate_copper_ore")}), Compound({"name": String("minecraft:copper_ore"), "version": Int(17959425), "states": Compound({})}), Compound({"states": Compound({}), "name": String("minecraft:deepslate_lapis_ore"), "version": Int(17959425)}), Compound({"version": Int(17959425), "name": String("minecraft:stone"), "states": Compound({"stone_type": String("granite")})}), Compound({"states": Compound({}), "version": Int(17959425), "name": String("minecraft:lapis_ore")}), Compound({"version": Int(17959425), "name": String("minecraft:redstone_ore"), "states": Compound({})}), Compound({"version": Int(17959425), "states": Compound({"stone_type": String("andesite")}), "name": String("minecraft:stone")}), Compound({"version": Int(17959425), "name": String("minecraft:air"), "states": Compound({})})] }]
 
-#[ignore]
 #[test]
 fn read_write_biomes() {
     let database = Database::open("test/db").unwrap();
@@ -29,8 +28,7 @@ fn read_write_biomes() {
 
             let biome2 = Biome::deserialize(ser.snapshot().as_ref()).unwrap();
 
-            println!("{:?}\n\n{:?}", biome.fragments[1], biome2.fragments[1]);
-            break;
+            assert_eq!(biome, biome2);
         }
     }
 }
@@ -106,7 +104,7 @@ fn bench_subchunk() {
 fn load_level_dat() {
     const LEVEL_DAT: &[u8] = include_bytes!("../test/level.dat");
 
-    let _decoded: LevelDat = nbt::from_le_bytes(&LEVEL_DAT[8..]).unwrap().0;
+    let _decoded: LevelSettings = nbt::from_le_bytes(&LEVEL_DAT[8..]).unwrap().0;
     let _value: nbt::Value = nbt::from_le_bytes(&LEVEL_DAT[8..]).unwrap().0;
 }
 

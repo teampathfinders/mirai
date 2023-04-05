@@ -17,6 +17,7 @@ tokio-util = "0.7.7"
 tracing = "0.1.37"
 anyhow = { version = "1.0.70", features = ["backtrace"] }
 bytemuck = "1.13.1"
+lru = "0.10.0"
 
 [build-dependencies]
 cmake = "0.1.50"

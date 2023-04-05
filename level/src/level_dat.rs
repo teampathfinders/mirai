@@ -40,7 +40,7 @@ pub struct Policies {
 #[derive(serde::Deserialize, Debug, PartialEq)]
 #[serde(rename_all = "camelCase")]
 #[serde(deny_unknown_fields)]
-pub struct LevelDat {
+pub struct LevelSettings {
     pub lightning_level: f32,
     pub lightning_time: i32,
     pub rain_level: f32,

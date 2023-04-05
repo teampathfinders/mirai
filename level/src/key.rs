@@ -124,7 +124,7 @@ impl DatabaseKey {
 }
 
 /// The Minecraft dimensions.
-#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
 #[repr(u32)]
 pub enum Dimension {
     /// The overworld dimension.
