@@ -6,23 +6,23 @@ use crate::{ceil_div, PackedArrayReturn};
 
 const HEIGHTMAP_SIZE: usize = 512; // 16x16 u16 array
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq)]
 pub struct PalettedBiome {
-    indices: Box<[u16; 4096]>,
-    palette: Vec<u32>,
+    pub(crate) indices: Box<[u16; 4096]>,
+    pub(crate) palette: Vec<u32>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq)]
 pub enum BiomeFragment {
-    Referral(u8),
+    Referral,
     Single(u32),
     Paletted(PalettedBiome),
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq)]
 pub struct Biome {
-    heightmap: Box<[[u16; 16]; 16]>,
-    fragments: Vec<BiomeFragment>,
+    pub(crate) heightmap: Box<[[u16; 16]; 16]>,
+    pub(crate) fragments: Vec<BiomeFragment>,
 }
 
 impl Biome {
@@ -48,7 +48,7 @@ impl Biome {
                 let single = reader.read_u32_le()?;
                 fragments.push(BiomeFragment::Single(single));
             } else {
-                fragments.push(BiomeFragment::Referral(fragments.len() as u8 - 1));
+                fragments.push(BiomeFragment::Referral);
             }
         }
 
@@ -62,7 +62,23 @@ impl Biome {
         let cast = bytemuck::cast_slice(self.heightmap.as_ref());
         writer.write_all(cast)?;
 
-        for fragment in &self.fragments {}
+        for fragment in &self.fragments {
+            match fragment {
+                BiomeFragment::Referral => writer.write_u8(0x7f << 1)?,
+                BiomeFragment::Single(single) => {
+                    writer.write_u8(0)?;
+                    writer.write_u32_le(*single)?;
+                }
+                BiomeFragment::Paletted(biome) => {
+                    crate::serialize_packed_array(&mut writer, &biome.indices, biome.palette.len())?;
+
+                    writer.write_u32_le(biome.palette.len() as u32)?;
+                    for entry in &biome.palette {
+                        writer.write_u32_le(*entry)?;
+                    }
+                }
+            }
+        }
 
         Ok(())
     }

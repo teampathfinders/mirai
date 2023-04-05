@@ -80,7 +80,7 @@ pub struct PaletteEntry {
 /// This is prefixed with a 32-bit little endian integer specifying the size of the palette.
 /// The rest of the palette then consists of `n` concatenated NBT compounds.
 #[doc(alias = "storage record")]
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub struct SubLayer {
     /// List of indices into the palette.
     ///
@@ -251,7 +251,7 @@ pub fn from_offset(offset: usize) -> Vector<u8, 3> {
 /// A Minecraft sub chunk.
 ///
 /// Every world contains
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub struct SubChunk {
     /// Version of the sub chunk.
     ///
