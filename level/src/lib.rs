@@ -110,7 +110,7 @@ mod biome;
 pub mod database;
 mod ffi;
 mod key;
-mod level_dat;
+mod settings;
 pub mod provider;
 mod sub_chunk;
 
