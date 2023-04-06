@@ -1,9 +1,22 @@
 use std::ffi::{c_char, c_int, c_void};
 
+/// Status of the LevelDB operation result.
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+#[repr(u8)]
+pub enum LoadStatus {
+    Success,
+    NotFound,
+    Corruption,
+    NotSupported,
+    InvalidArgument,
+    IOError
+}
+
+/// Result returned by fallible LevelDB operations.
 #[derive(Debug)]
 #[repr(C)]
 pub struct LevelResult {
-    pub is_success: c_int,
+    pub status: LoadStatus,
     pub size: c_int,
     pub data: *mut c_void,
 }

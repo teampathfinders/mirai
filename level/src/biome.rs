@@ -1,8 +1,6 @@
-use std::mem;
+use util::bytes::{BinaryRead, BinaryWrite};
 
-use util::bytes::{BinaryRead, BinaryWrite, SharedBuffer};
-
-use crate::{ceil_div, PackedArrayReturn};
+use crate::PackedArrayReturn;
 
 const HEIGHTMAP_SIZE: usize = 512; // 16x16 u16 array
 
@@ -33,14 +31,14 @@ pub enum BiomeEncoding {
 ///
 /// The biome consists of a heightmap and a biome fragment for each sub chunk.
 #[derive(Debug, PartialEq, Eq)]
-pub struct ChunkBiome {
+pub struct Biome {
     /// Highest blocks in the chunk.
     pub(crate) heightmap: Box<[[u16; 16]; 16]>,
     /// The biomes in each sub chunk.
     pub(crate) fragments: Vec<BiomeEncoding>,
 }
 
-impl ChunkBiome {
+impl Biome {
     /// Reads a chunk biome from a raw buffer.
     pub(crate) fn deserialize<'a, R>(mut reader: R) -> anyhow::Result<Self>
     where

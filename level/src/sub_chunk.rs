@@ -6,7 +6,7 @@ use serde::{Deserialize, Serialize};
 use util::bytes::{BinaryRead, BinaryWrite, MutableBuffer};
 use util::{bail, Vector};
 
-use crate::{ceil_div, PackedArrayReturn};
+use crate::PackedArrayReturn;
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum SubChunkVersion {
