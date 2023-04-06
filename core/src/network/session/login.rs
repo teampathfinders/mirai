@@ -72,7 +72,7 @@ impl Session {
             //     }],
             // })?;
 
-            let level_chunk = self.level_manager.request_chunk(Vector::from([0, 0]))?;
+            let level_chunk = self.level_manager.request_chunk(Vector::from([0, 0]), Dimension::Overworld)?;
             dbg!(level_chunk);
 
             self.broadcast_others(TextMessage {

@@ -2,9 +2,13 @@
 
 use crate::biome::Biome;
 use crate::database::Database;
+use crate::settings::LevelSettings;
 use crate::{DataKey, Dimension, KeyType, SubChunk};
 use anyhow::anyhow;
-use std::path::Path;
+use std::fs::File;
+use std::io::Read;
+use std::path::{Path, PathBuf};
+use util::bytes::BinaryRead;
 use util::Vector;
 
 /// Provides world data.
@@ -14,6 +18,7 @@ use util::Vector;
 pub struct Provider {
     /// Database to load the data from.
     database: Database,
+    path: PathBuf,
 }
 
 impl Provider {
@@ -28,7 +33,29 @@ impl Provider {
         P: AsRef<Path>,
     {
         let database = Database::open(path.as_ref().join("db").to_str().ok_or_else(|| anyhow!("Invalid level path"))?)?;
-        Ok(Self { database })
+        Ok(Self { database, path: path.as_ref().to_owned() })
+    }
+
+    /// Gets the world settings, encoded in the `level.dat` file.
+    ///
+    /// # Errors
+    ///
+    /// This method returns an error if the content does not match what is specified in the header.
+    pub fn get_settings(&self) -> anyhow::Result<LevelSettings> {
+        let mut raw = Vec::new();
+        File::open(self.path.join("level.dat"))?.read_to_end(&mut raw)?;
+
+        let mut reader = raw.as_slice();
+        let _file_version = reader.read_u32_le()?;
+        let file_size = reader.read_u32_le()?;
+
+        let remaining = reader.remaining();
+        if remaining != file_size as usize {
+            anyhow::bail!("Invalid `level.dat` file: header specified length of {file_size} bytes, but found {remaining}");
+        }
+
+        let (settings, _) = nbt::from_le_bytes(reader)?;
+        Ok(settings)
     }
 
     /// Gets the version of the specified chunk.
@@ -46,12 +73,12 @@ impl Provider {
     /// and an error if the data could not be loaded.
     pub fn get_version<I>(&self, coordinates: I, dimension: Dimension) -> anyhow::Result<Option<u8>>
     where
-        I: Into<Vector<i32, 2>>
+        I: Into<Vector<i32, 2>>,
     {
         let key = DataKey {
             coordinates: coordinates.into(),
             dimension,
-            data: KeyType::ChunkVersion
+            data: KeyType::ChunkVersion,
         };
 
         if let Some(data) = self.database.get(key)? {
@@ -113,11 +140,11 @@ impl Provider {
         let key = DataKey {
             coordinates: coordinates.into(),
             dimension,
-            data: KeyType::SubChunk { index }
+            data: KeyType::SubChunk { index },
         };
 
         if let Some(data) = self.database.get(key)? {
-            let sub_chunk = SubChunk::deserialize_local(&*data)?;
+            let sub_chunk = SubChunk::deserialize(&*data)?;
             Ok(Some(sub_chunk))
         } else {
             Ok(None)

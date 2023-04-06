@@ -1,6 +1,7 @@
 #[cfg(not(skip_leveldb))]
 fn main() {
     println!("cargo:rerun-if-env-changed=skip-leveldb");
+    println!("cargo:rerun-if-changed=leveldb/leveldb.cpp");
 
     let dst = cmake::Config::new("leveldb").profile("Release").build();
 

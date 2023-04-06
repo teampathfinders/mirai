@@ -34,7 +34,9 @@ impl PluginRuntime {
 
         let cache = CompilationCache::new(CACHE_DIRECTORY)?;
         let module_paths = std::fs::read_dir(ASSEMBLY_DIRECTORY)
-            .context(format!("Failed to read `{ASSEMBLY_DIRECTORY}` directory, please make sure the plugin directory exists."))?
+            .context(format!(
+                "Failed to read `{ASSEMBLY_DIRECTORY}` directory, please make sure the plugin directory exists."
+            ))?
             .filter_map(|entry| {
                 // Load only .wasm files
                 if let Ok(entry) = entry {
@@ -74,22 +76,25 @@ impl PluginRuntime {
         }
 
         // Run startup function for each plugin.
-        plugins
-            .iter_mut()
-            .map(Plugin::on_startup)
-            .for_each(|result| if let Err(err) = result {
-                tracing::error!("{err:?}");
-            });
-
-        Ok(Self { engine, plugins })
-    }
-
-    /// Calls the shutdown callback for every plugin and drops all plugins.
-    pub fn shutdown(self) {
-        self.plugins.into_iter().map(Plugin::on_shutdown).for_each(|r| {
-            if let Err(err) = r {
+        plugins.iter_mut().map(Plugin::on_startup).for_each(|result| {
+            if let Err(err) = result {
                 tracing::error!("{err:?}");
             }
         });
+
+        Ok(Self { engine, plugins })
+    }
+}
+
+impl Drop for PluginRuntime {
+    fn drop(&mut self) {
+        self.plugins
+            .drain(..)
+            .map(Plugin::on_shutdown)
+            .for_each(|r| {
+                if let Err(err) = r {
+                    tracing::error!("{err:?}");
+                }
+            });
     }
 }

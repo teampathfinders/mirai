@@ -56,6 +56,8 @@ LevelResult level_open(const char *path) {
       leveldb::DB::Open(database->options, path, &database->database);
 
   result.status = translate_status(status);
+  printf("%i, %i\n", result.status, sizeof(Database));
+
   if (status.ok()) {
     result.size = sizeof(Database);
     result.data = database.release();
@@ -101,8 +103,7 @@ LevelResult level_get(void *database_ptr, const char *key, int key_size) {
     result.data = new char[src_size];
     memcpy(result.data, src, src_size);
   }
-
-  printf("%i\n", result.status);
+  
   return result;
 }
 
