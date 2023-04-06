@@ -1,5 +1,4 @@
 pub use key::*;
-pub use level::*;
 pub use sub_chunk::*;
 use util::bytes::{BinaryRead, BinaryWrite, MutableBuffer};
 
@@ -110,6 +109,6 @@ mod biome;
 pub mod database;
 mod ffi;
 mod key;
-mod level;
+pub mod provider;
 mod level_dat;
 mod sub_chunk;
