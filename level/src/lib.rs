@@ -109,6 +109,6 @@ mod biome;
 pub mod database;
 mod ffi;
 mod key;
-pub mod provider;
 mod level_dat;
+pub mod provider;
 mod sub_chunk;

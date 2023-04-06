@@ -2,12 +2,21 @@
 extern "C" {
 #endif __cplusplus
 
+enum DbStatus {
+  Success,
+  NotFound,
+  Corruption,
+  NotSupported,
+  InvalidArgument,
+  IOError
+};
+
 // Result returned by fallible operations.
 // Data must manually be freed after use.
 struct LevelResult {
-    int is_success;
-    int size;
-    void *data;
+  enum DbStatus status;
+  int size;
+  void *data;
 };
 
 // Open a LevelDB database.
@@ -21,13 +30,12 @@ void level_close(void *database);
 struct LevelResult level_get(void *database, const char *key, int key_size);
 
 /// Writes a value into the database.
-struct LevelResult level_insert(
-    void* database_ptr, const char* key, int key_size,
-    const char* value, int value_size
-);
+struct LevelResult level_insert(void *database_ptr, const char *key,
+                                int key_size, const char *value,
+                                int value_size);
 
 /// Removes a key from the database.
-LevelResult level_remove(void* database_ptr, const char* key, int key_size);
+LevelResult level_remove(void *database_ptr, const char *key, int key_size);
 
 // Deallocates a string previously allocated by another function.
 void level_deallocate_array(char *array);
@@ -39,10 +47,12 @@ struct LevelResult level_iter(void *database);
 void level_destroy_iter(void *iter);
 
 // Returns the current key from the iterator.
-// SAFETY: The caller must ensure the iterator is still valid before calling this.
+// SAFETY: The caller must ensure the iterator is still valid before calling
+// this.
 LevelResult level_iter_key(const void *iter);
 
-// SAFETY: The caller must ensure the iterator is still valid before calling this.
+// SAFETY: The caller must ensure the iterator is still valid before calling
+// this.
 LevelResult level_iter_value(const void *iter);
 
 // Returns whether the iterator is still valid.

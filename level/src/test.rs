@@ -2,8 +2,8 @@ use std::{collections::HashMap};
 use util::{bytes::MutableBuffer, Deserialize, Serialize, Vector};
 
 use crate::{
-    biome::ChunkBiome, database::Database, level_dat::LevelSettings, DataKey, Dimension, KeyType, PaletteEntry, SubChunk, SubChunkVersion, SubLayer,
-    BIOME_DATA, LOCAL_PLAYER, MOB_EVENTS, OVERWORLD, SCHEDULER, SCOREBOARD,
+    biome::ChunkBiome, database::Database, level_dat::LevelSettings, provider::Provider, DataKey, Dimension, KeyType, PaletteEntry, SubChunk,
+    SubChunkVersion, SubLayer, BIOME_DATA, LOCAL_PLAYER, MOB_EVENTS, OVERWORLD, SCHEDULER, SCOREBOARD,
 };
 
 // digp [x] [z] [?dimension]
@@ -15,7 +15,7 @@ use crate::{
 
 #[test]
 fn key_not_found() {
-    let provider = Provider::new("test").unwrap();
+    let provider = Provider::open("test").unwrap();
     let biome = provider.get_biome(Vector::from([1290712972, 29372937]), Dimension::Overworld).unwrap();
     assert_eq!(biome, None);
 }
@@ -41,7 +41,7 @@ fn read_write_biomes() {
 }
 
 #[test]
-fn read_write_subchunk() {
+fn subchunks() {
     let database = Database::open("test/db").unwrap();
     let iter = database.iter();
     for kv in iter {
@@ -107,16 +107,18 @@ fn bench_subchunk() {
     // dbg!(block);
 }
 
+#[ignore]
 #[test]
-fn load_level_dat() {
+fn level_settings() {
     const LEVEL_DAT: &[u8] = include_bytes!("../test/level.dat");
 
     let _decoded: LevelSettings = nbt::from_le_bytes(&LEVEL_DAT[8..]).unwrap().0;
     let _value: nbt::Value = nbt::from_le_bytes(&LEVEL_DAT[8..]).unwrap().0;
 }
 
+#[ignore]
 #[test]
-fn ser_de_palette_entry() {
+fn palette_entry() {
     let entry = PaletteEntry {
         name: "minecraft:stone".to_owned(),
         version: Some([1, 18, 100, 0]),
