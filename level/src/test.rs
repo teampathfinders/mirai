@@ -17,7 +17,6 @@ use crate::{
 fn level_settings() {
     let provider = Provider::open("test").unwrap();
     let settings = provider.get_settings().unwrap();
-    panic!("{settings:?}");
 }
 
 #[test]
