@@ -135,6 +135,15 @@ pub trait BinaryWrite: Write {
         Ok(())
     }
 
+    #[inline]
+    fn write_vecb<const N: usize>(&mut self, v: &Vector<i8, N>) -> anyhow::Result<()> {
+        for v in v.components() {
+            self.write_i8(v)?;
+        }
+
+        Ok(())
+    }
+
     fn write_addr(&mut self, v: &SocketAddr) -> anyhow::Result<()> {
         match v {
             SocketAddr::V4(addr_v4) => {

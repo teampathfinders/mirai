@@ -2,6 +2,7 @@
 
 use anyhow::Context;
 use ext::PluginRuntime;
+use level::Dimension;
 use std::net::{Ipv4Addr, Ipv6Addr, SocketAddrV4};
 use std::sync::Arc;
 use std::time::Duration;
@@ -13,8 +14,8 @@ use tokio::sync::oneshot::Receiver;
 use tokio_util::sync::CancellationToken;
 
 use util::bytes::MutableBuffer;
-use util::Result;
 use util::{Deserialize, Serialize};
+use util::{Result, Vector};
 
 use crate::command::{Command, CommandDataType, CommandEnum, CommandOverload, CommandParameter, CommandPermissionLevel};
 use crate::config::SERVER_CONFIG;
@@ -156,6 +157,9 @@ impl InstanceManager {
                 }],
             }],
         });
+
+        level.request_chunk(Vector::from([0, 0]), Dimension::Overworld).unwrap();
+        todo!();
 
         session_manager.set_level_manager(Arc::downgrade(&level))?;
 
