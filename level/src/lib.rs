@@ -1,10 +1,10 @@
-pub use key::*;
-pub use level::*;
-pub use sub_chunk::*;
-use util::bytes::{BinaryRead, BinaryWrite, MutableBuffer};
+#![allow(unused)]
+#![deny(clippy::undocumented_unsafe_blocks)]
 
 #[cfg(target_endian = "big")]
 compile_error!("Big endian architectures are not supported");
+
+use util::bytes::{BinaryRead, BinaryWrite};
 
 /// Performs ceiling division on two u32s.
 #[inline(always)]
@@ -79,7 +79,7 @@ where
     }
 
     let per_word = u32::BITS / index_size as u32;
-    let word_count = ceil_div(4096, per_word as u32);
+    let word_count = ceil_div(4096, per_word);
     let mask = !(!0u32 << index_size);
 
     let mut indices = Box::new([0u16; 4096]);
@@ -110,6 +110,9 @@ mod biome;
 pub mod database;
 mod ffi;
 mod key;
-mod level;
-mod level_dat;
+mod settings;
+pub mod provider;
 mod sub_chunk;
+
+pub use key::*;
+pub use sub_chunk::*;
