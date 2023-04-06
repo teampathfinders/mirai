@@ -1,3 +1,4 @@
+use std::num::NonZeroUsize;
 use std::sync::atomic::AtomicU64;
 use std::sync::Arc;
 use std::time::Duration;
@@ -9,6 +10,7 @@ use tokio::sync::oneshot::{Receiver, Sender};
 use tokio_util::sync::CancellationToken;
 
 use level::provider::Provider;
+use level::{Biome, Dimension, SubChunk};
 use util::{Result, Vector};
 
 use crate::command::Command;
@@ -18,12 +20,40 @@ use crate::network::{
     SessionManager, {GameRule, GameRulesChanged},
 };
 
+use lru::LruCache;
+
 /// Interval between standard Minecraft ticks.
 const LEVEL_TICK_INTERVAL: Duration = Duration::from_millis(1000 / 20);
 
+#[derive(Debug)]
+pub struct CombinedChunk {
+    biome: Biome,
+    sub_chunks: Vec<SubChunk>,
+}
+
+#[derive(Debug)]
+pub struct LevelCache {
+    cache: LruCache<Vector<i32, 2>, CombinedChunk>,
+}
+
+impl LevelCache {
+    pub fn new() -> Self {
+        Default::default()
+    }
+}
+
+impl Default for LevelCache {
+    fn default() -> Self {
+        Self {
+            cache: LruCache::new(NonZeroUsize::new(25).unwrap()),
+        }
+    }
+}
+
 pub struct LevelManager {
+    cache: RwLock<LevelCache>,
     /// Used to load world data from disk.
-    level: RwLock<Provider>,
+    provider: Provider,
     /// List of commands available in this level.
     commands: DashMap<String, Command>,
     /// Currently set game rules.
@@ -44,9 +74,12 @@ impl LevelManager {
             (config.level_path, config.autosave_interval)
         };
 
-        let level = RwLock::new(Provider::open(level_path)?);
+        let provider = Provider::open(level_path)?;
+        let cache = RwLock::new(LevelCache::new());
+
         let manager = Arc::new(Self {
-            level,
+            provider,
+            cache,
             commands: DashMap::new(),
             game_rules: DashMap::from_iter([
                 ("showcoordinates".to_owned(), GameRule::ShowCoordinates(false)),
@@ -118,7 +151,27 @@ impl LevelManager {
         self.session_manager.broadcast(GameRulesChanged { game_rules })
     }
 
-    pub fn request_chunk(&self, position: Vector<i32, 2>) -> anyhow::Result<LevelChunk> {
+    pub fn request_chunk(&self, coordinates: Vector<i32, 2>, dimension: Dimension) -> anyhow::Result<Option<LevelChunk>> {
+        let biome = self.provider.get_biome(coordinates.clone(), dimension)?;
+        if biome.is_none() {
+            return Ok(None);
+        }
+
+        let sub_chunks = (-4..20)
+            .into_iter()
+            .filter_map(|cy| {
+                let sub = match self.provider.get_subchunk(coordinates.clone(), cy, dimension) {
+                    Ok(sub) => sub,
+                    Err(err) => {
+                        tracing::error!("Failed to load sub chunk [{},{},{}]: {err:?}", coordinates.x, cy, coordinates.y);
+                        return None;
+                    }
+                };
+
+                sub
+            })
+            .collect::<Vec<_>>();
+
         todo!();
     }
 

@@ -101,8 +101,7 @@ LevelResult level_get(void *database_ptr, const char *key, int key_size) {
     result.data = new char[src_size];
     memcpy(result.data, src, src_size);
   }
-
-  printf("%i\n", result.status);
+  
   return result;
 }
 

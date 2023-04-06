@@ -1,8 +1,8 @@
-use std::{collections::HashMap};
+use std::collections::HashMap;
 use util::{bytes::MutableBuffer, Deserialize, Serialize, Vector};
 
 use crate::{
-    biome::Biome, database::Database, settings::LevelSettings, provider::Provider, DataKey, Dimension, KeyType, PaletteEntry, SubChunk,
+    biome::Biome, database::Database, provider::Provider, settings::LevelSettings, DataKey, Dimension, KeyType, PaletteEntry, SubChunk,
     SubChunkVersion, SubLayer, BIOME_DATA, LOCAL_PLAYER, MOB_EVENTS, OVERWORLD, SCHEDULER, SCOREBOARD,
 };
 
@@ -12,6 +12,13 @@ use crate::{
 // points to "actorprefix" + digp data
 
 // palette: [Compound({"states": Compound({"pillar_axis": String("y")}), "version": Int(17959425), "name": String("minecraft:deepslate")}), Compound({"states": Compound({"stone_type": String("stone")}), "version": Int(17959425), "name": String("minecraft:stone")}), Compound({"states": Compound({}), "name": String("minecraft:iron_ore"), "version": Int(17959425)}), Compound({"name": String("minecraft:gravel"), "states": Compound({}), "version": Int(17959425)}), Compound({"states": Compound({}), "name": String("minecraft:deepslate_iron_ore"), "version": Int(17959425)}), Compound({"states": Compound({"stone_type": String("diorite")}), "version": Int(17959425), "name": String("minecraft:stone")}), Compound({"name": String("minecraft:dirt"), "states": Compound({"dirt_type": String("normal")}), "version": Int(17959425)}), Compound({"states": Compound({}), "version": Int(17959425), "name": String("minecraft:deepslate_redstone_ore")}), Compound({"version": Int(17959425), "states": Compound({}), "name": String("minecraft:deepslate_copper_ore")}), Compound({"name": String("minecraft:copper_ore"), "version": Int(17959425), "states": Compound({})}), Compound({"states": Compound({}), "name": String("minecraft:deepslate_lapis_ore"), "version": Int(17959425)}), Compound({"version": Int(17959425), "name": String("minecraft:stone"), "states": Compound({"stone_type": String("granite")})}), Compound({"states": Compound({}), "version": Int(17959425), "name": String("minecraft:lapis_ore")}), Compound({"version": Int(17959425), "name": String("minecraft:redstone_ore"), "states": Compound({})}), Compound({"version": Int(17959425), "states": Compound({"stone_type": String("andesite")}), "name": String("minecraft:stone")}), Compound({"version": Int(17959425), "name": String("minecraft:air"), "states": Compound({})})] }]
+
+#[test]
+fn level_settings() {
+    let provider = Provider::open("test").unwrap();
+    let settings = provider.get_settings().unwrap();
+    panic!("{settings:?}");
+}
 
 #[test]
 fn chunk_version() {
@@ -28,7 +35,7 @@ fn key_not_found() {
 }
 
 #[test]
-fn read_write_biomes() {
+fn biomes() {
     let database = Database::open("test/db").unwrap();
     let iter = database.iter();
 
@@ -54,10 +61,10 @@ fn subchunks() {
     for kv in iter {
         let key = kv.key();
         if key[key.len() - 2] == 0x2f {
-            let subchunk = SubChunk::deserialize_local(&*kv.value()).unwrap();
+            let subchunk = SubChunk::deserialize(&*kv.value()).unwrap();
 
-            let serialized = subchunk.serialize_local().unwrap();
-            let deserialized = SubChunk::deserialize_local(serialized.as_slice()).unwrap();
+            let serialized = subchunk.serialize().unwrap();
+            let deserialized = SubChunk::deserialize(serialized.as_slice()).unwrap();
 
             assert_eq!(subchunk, deserialized);
         }
@@ -80,7 +87,7 @@ fn bench_subchunk() {
 
             if key[key.len() - 2] == 0x2f {
                 let start = std::time::Instant::now();
-                let subchunk = SubChunk::deserialize_local(raw_ref.value().as_ref());
+                let subchunk = SubChunk::deserialize(raw_ref.value().as_ref());
                 let end = start.elapsed();
 
                 if subchunk.is_ok() {
@@ -114,16 +121,6 @@ fn bench_subchunk() {
     // dbg!(block);
 }
 
-#[ignore]
-#[test]
-fn level_settings() {
-    const LEVEL_DAT: &[u8] = include_bytes!("../test/level.dat");
-
-    let _decoded: LevelSettings = nbt::from_le_bytes(&LEVEL_DAT[8..]).unwrap().0;
-    let _value: nbt::Value = nbt::from_le_bytes(&LEVEL_DAT[8..]).unwrap().0;
-}
-
-#[ignore]
 #[test]
 fn palette_entry() {
     let entry = PaletteEntry {

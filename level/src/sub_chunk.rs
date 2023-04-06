@@ -8,10 +8,16 @@ use util::{bail, Vector};
 
 use crate::PackedArrayReturn;
 
+/// Version of the subchunk.
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum SubChunkVersion {
+    /// Legacy sub chunks are from before the Aquatic update.
+    /// These sub chunks only contain a single layer.
     Legacy = 1,
+    /// Limited sub chunks are from before the Caves and Cliffs update.
     Limited = 8,
+    /// Limitless are post Caves and Cliffs. The only difference between `Limitless` and `Limited` is the fact that limitless
+    /// contains a sub chunk index.
     Limitless = 9,
 }
 
@@ -23,7 +29,7 @@ impl TryFrom<u8> for SubChunkVersion {
             1 => Self::Legacy,
             8 => Self::Limited,
             9 => Self::Limitless,
-            _ => bail!(Malformed, "Invalid chunk version: {v}"),
+            _ => anyhow::bail!(format!("Invalid chunk version: {v}")),
         })
     }
 }
@@ -31,6 +37,7 @@ impl TryFrom<u8> for SubChunkVersion {
 mod block_version {
     use serde::{Deserialize, Deserializer, Serializer};
 
+    /// Deserializes a block version.
     #[inline]
     pub fn deserialize<'de, D>(de: D) -> anyhow::Result<Option<[u8; 4]>, D::Error>
     where
@@ -40,6 +47,7 @@ mod block_version {
         Ok(word.map(|w| w.to_be_bytes()))
     }
 
+    /// Serializes a block version.
     #[inline]
     pub fn serialize<S>(v: &Option<[u8; 4]>, ser: S) -> anyhow::Result<S::Ok, S::Error>
     where
@@ -147,7 +155,7 @@ impl SubLayer {
 impl SubLayer {
     /// Deserializes a single layer from the given buffer.
     #[inline]
-    fn deserialize_local<'a, R>(mut reader: R) -> anyhow::Result<Self>
+    fn deserialize<'a, R>(mut reader: R) -> anyhow::Result<Self>
     where
         R: BinaryRead<'a> + Copy + 'a,
     {
@@ -171,7 +179,7 @@ impl SubLayer {
     }
 
     #[inline]
-    fn serialize_local<W>(&self, mut writer: W) -> anyhow::Result<()>
+    fn serialize<W>(&self, mut writer: W) -> anyhow::Result<()>
     where
         W: BinaryWrite,
     {
@@ -270,6 +278,11 @@ pub struct SubChunk {
 }
 
 impl SubChunk {
+    #[inline]
+    pub fn index(&self) -> i8 {
+        self.index
+    }
+
     /// Returns the specified layer from the sub chunk.
     #[inline]
     pub fn layer(&self, index: usize) -> Option<&SubLayer> {
@@ -284,7 +297,7 @@ impl SubChunk {
 
 impl SubChunk {
     /// Deserialize a full sub chunk from the given buffer.
-    pub(crate) fn deserialize_local<'a, R>(mut reader: R) -> anyhow::Result<Self>
+    pub(crate) fn deserialize<'a, R>(mut reader: R) -> anyhow::Result<Self>
     where
         R: BinaryRead<'a> + Copy + 'a,
     {
@@ -303,7 +316,7 @@ impl SubChunk {
         // let mut layers = SmallVec::with_capacity(layer_count as usize);
         let mut layers = Vec::with_capacity(layer_count as usize);
         for _ in 0..layer_count {
-            layers.push(SubLayer::deserialize_local(reader)?);
+            layers.push(SubLayer::deserialize(reader)?);
         }
 
         Ok(Self { version, index, layers })
@@ -312,14 +325,14 @@ impl SubChunk {
     /// Serialises the sub chunk into a new buffer and returns the buffer.
     ///
     /// Use [`serialize_local_in`](Self::serialize_local_in) to serialize into an existing writer.
-    pub(crate) fn serialize_local(&self) -> anyhow::Result<MutableBuffer> {
+    pub(crate) fn serialize(&self) -> anyhow::Result<MutableBuffer> {
         let mut buffer = MutableBuffer::new();
-        self.serialize_local_in(&mut buffer)?;
+        self.serialize_in(&mut buffer)?;
         Ok(buffer)
     }
 
     /// Serialises the sub chunk into the given writer.
-    pub fn serialize_local_in<W>(&self, mut writer: W) -> anyhow::Result<()>
+    pub fn serialize_in<W>(&self, mut writer: W) -> anyhow::Result<()>
     where
         W: BinaryWrite,
     {
@@ -334,7 +347,7 @@ impl SubChunk {
         }
 
         for layer in &self.layers {
-            layer.serialize_local(&mut writer)?;
+            layer.serialize(&mut writer)?;
         }
 
         Ok(())
