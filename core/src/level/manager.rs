@@ -8,7 +8,7 @@ use parking_lot::RwLock;
 use tokio::sync::oneshot::{Receiver, Sender};
 use tokio_util::sync::CancellationToken;
 
-use level::Level;
+use level::Provider;
 use util::{Result, Vector};
 
 use crate::command::Command;
@@ -23,7 +23,7 @@ const LEVEL_TICK_INTERVAL: Duration = Duration::from_millis(1000 / 20);
 
 pub struct LevelManager {
     /// Used to load world data from disk.
-    level: RwLock<Level>,
+    level: RwLock<Provider>,
     /// List of commands available in this level.
     commands: DashMap<String, Command>,
     /// Currently set game rules.
@@ -44,7 +44,7 @@ impl LevelManager {
             (config.level_path, config.autosave_interval)
         };
 
-        let level = RwLock::new(Level::open(level_path)?);
+        let level = RwLock::new(Provider::open(level_path)?);
         let manager = Arc::new(Self {
             level,
             commands: DashMap::new(),
@@ -118,7 +118,9 @@ impl LevelManager {
         self.session_manager.broadcast(GameRulesChanged { game_rules })
     }
 
-    pub fn request_chunk(&self, position: Vector<i32, 2>) -> anyhow::Result<LevelChunk> {}
+    pub fn request_chunk(&self, position: Vector<i32, 2>) -> anyhow::Result<LevelChunk> {
+        todo!();
+    }
 
     // /// Simple job that runs [`flush`](Self::flush) on a specified interval.
     // async fn autosave_job(&self, sender: Sender<()>, interval: Duration) {

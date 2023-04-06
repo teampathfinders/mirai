@@ -2,7 +2,7 @@ use std::collections::HashMap;
 use util::{bytes::MutableBuffer, Deserialize, Serialize, Vector};
 
 use crate::{
-    biome::Biome, database::Database, level_dat::LevelSettings, DatabaseKey, Dimension, KeyData, PaletteEntry, SubChunk, SubChunkVersion, SubLayer,
+    biome::ChunkBiome, database::Database, level_dat::LevelSettings, DataKey, Dimension, KeyType, PaletteEntry, SubChunk, SubChunkVersion, SubLayer,
     BIOME_DATA, LOCAL_PLAYER, MOB_EVENTS, OVERWORLD, SCHEDULER, SCOREBOARD,
 };
 
@@ -20,13 +20,13 @@ fn read_write_biomes() {
 
     for kv in iter {
         let key = kv.key();
-        if *key.last().unwrap() == KeyData::Biome3d.discriminant() {
-            let biome = Biome::deserialize(&*kv.value()).unwrap();
+        if *key.last().unwrap() == KeyType::Biome3d.discriminant() {
+            let biome = ChunkBiome::deserialize(&*kv.value()).unwrap();
 
             let mut ser = MutableBuffer::new();
             biome.serialize(&mut ser).unwrap();
 
-            let biome2 = Biome::deserialize(ser.snapshot().as_ref()).unwrap();
+            let biome2 = ChunkBiome::deserialize(ser.snapshot().as_ref()).unwrap();
 
             assert_eq!(biome, biome2);
         }
