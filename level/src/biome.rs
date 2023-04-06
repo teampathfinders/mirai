@@ -1,36 +1,52 @@
 use std::mem;
 
-use util::bytes::{BinaryRead, SharedBuffer};
+use util::bytes::{BinaryRead, BinaryWrite, SharedBuffer};
 
 use crate::{ceil_div, PackedArrayReturn};
 
-#[derive(Debug)]
+const HEIGHTMAP_SIZE: usize = 512; // 16x16 u16 array
+
+/// A paletted biome.
+///
+/// This biome format is just like the sub chunk format.
+/// Every block is an index into the palette, which is a list of biome IDs.
+#[derive(Debug, PartialEq, Eq)]
 pub struct PalettedBiome {
-    indices: Box<[u16; 4096]>,
-    palette: Vec<u32>,
+    /// Indices into the biome palette.
+    pub(crate) indices: Box<[u16; 4096]>,
+    /// Contains all biome IDs located in this chunk.
+    pub(crate) palette: Vec<u32>,
 }
 
-#[derive(Debug)]
-pub enum BiomeFragment {
-    Referral(u8),
+/// Represents the three different biome formats.
+#[derive(Debug, PartialEq, Eq)]
+pub enum BiomeEncoding {
+    /// This sub chunk inherits all data from the previous sub chunk.
+    Inherit,
+    /// The entire sub chunk consists of a single biome.
     Single(u32),
+    /// See [`PalettedBiome`].
     Paletted(PalettedBiome),
 }
 
-#[derive(Debug)]
-pub struct Biome {
-    heightmap: Box<[[u16; 16]; 16]>,
-    fragments: Vec<BiomeFragment>,
+/// Describes the biomes contained in a single full size chunk.
+///
+/// The biome consists of a heightmap and a biome fragment for each sub chunk.
+#[derive(Debug, PartialEq, Eq)]
+pub struct ChunkBiome {
+    /// Highest blocks in the chunk.
+    pub(crate) heightmap: Box<[[u16; 16]; 16]>,
+    /// The biomes in each sub chunk.
+    pub(crate) fragments: Vec<BiomeEncoding>,
 }
 
-impl Biome {
+impl ChunkBiome {
+    /// Reads a chunk biome from a raw buffer.
     pub(crate) fn deserialize<'a, R>(mut reader: R) -> anyhow::Result<Self>
     where
         R: BinaryRead<'a>,
     {
-        const HM_BYTE_SIZE: usize = 512; // 16x16 u16 array
-
-        let heightmap: Box<[[u16; 16]; 16]> = Box::new(bytemuck::cast(reader.take_const::<HM_BYTE_SIZE>()?));
+        let heightmap: Box<[[u16; 16]; 16]> = Box::new(bytemuck::cast(reader.take_const::<HEIGHTMAP_SIZE>()?));
 
         let mut fragments = Vec::new();
         while !reader.eof() {
@@ -43,15 +59,44 @@ impl Biome {
                     palette.push(reader.read_u32_le()?);
                 }
 
-                fragments.push(BiomeFragment::Paletted(PalettedBiome { indices, palette }));
+                fragments.push(BiomeEncoding::Paletted(PalettedBiome { indices, palette }));
             } else if PackedArrayReturn::Empty == packed_array {
                 let single = reader.read_u32_le()?;
-                fragments.push(BiomeFragment::Single(single));
+                fragments.push(BiomeEncoding::Single(single));
             } else {
-                fragments.push(BiomeFragment::Referral(fragments.len() as u8 - 1));
+                fragments.push(BiomeEncoding::Inherit);
             }
         }
 
         Ok(Self { heightmap, fragments })
+    }
+
+    /// Serializes the current chunk biome.
+    pub(crate) fn serialize<W>(&self, mut writer: W) -> anyhow::Result<()>
+    where
+        W: BinaryWrite,
+    {
+        let cast = bytemuck::cast_slice(self.heightmap.as_ref());
+        writer.write_all(cast)?;
+
+        for fragment in &self.fragments {
+            match fragment {
+                BiomeEncoding::Inherit => writer.write_u8(0x7f << 1)?,
+                BiomeEncoding::Single(single) => {
+                    writer.write_u8(0)?;
+                    writer.write_u32_le(*single)?;
+                }
+                BiomeEncoding::Paletted(biome) => {
+                    crate::serialize_packed_array(&mut writer, &biome.indices, biome.palette.len())?;
+
+                    writer.write_u32_le(biome.palette.len() as u32)?;
+                    for entry in &biome.palette {
+                        writer.write_u32_le(*entry)?;
+                    }
+                }
+            }
+        }
+
+        Ok(())
     }
 }

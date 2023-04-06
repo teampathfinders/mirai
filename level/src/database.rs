@@ -7,7 +7,7 @@ use std::{
     os::raw::{c_char, c_int},
 };
 
-use crate::ffi;
+use crate::{ffi, DataKey};
 
 /// Wraps a LevelDB buffer, ensuring the buffer is deallocated after use.
 #[derive(Debug)]
@@ -190,17 +190,16 @@ impl Database {
     }
 
     /// Loads the specified value from the database.
-    pub fn get<K>(&self, key: K) -> anyhow::Result<Guard>
-    where
-        K: AsRef<[u8]>,
-    {
-        let key = key.as_ref();
+    pub fn get(&self, key: DataKey) -> anyhow::Result<Guard> {
+        let mut raw_key = Vec::with_capacity(key.serialized_size());
+        key.serialize(&mut raw_key)?;
+
         unsafe {
             // SAFETY: This function is guaranteed to not modify any arguments.
             // It also does not throw exceptions and returns a valid struct.
             //
             // LevelDB is thread-safe, this function can be used by multiple threads.
-            let result = ffi::level_get(self.ptr.as_ptr(), key.as_ptr() as *const c_char, key.len() as c_int);
+            let result = ffi::level_get(self.ptr.as_ptr(), raw_key.as_ptr() as *const c_char, raw_key.len() as c_int);
 
             if result.is_success == 1 {
                 debug_assert_ne!(result.data, std::ptr::null_mut());
@@ -219,19 +218,20 @@ impl Database {
         }
     }
 
-    pub fn insert<K, V>(&self, key: K, value: V) -> anyhow::Result<()>
+    pub fn insert<V>(&self, key: DataKey, value: V) -> anyhow::Result<()>
     where
-        K: AsRef<[u8]>,
         V: AsRef<[u8]>,
     {
-        let key = key.as_ref();
+        let mut raw_key = Vec::with_capacity(key.serialized_size());
+        key.serialize(&mut raw_key)?;
+
         let value = value.as_ref();
 
         unsafe {
             let result = ffi::level_insert(
                 self.ptr.as_ptr(),
-                key.as_ptr() as *const c_char,
-                key.len() as c_int,
+                raw_key.as_ptr() as *const c_char,
+                raw_key.len() as c_int,
                 value.as_ptr() as *const c_char,
                 value.len() as c_int,
             );
@@ -244,14 +244,12 @@ impl Database {
         }
     }
 
-    pub fn remove<K>(&self, key: K) -> anyhow::Result<()>
-    where
-        K: AsRef<[u8]>,
-    {
-        let key = key.as_ref();
+    pub fn remove(&self, key: DataKey) -> anyhow::Result<()> {
+        let mut raw_key = Vec::with_capacity(key.serialized_size());
+        key.serialize(&mut raw_key)?;
 
         unsafe {
-            let result = ffi::level_remove(self.ptr.as_ptr(), key.as_ptr() as *mut c_char, key.len() as c_int);
+            let result = ffi::level_remove(self.ptr.as_ptr(), raw_key.as_ptr() as *mut c_char, raw_key.len() as c_int);
 
             if result.is_success == 1 {
                 Ok(())

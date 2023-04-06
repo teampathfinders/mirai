@@ -80,7 +80,7 @@ pub struct PaletteEntry {
 /// This is prefixed with a 32-bit little endian integer specifying the size of the palette.
 /// The rest of the palette then consists of `n` concatenated NBT compounds.
 #[doc(alias = "storage record")]
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub struct SubLayer {
     /// List of indices into the palette.
     ///
@@ -175,53 +175,7 @@ impl SubLayer {
     where
         W: BinaryWrite,
     {
-        // Determine the required bits per index
-        let index_size = {
-            let palette_size = self.palette.len();
-
-            let mut bits_per_block = 0;
-            // Loop over allowed values.
-            for b in [1, 2, 3, 4, 5, 6, 8, 16] {
-                if 2usize.pow(b) >= palette_size {
-                    bits_per_block = b;
-                    break;
-                }
-            }
-
-            bits_per_block as u8
-        };
-
-        writer.write_u8(index_size << 1)?;
-
-        // Amount of indices that fit in a single 32-bit integer.
-        let per_word = ceil_div(u32::BITS, index_size as u32) as usize;
-
-        // Amount of words needed to encode 4096 block indices.
-        let word_count = {
-            let padding = match index_size {
-                3 | 5 | 6 => 1,
-                _ => 0,
-            };
-            4096 / per_word + padding
-        };
-
-        let mask = !(!0u32 << index_size);
-        for i in 0..word_count {
-            let mut word = 0;
-            for j in 0..per_word {
-                let offset = i * per_word + j;
-                if offset == 4096 {
-                    break;
-                }
-
-                let index = self.indices[offset] as u32 & mask;
-
-                word |= index;
-                word <<= index_size;
-            }
-
-            writer.write_u32_le(word)?;
-        }
+        crate::serialize_packed_array(&mut writer, &self.indices, self.palette.len())?;
 
         writer.write_u32_le(self.palette.len() as u32)?;
         for entry in &self.palette {
@@ -297,7 +251,7 @@ pub fn from_offset(offset: usize) -> Vector<u8, 3> {
 /// A Minecraft sub chunk.
 ///
 /// Every world contains
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub struct SubChunk {
     /// Version of the sub chunk.
     ///

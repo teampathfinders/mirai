@@ -2,7 +2,7 @@
 
 use crate::biome::ChunkBiome;
 use crate::database::Database;
-use crate::{DataKey, Dimension, KeyType, SubChunk};
+use crate::{DataKey, Dimension, KeyType};
 use anyhow::anyhow;
 use std::path::Path;
 use util::Vector;
@@ -30,6 +30,12 @@ impl Provider {
             data: KeyType::Biome3d,
         };
 
-        todo!();
+        if let Some(data) = self.database.get(key.clone())? {
+            let biome = ChunkBiome::deserialize(&*data)?;
+            Ok(Some(biome))
+        } else {
+            // Key not found
+            Ok(None)
+        }
     }
 }

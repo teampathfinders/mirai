@@ -1,8 +1,8 @@
 use std::collections::HashMap;
-use util::{Deserialize, Serialize, Vector};
+use util::{bytes::MutableBuffer, Deserialize, Serialize, Vector};
 
 use crate::{
-    biome::Biome, database::Database, level_dat::LevelDat, DatabaseKey, Dimension, KeyData, PaletteEntry, SubChunk, SubChunkVersion, SubLayer,
+    biome::ChunkBiome, database::Database, level_dat::LevelSettings, DataKey, Dimension, KeyType, PaletteEntry, SubChunk, SubChunkVersion, SubLayer,
     BIOME_DATA, LOCAL_PLAYER, MOB_EVENTS, OVERWORLD, SCHEDULER, SCOREBOARD,
 };
 
@@ -20,14 +20,19 @@ fn read_write_biomes() {
 
     for kv in iter {
         let key = kv.key();
-        if *key.last().unwrap() == KeyData::Biome3d.discriminant() {
-            let biome = Biome::deserialize(&*kv.value());
-            println!("{biome:?}");
+        if *key.last().unwrap() == KeyType::Biome3d.discriminant() {
+            let biome = ChunkBiome::deserialize(&*kv.value()).unwrap();
+
+            let mut ser = MutableBuffer::new();
+            biome.serialize(&mut ser).unwrap();
+
+            let biome2 = ChunkBiome::deserialize(ser.snapshot().as_ref()).unwrap();
+
+            assert_eq!(biome, biome2);
         }
     }
 }
 
-#[ignore]
 #[test]
 fn read_write_subchunk() {
     let database = Database::open("test/db").unwrap();
@@ -35,17 +40,12 @@ fn read_write_subchunk() {
     for kv in iter {
         let key = kv.key();
         if key[key.len() - 2] == 0x2f {
-            let mut subchunk = SubChunk::deserialize_local(&*kv.value()).unwrap();
-            subchunk[0][[0, 0, 0]]
-                .states
-                .insert("hello".to_owned(), nbt::Value::String("world".to_owned()));
+            let subchunk = SubChunk::deserialize_local(&*kv.value()).unwrap();
 
             let serialized = subchunk.serialize_local().unwrap();
-
             let deserialized = SubChunk::deserialize_local(serialized.as_slice()).unwrap();
-            dbg!(deserialized);
 
-            break;
+            assert_eq!(subchunk, deserialized);
         }
     }
 }
@@ -104,7 +104,7 @@ fn bench_subchunk() {
 fn load_level_dat() {
     const LEVEL_DAT: &[u8] = include_bytes!("../test/level.dat");
 
-    let _decoded: LevelDat = nbt::from_le_bytes(&LEVEL_DAT[8..]).unwrap().0;
+    let _decoded: LevelSettings = nbt::from_le_bytes(&LEVEL_DAT[8..]).unwrap().0;
     let _value: nbt::Value = nbt::from_le_bytes(&LEVEL_DAT[8..]).unwrap().0;
 }
 
