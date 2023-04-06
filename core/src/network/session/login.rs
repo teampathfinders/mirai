@@ -2,27 +2,23 @@ use std::collections::HashMap;
 use std::sync::atomic::Ordering;
 
 use level::Dimension;
-use util::{bail, BlockPosition, Deserialize, Result, Vector};
 use util::bytes::MutableBuffer;
+use util::{bail, BlockPosition, Deserialize, Result, Vector};
 
 use crate::config::SERVER_CONFIG;
-use crate::network::{PropertyData, ItemEntry, BlockEntry, TextData};
-use crate::network::{
-    BroadcastIntent, ChatRestrictionLevel, ChunkRadiusReply,
-    ChunkRadiusRequest, ClientToServerHandshake, CreativeContent, DISCONNECTED_LOGIN_FAILED, Login, NetworkSettings, PermissionLevel,
-    PlayerMovementSettings, PlayerMovementType, PlayStatus,
-    RequestNetworkSettings, ResourcePackClientResponse, ResourcePacksInfo,
-    ResourcePackStack, ServerToClientHandshake, SpawnBiomeType, StartGame, Status, WorldGenerator,
-};
-use crate::network::{
-    BiomeDefinitionList, CLIENT_VERSION_STRING, Difficulty, GameMode,
-    NETWORK_VERSION,
-    SetLocalPlayerAsInitialized, TextMessage, ViolationWarning,
-};
-use crate::network::AvailableCommands;
-use crate::network::CacheStatus;
 use crate::crypto::Encryptor;
+use crate::network::CacheStatus;
 use crate::network::Session;
+use crate::network::{AvailableCommands, SubChunkRequestMode};
+use crate::network::{
+    BiomeDefinitionList, Difficulty, GameMode, SetLocalPlayerAsInitialized, TextMessage, ViolationWarning, CLIENT_VERSION_STRING, NETWORK_VERSION,
+};
+use crate::network::{BlockEntry, ItemEntry, LevelChunk, PropertyData, TextData};
+use crate::network::{
+    BroadcastIntent, ChatRestrictionLevel, ChunkRadiusReply, ChunkRadiusRequest, ClientToServerHandshake, CreativeContent, Login, NetworkSettings,
+    PermissionLevel, PlayStatus, PlayerMovementSettings, PlayerMovementType, RequestNetworkSettings, ResourcePackClientResponse, ResourcePackStack,
+    ResourcePacksInfo, ServerToClientHandshake, SpawnBiomeType, StartGame, Status, WorldGenerator, DISCONNECTED_LOGIN_FAILED,
+};
 
 impl Session {
     /// Handles a [`ClientCacheStatus`] packet.
@@ -76,16 +72,16 @@ impl Session {
             //     }],
             // })?;
 
+            let level_chunk = self.level_manager.request_chunk(Vector::from([0, 0]))?;
+            dbg!(level_chunk);
+
             self.broadcast_others(TextMessage {
                 data: TextData::System {
-                    message: &format!(
-                        "§e{} has joined the server.",
-                        identity_data.display_name
-                    )
+                    message: &format!("§e{} has joined the server.", identity_data.display_name),
                 },
                 needs_translation: false,
                 xuid: "",
-                platform_chat_id: ""
+                platform_chat_id: "",
             })?;
         }
         self.initialized.store(true, Ordering::SeqCst);
@@ -104,10 +100,7 @@ impl Session {
         })
     }
 
-    pub fn process_pack_client_response(
-        &self,
-        packet: MutableBuffer,
-    ) -> anyhow::Result<()> {
+    pub fn process_pack_client_response(&self, packet: MutableBuffer) -> anyhow::Result<()> {
         let _request = ResourcePackClientResponse::deserialize(packet.snapshot())?;
 
         // TODO: Implement resource packs.
@@ -170,14 +163,10 @@ impl Session {
             },
             time: 0,
             enchantment_seed: 0,
-            block_properties: &[
-                BlockEntry {
-                    name: "minecraft:bedrock".to_owned(),
-                    properties: HashMap::from([
-                        ("infiniburn_bit".to_owned(), nbt::Value::Byte(0))
-                    ]),
-                }
-            ],
+            block_properties: &[BlockEntry {
+                name: "minecraft:bedrock".to_owned(),
+                properties: HashMap::from([("infiniburn_bit".to_owned(), nbt::Value::Byte(0))]),
+            }],
             item_properties: &[
 //                ItemEntry {
 //                    name: "minecraft:bedrock".to_owned(),
@@ -204,15 +193,9 @@ impl Session {
         let play_status = PlayStatus { status: Status::PlayerSpawn };
         self.send(play_status)?;
 
-        let commands = self
-            .level_manager
-            .get_commands()
-            .iter()
-            .map(|kv| kv.value().clone())
-            .collect::<Vec<_>>();
+        let commands = self.level_manager.get_commands().iter().map(|kv| kv.value().clone()).collect::<Vec<_>>();
 
-        let available_commands =
-            AvailableCommands { commands: commands.as_slice() };
+        let available_commands = AvailableCommands { commands: commands.as_slice() };
 
         self.send(available_commands)?;
 
@@ -313,9 +296,7 @@ impl Session {
         };
 
         self.send(response)?;
-        self.raknet
-            .compression_enabled
-            .store(true, Ordering::SeqCst);
+        self.raknet.compression_enabled.store(true, Ordering::SeqCst);
 
         Ok(())
     }

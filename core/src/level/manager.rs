@@ -8,11 +8,12 @@ use parking_lot::RwLock;
 use tokio::sync::oneshot::{Receiver, Sender};
 use tokio_util::sync::CancellationToken;
 
-use level::Level;
-use util::Result;
+use level::provider::Provider;
+use util::{Result, Vector};
 
 use crate::command::Command;
 use crate::config::SERVER_CONFIG;
+use crate::network::LevelChunk;
 use crate::network::{
     SessionManager, {GameRule, GameRulesChanged},
 };
@@ -22,7 +23,7 @@ const LEVEL_TICK_INTERVAL: Duration = Duration::from_millis(1000 / 20);
 
 pub struct LevelManager {
     /// Used to load world data from disk.
-    level: RwLock<Level>,
+    level: RwLock<Provider>,
     /// List of commands available in this level.
     commands: DashMap<String, Command>,
     /// Currently set game rules.
@@ -43,7 +44,7 @@ impl LevelManager {
             (config.level_path, config.autosave_interval)
         };
 
-        let level = RwLock::new(Level::open(level_path)?);
+        let level = RwLock::new(Provider::open(level_path)?);
         let manager = Arc::new(Self {
             level,
             commands: DashMap::new(),
@@ -78,7 +79,7 @@ impl LevelManager {
     }
 
     #[inline]
-    pub fn add_many_commands(&self, commands: &[Command]) {
+    pub fn add_commands(&self, commands: &[Command]) {
         commands.iter().for_each(|cmd| {
             self.commands.insert(cmd.name.clone(), cmd.clone());
         });
@@ -115,6 +116,10 @@ impl LevelManager {
         }
 
         self.session_manager.broadcast(GameRulesChanged { game_rules })
+    }
+
+    pub fn request_chunk(&self, position: Vector<i32, 2>) -> anyhow::Result<LevelChunk> {
+        todo!();
     }
 
     // /// Simple job that runs [`flush`](Self::flush) on a specified interval.

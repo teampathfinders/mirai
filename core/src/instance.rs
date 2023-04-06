@@ -50,7 +50,7 @@ pub struct InstanceManager {
     /// Service that manages all player sessions.
     session_manager: Arc<SessionManager>,
     /// Manages the level.
-    level_manager: RwLock<Option<Arc<LevelManager>>>,
+    level_manager: Arc<LevelManager>,
     /// Channel that the LevelManager sends a message to when it has fully shutdown.
     /// This is to make sure that the world has been saved and safely shut down before shutting down the server.
     level_notifier: Receiver<()>,

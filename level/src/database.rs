@@ -7,7 +7,8 @@ use std::{
     os::raw::{c_char, c_int},
 };
 
-use crate::ffi;
+use crate::ffi::LoadStatus;
+use crate::{ffi, DataKey};
 
 /// Wraps a LevelDB buffer, ensuring the buffer is deallocated after use.
 #[derive(Debug)]
@@ -66,7 +67,7 @@ impl<'a> KvRef<'a> {
         // This invariant is upheld by the lifetime 'a.
         unsafe {
             let result = ffi::level_iter_key(self.iter.as_ptr());
-            debug_assert_eq!(result.is_success, 1);
+            debug_assert_eq!(result.status, LoadStatus::Success);
 
             Guard::from_slice(std::slice::from_raw_parts(result.data as *const u8, result.size as usize))
         }
@@ -78,7 +79,7 @@ impl<'a> KvRef<'a> {
         // This invariant is upheld by the lifetime 'a.
         unsafe {
             let result = ffi::level_iter_value(self.iter.as_ptr());
-            debug_assert_eq!(result.is_success, 1);
+            debug_assert_eq!(result.status, LoadStatus::Success);
 
             Guard::from_slice(std::slice::from_raw_parts(result.data as *const u8, result.size as usize))
         }
@@ -102,7 +103,7 @@ impl<'a> Keys<'a> {
         // The iterator position has also been initialized by FFI and is not in an invalid state.
         let result = unsafe { ffi::level_iter(db.ptr.as_ptr()) };
 
-        debug_assert_eq!(result.is_success, 1);
+        debug_assert_eq!(result.status, LoadStatus::Success);
         debug_assert_ne!(result.data, std::ptr::null_mut());
 
         Self {
@@ -167,12 +168,11 @@ impl Database {
     {
         let ffi_path = CString::new(path.as_ref())?;
 
+        // SAFETY: This function is guaranteed to not return exceptions.
+        // It also does not modify the argument and returns a valid struct.
         unsafe {
-            // SAFETY: This function is guaranteed to not return exceptions.
-            // It also does not modify the argument and returns a valid struct.
             let result = ffi::level_open(ffi_path.as_ptr());
-
-            if result.is_success == 1 {
+            if result.status == LoadStatus::Success {
                 debug_assert_ne!(result.data, std::ptr::null_mut());
 
                 // SAFETY: If result.is_success is true, then the caller has set data to a valid pointer.
@@ -190,19 +190,17 @@ impl Database {
     }
 
     /// Loads the specified value from the database.
-    pub fn get<K>(&self, key: K) -> anyhow::Result<Guard>
-    where
-        K: AsRef<[u8]>,
-    {
-        let key = key.as_ref();
-        unsafe {
-            // SAFETY: This function is guaranteed to not modify any arguments.
-            // It also does not throw exceptions and returns a valid struct.
-            //
-            // LevelDB is thread-safe, this function can be used by multiple threads.
-            let result = ffi::level_get(self.ptr.as_ptr(), key.as_ptr() as *const c_char, key.len() as c_int);
+    pub fn get(&self, key: DataKey) -> anyhow::Result<Option<Guard>> {
+        let mut raw_key = Vec::with_capacity(key.serialized_size());
+        key.serialize(&mut raw_key)?;
 
-            if result.is_success == 1 {
+        // SAFETY: This function is guaranteed to not modify any arguments.
+        // It also does not throw exceptions and returns a valid struct.
+        //
+        // A LevelDB database is thread-safe, this function can be used by multiple threads.
+        unsafe {
+            let result = ffi::level_get(self.ptr.as_ptr(), raw_key.as_ptr() as *const c_char, raw_key.len() as c_int);
+            if result.status == LoadStatus::Success {
                 debug_assert_ne!(result.data, std::ptr::null_mut());
 
                 // SAFETY: result.data is guaranteed by the caller to be a valid pointer.
@@ -212,31 +210,37 @@ impl Database {
                 // SAFETY: The data passed into the Guard has been allocated in the leveldb FFI code.
                 // It is therefore also required to deallocate the data there, which is what Guard
                 // does.
-                Ok(Guard::from_slice(data))
+                Ok(Some(Guard::from_slice(data)))
+            } else if result.status == LoadStatus::NotFound {
+                Ok(None)
             } else {
+                dbg!(&result);
                 Err(translate_ffi_error(result))
             }
         }
     }
 
-    pub fn insert<K, V>(&self, key: K, value: V) -> anyhow::Result<()>
+    pub fn insert<V>(&self, key: DataKey, value: V) -> anyhow::Result<()>
     where
-        K: AsRef<[u8]>,
         V: AsRef<[u8]>,
     {
-        let key = key.as_ref();
+        let mut raw_key = Vec::with_capacity(key.serialized_size());
+        key.serialize(&mut raw_key)?;
+
         let value = value.as_ref();
 
+        /// SAFETY: This is safe because the data and lengths come from properly allocated vecs.
+        /// Additionally, the insert method does not keep references to the data after the function has been called.
         unsafe {
             let result = ffi::level_insert(
                 self.ptr.as_ptr(),
-                key.as_ptr() as *const c_char,
-                key.len() as c_int,
+                raw_key.as_ptr() as *const c_char,
+                raw_key.len() as c_int,
                 value.as_ptr() as *const c_char,
                 value.len() as c_int,
             );
 
-            if result.is_success == 1 {
+            if result.status == LoadStatus::Success {
                 Ok(())
             } else {
                 Err(translate_ffi_error(result))
@@ -244,16 +248,16 @@ impl Database {
         }
     }
 
-    pub fn remove<K>(&self, key: K) -> anyhow::Result<()>
-    where
-        K: AsRef<[u8]>,
-    {
-        let key = key.as_ref();
+    pub fn remove(&self, key: DataKey) -> anyhow::Result<()> {
+        let mut raw_key = Vec::with_capacity(key.serialized_size());
+        key.serialize(&mut raw_key)?;
 
+        /// SAFETY: This is safe because the data and lengths come from properly allocated vecs.
+        /// Additionally, the remove method does not keep references to the data after the function has been called.
         unsafe {
-            let result = ffi::level_remove(self.ptr.as_ptr(), key.as_ptr() as *mut c_char, key.len() as c_int);
+            let result = ffi::level_remove(self.ptr.as_ptr(), raw_key.as_ptr() as *mut c_char, raw_key.len() as c_int);
 
-            if result.is_success == 1 {
+            if result.status == LoadStatus::Success || result.status == LoadStatus::NotFound {
                 Ok(())
             } else {
                 Err(translate_ffi_error(result))
@@ -265,7 +269,7 @@ impl Database {
 impl Drop for Database {
     #[inline]
     fn drop(&mut self) {
-        // Make sure to clean up the LevelDB resources when the database is dropped.
+        // SAFETY: Make sure to clean up the LevelDB resources when the database is dropped.
         // This can only be done by C++.
         unsafe {
             ffi::level_close(self.ptr.as_ptr());
@@ -281,7 +285,7 @@ unsafe impl Sync for Database {}
 
 /// Translates an error received from the FFI, into an [`Error`].
 unsafe fn translate_ffi_error(result: ffi::LevelResult) -> anyhow::Error {
-    debug_assert_eq!(result.is_success, 0);
+    debug_assert_ne!(result.status, LoadStatus::Success);
 
     // SAFETY: This string is guaranteed to have a null termination character,
     // as it has been created by the c_str method on std::string in C++.

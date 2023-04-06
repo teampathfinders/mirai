@@ -34,4 +34,4 @@ jobs:
       run: cargo +1.68.0 build
       
     - name: Test
-      run: cargo +1.68.0 test
+      run: cargo +1.68.0 test -- --test-threads 1
