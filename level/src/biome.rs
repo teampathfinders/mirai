@@ -2,7 +2,8 @@ use util::bytes::{BinaryRead, BinaryWrite};
 
 use crate::PackedArrayReturn;
 
-const HEIGHTMAP_SIZE: usize = 512; // 16x16 u16 array
+/// Size in bytes of the heightmap.
+const HEIGHTMAP_SIZE: usize = 512;
 
 /// A paletted biome.
 ///
