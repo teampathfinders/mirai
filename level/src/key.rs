@@ -47,6 +47,7 @@ pub enum KeyType {
 }
 
 impl KeyType {
+    /// Returns the discriminant of `self`.
     pub fn discriminant(&self) -> u8 {
         // SAFETY: KeyData is marked as `repr(u8)` and therefore its layout is a
         // `repr(C)` union of `repr(C)` structs, each of which has the `u8` discriminant as its first
@@ -55,8 +56,10 @@ impl KeyType {
     }
 }
 
+/// A key that can be loaded from the database.
 #[derive(Debug, Clone)]
 pub struct DataKey {
+    /// X and Z coordinates of the requested chunk.
     pub coordinates: Vector<i32, 2>,
     /// Dimension of the chunk.
     pub dimension: Dimension,
@@ -65,10 +68,12 @@ pub struct DataKey {
 }
 
 impl DataKey {
+    /// What is the size of this key after it has been serialised?
     pub(crate) fn serialized_size(&self) -> usize {
         4 + 4 + if self.dimension != Dimension::Overworld { 4 } else { 0 } + 1 + if let KeyType::SubChunk { .. } = self.data { 1 } else { 0 }
     }
 
+    /// Serialises the key into the given writer.
     pub(crate) fn serialize<W>(&self, mut writer: W) -> anyhow::Result<()>
     where
         W: BinaryWrite,
@@ -88,6 +93,7 @@ impl DataKey {
         Ok(())
     }
 
+    /// Deserialises a key from the given reader.
     pub(crate) fn deserialize<'a, R>(mut reader: R) -> anyhow::Result<Self>
     where
         R: BinaryRead<'a> + 'a,

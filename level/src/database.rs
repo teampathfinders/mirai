@@ -168,9 +168,9 @@ impl Database {
     {
         let ffi_path = CString::new(path.as_ref())?;
 
+        // SAFETY: This function is guaranteed to not return exceptions.
+        // It also does not modify the argument and returns a valid struct.
         unsafe {
-            // SAFETY: This function is guaranteed to not return exceptions.
-            // It also does not modify the argument and returns a valid struct.
             let result = ffi::level_open(ffi_path.as_ptr());
             if result.status == LoadStatus::Success {
                 debug_assert_ne!(result.data, std::ptr::null_mut());
@@ -194,11 +194,11 @@ impl Database {
         let mut raw_key = Vec::with_capacity(key.serialized_size());
         key.serialize(&mut raw_key)?;
 
+        // SAFETY: This function is guaranteed to not modify any arguments.
+        // It also does not throw exceptions and returns a valid struct.
+        //
+        // A LevelDB database is thread-safe, this function can be used by multiple threads.
         unsafe {
-            // SAFETY: This function is guaranteed to not modify any arguments.
-            // It also does not throw exceptions and returns a valid struct.
-            //
-            // LevelDB is thread-safe, this function can be used by multiple threads.
             let result = ffi::level_get(self.ptr.as_ptr(), raw_key.as_ptr() as *const c_char, raw_key.len() as c_int);
             if result.status == LoadStatus::Success {
                 debug_assert_ne!(result.data, std::ptr::null_mut());
@@ -229,6 +229,8 @@ impl Database {
 
         let value = value.as_ref();
 
+        /// SAFETY: This is safe because the data and lengths come from properly allocated vecs.
+        /// Additionally, the insert method does not keep references to the data after the function has been called.
         unsafe {
             let result = ffi::level_insert(
                 self.ptr.as_ptr(),
@@ -250,6 +252,8 @@ impl Database {
         let mut raw_key = Vec::with_capacity(key.serialized_size());
         key.serialize(&mut raw_key)?;
 
+        /// SAFETY: This is safe because the data and lengths come from properly allocated vecs.
+        /// Additionally, the remove method does not keep references to the data after the function has been called.
         unsafe {
             let result = ffi::level_remove(self.ptr.as_ptr(), raw_key.as_ptr() as *mut c_char, raw_key.len() as c_int);
 
@@ -265,7 +269,7 @@ impl Database {
 impl Drop for Database {
     #[inline]
     fn drop(&mut self) {
-        // Make sure to clean up the LevelDB resources when the database is dropped.
+        // SAFETY: Make sure to clean up the LevelDB resources when the database is dropped.
         // This can only be done by C++.
         unsafe {
             ffi::level_close(self.ptr.as_ptr());

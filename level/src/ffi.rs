@@ -1,5 +1,6 @@
 use std::ffi::{c_char, c_int, c_void};
 
+/// Status of the LevelDB operation result.
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 #[repr(u8)]
 pub enum LoadStatus {
@@ -11,6 +12,7 @@ pub enum LoadStatus {
     IOError
 }
 
+/// Result returned by fallible LevelDB operations.
 #[derive(Debug)]
 #[repr(C)]
 pub struct LevelResult {

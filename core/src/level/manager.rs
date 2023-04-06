@@ -8,7 +8,7 @@ use parking_lot::RwLock;
 use tokio::sync::oneshot::{Receiver, Sender};
 use tokio_util::sync::CancellationToken;
 
-use level::Provider;
+use level::provider::Provider;
 use util::{Result, Vector};
 
 use crate::command::Command;
