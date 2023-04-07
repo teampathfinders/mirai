@@ -2,7 +2,7 @@ use std::collections::HashMap;
 use util::{bytes::MutableBuffer, Deserialize, Serialize, Vector};
 
 use crate::{
-    biome::Biome, database::Database, provider::Provider, settings::LevelSettings, DataKey, Dimension, KeyType, PaletteEntry, SubChunk,
+    biome::Biomes, database::Database, provider::Provider, settings::LevelSettings, DataKey, Dimension, KeyType, PaletteEntry, SubChunk,
     SubChunkVersion, SubLayer, BIOME_DATA, LOCAL_PLAYER, MOB_EVENTS, OVERWORLD, SCHEDULER, SCOREBOARD,
 };
 
@@ -29,7 +29,7 @@ fn chunk_version() {
 #[test]
 fn key_not_found() {
     let provider = Provider::open("test").unwrap();
-    let biome = provider.get_biome(Vector::from([1290712972, 29372937]), Dimension::Overworld).unwrap();
+    let biome = provider.get_biomes(Vector::from([1290712972, 29372937]), Dimension::Overworld).unwrap();
     assert_eq!(biome, None);
 }
 
@@ -41,12 +41,12 @@ fn biomes() {
     for kv in iter {
         let key = kv.key();
         if *key.last().unwrap() == KeyType::Biome3d.discriminant() {
-            let biome = Biome::deserialize(&*kv.value()).unwrap();
+            let biome = Biomes::deserialize(&*kv.value()).unwrap();
 
             let mut ser = MutableBuffer::new();
             biome.serialize(&mut ser).unwrap();
 
-            let biome2 = Biome::deserialize(ser.snapshot().as_ref()).unwrap();
+            let biome2 = Biomes::deserialize(ser.snapshot().as_ref()).unwrap();
 
             assert_eq!(biome, biome2);
         }

@@ -164,6 +164,16 @@ pub trait BinaryRead<'a> {
         Ok(BlockPosition::new(x, y, z))
     }
 
+    /// Reads a byte vector from the buffer.
+    #[inline]
+    fn read_vecb<const N: usize>(&mut self) -> anyhow::Result<Vector<i8, N>> {
+        let mut x = [0; N];
+        for v in &mut x {
+            *v = self.read_i8()?;
+        }
+        Ok(Vector::from(x))
+    }
+
     /// Reads an integer vector from the buffer.
     #[inline]
     fn read_veci<const N: usize>(&mut self) -> anyhow::Result<Vector<i32, N>> {

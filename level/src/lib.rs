@@ -13,14 +13,14 @@ const fn ceil_div(lhs: u32, rhs: u32) -> u32 {
 }
 
 #[derive(Debug, PartialEq, Eq)]
-enum PackedArrayReturn {
+pub enum PackedArrayReturn {
     Empty,
     ReferBack,
     Data(Box<[u16; 4096]>),
 }
 
 #[inline(always)]
-fn serialize_packed_array<W>(writer: &mut W, array: &[u16; 4096], max_index: usize) -> anyhow::Result<()>
+pub fn serialize_packed_array<W>(writer: &mut W, array: &[u16; 4096], max_index: usize, is_network: bool) -> anyhow::Result<()>
 where
     W: BinaryWrite,
 {
@@ -38,7 +38,7 @@ where
         bits_per_block as u8
     };
 
-    writer.write_u8(index_size << 1)?;
+    writer.write_u8(index_size << 1 | is_network as u8)?;
 
     // Amount of indices that fit in a single 32-bit integer.
     let per_word = u32::BITS / index_size as u32;
@@ -65,7 +65,7 @@ where
 }
 
 #[inline(always)]
-fn deserialize_packed_array<'a, R>(reader: &mut R) -> anyhow::Result<PackedArrayReturn>
+pub fn deserialize_packed_array<'a, R>(reader: &mut R) -> anyhow::Result<PackedArrayReturn>
 where
     R: BinaryRead<'a>,
 {
