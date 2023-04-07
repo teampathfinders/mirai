@@ -174,7 +174,7 @@ impl Database {
             let result = ffi::level_open(ffi_path.as_ptr());
             if result.status == LoadStatus::Success {
                 debug_assert_ne!(result.data, std::ptr::null_mut());
-                
+
                 dbg!(&result);
                 // SAFETY: If result.is_success is true, then the caller has set data to a valid pointer.
                 Ok(Self { ptr: NonNull::new_unchecked(result.data) })

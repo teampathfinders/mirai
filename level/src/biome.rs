@@ -17,6 +17,23 @@ pub struct PalettedBiome {
     pub(crate) palette: Vec<u32>,
 }
 
+impl PalettedBiome {
+    #[inline]
+    pub fn indices(&self) -> &[u16; 4096] {
+        &self.indices
+    }
+
+    #[inline]
+    pub fn palette(&self) -> &[u32] {
+        &self.palette
+    }
+
+    #[inline]
+    pub fn max_index(&self) -> usize {
+        self.palette.len() - 1
+    }
+}
+
 /// Represents the three different biome formats.
 #[derive(Debug, PartialEq, Eq)]
 pub enum BiomeEncoding {
@@ -32,14 +49,24 @@ pub enum BiomeEncoding {
 ///
 /// The biome consists of a heightmap and a biome fragment for each sub chunk.
 #[derive(Debug, PartialEq, Eq)]
-pub struct Biome {
+pub struct Biomes {
     /// Highest blocks in the chunk.
     pub(crate) heightmap: Box<[[u16; 16]; 16]>,
     /// The biomes in each sub chunk.
     pub(crate) fragments: Vec<BiomeEncoding>,
 }
 
-impl Biome {
+impl Biomes {
+    #[inline]
+    pub fn heightmap(&self) -> &[[u16; 16]; 16] {
+        &self.heightmap
+    }
+
+    #[inline]
+    pub fn fragments(&self) -> &[BiomeEncoding] {
+        &self.fragments
+    }
+
     /// Reads a chunk biome from a raw buffer.
     pub(crate) fn deserialize<'a, R>(mut reader: R) -> anyhow::Result<Self>
     where
@@ -86,7 +113,7 @@ impl Biome {
                     writer.write_u32_le(*single)?;
                 }
                 BiomeEncoding::Paletted(biome) => {
-                    crate::serialize_packed_array(&mut writer, &biome.indices, biome.palette.len())?;
+                    crate::serialize_packed_array(&mut writer, &biome.indices, biome.palette.len(), false)?;
 
                     writer.write_u32_le(biome.palette.len() as u32)?;
                     for entry in &biome.palette {

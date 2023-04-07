@@ -1,6 +1,6 @@
 // Special keys
 
-use crate::biome::Biome;
+use crate::biome::Biomes;
 use crate::database::Database;
 use crate::settings::LevelSettings;
 use crate::{DataKey, Dimension, KeyType, SubChunk};
@@ -90,7 +90,7 @@ impl Provider {
 
     /// Gets the biomes in the specified chunk.
     ///
-    /// See [`Biome`] for more information.
+    /// See [`Biomes`] for more information.
     ///
     /// # Arguments
     ///
@@ -101,7 +101,7 @@ impl Provider {
     ///
     /// This method returns `None` if the requested chunk was not found
     /// and an error if the data could not be loaded.
-    pub fn get_biome<I>(&self, coordinates: I, dimension: Dimension) -> anyhow::Result<Option<Biome>>
+    pub fn get_biomes<I>(&self, coordinates: I, dimension: Dimension) -> anyhow::Result<Option<Biomes>>
     where
         I: Into<Vector<i32, 2>>,
     {
@@ -112,7 +112,7 @@ impl Provider {
         };
 
         if let Some(data) = self.database.get(key)? {
-            let biome = Biome::deserialize(&*data)?;
+            let biome = Biomes::deserialize(&*data)?;
             Ok(Some(biome))
         } else {
             Ok(None)
