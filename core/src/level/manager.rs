@@ -15,7 +15,7 @@ use util::{Result, Vector};
 
 use crate::command::Command;
 use crate::config::SERVER_CONFIG;
-use crate::network::LevelChunk;
+use crate::network::{LevelChunk, SubChunkResponse, SubChunkRequestMode};
 use crate::network::{
     SessionManager, {GameRule, GameRulesChanged},
 };
@@ -151,17 +151,17 @@ impl LevelManager {
         self.session_manager.broadcast(GameRulesChanged { game_rules })
     }
 
-    pub fn request_chunk(&self, coordinates: Vector<i32, 2>, dimension: Dimension) -> anyhow::Result<Option<LevelChunk>> {
+    pub fn request_chunk(&self, coordinates: Vector<i32, 2>, dimension: Dimension) -> anyhow::Result<SubChunkResponse> {
         let biome = self.provider.get_biome(coordinates.clone(), dimension)?;
         if biome.is_none() {
-            return Ok(None);
+            todo!();
         }
 
         let sub_chunks = (-4..20)
             .into_iter()
             .filter_map(|cy| {
                 let sub = match self.provider.get_subchunk(coordinates.clone(), cy, dimension) {
-                    Ok(sub) => sub,
+                    Ok(sub) => Some(sub),
                     Err(err) => {
                         tracing::error!("Failed to load sub chunk [{},{},{}]: {err:?}", coordinates.x, cy, coordinates.y);
                         return None;
@@ -171,6 +171,8 @@ impl LevelManager {
                 sub
             })
             .collect::<Vec<_>>();
+
+        
 
         todo!();
     }

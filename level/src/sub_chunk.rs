@@ -279,6 +279,11 @@ pub struct SubChunk {
 
 impl SubChunk {
     #[inline]
+    pub fn version(&self) -> SubChunkVersion {
+        self.version
+    }
+
+    #[inline]
     pub fn index(&self) -> i8 {
         self.index
     }
@@ -332,15 +337,12 @@ impl SubChunk {
     }
 
     /// Serialises the sub chunk into the given writer.
-    pub fn serialize_in<W>(&self, mut writer: W) -> anyhow::Result<()>
+    pub(crate) fn serialize_in<W>(&self, mut writer: W) -> anyhow::Result<()>
     where
         W: BinaryWrite,
     {
         writer.write_u8(self.version as u8)?;
-        match self.version {
-            SubChunkVersion::Legacy => writer.write_u8(1),
-            _ => writer.write_u8(self.layers.len() as u8),
-        }?;
+        writer.write_u8(self.layers.len() as u8)?;
 
         if self.version == SubChunkVersion::Limitless {
             writer.write_i8(self.index)?;

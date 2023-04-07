@@ -19,7 +19,7 @@ pub enum SubChunkRequestMode {
 #[derive(Debug)]
 pub struct LevelChunk {
     /// Position of the chunk.
-    pub position: Vector<i32, 2>,
+    pub coordinates: Vector<i32, 2>,
     /// How these chunks should be handled by the client.
     pub request_mode: SubChunkRequestMode,
     /// Top sub chunk in the packet.
@@ -40,7 +40,7 @@ impl ConnectedPacket for LevelChunk {
 
 impl Serialize for LevelChunk {
     fn serialize(&self, buffer: &mut MutableBuffer) -> anyhow::Result<()> {
-        buffer.write_veci(&self.position)?;
+        buffer.write_veci(&self.coordinates)?;
         match self.request_mode {
             SubChunkRequestMode::Legacy => {
                 buffer.write_var_u32(self.sub_chunk_count)?;
