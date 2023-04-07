@@ -84,13 +84,17 @@ impl PluginRuntime {
 
         Ok(Self { engine, plugins })
     }
+}
 
-    /// Calls the shutdown callback for every plugin and drops all plugins.
-    pub fn shutdown(self) {
-        self.plugins.into_iter().map(Plugin::on_shutdown).for_each(|r| {
-            if let Err(err) = r {
-                tracing::error!("{err:?}");
-            }
-        });
+impl Drop for PluginRuntime {
+    fn drop(&mut self) {
+        self.plugins
+            .drain(..)
+            .map(Plugin::on_shutdown)
+            .for_each(|r| {
+                if let Err(err) = r {
+                    tracing::error!("{err:?}");
+                }
+            });
     }
 }

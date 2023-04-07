@@ -177,7 +177,7 @@ impl InstanceManager {
             _ = tokio::signal::ctrl_c() => ()
         }
 
-        extensions.shutdown();
+        drop(extensions);
 
         // ...then shut down all services.
         if let Err(e) = session_manager.kick_all("Server closed").await {
