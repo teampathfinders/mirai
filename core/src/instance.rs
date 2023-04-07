@@ -158,9 +158,6 @@ impl InstanceManager {
             }],
         });
 
-        level.request_chunk(Vector::from([0, 0]), Dimension::Overworld).unwrap();
-        todo!();
-
         session_manager.set_level_manager(Arc::downgrade(&level))?;
 
         // UDP receiver job.

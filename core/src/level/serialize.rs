@@ -13,7 +13,7 @@ fn serialize_biome_palette(buffer: &mut MutableBuffer, palette: &[u32]) -> anyho
 
 #[inline]
 pub fn serialize_biomes(buffer: &mut MutableBuffer, biomes: &Biomes) -> anyhow::Result<()> {
-    for fragment in biome.fragments() {
+    for fragment in biomes.fragments() {
         match fragment {
             BiomeEncoding::Paletted(paletted) => {
                 let indices = paletted.indices();
