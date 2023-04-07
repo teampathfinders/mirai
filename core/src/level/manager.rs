@@ -10,7 +10,7 @@ use tokio::sync::oneshot::{Receiver, Sender};
 use tokio_util::sync::CancellationToken;
 
 use level::provider::Provider;
-use level::{Biome, Dimension, SubChunk};
+use level::{Biomes, Dimension, SubChunk};
 use util::{Result, Vector};
 
 use crate::command::Command;
@@ -21,13 +21,15 @@ use crate::network::{
 };
 
 use lru::LruCache;
+use util::bytes::MutableBuffer;
+use crate::level::serialize::serialize_biomes;
 
 /// Interval between standard Minecraft ticks.
 const LEVEL_TICK_INTERVAL: Duration = Duration::from_millis(1000 / 20);
 
 #[derive(Debug)]
 pub struct CombinedChunk {
-    biome: Biome,
+    biome: Biomes,
     sub_chunks: Vec<SubChunk>,
 }
 
@@ -151,11 +153,12 @@ impl LevelManager {
         self.session_manager.broadcast(GameRulesChanged { game_rules })
     }
 
-    pub fn request_chunk(&self, coordinates: Vector<i32, 2>, dimension: Dimension) -> anyhow::Result<SubChunkResponse> {
-        let biome = self.provider.get_biome(coordinates.clone(), dimension)?;
-        if biome.is_none() {
+    pub fn request_chunk(&self, coordinates: Vector<i32, 2>, dimension: Dimension) -> anyhow::Result<LevelChunk> {
+        let biomes = self.provider.get_biomes(coordinates.clone(), dimension)?;
+        if biomes.is_none() {
             todo!();
         }
+        let biomes = biomes.unwrap();
 
         let sub_chunks = (-4..20)
             .into_iter()
@@ -172,9 +175,24 @@ impl LevelManager {
             })
             .collect::<Vec<_>>();
 
-        
+        let count = sub_chunks
+            .iter()
+            .filter(|o| o.is_some())
+            .count();
 
-        todo!();
+        let mut raw_payload = MutableBuffer::new();
+        serialize_biomes(&mut raw_payload, &biomes)?;
+
+        let packet = LevelChunk {
+            coordinates,
+            request_mode: SubChunkRequestMode::Limited,
+            highest_sub_chunk: count as u16,
+            sub_chunk_count: count as u32,
+            blob_hashes: None,
+            raw_payload
+        };
+
+        Ok(packet)
     }
 
     // /// Simple job that runs [`flush`](Self::flush) on a specified interval.

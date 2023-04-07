@@ -183,7 +183,7 @@ impl SubLayer {
     where
         W: BinaryWrite,
     {
-        crate::serialize_packed_array(&mut writer, &self.indices, self.palette.len())?;
+        crate::serialize_packed_array(&mut writer, &self.indices, self.palette.len(), false)?;
 
         writer.write_u32_le(self.palette.len() as u32)?;
         for entry in &self.palette {
