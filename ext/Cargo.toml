@@ -14,8 +14,8 @@ wasmtime = { version = "7.0.0", features = ["cranelift", "parallel-compilation"]
 wasmtime-wasi = "7.0.0"
 
 [target.'cfg(unix)'.dependencies]
-rustix = { version = "0.37.7", features = ["fs"] }
+rustix = { version = "0.37.8", features = ["fs"] }
 
 [target.'cfg(windows)'.dependencies]
 io-extras = "0.17.4"
-rustix = { version = "0.37.6", features = ["net"] }
+rustix = { version = "0.37.8", features = ["net"] }
