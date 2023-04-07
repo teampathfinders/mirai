@@ -9,7 +9,7 @@ pub enum LoadStatus {
     Corruption,
     NotSupported,
     InvalidArgument,
-    IOError
+    IOError,
 }
 
 /// Result returned by fallible LevelDB operations.

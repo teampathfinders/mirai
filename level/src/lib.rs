@@ -110,9 +110,10 @@ mod biome;
 pub mod database;
 mod ffi;
 mod key;
-mod settings;
 pub mod provider;
+mod settings;
 mod sub_chunk;
 
+pub use biome::*;
 pub use key::*;
 pub use sub_chunk::*;
