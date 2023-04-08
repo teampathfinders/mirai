@@ -1,4 +1,5 @@
 use std::net::SocketAddr;
+use std::num::{NonZeroI32, NonZeroU32};
 use std::sync::Arc;
 use std::sync::atomic::{
     AtomicBool, AtomicU64, Ordering,
@@ -34,6 +35,8 @@ pub struct PlayerData {
     /// x and y components are general rotation.
     /// z component is head yaw.
     pub rotation: Vector<f32, 3>,
+    /// Render distance of the player in chunks.
+    pub render_distance: Option<NonZeroI32>,
     /// Game mode.
     pub game_mode: GameMode,
     /// General permission level.
@@ -97,6 +100,7 @@ impl Session {
                 is_inventory_open: false,
                 position: Vector::from([23.0, 23.0, 2.0]),
                 rotation: Vector::from([0.0; 3]),
+                render_distance: None,
                 runtime_id: RUNTIME_ID_COUNTER.fetch_add(1, Ordering::SeqCst),
                 game_mode: GameMode::Creative,
                 permission_level: PermissionLevel::Member,

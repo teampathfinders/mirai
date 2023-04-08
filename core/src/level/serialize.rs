@@ -31,6 +31,8 @@ pub fn serialize_biomes(buffer: &mut MutableBuffer, biomes: &Biomes) -> anyhow::
     Ok(())
 }
 
+
+
 // #[inline]
 // pub fn encode_subchunk(subchunk: &SubChunk, buffer: &mut MutableBuffer) -> anyhow::Result<()> {
 //     subchunk.serialize_network(buffer)?;

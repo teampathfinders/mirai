@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use std::num::{NonZeroI32, NonZeroU32};
 use std::sync::atomic::Ordering;
 
 use level::Dimension;
@@ -7,7 +8,7 @@ use util::{bail, BlockPosition, Deserialize, Result, Vector};
 
 use crate::config::SERVER_CONFIG;
 use crate::crypto::Encryptor;
-use crate::network::CacheStatus;
+use crate::network::{CacheStatus, NetworkChunkPublisherUpdate};
 use crate::network::Session;
 use crate::network::{AvailableCommands, SubChunkRequestMode};
 use crate::network::{
@@ -27,6 +28,8 @@ impl Session {
         let request = CacheStatus::deserialize(packet.snapshot())?;
         self.cache_support.set(request.supports_cache)?;
 
+        tracing::debug!("[{}] Cache status is: {}", self.get_display_name()?, request.supports_cache);
+
         Ok(())
     }
 
@@ -44,7 +47,28 @@ impl Session {
     /// All connected sessions are notified of the new player
     /// and the new player gets a list of all current players.
     pub fn process_local_initialized(&self, packet: MutableBuffer) -> anyhow::Result<()> {
-        let _request = SetLocalPlayerAsInitialized::deserialize(packet.snapshot())?;
+        let request = SetLocalPlayerAsInitialized::deserialize(packet.snapshot())?;
+        tracing::debug!("[{}] Initialised with runtime ID {}", self.get_display_name()?, request.runtime_id);
+
+        // Initialise chunk loading
+        let lock = self.player.read();
+        let rounded_position = Vector::from([
+            lock.position.x.round() as i32,
+            lock.position.y.round() as i32,
+            lock.position.z.round() as i32
+        ]);
+
+        self.send(NetworkChunkPublisherUpdate {
+            position: rounded_position,
+            radius: self.player
+                .read()
+                .render_distance
+                .ok_or_else(||
+                    anyhow::anyhow!("Chunk radius was not set before initialising local player")
+                )?
+                .get() as u32
+        })?;
+        drop(lock);
 
         // Add player to other's player lists
 
@@ -72,7 +96,7 @@ impl Session {
             //     }],
             // })?;
 
-            let level_chunk = self.level_manager.request_chunk(Vector::from([0, 0]), Dimension::Overworld)?;
+            let level_chunk = self.level_manager.request_biomes(Vector::from([0, 0]), Dimension::Overworld)?;
             dbg!(level_chunk);
 
             self.broadcast_others(TextMessage {
@@ -94,10 +118,21 @@ impl Session {
 
     /// Handles a [`ChunkRadiusRequest`] packet by returning the maximum allowed render distance.
     pub fn process_radius_request(&self, packet: MutableBuffer) -> anyhow::Result<()> {
-        let _request = ChunkRadiusRequest::deserialize(packet.snapshot())?;
+        let request = ChunkRadiusRequest::deserialize(packet.snapshot())?;
         self.send(ChunkRadiusReply {
-            allowed_radius: SERVER_CONFIG.read().allowed_render_distance,
-        })
+            allowed_radius: std::cmp::min(
+                SERVER_CONFIG.read().allowed_render_distance, request.radius
+            ),
+        })?;
+
+        if request.radius <= 0 {
+            anyhow::bail!("Render distance must be greater than 0");
+        }
+
+        tracing::debug!("[{}] Chunk radius updated to: {}", self.get_display_name()?, request.radius);
+
+        self.player.write().render_distance = Some(NonZeroI32::new(request.radius).unwrap());
+        Ok(())
     }
 
     pub fn process_pack_client_response(&self, packet: MutableBuffer) -> anyhow::Result<()> {
