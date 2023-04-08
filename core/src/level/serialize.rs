@@ -1,5 +1,5 @@
-use level::{Biomes, BiomeEncoding, SubChunk};
-use util::bytes::{MutableBuffer, BinaryWrite};
+use level::{BiomeEncoding, Biomes, SubChunk};
+use util::bytes::{BinaryWrite, MutableBuffer};
 
 #[inline]
 fn serialize_biome_palette(buffer: &mut MutableBuffer, palette: &[u32]) -> anyhow::Result<()> {
@@ -21,7 +21,7 @@ pub fn serialize_biomes(buffer: &mut MutableBuffer, biomes: &Biomes) -> anyhow::
 
                 level::serialize_packed_array(buffer, indices, max_index, true)?;
                 serialize_biome_palette(buffer, paletted.palette())?;
-            },
+            }
             _ => {
                 // TODO: other encoding types
             }
@@ -30,8 +30,6 @@ pub fn serialize_biomes(buffer: &mut MutableBuffer, biomes: &Biomes) -> anyhow::
 
     Ok(())
 }
-
-
 
 // #[inline]
 // pub fn encode_subchunk(subchunk: &SubChunk, buffer: &mut MutableBuffer) -> anyhow::Result<()> {

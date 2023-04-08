@@ -1,6 +1,6 @@
 //! Code related to working with the world.
 
-mod serialize;
 mod manager;
+mod serialize;
 
 pub use manager::*;
