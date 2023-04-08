@@ -46,7 +46,7 @@ impl Session {
 
     pub fn process_move_player(&self, packet: MutableBuffer) -> anyhow::Result<()> {
         let request = MovePlayer::deserialize(packet.snapshot())?;
-        dbg!(&request);
+        // dbg!(&request);
 
         self.broadcast_others(request)?;
 

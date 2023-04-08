@@ -1,4 +1,4 @@
-use util::{BlockPosition, Result};
+use util::{BlockPosition, Result, Vector};
 use util::bytes::{BinaryWrite, MutableBuffer, size_of_varint};
 use util::Serialize;
 
@@ -6,7 +6,7 @@ use crate::network::ConnectedPacket;
 
 #[derive(Debug, Clone)]
 pub struct NetworkChunkPublisherUpdate {
-    pub position: BlockPosition,
+    pub position: Vector<i32, 3>,
     pub radius: u32,
 }
 
@@ -23,7 +23,7 @@ impl ConnectedPacket for NetworkChunkPublisherUpdate {
 
 impl Serialize for NetworkChunkPublisherUpdate {
     fn serialize(&self, buffer: &mut MutableBuffer) -> anyhow::Result<()> {
-        buffer.write_block_pos(&self.position)?;
+        buffer.write_veci(&self.position)?;
         buffer.write_var_u32(self.radius)?;
 
         // No saved chunks.

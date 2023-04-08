@@ -1,4 +1,5 @@
 use std::num::NonZeroUsize;
+use std::ops::Range;
 use std::sync::atomic::AtomicU64;
 use std::sync::Arc;
 use std::time::Duration;
@@ -153,7 +154,15 @@ impl LevelManager {
         self.session_manager.broadcast(GameRulesChanged { game_rules })
     }
 
-    pub fn request_chunk(&self, coordinates: Vector<i32, 2>, dimension: Dimension) -> anyhow::Result<LevelChunk> {
+    /// Loads all chunks in a radius around a specified center.
+    pub fn request_subchunks(
+        &self, center: Vector<i32, 3>, offsets: &[Vector<i8, 3>]
+    ) -> anyhow::Result<SubChunkResponse> {
+        todo!();
+        // https://github.com/df-mc/dragonfly/blob/5f8833e69a933fdbb15625217ebf3b6d8e28fbf5/server/session/chunk.go
+    }
+
+    pub fn request_biomes(&self, coordinates: Vector<i32, 2>, dimension: Dimension) -> anyhow::Result<LevelChunk> {
         let biomes = self.provider.get_biomes(coordinates.clone(), dimension)?;
         if biomes.is_none() {
             todo!();
