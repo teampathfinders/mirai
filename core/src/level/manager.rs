@@ -1,6 +1,6 @@
 use std::num::NonZeroUsize;
 use std::ops::Range;
-use std::sync::atomic::AtomicU64;
+use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Arc;
 use std::time::Duration;
 
@@ -26,7 +26,7 @@ use lru::LruCache;
 use util::bytes::MutableBuffer;
 
 /// Interval between standard Minecraft ticks.
-const LEVEL_TICK_INTERVAL: Duration = Duration::from_millis(1000 / 20);
+const TICK_INTERVAL: Duration = Duration::from_millis(1000 / 20);
 
 #[derive(Debug)]
 pub struct CombinedChunk {
@@ -93,7 +93,17 @@ impl LevelManager {
             token,
         });
 
+        let clone = manager.clone();
+        tokio::spawn(async move {
+            clone.ticker_job().await
+        });
+
         Ok(manager)
+    }
+
+    #[inline]
+    pub fn get_current_tick(&self) -> u64 {
+        self.tick.load(Ordering::SeqCst)
     }
 
     /// Returns the requested command
@@ -197,6 +207,26 @@ impl LevelManager {
         };
 
         Ok(packet)
+    }
+
+    fn tick(&self) {
+        self.tick.fetch_add(1, Ordering::SeqCst);
+    }
+
+    async fn ticker_job(&self) {
+        let mut interval = tokio::time::interval(TICK_INTERVAL);
+        loop {
+            tokio::select! {
+                _ = self.token.cancelled() => break,
+                _ = interval.tick() => ()
+            };
+
+            self.tick();
+            // match self.tick() {
+            //     Ok(_) => (),
+            //     Err(e) => tracing::error!("{e:?}")
+            // }
+        }
     }
 
     // /// Simple job that runs [`flush`](Self::flush) on a specified interval.

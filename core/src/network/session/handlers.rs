@@ -3,10 +3,7 @@ use util::{
 };
 use util::bytes::MutableBuffer;
 
-use crate::network::{
-    CommandOutput, CommandOutputMessage, CommandOutputType, CommandRequest,
-    SettingsCommand, TextData,
-};
+use crate::network::{Attribute, CommandOutput, CommandOutputMessage, CommandOutputType, CommandRequest, SettingsCommand, TextData, UpdateAttributes};
 use crate::network::{
     {
         Animate, RequestAbility,

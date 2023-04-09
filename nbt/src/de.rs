@@ -55,9 +55,9 @@ where
     #[inline]
     pub fn new(mut input: R) -> anyhow::Result<Self> {
         let next_ty = FieldType::try_from(input.read_u8()?)?;
-        if next_ty != FieldType::Compound {
-            bail!(Malformed, "Expected compound tag as root");
-        }
+        // if next_ty != FieldType::Compound {
+        //     bail!(Malformed, "Expected compound tag as root");
+        // }
 
         let mut de = Deserializer {
             input,
@@ -224,7 +224,7 @@ where
                 FieldType::Long => self.deserialize_i64(visitor),
                 FieldType::Float => self.deserialize_f32(visitor),
                 FieldType::Double => self.deserialize_f64(visitor),
-                FieldType::ByteArray => self.deserialize_byte_buf(visitor),
+                FieldType::ByteArray => self.deserialize_seq(visitor),
                 FieldType::String => self.deserialize_string(visitor),
                 FieldType::List => self.deserialize_seq(visitor),
                 FieldType::Compound => {
@@ -368,6 +368,8 @@ where
 
         let data = self.input.take_n(len as usize)?;
         let string = String::from_utf8(data.to_vec())?;
+        println!("{:02x?}", string.as_bytes());
+        println!("{string}");
 
         visitor.visit_string(string)
     }
@@ -536,11 +538,13 @@ where
         let remaining = match F::AS_ENUM {
             Variant::BigEndian => de.input.read_i32_be()? as u32,
             Variant::LittleEndian => de.input.read_i32_le()? as u32,
-            Variant::Variable => de.input.read_var_u32()?,
+            Variant::Variable => de.input.read_var_i32()? as u32,
         };
+        dbg!(ty);
+        dbg!(remaining);
 
         if expected_len != 0 && expected_len != remaining {
-            bail!(Malformed, "Expected sequence of length {expected_len}, got length {remaining}");
+            anyhow::bail!(format!("Expected sequence of length {expected_len}, got length {remaining}"));
         }
 
         Ok(Self { de, ty, remaining })
@@ -607,7 +611,7 @@ where
         self.de.next_ty = FieldType::String;
 
         let next_ty = FieldType::try_from(self.de.input.read_u8()?)?;
-
+        dbg!(next_ty);
         let r = if next_ty == FieldType::End {
             Ok(None)
         } else {

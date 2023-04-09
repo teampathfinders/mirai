@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use util::Serialize;
 use util::bytes::{BinaryWrite, MutableBuffer, VarInt};
 use util::Result;
@@ -22,6 +23,7 @@ pub struct ItemStack {
     pub runtime_id: u32,
     pub count: u16,
     // pub nbt_data: nbt::Value,
+    pub properties: HashMap<String, nbt::Value>,
     pub can_be_placed_on: Vec<String>,
     pub can_break: Vec<String>,
     pub has_network_id: bool,
@@ -29,7 +31,8 @@ pub struct ItemStack {
 
 impl ItemStack {
     pub fn serialized_size(&self) -> usize {
-        todo!();
+        0
+        // todo!();
         // self.item_type.network_id.var_len() +
         // if self.item_type.network_id != 0 {
         //     2 +
@@ -50,7 +53,7 @@ impl ItemStack {
         // }
     }
 
-    pub fn serialize(&self, buffer: &mut MutableBuffer) -> anyhow::Result<()> {
+    pub fn serialize(&self, mut buffer: &mut MutableBuffer) -> anyhow::Result<()> {
         buffer.write_var_u32(self.item_type.network_id)?;
         if self.item_type.network_id == 0 {
             // Air has no data.
@@ -61,19 +64,14 @@ impl ItemStack {
         buffer.write_var_u32(self.item_type.metadata)?;
         buffer.write_var_u32(self.runtime_id)?;
 
-        // if let Value::Compound(ref map) = self.nbt_data {
-        //     let length = map.len();
-        //     if length == 0 {
-        //         buffer.put_i16(0); // Length
-        //     } else {
-        //         buffer.put_i16(-1); // Length
-        //         buffer.write_u8(1)?; // Version
-        //
-        //         nbt::serialize_net("", &self.nbt_data, buffer);
-        //     }
-        // } else {
-        //     todo!()
-        // }
+        if self.properties.is_empty() {
+            buffer.write_i16_le(0); // Length
+        } else {
+            buffer.write_i16_le(-1);
+            buffer.write_u8(1);
+
+            nbt::to_var_bytes_in(&mut buffer, &self.properties)?;
+        }
 
         buffer.write_u32_be(self.can_be_placed_on.len() as u32)?;
         for item in &self.can_be_placed_on {

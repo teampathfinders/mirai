@@ -52,8 +52,8 @@ pub struct Attribute<'a> {
 
 impl<'a> Serialize for Attribute<'a> {
     fn serialize(&self, buffer: &mut MutableBuffer) -> anyhow::Result<()> {
-        buffer.write_f32_le(self.range.end)?;
         buffer.write_f32_le(self.range.start)?;
+        buffer.write_f32_le(self.range.end)?;
         buffer.write_f32_le(self.value)?;
         buffer.write_f32_le(self.default)?;
         buffer.write_str(self.name)?;

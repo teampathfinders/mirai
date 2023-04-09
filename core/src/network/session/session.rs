@@ -102,7 +102,7 @@ impl Session {
                 rotation: Vector::from([0.0; 3]),
                 render_distance: None,
                 runtime_id: RUNTIME_ID_COUNTER.fetch_add(1, Ordering::SeqCst),
-                game_mode: GameMode::Creative,
+                game_mode: GameMode::Survival,
                 permission_level: PermissionLevel::Member,
                 skin: None,
             }),

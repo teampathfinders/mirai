@@ -25,14 +25,6 @@ fn init_runtime() {
     }
 }
 
-// /// The Cranelift compiler inside of Wasmer logs verbose things to the console when the level is set
-// /// to info. This function disables that.
-// fn disable_wasmer_log() {
-//     if std::env::var_os("RUST_LOG").is_none() {
-//         std::env::set_var("RUST_LOG", "info,wasmer_compiler_cranelift=warn");
-//     }
-// }
-
 /// Initialises logging with tokio-console.
 #[cfg(feature = "tokio-console")]
 fn init_logging() {

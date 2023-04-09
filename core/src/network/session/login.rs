@@ -5,10 +5,11 @@ use std::sync::atomic::Ordering;
 use level::Dimension;
 use util::bytes::MutableBuffer;
 use util::{bail, BlockPosition, Deserialize, Result, Vector};
+use crate::command::CommandPermissionLevel;
 
 use crate::config::SERVER_CONFIG;
 use crate::crypto::Encryptor;
-use crate::network::{CacheStatus, NetworkChunkPublisherUpdate};
+use crate::network::{AbilityData, AddPlayer, Attribute, AttributeModifier, CacheStatus, ItemStack, ItemType, NetworkChunkPublisherUpdate, PlayerListAdd, PlayerListAddEntry, UpdateAttributes};
 use crate::network::Session;
 use crate::network::{AvailableCommands, SubChunkRequestMode};
 use crate::network::{
@@ -68,7 +69,27 @@ impl Session {
                 )?
                 .get() as u32
         })?;
-        drop(lock);
+
+        self.send(UpdateAttributes {
+            runtime_id: lock.runtime_id,
+            tick: self.level_manager.get_current_tick(),
+            attributes: vec![
+                Attribute {
+                    name: "minecraft:health",
+                    value: 1.0,
+                    range: 0.0..20.0,
+                    default: 20.0,
+                    modifiers: vec![]
+                },
+                Attribute {
+                    name: "minecraft:movement",
+                    value: 1.0,
+                    range: 0.0..10.0,
+                    default: 1.0,
+                    modifiers: vec![]
+                }
+            ]
+        })?;
 
         // Add player to other's player lists
 
@@ -77,27 +98,25 @@ impl Session {
             let identity_data = self.get_identity_data()?;
             let _user_data = self.get_user_data()?;
 
-            // self.broadcast_others(PlayerListAdd {
-            //     entries: &[PlayerListAddEntry {
-            //         uuid: identity_data.uuid,
-            //         entity_id: self.player.read().runtime_id as i64,
-            //         username: &identity_data.display_name,
-            //         xuid: identity_data.xuid,
-            //         device_os: user_data.build_platform,
-            //         skin: self.player.read().skin.as_ref().ok_or_else(
-            //             || {
-            //                 error!(
-            //                     NotInitialized,
-            //                     "Skin data has not been initialised"
-            //                 )
-            //             },
-            //         )?,
-            //         host: false,
-            //     }],
-            // })?;
+            self.broadcast_others(PlayerListAdd {
+                entries: &[PlayerListAddEntry {
+                    uuid: identity_data.uuid,
+                    entity_id: self.player.read().runtime_id as i64,
+                    username: &identity_data.display_name,
+                    xuid: identity_data.xuid,
+                    device_os: self.get_device_os()?,
+                    skin: self.player.read().skin.as_ref().ok_or_else(
+                        || {
+                            anyhow::anyhow!(
+                                "Skin data has not been initialised"
+                            )
+                        },
+                    )?,
+                    host: false,
+                }],
+            })?;
 
-            let level_chunk = self.level_manager.request_biomes(Vector::from([0, 0]), Dimension::Overworld)?;
-            dbg!(level_chunk);
+            drop(lock);
 
             self.broadcast_others(TextMessage {
                 data: TextData::System {
@@ -119,19 +138,21 @@ impl Session {
     /// Handles a [`ChunkRadiusRequest`] packet by returning the maximum allowed render distance.
     pub fn process_radius_request(&self, packet: MutableBuffer) -> anyhow::Result<()> {
         let request = ChunkRadiusRequest::deserialize(packet.snapshot())?;
+        let final_radius = std::cmp::min(
+            SERVER_CONFIG.read().allowed_render_distance, request.radius
+        );
+
         self.send(ChunkRadiusReply {
-            allowed_radius: std::cmp::min(
-                SERVER_CONFIG.read().allowed_render_distance, request.radius
-            ),
+            final_radius
         })?;
 
-        if request.radius <= 0 {
+        if final_radius <= 0 {
             anyhow::bail!("Render distance must be greater than 0");
         }
 
         tracing::debug!("[{}] Chunk radius updated to: {}", self.get_display_name()?, request.radius);
 
-        self.player.write().render_distance = Some(NonZeroI32::new(request.radius).unwrap());
+        self.player.write().render_distance = Some(NonZeroI32::new(final_radius).unwrap());
         Ok(())
     }
 
@@ -141,12 +162,12 @@ impl Session {
         // TODO: Implement resource packs.
 
         let start_game = StartGame {
-            entity_id: 1,
-            runtime_id: 1,
+            entity_id: self.player.read().runtime_id as i64,
+            runtime_id: self.player.read().runtime_id,
             game_mode: self.get_game_mode(),
             position: Vector::from([0.0, 50.0, 0.0]),
             rotation: Vector::from([0.0, 0.0]),
-            world_seed: 69420,
+            world_seed: 69421,
             spawn_biome_type: SpawnBiomeType::Default,
             custom_biome_name: "plains",
             dimension: Dimension::Overworld,
@@ -203,11 +224,11 @@ impl Session {
                 properties: HashMap::from([("infiniburn_bit".to_owned(), nbt::Value::Byte(0))]),
             }],
             item_properties: &[
-//                ItemEntry {
-//                    name: "minecraft:bedrock".to_owned(),
-//                    runtime_id: 2,
-//                    component_based: false
-//                }
+               ItemEntry {
+                   name: "minecraft:bedrock".to_owned(),
+                   runtime_id: 0,
+                   component_based: false
+               }
             ],
             property_data: PropertyData {},
             server_authoritative_inventory: false,
@@ -219,7 +240,22 @@ impl Session {
         };
         self.send(start_game)?;
 
-        let creative_content = CreativeContent { items: &[] };
+        let creative_content = CreativeContent { items: &[
+            ItemStack {
+                runtime_id: 0,
+                count: 64,
+                can_break: vec![],
+                can_be_placed_on: vec![],
+                properties: HashMap::from([
+
+                ]),
+                item_type: ItemType {
+                    metadata: 0,
+                    network_id: 0,
+                },
+                has_network_id: false
+            }
+        ]};
         self.send(creative_content)?;
 
         let biome_definition_list = BiomeDefinitionList;

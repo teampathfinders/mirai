@@ -98,7 +98,7 @@ pub trait BinaryRead<'a> {
             i += 7;
         }
 
-        bail!(Malformed, "variable 32-bit integer did not end after 5 bytes")
+        anyhow::bail!("Variable 32-bit integer did not end after 5 bytes")
     }
 
     /// Reads a variable size [`i32`] from the reader.
@@ -109,15 +109,13 @@ pub trait BinaryRead<'a> {
         while i < 70 {
             let b = self.read_u8()?;
             v |= ((b & 0x7f) as u64) << i;
-
             if b & 0x80 == 0 {
                 return Ok(v);
             }
-
             i += 7;
         }
 
-        bail!(Malformed, "variable 64-bit integer did not end after 10 bytes")
+        anyhow::bail!("Variable 64-bit integer did not end after 10 bytes")
     }
 
     /// Reads a variable size [`u64`] from the reader.
@@ -214,7 +212,7 @@ pub trait BinaryRead<'a> {
                 SocketAddr::new(addr, port)
             }
             _ => {
-                bail!(Malformed, "Invalid IP type {variant}, expected either 4 or 6");
+                anyhow::bail!(format!("Invalid IP type {variant}, expected either 4 or 6"));
             }
         })
     }

@@ -116,7 +116,7 @@ impl TryFrom<u8> for FieldType {
     fn try_from(v: u8) -> anyhow::Result<Self> {
         const LAST_DISC: u8 = FieldType::LongArray as u8;
         if v > LAST_DISC {
-            util::bail!(Other, "NBT field type discriminant out of range");
+            anyhow::bail!("NBT field type discriminant out of range: {v}");
         }
 
         // SAFETY: Because `Self` is marked as `repr(u8)`, its layout is guaranteed to start
