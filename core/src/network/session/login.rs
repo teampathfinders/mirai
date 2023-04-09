@@ -9,7 +9,8 @@ use crate::command::CommandPermissionLevel;
 
 use crate::config::SERVER_CONFIG;
 use crate::crypto::Encryptor;
-use crate::network::{AbilityData, AddPlayer, Attribute, AttributeModifier, CacheStatus, ItemStack, ItemType, NetworkChunkPublisherUpdate, PlayerListAdd, PlayerListAddEntry, UpdateAttributes};
+use crate::item::{ItemStack, ItemType};
+use crate::network::{AbilityData, AddPlayer, Attribute, AttributeModifier, CacheStatus, CreativeItem, NetworkChunkPublisherUpdate, PlayerListAdd, PlayerListAddEntry, UpdateAttributes};
 use crate::network::Session;
 use crate::network::{AvailableCommands, SubChunkRequestMode};
 use crate::network::{
@@ -241,20 +242,7 @@ impl Session {
         self.send(start_game)?;
 
         let creative_content = CreativeContent { items: &[
-            ItemStack {
-                runtime_id: 0,
-                count: 64,
-                can_break: vec![],
-                can_be_placed_on: vec![],
-                properties: HashMap::from([
 
-                ]),
-                item_type: ItemType {
-                    metadata: 0,
-                    network_id: 0,
-                },
-                has_network_id: false
-            }
         ]};
         self.send(creative_content)?;
 

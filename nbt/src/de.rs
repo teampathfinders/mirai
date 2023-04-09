@@ -368,8 +368,6 @@ where
 
         let data = self.input.take_n(len as usize)?;
         let string = String::from_utf8(data.to_vec())?;
-        println!("{:02x?}", string.as_bytes());
-        println!("{string}");
 
         visitor.visit_string(string)
     }
@@ -540,8 +538,6 @@ where
             Variant::LittleEndian => de.input.read_i32_le()? as u32,
             Variant::Variable => de.input.read_var_i32()? as u32,
         };
-        dbg!(ty);
-        dbg!(remaining);
 
         if expected_len != 0 && expected_len != remaining {
             anyhow::bail!(format!("Expected sequence of length {expected_len}, got length {remaining}"));
@@ -611,7 +607,6 @@ where
         self.de.next_ty = FieldType::String;
 
         let next_ty = FieldType::try_from(self.de.input.read_u8()?)?;
-        dbg!(next_ty);
         let r = if next_ty == FieldType::End {
             Ok(None)
         } else {

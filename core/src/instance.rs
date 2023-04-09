@@ -19,6 +19,7 @@ use util::{Result, Vector};
 
 use crate::command::{Command, CommandDataType, CommandEnum, CommandOverload, CommandParameter, CommandPermissionLevel};
 use crate::config::SERVER_CONFIG;
+use crate::item::ItemRegistry;
 use crate::level::LevelManager;
 use crate::network::SessionManager;
 use crate::network::{BOOLEAN_GAME_RULES, CLIENT_VERSION_STRING, INTEGER_GAME_RULES, NETWORK_VERSION};
@@ -43,6 +44,7 @@ const RECV_BUF_SIZE: usize = 4096;
 const METADATA_REFRESH_INTERVAL: Duration = Duration::from_secs(2);
 
 pub struct InstanceManager {
+    item_registry: ItemRegistry,
     /// IPv4 UDP socket
     udp4_socket: Arc<UdpSocket>,
     /// Token indicating whether the server is still running.
@@ -74,6 +76,7 @@ impl InstanceManager {
 
         let session_manager = Arc::new(SessionManager::new());
 
+        let item_registry = ItemRegistry::new()?;
         let level = LevelManager::new(session_manager.clone(), token.clone())?;
         level.add_command(Command {
             name: "gamerule".to_owned(),
