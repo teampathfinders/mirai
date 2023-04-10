@@ -296,11 +296,11 @@ pub struct ServerInstance {
 
 impl ServerInstance {
     /// Creates a new server instance running on the specified port.
-    pub async fn new(ipv4_port: u16) -> anyhow::Result<Self> {
+    pub async fn new(ipv4_port: u16, max_players: usize) -> anyhow::Result<Self> {
         let server_guid = rand::thread_rng().gen();
 
         let token = CancellationToken::new();
-        let sessions = Arc::new(SessionMap::new(token.clone()));
+        let sessions = Arc::new(SessionMap::new(token.clone(), max_players));
         let metadata = Arc::new(RwLock::new(String::new()));
 
         let udp_controller = UdpController::new(

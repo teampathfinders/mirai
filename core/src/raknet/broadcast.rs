@@ -9,6 +9,8 @@ use crate::network::{
     Session,
 };
 
+use super::RakNetSession;
+
 /// A packet that can be broadcasted to other sessions.
 ///
 /// Unlike standard packets, this packet contains an optional sender.
@@ -48,7 +50,7 @@ impl BroadcastPacket {
     }
 }
 
-impl Session {
+impl RakNetSession {
     /// Sends a packet to all initialised sessions including self.
     pub fn broadcast<P: ConnectedPacket + Serialize + Clone>(
         &self,
@@ -65,10 +67,7 @@ impl Session {
     ) -> anyhow::Result<()> {
         self.broadcast.send(BroadcastPacket::new(
             packet,
-            Some(
-                NonZeroU64::new(self.get_xuid()?)
-                    .ok_or_else(|| anyhow!("XUID was 0"))?,
-            ),
+            Some(self.session_id)
         )?)?;
 
         Ok(())

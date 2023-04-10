@@ -12,7 +12,7 @@ use crate::network::{
     Session, TextData,
 };
 
-use super::RakNetSession;
+use super::{RakNetSession, RakNetMessage};
 
 /// Tick interval of the internal session tick.
 const INTERNAL_TICK_INTERVAL: Duration = Duration::from_millis(1000 / 20);
@@ -29,7 +29,7 @@ impl RakNetSession {
         tokio::spawn(async move {
             let mut interval = tokio::time::interval(INTERNAL_TICK_INTERVAL);
 
-            while !self.active.is_cancelled() {
+            while self.is_active() {
                 match self.tick().await {
                     Ok(_) => (),
                     Err(e) => tracing::error!("{e}"),
@@ -64,9 +64,9 @@ impl RakNetSession {
         mut receiver: mpsc::Receiver<MutableBuffer>,
     ) {
         tokio::spawn(async move {
-            let mut broadcast_recv = self.broadcast.subscribe();
+            let mut broadcast = self.broadcast.subscribe();
 
-            while !self.active.is_cancelled() {
+            while self.is_active() {
                 tokio::select! {
                     packet = receiver.recv() => {
                         if let Some(packet) = packet {
@@ -76,7 +76,7 @@ impl RakNetSession {
                             }
                         }
                     },
-                    packet = broadcast_recv.recv() => {
+                    packet = broadcast.recv() => {
                         if let Ok(packet) = packet {
                             match self.process_broadcast(packet) {
                                 Ok(_) => (),
@@ -91,42 +91,24 @@ impl RakNetSession {
     }
 
     /// Signals to the session that it needs to close.
-    pub fn on_disconnect(&self) {
+    pub async fn on_disconnect(&self) {
         if !self.is_active() {
             return;
         }
 
-        self.initialized.store(false, Ordering::SeqCst);
-
-        if let Ok(display_name) = self.get_display_name() {
-            if let Ok(uuid) = self.get_uuid() {
-                tracing::info!("`{display_name}` has disconnected");
-
-                let _ = self.broadcast_others(TextMessage {
-                    needs_translation: false,
-                    xuid: "",
-                    platform_chat_id: "",
-                    data: TextData::System {
-                        message: &format!("§e{display_name} has left the server.")
-                    }
-                });
-
-                let _ = self
-                    .broadcast_others(PlayerListRemove { entries: &[*uuid] });
-            }
-        }
-        self.active.cancel();
+        self.sender.send(RakNetMessage::Disconnect).await.unwrap();
+        self.token.cancel();
     }
 
     /// Performs tasks not related to packet processing
     pub async fn tick(&self) -> anyhow::Result<()> {
-        let _current_tick = self.current_tick.fetch_add(1, Ordering::SeqCst);
+        let current_tick = self.current_tick.fetch_add(1, Ordering::SeqCst);
 
         // Session has timed out
-        if Instant::now().duration_since(*self.raknet.last_update.read())
+        if Instant::now().duration_since(*self.last_update.read())
             > SESSION_TIMEOUT
         {
-            self.on_disconnect();
+            self.on_disconnect().await;
         }
 
         self.flush().await?;

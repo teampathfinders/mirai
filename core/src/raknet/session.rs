@@ -1,11 +1,13 @@
 use std::mem::MaybeUninit;
 use std::net::SocketAddr;
+use std::num::NonZeroU64;
 use std::sync::Arc;
-use std::sync::atomic::{AtomicBool, AtomicU32, AtomicU16, AtomicU64};
+use std::sync::atomic::{AtomicBool, AtomicU32, AtomicU16, AtomicU64, Ordering};
 use std::time::Instant;
 use parking_lot::{Mutex, RwLock};
 use tokio::net::UdpSocket;
 use tokio::sync::{mpsc, broadcast};
+use tokio_util::sync::CancellationToken;
 use crate::instance::UdpController;
 
 use crate::raknet::{CompoundCollector, OrderChannel, RecoveryQueue, SendQueues};
@@ -13,6 +15,8 @@ use crate::raknet::{CompoundCollector, OrderChannel, RecoveryQueue, SendQueues};
 use super::{BroadcastPacket, RawPacket};
 
 const ORDER_CHANNEL_COUNT: usize = 5;
+
+static SESSION_ID_COUNTER: AtomicU64 = AtomicU64::new(1);
 
 #[derive(Default)]
 pub struct RakNetSessionBuilder {
@@ -72,10 +76,19 @@ impl RakNetSessionBuilder {
     }
 }
 
+
+#[derive(Debug)]
+pub enum RakNetMessage {
+    Connected,
+    Disconnect
+}
+
 #[derive(Debug)]
 pub struct RakNetSession {
+    pub session_id: NonZeroU64,
+    pub token: CancellationToken,
     pub broadcast: broadcast::Sender<BroadcastPacket>,
-    pub receiver: mpsc::Receiver<RawPacket>,
+    pub packet_receiver: mpsc::Receiver<RawPacket>,
     /// IPv4 socket of the server.
     pub udp_controller: Arc<UdpController>,
     /// IP address of this session.
@@ -112,7 +125,17 @@ pub struct RakNetSession {
     /// Whether compression has been configured for this session.
     /// This is set to true after network settings have been sent to the client.
     pub compression_enabled: AtomicBool,
-    pub current_tick: AtomicU64
+    pub current_tick: AtomicU64,
+    pub encryptor: Encryptor,
+    pub sender: mpsc::Sender<RakNetMessage>,
+    pub receiver: mpsc::Receiver<RakNetMessage>
+}
+
+impl RakNetSession {
+    #[inline]
+    pub fn is_active(&self) -> bool {
+        !self.token.is_cancelled()
+    }
 }
 
 impl From<RakNetSessionBuilder> for RakNetSession {
@@ -132,9 +155,11 @@ impl From<RakNetSessionBuilder> for RakNetSession {
         };
 
         Self {
+            session_id: NonZeroU64::new(SESSION_ID_COUNTER.fetch_add(1, Ordering::Relaxed)).unwrap(),
+            token: CancellationToken::new(),
             current_tick: AtomicU64::new(0),
             broadcast: builder.broadcast.unwrap(),
-            receiver: builder.receiver.unwrap(),
+            packet_receiver: builder.receiver.unwrap(),
             udp_controller: builder.udp_controller.unwrap(),
             addr: builder.addr.unwrap(),
             mtu: builder.mtu,

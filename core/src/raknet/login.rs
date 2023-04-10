@@ -11,12 +11,14 @@ use crate::raknet::NewIncomingConnection;
 use crate::raknet::Reliability;
 use crate::network::Session;
 
-impl Session {
+use super::RakNetSession;
+
+impl RakNetSession {
     /// Handles a [`ConnectionRequest`] packet.
     pub fn process_connection_request(&self, mut packet: MutableBuffer) -> anyhow::Result<()> {
         let request = ConnectionRequest::deserialize(packet.snapshot())?;
         let reply = ConnectionRequestAccepted {
-            client_address: self.raknet.address,
+            client_address: self.addr,
             request_time: request.time,
         };
 
@@ -24,7 +26,7 @@ impl Session {
         packet.reserve_to(reply.serialized_size());
         reply.serialize(&mut packet)?;
 
-        self.send_raw_buffer(packet);
+        self.send_raw_buf(packet);
         Ok(())
     }
 
@@ -46,7 +48,7 @@ impl Session {
         packet.reserve_to(pong.serialized_size());
         pong.serialize(&mut packet)?;
 
-        self.send_raw_buffer_with_config(
+        self.send_raw_buf_with_config(
             packet,
             PacketConfig {
                 reliability: Reliability::Unreliable,

@@ -238,6 +238,9 @@ pub struct SessionRef<T> {
 
 /// Keeps track of all the sessions connected to the current instance.
 pub struct SessionMap {
+    /// The maximum amount of sessions allowed on this server instance.
+    max_sessions: usize,
+    /// All sessions that are still in the login sequence.
     incomplete_map: DashMap<SocketAddr, SessionRef<IncompleteSession>>,
     /// All sessions connected to the current instance.
     ///
@@ -258,7 +261,7 @@ pub struct SessionMap {
 
 impl SessionMap {
     /// Creates a new session tracker.
-    pub fn new(token: CancellationToken) -> Self {
+    pub fn new(token: CancellationToken, max_sessions: usize) -> Self {
         let incomplete_map = DashMap::new();
         let map = DashMap::new();
 
@@ -266,26 +269,42 @@ impl SessionMap {
         let (broadcast, _) = broadcast::channel(BROADCAST_CHANNEL_CAPACITY);
 
         Self {
-            incomplete_map, map, broadcast, token
+            incomplete_map, map, broadcast, token, max_sessions
         }
     }
 
     /// Adds a new session into the list.
+    ///
+    /// The method returns `true` if the session was successfully created
+    /// and `false` if the server is full.
     pub fn insert(
         &self,
         udp_controller: Arc<UdpController>,
         addr: SocketAddr,
         mtu: u16,
         client_guid: u64
-    ) {
+    ) -> bool {
         let session_ref = SessionBuilder::new()
             .guid(client_guid)
             .broadcast(self.broadcast.clone())
             .channel(mpsc::channel(SINGLE_CHANNEL_CAPACITY))
             .build();
 
-        self.incomplete_map.insert(addr, session_ref);
+        if self.count() < self.max_count() {
+            self.incomplete_map.insert(addr, session_ref);
+            true
+        } else {
+            false
+        }
     }
 
+    #[inline]
+    pub fn count(&self) -> usize {
+        self.incomplete_map.len() + self.map.len()
+    }
 
+    #[inline]
+    pub fn max_count(&self) -> usize {
+        self.max_sessions
+    }
 }
