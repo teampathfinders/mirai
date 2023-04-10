@@ -106,4 +106,18 @@ impl SessionLike for Session {
     {
         self.raknet.broadcast_others(packet)
     }
+
+    fn kick<S>(&self, reason: S) -> anyhow::Result<()>
+    where
+        S: AsRef<str>
+    {
+        let disconnect_packet = Disconnect {
+            reason: reason.as_ref(),
+            hide_reason: false
+        };
+        self.send(disconnect_packet)?;
+        self.raknet.token.cancel();
+
+        Ok(())
+    }
 }

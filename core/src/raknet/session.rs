@@ -8,6 +8,7 @@ use parking_lot::{Mutex, RwLock};
 use tokio::net::UdpSocket;
 use tokio::sync::{mpsc, broadcast, OnceCell};
 use tokio_util::sync::CancellationToken;
+use util::bytes::MutableBuffer;
 use crate::crypto::Encryptor;
 use crate::instance::UdpController;
 
@@ -18,6 +19,14 @@ use super::{BroadcastPacket, RawPacket};
 const ORDER_CHANNEL_COUNT: usize = 5;
 
 static SESSION_ID_COUNTER: AtomicU64 = AtomicU64::new(1);
+
+#[derive(Debug)]
+pub enum RakNetMessage {
+    Connected,
+    CreateEncryptor(Encryptor),
+    Message(MutableBuffer),
+    Disconnect
+}
 
 #[derive(Default)]
 pub struct RakNetSessionBuilder {
@@ -84,14 +93,6 @@ impl RakNetSessionBuilder {
     pub fn build(self) -> RakNetSession {
         RakNetSession::from(self)
     }
-}
-
-
-#[derive(Debug)]
-pub enum RakNetMessage {
-    Connected,
-    CreateEncryptor(Encryptor),
-    Disconnect
 }
 
 #[derive(Debug)]

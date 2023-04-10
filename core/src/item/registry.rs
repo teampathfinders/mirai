@@ -16,6 +16,7 @@ pub struct CreativeItemEntry {
     pub block: Option<CreativeBlock>
 }
 
+#[derive(Debug)]
 pub struct ItemRegistry {
     creative: Vec<CreativeItemEntry>
 }

@@ -28,7 +28,7 @@ use crate::network::Header;
 use crate::config::SERVER_CONFIG;
 use crate::network::Session;
 
-use super::RakNetSession;
+use super::{RakNetSession, RakNetMessage};
 
 impl RakNetSession {
     /// Processes the raw packet coming directly from the network.
@@ -208,46 +208,12 @@ impl RakNetSession {
     }
 
     /// Processes a packet that has been decrypted, decompressed and stripped of the frame header.
+    #[inline]
     async fn process_naked_packet(
         &self,
-        mut packet: MutableBuffer,
+        mut packet: MutableBuffer
     ) -> anyhow::Result<()> {
-        let mut snapshot = packet.snapshot();
-        let start_len = snapshot.len();
-        let _length = snapshot.read_var_u32()?;
-
-        let header = Header::deserialize(&mut snapshot)?;
-
-        // Advance past the header.
-        packet.advance_cursor(start_len - snapshot.len());
-
-        match header.id {
-            RequestNetworkSettings::ID => {
-                self.process_network_settings_request(packet)
-            }
-            Login::ID => self.process_login(packet).await,
-            ClientToServerHandshake::ID => {
-                self.process_cts_handshake(packet)
-            }
-            CacheStatus::ID => self.process_cache_status(packet),
-            ResourcePackClientResponse::ID => {
-                self.process_pack_client_response(packet)
-            }
-            ViolationWarning::ID => self.process_violation_warning(packet),
-            ChunkRadiusRequest::ID => self.process_radius_request(packet),
-            Interact::ID => self.process_interaction(packet),
-            TextMessage::ID => self.process_text_message(packet),
-            SetLocalPlayerAsInitialized::ID => {
-                self.process_local_initialized(packet)
-            }
-            MovePlayer::ID => self.process_move_player(packet),
-            RequestAbility::ID => self.process_ability_request(packet),
-            Animate::ID => self.process_animation(packet),
-            CommandRequest::ID => self.process_command_request(packet),
-            UpdateSkin::ID => self.process_skin_update(packet),
-            SettingsCommand::ID => self.process_settings_command(packet),
-            ContainerClose::ID => self.process_container_close(packet),
-            id => bail!(Malformed, "Invalid game packet: {id:#04x}"),
-        }
+        self.sender.send(RakNetMessage::Message(packet)).await?;
+        Ok(())
     }
 }

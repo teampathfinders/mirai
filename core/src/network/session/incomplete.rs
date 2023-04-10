@@ -258,7 +258,10 @@ impl SessionLike for IncompleteSession {
             reason: reason.as_ref(),
             hide_reason: false
         };
-        self.send(disconnect_packet)
+        self.send(disconnect_packet)?;
+        self.raknet.token.cancel();
+
+        Ok(())
     }
 }
 
