@@ -17,22 +17,22 @@ pub const DISCONNECTED_BAD_PACKET: &str = "Client sent bad packet.";
 #[derive(Debug, Clone)]
 pub struct Disconnect<'a> {
     /// Whether to immediately send the client to the main menu.
-    pub hide_message: bool,
+    pub hide_reason: bool,
     /// Message to display to the client
-    pub message: &'a str,
+    pub reason: &'a str,
 }
 
 impl ConnectedPacket for Disconnect<'_> {
     const ID: u32 = 0x05;
 
     fn serialized_size(&self) -> usize {
-        1 + self.message.var_len()
+        1 + self.reason.var_len()
     }
 }
 
 impl Serialize for Disconnect<'_> {
     fn serialize(&self, buffer: &mut MutableBuffer) -> anyhow::Result<()> {
-        buffer.write_bool(self.hide_message)?;
-        buffer.write_str(self.message)
+        buffer.write_bool(self.hide_reason)?;
+        buffer.write_str(self.reason)
     }
 }

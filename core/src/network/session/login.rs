@@ -22,15 +22,16 @@ use crate::network::{
     PermissionLevel, PlayStatus, PlayerMovementSettings, PlayerMovementType, RequestNetworkSettings, ResourcePackClientResponse, ResourcePackStack,
     ResourcePacksInfo, ServerToClientHandshake, SpawnBiomeType, StartGame, Status, WorldGenerator, DISCONNECTED_LOGIN_FAILED,
 };
+use crate::raknet::RakNetMessage;
 
-impl Session {
+use super::IncompleteSession;
+
+impl IncompleteSession {
     /// Handles a [`ClientCacheStatus`] packet.
     /// This stores the result in the [`Session::cache_support`] field.
     pub fn process_cache_status(&self, packet: MutableBuffer) -> anyhow::Result<()> {
         let request = CacheStatus::deserialize(packet.snapshot())?;
-        self.cache_support.set(request.support)?;
-
-        tracing::debug!("[{}] Cache status is: {}", self.get_display_name()?, request.support);
+        self.cache_support.store(request.support, Ordering::Relaxed);
 
         Ok(())
     }
@@ -53,83 +54,84 @@ impl Session {
         let request = SetLocalPlayerAsInitialized::deserialize(packet.snapshot())?;
         tracing::debug!("[{}] Initialised with runtime ID {}", self.get_display_name()?, request.runtime_id);
 
-        // Initialise chunk loading
-        let lock = self.player.read();
-        let rounded_position = Vector::from([
-            lock.position.x.round() as i32,
-            lock.position.y.round() as i32,
-            lock.position.z.round() as i32
-        ]);
+//        // Initialise chunk loading
+//        let lock = self.player.read();
+//        let rounded_position = Vector::from([
+//            lock.position.x.round() as i32,
+//            lock.position.y.round() as i32,
+//            lock.position.z.round() as i32
+//        ]);
+//
+//        self.send(NetworkChunkPublisherUpdate {
+//            position: rounded_position,
+//            radius: self.player
+//                .read()
+//                .render_distance
+//                .ok_or_else(||
+//                    anyhow::anyhow!("Chunk radius was not set before initialising local player")
+//                )?
+//                .get() as u32
+//        })?;
+//
+//        self.send(UpdateAttributes {
+//            runtime_id: lock.runtime_id,
+//            tick: self.level_manager.get_current_tick(),
+//            attributes: vec![
+//                Attribute {
+//                    name: "minecraft:health",
+//                    value: 1.0,
+//                    range: 0.0..20.0,
+//                    default: 20.0,
+//                    modifiers: vec![]
+//                },
+//                Attribute {
+//                    name: "minecraft:movement",
+//                    value: 1.0,
+//                    range: 0.0..10.0,
+//                    default: 1.0,
+//                    modifiers: vec![]
+//                }
+//            ]
+//        })?;
+//
+//        // Add player to other's player lists
+//
+//        // Tell rest of server that this client has joined...
+//        {
+//            let identity_data = self.get_identity_data()?;
+//            let _user_data = self.get_user_data()?;
+//
+//            self.broadcast_others(PlayerListAdd {
+//                entries: &[PlayerListAddEntry {
+//                    uuid: identity_data.uuid,
+//                    entity_id: self.player.read().runtime_id as i64,
+//                    username: &identity_data.display_name,
+//                    xuid: identity_data.xuid,
+//                    device_os: self.get_device_os()?,
+//                    skin: self.player.read().skin.as_ref().ok_or_else(
+//                        || {
+//                            anyhow::anyhow!(
+//                                "Skin data has not been initialised"
+//                            )
+//                        },
+//                    )?,
+//                    host: false,
+//                }],
+//            })?;
+//
+//            drop(lock);
+//
+//            self.broadcast_others(TextMessage {
+//                data: TextData::System {
+//                    message: &format!("§e{} has joined the server.", identity_data.display_name),
+//                },
+//                needs_translation: false,
+//                xuid: "",
+//                platform_chat_id: "",
+//            })?;
+//        }
 
-        self.send(NetworkChunkPublisherUpdate {
-            position: rounded_position,
-            radius: self.player
-                .read()
-                .render_distance
-                .ok_or_else(||
-                    anyhow::anyhow!("Chunk radius was not set before initialising local player")
-                )?
-                .get() as u32
-        })?;
-
-        self.send(UpdateAttributes {
-            runtime_id: lock.runtime_id,
-            tick: self.level_manager.get_current_tick(),
-            attributes: vec![
-                Attribute {
-                    name: "minecraft:health",
-                    value: 1.0,
-                    range: 0.0..20.0,
-                    default: 20.0,
-                    modifiers: vec![]
-                },
-                Attribute {
-                    name: "minecraft:movement",
-                    value: 1.0,
-                    range: 0.0..10.0,
-                    default: 1.0,
-                    modifiers: vec![]
-                }
-            ]
-        })?;
-
-        // Add player to other's player lists
-
-        // Tell rest of server that this client has joined...
-        {
-            let identity_data = self.get_identity_data()?;
-            let _user_data = self.get_user_data()?;
-
-            self.broadcast_others(PlayerListAdd {
-                entries: &[PlayerListAddEntry {
-                    uuid: identity_data.uuid,
-                    entity_id: self.player.read().runtime_id as i64,
-                    username: &identity_data.display_name,
-                    xuid: identity_data.xuid,
-                    device_os: self.get_device_os()?,
-                    skin: self.player.read().skin.as_ref().ok_or_else(
-                        || {
-                            anyhow::anyhow!(
-                                "Skin data has not been initialised"
-                            )
-                        },
-                    )?,
-                    host: false,
-                }],
-            })?;
-
-            drop(lock);
-
-            self.broadcast_others(TextMessage {
-                data: TextData::System {
-                    message: &format!("§e{} has joined the server.", identity_data.display_name),
-                },
-                needs_translation: false,
-                xuid: "",
-                platform_chat_id: "",
-            })?;
-        }
-        self.initialized.store(true, Ordering::SeqCst);
+        todo!("Convert IncompleteSession to Session");
 
         // ...then tell the client about all the other players.
         // TODO
@@ -152,9 +154,7 @@ impl Session {
             anyhow::bail!("Render distance must be greater than 0");
         }
 
-        tracing::debug!("[{}] Chunk radius updated to: {}", self.get_display_name()?, request.radius);
-
-        self.player.write().render_distance = Some(NonZeroI32::new(final_radius).unwrap());
+        self.render_distance.store(final_radius, Ordering::Relaxed);
         Ok(())
     }
 
@@ -163,91 +163,92 @@ impl Session {
 
         // TODO: Implement resource packs.
 
-        let start_game = StartGame {
-            entity_id: self.player.read().runtime_id as i64,
-            runtime_id: self.player.read().runtime_id,
-            game_mode: self.get_game_mode(),
-            position: Vector::from([0.0, 50.0, 0.0]),
-            rotation: Vector::from([0.0, 0.0]),
-            world_seed: 69421,
-            spawn_biome_type: SpawnBiomeType::Default,
-            custom_biome_name: "plains",
-            dimension: Dimension::Overworld,
-            generator: WorldGenerator::Infinite,
-            world_game_mode: GameMode::Creative,
-            difficulty: Difficulty::Normal,
-            world_spawn: BlockPosition::new(0, 50, 0),
-            achievements_disabled: true,
-            editor_world: false,
-            day_cycle_lock_time: 0,
-            education_features_enabled: true,
-            rain_level: 0.0,
-            lightning_level: 0.0,
-            confirmed_platform_locked_content: false,
-            broadcast_to_lan: true,
-            xbox_broadcast_intent: BroadcastIntent::Public,
-            platform_broadcast_intent: BroadcastIntent::Public,
-            enable_commands: true,
-            texture_packs_required: true,
-            game_rules: &self.level_manager.get_game_rules(),
-            experiments: &[],
-            experiments_previously_enabled: false,
-            bonus_chest_enabled: false,
-            starter_map_enabled: false,
-            permission_level: PermissionLevel::Operator,
-            server_chunk_tick_range: 0,
-            has_locked_behavior_pack: false,
-            has_locked_resource_pack: false,
-            is_from_locked_world_template: false,
-            use_msa_gamertags_only: false,
-            is_from_world_template: false,
-            is_world_template_option_locked: false,
-            only_spawn_v1_villagers: false,
-            persona_disabled: false,
-            custom_skins_disabled: false,
-            emote_chat_muted: true,
-            limited_world_width: 0,
-            limited_world_height: 0,
-            force_experimental_gameplay: false,
-            chat_restriction_level: ChatRestrictionLevel::None,
-            disable_player_interactions: false,
-            level_id: "",
-            level_name: "World name",
-            template_content_identity: "",
-            movement_settings: PlayerMovementSettings {
-                movement_type: PlayerMovementType::ClientAuthoritative,
-                rewind_history_size: 0,
-                server_authoritative_breaking: true,
-            },
-            time: 0,
-            enchantment_seed: 0,
-            block_properties: &[],
-            item_properties: &[],
-            property_data: PropertyData {},
-            server_authoritative_inventory: false,
-            game_version: CLIENT_VERSION_STRING,
-            // property_data: nbt::Value::Compound(HashMap::new()),
-            server_block_state_checksum: 0,
-            world_template_id: 0,
-            client_side_generation: false,
-        };
-        self.send(start_game)?;
-
-        let creative_content = CreativeContent { items: };
-
-        self.send(creative_content)?;
-
-        let biome_definition_list = BiomeDefinitionList;
-        self.send(biome_definition_list)?;
-
-        let play_status = PlayStatus { status: Status::PlayerSpawn };
-        self.send(play_status)?;
-
-        let commands = self.level_manager.get_commands().iter().map(|kv| kv.value().clone()).collect::<Vec<_>>();
-
-        let available_commands = AvailableCommands { commands: commands.as_slice() };
-
-        self.send(available_commands)?;
+//        let start_game = StartGame {
+//            entity_id: self.player.read().runtime_id as i64,
+//            runtime_id: self.player.read().runtime_id,
+//            game_mode: self.get_game_mode(),
+//            position: Vector::from([0.0, 50.0, 0.0]),
+//            rotation: Vector::from([0.0, 0.0]),
+//            world_seed: 69421,
+//            spawn_biome_type: SpawnBiomeType::Default,
+//            custom_biome_name: "plains",
+//            dimension: Dimension::Overworld,
+//            generator: WorldGenerator::Infinite,
+//            world_game_mode: GameMode::Creative,
+//            difficulty: Difficulty::Normal,
+//            world_spawn: BlockPosition::new(0, 50, 0),
+//            achievements_disabled: true,
+//            editor_world: false,
+//            day_cycle_lock_time: 0,
+//            education_features_enabled: true,
+//            rain_level: 0.0,
+//            lightning_level: 0.0,
+//            confirmed_platform_locked_content: false,
+//            broadcast_to_lan: true,
+//            xbox_broadcast_intent: BroadcastIntent::Public,
+//            platform_broadcast_intent: BroadcastIntent::Public,
+//            enable_commands: true,
+//            texture_packs_required: true,
+//            game_rules: &self.level_manager.get_game_rules(),
+//            experiments: &[],
+//            experiments_previously_enabled: false,
+//            bonus_chest_enabled: false,
+//            starter_map_enabled: false,
+//            permission_level: PermissionLevel::Operator,
+//            server_chunk_tick_range: 0,
+//            has_locked_behavior_pack: false,
+//            has_locked_resource_pack: false,
+//            is_from_locked_world_template: false,
+//            use_msa_gamertags_only: false,
+//            is_from_world_template: false,
+//            is_world_template_option_locked: false,
+//            only_spawn_v1_villagers: false,
+//            persona_disabled: false,
+//            custom_skins_disabled: false,
+//            emote_chat_muted: true,
+//            limited_world_width: 0,
+//            limited_world_height: 0,
+//            force_experimental_gameplay: false,
+//            chat_restriction_level: ChatRestrictionLevel::None,
+//            disable_player_interactions: false,
+//            level_id: "",
+//            level_name: "World name",
+//            template_content_identity: "",
+//            movement_settings: PlayerMovementSettings {
+//                movement_type: PlayerMovementType::ClientAuthoritative,
+//                rewind_history_size: 0,
+//                server_authoritative_breaking: true,
+//            },
+//            time: 0,
+//            enchantment_seed: 0,
+//            block_properties: &[],
+//            item_properties: &[],
+//            property_data: PropertyData {},
+//            server_authoritative_inventory: false,
+//            game_version: CLIENT_VERSION_STRING,
+//            // property_data: nbt::Value::Compound(HashMap::new()),
+//            server_block_state_checksum: 0,
+//            world_template_id: 0,
+//            client_side_generation: false,
+//        };
+//        self.send(start_game)?;
+//
+//        let creative_content = CreativeContent { items: };
+//
+//        self.send(creative_content)?;
+//
+//        let biome_definition_list = BiomeDefinitionList;
+//        self.send(biome_definition_list)?;
+//
+//        let play_status = PlayStatus { status: Status::PlayerSpawn };
+//        self.send(play_status)?;
+//
+//        let commands = self.level_manager.get_commands().iter().map(|kv| kv.value().clone()).collect::<Vec<_>>();
+//
+//        let available_commands = AvailableCommands { commands: commands.as_slice() };
+//
+//        self.send(available_commands)?;
+        todo!();
 
         Ok(())
     }
@@ -293,20 +294,15 @@ impl Session {
         };
 
         let (encryptor, jwt) = Encryptor::new(&request.identity.public_key)?;
+        self.sender.send(RakNetMessage::CreateEncryptor(encryptor));
 
         self.identity.set(request.identity)?;
         self.user_data.set(request.user_data)?;
-        self.player.write().skin = Some(request.skin);
+        self.skin.set(request.skin);
 
         // Flush packets before enabling encryption
-        self.flush().await?;
-
-        self.send(ServerToClientHandshake { jwt: &jwt })?;
-        self.encryptor.set(encryptor)?;
-
-        tracing::info!("`{}` has connected", self.get_display_name()?);
-
-        Ok(())
+        self.raknet.flush().await?;
+        self.send(ServerToClientHandshake { jwt: &jwt })
     }
 
     /// Handles a [`RequestNetworkSettings`] packet.

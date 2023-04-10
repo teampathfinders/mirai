@@ -39,13 +39,13 @@ pub struct PlayerData {
     /// z component is head yaw.
     pub rotation: Vector<f32, 3>,
     /// Render distance of the player in chunks.
-    pub render_distance: Option<NonZeroI32>,
+    pub render_distance: u32,
     /// Game mode.
     pub game_mode: GameMode,
     /// General permission level.
     pub permission_level: PermissionLevel,
     /// The client's skin.
-    pub skin: Option<Skin>,
+    pub skin: Skin,
     /// Runtime ID.
     pub runtime_id: u64,
 }
@@ -54,25 +54,12 @@ pub struct PlayerData {
 ///
 /// Anything that has to do with specific clients must be communicated with their associated sessions.
 /// The server does not interact with clients directly, everything is done through these sessions.
+#[derive(Debug)]
 pub struct Session {
     pub item_registry: Arc<ItemRegistry>,
     /// Identity data such as XUID and display name.
-    pub identity: OnceCell<IdentityData>,
-    /// Extra user data, such as device OS and language.
-    pub user_data: OnceCell<UserData>,
-    /// Used to encrypt and decrypt packets.
-    pub encryptor: OnceCell<Encryptor>,
     /// Whether the client supports the chunk cache.
-    pub cache_support: OnceCell<bool>,
-    /// Whether the client has fully been initialised.
-    /// This is set to true after receiving the [`SetLocalPlayerAsInitialized`](crate::SetLocalPlayerAsInitialized) packet
-    pub initialized: AtomicBool,
-    /// Manages entire world.
-    pub level_manager: Arc<LevelManager>,
-    /// Indicates whether this session is active.
-    pub active: CancellationToken,
-    /// Current tick of this session, this is increased every [`TICK_INTERVAL`].
-    pub current_tick: AtomicU64,
+    pub cache_support: bool,
     /// Minecraft-specific data.
     pub player: RwLock<PlayerData>,
     /// Raknet-specific data.

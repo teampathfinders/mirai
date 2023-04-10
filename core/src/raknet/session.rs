@@ -22,7 +22,9 @@ static SESSION_ID_COUNTER: AtomicU64 = AtomicU64::new(1);
 #[derive(Default)]
 pub struct RakNetSessionBuilder {
     broadcast: Option<broadcast::Sender<BroadcastPacket>>,
-    receiver: Option<mpsc::Receiver<RawPacket>>,
+    packet_receiver: Option<mpsc::Receiver<RawPacket>>,
+    receiver: Option<mpsc::Receiver<RakNetMessage>>,
+    sender: Option<mpsc::Sender<RakNetMessage>>,
     udp_controller: Option<Arc<UdpController>>,
     addr: Option<SocketAddr>,
     mtu: u16,
@@ -48,8 +50,15 @@ impl RakNetSessionBuilder {
     }
 
     #[inline]
-    pub fn receiver(&mut self, receiver: mpsc::Receiver<RawPacket>) -> &mut Self {
+    pub fn channel(&mut self, (sender, receiver): (mpsc::Sender<RakNetMessage>, mpsc::Receiver<RakNetMessage>)) -> &mut Self {
         self.receiver = Some(receiver);
+        self.sender = Some(sender);
+        self
+    }
+
+    #[inline]
+    pub fn packet_receiver(&mut self, receiver: mpsc::Receiver<RawPacket>) -> &mut Self {
+        self.packet_receiver = Some(receiver);
         self
     }
 
@@ -81,6 +90,7 @@ impl RakNetSessionBuilder {
 #[derive(Debug)]
 pub enum RakNetMessage {
     Connected,
+    CreateEncryptor(Encryptor),
     Disconnect
 }
 
@@ -160,7 +170,7 @@ impl From<RakNetSessionBuilder> for RakNetSession {
             token: CancellationToken::new(),
             current_tick: AtomicU64::new(0),
             broadcast: builder.broadcast.unwrap(),
-            packet_receiver: builder.receiver.unwrap(),
+            packet_receiver: builder.packet_receiver.unwrap(),
             udp_controller: builder.udp_controller.unwrap(),
             addr: builder.addr.unwrap(),
             mtu: builder.mtu,
@@ -177,7 +187,9 @@ impl From<RakNetSessionBuilder> for RakNetSession {
             confirmed_packets: Mutex::new(Vec::new()),
             recovery_queue: RecoveryQueue::new(),
             compression_enabled: AtomicBool::new(false),
-            encryptor: OnceCell::new()
+            encryptor: OnceCell::new(),
+            sender: builder.sender.unwrap(),
+            receiver: builder.receiver.unwrap()
         }
     }
 }
