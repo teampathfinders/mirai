@@ -1,6 +1,6 @@
 use std::io::Read;
 use std::sync::atomic::Ordering;
-use std::time::Instant;
+use std::time::{Instant, Duration};
 
 use async_recursion::async_recursion;
 
@@ -29,6 +29,8 @@ use crate::config::SERVER_CONFIG;
 use crate::network::Session;
 
 use super::{RakNetSession, RakNetMessage};
+
+const RAKNET_MESSAGE_SEND_TIMEOUT: Duration = Duration::from_millis(10);
 
 impl RakNetSession {
     /// Processes the raw packet coming directly from the network.
@@ -130,17 +132,17 @@ impl RakNetSession {
                 .insert(frame)
             {
                 for packet in ready {
-                    self.process_frame_data(packet.body).await?;
+                    self.process_frame_body(packet.body).await?;
                 }
             }
             return Ok(());
         }
 
-        self.process_frame_data(frame.body).await
+        self.process_frame_body(frame.body).await
     }
 
     /// Processes an unencapsulated game packet.
-    async fn process_frame_data(&self, packet: MutableBuffer) -> anyhow::Result<()> {
+    async fn process_frame_body(&self, packet: MutableBuffer) -> anyhow::Result<()> {
         let packet_id = *packet.first().expect("Game packet buffer was empty");
         match packet_id {
             CONNECTED_PACKET_ID => self.process_connected_packet(packet).await?,
@@ -213,7 +215,13 @@ impl RakNetSession {
         &self,
         mut packet: MutableBuffer
     ) -> anyhow::Result<()> {
-        self.sender.send(RakNetMessage::Message(packet)).await?;
+        let result = self.sender.send_timeout(RakNetMessage::Message(packet), RAKNET_MESSAGE_SEND_TIMEOUT).await;
+        if result.is_err() {
+            anyhow::bail!("RakNet message channel timed out");
+        }
+
+        todo!();
+
         Ok(())
     }
 }
