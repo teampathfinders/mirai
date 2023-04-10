@@ -28,13 +28,15 @@ use crate::network::Header;
 use crate::config::SERVER_CONFIG;
 use crate::network::Session;
 
-impl Session {
+use super::RakNetSession;
+
+impl RakNetSession {
     /// Processes the raw packet coming directly from the network.
     ///
     /// If a packet is an ACK or NACK type, it will be responded to accordingly (using [`Session::process_ack`] and [`Session::process_nak`]).
     /// Frame batches are processed by [`Session::process_frame_batch`].
     pub async fn process_raw_packet(&self, packet: MutableBuffer) -> anyhow::Result<bool> {
-        *self.raknet.last_update.write() = Instant::now();
+        *self.last_update.write() = Instant::now();
 
         if packet.is_empty() {
             bail!(Malformed, "Packet is empty");
@@ -50,17 +52,22 @@ impl Session {
         Ok(true)
     }
 
-    pub fn process_broadcast(&self, packet: BroadcastPacket) -> anyhow::Result<()> {
-        if let Ok(xuid) = self.get_xuid() {
-            if let Some(sender) = packet.sender {
-                if sender.get() == xuid {
-                    // Source is self, do not send.
-                    return Ok(());
-                }
+    /// Processes a broadcast packet.
+    ///
+    /// If the packet does not contain a sender or the
+    /// sender is confirmed to be a different session,
+    /// the packet will be sent to the client.
+    ///
+    /// If the returned boolean is false, the packet was not sent.
+    pub fn process_broadcast(&self, packet: BroadcastPacket) -> anyhow::Result<bool> {
+        if let Some(source) = packet.source {
+            if source == self.session_id {
+                return Ok(false)
             }
         }
 
-        self.send_serialized(packet.content, DEFAULT_SEND_CONFIG)
+        self.send_buf(packet.content, DEFAULT_SEND_CONFIG)?;
+        Ok(true)
     }
 
     /// Processes a batch of frames.
@@ -72,7 +79,7 @@ impl Session {
     /// * Acknowledging reliable packets
     async fn process_frame_batch(&self, packet: MutableBuffer) -> anyhow::Result<()> {
         let batch = FrameBatch::deserialize(packet.snapshot())?;
-        self.raknet
+        self
             .client_batch_number
             .fetch_max(batch.sequence_number, Ordering::SeqCst);
 
@@ -83,6 +90,7 @@ impl Session {
         Ok(())
     }
 
+    /// Processes a single [`Frame`].
     #[async_recursion]
     async fn process_frame(
         &self,
@@ -91,7 +99,7 @@ impl Session {
     ) -> anyhow::Result<()> {
         if frame.reliability.is_sequenced()
             && frame.sequence_index
-            < self.raknet.client_batch_number.load(Ordering::SeqCst)
+            < self.client_batch_number.load(Ordering::SeqCst)
         {
             // Discard packet
             return Ok(());
@@ -99,12 +107,12 @@ impl Session {
 
         if frame.reliability.is_reliable() {
             // Confirm packet
-            let mut lock = self.raknet.confirmed_packets.lock();
+            let mut lock = self.confirmed_packets.lock();
             lock.push(batch_number);
         }
 
         if frame.is_compound {
-            let possible_frag = self.raknet.compound_collector.insert(frame)?;
+            let possible_frag = self.compound_collector.insert(frame)?;
 
             return if let Some(packet) = possible_frag {
                 self.process_frame(packet, batch_number).await
@@ -117,7 +125,7 @@ impl Session {
         // Sequenced implies ordered
         if frame.reliability.is_ordered() || frame.reliability.is_sequenced() {
             // Add packet to order queue
-            if let Some(ready) = self.raknet.order_channels
+            if let Some(ready) = self.order_channels
                 [frame.order_channel as usize]
                 .insert(frame)
             {
@@ -136,7 +144,7 @@ impl Session {
         let packet_id = *packet.first().expect("Game packet buffer was empty");
         match packet_id {
             CONNECTED_PACKET_ID => self.process_connected_packet(packet).await?,
-            DisconnectNotification::ID => self.on_disconnect(),
+            DisconnectNotification::ID => self.on_disconnect().await,
             ConnectionRequest::ID => self.process_connection_request(packet)?,
             NewIncomingConnection::ID => {
                 self.process_new_incoming_connection(packet)?
@@ -148,30 +156,27 @@ impl Session {
         Ok(())
     }
 
+    /// Processes a connected packet.
+    ///
+    /// This method takes care of decrypting and decompressing
+    /// received packets.
     async fn process_connected_packet(&self, mut packet: MutableBuffer) -> anyhow::Result<()> {
         // dbg!(&packet);
 
         // Remove 0xfe packet ID.
         packet.advance_cursor(1);
 
-        // Decrypt packet
-        if self.encryptor.initialized() {
-            // Safe to unwrap because the encryptor is confirmed to exist.
-            let encryptor = self
-                .encryptor
-                .get()
-                .expect("Encryptor was destroyed while it was in use");
-
+        if let Some(encryptor) = self.encryptor.get() {
             match encryptor.decrypt(&mut packet) {
                 Ok(_) => (),
                 Err(e) => {
                     return Err(e);
                 }
             }
-        };
+        }
 
         let compression_enabled =
-            self.raknet.compression_enabled.load(Ordering::SeqCst);
+            self.compression_enabled.load(Ordering::SeqCst);
 
         let compression_threshold = SERVER_CONFIG.read().compression_threshold;
 
@@ -194,15 +199,16 @@ impl Session {
                     reader.read_to_end(&mut decompressed)?;
 
                     let buffer = MutableBuffer::from(decompressed);
-                    self.process_decompressed_packet(buffer).await
+                    self.process_naked_packet(buffer).await
                 }
             }
         } else {
-            self.process_decompressed_packet(packet).await
+            self.process_naked_packet(packet).await
         }
     }
 
-    async fn process_decompressed_packet(
+    /// Processes a packet that has been decrypted, decompressed and stripped of the frame header.
+    async fn process_naked_packet(
         &self,
         mut packet: MutableBuffer,
     ) -> anyhow::Result<()> {

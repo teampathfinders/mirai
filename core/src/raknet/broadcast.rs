@@ -27,7 +27,7 @@ pub struct BroadcastPacket {
     /// If this is Some, every session that receives the broadcast will check the XUID with its own.
     /// If it matches, the packet will not be sent.
     /// This can be used to broadcast packets to every client other than self.
-    pub sender: Option<NonZeroU64>,
+    pub source: Option<NonZeroU64>,
     /// Content of the packet.
     ///
     /// This must be an already serialized packet (use the [`Serialize`] trait)
@@ -44,7 +44,7 @@ impl BroadcastPacket {
         let packet = Packet::new(packet);
 
         Ok(Self {
-            sender,
+            source: sender,
             content: ArcBuffer::from(packet.serialize()?),
         })
     }
@@ -52,7 +52,7 @@ impl BroadcastPacket {
 
 impl RakNetSession {
     /// Sends a packet to all initialised sessions including self.
-    pub fn broadcast<P: ConnectedPacket + Serialize + Clone>(
+    pub fn broadcast<P: ConnectedPacket + Serialize>(
         &self,
         packet: P,
     ) -> anyhow::Result<()> {
@@ -61,7 +61,7 @@ impl RakNetSession {
     }
 
     /// Sends a packet to all initialised sessions other than self.
-    pub fn broadcast_others<P: ConnectedPacket + Serialize + Clone>(
+    pub fn broadcast_others<P: ConnectedPacket + Serialize>(
         &self,
         packet: P,
     ) -> anyhow::Result<()> {

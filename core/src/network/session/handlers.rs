@@ -14,6 +14,8 @@ use crate::network::{
 };
 use crate::command::ParsedCommand;
 
+use super::SessionLike;
+
 impl Session {
     pub fn process_settings_command(&self, packet: MutableBuffer) -> anyhow::Result<()> {
         let request = SettingsCommand::deserialize(packet.snapshot())?;

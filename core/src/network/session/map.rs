@@ -102,6 +102,14 @@ pub trait SessionLike {
     fn send_buf<A>(&self, buf: A) -> anyhow::Result<()>
     where
         A: AsRef<[u8]>;
+
+    fn broadcast<T>(&self, packet: T) -> anyhow::Result<()>
+    where
+        T: ConnectedPacket + Serialize;
+
+    fn broadcast_others<T>(&self, packet: T) -> anyhow::Result<()>
+    where
+        T: ConnectedPacket + Serialize;
 }
 
 pub struct Session {
@@ -144,7 +152,7 @@ impl IncompleteSession {
         }
 
         self.send(ChunkRadiusReply {
-             radius
+            radius
         })?;
 
         self.render_distance = radius;
@@ -204,6 +212,20 @@ impl SessionLike for IncompleteSession {
             reliability: Reliability::ReliableOrdered,
             priority: SendPriority::Medium
         })
+    }
+
+    fn broadcast<T>(&self, packet: T) -> anyhow::Result<()>
+    where
+        T: ConnectedPacket + Serialize
+    {
+        self.raknet.broadcast(packet)
+    }
+
+    fn broadcast_others<T>(&self, packet: T) -> anyhow::Result<()>
+    where
+        T: ConnectedPacket + Serialize,
+    {
+        self.raknet.broadcast_others(packet)
     }
 }
 

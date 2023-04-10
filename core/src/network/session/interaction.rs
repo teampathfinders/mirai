@@ -9,6 +9,8 @@ use crate::network::{
     Session,
 };
 
+use super::SessionLike;
+
 impl Session {
     pub fn process_interaction(&self, packet: MutableBuffer) -> anyhow::Result<()> {
         let request = Interact::deserialize(packet.snapshot())?;

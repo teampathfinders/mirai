@@ -6,8 +6,9 @@ use std::sync::atomic::{AtomicBool, AtomicU32, AtomicU16, AtomicU64, Ordering};
 use std::time::Instant;
 use parking_lot::{Mutex, RwLock};
 use tokio::net::UdpSocket;
-use tokio::sync::{mpsc, broadcast};
+use tokio::sync::{mpsc, broadcast, OnceCell};
 use tokio_util::sync::CancellationToken;
+use crate::crypto::Encryptor;
 use crate::instance::UdpController;
 
 use crate::raknet::{CompoundCollector, OrderChannel, RecoveryQueue, SendQueues};
@@ -126,7 +127,7 @@ pub struct RakNetSession {
     /// This is set to true after network settings have been sent to the client.
     pub compression_enabled: AtomicBool,
     pub current_tick: AtomicU64,
-    pub encryptor: Encryptor,
+    pub encryptor: OnceCell<Encryptor>,
     pub sender: mpsc::Sender<RakNetMessage>,
     pub receiver: mpsc::Receiver<RakNetMessage>
 }
@@ -176,6 +177,7 @@ impl From<RakNetSessionBuilder> for RakNetSession {
             confirmed_packets: Mutex::new(Vec::new()),
             recovery_queue: RecoveryQueue::new(),
             compression_enabled: AtomicBool::new(false),
+            encryptor: OnceCell::new()
         }
     }
 }

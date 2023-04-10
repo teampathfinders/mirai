@@ -10,7 +10,7 @@ use crate::command::CommandPermissionLevel;
 use crate::config::SERVER_CONFIG;
 use crate::crypto::Encryptor;
 use crate::item::{ItemStack, ItemType};
-use crate::network::{AbilityData, AddPlayer, Attribute, AttributeModifier, CacheStatus, CreativeItem, NetworkChunkPublisherUpdate, PlayerListAdd, PlayerListAddEntry, UpdateAttributes};
+use crate::network::{AbilityData, AddPlayer, Attribute, AttributeModifier, CacheStatus, CreativeItem, NetworkChunkPublisherUpdate, PlayerListAdd, PlayerListAddEntry, UpdateAttributes, SessionLike};
 use crate::network::Session;
 use crate::network::{AvailableCommands, SubChunkRequestMode};
 use crate::network::{
