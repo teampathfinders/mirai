@@ -77,7 +77,9 @@ impl LevelManager {
             (config.level_path, config.autosave_interval)
         };
 
-        let provider = Provider::open(level_path)?;
+        let provider = unsafe {
+            Provider::open(level_path)?
+        };
         let cache = RwLock::new(LevelCache::new());
 
         let manager = Arc::new(Self {

@@ -1,5 +1,7 @@
 use anyhow::anyhow;
+use std::path::Path;
 use std::ptr::NonNull;
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::{
     ffi::{c_void, CStr, CString},
     marker::PhantomData,
@@ -162,10 +164,22 @@ pub struct Database {
 
 impl Database {
     /// Opens the database at the specified path.
-    pub fn open<P>(path: P) -> anyhow::Result<Self>
+    /// 
+    /// # Safety
+    /// 
+    /// It is up to the caller to ensure that the given `path` is not
+    /// already in use by another `Database`.
+    /// Multiple databases owning the same directory is *guaranteed* to cause corruption.
+    /// 
+    /// # Errors
+    /// 
+    /// This method returns an error if the database could not be opened.
+    pub unsafe fn open<P>(path: P) -> anyhow::Result<Self>
     where
         P: AsRef<str>,
     {
+        // Ensure that there can only be a single database open at once.
+        // Multiple databases causes corruption.
         let ffi_path = CString::new(path.as_ref())?;
 
         // SAFETY: This function is guaranteed to not return exceptions.
