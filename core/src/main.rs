@@ -2,14 +2,25 @@ use std::sync::atomic::{AtomicU16, Ordering};
 
 use tokio::runtime;
 
-use pyro::instance::InstanceManager;
+use pyro::instance::ServerInstance;
 
-fn main() {
+fn main() -> anyhow::Result<()> {
     init_logging();
-    init_runtime();
+    init_runtime()
 }
 
-fn init_runtime() {
+async fn app() -> anyhow::Result<()> {
+    let mut server = ServerInstance::new(19132, 100).await?;
+    if let Err(error) = server.run().await {
+        tracing::error!("Fatal error: {error:?}");
+
+        return Err(error);
+    }
+
+    Ok(())
+}
+
+fn init_runtime() -> anyhow::Result<()> {
     let runtime = runtime::Builder::new_multi_thread()
         .enable_io()
         .enable_time()
@@ -20,9 +31,7 @@ fn init_runtime() {
         .build()
         .expect("Failed to build runtime");
 
-    if let Err(error) = runtime.block_on(InstanceManager::run()) {
-        tracing::error!("Fatal error: {error:?}");
-    }
+    runtime.block_on(app())
 }
 
 /// Initialises logging with tokio-console.

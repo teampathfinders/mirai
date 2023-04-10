@@ -13,7 +13,7 @@ const RAKNET_MESSAGE_CHANNEL_SIZE: usize = 5;
 #[derive(Default)]
 pub struct SessionBuilder {
     addr: Option<SocketAddr>,
-    udp: Option<Arc<UdpController>>,
+    udp_controller: Option<Arc<UdpController>>,
     sender: Option<mpsc::Sender<RawPacket>>,
     receiver: Option<mpsc::Receiver<RawPacket>>,
     broadcast: Option<broadcast::Sender<BroadcastPacket>>,
@@ -36,7 +36,7 @@ impl SessionBuilder {
 
     #[inline]
     pub fn udp(&mut self, controller: Arc<UdpController>) -> &mut Self {
-        self.udp = Some(controller);
+        self.udp_controller = Some(controller);
         self
     }
 
@@ -159,14 +159,14 @@ impl IncompleteSession {
     }
 
     pub fn on_cache_status(&mut self, packet: MutableBuffer) -> anyhow::Result<()> {
-        let status = CacheStatus::deserialize(packet.as_ref())?;
+        let status = CacheStatus::deserialize(packet.as_ref().into())?; // TODO
         self.cache_support.store(status.support, Ordering::Relaxed);
 
         Ok(())
     }
 
     pub fn on_radius_request(&mut self, packet: MutableBuffer) -> anyhow::Result<()> {
-        let request = ChunkRadiusRequest::deserialize(packet.as_ref())?;
+        let request = ChunkRadiusRequest::deserialize(packet.as_ref().into())?; // TODO
         let radius = std::cmp::min(SERVER_CONFIG.read().allowed_render_distance, request.radius);
 
         if request.radius <= 0 {
@@ -182,7 +182,7 @@ impl IncompleteSession {
     }
 
     pub fn on_settings_request(&mut self, packet: MutableBuffer) -> anyhow::Result<()> {
-        let request = RequestNetworkSettings::deserialize(packet.as_ref())?;
+        let request = RequestNetworkSettings::deserialize(packet.as_ref().into())?; // TODO
         if request.protocol_version > NETWORK_VERSION {
             self.send(PlayStatus {
                 status: Status::FailedServer
@@ -270,14 +270,17 @@ impl From<SessionBuilder> for IncompleteSession {
         let (sessionSender, raknetReceiver) = mpsc::channel(RAKNET_MESSAGE_CHANNEL_SIZE);
         let (raknetSender, sessionReceiver) = mpsc::channel(RAKNET_MESSAGE_CHANNEL_SIZE);
 
-        let raknet = RakNetSessionBuilder::new()
-            .udp(builder.udp.unwrap())
+        let mut raknet_builder = RakNetSessionBuilder::new();
+        
+        raknet_builder
+            .udp(builder.udp_controller.unwrap())
             .addr(builder.addr.unwrap())
             .broadcast(builder.broadcast.unwrap())
             .packet_receiver(builder.receiver.unwrap())
             .guid(builder.guid)
-            .channel((raknetSender, raknetReceiver))
-            .build();
+            .channel((raknetSender, raknetReceiver));
+
+        let raknet = raknet_builder.build();
 
         Self {
             expected: AtomicU32::new(0),

@@ -30,14 +30,14 @@ pub enum RakNetMessage {
 
 #[derive(Default)]
 pub struct RakNetSessionBuilder {
-    broadcast: Option<broadcast::Sender<BroadcastPacket>>,
-    packet_receiver: Option<mpsc::Receiver<RawPacket>>,
-    receiver: Option<mpsc::Receiver<RakNetMessage>>,
-    sender: Option<mpsc::Sender<RakNetMessage>>,
-    udp_controller: Option<Arc<UdpController>>,
-    addr: Option<SocketAddr>,
-    mtu: u16,
-    guid: u64
+    pub broadcast: Option<broadcast::Sender<BroadcastPacket>>,
+    pub packet_receiver: Option<mpsc::Receiver<RawPacket>>,
+    pub receiver: Option<mpsc::Receiver<RakNetMessage>>,
+    pub sender: Option<mpsc::Sender<RakNetMessage>>,
+    pub udp_controller: Option<Arc<UdpController>>,
+    pub addr: Option<SocketAddr>,
+    pub mtu: u16,
+    pub guid: u64
 }
 
 impl RakNetSessionBuilder {

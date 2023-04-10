@@ -134,12 +134,12 @@ impl UdpController {
     /// If there are still multiple strong references to this controller,
     /// this method will fail.
     pub async fn shutdown(self: Arc<Self>) -> anyhow::Result<()> {
-        if let Ok(inner) = Arc::into_inner(self) {
+        if let Ok(inner) = Arc::try_unwrap(self) {
             // These can be unwrapped without panicking because shutdown requires exclusive
             // access to `self`.
             // It is statically guaranteed that this method can only be called once.
-            let recv_handle = self.recv_handle.write().take().unwrap();
-            let send_handle = self.send_handle.write().take().unwrap();
+            let recv_handle = inner.recv_handle.write().take().unwrap();
+            let send_handle = inner.send_handle.write().take().unwrap();
 
             tokio::join!(recv_handle, send_handle);
 
@@ -219,7 +219,7 @@ impl UdpController {
     /// of going through sessions.
     #[inline]
     fn process_unconnected_ping(self: &Arc<Self>, packet: &mut RawPacket) -> anyhow::Result<()> {
-        let ping = UnconnectedPing::deserialize(packet.buf.as_ref())?;
+        let ping = UnconnectedPing::deserialize(packet.buf.as_ref().into())?; // TODO
         let pong = UnconnectedPong {
             time: ping.time,
             server_guid: self.server_guid,
@@ -237,7 +237,7 @@ impl UdpController {
     /// of going through sessions.
     #[inline]
     fn process_open_connection_request1(self: &Arc<Self>, packet: &mut RawPacket) -> anyhow::Result<()> {
-        let request = OpenConnectionRequest1::deserialize(packet.buf.as_ref())?;
+        let request = OpenConnectionRequest1::deserialize(packet.buf.as_ref().into())?; // TODO
 
         packet.buf.clear();
         if request.protocol_version != RAKNET_VERSION {
@@ -263,7 +263,7 @@ impl UdpController {
     /// of going through sessions.
     #[inline]
     fn process_open_connection_request2(self: &Arc<Self>, packet: &mut RawPacket) -> anyhow::Result<()> {
-        let request = OpenConnectionRequest2::deserialize(packet.buf.as_ref())?;
+        let request = OpenConnectionRequest2::deserialize(packet.buf.as_ref().into())?; // TODO
         let reply = OpenConnectionReply2 {
             server_guid: self.server_guid,
             mtu: request.mtu,

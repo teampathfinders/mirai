@@ -108,11 +108,13 @@ impl SessionMap {
         mtu: u16,
         client_guid: u64
     ) -> bool {
-        let session_ref = SessionBuilder::new()
+        let mut builder = SessionBuilder::new();
+        builder
             .guid(client_guid)
             .broadcast(self.broadcast.clone())
-            .channel(mpsc::channel(SINGLE_CHANNEL_CAPACITY))
-            .build();
+            .channel(mpsc::channel(SINGLE_CHANNEL_CAPACITY));
+
+        let session_ref = builder.build();
 
         if self.count() < self.max_count() {
             self.incomplete_map.insert(addr, session_ref);
