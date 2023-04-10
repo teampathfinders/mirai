@@ -141,7 +141,6 @@ impl UdpController {
         // Heap allocated to prevent storing large values on the stack.
         let mut recv_buf = vec![0u8; RECV_BUF_SIZE];
 
-        let self_ref = &self;
         loop {
             let (n, addr) = tokio::select! {
                 res = self.ipv4_socket.recv_from(&mut recv_buf) => {
@@ -167,7 +166,8 @@ impl UdpController {
             };
 
             if raw_packet.is_unconnected() {
-                let clone = Arc::clone(self_ref);
+                let clone = Arc::clone(&self);
+
                 tokio::spawn(async move {
                     let id = raw_packet.id().unwrap();
                     let result = match id {
@@ -196,7 +196,13 @@ impl UdpController {
                     }
                 });
             } else {
-
+                let clone = Arc::clone(&self);
+                tokio::spawn(async move {
+                    let result = clone.session_map.forward(raw_packet).await;
+                    if let Err(err) = result {
+                        tracing::error!("{err:?}");
+                    }
+                });
             }
         }
     }

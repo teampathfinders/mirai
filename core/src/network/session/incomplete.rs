@@ -17,7 +17,8 @@ pub struct SessionBuilder {
     sender: Option<mpsc::Sender<MutableBuffer>>,
     receiver: Option<mpsc::Receiver<MutableBuffer>>,
     broadcast: Option<broadcast::Sender<BroadcastPacket>>,
-    guid: u64
+    guid: u64,
+    mtu: u16
 }
 
 impl SessionBuilder {
@@ -31,6 +32,12 @@ impl SessionBuilder {
     #[inline]
     pub fn guid(&mut self, guid: u64) -> &mut Self {
         self.guid = guid;
+        self
+    }
+
+    #[inline]
+    pub fn mtu(&mut self, mtu: u16) -> &mut Self {
+        self.mtu = mtu;
         self
     }
 
@@ -105,6 +112,7 @@ impl IncompleteSession {
 
         raknet_builder
             .udp(builder.udp_controller.unwrap())
+            .mtu(builder.mtu)
             .addr(builder.addr.unwrap())
             .broadcast(builder.broadcast.unwrap())
             .packet_receiver(builder.receiver.unwrap())

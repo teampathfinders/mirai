@@ -113,17 +113,32 @@ impl SessionMap {
             .udp_controller(udp_controller)
             .addr(addr)
             .guid(client_guid)
+            .mtu(mtu)
             .broadcast(self.broadcast.clone())
             .channel(mpsc::channel(SINGLE_CHANNEL_CAPACITY));
 
         let session_ref = builder.build();
-
         if self.count() < self.max_count() {
             self.incomplete_map.insert(addr, session_ref);
             true
         } else {
             false
         }
+    }
+
+    pub async fn forward(&self, packet: RawPacket) -> anyhow::Result<()> {
+        if let Some(session) = self.map.get(&packet.addr) {
+            todo!();
+        } else if let Some(session) = self.incomplete_map.get(&packet.addr) {
+            let result = session.sender.send_timeout(packet.buf, FORWARD_TIMEOUT).await;
+            if result.is_err() {
+                anyhow::bail!("Forwarding timed out");
+            }
+        } else {
+            anyhow::bail!("Connected packet received from unconnected client");
+        }
+
+        Ok(())
     }
 
     #[inline]
