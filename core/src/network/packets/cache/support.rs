@@ -8,7 +8,7 @@ use crate::network::ConnectedPacket;
 #[derive(Debug, Clone)]
 pub struct CacheStatus {
     /// Whether the client supports the client-side blob cache.
-    pub supports_cache: bool,
+    pub support: bool,
 }
 
 impl ConnectedPacket for CacheStatus {
@@ -19,6 +19,6 @@ impl Deserialize<'_> for CacheStatus {
     fn deserialize(mut buffer: SharedBuffer) -> anyhow::Result<Self> {
         let support = buffer.read_bool()?;
 
-        Ok(Self { supports_cache: support })
+        Ok(Self { support: support })
     }
 }

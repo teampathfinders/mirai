@@ -7,12 +7,10 @@ use tokio::net::UdpSocket;
 use tokio::sync::{broadcast, mpsc, OnceCell};
 use tokio_util::sync::CancellationToken;
 
-use util::{Result, Serialize};
+use util::{Deserialize, Result, Serialize};
 use util::bytes::MutableBuffer;
 
-use crate::network::{
-    Disconnect, DISCONNECTED_TIMEOUT,
-};
+use crate::network::{CacheStatus, ChunkRadiusReply, ChunkRadiusRequest, Disconnect, DISCONNECTED_TIMEOUT, NETWORK_VERSION, NetworkSettings, PlayStatus, RequestNetworkSettings, Status};
 use crate::raknet::{BroadcastPacket, RawPacket};
 use crate::{config::SERVER_CONFIG, network::ConnectedPacket};
 use crate::instance::UdpController;
@@ -93,12 +91,72 @@ impl From<SessionBuilder> for Session {
 pub struct IncompleteSession {
     broadcast: broadcast::Sender<BroadcastPacket>,
     receiver: mpsc::Receiver<RawPacket>,
-
-    guid: u64
+    
+    cache_support: bool,
+    render_distance: i32,
+    guid: u64,
+    compression: bool
 }
 
 impl IncompleteSession {
-    
+    pub fn on_cache_status(&mut self, packet: MutableBuffer) -> anyhow::Result<()> {
+        let status = CacheStatus::deserialize(packet.as_ref())?;
+        self.cache_support = status.support;
+
+        Ok(())
+    }
+
+    pub fn on_radius_request(&mut self, packet: MutableBuffer) -> anyhow::Result<()> {
+        let request = ChunkRadiusRequest::deserialize(packet.as_ref())?;
+        let radius = std::cmp::min(SERVER_CONFIG.read().allowed_render_distance, request.radius);
+
+        if request.radius <= 0 {
+            anyhow::bail!("Render distance must be greater than 0");
+        }
+
+        self.send(ChunkRadiusReply {
+             radius
+        })?;
+
+        self.render_distance = radius;
+        Ok(())
+    }
+
+    pub fn on_settings_request(&mut self, packet: MutableBuffer) -> anyhow::Result<()> {
+        let request = RequestNetworkSettings::deserialize(packet.as_ref())?;
+        if request.protocol_version > NETWORK_VERSION {
+            self.send(PlayStatus {
+                status: Status::FailedServer
+            })?;
+
+            anyhow::bail!(format!(
+                "Client is using a newer protocol version: {} vs. {NETWORK_VERSION}",
+                request.protocol_version
+            ));
+        } else if request.protocol_version < NETWORK_VERSION {
+            self.send(PlayStatus {
+                status: Status::FailedClient
+            })?;
+
+            anyhow::bail!(format!(
+                "Client is using an older protocol version: {} vs. {NETWORK_VERSION}",
+                request.protocol_version
+            ));
+        }
+
+        let response = {
+            let lock = SERVER_CONFIG.read();
+
+            NetworkSettings {
+                compression_algorithm: lock.compression_algorithm,
+                compression_threshold: lock.compression_threshold,
+                client_throttle: lock.client_throttle
+            }
+        };
+
+        self.compression = true;
+        self.send(response)
+    }
 }
 
 impl From<SessionBuilder> for IncompleteSession {
@@ -106,7 +164,10 @@ impl From<SessionBuilder> for IncompleteSession {
         Self {
             broadcast: builder.broadcast.unwrap(),
             receiver: builder.receiver.unwrap(),
-            guid: builder.guid
+            cache_support: false,
+            render_distance: 0,
+            guid: builder.guid,
+            compression: false,
         }
     }
 }
@@ -167,7 +228,7 @@ impl SessionMap {
             .channel(mpsc::channel(SINGLE_CHANNEL_CAPACITY))
             .build();
 
-        self.map.insert(addr, session_ref);
+        self.incomplete_map.insert(addr, session_ref);
     }
 
 

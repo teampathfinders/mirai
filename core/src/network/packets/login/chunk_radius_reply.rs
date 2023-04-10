@@ -8,19 +8,19 @@ use crate::network::ConnectedPacket;
 #[derive(Debug, Clone)]
 pub struct ChunkRadiusReply {
     /// Maximum render distance that the server allows (in chunks).
-    pub final_radius: i32,
+    pub radius: i32,
 }
 
 impl ConnectedPacket for ChunkRadiusReply {
     const ID: u32 = 0x46;
 
     fn serialized_size(&self) -> usize {
-        self.final_radius.var_len()
+        self.radius.var_len()
     }
 }
 
 impl Serialize for ChunkRadiusReply {
     fn serialize(&self, buffer: &mut MutableBuffer) -> anyhow::Result<()> {
-        buffer.write_var_i32(self.final_radius)
+        buffer.write_var_i32(self.radius)
     }
 }

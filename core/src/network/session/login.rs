@@ -28,9 +28,9 @@ impl Session {
     /// This stores the result in the [`Session::cache_support`] field.
     pub fn process_cache_status(&self, packet: MutableBuffer) -> anyhow::Result<()> {
         let request = CacheStatus::deserialize(packet.snapshot())?;
-        self.cache_support.set(request.supports_cache)?;
+        self.cache_support.set(request.support)?;
 
-        tracing::debug!("[{}] Cache status is: {}", self.get_display_name()?, request.supports_cache);
+        tracing::debug!("[{}] Cache status is: {}", self.get_display_name()?, request.support);
 
         Ok(())
     }
@@ -145,7 +145,7 @@ impl Session {
         );
 
         self.send(ChunkRadiusReply {
-            final_radius
+            radius: final_radius
         })?;
 
         if final_radius <= 0 {
