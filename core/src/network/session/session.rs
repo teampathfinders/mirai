@@ -18,7 +18,7 @@ use util::bytes::MutableBuffer;
 
 use crate::network::{DeviceOS, Disconnect, PermissionLevel};
 use crate::network::GameMode;
-use crate::raknet::{BroadcastPacket, RaknetData};
+use crate::raknet::{BroadcastPacket, RakNetSession};
 use crate::crypto::{Encryptor, IdentityData, UserData};
 use crate::item::ItemRegistry;
 use crate::level::LevelManager;
@@ -54,7 +54,6 @@ pub struct PlayerData {
 /// The server does not interact with clients directly, everything is done through these sessions.
 pub struct Session {
     pub item_registry: Arc<ItemRegistry>,
-
     /// Identity data such as XUID and display name.
     pub identity: OnceCell<IdentityData>,
     /// Extra user data, such as device OS and language.
@@ -68,18 +67,14 @@ pub struct Session {
     pub initialized: AtomicBool,
     /// Manages entire world.
     pub level_manager: Arc<LevelManager>,
-    /// Sends packets into the broadcasting channel.
-    pub broadcast: broadcast::Sender<BroadcastPacket>,
-
     /// Indicates whether this session is active.
     pub active: CancellationToken,
-
     /// Current tick of this session, this is increased every [`TICK_INTERVAL`].
     pub current_tick: AtomicU64,
     /// Minecraft-specific data.
     pub player: RwLock<PlayerData>,
     /// Raknet-specific data.
-    pub raknet: RaknetData,
+    pub raknet: RakNetSession,
 }
 
 impl Session {
@@ -111,12 +106,12 @@ impl Session {
                 permission_level: PermissionLevel::Member,
                 skin: None,
             }),
-            raknet: RaknetData {
-                udp_socket: ipv4_socket,
+            raknet: RakNetSession {
+                udp_controller: ipv4_socket,
                 mtu,
                 guid,
                 last_update: RwLock::new(Instant::now()),
-                batch_sequence_number: Default::default(),
+                batch_number: Default::default(),
                 sequence_index: Default::default(),
                 ack_index: Default::default(),
                 compound_id: Default::default(),
@@ -126,7 +121,7 @@ impl Session {
                 send_queue: Default::default(),
                 confirmed_packets: Mutex::new(Vec::new()),
                 compression_enabled: AtomicBool::new(false),
-                address,
+                addr: address,
                 recovery_queue: Default::default(),
             },
             broadcast,

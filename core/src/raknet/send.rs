@@ -18,6 +18,8 @@ use crate::raknet::SendPriority;
 use crate::config::SERVER_CONFIG;
 use crate::network::Session;
 
+use super::RakNetSession;
+
 pub struct PacketConfig {
     pub reliability: Reliability,
     pub priority: SendPriority,
@@ -28,19 +30,26 @@ pub const DEFAULT_SEND_CONFIG: PacketConfig = PacketConfig {
     priority: SendPriority::Medium,
 };
 
-impl Session {
-    /// Sends a game packet with default settings
-    /// (reliable ordered and medium priority)
+impl RakNetSession {
+    /// Sends a Minecraft packet to the session.
     #[inline]
     pub fn send<T: ConnectedPacket + Serialize>(&self, packet: T) -> anyhow::Result<()> {
         let packet = Packet::new(packet);
         let serialized = packet.serialize()?;
 
-        self.send_serialized(serialized, DEFAULT_SEND_CONFIG)
+        self.send_buf(serialized, DEFAULT_SEND_CONFIG)
     }
 
-    /// Sends a game packet with custom reliability and priority
-    pub fn send_serialized<B>(&self, packet: B, config: PacketConfig) -> anyhow::Result<()>
+    /// Sends an already serialised game packet to the session.
+    ///
+    /// # Arguments
+    ///
+    /// * `buffer` - The buffer to send to the client.
+    /// * `config` - The reliability and priority of this packet.
+    ///
+    /// If encryption is enabled, the packet must be sent with a
+    /// [`ReliableOrdered`](Reliability::ReliableOrdered) reliability.
+    pub fn send_buf<B>(&self, buffer: B, config: PacketConfig) -> anyhow::Result<()>
         where
             B: AsRef<[u8]>
     {
@@ -51,7 +60,7 @@ impl Session {
                 (config.compression_algorithm, config.compression_threshold)
             };
 
-            if packet.as_ref().len() > threshold as usize {
+            if buffer.as_ref().len() > threshold as usize {
                 // Compress packet
                 match algorithm {
                     CompressionAlgorithm::Snappy => {
@@ -63,23 +72,23 @@ impl Session {
                             Compression::best(),
                         );
 
-                        writer.write_all(packet.as_ref())?;
+                        writer.write_all(buffer.as_ref())?;
                         out = MutableBuffer::from(writer.finish()?)
                     }
                 }
             } else {
                 // Also reserve capacity for checksum even if encryption is disabled,
                 // preventing allocations.
-                out = MutableBuffer::with_capacity(1 + packet.as_ref().len() + 8);
+                out = MutableBuffer::with_capacity(1 + buffer.as_ref().len() + 8);
                 out.write_u8(CONNECTED_PACKET_ID)?;
-                out.write_all(packet.as_ref())?;
+                out.write_all(buffer.as_ref())?;
             }
         } else {
             // Also reserve capacity for checksum even if encryption is disabled,
             // preventing allocations.
-            out = MutableBuffer::with_capacity(1 + packet.as_ref().len() + 8);
+            out = MutableBuffer::with_capacity(1 + buffer.as_ref().len() + 8);
             out.write_u8(CONNECTED_PACKET_ID)?;
-            out.write_all(packet.as_ref())?;
+            out.write_all(buffer.as_ref())?;
         };
 
         if let Some(encryptor) = self.encryptor.get() {
@@ -107,7 +116,7 @@ impl Session {
         config: PacketConfig,
     ) where B: Into<MutableBuffer> {
         let buffer = buffer.into();
-        self.raknet.send_queue.insert_raw(
+        self.send_queue.insert_raw(
             config.priority,
             Frame::new(config.reliability, buffer),
         );
@@ -117,14 +126,14 @@ impl Session {
     pub async fn flush(&self) -> anyhow::Result<()> {
         let tick = self.current_tick.load(Ordering::SeqCst);
 
-        if let Some(frames) = self.raknet.send_queue.flush(SendPriority::High) {
+        if let Some(frames) = self.send_queue.flush(SendPriority::High) {
             self.send_raw_frames(frames).await?;
         }
 
         if tick % 2 == 0 {
             // Also flush broadcast packets.
             if let Some(frames) =
-                self.raknet.send_queue.flush(SendPriority::Medium)
+                self.send_queue.flush(SendPriority::Medium)
             {
                 self.send_raw_frames(frames).await?;
             }
@@ -132,7 +141,7 @@ impl Session {
 
         if tick % 4 == 0 {
             if let Some(frames) =
-                self.raknet.send_queue.flush(SendPriority::Low)
+                self.send_queue.flush(SendPriority::Low)
             {
                 self.send_raw_frames(frames).await?;
             }
@@ -147,16 +156,16 @@ impl Session {
     }
 
     pub async fn flush_all(&self) -> anyhow::Result<()> {
-        if let Some(frames) = self.raknet.send_queue.flush(SendPriority::High) {
+        if let Some(frames) = self.send_queue.flush(SendPriority::High) {
             self.send_raw_frames(frames).await?;
         }
 
-        if let Some(frames) = self.raknet.send_queue.flush(SendPriority::Medium)
+        if let Some(frames) = self.send_queue.flush(SendPriority::Medium)
         {
             self.send_raw_frames(frames).await?;
         }
 
-        if let Some(frames) = self.raknet.send_queue.flush(SendPriority::Low) {
+        if let Some(frames) = self.send_queue.flush(SendPriority::Low) {
             self.send_raw_frames(frames).await?;
         }
 
@@ -166,7 +175,7 @@ impl Session {
 
     pub async fn flush_acknowledgements(&self) -> anyhow::Result<()> {
         let mut confirmed = {
-            let mut lock = self.raknet.confirmed_packets.lock();
+            let mut lock = self.confirmed_packets.lock();
             if lock.is_empty() {
                 return Ok(());
             }
@@ -199,9 +208,9 @@ impl Session {
         let mut serialized = MutableBuffer::with_capacity(ack.serialized_size());
         ack.serialize(&mut serialized)?;
 
-        self.raknet
-            .udp_socket
-            .send_to(serialized.as_ref(), self.raknet.address)
+        self
+            .udp_controller
+            .send_to(serialized.as_ref(), self.address)
             .await?;
 
         Ok(())

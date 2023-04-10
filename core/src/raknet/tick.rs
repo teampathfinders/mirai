@@ -12,6 +12,8 @@ use crate::network::{
     Session, TextData,
 };
 
+use super::RakNetSession;
+
 /// Tick interval of the internal session tick.
 const INTERNAL_TICK_INTERVAL: Duration = Duration::from_millis(1000 / 20);
 /// Inactivity timeout.
@@ -22,7 +24,7 @@ const INTERNAL_TICK_INTERVAL: Duration = Duration::from_millis(1000 / 20);
 /// Hence, they have to be disconnected manually after the timeout passes.
 const SESSION_TIMEOUT: Duration = Duration::from_secs(5);
 
-impl Session {
+impl RakNetSession {
     pub fn start_tick_job(self: Arc<Self>) {
         tokio::spawn(async move {
             let mut interval = tokio::time::interval(INTERNAL_TICK_INTERVAL);

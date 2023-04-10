@@ -10,7 +10,7 @@ use std::time::Duration;
 
 use parking_lot::RwLock;
 use rand::Rng;
-use tokio::net::UdpSocket;
+use tokio::net::{UdpSocket, ToSocketAddrs};
 use tokio::sync::OnceCell;
 use tokio::sync::oneshot::Receiver;
 use tokio::task::JoinHandle;
@@ -47,6 +47,7 @@ const RECV_BUF_SIZE: usize = 4096;
 const METADATA_REFRESH_INTERVAL: Duration = Duration::from_secs(2);
 
 /// Controls the UDP socket, managing incoming and outgoing traffic.
+#[derive(Debug)]
 pub struct UdpController {
     /// UDP socket used for IPv4 communications.
     ipv4_socket: UdpSocket,
@@ -99,6 +100,18 @@ impl UdpController {
         Ok(controller)
     }
 
+    /// Sends the given buffer to the specified IP addresses.
+    pub async fn send_to<B, A>(&self, buf: B, addrs: A) -> anyhow::Result<()>
+    where
+        B: AsRef<[u8]>,
+        A: ToSocketAddrs
+    {
+        let buf = buf.as_ref();
+
+        self.ipv4_socket.send_to(buf, addrs).await?;
+        Ok(())
+    }
+
     /// Waits for the controller tasks to shut down.
     ///
     /// # Errors
@@ -131,7 +144,7 @@ impl UdpController {
 
         loop {
             let (n, addr) = tokio::select! {
-                res = socket.recv_from(&mut recv_buf) => {
+                res = self.ipv4_socket.recv_from(&mut recv_buf) => {
                     match result {
                         Ok(s) => s,
                         Err(e) => {

@@ -10,8 +10,8 @@ use tokio_util::sync::CancellationToken;
 use util::{Deserialize, Result, Serialize};
 use util::bytes::MutableBuffer;
 
-use crate::network::{CacheStatus, ChunkRadiusReply, ChunkRadiusRequest, Disconnect, DISCONNECTED_TIMEOUT, NETWORK_VERSION, NetworkSettings, PlayStatus, RequestNetworkSettings, Status};
-use crate::raknet::{BroadcastPacket, RawPacket};
+use crate::network::{CacheStatus, ChunkRadiusReply, ChunkRadiusRequest, Disconnect, DISCONNECTED_TIMEOUT, NETWORK_VERSION, NetworkSettings, Packet, PlayStatus, RequestNetworkSettings, Status};
+use crate::raknet::{BroadcastPacket, RakNetSession, RawPacket, PacketConfig, Reliability, SendPriority, RakNetSessionBuilder};
 use crate::{config::SERVER_CONFIG, network::ConnectedPacket};
 use crate::instance::UdpController;
 use crate::item::ItemRegistry;
@@ -25,6 +25,8 @@ const GARBAGE_COLLECT_INTERVAL: Duration = Duration::from_secs(1);
 
 #[derive(Default)]
 pub struct SessionBuilder {
+    addr: Option<SocketAddr>,
+    udp: Option<Arc<UdpController>>,
     sender: Option<mpsc::Sender<RawPacket>>,
     receiver: Option<mpsc::Receiver<RawPacket>>,
     broadcast: Option<broadcast::Sender<BroadcastPacket>>,
@@ -33,17 +35,32 @@ pub struct SessionBuilder {
 
 impl SessionBuilder {
     /// Creates a new `SessionBuilder`.
+    #[inline]
     pub fn new() -> Self {
         Self::default()
     }
 
     /// Configures the Raknet GUID of the session.
+    #[inline]
     pub fn guid(&mut self, guid: u64) -> &mut Self {
         self.guid = guid;
         self
     }
 
+    #[inline]
+    pub fn udp(&mut self, controller: Arc<UdpController>) -> &mut Self {
+        self.udp = Some(controller);
+        self
+    }
+
+    #[inline]
+    pub fn addr(&mut self, addr: SocketAddr) -> &mut Self {
+        self.addr = Some(addr);
+        self
+    }
+
     /// Configures the channel used for packet sending/receiving.
+    #[inline]
     pub fn channel(
         &mut self,
         (sender, receiver): (mpsc::Sender<RawPacket>, mpsc::Receiver<RawPacket>)
@@ -54,6 +71,7 @@ impl SessionBuilder {
     }
 
     /// Configures the channel used for packet broadcasting.
+    #[inline]
     pub fn broadcast(&mut self, broadcast: broadcast::Sender<BroadcastPacket>) -> &mut Self {
         self.broadcast = Some(broadcast);
         self
@@ -64,6 +82,7 @@ impl SessionBuilder {
     /// # Panics
     ///
     /// This method panics if several required options were not set.
+    #[inline]
     pub fn build(mut self) -> SessionRef<IncompleteSession> {
         let sender = self.sender.take().unwrap();
         let session = IncompleteSession::from(self);
@@ -72,6 +91,17 @@ impl SessionBuilder {
             sender, session
         }
     }
+}
+
+/// Methods implement by `session-like` types.
+pub trait SessionLike {
+    fn send<T>(&self, packet: T) -> anyhow::Result<()>
+    where
+        T: ConnectedPacket + Serialize;
+
+    fn send_buf<A>(&self, buf: A) -> anyhow::Result<()>
+    where
+        A: AsRef<[u8]>;
 }
 
 pub struct Session {
@@ -89,13 +119,12 @@ impl From<SessionBuilder> for Session {
 }
 
 pub struct IncompleteSession {
-    broadcast: broadcast::Sender<BroadcastPacket>,
-    receiver: mpsc::Receiver<RawPacket>,
-    
+    expected: u32,
     cache_support: bool,
     render_distance: i32,
     guid: u64,
-    compression: bool
+    compression: bool,
+    raknet: RakNetSession
 }
 
 impl IncompleteSession {
@@ -159,15 +188,42 @@ impl IncompleteSession {
     }
 }
 
+impl SessionLike for IncompleteSession {
+    fn send<T>(&self, packet: T) -> anyhow::Result<()>
+    where
+        T: ConnectedPacket + Serialize
+    {
+        self.raknet.send(packet)
+    }
+
+    fn send_buf<A>(&self, buf: A) -> anyhow::Result<()>
+    where
+        A: AsRef<[u8]>
+    {
+        self.raknet.send_buf(buf, PacketConfig {
+            reliability: Reliability::ReliableOrdered,
+            priority: SendPriority::Medium
+        })
+    }
+}
+
 impl From<SessionBuilder> for IncompleteSession {
     fn from(builder: SessionBuilder) -> Self {
+        let raknet = RakNetSessionBuilder::new()
+            .udp(builder.udp.unwrap())
+            .addr(builder.addr.unwrap())
+            .broadcast(builder.broadcast.unwrap())
+            .receiver(builder.receiver.unwrap())
+            .guid(builder.guid)
+            .build();
+
         Self {
-            broadcast: builder.broadcast.unwrap(),
-            receiver: builder.receiver.unwrap(),
+            expected: 0,
             cache_support: false,
             render_distance: 0,
             guid: builder.guid,
             compression: false,
+            raknet
         }
     }
 }
