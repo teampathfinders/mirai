@@ -46,15 +46,29 @@ const RECV_BUF_SIZE: usize = 4096;
 /// This data is displayed in the server menu.
 const METADATA_REFRESH_INTERVAL: Duration = Duration::from_secs(2);
 
+/// Controls the UDP socket, managing incoming and outgoing traffic.
 pub struct UdpController {
+    /// UDP socket used for IPv4 communications.
     ipv4_socket: UdpSocket,
+    /// Token that can be cancelled by the instance to
+    /// shut down the controller.
     token: CancellationToken,
-
+    /// Handle to the receiving task.
+    ///
+    /// `tokio::join` requires owned access to the handles,
+    /// therefore these are wrapped in an RwLock and option.
     recv_handle: RwLock<Option<JoinHandle<()>>>,
+    /// Handle to the sending task.
+    ///
+    /// `tokio::join` requires owned access to the handles,
+    /// therefore these are wrapped in an RwLock and option.
     send_handle: RwLock<Option<JoinHandle<()>>>
 }
 
 impl UdpController {
+    /// Creates a new UDP controller.
+    ///
+    /// The two async tasks are automatically started, the socket is also created.
     pub async fn new(ipv4_port: u16, token: CancellationToken) -> anyhow::Result<Arc<Self>> {
         let ipv4_address = SocketAddr::new(
             IpAddr::V4(Ipv4Addr::new(0, 0, 0, 0)),
@@ -108,6 +122,9 @@ impl UdpController {
         }
     }
 
+    /// Starts the receiving task of this controller.
+    ///
+    /// The task runs until the `token` is cancelled.
     async fn receive_task(self: Arc<Self>) {
         // Heap allocated to prevent storing large values on the stack.
         let mut recv_buf = vec![0u8; RECV_BUF_SIZE];
@@ -160,10 +177,17 @@ impl UdpController {
         }
     }
 
+    /// Starts the sending task of the controller.
+    ///
+    /// The task runs until the `token` is cancelled.
     async fn send_task(self: Arc<Self>) {
         todo!();
     }
 
+    /// Processes an [`UnconnectedPing`] packet.
+    ///
+    /// This is an unconnected packet, which is handled by the controller directly instead
+    /// of going through sessions.
     #[inline]
     fn process_unconnected_ping(self: &Arc<Self>, packet: &mut RawPacket) -> anyhow::Result<()> {
         let ping = UnconnectedPing::deserialize(packet.buf.as_ref())?;
@@ -174,6 +198,10 @@ impl UdpController {
         pong.serialize(&mut packet.buf)
     }
 
+    /// Processes an [`OpenConnectionRequest1`] packet.
+    ///
+    /// This is an unconnected packet, which is handled by the controller directly instead
+    /// of going through sessions.
     #[inline]
     fn process_open_connection_request1(self: &Arc<Self>, packet: &mut RawPacket) -> anyhow::Result<()> {
         let request = OpenConnectionRequest1::deserialize(packet.buf.as_ref())?;
@@ -196,6 +224,10 @@ impl UdpController {
         }
     }
 
+    /// Processes an [`OpenConnectionRequest2`] packet.
+    ///
+    /// This is an unconnected packet, which is handled by the controller directly instead
+    /// of going through sessions.
     #[inline]
     fn process_open_connection_request2(self: &Arc<Self>, packet: &mut RawPacket) -> anyhow::Result<()> {
         let request = OpenConnectionRequest2::deserialize(packet.buf.as_ref())?;
@@ -231,6 +263,7 @@ pub struct ServerInstance {
 }
 
 impl ServerInstance {
+    /// Creates a new server instance running on the specified port.
     pub async fn new(ipv4_port: u16) -> anyhow::Result<Self> {
         let token = CancellationToken::new();
         let udp_controller = UdpController::new(ipv4_port, token.clone()).await?;
