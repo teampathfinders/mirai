@@ -1,6 +1,7 @@
 //! Contains the server instance.
 
 use std::iter::Once;
+use std::marker::PhantomData;
 use anyhow::Context;
 use ext::{Plugin, PluginRuntime};
 use level::Dimension;
@@ -49,6 +50,12 @@ const METADATA_REFRESH_INTERVAL: Duration = Duration::from_secs(2);
 /// Controls the UDP socket, managing incoming and outgoing traffic.
 #[derive(Debug)]
 pub struct UdpController {
+    metadata: Arc<RwLock<String>>,
+    session_map: Arc<SessionMap>,
+    /// Unique GUID of the server.
+    /// This is randomly generated on startup and sent together with every RakNet packet.
+    /// This doesn't really seem to have a purpose.
+    server_guid: u64,
     /// UDP socket used for IPv4 communications.
     ipv4_socket: UdpSocket,
     /// Token that can be cancelled by the instance to
@@ -70,7 +77,12 @@ impl UdpController {
     /// Creates a new UDP controller.
     ///
     /// The two async tasks are automatically started, the socket is also created.
-    pub async fn new(ipv4_port: u16, token: CancellationToken) -> anyhow::Result<Arc<Self>> {
+    pub async fn new(
+        server_guid: u64,
+        metadata: Arc<RwLock<String>>,
+        session_map: Arc<SessionMap>,
+        ipv4_port: u16, token: CancellationToken
+    ) -> anyhow::Result<Arc<Self>> {
         let ipv4_address = SocketAddr::new(
             IpAddr::V4(Ipv4Addr::new(0, 0, 0, 0)),
             ipv4_port
@@ -78,6 +90,8 @@ impl UdpController {
 
         let ipv4_socket = UdpSocket::bind(ipv4_address).await?;
         let controller = Arc::new(Self {
+            metadata, session_map,
+            server_guid,
             ipv4_socket, token,
             recv_handle: RwLock::new(None),
             send_handle: RwLock::new(None)
@@ -142,10 +156,11 @@ impl UdpController {
         // Heap allocated to prevent storing large values on the stack.
         let mut recv_buf = vec![0u8; RECV_BUF_SIZE];
 
+        let self_ref = &self;
         loop {
             let (n, addr) = tokio::select! {
                 res = self.ipv4_socket.recv_from(&mut recv_buf) => {
-                    match result {
+                    match res {
                         Ok(s) => s,
                         Err(e) => {
                             tracing::error!("Failed to receive packet on socket: {e:?}");
@@ -167,15 +182,16 @@ impl UdpController {
             };
 
             if raw_packet.is_unconnected() {
+                let clone = Arc::clone(self_ref);
                 tokio::spawn(async move {
                     let id = raw_packet.id().unwrap();
                     let result = match id {
                         UnconnectedPing::ID =>
-                            self.process_unconnected_ping(&mut raw_packet),
+                            clone.process_unconnected_ping(&mut raw_packet),
                         OpenConnectionRequest1::ID =>
-                            self.process_open_connection_request1(&mut raw_packet),
+                            clone.process_open_connection_request1(&mut raw_packet),
                         OpenConnectionRequest2::ID =>
-                            self.process_open_connection_request2(&mut raw_packet),
+                            clone.process_open_connection_request2(&mut raw_packet),
                         _ => {
                             tracing::error!("Invalid unconnected packet ID: {id:x}");
                             return
@@ -204,7 +220,11 @@ impl UdpController {
     #[inline]
     fn process_unconnected_ping(self: &Arc<Self>, packet: &mut RawPacket) -> anyhow::Result<()> {
         let ping = UnconnectedPing::deserialize(packet.buf.as_ref())?;
-        let pong = UnconnectedPong { time: ping.time, server_guid, metadata };
+        let pong = UnconnectedPong {
+            time: ping.time,
+            server_guid: self.server_guid,
+            metadata: &self.metadata.read()
+        };
 
         packet.buf.clear();
         packet.buf.reserve_to(pong.serialized_size());
@@ -222,14 +242,14 @@ impl UdpController {
         packet.buf.clear();
         if request.protocol_version != RAKNET_VERSION {
             let reply = IncompatibleProtocol {
-                server_guid
+                server_guid: self.server_guid
             };
 
             packet.buf.reserve_to(reply.serialized_size());
             reply.serialize(&mut packet.buf)
         } else {
             let reply = OpenConnectionReply1 {
-                mtu: request.mtu, server_guid
+                mtu: request.mtu, server_guid: self.server_guid
             };
 
             packet.buf.reserve_to(reply.serialized_size());
@@ -245,56 +265,84 @@ impl UdpController {
     fn process_open_connection_request2(self: &Arc<Self>, packet: &mut RawPacket) -> anyhow::Result<()> {
         let request = OpenConnectionRequest2::deserialize(packet.buf.as_ref())?;
         let reply = OpenConnectionReply2 {
-            server_guid, mtu: request.mtu, client_address: packet.addr
+            server_guid: self.server_guid,
+            mtu: request.mtu,
+            client_address: packet.addr
         };
 
         packet.buf.clear();
         packet.buf.reserve_to(reply.serialized_size());
         reply.serialize(&mut packet.buf)?;
 
-        session_list.add_session(
-            Arc::clone(self), packet.addr, request.mtu, request.client_guid
-        );
+        self.session_map.insert(Arc::clone(self), packet.addr, request.mtu, request.client_guid);
 
         Ok(())
     }
 }
 
 pub struct ServerInstance {
+    metadata: Arc<RwLock<String>>,
+
     /// Controls the UDP socket.
     ///
     /// This is wrapped in an `Arc` because the controller contains async tasks
     /// that require access to the controller.
     udp_controller: Arc<UdpController>,
-    sessions: SessionMap,
+    sessions: Arc<SessionMap>,
     plugin_runtime: PluginRuntime,
 
-    token: CancellationToken,
-
-    // World data
-    item_registry: Arc<ItemRegistry>,
+    token: CancellationToken
 }
 
 impl ServerInstance {
     /// Creates a new server instance running on the specified port.
     pub async fn new(ipv4_port: u16) -> anyhow::Result<Self> {
+        let server_guid = rand::thread_rng().gen();
+
         let token = CancellationToken::new();
-        let udp_controller = UdpController::new(ipv4_port, token.clone()).await?;
-        let sessions = SessionMap::new(token.clone());
+        let sessions = Arc::new(SessionMap::new(token.clone()));
+        let metadata = Arc::new(RwLock::new(String::new()));
+
+        let udp_controller = UdpController::new(
+            server_guid,
+            metadata.clone(), sessions.clone(),
+            ipv4_port, token.clone()
+        ).await?;
 
         // let item_registry = Arc::new(ItemRegistry::new()?);
-
 
         let plugin_runtime = PluginRuntime::new()
             .context("Failed to start plugin runtime")?;
 
+        {
+            let sessions = sessions.clone();
+            let metadata = metadata.clone();
+            let token = token.clone();
+
+            tokio::spawn(async move {
+                let mut interval = tokio::time::interval(METADATA_REFRESH_INTERVAL);
+                loop {
+                    let count = sessions.count();
+                    let max_count = sessions.max_count();
+                    let description = "description"; // TODO: Call plugin method or use default description.
+
+                    let new = Self::regenerate_metadata(description, server_guid, count, max_count);
+                    *metadata.write() = new;
+
+                    tokio::select! {
+                        _ = token.cancelled() => break,
+                        _ = interval.tick() => continue
+                    }
+                }
+            });
+        }
+
         Ok(Self {
+            metadata,
             udp_controller,
             sessions,
             plugin_runtime,
             token,
-
-            item_registry
         })
     }
 
@@ -307,299 +355,11 @@ impl ServerInstance {
 
         self.udp_controller.shutdown().await
     }
-}
-
-pub struct InstanceManager {
-    item_registry: ItemRegistry,
-    /// IPv4 UDP socket
-    udp4_socket: Arc<UdpSocket>,
-    /// Token indicating whether the server is still running.
-    /// All services listen to this token to determine whether they should shut down.
-    token: CancellationToken,
-    /// Service that manages all player sessions.
-    session_manager: Arc<SessionMap>,
-    /// Manages the level.
-    level_manager: Arc<LevelManager>,
-    /// Channel that the LevelManager sends a message to when it has fully shutdown.
-    /// This is to make sure that the world has been saved and safely shut down before shutting down the server.
-    level_notifier: Receiver<()>,
-    /// Virtual machine that runs and compiles the plugins.
-    plugins: PluginRuntime,
-}
-
-impl InstanceManager {
-    /// Creates a new server.
-    pub async fn run() -> anyhow::Result<()> {
-        let extensions = PluginRuntime::new().context("Failed to start extension runtime")?;
-
-        let (ipv4_port, _ipv6_port) = {
-            let lock = SERVER_CONFIG.read();
-            (lock.ipv4_port, lock.ipv6_port)
-        };
-
-        let token = CancellationToken::new();
-        let udp_socket = Arc::new(UdpSocket::bind(SocketAddrV4::new(IPV4_LOCAL_ADDR, ipv4_port)).await?);
-
-        let item_registry = Arc::new(ItemRegistry::new()?);
-        let session_manager = Arc::new(SessionMap::new(item_registry));
-
-        let level = LevelManager::new(session_manager.clone(), token.clone())?;
-        level.add_command(Command {
-            name: "gamerule".to_owned(),
-            description: "Sets or queries a game rule value.".to_owned(),
-            permission_level: CommandPermissionLevel::Normal,
-            aliases: vec![],
-            overloads: vec![
-                // Boolean game rules.
-                CommandOverload {
-                    parameters: vec![
-                        CommandParameter {
-                            data_type: CommandDataType::String,
-                            name: "rule".to_owned(),
-                            suffix: "".to_owned(),
-                            command_enum: Some(CommandEnum {
-                                dynamic: false,
-                                enum_id: "boolean gamerule".to_owned(),
-                                options: BOOLEAN_GAME_RULES.iter().map(|g| g.to_string()).collect::<Vec<_>>(),
-                            }),
-                            optional: false,
-                            options: 0,
-                        },
-                        CommandParameter {
-                            data_type: CommandDataType::String,
-                            name: "value".to_owned(),
-                            suffix: "".to_owned(),
-                            command_enum: Some(CommandEnum {
-                                dynamic: false,
-                                enum_id: "boolean".to_owned(),
-                                options: vec!["true".to_owned(), "false".to_owned()],
-                            }),
-                            optional: true,
-                            options: 0,
-                        },
-                    ],
-                },
-                // Integral game rules.
-                CommandOverload {
-                    parameters: vec![
-                        CommandParameter {
-                            data_type: CommandDataType::String,
-                            name: "rule".to_owned(),
-                            suffix: "".to_owned(),
-                            command_enum: Some(CommandEnum {
-                                dynamic: false,
-                                enum_id: "integral gamerule".to_owned(),
-                                options: INTEGER_GAME_RULES.iter().map(|g| g.to_string()).collect::<Vec<_>>(),
-                            }),
-                            optional: false,
-                            options: 0,
-                        },
-                        CommandParameter {
-                            data_type: CommandDataType::Int,
-                            name: "value".to_owned(),
-                            suffix: "this is a suffix".to_owned(),
-                            command_enum: None,
-                            optional: true,
-                            options: 0,
-                        },
-                    ],
-                },
-            ],
-        });
-        level.add_command(Command {
-            name: "daylock".to_owned(),
-            description: "Locks and unlocks the day-night cycle.".to_owned(),
-            aliases: vec![],
-            permission_level: CommandPermissionLevel::Normal,
-            overloads: vec![CommandOverload {
-                parameters: vec![CommandParameter {
-                    data_type: CommandDataType::String,
-                    name: "lock".to_owned(),
-                    suffix: "".to_owned(),
-                    command_enum: Some(CommandEnum {
-                        dynamic: false,
-                        enum_id: "boolean".to_owned(),
-                        options: vec!["true".to_owned(), "false".to_owned()],
-                    }),
-                    optional: true,
-                    options: 0,
-                }],
-            }],
-        });
-
-        session_manager.set_level_manager(Arc::downgrade(&level))?;
-
-        // UDP receiver job.
-        let receiver_task = {
-            let udp_socket = udp_socket.clone();
-            let session_manager = session_manager.clone();
-            let token = token.clone();
-
-            tokio::spawn(async move { Self::udp_recv_job(token, udp_socket, session_manager).await })
-        };
-
-        tracing::info!("Ready!");
-
-        // Wait for either Ctrl-C or token cancel...
-        tokio::select! {
-            _ = token.cancelled() => (),
-            _ = tokio::signal::ctrl_c() => ()
-        }
-
-        drop(extensions);
-
-        // ...then shut down all services.
-        if let Err(e) = session_manager.kick_all("Server closed").await {
-            tracing::error!("Failed to kick remaining sessions: {e}");
-        }
-
-        token.cancel();
-
-        drop(session_manager);
-        // drop(level_manager);
-
-        let _ = tokio::join!(receiver_task /*, level_notifier*/);
-
-        Ok(())
-    }
-
-    /// Generates a response to the [`OfflinePing`] packet with [`OfflinePong`].
-    #[inline]
-    fn process_unconnected_ping(packet: RawPacket, server_guid: u64, metadata: &str) -> anyhow::Result<RawPacket> {
-        let ping = UnconnectedPing::deserialize(packet.buf.snapshot())?;
-        let pong = UnconnectedPong { time: ping.time, server_guid, metadata };
-
-        let mut serialized = MutableBuffer::with_capacity(pong.serialized_size());
-        pong.serialize(&mut serialized)?;
-
-        let packet = RawPacket { buf: serialized, addr: packet.addr };
-
-        Ok(packet)
-    }
-
-    /// Generates a response to the [`OpenConnectionRequest1`] packet with [`OpenConnectionReply1`].
-    #[inline]
-    fn process_open_connection_request1(mut packet: RawPacket, server_guid: u64) -> anyhow::Result<RawPacket> {
-        let request = OpenConnectionRequest1::deserialize(packet.buf.snapshot())?;
-
-        packet.buf.clear();
-        if request.protocol_version != RAKNET_VERSION {
-            let reply = IncompatibleProtocol { server_guid };
-
-            packet.buf.clear();
-            packet.buf.reserve_to(reply.serialized_size());
-            reply.serialize(&mut packet.buf)?;
-        } else {
-            let reply = OpenConnectionReply1 { mtu: request.mtu, server_guid };
-
-            packet.buf.clear();
-            packet.buf.reserve_to(reply.serialized_size());
-            reply.serialize(&mut packet.buf)?;
-        }
-
-        Ok(packet)
-    }
-
-    /// Responds to the [`OpenConnectionRequest2`] packet with [`OpenConnectionReply2`].
-    /// This is also when a session is created for the client.
-    /// From this point, all packets are encoded in a [`Frame`](crate::Frame).
-    #[inline]
-    fn process_open_connection_request2(
-        mut packet: RawPacket,
-        udp_socket: Arc<UdpSocket>,
-        sess_manager: Arc<SessionMap>,
-        server_guid: u64,
-    ) -> anyhow::Result<RawPacket> {
-        let request = OpenConnectionRequest2::deserialize(packet.buf.snapshot())?;
-        let reply = OpenConnectionReply2 {
-            server_guid,
-            mtu: request.mtu,
-            client_address: packet.addr,
-        };
-
-        packet.buf.clear();
-        packet.buf.reserve_to(reply.serialized_size());
-        reply.serialize(&mut packet.buf)?;
-
-        sess_manager.insert(udp_socket, packet.addr, request.mtu, request.client_guid);
-
-        Ok(packet)
-    }
-
-    /// Receives packets from IPv4 clients and adds them to the receive queue
-    async fn udp_recv_job(token: CancellationToken, udp_socket: Arc<UdpSocket>, sess_manager: Arc<SessionMap>) {
-        let server_guid = rand::thread_rng().gen();
-        let metadata = Self::refresh_metadata("description", server_guid, sess_manager.session_count(), sess_manager.max_session_count());
-
-        // This is heap-allocated because stack data is stored inline in tasks.
-        // If it were to be stack-allocated, Tokio would have to copy the entire buffer each time
-        // the task is moved across threads.
-        let mut recv_buf = vec![0u8; RECV_BUF_SIZE];
-
-        loop {
-            let (n, address) = tokio::select! {
-                r = udp_socket.recv_from(&mut recv_buf) => {
-                    match r {
-                        Ok(r) => r,
-                        Err(e) => {
-                            tracing::error!("UdpSocket recv_from failed: {e}");
-                            continue
-                        }
-                    }
-                },
-                _ = token.cancelled() => break
-            };
-
-            let packet = RawPacket {
-                buf: MutableBuffer::from(recv_buf[..n].to_vec()),
-                addr: address,
-            };
-
-            if packet.is_unconnected() {
-                let udp_socket = udp_socket.clone();
-                let session_manager = sess_manager.clone();
-                let metadata = metadata.clone();
-
-                tokio::spawn(async move {
-                    let id = if let Some(id) = packet.id() {
-                        id
-                    } else {
-                        tracing::error!("Unconnected packet was empty");
-                        return;
-                    };
-
-                    let pk_result = match id {
-                        UnconnectedPing::ID => Self::process_unconnected_ping(packet, server_guid, &metadata),
-                        OpenConnectionRequest1::ID => Self::process_open_connection_request1(packet, server_guid),
-                        OpenConnectionRequest2::ID => {
-                            Self::process_open_connection_request2(packet, udp_socket.clone(), session_manager, server_guid)
-                        }
-                        _ => {
-                            tracing::error!("Invalid unconnected packet ID: {id:x}");
-                            return;
-                        }
-                    };
-
-                    match pk_result {
-                        Ok(packet) => match udp_socket.send_to(packet.buf.as_ref(), packet.addr).await {
-                            Ok(_) => (),
-                            Err(e) => {
-                                tracing::error!("Unable to send unconnected packet to client: {e}");
-                            }
-                        },
-                        Err(e) => {
-                            tracing::error!("{e}");
-                        }
-                    }
-                });
-            } else {
-                sess_manager.forward_packet(packet);
-            }
-        }
-    }
 
     /// Generates a new metadata string using the given description and new player count.
-    fn refresh_metadata(description: &str, server_guid: u64, session_count: usize, max_session_count: usize) -> String {
+    fn regenerate_metadata(
+        description: &str, server_guid: u64, session_count: usize, max_session_count: usize
+    ) -> String {
         format!(
             "MCPE;{};{};{};{};{};{};{};Survival;1;{};{};",
             description,

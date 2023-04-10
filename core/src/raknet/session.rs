@@ -1,7 +1,7 @@
 use std::mem::MaybeUninit;
 use std::net::SocketAddr;
 use std::sync::Arc;
-use std::sync::atomic::{AtomicBool, AtomicU32, AtomicU16};
+use std::sync::atomic::{AtomicBool, AtomicU32, AtomicU16, AtomicU64};
 use std::time::Instant;
 use parking_lot::{Mutex, RwLock};
 use tokio::net::UdpSocket;
@@ -112,6 +112,7 @@ pub struct RakNetSession {
     /// Whether compression has been configured for this session.
     /// This is set to true after network settings have been sent to the client.
     pub compression_enabled: AtomicBool,
+    pub current_tick: AtomicU64
 }
 
 impl From<RakNetSessionBuilder> for RakNetSession {
@@ -131,6 +132,7 @@ impl From<RakNetSessionBuilder> for RakNetSession {
         };
 
         Self {
+            current_tick: AtomicU64::new(0),
             broadcast: builder.broadcast.unwrap(),
             receiver: builder.receiver.unwrap(),
             udp_controller: builder.udp_controller.unwrap(),
