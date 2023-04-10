@@ -13,7 +13,13 @@ use crate::network::Header;
 use crate::raknet::{Frame, OrderChannel};
 
 #[test]
-fn read_write_header() {
+fn biome_nbt() {
+    let biomes: nbt::Value = nbt::from_var_bytes(include_bytes!("../included/biomes.nbt").as_ref()).unwrap().0;
+    dbg!(biomes);
+}
+
+#[test]
+fn header() {
     let header = Header {
         id: 129,
         sender_subclient: 3,
