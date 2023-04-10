@@ -17,21 +17,23 @@ pub struct CreativeItemEntry {
 }
 
 pub struct ItemRegistry {
-
+    creative: Vec<CreativeItemEntry>
 }
 
 impl ItemRegistry {
     /// Loads the creative items from `creative_items.nbt`.
     pub fn new() -> anyhow::Result<Self> {
-        let nbt_bytes: &[u8] = include_bytes!("../../included/creative_items.nbt");
-        let creative_nbt: Vec<CreativeItemEntry> = nbt::from_var_bytes(nbt_bytes)?.0;
+        let nbt_data: &[u8] = include_bytes!("../../included/creative_items.nbt");
+        let creative: Vec<CreativeItemEntry> = nbt::from_var_bytes(nbt_data)?.0;
 
-        dbg!(creative_nbt);
-
-        Ok(Self {})
+        Ok(Self {
+            creative
+        })
     }
 
-    pub fn get_creative_items(&self) -> &[CreativeItem] {
-        todo!();
+    /// Returns a list of items available in the creative menu.
+    #[inline]
+    pub fn get_creative_items(&self) -> &[CreativeItemEntry] {
+        &self.creative
     }
 }

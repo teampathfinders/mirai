@@ -20,6 +20,7 @@ use crate::network::{DeviceOS, Disconnect, PermissionLevel};
 use crate::network::GameMode;
 use crate::raknet::{BroadcastPacket, RaknetData};
 use crate::crypto::{Encryptor, IdentityData, UserData};
+use crate::item::ItemRegistry;
 use crate::level::LevelManager;
 use crate::network::Skin;
 
@@ -52,6 +53,8 @@ pub struct PlayerData {
 /// Anything that has to do with specific clients must be communicated with their associated sessions.
 /// The server does not interact with clients directly, everything is done through these sessions.
 pub struct Session {
+    pub item_registry: Arc<ItemRegistry>,
+
     /// Identity data such as XUID and display name.
     pub identity: OnceCell<IdentityData>,
     /// Extra user data, such as device OS and language.
@@ -84,6 +87,7 @@ impl Session {
     pub fn new(
         broadcast: broadcast::Sender<BroadcastPacket>,
         receiver: mpsc::Receiver<MutableBuffer>,
+        item_registry: Arc<ItemRegistry>,
         level_manager: Arc<LevelManager>,
         ipv4_socket: Arc<UdpSocket>,
         address: SocketAddr,
@@ -91,6 +95,7 @@ impl Session {
         guid: u64,
     ) -> Arc<Self> {
         let session = Arc::new(Self {
+            item_registry,
             identity: OnceCell::new(),
             user_data: OnceCell::new(),
             encryptor: OnceCell::new(),

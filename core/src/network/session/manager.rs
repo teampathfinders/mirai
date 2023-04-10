@@ -14,6 +14,7 @@ use crate::network::{
 };
 use crate::raknet::{BroadcastPacket, RawPacket};
 use crate::{config::SERVER_CONFIG, network::ConnectedPacket};
+use crate::item::ItemRegistry;
 use crate::level::LevelManager;
 use crate::network::Session;
 
@@ -22,7 +23,7 @@ const FORWARD_TIMEOUT: Duration = Duration::from_millis(20);
 const GARBAGE_COLLECT_INTERVAL: Duration = Duration::from_secs(1);
 
 /// Keeps track of all sessions on the server.
-pub struct SessionManager {
+pub struct SessionList {
     /// Map of all tracked sessions, listed by IP address.
     list: Arc<DashMap<SocketAddr, (mpsc::Sender<MutableBuffer>, Arc<Session>)>>,
     /// The level manager.
@@ -31,9 +32,9 @@ pub struct SessionManager {
     broadcast: broadcast::Sender<BroadcastPacket>,
 }
 
-impl SessionManager {
+impl SessionList {
     /// Creates a new session tracker.
-    pub fn new() -> Self {
+    pub fn new(item_registry: Arc<ItemRegistry>) -> Self {
         let list = Arc::new(DashMap::new());
         {
             let list = list.clone();
@@ -45,6 +46,7 @@ impl SessionManager {
         let (broadcast, _) = broadcast::channel(BROADCAST_CHANNEL_CAPACITY);
         Self {
             list,
+            item_registry,
             level_manager: OnceCell::new(),
             broadcast,
         }
@@ -66,6 +68,7 @@ impl SessionManager {
         let session = Session::new(
             self.broadcast.clone(),
             receiver,
+            self.item_registry.clone(),
             level_manager,
             ipv4_socket,
             address,
@@ -188,7 +191,7 @@ impl SessionManager {
     }
 }
 
-impl Default for SessionManager {
+impl Default for SessionList {
     fn default() -> Self {
         Self::new()
     }

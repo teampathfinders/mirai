@@ -35,6 +35,7 @@ impl Session {
         Ok(())
     }
 
+    /// Processes an error returned by a client.
     pub fn process_violation_warning(&self, packet: MutableBuffer) -> anyhow::Result<()> {
         let request = ViolationWarning::deserialize(packet.snapshot())?;
         tracing::error!("Received violation warning: {request:?}");
@@ -220,20 +221,11 @@ impl Session {
             },
             time: 0,
             enchantment_seed: 0,
-            block_properties: &[BlockEntry {
-                name: "minecraft:bedrock".to_owned(),
-                properties: HashMap::from([("infiniburn_bit".to_owned(), nbt::Value::Byte(0))]),
-            }],
-            item_properties: &[
-               ItemEntry {
-                   name: "minecraft:bedrock".to_owned(),
-                   runtime_id: 0,
-                   component_based: false
-               }
-            ],
+            block_properties: &[],
+            item_properties: &[],
             property_data: PropertyData {},
             server_authoritative_inventory: false,
-            game_version: "1.19.60",
+            game_version: CLIENT_VERSION_STRING,
             // property_data: nbt::Value::Compound(HashMap::new()),
             server_block_state_checksum: 0,
             world_template_id: 0,
@@ -241,9 +233,8 @@ impl Session {
         };
         self.send(start_game)?;
 
-        let creative_content = CreativeContent { items: &[
+        let creative_content = CreativeContent { items: };
 
-        ]};
         self.send(creative_content)?;
 
         let biome_definition_list = BiomeDefinitionList;

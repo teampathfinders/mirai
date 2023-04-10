@@ -26,7 +26,7 @@ impl RawPacket {
     ///
     /// So this should generally only be used for packets that are not encapsulated.
     #[inline]
-    pub fn packet_id(&self) -> Option<u8> {
+    pub fn id(&self) -> Option<u8> {
         self.buf.first().copied()
     }
 }
