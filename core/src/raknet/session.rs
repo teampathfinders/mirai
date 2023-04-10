@@ -31,7 +31,7 @@ pub enum RakNetMessage {
 #[derive(Default)]
 pub struct RakNetSessionBuilder {
     pub broadcast: Option<broadcast::Sender<BroadcastPacket>>,
-    pub packet_receiver: Option<mpsc::Receiver<RawPacket>>,
+    pub packet_receiver: Option<mpsc::Receiver<MutableBuffer>>,
     pub receiver: Option<mpsc::Receiver<RakNetMessage>>,
     pub sender: Option<mpsc::Sender<RakNetMessage>>,
     pub udp_controller: Option<Arc<UdpController>>,
@@ -66,7 +66,7 @@ impl RakNetSessionBuilder {
     }
 
     #[inline]
-    pub fn packet_receiver(&mut self, receiver: mpsc::Receiver<RawPacket>) -> &mut Self {
+    pub fn packet_receiver(&mut self, receiver: mpsc::Receiver<MutableBuffer>) -> &mut Self {
         self.packet_receiver = Some(receiver);
         self
     }
@@ -90,8 +90,13 @@ impl RakNetSessionBuilder {
     }
 
     #[inline]
-    pub fn build(self) -> RakNetSession {
-        RakNetSession::from(self)
+    pub fn build(mut self) -> Arc<RakNetSession> {
+        let packet_receiver = self.packet_receiver.take().unwrap();
+        let session = Arc::new(RakNetSession::from(self));
+
+        session.clone().start_tick_job();
+        session.clone().start_packet_job(packet_receiver);
+        session
     }
 }
 
@@ -100,7 +105,6 @@ pub struct RakNetSession {
     pub session_id: NonZeroU64,
     pub token: CancellationToken,
     pub broadcast: broadcast::Sender<BroadcastPacket>,
-    pub packet_receiver: mpsc::Receiver<RawPacket>,
     /// IPv4 socket of the server.
     pub udp_controller: Arc<UdpController>,
     /// IP address of this session.
@@ -171,7 +175,6 @@ impl From<RakNetSessionBuilder> for RakNetSession {
             token: CancellationToken::new(),
             current_tick: AtomicU64::new(0),
             broadcast: builder.broadcast.unwrap(),
-            packet_receiver: builder.packet_receiver.unwrap(),
             udp_controller: builder.udp_controller.unwrap(),
             addr: builder.addr.unwrap(),
             mtu: builder.mtu,

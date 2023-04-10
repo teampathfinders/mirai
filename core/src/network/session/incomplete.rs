@@ -14,8 +14,8 @@ const RAKNET_MESSAGE_CHANNEL_SIZE: usize = 5;
 pub struct SessionBuilder {
     addr: Option<SocketAddr>,
     udp_controller: Option<Arc<UdpController>>,
-    sender: Option<mpsc::Sender<RawPacket>>,
-    receiver: Option<mpsc::Receiver<RawPacket>>,
+    sender: Option<mpsc::Sender<MutableBuffer>>,
+    receiver: Option<mpsc::Receiver<MutableBuffer>>,
     broadcast: Option<broadcast::Sender<BroadcastPacket>>,
     guid: u64
 }
@@ -35,7 +35,7 @@ impl SessionBuilder {
     }
 
     #[inline]
-    pub fn udp(&mut self, controller: Arc<UdpController>) -> &mut Self {
+    pub fn udp_controller(&mut self, controller: Arc<UdpController>) -> &mut Self {
         self.udp_controller = Some(controller);
         self
     }
@@ -50,7 +50,7 @@ impl SessionBuilder {
     #[inline]
     pub fn channel(
         &mut self,
-        (sender, receiver): (mpsc::Sender<RawPacket>, mpsc::Receiver<RawPacket>)
+        (sender, receiver): (mpsc::Sender<MutableBuffer>, mpsc::Receiver<MutableBuffer>)
     ) -> &mut Self {
         self.receiver = Some(receiver);
         self.sender = Some(sender);
@@ -72,7 +72,7 @@ impl SessionBuilder {
     #[inline]
     pub fn build(mut self) -> SessionRef<IncompleteSession> {
         let sender = self.sender.take().unwrap();
-        let session = IncompleteSession::from(self);
+        let session = IncompleteSession::new(self);
 
         SessionRef {
             sender, session
@@ -89,7 +89,7 @@ pub struct IncompleteSession {
     pub compression: AtomicBool,
     pub sender: mpsc::Sender<RakNetMessage>,
     pub receiver: mpsc::Receiver<RakNetMessage>,
-    pub raknet: RakNetSession,
+    pub raknet: Arc<RakNetSession>,
     pub identity: OnceCell<IdentityData>,
     /// Extra user data, such as device OS and language.
     pub user_data: OnceCell<UserData>,
@@ -97,6 +97,39 @@ pub struct IncompleteSession {
 }
 
 impl IncompleteSession {
+    pub fn new(builder: SessionBuilder) -> Self {
+        let (session_sender, raknet_receiver) = mpsc::channel(RAKNET_MESSAGE_CHANNEL_SIZE);
+        let (raknet_sender, session_receiver) = mpsc::channel(RAKNET_MESSAGE_CHANNEL_SIZE);
+
+        let mut raknet_builder = RakNetSessionBuilder::new();
+
+        raknet_builder
+            .udp(builder.udp_controller.unwrap())
+            .addr(builder.addr.unwrap())
+            .broadcast(builder.broadcast.unwrap())
+            .packet_receiver(builder.receiver.unwrap())
+            .guid(builder.guid)
+            .channel((raknet_sender, raknet_receiver));
+
+        let raknet = raknet_builder.build();
+
+        let incomplete = Self {
+            expected: AtomicU32::new(0),
+            cache_support: AtomicBool::new(false),
+            render_distance: AtomicI32::new(0),
+            guid: builder.guid,
+            compression: AtomicBool::new(false),
+            raknet,
+            sender: session_sender,
+            receiver: session_receiver,
+            identity: OnceCell::new(),
+            user_data: OnceCell::new(),
+            skin: OnceCell::new()
+        };
+
+        incomplete
+    }
+
     #[inline]
     pub fn get_identity_data(&self) -> anyhow::Result<&IdentityData> {
         self.identity.get().ok_or_else(|| {
@@ -262,38 +295,5 @@ impl SessionLike for IncompleteSession {
         self.raknet.token.cancel();
 
         Ok(())
-    }
-}
-
-impl From<SessionBuilder> for IncompleteSession {
-    fn from(builder: SessionBuilder) -> Self {
-        let (sessionSender, raknetReceiver) = mpsc::channel(RAKNET_MESSAGE_CHANNEL_SIZE);
-        let (raknetSender, sessionReceiver) = mpsc::channel(RAKNET_MESSAGE_CHANNEL_SIZE);
-
-        let mut raknet_builder = RakNetSessionBuilder::new();
-        
-        raknet_builder
-            .udp(builder.udp_controller.unwrap())
-            .addr(builder.addr.unwrap())
-            .broadcast(builder.broadcast.unwrap())
-            .packet_receiver(builder.receiver.unwrap())
-            .guid(builder.guid)
-            .channel((raknetSender, raknetReceiver));
-
-        let raknet = raknet_builder.build();
-
-        Self {
-            expected: AtomicU32::new(0),
-            cache_support: AtomicBool::new(false),
-            render_distance: AtomicI32::new(0),
-            guid: builder.guid,
-            compression: AtomicBool::new(false),
-            raknet,
-            sender: sessionSender,
-            receiver: sessionReceiver,
-            identity: OnceCell::new(),
-            user_data: OnceCell::new(),
-            skin: OnceCell::new()
-        }
     }
 }

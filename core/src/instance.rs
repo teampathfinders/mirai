@@ -65,18 +65,13 @@ pub struct UdpController {
     ///
     /// `tokio::join` requires owned access to the handles,
     /// therefore these are wrapped in an RwLock and option.
-    recv_handle: RwLock<Option<JoinHandle<()>>>,
-    /// Handle to the sending task.
-    ///
-    /// `tokio::join` requires owned access to the handles,
-    /// therefore these are wrapped in an RwLock and option.
-    send_handle: RwLock<Option<JoinHandle<()>>>
+    recv_handle: RwLock<Option<JoinHandle<()>>>
 }
 
 impl UdpController {
     /// Creates a new UDP controller.
     ///
-    /// The two async tasks are automatically started, the socket is also created.
+    /// The async task is automatically started, the socket is also created.
     pub async fn new(
         server_guid: u64,
         metadata: Arc<RwLock<String>>,
@@ -93,8 +88,7 @@ impl UdpController {
             metadata, session_map,
             server_guid,
             ipv4_socket, token,
-            recv_handle: RwLock::new(None),
-            send_handle: RwLock::new(None)
+            recv_handle: RwLock::new(None)
         });
 
         let clone = controller.clone();
@@ -103,13 +97,6 @@ impl UdpController {
         });
 
         *controller.recv_handle.write() = Some(recv_handle);
-
-        let clone = controller.clone();
-        let send_handle = tokio::spawn(async move {
-            clone.send_task().await
-        });
-
-        *controller.send_handle.write() = Some(send_handle);
 
         Ok(controller)
     }
@@ -139,9 +126,7 @@ impl UdpController {
             // access to `self`.
             // It is statically guaranteed that this method can only be called once.
             let recv_handle = inner.recv_handle.write().take().unwrap();
-            let send_handle = inner.send_handle.write().take().unwrap();
-
-            tokio::join!(recv_handle, send_handle);
+            tokio::join!(recv_handle);
 
             Ok(())
         } else {
@@ -198,19 +183,22 @@ impl UdpController {
                         }
                     };
 
-                    todo!();
+                    match result {
+                        Ok(_) => match clone.ipv4_socket.send_to(raw_packet.buf.as_ref(), raw_packet.addr).await {
+                            Ok(_) => (),
+                            Err(e) => {
+                                tracing::error!("Failed to send unconnected packet: {e:?}");
+                            }
+                        },
+                        Err(e) => {
+                            tracing::error!("{e:?}");
+                        }
+                    }
                 });
             } else {
 
             }
         }
-    }
-
-    /// Starts the sending task of the controller.
-    ///
-    /// The task runs until the `token` is cancelled.
-    async fn send_task(self: Arc<Self>) {
-        todo!();
     }
 
     /// Processes an [`UnconnectedPing`] packet.
@@ -346,8 +334,14 @@ impl ServerInstance {
         })
     }
 
-    pub async fn run(&mut self) -> anyhow::Result<()> {
-        todo!();
+    pub async fn run(self) -> anyhow::Result<()> {
+        tokio::select! {
+            _ = self.token.cancelled() => (),
+            _ = tokio::signal::ctrl_c() => ()
+        }
+        self.token.cancel();
+
+        self.udp_controller.shutdown().await
     }
 
     pub async fn shutdown(self) -> anyhow::Result<()> {

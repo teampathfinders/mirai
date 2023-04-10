@@ -36,6 +36,8 @@ impl RakNetSession {
     /// If a packet is an ACK or NACK type, it will be responded to accordingly (using [`Session::process_ack`] and [`Session::process_nak`]).
     /// Frame batches are processed by [`Session::process_frame_batch`].
     pub async fn process_raw_packet(&self, packet: MutableBuffer) -> anyhow::Result<bool> {
+        todo!();
+
         *self.last_update.write() = Instant::now();
 
         if packet.is_empty() {

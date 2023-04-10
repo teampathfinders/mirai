@@ -54,7 +54,7 @@ pub trait SessionLike {
 #[derive(Debug)]
 pub struct SessionRef<T> where T: SessionLike {
     /// Sender that sends packets to the session for processing.
-    pub sender: mpsc::Sender<RawPacket>,
+    pub sender: mpsc::Sender<MutableBuffer>,
     /// The actual session.
     pub session: T
 }
@@ -110,6 +110,8 @@ impl SessionMap {
     ) -> bool {
         let mut builder = SessionBuilder::new();
         builder
+            .udp_controller(udp_controller)
+            .addr(addr)
             .guid(client_guid)
             .broadcast(self.broadcast.clone())
             .channel(mpsc::channel(SINGLE_CHANNEL_CAPACITY));
