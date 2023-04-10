@@ -18,7 +18,7 @@ use crate::command::Command;
 use crate::config::SERVER_CONFIG;
 use crate::network::{LevelChunk, SubChunkRequestMode, SubChunkResponse};
 use crate::network::{
-    SessionList, {GameRule, GameRulesChanged},
+    SessionMap, {GameRule, GameRulesChanged},
 };
 
 use crate::level::serialize::serialize_biomes;
@@ -62,7 +62,7 @@ pub struct LevelManager {
     /// Currently set game rules.
     game_rules: DashMap<String, GameRule>,
     /// Used to broadcast level events to the sessions.
-    session_manager: Arc<SessionList>,
+    session_manager: Arc<SessionMap>,
     /// Current world tick.
     /// This is the standard Minecraft tick.
     /// The level is ticked 20 times every second.
@@ -71,7 +71,7 @@ pub struct LevelManager {
 }
 
 impl LevelManager {
-    pub fn new(session_manager: Arc<SessionList>, token: CancellationToken) -> anyhow::Result<Arc<Self>> {
+    pub fn new(session_manager: Arc<SessionMap>, token: CancellationToken) -> anyhow::Result<Arc<Self>> {
         let (level_path, autosave_interval) = {
             let config = SERVER_CONFIG.read();
             (config.level_path, config.autosave_interval)

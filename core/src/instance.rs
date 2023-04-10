@@ -24,7 +24,7 @@ use crate::command::{Command, CommandDataType, CommandEnum, CommandOverload, Com
 use crate::config::SERVER_CONFIG;
 use crate::item::ItemRegistry;
 use crate::level::LevelManager;
-use crate::network::SessionList;
+use crate::network::SessionMap;
 use crate::network::{BOOLEAN_GAME_RULES, CLIENT_VERSION_STRING, INTEGER_GAME_RULES, NETWORK_VERSION};
 use crate::raknet::IncompatibleProtocol;
 use crate::raknet::OpenConnectionReply1;
@@ -253,7 +253,7 @@ pub struct ServerInstance {
     /// This is wrapped in an `Arc` because the controller contains async tasks
     /// that require access to the controller.
     udp_controller: Arc<UdpController>,
-    sessions: SessionList,
+    sessions: SessionMap,
     plugin_runtime: PluginRuntime,
 
     token: CancellationToken,
@@ -267,7 +267,7 @@ impl ServerInstance {
     pub async fn new(ipv4_port: u16) -> anyhow::Result<Self> {
         let token = CancellationToken::new();
         let udp_controller = UdpController::new(ipv4_port, token.clone()).await?;
-        let sessions = SessionList::new(token.clone());
+        let sessions = SessionMap::new(token.clone());
 
         // let item_registry = Arc::new(ItemRegistry::new()?);
 
@@ -304,7 +304,7 @@ pub struct InstanceManager {
     /// All services listen to this token to determine whether they should shut down.
     token: CancellationToken,
     /// Service that manages all player sessions.
-    session_manager: Arc<SessionList>,
+    session_manager: Arc<SessionMap>,
     /// Manages the level.
     level_manager: Arc<LevelManager>,
     /// Channel that the LevelManager sends a message to when it has fully shutdown.
@@ -328,7 +328,7 @@ impl InstanceManager {
         let udp_socket = Arc::new(UdpSocket::bind(SocketAddrV4::new(IPV4_LOCAL_ADDR, ipv4_port)).await?);
 
         let item_registry = Arc::new(ItemRegistry::new()?);
-        let session_manager = Arc::new(SessionList::new(item_registry));
+        let session_manager = Arc::new(SessionMap::new(item_registry));
 
         let level = LevelManager::new(session_manager.clone(), token.clone())?;
         level.add_command(Command {
@@ -494,7 +494,7 @@ impl InstanceManager {
     fn process_open_connection_request2(
         mut packet: RawPacket,
         udp_socket: Arc<UdpSocket>,
-        sess_manager: Arc<SessionList>,
+        sess_manager: Arc<SessionMap>,
         server_guid: u64,
     ) -> anyhow::Result<RawPacket> {
         let request = OpenConnectionRequest2::deserialize(packet.buf.snapshot())?;
@@ -508,13 +508,13 @@ impl InstanceManager {
         packet.buf.reserve_to(reply.serialized_size());
         reply.serialize(&mut packet.buf)?;
 
-        sess_manager.add_session(udp_socket, packet.addr, request.mtu, request.client_guid);
+        sess_manager.insert(udp_socket, packet.addr, request.mtu, request.client_guid);
 
         Ok(packet)
     }
 
     /// Receives packets from IPv4 clients and adds them to the receive queue
-    async fn udp_recv_job(token: CancellationToken, udp_socket: Arc<UdpSocket>, sess_manager: Arc<SessionList>) {
+    async fn udp_recv_job(token: CancellationToken, udp_socket: Arc<UdpSocket>, sess_manager: Arc<SessionMap>) {
         let server_guid = rand::thread_rng().gen();
         let metadata = Self::refresh_metadata("description", server_guid, sess_manager.session_count(), sess_manager.max_session_count());
 
