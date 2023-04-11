@@ -3,19 +3,14 @@ use std::io::Write;
 use std::ops::{Deref, DerefMut};
 use std::{fmt, io};
 
-use crate::bytes::SharedBuffer;
-
 use super::BinaryWrite;
 
 /// A buffer that can be read from and written to.
-/// It is the owned version of [`ReadBuffer`].
-#[derive(Default)]
-pub struct MutableBuffer {
-    data: Vec<u8>,
-    cursor: usize,
-}
+#[derive(Default, Clone)]
+#[repr(transparent)]
+pub struct BinVec(Vec<u8>);
 
-impl MutableBuffer {
+impl BinVec {
     /// Creates a new empty buffer.
     ///
     /// This call does not allocate.
@@ -25,118 +20,64 @@ impl MutableBuffer {
     }
 
     #[inline]
-    pub fn insert(&mut self, index: usize, element: u8) {
-        self.data.insert(index, element);
-    }
-
-    #[inline]
-    pub fn advance_cursor(&mut self, n: usize) {
-        self.cursor += n;
-    }
-
-    #[inline]
-    pub fn set_cursor(&mut self, n: usize) {
-        self.cursor = n;
-    }
-
-    #[inline]
-    pub fn truncate(&mut self, n: usize) {
-        self.data.truncate(n);
-    }
-
-    #[inline]
-    pub fn clear(&mut self) {
-        self.data.clear();
-        self.cursor = 0;
-    }
-
-    #[inline]
     pub fn with_capacity(capacity: usize) -> Self {
-        Self {
-            data: Vec::with_capacity(capacity),
-            cursor: 0,
+        Self(Vec::with_capacity(capacity))
+    }
+
+    #[inline]
+    pub fn reserve_absolute(&mut self, total: usize) {
+        let capacity = self.0.capacity();
+        if total > capacity {
+            self.reserve(total - capacity);
         }
-    }
-
-    #[inline]
-    pub fn reserve(&mut self, additional: usize) {
-        self.data.reserve(additional);
-    }
-
-    #[inline]
-    pub fn reserve_to(&mut self, total: usize) {
-        if total > self.data.capacity() {
-            self.reserve(total - self.data.capacity());
-        }
-    }
-
-    #[inline]
-    pub fn inner(&self) -> &Vec<u8> {
-        &self.data
-    }
-
-    #[inline]
-    pub fn snapshot(&self) -> SharedBuffer {
-        // SharedBuffer::from(&self.as_slice()[self.cursor..])
-        SharedBuffer::from(self.as_slice())
-    }
-
-    #[inline]
-    pub fn as_mut_slice(&mut self) -> &mut [u8] {
-        &mut self.data.as_mut_slice()[self.cursor..]
-    }
-
-    #[inline]
-    pub fn as_slice(&self) -> &[u8] {
-        &self.data.as_slice()[self.cursor..]
     }
 
     #[inline]
     pub fn into_inner(self) -> Vec<u8> {
-        self.data
+        self.0
     }
 }
 
-impl AsRef<[u8]> for MutableBuffer {
+impl AsRef<[u8]> for BinVec {
     fn as_ref(&self) -> &[u8] {
-        self.data.as_ref()
+        self.0.as_ref()
     }
 }
 
-impl From<Vec<u8>> for MutableBuffer {
+impl From<Vec<u8>> for BinVec {
     #[inline]
     fn from(data: Vec<u8>) -> Self {
-        Self { data, cursor: 0 }
+        Self(data)
     }
 }
 
-impl Debug for MutableBuffer {
+impl Debug for BinVec {
     #[inline]
     fn fmt(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
-        write!(formatter, "{:?}", self.data)
+        write!(formatter, "{:?}", self.0)
     }
 }
 
-impl Deref for MutableBuffer {
-    type Target = [u8];
+impl Deref for BinVec {
+    type Target = Vec<u8>;
 
     #[inline]
     fn deref(&self) -> &Self::Target {
-        self.data.as_slice()
+        &self.0
     }
 }
 
-impl DerefMut for MutableBuffer {
+impl DerefMut for BinVec {
     #[inline]
     fn deref_mut(&mut self) -> &mut Self::Target {
-        self.data.as_mut_slice()
+        &mut self.0
     }
 }
 
-impl Write for MutableBuffer {
+impl Write for BinVec {
     #[inline]
     fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
-        self.data.extend_from_slice(buf);
+        self.0.extend_from_slice(buf);
         Ok(buf.len())
     }
 
@@ -146,8 +87,8 @@ impl Write for MutableBuffer {
     }
 }
 
-impl BinaryWrite for MutableBuffer {
+impl BinaryWrite for BinVec {
     fn as_mut_slice(&mut self) -> &mut [u8] {
-        &mut self.data
+        &mut self.0
     }
 }

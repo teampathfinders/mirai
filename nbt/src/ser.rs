@@ -6,7 +6,7 @@ use serde::ser::{
 };
 use serde::{ser, Serialize};
 
-use util::bytes::{BinaryWrite, MutableBuffer};
+use util::bytes::{BinaryWrite, BinVec};
 
 use crate::{
     BigEndian, FieldType, LittleEndian, NbtError, Variable, Variant,
@@ -60,14 +60,14 @@ macro_rules! forward_unsupported_field {
 /// # }
 /// ```
 #[inline]
-pub fn to_be_bytes<T>(v: &T) -> anyhow::Result<MutableBuffer>
+pub fn to_be_bytes<T>(v: &T) -> anyhow::Result<Vec<u8>>
 where
     T: ?Sized + Serialize,
 {
-    let mut ser = Serializer::<_, BigEndian>::new(MutableBuffer::new());
+    let mut ser = Serializer::<_, BigEndian>::new(BinVec::new());
 
     v.serialize(&mut ser)?;
-    Ok(ser.into_inner())
+    Ok(ser.into_inner().into_inner())
 }
 
 /// Serializes the given data in little endian format.
@@ -93,14 +93,14 @@ where
 /// # }
 /// ```
 #[inline]
-pub fn to_le_bytes<T>(v: &T) -> anyhow::Result<MutableBuffer>
+pub fn to_le_bytes<T>(v: &T) -> anyhow::Result<Vec<u8>>
 where
     T: ?Sized + Serialize,
 {
-    let mut ser = Serializer::<_, LittleEndian>::new(MutableBuffer::new());
+    let mut ser = Serializer::<_, LittleEndian>::new(BinVec::new());
 
     v.serialize(&mut ser)?;
-    Ok(ser.into_inner())
+    Ok(ser.into_inner().into_inner())
 }
 
 /// Serializes the given data in variable format.
@@ -126,14 +126,14 @@ where
 /// # }
 /// ```
 #[inline]
-pub fn to_var_bytes<T>(v: &T) -> anyhow::Result<MutableBuffer>
+pub fn to_var_bytes<T>(v: &T) -> anyhow::Result<Vec<u8>>
 where
     T: ?Sized + Serialize,
 {
-    let mut ser = Serializer::<_, Variable>::new(MutableBuffer::new());
+    let mut ser = Serializer::<_, Variable>::new(BinVec::new());
 
     v.serialize(&mut ser)?;
-    Ok(ser.into_inner())
+    Ok(ser.into_inner().into_inner())
 }
 
 /// Serializes the given data, into the given writer, in big endian format.

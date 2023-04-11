@@ -3,7 +3,7 @@ use std::ops::{Index, IndexMut};
 
 use serde::{Deserialize, Serialize};
 
-use util::bytes::{BinaryRead, BinaryWrite, MutableBuffer};
+use util::bytes::{BinaryRead, BinaryWrite, BinVec};
 use util::{bail, Vector};
 
 use crate::PackedArrayReturn;
@@ -162,7 +162,7 @@ impl SubLayer {
     #[inline]
     fn deserialize<'a, R>(mut reader: R) -> anyhow::Result<Self>
     where
-        R: BinaryRead<'a> + 'a,
+        R: BinaryRead<'a> + Copy + 'a,
     {
         let indices = match crate::deserialize_packed_array(&mut reader)? {
             PackedArrayReturn::Data(data) => data,
@@ -178,7 +178,8 @@ impl SubLayer {
         let mut palette = Vec::with_capacity(len);
 
         for _ in 0..len {
-            let (entry, n) = nbt::from_le_bytes(&mut reader)?;
+            // TODO: Fix lifetime issues so that the reader does not require the Copy trait.
+            let (entry, n) = nbt::from_le_bytes(reader)?;
 
             palette.push(entry);
             reader.advance(n)?;
@@ -354,10 +355,10 @@ impl SubChunk {
     /// Serialises the sub chunk into a new buffer and returns the buffer.
     ///
     /// Use [`serialize_local_in`](Self::serialize_local_in) to serialize into an existing writer.
-    pub(crate) fn serialize(&self) -> anyhow::Result<MutableBuffer> {
-        let mut buffer = MutableBuffer::new();
-        self.serialize_in(&mut buffer)?;
-        Ok(buffer)
+    pub(crate) fn serialize(&self) -> anyhow::Result<Vec<u8>> {
+        let mut writer = BinVec::new();
+        self.serialize_in(&mut writer)?;
+        Ok(writer.into_inner())
     }
 
     /// Serialises the sub chunk into the given writer.

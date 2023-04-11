@@ -4,7 +4,7 @@ use std::ops::{Deref, DerefMut, Index};
 use std::sync::Arc;
 use std::{cmp, fmt, io};
 
-use crate::bytes::{BinaryRead, MutableBuffer};
+use crate::bytes::BinaryRead;
 
 #[derive(Debug, Clone)]
 pub struct ArcBuffer(Arc<Vec<u8>>);
@@ -16,10 +16,10 @@ impl ArcBuffer {
     }
 }
 
-impl From<MutableBuffer> for ArcBuffer {
+impl From<Vec<u8>> for ArcBuffer {
     #[inline]
-    fn from(value: MutableBuffer) -> Self {
-        ArcBuffer(Arc::new(value.into_inner()))
+    fn from(value: Vec<u8>) -> Self {
+        ArcBuffer(Arc::new(value))
     }
 }
 
@@ -36,27 +36,6 @@ impl Deref for ArcBuffer {
     #[inline]
     fn deref(&self) -> &Self::Target {
         self.0.as_slice()
-    }
-}
-
-/// Buffer that can be used to read binary data.
-///
-/// See [`MutableBuffer`](crate::MutableBuffer) for an owned and writable buffer.
-#[derive(Copy, Clone)]
-pub struct SharedBuffer<'a>(&'a [u8]);
-
-impl<'a> SharedBuffer<'a> {
-    /// Advances the cursor, skipping `n` bytes.
-    #[inline]
-    pub fn advance(&mut self, n: usize) {
-        let (_, b) = self.0.split_at(n);
-        *self = SharedBuffer::from(b);
-    }
-
-    #[inline]
-    pub fn truncate(&mut self, n: usize) {
-        let (a, _) = self.0.split_at(n);
-        *self = SharedBuffer::from(a);
     }
 }
 
@@ -177,77 +156,11 @@ impl<'a> BinaryRead<'a> for &'a [u8] {
     }
 }
 
-impl<'a> From<&'a [u8]> for SharedBuffer<'a> {
-    #[inline]
-    fn from(b: &'a [u8]) -> Self {
-        Self(b)
-    }
-}
-
-impl<'a> Deref for SharedBuffer<'a> {
-    type Target = &'a [u8];
-
-    #[inline]
-    fn deref(&self) -> &Self::Target {
-        &self.0
-    }
-}
-
-impl<'a> DerefMut for SharedBuffer<'a> {
-    #[inline]
-    fn deref_mut(&mut self) -> &mut Self::Target {
-        &mut self.0
-    }
-}
-
-impl<'a> Index<usize> for SharedBuffer<'a> {
-    type Output = u8;
-
-    #[inline]
-    fn index(&self, index: usize) -> &Self::Output {
-        &self.0[index]
-    }
-}
-
-// impl<'a> IntoIterator for ReadBuffer<'a> {
-//     type Item = &'a u8;
-//     type IntoIter = std::slice::Iter<'a, u8>;
-
-//     #[inline]
-//     fn into_iter(self) -> Self::IntoIter {
-//         self.0.iter()
-//     }
-// }
-
-impl<'a> Debug for SharedBuffer<'a> {
-    #[inline]
-    fn fmt(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
-        write!(formatter, "{:?}", self.0)
-    }
-}
-
-impl<'a> Read for SharedBuffer<'a> {
-    #[inline]
-    fn read(&mut self, buf: &mut [u8]) -> io::Result<usize> {
-        let amt = cmp::min(self.len(), buf.len());
-        let (a, b) = self.0.split_at(amt);
-
-        if amt == 1 {
-            buf[0] = a[0];
-        } else {
-            buf[..amt].copy_from_slice(a);
-        }
-
-        *self = SharedBuffer::from(b);
-        Ok(amt)
-    }
-}
-
 #[cfg(test)]
 mod test {
     use paste::paste;
 
-    use crate::bytes::{BinaryRead, BinaryWrite, MutableBuffer};
+    use crate::bytes::{BinaryRead, BinaryWrite, BinVec};
 
     macro_rules! define_test_fns {
         ($($ty: ident),+) => {
@@ -256,12 +169,12 @@ mod test {
                 fn [<read_write_ $ty _ le>]() {
                     const VALUES: [$ty; 4] = [$ty::MAX, $ty::MIN, $ty::MAX - 42, $ty::MIN + 42];
 
-                    let mut buffer = MutableBuffer::new();
+                    let mut buffer = BinVec::new();
                     for v in VALUES {
                         buffer.[<write_ $ty _le>](v).unwrap();
                     }
 
-                    let mut ss = buffer.snapshot();
+                    let mut ss = buffer.as_slice();
                     for v in VALUES {
                         assert_eq!(v, ss.[<read_ $ty _le>]().unwrap());
                     }
@@ -271,12 +184,12 @@ mod test {
                 fn [<read_write_ $ty _ be>]() {
                     const VALUES: [$ty; 4] = [$ty::MAX, $ty::MIN, $ty::MAX - 42, $ty::MIN + 42];
 
-                    let mut buffer = MutableBuffer::new();
+                    let mut buffer = BinVec::new();
                     for v in VALUES {
                         buffer.[<write_ $ty _be>](v).unwrap();
                     }
 
-                    let mut ss = buffer.snapshot();
+                    let mut ss = buffer.as_slice();
                     for v in VALUES {
                         assert_eq!(v, ss.[<read_ $ty _be>]().unwrap());
                     }
@@ -291,12 +204,12 @@ mod test {
     fn read_write_u8() {
         const VALUES: [u8; 4] = [u8::MAX, u8::MIN, u8::MAX - 42, u8::MIN + 42];
 
-        let mut buffer = MutableBuffer::new();
+        let mut buffer = BinVec::new();
         for v in VALUES {
             buffer.write_u8(v).unwrap();
         }
 
-        let mut ss = buffer.snapshot();
+        let mut ss = buffer.as_slice();
         for v in VALUES {
             assert_eq!(v, ss.read_u8().unwrap());
         }
@@ -306,12 +219,12 @@ mod test {
     fn read_write_i8() {
         const VALUES: [i8; 4] = [i8::MAX, i8::MIN, i8::MAX - 42, i8::MIN + 42];
 
-        let mut buffer = MutableBuffer::new();
+        let mut buffer = BinVec::new();
         for v in VALUES {
             buffer.write_i8(v).unwrap();
         }
 
-        let mut ss = buffer.snapshot();
+        let mut ss = buffer.as_slice();
         for v in VALUES {
             assert_eq!(v, ss.read_i8().unwrap());
         }
@@ -322,12 +235,12 @@ mod test {
         const VALUES: [f32; 4] =
             [f32::MAX, f32::MIN, f32::MAX - 42.0, f32::MIN + 42.0];
 
-        let mut buffer = MutableBuffer::new();
+        let mut buffer = BinVec::new();
         for v in VALUES {
             buffer.write_f32_le(v).unwrap();
         }
 
-        let mut ss = buffer.snapshot();
+        let mut ss = buffer.as_slice();
         for v in VALUES {
             assert_eq!(v, ss.read_f32_le().unwrap());
         }
@@ -338,12 +251,12 @@ mod test {
         const VALUES: [f32; 4] =
             [f32::MAX, f32::MIN, f32::MAX - 42.0, f32::MIN + 42.0];
 
-        let mut buffer = MutableBuffer::new();
+        let mut buffer = BinVec::new();
         for v in VALUES {
             buffer.write_f32_be(v).unwrap();
         }
 
-        let mut ss = buffer.snapshot();
+        let mut ss = buffer.as_slice();
         for v in VALUES {
             assert_eq!(v, ss.read_f32_be().unwrap());
         }
@@ -354,12 +267,12 @@ mod test {
         const VALUES: [f64; 4] =
             [f64::MAX, f64::MIN, f64::MAX - 42.0, f64::MIN + 42.0];
 
-        let mut buffer = MutableBuffer::new();
+        let mut buffer = BinVec::new();
         for v in VALUES {
             buffer.write_f64_le(v).unwrap();
         }
 
-        let mut ss = buffer.snapshot();
+        let mut ss = buffer.as_slice();
         for v in VALUES {
             assert_eq!(v, ss.read_f64_le().unwrap());
         }
@@ -370,12 +283,12 @@ mod test {
         const VALUES: [f64; 4] =
             [f64::MAX, f64::MIN, f64::MAX - 42.0, f64::MIN + 42.0];
 
-        let mut buffer = MutableBuffer::new();
+        let mut buffer = BinVec::new();
         for v in VALUES {
             buffer.write_f64_be(v).unwrap();
         }
 
-        let mut ss = buffer.snapshot();
+        let mut ss = buffer.as_slice();
         for v in VALUES {
             assert_eq!(v, ss.read_f64_be().unwrap());
         }
@@ -383,10 +296,10 @@ mod test {
 
     #[test]
     fn read_write_str() {
-        let mut buffer = MutableBuffer::new();
+        let mut buffer = BinVec::new();
         buffer.write_str("Hello, World!").unwrap();
 
-        let mut ss = buffer.snapshot();
+        let mut ss = buffer.as_slice();
         assert_eq!(ss.read_str().unwrap(), "Hello, World!");
     }
 }

@@ -4,7 +4,7 @@ use paste::paste;
 use serde::de::{DeserializeSeed, MapAccess, SeqAccess, Visitor};
 use serde::{de, Deserialize};
 
-use util::bytes::{BinaryRead, SharedBuffer};
+use util::bytes::BinaryRead;
 use util::{bail, Error};
 
 use crate::{
