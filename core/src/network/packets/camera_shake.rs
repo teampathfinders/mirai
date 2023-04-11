@@ -39,10 +39,13 @@ impl ConnectedPacket for CameraShake {
 }
 
 impl Serialize for CameraShake {
-    fn serialize<W>(&self, buffer: W) -> anyhow::Result<()> where W: BinaryWrite {
-        buffer.write_f32_le(self.intensity)?;
-        buffer.write_f32_le(self.duration)?;
-        buffer.write_u8(self.shake_type as u8)?;
-        buffer.write_u8(self.action as u8)
+    fn serialize<W>(&self, writer: W) -> anyhow::Result<()>
+    where
+        W: BinaryWrite
+    {
+        writer.write_f32_le(self.intensity)?;
+        writer.write_f32_le(self.duration)?;
+        writer.write_u8(self.shake_type as u8)?;
+        writer.write_u8(self.action as u8)
     }
 }

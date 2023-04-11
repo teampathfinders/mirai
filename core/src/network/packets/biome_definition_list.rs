@@ -22,7 +22,10 @@ impl ConnectedPacket for BiomeDefinitionList {
 }
 
 impl Serialize for BiomeDefinitionList {
-    fn serialize(&self, writer: impl BinaryWrite) -> anyhow::Result<()> {
+    fn serialize<W>(&self, writer: W) -> anyhow::Result<()>
+    where
+        W: BinaryWrite
+    {
         writer.write_all(DEFINITIONS)?;
 
         Ok(())

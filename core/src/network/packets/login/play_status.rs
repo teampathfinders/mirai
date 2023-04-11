@@ -26,6 +26,8 @@ pub enum Status {
     FailedServerFull,
     /// Displays "The server is not in Editor Mode. Failed to connect."
     FailedEditorToVanillaMismatch,
+    /// Unsure what this displays.
+    FailedVanillaToEditorMismatch
 }
 
 /// Sends a status update to the client.
@@ -44,7 +46,10 @@ impl ConnectedPacket for PlayStatus {
 }
 
 impl Serialize for PlayStatus {
-    fn serialize<W>(&self, buffer: W) -> anyhow::Result<()> where W: BinaryWrite {
-        buffer.write_u32_be(self.status as u32)
+    fn serialize<W>(&self, writer: W) -> anyhow::Result<()>
+    where
+        W: BinaryWrite
+    {
+        writer.write_u32_be(self.status as u32)
     }
 }

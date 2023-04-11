@@ -23,18 +23,24 @@ impl ConnectedPacket for TickSync {
     }
 }
 
-impl Deserialize<'_> for TickSync {
-    fn deserialize(mut buffer: SharedBuffer) -> anyhow::Result<Self> {
-        let request = buffer.read_u64_le()?;
-        let response = buffer.read_u64_le()?;
+impl<'a> Deserialize<'a> for TickSync {
+    fn deserialize<R>(reader: R) -> anyhow::Result<Self>
+    where
+        R: BinaryRead<'a> + 'a
+    {
+        let request = reader.read_u64_le()?;
+        let response = reader.read_u64_le()?;
 
         Ok(Self { request, response })
     }
 }
 
 impl Serialize for TickSync {
-    fn serialize<W>(&self, buffer: W) -> anyhow::Result<()> where W: BinaryWrite {
-        buffer.write_u64_le(self.request)?;
-        buffer.write_u64_le(self.response)
+    fn serialize<W>(&self, writer: W) -> anyhow::Result<()>
+    where
+        W: BinaryWrite
+    {
+        writer.write_u64_le(self.request)?;
+        writer.write_u64_le(self.response)
     }
 }

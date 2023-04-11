@@ -22,7 +22,10 @@ impl<'a> ConnectedPacket for ServerToClientHandshake<'a> {
 }
 
 impl<'a> Serialize for ServerToClientHandshake<'a> {
-    fn serialize<W>(&self, buffer: W) -> anyhow::Result<()> where W: BinaryWrite {
-        buffer.write_str(self.jwt)
+    fn serialize<W>(&self, writer: W) -> anyhow::Result<()>
+    where
+        W: BinaryWrite
+    {
+        writer.write_str(self.jwt)
     }
 }

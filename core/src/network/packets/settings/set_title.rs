@@ -38,7 +38,7 @@ pub struct SetTitle<'a> {
     pub platform_online_id: &'a str,
 }
 
-impl ConnectedPacket for SetTitle<'_> {
+impl<'a> ConnectedPacket for SetTitle<'a> {
     const ID: u32 = 0x58;
 
     fn serialized_size(&self) -> usize {
@@ -52,14 +52,17 @@ impl ConnectedPacket for SetTitle<'_> {
     }
 }
 
-impl Serialize for SetTitle<'_> {
-    fn serialize<W>(&self, buffer: W) -> anyhow::Result<()> where W: BinaryWrite {
-        buffer.write_var_i32(self.action as i32)?;
-        buffer.write_str(self.text)?;
-        buffer.write_var_i32(self.fade_in_duration)?;
-        buffer.write_var_i32(self.remain_duration)?;
-        buffer.write_var_i32(self.fade_out_duration)?;
-        buffer.write_str(self.xuid)?;
-        buffer.write_str(self.platform_online_id)
+impl<'a> Serialize for SetTitle<'a> {
+    fn serialize<W>(&self, writer: W) -> anyhow::Result<()>
+    where
+        W: BinaryWrite
+    {
+        writer.write_var_i32(self.action as i32)?;
+        writer.write_str(self.text)?;
+        writer.write_var_i32(self.fade_in_duration)?;
+        writer.write_var_i32(self.remain_duration)?;
+        writer.write_var_i32(self.fade_out_duration)?;
+        writer.write_str(self.xuid)?;
+        writer.write_str(self.platform_online_id)
     }
 }

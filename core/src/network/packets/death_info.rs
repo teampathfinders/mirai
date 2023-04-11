@@ -13,7 +13,7 @@ pub struct DeathInfo<'a> {
     pub messages: &'a [&'a str],
 }
 
-impl ConnectedPacket for DeathInfo<'_> {
+impl<'a> ConnectedPacket for DeathInfo<'a> {
     const ID: u32 = 0xbd;
 
     fn serialized_size(&self) -> usize {
@@ -25,13 +25,16 @@ impl ConnectedPacket for DeathInfo<'_> {
     }
 }
 
-impl Serialize for DeathInfo<'_> {
-    fn serialize<W>(&self, buffer: W) -> anyhow::Result<()> where W: BinaryWrite {
-        buffer.write_str(self.cause)?;
+impl<'a> Serialize for DeathInfo<'a> {
+    fn serialize<W>(&self, writer: W) -> anyhow::Result<()>
+    where
+        W: BinaryWrite
+    {
+        writer.write_str(self.cause)?;
 
-        buffer.write_var_u32(self.messages.len() as u32)?;
+        writer.write_var_u32(self.messages.len() as u32)?;
         for message in self.messages {
-            buffer.write_str(message)?;
+            writer.write_str(message)?;
         }
 
         Ok(())

@@ -38,10 +38,13 @@ impl<'a> ConnectedPacket for CreativeContent<'a> {
 }
 
 impl<'a> Serialize for CreativeContent<'a> {
-    fn serialize<W>(&self, buffer: W) -> anyhow::Result<()> where W: BinaryWrite {
-        buffer.write_var_u32(self.items.len() as u32)?;
+    fn serialize<W>(&self, writer: W) -> anyhow::Result<()>
+    where
+        W: BinaryWrite
+    {
+        writer.write_var_u32(self.items.len() as u32)?;
         for item in self.items {
-            item.serialize(buffer)?;
+            item.serialize(writer)?;
         }
 
         Ok(())

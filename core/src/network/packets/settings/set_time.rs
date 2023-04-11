@@ -20,7 +20,10 @@ impl ConnectedPacket for SetTime {
 }
 
 impl Serialize for SetTime {
-    fn serialize<W>(&self, buffer: W) -> anyhow::Result<()> where W: BinaryWrite {
-        buffer.write_var_i32(self.time)
+    fn serialize<W>(&self, writer: W) -> anyhow::Result<()>
+    where
+        W: BinaryWrite
+    {
+        writer.write_var_i32(self.time)
     }
 }

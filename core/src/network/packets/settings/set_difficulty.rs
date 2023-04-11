@@ -45,14 +45,20 @@ impl ConnectedPacket for SetDifficulty {
 }
 
 impl Serialize for SetDifficulty {
-    fn serialize<W>(&self, buffer: W) -> anyhow::Result<()> where W: BinaryWrite {
-        buffer.write_var_i32(self.difficulty as i32)
+    fn serialize<W>(&self, writer: W) -> anyhow::Result<()>
+    where
+        W: BinaryWrite
+    {
+        writer.write_var_i32(self.difficulty as i32)
     }
 }
 
-impl Deserialize<'_> for SetDifficulty {
-    fn deserialize(mut buffer: SharedBuffer) -> anyhow::Result<Self> {
-        let difficulty = Difficulty::try_from(buffer.read_var_i32()?)?;
+impl<'a> Deserialize<'a> for SetDifficulty {
+    fn deserialize<R>(reader: R) -> anyhow::Result<Self>
+    where
+        R: BinaryRead<'a> + 'a
+    {
+        let difficulty = Difficulty::try_from(reader.read_var_i32()?)?;
 
         Ok(Self { difficulty })
     }

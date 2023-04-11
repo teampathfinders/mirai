@@ -13,7 +13,7 @@ pub struct ToastRequest<'a> {
     pub message: &'a str,
 }
 
-impl ConnectedPacket for ToastRequest<'_> {
+impl<'a> ConnectedPacket for ToastRequest<'a> {
     const ID: u32 = 0xba;
 
     fn serialized_size(&self) -> usize {
@@ -22,9 +22,12 @@ impl ConnectedPacket for ToastRequest<'_> {
     }
 }
 
-impl Serialize for ToastRequest<'_> {
-    fn serialize<W>(&self, buffer: W) -> anyhow::Result<()> where W: BinaryWrite {
-        buffer.write_str(self.title)?;
-        buffer.write_str(self.message)
+impl<'a> Serialize for ToastRequest<'a> {
+    fn serialize<W>(&self, writer: W) -> anyhow::Result<()>
+    where
+        W: BinaryWrite
+    {
+        writer.write_str(self.title)?;
+        writer.write_str(self.message)
     }
 }

@@ -46,14 +46,20 @@ impl ConnectedPacket for SetPlayerGameMode {
 }
 
 impl Serialize for SetPlayerGameMode {
-    fn serialize<W>(&self, buffer: W) -> anyhow::Result<()> where W: BinaryWrite {
-        buffer.write_var_i32(self.game_mode as i32)
+    fn serialize<W>(&self, writer: W) -> anyhow::Result<()>
+    where
+        W: BinaryWrite
+    {
+        writer.write_var_i32(self.game_mode as i32)
     }
 }
 
-impl Deserialize<'_> for SetPlayerGameMode {
-    fn deserialize(mut buffer: SharedBuffer) -> anyhow::Result<Self> {
-        let game_mode = GameMode::try_from(buffer.read_var_i32()?)?;
+impl<'a> Deserialize<'a> for SetPlayerGameMode {
+    fn deserialize<R>(reader: R) -> anyhow::Result<Self>
+    where
+        R: BinaryRead<'a> + 'a
+    {
+        let game_mode = GameMode::try_from(reader.read_var_i32()?)?;
 
         Ok(Self { game_mode })
     }

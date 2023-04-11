@@ -42,16 +42,22 @@ impl ConnectedPacket for CreditsUpdate {
 }
 
 impl Serialize for CreditsUpdate {
-    fn serialize<W>(&self, buffer: W) -> anyhow::Result<()> where W: BinaryWrite {
-        buffer.write_var_u64(self.runtime_id)?;
-        buffer.write_var_i32(self.status as i32)
+    fn serialize<W>(&self, writer: W) -> anyhow::Result<()>
+    where
+        W: BinaryWrite
+    {
+        writer.write_var_u64(self.runtime_id)?;
+        writer.write_var_i32(self.status as i32)
     }
 }
 
-impl Deserialize<'_> for CreditsUpdate {
-    fn deserialize(mut buffer: SharedBuffer) -> anyhow::Result<Self> {
-        let runtime_id = buffer.read_var_u64()?;
-        let status = CreditsStatus::try_from(buffer.read_var_i32()?)?;
+impl<'a> Deserialize<'a> for CreditsUpdate {
+    fn deserialize<R>(reader: R) -> anyhow::Result<Self>
+    where
+        R: BinaryRead<'a> + 'a
+    {
+        let runtime_id = reader.read_var_u64()?;
+        let status = CreditsStatus::try_from(reader.read_var_i32()?)?;
 
         Ok(Self { runtime_id, status })
     }

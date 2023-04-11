@@ -19,8 +19,11 @@ impl ConnectedPacket for SpawnExperienceOrb {
 }
 
 impl Serialize for SpawnExperienceOrb {
-    fn serialize<W>(&self, buffer: W) -> anyhow::Result<()> where W: BinaryWrite {
-        buffer.write_vecf(&self.position)?;
-        buffer.write_var_u32(self.amount)
+    fn serialize<W>(&self, writer: W) -> anyhow::Result<()>
+    where
+        W: BinaryWrite
+    {
+        writer.write_vecf(&self.position)?;
+        writer.write_var_u32(self.amount)
     }
 }

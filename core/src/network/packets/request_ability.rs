@@ -37,18 +37,21 @@ impl ConnectedPacket for RequestAbility {
     const ID: u32 = 0xb8;
 }
 
-impl Deserialize<'_> for RequestAbility {
-    fn deserialize(mut buffer: SharedBuffer) -> anyhow::Result<Self> {
-        let ability_type = buffer.read_var_i32()?;
-        let value_type = buffer.read_u8()?;
+impl<'a> Deserialize<'a> for RequestAbility {
+    fn deserialize<R>(reader: R) -> anyhow::Result<Self>
+    where
+        R: BinaryRead<'a> + 'a
+    {
+        let ability_type = reader.read_var_i32()?;
+        let value_type = reader.read_u8()?;
 
         let mut bool_value = false;
         let mut float_value = 0.0;
 
         if value_type == 1 {
-            bool_value = buffer.read_bool()?;
+            bool_value = reader.read_bool()?;
         } else if value_type == 2 {
-            float_value = buffer.read_f32_be()?;
+            float_value = reader.read_f32_be()?;
         } else {
             bail!(Malformed, "Invalid ability value type {value_type}")
         }

@@ -10,14 +10,19 @@ pub struct ExperimentData<'a> {
     pub enabled: bool,
 }
 
-impl ExperimentData<'_> {
+impl<'a> ExperimentData<'a> {
     pub fn serialized_size(&self) -> usize {
         self.name.var_len() + 1
     }
+}
 
-    pub fn serialize<W>(&self, buffer: W) -> anyhow::Result<()> where W: BinaryWrite {
-        buffer.write_str(self.name)?;
-        buffer.write_bool(self.enabled)
+impl<'a> Serialize for ExperimentData<'a> {
+    fn serialize<W>(&self, writer: W) -> anyhow::Result<()>
+    where
+        W: BinaryWrite
+    {
+        writer.write_str(self.name)?;
+        writer.write_bool(self.enabled)
     }
 }
 
@@ -28,17 +33,22 @@ pub struct ResourcePackStackEntry<'a> {
     pub subpack_name: &'a str,
 }
 
-impl ResourcePackStackEntry<'_> {
+impl<'a> ResourcePackStackEntry<'a> {
     pub fn serialized_size(&self) -> usize {
         self.pack_id.var_len() +
             self.pack_version.var_len() +
             self.subpack_name.var_len()
     }
+}
 
-    pub fn serialize<W>(&self, buffer: W) -> anyhow::Result<()> where W: BinaryWrite {
-        buffer.write_str(self.pack_id)?;
-        buffer.write_str(self.pack_version)?;
-        buffer.write_str(self.subpack_name)
+impl<'a> Serialize for ResourcePackStackEntry<'a> {
+    fn serialize<W>(&self, writer: W) -> anyhow::Result<()>
+    where
+        W: BinaryWrite
+    {
+        writer.write_str(self.pack_id)?;
+        writer.write_str(self.pack_version)?;
+        writer.write_str(self.subpack_name)
     }
 }
 
@@ -69,27 +79,30 @@ impl ConnectedPacket for ResourcePackStack<'_> {
     }
 }
 
-impl Serialize for ResourcePackStack<'_> {
-    fn serialize<W>(&self, buffer: W) -> anyhow::Result<()> where W: BinaryWrite {
-        buffer.write_bool(self.forced_to_accept)?;
+impl<'a> Serialize for ResourcePackStack<'a> {
+    fn serialize<W>(&self, writer: W) -> anyhow::Result<()>
+    where
+        W: BinaryWrite
+    {
+        writer.write_bool(self.forced_to_accept)?;
 
-        buffer.write_var_u32(self.resource_packs.len() as u32)?;
+        writer.write_var_u32(self.resource_packs.len() as u32)?;
         for pack in self.resource_packs {
-            pack.serialize(buffer)?;
+            pack.serialize(writer)?;
         }
 
-        buffer.write_var_u32(self.behavior_packs.len() as u32)?;
+        writer.write_var_u32(self.behavior_packs.len() as u32)?;
         for pack in self.behavior_packs {
-            pack.serialize(buffer)?;
+            pack.serialize(writer)?;
         }
 
-        buffer.write_str(self.game_version)?;
+        writer.write_str(self.game_version)?;
 
-        buffer.write_u32_be(self.experiments.len() as u32)?;
+        writer.write_u32_be(self.experiments.len() as u32)?;
         for experiment in self.experiments {
-            experiment.serialize(buffer)?;
+            experiment.serialize(writer)?;
         }
 
-        buffer.write_bool(self.experiments_previously_toggled)
+        writer.write_bool(self.experiments_previously_toggled)
     }
 }

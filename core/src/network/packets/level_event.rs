@@ -250,18 +250,24 @@ impl ConnectedPacket for LevelEvent {
 }
 
 impl Serialize for LevelEvent {
-    fn serialize<W>(&self, buffer: W) -> anyhow::Result<()> where W: BinaryWrite {
-        buffer.write_var_i32(self.event_type as i32)?;
-        buffer.write_vecf(&self.position)?;
-        buffer.write_var_i32(self.event_data)
+    fn serialize<W>(&self, writer: W) -> anyhow::Result<()>
+    where
+        W: BinaryWrite
+    {
+        writer.write_var_i32(self.event_type as i32)?;
+        writer.write_vecf(&self.position)?;
+        writer.write_var_i32(self.event_data)
     }
 }
 
-impl Deserialize<'_> for LevelEvent {
-    fn deserialize(mut buffer: SharedBuffer) -> anyhow::Result<Self> {
-        let event_type = LevelEventType::try_from(buffer.read_var_i32()?)?;
-        let position = buffer.read_vecf()?;
-        let event_data = buffer.read_var_i32()?;
+impl<'a> Deserialize<'a> for LevelEvent {
+    fn deserialize<R>(reader: R) -> anyhow::Result<Self>
+    where
+        R: BinaryRead<'a> + 'a
+    {
+        let event_type = LevelEventType::try_from(reader.read_var_i32()?)?;
+        let position = reader.read_vecf()?;
+        let event_data = reader.read_var_i32()?;
 
         Ok(Self {
             event_type,

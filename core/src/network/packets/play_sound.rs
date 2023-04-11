@@ -27,10 +27,13 @@ impl<'a> ConnectedPacket for PlaySound<'a> {
 }
 
 impl<'a> Serialize for PlaySound<'a> {
-    fn serialize<W>(&self, buffer: W) -> anyhow::Result<()> where W: BinaryWrite {
-        buffer.write_str(self.name)?;
-        buffer.write_veci(&self.position)?;
-        buffer.write_f32_le(self.volume)?;
-        buffer.write_f32_le(self.pitch)
+    fn serialize<W>(&self, writer: W) -> anyhow::Result<()>
+    where
+        W: BinaryWrite
+    {
+        writer.write_str(self.name)?;
+        writer.write_veci(&self.position)?;
+        writer.write_f32_le(self.volume)?;
+        writer.write_f32_le(self.pitch)
     }
 }

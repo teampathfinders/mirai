@@ -14,7 +14,10 @@ impl ConnectedPacket for SubChunkRequest {
 }
 
 impl<'a> Deserialize<'a> for SubChunkRequest {
-    fn deserialize(mut buffer: SharedBuffer<'a>) -> anyhow::Result<Self> {
+    fn deserialize<R>(mut buffer: R) -> anyhow::Result<Self>
+    where
+        R: BinaryRead<'a> + 'a
+    {
         let dimension = Dimension::try_from(buffer.read_var_u32()?)?;
         let position = buffer.read_veci()?;
 

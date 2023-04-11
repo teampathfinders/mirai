@@ -39,7 +39,10 @@ impl ConnectedPacket for LevelChunk {
 }
 
 impl Serialize for LevelChunk {
-    fn serialize<W>(&self, buffer: W) -> anyhow::Result<()> where W: BinaryWrite {
+    fn serialize<W>(&self, buffer: W) -> anyhow::Result<()>
+    where
+        W: BinaryWrite
+    {
         buffer.write_veci(&self.coordinates)?;
         match self.request_mode {
             SubChunkRequestMode::Legacy => {

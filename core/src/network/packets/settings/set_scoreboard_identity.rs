@@ -47,20 +47,23 @@ impl ConnectedPacket for SetScoreboardIdentity {
 }
 
 impl Serialize for SetScoreboardIdentity {
-    fn serialize<W>(&self, buffer: W) -> anyhow::Result<()> where W: BinaryWrite {
-        buffer.write_u8(self.action as u8)?;
+    fn serialize<W>(&self, writer: W) -> anyhow::Result<()>
+    where
+        W: BinaryWrite
+    {
+        writer.write_u8(self.action as u8)?;
         match self.action {
             ScoreboardIdentityAction::Add => {
-                buffer.write_var_u32(self.entries.len() as u32)?;
+                writer.write_var_u32(self.entries.len() as u32)?;
                 for entry in &self.entries {
-                    buffer.write_var_i64(entry.entry_id)?;
-                    buffer.write_var_i64(entry.entity_unique_id)?;
+                    writer.write_var_i64(entry.entry_id)?;
+                    writer.write_var_i64(entry.entity_unique_id)?;
                 }
             }
             ScoreboardIdentityAction::Clear => {
-                buffer.write_var_u32(self.entries.len() as u32)?;
+                writer.write_var_u32(self.entries.len() as u32)?;
                 for entry in &self.entries {
-                    buffer.write_var_i64(entry.entry_id)?;
+                    writer.write_var_i64(entry.entry_id)?;
                 }
             }
         }

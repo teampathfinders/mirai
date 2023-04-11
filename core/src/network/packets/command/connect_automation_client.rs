@@ -19,7 +19,10 @@ impl<'a> ConnectedPacket for ConnectAutomationClient<'a> {
 }
 
 impl<'a> Serialize for ConnectAutomationClient<'a> {
-    fn serialize<W>(&self, buffer: W) -> anyhow::Result<()> where W: BinaryWrite {
-        buffer.write_str(self.server_uri)
+    fn serialize<W>(&self, writer: W) -> anyhow::Result<()>
+    where
+        W: BinaryWrite
+    {
+        writer.write_str(self.server_uri)
     }
 }

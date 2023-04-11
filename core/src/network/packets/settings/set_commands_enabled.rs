@@ -22,7 +22,10 @@ impl ConnectedPacket for SetCommandsEnabled {
 }
 
 impl Serialize for SetCommandsEnabled {
-    fn serialize<W>(&self, buffer: W) -> anyhow::Result<()> where W: BinaryWrite {
-        buffer.write_bool(self.enabled)
+    fn serialize<W>(&self, writer: W) -> anyhow::Result<()>
+    where
+        W: BinaryWrite
+    {
+        writer.write_bool(self.enabled)
     }
 }

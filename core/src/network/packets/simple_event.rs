@@ -32,13 +32,19 @@ impl ConnectedPacket for SimpleEvent {
 }
 
 impl Serialize for SimpleEvent {
-    fn serialize<W>(&self, buffer: W) -> anyhow::Result<()> where W: BinaryWrite {
-        buffer.write_i16_le(*self as i16)
+    fn serialize<W>(&self, writer: W) -> anyhow::Result<()>
+    where
+        W: BinaryWrite
+    {
+        writer.write_i16_le(*self as i16)
     }
 }
 
-impl Deserialize<'_> for SimpleEvent {
-    fn deserialize(mut buffer: SharedBuffer) -> anyhow::Result<Self> {
-        Self::try_from(buffer.read_i16_le()?)
+impl<'a> Deserialize<'a> for SimpleEvent {
+    fn deserialize<R>(reader: R) -> anyhow::Result<Self>
+    where
+        R: BinaryRead<'a> + 'a
+    {
+        Self::try_from(reader.read_i16_le()?)
     }
 }

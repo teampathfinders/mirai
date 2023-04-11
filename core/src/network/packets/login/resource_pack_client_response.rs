@@ -52,13 +52,16 @@ impl<'a> ConnectedPacket for ResourcePackClientResponse<'a> {
 }
 
 impl<'a> Deserialize<'a> for ResourcePackClientResponse<'a> {
-    fn deserialize(mut buffer: SharedBuffer<'a>) -> anyhow::Result<Self> {
-        let status = ResourcePackStatus::try_from(buffer.read_u8()?)?;
-        let length = buffer.read_u16_be()?;
+    fn deserialize<R>(reader: R) -> anyhow::Result<Self>
+    where
+        R: BinaryRead<'a> + 'a
+    {
+        let status = ResourcePackStatus::try_from(reader.read_u8()?)?;
+        let length = reader.read_u16_be()?;
 
         let mut pack_ids = Vec::with_capacity(length as usize);
         for _ in 0..length {
-            pack_ids.push(buffer.read_str()?);
+            pack_ids.push(reader.read_str()?);
         }
 
         Ok(Self { status, pack_ids })

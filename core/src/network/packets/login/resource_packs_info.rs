@@ -109,32 +109,35 @@ impl<'a> ConnectedPacket for ResourcePacksInfo<'a> {
 }
 
 impl<'a> Serialize for ResourcePacksInfo<'a> {
-    fn serialize<W>(&self, buffer: W) -> anyhow::Result<()> where W: BinaryWrite {
-        buffer.write_bool(self.required)?;
-        buffer.write_bool(self.scripting_enabled)?;
-        buffer.write_bool(self.forcing_server_packs)?;
+    fn serialize<W>(&self, writer: W) -> anyhow::Result<()>
+    where
+        W: BinaryWrite
+    {
+        writer.write_bool(self.required)?;
+        writer.write_bool(self.scripting_enabled)?;
+        writer.write_bool(self.forcing_server_packs)?;
 
-        buffer.write_u16_be(self.behavior_info.len() as u16)?;
+        writer.write_u16_be(self.behavior_info.len() as u16)?;
         for pack in self.behavior_info {
-            buffer.write_str(&pack.uuid)?;
-            buffer.write_str(&pack.version)?;
-            buffer.write_u64_be(pack.size)?;
-            buffer.write_str(&pack.content_key)?;
-            buffer.write_str(&pack.subpack_name)?;
-            buffer.write_str(&pack.content_identity)?;
-            buffer.write_bool(pack.has_scripts)?;
+            writer.write_str(&pack.uuid)?;
+            writer.write_str(&pack.version)?;
+            writer.write_u64_be(pack.size)?;
+            writer.write_str(&pack.content_key)?;
+            writer.write_str(&pack.subpack_name)?;
+            writer.write_str(&pack.content_identity)?;
+            writer.write_bool(pack.has_scripts)?;
         }
 
-        buffer.write_u16_be(self.resource_info.len() as u16)?;
+        writer.write_u16_be(self.resource_info.len() as u16)?;
         for pack in self.resource_info {
-            buffer.write_str(&pack.uuid)?;
-            buffer.write_str(&pack.version)?;
-            buffer.write_u64_be(pack.size)?;
-            buffer.write_str(&pack.content_key)?;
-            buffer.write_str(&pack.subpack_name)?;
-            buffer.write_str(&pack.content_identity)?;
-            buffer.write_bool(pack.has_scripts)?;
-            buffer.write_bool(pack.rtx_enabled)?;
+            writer.write_str(&pack.uuid)?;
+            writer.write_str(&pack.version)?;
+            writer.write_u64_be(pack.size)?;
+            writer.write_str(&pack.content_key)?;
+            writer.write_str(&pack.subpack_name)?;
+            writer.write_str(&pack.content_identity)?;
+            writer.write_bool(pack.has_scripts)?;
+            writer.write_bool(pack.rtx_enabled)?;
         }
 
         Ok(())

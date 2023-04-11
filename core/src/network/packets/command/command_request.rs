@@ -73,11 +73,14 @@ impl<'a> ConnectedPacket for CommandRequest<'a> {
 }
 
 impl<'a> Deserialize<'a> for CommandRequest<'a> {
-    fn deserialize(mut buffer: SharedBuffer<'a>) -> anyhow::Result<Self> {
-        let command = buffer.read_str()?;
-        let origin = CommandOriginType::try_from(buffer.read_var_u32()?)?;
-        buffer.advance(16);
-        let request_id = buffer.read_str()?;
+    fn deserialize<R>(reader: R) -> anyhow::Result<Self>
+    where
+        R: BinaryRead<'a> + 'a
+    {
+        let command = reader.read_str()?;
+        let origin = CommandOriginType::try_from(reader.read_var_u32()?)?;
+        reader.advance(16);
+        let request_id = reader.read_str()?;
 
         Ok(Self { command, origin, request_id })
     }

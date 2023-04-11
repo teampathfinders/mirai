@@ -248,9 +248,12 @@ impl GameRule {
         }
     }
 
-    pub fn serialize<W>(&self, buffer: W) -> anyhow::Result<()> where W: BinaryWrite {
-        buffer.write_str(self.name())?;
-        buffer.write_bool(true)?; // Player can modify. Doesn't seem to do anything.
+    pub fn serialize<W>(&self, writer: W) -> anyhow::Result<()>
+    where
+        W: BinaryWrite
+    {
+        writer.write_str(self.name())?;
+        writer.write_bool(true)?; // Player can modify. Doesn't seem to do anything.
 
         match self {
             Self::CommandBlocksEnabled(b)
@@ -279,15 +282,15 @@ impl GameRule {
             | Self::ShowDeathMessages(b)
             | Self::ShowTags(b)
             | Self::TntExplodes(b) => {
-                buffer.write_var_u32(1)?;
-                buffer.write_bool(*b)
+                writer.write_var_u32(1)?;
+                writer.write_bool(*b)
             }
             Self::FunctionCommandLimit(i)
             | Self::MaxCommandChainLength(i)
             | Self::RandomTickSpeed(i)
             | Self::SpawnRadius(i) => {
-                buffer.write_var_u32(2)?;
-                buffer.write_var_u32(*i as u32)
+                writer.write_var_u32(2)?;
+                writer.write_var_u32(*i as u32)
             }
         }
     }
@@ -337,7 +340,7 @@ pub struct GameRulesChanged<'a> {
     pub game_rules: &'a [GameRule],
 }
 
-impl ConnectedPacket for GameRulesChanged<'_> {
+impl<'a> ConnectedPacket for GameRulesChanged<'a> {
     const ID: u32 = 0x48;
 
     fn serialized_size(&self) -> usize {
@@ -348,8 +351,11 @@ impl ConnectedPacket for GameRulesChanged<'_> {
     }
 }
 
-impl Serialize for GameRulesChanged<'_> {
-    fn serialize<W>(&self, buffer: W) -> anyhow::Result<()> where W: BinaryWrite {
+impl<'a> Serialize for GameRulesChanged<'a> {
+    fn serialize<W>(&self, buffer: W) -> anyhow::Result<()>
+    where
+        W: BinaryWrite
+    {
         buffer.write_var_u32(self.game_rules.len() as u32)?;
         for game_rule in self.game_rules {
             game_rule.serialize(buffer)?;

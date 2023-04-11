@@ -55,32 +55,35 @@ impl<'a> ConnectedPacket for BookEdit<'a> {
 }
 
 impl<'a> Deserialize<'a> for BookEdit<'a> {
-    fn deserialize(mut buffer: SharedBuffer<'a>) -> anyhow::Result<Self> {
-        let action = buffer.read_u8()?;
-        let inventory_slot = buffer.read_u8()?;
+    fn deserialize<R>(reader: R) -> anyhow::Result<Self>
+    where
+        R: BinaryRead<'a> + 'a
+    {
+        let action = reader.read_u8()?;
+        let inventory_slot = reader.read_u8()?;
 
         Ok(Self {
             inventory_slot,
             action: match action {
                 0 => BookEditAction::ReplacePage {
-                    page_number: buffer.read_u8()?,
-                    text: buffer.read_str()?,
+                    page_number: reader.read_u8()?,
+                    text: reader.read_str()?,
                 },
                 1 => BookEditAction::AddPage {
-                    page_number: buffer.read_u8()?,
-                    text: buffer.read_str()?,
+                    page_number: reader.read_u8()?,
+                    text: reader.read_str()?,
                 },
                 2 => BookEditAction::DeletePage {
-                    page_number: buffer.read_u8()?
+                    page_number: reader.read_u8()?
                 },
                 3 => BookEditAction::SwapPages {
-                    first_page: buffer.read_u8()?,
-                    second_page: buffer.read_u8()?,
+                    first_page: reader.read_u8()?,
+                    second_page: reader.read_u8()?,
                 },
                 4 => BookEditAction::Sign {
-                    title: buffer.read_str()?,
-                    author: buffer.read_str()?,
-                    xuid: buffer.read_str()?,
+                    title: reader.read_str()?,
+                    author: reader.read_str()?,
+                    xuid: reader.read_str()?,
                 },
                 _ => bail!(Malformed, "Invalid book edit action {action}")
             },

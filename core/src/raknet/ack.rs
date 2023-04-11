@@ -1,5 +1,5 @@
 use util::bytes::{MutableBuffer, SharedBuffer, BinaryRead};
-use util::{Deserialize, Result};
+use util::{Deserialize, Result, Serialize};
 
 use crate::raknet::{Ack, Nak};
 use crate::network::Session;

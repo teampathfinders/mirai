@@ -39,18 +39,24 @@ impl ConnectedPacket for BlockEvent {
 }
 
 impl Serialize for BlockEvent {
-    fn serialize<W>(&self, buffer: W) -> anyhow::Result<()> where W: BinaryWrite {
-        buffer.write_block_pos(&self.position)?;
-        buffer.write_var_i32(self.event_type as i32)?;
-        buffer.write_var_i32(self.event_data)
+    fn serialize<W>(&self, writer: W) -> anyhow::Result<()>
+    where
+        W: BinaryWrite
+    {
+        writer.write_block_pos(&self.position)?;
+        writer.write_var_i32(self.event_type as i32)?;
+        writer.write_var_i32(self.event_data)
     }
 }
 
-impl Deserialize<'_> for BlockEvent {
-    fn deserialize(mut buffer: SharedBuffer) -> anyhow::Result<Self> {
-        let position = buffer.read_block_pos()?;
-        let event_type = BlockEventType::try_from(buffer.read_var_i32()?)?;
-        let event_data = buffer.read_var_i32()?;
+impl<'a> Deserialize<'a> for BlockEvent {
+    fn deserialize<R>(reader: R) -> anyhow::Result<Self>
+    where
+        R: BinaryRead<'a> + 'a
+    {
+        let position = reader.read_block_pos()?;
+        let event_type = BlockEventType::try_from(reader.read_var_i32()?)?;
+        let event_data = reader.read_var_i32()?;
 
         Ok(Self {
             position,

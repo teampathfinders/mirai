@@ -14,9 +14,12 @@ impl RequestNetworkSettings {
     pub const ID: u32 = 0xc1;
 }
 
-impl Deserialize<'_> for RequestNetworkSettings {
-    fn deserialize(mut buffer: SharedBuffer) -> anyhow::Result<Self> {
-        let protocol_version = buffer.read_u32_be()?;
+impl<'a> Deserialize<'a> for RequestNetworkSettings {
+    fn deserialize<R>(reader: R) -> anyhow::Result<Self>
+    where
+        R: BinaryRead<'a> + 'a
+    {
+        let protocol_version = reader.read_u32_be()?;
 
         Ok(Self { protocol_version })
     }

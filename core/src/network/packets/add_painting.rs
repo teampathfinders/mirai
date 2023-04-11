@@ -39,7 +39,10 @@ impl<'a> ConnectedPacket for AddPainting<'a> {
 }
 
 impl<'a> Serialize for AddPainting<'a> {
-    fn serialize(&self, writer: impl BinaryWrite) -> anyhow::Result<()> {
+    fn serialize<W>(&self, writer: W) -> anyhow::Result<()>
+    where
+        W: BinaryWrite
+    {
         writer.write_var_i64(self.runtime_id as i64)?; // Unique entity ID.
         writer.write_var_u64(self.runtime_id)?;
         writer.write_vecf(&self.position)?;

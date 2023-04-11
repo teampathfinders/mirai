@@ -31,13 +31,16 @@ pub struct AttributeModifier<'a> {
 }
 
 impl<'a> Serialize for AttributeModifier<'a> {
-    fn serialize<W>(&self, buffer: W) -> anyhow::Result<()> where W: BinaryWrite {
-        buffer.write_str(self.id)?;
-        buffer.write_str(self.name)?;
-        buffer.write_f32_le(self.amount)?;
-        buffer.write_i32_le(self.operation as i32)?;
-        buffer.write_i32_le(self.operand as i32)?;
-        buffer.write_bool(self.serializable)
+    fn serialize<W>(&self, writer: W) -> anyhow::Result<()>
+    where
+        W: BinaryWrite
+    {
+        writer.write_str(self.id)?;
+        writer.write_str(self.name)?;
+        writer.write_f32_le(self.amount)?;
+        writer.write_i32_le(self.operation as i32)?;
+        writer.write_i32_le(self.operand as i32)?;
+        writer.write_bool(self.serializable)
     }
 }
 
@@ -51,16 +54,19 @@ pub struct Attribute<'a> {
 }
 
 impl<'a> Serialize for Attribute<'a> {
-    fn serialize<W>(&self, buffer: W) -> anyhow::Result<()> where W: BinaryWrite {
-        buffer.write_f32_le(self.range.start)?;
-        buffer.write_f32_le(self.range.end)?;
-        buffer.write_f32_le(self.value)?;
-        buffer.write_f32_le(self.default)?;
-        buffer.write_str(self.name)?;
+    fn serialize<W>(&self, writer: W) -> anyhow::Result<()>
+    where
+        W: BinaryWrite
+    {
+        writer.write_f32_le(self.range.start)?;
+        writer.write_f32_le(self.range.end)?;
+        writer.write_f32_le(self.value)?;
+        writer.write_f32_le(self.default)?;
+        writer.write_str(self.name)?;
 
-        buffer.write_var_u32(self.modifiers.len() as u32)?;
+        writer.write_var_u32(self.modifiers.len() as u32)?;
         for modifier in &self.modifiers {
-            modifier.serialize(buffer)?;
+            modifier.serialize(writer)?;
         }
 
         Ok(())
@@ -79,14 +85,17 @@ impl<'a> ConnectedPacket for UpdateAttributes<'a> {
 }
 
 impl<'a> Serialize for UpdateAttributes<'a> {
-    fn serialize<W>(&self, buffer: W) -> anyhow::Result<()> where W: BinaryWrite {
-        buffer.write_var_u64(self.runtime_id)?;
+    fn serialize<W>(&self, writer: W) -> anyhow::Result<()>
+    where
+        W: BinaryWrite
+    {
+        writer.write_var_u64(self.runtime_id)?;
 
-        buffer.write_var_u32(self.attributes.len() as u32)?;
+        writer.write_var_u32(self.attributes.len() as u32)?;
         for attribute in &self.attributes {
-            attribute.serialize(buffer)?;
+            attribute.serialize(writer)?;
         }
 
-        buffer.write_var_u64(self.tick)
+        writer.write_var_u64(self.tick)
     }
 }

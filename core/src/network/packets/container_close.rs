@@ -20,9 +20,12 @@ impl ConnectedPacket for ContainerClose {
 }
 
 impl<'a> Deserialize<'a> for ContainerClose {
-    fn deserialize(mut buffer: SharedBuffer<'a>) -> anyhow::Result<Self> {
-        let window_id = buffer.read_u8()?;
-        let server_initiated = buffer.read_bool()?;
+    fn deserialize<R>(reader: R) -> anyhow::Result<Self>
+    where
+        R: BinaryRead<'a> + 'a
+    {
+        let window_id = reader.read_u8()?;
+        let server_initiated = reader.read_bool()?;
 
         Ok(Self {
             window_id, server_initiated
@@ -31,7 +34,10 @@ impl<'a> Deserialize<'a> for ContainerClose {
 }
 
 impl Serialize for ContainerClose {
-    fn serialize<W>(&self, buffer: W) -> anyhow::Result<()> where W: BinaryWrite {
+    fn serialize<W>(&self, buffer: W) -> anyhow::Result<()>
+    where
+        W: BinaryWrite
+    {
         buffer.write_u8(self.window_id)?;
         buffer.write_bool(self.server_initiated)
     }

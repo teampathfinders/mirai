@@ -22,11 +22,14 @@ impl ConnectedPacket for NetworkChunkPublisherUpdate {
 }
 
 impl Serialize for NetworkChunkPublisherUpdate {
-    fn serialize<W>(&self, buffer: W) -> anyhow::Result<()> where W: BinaryWrite {
-        buffer.write_veci(&self.position)?;
-        buffer.write_var_u32(self.radius)?;
+    fn serialize<W>(&self, writer: W) -> anyhow::Result<()>
+    where
+        W: BinaryWrite
+    {
+        writer.write_veci(&self.position)?;
+        writer.write_var_u32(self.radius)?;
 
         // No saved chunks.
-        buffer.write_u32_be(0)
+        writer.write_u32_be(0)
     }
 }

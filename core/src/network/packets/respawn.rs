@@ -40,18 +40,24 @@ impl ConnectedPacket for Respawn {
 }
 
 impl Serialize for Respawn {
-    fn serialize<W>(&self, buffer: W) -> anyhow::Result<()> where W: BinaryWrite {
-        buffer.write_vecf(&self.position)?;
-        buffer.write_u8(self.state as u8)?;
-        buffer.write_var_u64(self.runtime_id)
+    fn serialize<W>(&self, writer: W) -> anyhow::Result<()>
+    where
+        W: BinaryWrite
+    {
+        writer.write_vecf(&self.position)?;
+        writer.write_u8(self.state as u8)?;
+        writer.write_var_u64(self.runtime_id)
     }
 }
 
-impl Deserialize<'_> for Respawn {
-    fn deserialize(mut buffer: SharedBuffer) -> anyhow::Result<Self> {
-        let position = buffer.read_vecf()?;
-        let state = RespawnState::try_from(buffer.read_u8()?)?;
-        let runtime_id = buffer.read_var_u64()?;
+impl<'a> Deserialize<'a> for Respawn {
+    fn deserialize<R>(reader: R) -> anyhow::Result<Self>
+    where
+        R: BinaryRead<'a> + 'a
+    {
+        let position = reader.read_vecf()?;
+        let state = RespawnState::try_from(reader.read_u8()?)?;
+        let runtime_id = reader.read_var_u64()?;
 
         Ok(Self { position, state, runtime_id })
     }

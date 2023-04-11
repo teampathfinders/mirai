@@ -25,7 +25,10 @@ impl Header {
 
 impl Serialize for Header {
     /// Encodes the header.
-    fn serialize(&self, writer: impl BinaryWrite) -> anyhow::Result<()> {
+    fn serialize<W>(&self, writer: W) -> anyhow::Result<()>
+    where
+        W: BinaryWrite
+    {
         let value = self.id
             | ((self.sender_subclient as u32) << 10)
             | ((self.target_subclient as u32) << 12);
@@ -36,7 +39,10 @@ impl Serialize for Header {
 
 impl Header {
     /// Decodes the header.
-    pub fn deserialize<'a>(reader: impl BinaryRead<'a>) -> anyhow::Result<Self> {
+    pub fn deserialize<'a, R>(reader: R) -> anyhow::Result<Self>
+    where
+        R: BinaryRead<'a> + 'a
+    {
         let value = reader.read_var_u32()?;
 
         let id = value & 0x3ff;

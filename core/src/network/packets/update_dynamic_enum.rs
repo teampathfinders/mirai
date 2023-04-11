@@ -23,7 +23,7 @@ pub struct UpdateDynamicEnum<'a> {
     pub action: SoftEnumAction,
 }
 
-impl ConnectedPacket for UpdateDynamicEnum<'_> {
+impl<'a> ConnectedPacket for UpdateDynamicEnum<'a> {
     const ID: u32 = 0x72;
 
     fn serialized_size(&self) -> usize {
@@ -35,13 +35,16 @@ impl ConnectedPacket for UpdateDynamicEnum<'_> {
     }
 }
 
-impl Serialize for UpdateDynamicEnum<'_> {
-    fn serialize<W>(&self, buffer: W) -> anyhow::Result<()> where W: BinaryWrite {
-        buffer.write_str(self.enum_id)?;
-        buffer.write_var_u32(self.options.len() as u32)?;
+impl<'a> Serialize for UpdateDynamicEnum<'a> {
+    fn serialize<W>(&self, writer: W) -> anyhow::Result<()>
+    where
+        W: BinaryWrite
+    {
+        writer.write_str(self.enum_id)?;
+        writer.write_var_u32(self.options.len() as u32)?;
         for option in self.options {
-            buffer.write_str(option)?;
+            writer.write_str(option)?;
         }
-        buffer.write_u8(self.action as u8)
+        writer.write_u8(self.action as u8)
     }
 }

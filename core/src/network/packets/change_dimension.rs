@@ -26,9 +26,12 @@ impl ConnectedPacket for ChangeDimension {
 }
 
 impl Serialize for ChangeDimension {
-    fn serialize<W>(&self, buffer: W) -> anyhow::Result<()> where W: BinaryWrite {
-        buffer.write_var_i32(self.dimension as i32)?;
-        buffer.write_vecf(&self.position)?;
-        buffer.write_bool(self.respawn)
+    fn serialize<W>(&self, writer: W) -> anyhow::Result<()>
+    where
+        W: BinaryWrite
+    {
+        writer.write_var_i32(self.dimension as i32)?;
+        writer.write_vecf(&self.position)?;
+        writer.write_bool(self.respawn)
     }
 }

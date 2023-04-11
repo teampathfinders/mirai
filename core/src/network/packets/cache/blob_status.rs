@@ -16,19 +16,22 @@ impl ConnectedPacket for CacheBlobStatus {
     const ID: u32 = 0x87;
 }
 
-impl Deserialize<'_> for CacheBlobStatus {
-    fn deserialize(mut buffer: SharedBuffer) -> anyhow::Result<Self> {
-        let miss_count = buffer.read_var_u32()?;
-        let hit_count = buffer.read_var_u32()?;
+impl<'a> Deserialize<'a> for CacheBlobStatus {
+    fn deserialize<R>(reader: R) -> anyhow::Result<Self>
+    where
+        R: BinaryRead<'a> + 'a
+    {
+        let miss_count = reader.read_var_u32()?;
+        let hit_count = reader.read_var_u32()?;
 
         let mut misses = Vec::with_capacity(miss_count as usize);
         for _ in 0..miss_count {
-            misses.push(buffer.read_u64_le()?);
+            misses.push(reader.read_u64_le()?);
         }
 
         let mut hits = Vec::with_capacity(hit_count as usize);
         for _ in 0..hit_count {
-            hits.push(buffer.read_u64_le()?);
+            hits.push(reader.read_u64_le()?);
         }
 
         Ok(Self {
