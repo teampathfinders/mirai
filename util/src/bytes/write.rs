@@ -34,6 +34,8 @@ pub trait BinaryWrite: Write {
         u16, i16, u24, u32, i32, u64, i64, u128, i128, f32, f64
     );
 
+    fn as_mut_slice(&mut self) -> &mut [u8];
+
     #[inline]
     fn write_bool(&mut self, v: bool) -> anyhow::Result<()> {
         self.write_all(&[v as u8])?;
@@ -173,4 +175,8 @@ pub trait BinaryWrite: Write {
     }
 }
 
-impl<W: Write> BinaryWrite for W {}
+impl<W: BinaryWrite> BinaryWrite for &mut W {
+    fn as_mut_slice(&mut self) -> &mut [u8] {
+        (*self).as_mut_slice()
+    }
+}

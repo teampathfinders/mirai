@@ -16,7 +16,7 @@ use rand::rngs::OsRng;
 use rand::Rng;
 use sha2::{Digest, Sha256};
 
-use util::bytes::MutableBuffer;
+use util::bytes::{MutableBuffer, BinaryWrite};
 use util::{bail, Result};
 
 type Aes256CtrBE = ctr::Ctr64BE<aes::Aes256>;
@@ -157,22 +157,24 @@ impl Encryptor {
     ///
     /// If the checksum does not match, a [`BadPacket`](util::ErrorKind::Malformed) error is returned.
     /// The client must be disconnected if this fails, because the data has probably been tampered with.
-    pub fn decrypt(&self, buffer: &mut MutableBuffer) -> anyhow::Result<()> {
-        if buffer.len() < 9 {
-            bail!(
-                Malformed,
+    pub fn decrypt<W>(&self, writer: W) -> anyhow::Result<()>
+    where
+        W: BinaryWrite
+    {
+        if writer.remaining() < 9 {
+            anyhow::bail!(format!(
                 "Encrypted buffer must be at least 9 bytes, received {}",
-                buffer.len()
-            );
+                writer.remaining()
+            ))
         }
 
         self.cipher_decrypt
             .lock()
-            .apply_keystream(buffer.as_mut_slice());
+            .apply_keystream(writer.as_mut_slice());
         let counter = self.receive_counter.fetch_add(1, Ordering::SeqCst);
 
-        let slice = buffer.as_slice();
-        let checksum = &slice[slice.len() - 8..];
+        let slice = writer.as_slice();
+        let checksum = &slice[slice.remaining() - 8..];
         let computed_checksum =
             self.compute_checksum(&slice[..slice.len() - 8], counter);
 
@@ -181,21 +183,24 @@ impl Encryptor {
         }
 
         // Remove checksum from data.
-        buffer.truncate(buffer.len() - 8);
+        writer.truncate(writer.remaining() - 8);
 
         Ok(())
     }
 
     /// Encrypts a packet and appends the computed checksum.
-    pub fn encrypt(&self, buffer: &mut MutableBuffer) -> anyhow::Result<()> {
+    pub fn encrypt<W>(&self, writer: W) -> anyhow::Result<()>
+    where
+        W: BinaryWrite
+    {
         let counter = self.send_counter.fetch_add(1, Ordering::SeqCst);
         // Exclude 0xfe header from checksum calculations.
-        let checksum = self.compute_checksum(&buffer.as_ref()[1..], counter);
-        buffer.write_all(&checksum)?;
+        let checksum = self.compute_checksum(&writer.as_slice()[1..], counter);
+        writer.write_all(&checksum)?;
 
         self.cipher_encrypt
             .lock()
-            .apply_keystream(&mut buffer.as_mut_slice()[1..]);
+            .apply_keystream(&mut writer.as_mut_slice()[1..]);
 
         Ok(())
     }

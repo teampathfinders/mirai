@@ -46,6 +46,8 @@ pub trait BinaryRead<'a> {
         u16, i16, u24, u32, i32, u64, i64, u128, i128, f32, f64
     );
 
+    fn as_slice(&self) -> &[u8];
+
     /// Consumes `n` bytes.
     fn advance(&mut self, n: usize) -> anyhow::Result<()>;
 
@@ -223,6 +225,11 @@ pub trait BinaryRead<'a> {
 }
 
 impl<'a, R: BinaryRead<'a>> BinaryRead<'a> for &'a mut R {
+    #[inline]
+    fn as_slice(&self) -> &[u8] {
+        (**self).as_slice()
+    }
+
     #[inline]
     fn advance(&mut self, n: usize) -> anyhow::Result<()> {
         (*self).advance(n)

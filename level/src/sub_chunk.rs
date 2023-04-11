@@ -162,7 +162,7 @@ impl SubLayer {
     #[inline]
     fn deserialize<'a, R>(mut reader: R) -> anyhow::Result<Self>
     where
-        R: BinaryRead<'a> + Copy + 'a,
+        R: BinaryRead<'a> + 'a,
     {
         let indices = match crate::deserialize_packed_array(&mut reader)? {
             PackedArrayReturn::Data(data) => data,
@@ -178,7 +178,7 @@ impl SubLayer {
         let mut palette = Vec::with_capacity(len);
 
         for _ in 0..len {
-            let (entry, n) = nbt::from_le_bytes(reader)?;
+            let (entry, n) = nbt::from_le_bytes(&mut reader)?;
 
             palette.push(entry);
             reader.advance(n)?;

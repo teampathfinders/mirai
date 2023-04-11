@@ -5,6 +5,8 @@ use std::{fmt, io};
 
 use crate::bytes::SharedBuffer;
 
+use super::BinaryWrite;
+
 /// A buffer that can be read from and written to.
 /// It is the owned version of [`ReadBuffer`].
 #[derive(Default)]
@@ -141,5 +143,11 @@ impl Write for MutableBuffer {
     #[inline]
     fn flush(&mut self) -> io::Result<()> {
         Ok(())
+    }
+}
+
+impl BinaryWrite for MutableBuffer {
+    fn as_mut_slice(&mut self) -> &mut [u8] {
+        &mut self.data
     }
 }

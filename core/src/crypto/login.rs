@@ -214,11 +214,14 @@ fn parse_user_data_token(
 /// Parses the identification data contained in the first token chain.
 ///
 /// This contains such as the XUID, display name and public key.
-pub fn parse_identity_data(
-    buffer: &mut SharedBuffer,
-) -> anyhow::Result<IdentityTokenPayload> {
-    let token_length = buffer.read_u32_le()?;
-    let token_chain = buffer.take_n(token_length as usize)?;
+pub fn parse_identity_data<'a, R>(
+    reader: R
+) -> anyhow::Result<IdentityTokenPayload>
+where
+    R: BinaryRead<'a> + 'a
+{
+    let token_length = reader.read_u32_le()?;
+    let token_chain = reader.take_n(token_length as usize)?;
 
     let tokens = serde_json::from_slice::<TokenChain>(token_chain)?;
     let identity_data = match tokens.chain.len() {
@@ -253,12 +256,15 @@ pub fn parse_identity_data(
 
 /// Parses the user data token from the login packet.
 /// This token contains the user's operating system, language, skin, etc.
-pub fn parse_user_data(
-    buffer: &mut SharedBuffer,
+pub fn parse_user_data<'a, R>(
+    reader: R,
     public_key: &str,
-) -> anyhow::Result<UserDataTokenPayload> {
-    let token_length = buffer.read_u32_le()?;
-    let token = buffer.take_n(token_length as usize)?;
+) -> anyhow::Result<UserDataTokenPayload>
+where
+    R: BinaryRead<'a> + 'a
+{
+    let token_length = reader.read_u32_le()?;
+    let token = reader.take_n(token_length as usize)?;
     let token_string = String::from_utf8_lossy(token);
 
     let user_data = parse_user_data_token(token_string.as_ref(), public_key)?;

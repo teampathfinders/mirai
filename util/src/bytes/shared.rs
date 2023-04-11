@@ -61,6 +61,10 @@ impl<'a> SharedBuffer<'a> {
 }
 
 impl<'a> BinaryRead<'a> for &'a [u8] {
+    fn as_slice(&self) -> &[u8] {
+        self
+    }
+
     fn advance(&mut self, n: usize) -> anyhow::Result<()> {
         if self.len() < n {
             anyhow::bail!(format!(
