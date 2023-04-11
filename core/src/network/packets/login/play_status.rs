@@ -44,7 +44,7 @@ impl ConnectedPacket for PlayStatus {
 }
 
 impl Serialize for PlayStatus {
-    fn serialize(&self, buffer: &mut MutableBuffer) -> anyhow::Result<()> {
+    fn serialize<W>(&self, buffer: W) -> anyhow::Result<()> where W: BinaryWrite {
         buffer.write_u32_be(self.status as u32)
     }
 }

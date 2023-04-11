@@ -248,7 +248,7 @@ impl GameRule {
         }
     }
 
-    pub fn serialize(&self, buffer: &mut MutableBuffer) -> anyhow::Result<()> {
+    pub fn serialize<W>(&self, buffer: W) -> anyhow::Result<()> where W: BinaryWrite {
         buffer.write_str(self.name())?;
         buffer.write_bool(true)?; // Player can modify. Doesn't seem to do anything.
 
@@ -349,7 +349,7 @@ impl ConnectedPacket for GameRulesChanged<'_> {
 }
 
 impl Serialize for GameRulesChanged<'_> {
-    fn serialize(&self, buffer: &mut MutableBuffer) -> anyhow::Result<()> {
+    fn serialize<W>(&self, buffer: W) -> anyhow::Result<()> where W: BinaryWrite {
         buffer.write_var_u32(self.game_rules.len() as u32)?;
         for game_rule in self.game_rules {
             game_rule.serialize(buffer)?;

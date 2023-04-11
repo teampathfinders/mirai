@@ -40,7 +40,7 @@ impl<'a> ConnectedPacket for PlayerListAdd<'a> {
 }
 
 impl<'a> Serialize for PlayerListAdd<'a> {
-    fn serialize(&self, buffer: &mut MutableBuffer) -> anyhow::Result<()> {
+    fn serialize<W>(&self, buffer: W) -> anyhow::Result<()> where W: BinaryWrite {
         buffer.write_u8(0)?; // Add player.
         buffer.write_var_u32(self.entries.len() as u32)?;
         for entry in self.entries {
@@ -79,7 +79,7 @@ impl<'a> ConnectedPacket for PlayerListRemove<'a> {
 }
 
 impl<'a> Serialize for PlayerListRemove<'a> {
-    fn serialize(&self, buffer: &mut MutableBuffer) -> anyhow::Result<()> {
+    fn serialize<W>(&self, buffer: W) -> anyhow::Result<()> where W: BinaryWrite {
         buffer.write_u8(1)?; // Remove player.
         buffer.write_var_u32(self.entries.len() as u32)?;
         for entry in self.entries {

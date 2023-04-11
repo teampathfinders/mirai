@@ -72,7 +72,8 @@ impl Biomes {
     where
         R: BinaryRead<'a>,
     {
-        let heightmap: Box<[[u16; 16]; 16]> = Box::new(bytemuck::cast(reader.take_const::<HEIGHTMAP_SIZE>()?));
+        let heightmap: Box<[[u16; 16]; 16]> =
+            Box::new(bytemuck::cast(reader.take_const::<HEIGHTMAP_SIZE>()?));
 
         let mut fragments = Vec::new();
         while !reader.eof() {
@@ -85,7 +86,10 @@ impl Biomes {
                     palette.push(reader.read_u32_le()?);
                 }
 
-                fragments.push(BiomeEncoding::Paletted(PalettedBiome { indices, palette }));
+                fragments.push(BiomeEncoding::Paletted(PalettedBiome {
+                    indices,
+                    palette,
+                }));
             } else if PackedArrayReturn::Empty == packed_array {
                 let single = reader.read_u32_le()?;
                 fragments.push(BiomeEncoding::Single(single));
@@ -113,7 +117,12 @@ impl Biomes {
                     writer.write_u32_le(*single)?;
                 }
                 BiomeEncoding::Paletted(biome) => {
-                    crate::serialize_packed_array(&mut writer, &biome.indices, biome.palette.len(), false)?;
+                    crate::serialize_packed_array(
+                        &mut writer,
+                        &biome.indices,
+                        biome.palette.len(),
+                        false,
+                    )?;
 
                     writer.write_u32_le(biome.palette.len() as u32)?;
                     for entry in &biome.palette {

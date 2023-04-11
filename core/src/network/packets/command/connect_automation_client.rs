@@ -19,7 +19,7 @@ impl<'a> ConnectedPacket for ConnectAutomationClient<'a> {
 }
 
 impl<'a> Serialize for ConnectAutomationClient<'a> {
-    fn serialize(&self, buffer: &mut MutableBuffer) -> anyhow::Result<()> {
+    fn serialize<W>(&self, buffer: W) -> anyhow::Result<()> where W: BinaryWrite {
         buffer.write_str(self.server_uri)
     }
 }

@@ -42,7 +42,9 @@ macro_rules! declare_primitive_fns {
 
 /// Adds binary reading capabilities to a reader.
 pub trait BinaryRead<'a> {
-    declare_primitive_fns!(u16, i16, u24, u32, i32, u64, i64, u128, i128, f32, f64);
+    declare_primitive_fns!(
+        u16, i16, u24, u32, i32, u64, i64, u128, i128, f32, f64
+    );
 
     /// Consumes `n` bytes.
     fn advance(&mut self, n: usize) -> anyhow::Result<()>;
@@ -212,7 +214,9 @@ pub trait BinaryRead<'a> {
                 SocketAddr::new(addr, port)
             }
             _ => {
-                anyhow::bail!(format!("Invalid IP type {variant}, expected either 4 or 6"));
+                anyhow::bail!(format!(
+                    "Invalid IP type {variant}, expected either 4 or 6"
+                ));
             }
         })
     }

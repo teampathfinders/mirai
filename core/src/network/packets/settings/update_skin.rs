@@ -20,7 +20,7 @@ impl<'a> ConnectedPacket for UpdateSkin<'a> {
 }
 
 impl<'a> Serialize for UpdateSkin<'a> {
-    fn serialize(&self, buffer: &mut MutableBuffer) -> anyhow::Result<()> {
+    fn serialize<W>(&self, buffer: W) -> anyhow::Result<()> where W: BinaryWrite {
         buffer.write_u128_le(self.uuid.as_u128())?;
         self.skin.serialize(buffer)?;
         buffer.write_str("")?; // Old skin name. Unused

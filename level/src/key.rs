@@ -70,7 +70,18 @@ pub struct DataKey {
 impl DataKey {
     /// What is the size of this key after it has been serialised?
     pub(crate) fn serialized_size(&self) -> usize {
-        4 + 4 + if self.dimension != Dimension::Overworld { 4 } else { 0 } + 1 + if let KeyType::SubChunk { .. } = self.data { 1 } else { 0 }
+        4 + 4
+            + if self.dimension != Dimension::Overworld {
+                4
+            } else {
+                0
+            }
+            + 1
+            + if let KeyType::SubChunk { .. } = self.data {
+                1
+            } else {
+                0
+            }
     }
 
     /// Serialises the key into the given writer.

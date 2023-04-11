@@ -31,7 +31,7 @@ pub struct AttributeModifier<'a> {
 }
 
 impl<'a> Serialize for AttributeModifier<'a> {
-    fn serialize(&self, buffer: &mut MutableBuffer) -> anyhow::Result<()> {
+    fn serialize<W>(&self, buffer: W) -> anyhow::Result<()> where W: BinaryWrite {
         buffer.write_str(self.id)?;
         buffer.write_str(self.name)?;
         buffer.write_f32_le(self.amount)?;
@@ -51,7 +51,7 @@ pub struct Attribute<'a> {
 }
 
 impl<'a> Serialize for Attribute<'a> {
-    fn serialize(&self, buffer: &mut MutableBuffer) -> anyhow::Result<()> {
+    fn serialize<W>(&self, buffer: W) -> anyhow::Result<()> where W: BinaryWrite {
         buffer.write_f32_le(self.range.start)?;
         buffer.write_f32_le(self.range.end)?;
         buffer.write_f32_le(self.value)?;
@@ -79,7 +79,7 @@ impl<'a> ConnectedPacket for UpdateAttributes<'a> {
 }
 
 impl<'a> Serialize for UpdateAttributes<'a> {
-    fn serialize(&self, buffer: &mut MutableBuffer) -> anyhow::Result<()> {
+    fn serialize<W>(&self, buffer: W) -> anyhow::Result<()> where W: BinaryWrite {
         buffer.write_var_u64(self.runtime_id)?;
 
         buffer.write_var_u32(self.attributes.len() as u32)?;

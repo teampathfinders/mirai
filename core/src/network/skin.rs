@@ -130,7 +130,7 @@ pub struct PersonaPiece {
 }
 
 impl PersonaPiece {
-    fn serialize(&self, buffer: &mut MutableBuffer) -> anyhow::Result<()> {
+    fn serialize<W>(&self, buffer: W) -> anyhow::Result<()> where W: BinaryWrite {
         buffer.write_str(&self.piece_id)?;
         buffer.write_str(self.piece_type.name())?;
         buffer.write_str(&self.pack_id)?;
@@ -138,7 +138,7 @@ impl PersonaPiece {
         buffer.write_str(&self.product_id)
     }
 
-    fn deserialize(buffer: &mut SharedBuffer) -> anyhow::Result<Self> {
+    fn deserialize<R>(buffer: R) -> anyhow::Result<Self> where R: BinaryRead<'a> + 'a {
         let piece_id = buffer.read_str()?.to_owned();
         let piece_type = PersonaPieceType::try_from(buffer.read_str()?)?;
         let pack_id = buffer.read_str()?.to_owned();
@@ -167,7 +167,7 @@ pub struct PersonaPieceTint {
 }
 
 impl PersonaPieceTint {
-    fn serialize(&self, buffer: &mut MutableBuffer) -> anyhow::Result<()> {
+    fn serialize<W>(&self, buffer: W) -> anyhow::Result<()> where W: BinaryWrite {
         buffer.write_str(self.piece_type.name())?;
 
         buffer.write_u32_le(self.colors.len() as u32)?;
@@ -178,7 +178,7 @@ impl PersonaPieceTint {
         Ok(())
     }
 
-    fn deserialize(buffer: &mut SharedBuffer) -> anyhow::Result<Self> {
+    fn deserialize<R>(buffer: R) -> anyhow::Result<Self> where R: BinaryRead<'a> + 'a {
         let piece_type = PersonaPieceType::try_from(buffer.read_str()?)?;
 
         let color_count = buffer.read_u32_le()?;
@@ -268,7 +268,7 @@ pub struct SkinAnimation {
 }
 
 impl SkinAnimation {
-    pub fn serialize(&self, buffer: &mut MutableBuffer) -> anyhow::Result<()> {
+    pub fn serialize<W>(&self, buffer: W) -> anyhow::Result<()> where W: BinaryWrite {
         buffer.write_u32_le(self.image_width)?;
         buffer.write_u32_le(self.image_height)?;
 
@@ -280,7 +280,7 @@ impl SkinAnimation {
         buffer.write_u32_le(self.expression_type as u32)
     }
 
-    pub fn deserialize(buffer: &mut SharedBuffer) -> anyhow::Result<Self> {
+    pub fn deserialize<R>(buffer: R) -> anyhow::Result<Self> where R: BinaryRead<'a> + 'a {
         let image_width = buffer.read_u32_le()?;
         let image_height = buffer.read_u32_le()?;
         let image_size = buffer.read_var_u32()?;
@@ -444,7 +444,7 @@ impl Skin {
         Ok(())
     }
 
-    pub fn serialize(&self, buffer: &mut MutableBuffer) -> anyhow::Result<()> {
+    pub fn serialize<W>(&self, buffer: W) -> anyhow::Result<()> where W: BinaryWrite {
         buffer.write_str(&self.skin_id)?;
         buffer.write_str(&self.playfab_id)?;
         buffer.write_str(&self.resource_patch)?;
@@ -489,7 +489,7 @@ impl Skin {
         buffer.write_bool(self.is_primary_user)
     }
 
-    pub fn deserialize(buffer: &mut SharedBuffer) -> anyhow::Result<Self> {
+    pub fn deserialize<R>(buffer: R) -> anyhow::Result<Self> where R: BinaryRead<'a> + 'a {
         let skin_id = buffer.read_str()?.to_owned();
         let playfab_id = buffer.read_str()?.to_owned();
         let resource_patch = buffer.read_str()?.to_owned();

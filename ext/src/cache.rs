@@ -34,7 +34,10 @@ impl CompilationCache {
         P: Into<PathBuf>,
     {
         let cache_dir = cache_dir.into();
-        if !cache_dir.try_exists().context("Could not verify that cache directory exists")? {
+        if !cache_dir
+            .try_exists()
+            .context("Could not verify that cache directory exists")?
+        {
             std::fs::create_dir_all(&cache_dir)?;
         }
 
@@ -49,11 +52,18 @@ impl CompilationCache {
     ///
     /// This function will return an error if filesystem I/O operations fail,
     /// if the file is an invalid Zlib stream or if the plugin is malformed.
-    pub fn load(&self, engine: &Engine, file_name: &str) -> anyhow::Result<Module> {
+    pub fn load(
+        &self,
+        engine: &Engine,
+        file_name: &str,
+    ) -> anyhow::Result<Module> {
         let assembly_path = Path::new(ASSEMBLY_DIRECTORY).join(file_name);
         let mut bytecode = Vec::new();
         File::open(&assembly_path)
-            .context(format!("Could not find plugin assembly {}", assembly_path.display()))?
+            .context(format!(
+                "Could not find plugin assembly {}",
+                assembly_path.display()
+            ))?
             .read_to_end(&mut bytecode)?;
 
         // Cache names are SHA-256 hashes of the plugin's source.

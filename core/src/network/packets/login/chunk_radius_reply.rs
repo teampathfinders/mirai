@@ -20,7 +20,7 @@ impl ConnectedPacket for ChunkRadiusReply {
 }
 
 impl Serialize for ChunkRadiusReply {
-    fn serialize(&self, buffer: &mut MutableBuffer) -> anyhow::Result<()> {
+    fn serialize<W>(&self, buffer: W) -> anyhow::Result<()> where W: BinaryWrite {
         buffer.write_var_i32(self.radius)
     }
 }

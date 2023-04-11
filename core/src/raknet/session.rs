@@ -2,7 +2,7 @@ use std::mem::MaybeUninit;
 use std::net::SocketAddr;
 use std::num::NonZeroU64;
 use std::sync::Arc;
-use std::sync::atomic::{AtomicBool, AtomicU32, AtomicU16, AtomicU64, Ordering};
+use std::sync::atomic::{AtomicBool, AtomicU16, AtomicU64, Ordering};
 use std::time::Instant;
 use parking_lot::{Mutex, RwLock};
 use tokio::net::UdpSocket;

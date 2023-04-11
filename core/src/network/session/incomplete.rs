@@ -2,10 +2,10 @@ use std::{sync::{atomic::{AtomicU32, AtomicBool, AtomicI32, Ordering}, Arc}, net
 
 use tokio::sync::{mpsc, OnceCell, broadcast, Mutex, oneshot};
 use tokio_util::sync::CancellationToken;
-use util::{bytes::MutableBuffer, Deserialize, Serialize};
+use util::{bytes::{MutableBuffer, BinaryRead}, Deserialize, Serialize};
 use uuid::Uuid;
 
-use crate::{network::{Disconnect, ConnectedPacket, Skin, DeviceOS, ChunkRadiusRequest, CacheStatus, ChunkRadiusReply, RequestNetworkSettings, PlayStatus, NETWORK_VERSION, Status, NetworkSettings}, raknet::{RakNetSession, RakNetMessage, PacketConfig, Reliability, SendPriority, RakNetSessionBuilder, BroadcastPacket, RawPacket}, crypto::{UserData, IdentityData}, config::SERVER_CONFIG, instance::UdpController};
+use crate::{network::{Disconnect, ConnectedPacket, Skin, DeviceOS, ChunkRadiusRequest, CacheStatus, ChunkRadiusReply, RequestNetworkSettings, PlayStatus, NETWORK_VERSION, Status, NetworkSettings, Header}, raknet::{RakNetSession, RakNetMessage, PacketConfig, Reliability, SendPriority, RakNetSessionBuilder, BroadcastPacket, RawPacket}, crypto::{UserData, IdentityData}, config::SERVER_CONFIG, instance::UdpController};
 
 use super::{SessionLike, SessionRef, SessionMapMessage};
 
@@ -217,14 +217,14 @@ impl IncompleteSession {
     }
 
     pub fn on_cache_status(&mut self, packet: MutableBuffer) -> anyhow::Result<()> {
-        let status = CacheStatus::deserialize(packet.as_ref().into())?; // TODO
+        let status = CacheStatus::deserialize(packet.as_ref())?;
         self.cache_support.store(status.support, Ordering::Relaxed);
 
         Ok(())
     }
 
     pub fn on_radius_request(&mut self, packet: MutableBuffer) -> anyhow::Result<()> {
-        let request = ChunkRadiusRequest::deserialize(packet.as_ref().into())?; // TODO
+        let request = ChunkRadiusRequest::deserialize(packet.as_ref())?;
         let radius = std::cmp::min(SERVER_CONFIG.read().allowed_render_distance, request.radius);
 
         if request.radius <= 0 {
@@ -240,7 +240,7 @@ impl IncompleteSession {
     }
 
     pub fn on_settings_request(&mut self, packet: MutableBuffer) -> anyhow::Result<()> {
-        let request = RequestNetworkSettings::deserialize(packet.as_ref().into())?; // TODO
+        let request = RequestNetworkSettings::deserialize(packet.as_ref())?;
         if request.protocol_version > NETWORK_VERSION {
             self.send(PlayStatus {
                 status: Status::FailedServer
@@ -283,7 +283,12 @@ impl IncompleteSession {
 
     #[inline]
     fn process_packet(&self, packet: MutableBuffer) -> anyhow::Result<()> {
-        println!("packet: {packet:?}");
+        let mut reader = packet.as_ref();
+
+        reader.advance(1)?;
+
+        let header = Header::deserialize(&mut reader)?;
+        dbg!(header);
 
         Ok(())
     }

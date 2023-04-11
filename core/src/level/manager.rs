@@ -71,15 +71,16 @@ pub struct LevelManager {
 }
 
 impl LevelManager {
-    pub fn new(session_manager: Arc<SessionMap>, token: CancellationToken) -> anyhow::Result<Arc<Self>> {
+    pub fn new(
+        session_manager: Arc<SessionMap>,
+        token: CancellationToken,
+    ) -> anyhow::Result<Arc<Self>> {
         let (level_path, autosave_interval) = {
             let config = SERVER_CONFIG.read();
             (config.level_path, config.autosave_interval)
         };
 
-        let provider = unsafe {
-            Provider::open(level_path)?
-        };
+        let provider = unsafe { Provider::open(level_path)? };
         let cache = RwLock::new(LevelCache::new());
 
         let manager = Arc::new(Self {
@@ -87,8 +88,14 @@ impl LevelManager {
             cache,
             commands: DashMap::new(),
             game_rules: DashMap::from_iter([
-                ("showcoordinates".to_owned(), GameRule::ShowCoordinates(false)),
-                ("naturalregeneration".to_owned(), GameRule::NaturalRegeneration(false)),
+                (
+                    "showcoordinates".to_owned(),
+                    GameRule::ShowCoordinates(false),
+                ),
+                (
+                    "naturalregeneration".to_owned(),
+                    GameRule::NaturalRegeneration(false),
+                ),
             ]),
             session_manager,
             tick: AtomicU64::new(0),
@@ -96,9 +103,7 @@ impl LevelManager {
         });
 
         let clone = manager.clone();
-        tokio::spawn(async move {
-            clone.ticker_job().await
-        });
+        tokio::spawn(async move { clone.ticker_job().await });
 
         Ok(manager)
     }
@@ -142,38 +147,58 @@ impl LevelManager {
     /// Returns a list of currently applied game rules.
     #[inline]
     pub fn get_game_rules(&self) -> Vec<GameRule> {
-        self.game_rules.iter().map(|kv| *kv.value()).collect::<Vec<_>>()
+        self.game_rules
+            .iter()
+            .map(|kv| *kv.value())
+            .collect::<Vec<_>>()
     }
 
     /// Sets the value of a game rule, returning the old value if there was one.
     #[inline]
-    pub fn set_game_rule(&self, game_rule: GameRule) -> anyhow::Result<Option<GameRule>> {
+    pub fn set_game_rule(
+        &self,
+        game_rule: GameRule,
+    ) -> anyhow::Result<Option<GameRule>> {
         let name = game_rule.name();
 
-        self.session_manager.broadcast(GameRulesChanged { game_rules: &[game_rule] })?;
+        self.session_manager
+            .broadcast(GameRulesChanged { game_rules: &[game_rule] })?;
         Ok(self.game_rules.insert(name.to_owned(), game_rule))
     }
 
     /// Modifies multiple game rules at the same time.
     /// This function also notifies all the clients of the change.
     #[inline]
-    pub fn set_game_rules(&self, game_rules: &[GameRule]) -> anyhow::Result<()> {
+    pub fn set_game_rules(
+        &self,
+        game_rules: &[GameRule],
+    ) -> anyhow::Result<()> {
         for game_rule in game_rules {
             let name = game_rule.name();
             self.game_rules.insert(name.to_owned(), *game_rule);
         }
 
-        self.session_manager.broadcast(GameRulesChanged { game_rules })
+        self.session_manager
+            .broadcast(GameRulesChanged { game_rules })
     }
 
     /// Loads all chunks in a radius around a specified center.
-    pub fn request_subchunks(&self, center: Vector<i32, 3>, offsets: &[Vector<i8, 3>]) -> anyhow::Result<SubChunkResponse> {
+    pub fn request_subchunks(
+        &self,
+        center: Vector<i32, 3>,
+        offsets: &[Vector<i8, 3>],
+    ) -> anyhow::Result<SubChunkResponse> {
         todo!();
         // https://github.com/df-mc/dragonfly/blob/5f8833e69a933fdbb15625217ebf3b6d8e28fbf5/server/session/chunk.go
     }
 
-    pub fn request_biomes(&self, coordinates: Vector<i32, 2>, dimension: Dimension) -> anyhow::Result<LevelChunk> {
-        let biomes = self.provider.get_biomes(coordinates.clone(), dimension)?;
+    pub fn request_biomes(
+        &self,
+        coordinates: Vector<i32, 2>,
+        dimension: Dimension,
+    ) -> anyhow::Result<LevelChunk> {
+        let biomes =
+            self.provider.get_biomes(coordinates.clone(), dimension)?;
         if biomes.is_none() {
             todo!();
         }
@@ -182,10 +207,19 @@ impl LevelManager {
         let sub_chunks = (-4..20)
             .into_iter()
             .filter_map(|cy| {
-                let sub = match self.provider.get_subchunk(coordinates.clone(), cy, dimension) {
+                let sub = match self.provider.get_subchunk(
+                    coordinates.clone(),
+                    cy,
+                    dimension,
+                ) {
                     Ok(sub) => Some(sub),
                     Err(err) => {
-                        tracing::error!("Failed to load sub chunk [{},{},{}]: {err:?}", coordinates.x, cy, coordinates.y);
+                        tracing::error!(
+                            "Failed to load sub chunk [{},{},{}]: {err:?}",
+                            coordinates.x,
+                            cy,
+                            coordinates.y
+                        );
                         return None;
                     }
                 };

@@ -34,8 +34,12 @@ impl WasiFile for ExtensionStdout {
         self.stdout.get_fdflags().await
     }
 
-    async fn write_vectored<'a>(&self, bufs: &[io::IoSlice<'a>]) -> Result<u64, Error> {
-        let span = tracing::span!(tracing::Level::INFO, "plugin", id = self.prefix);
+    async fn write_vectored<'a>(
+        &self,
+        bufs: &[io::IoSlice<'a>],
+    ) -> Result<u64, Error> {
+        let span =
+            tracing::span!(tracing::Level::INFO, "plugin", id = self.prefix);
         let _guard = span.enter();
 
         let mut written = 0;
@@ -45,10 +49,14 @@ impl WasiFile for ExtensionStdout {
                 continue;
             }
 
-            let as_str = std::str::from_utf8(buf).map_err(|_| Error::invalid_argument())?;
+            let as_str = std::str::from_utf8(buf)
+                .map_err(|_| Error::invalid_argument())?;
 
             // Strip trailing newline because tracing also adds one.
-            let stripped = as_str.strip_suffix('\n').or(as_str.strip_suffix("\r\n")).unwrap_or(as_str);
+            let stripped = as_str
+                .strip_suffix('\n')
+                .or(as_str.strip_suffix("\r\n"))
+                .unwrap_or(as_str);
 
             tracing::info!("{stripped}");
             written += buf.len();
@@ -56,7 +64,11 @@ impl WasiFile for ExtensionStdout {
         Ok(written as u64)
     }
 
-    async fn write_vectored_at<'a>(&self, _bufs: &[io::IoSlice<'a>], _offset: u64) -> Result<u64, Error> {
+    async fn write_vectored_at<'a>(
+        &self,
+        _bufs: &[io::IoSlice<'a>],
+        _offset: u64,
+    ) -> Result<u64, Error> {
         Err(Error::seek_pipe())
     }
 
@@ -64,7 +76,11 @@ impl WasiFile for ExtensionStdout {
         Err(Error::seek_pipe())
     }
 
-    async fn set_times(&self, atime: Option<SystemTimeSpec>, mtime: Option<SystemTimeSpec>) -> Result<(), Error> {
+    async fn set_times(
+        &self,
+        atime: Option<SystemTimeSpec>,
+        mtime: Option<SystemTimeSpec>,
+    ) -> Result<(), Error> {
         self.stdout.set_times(atime, mtime).await
     }
 

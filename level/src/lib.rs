@@ -30,7 +30,12 @@ pub enum PackedArrayReturn {
 
 /// Serialises a packed array.
 #[inline(always)]
-pub fn serialize_packed_array<W>(writer: &mut W, array: &[u16; 4096], max_index: usize, is_network: bool) -> anyhow::Result<()>
+pub fn serialize_packed_array<W>(
+    writer: &mut W,
+    array: &[u16; 4096],
+    max_index: usize,
+    is_network: bool,
+) -> anyhow::Result<()>
 where
     W: BinaryWrite,
 {
@@ -75,7 +80,9 @@ where
 }
 
 #[inline(always)]
-pub fn deserialize_packed_array<'a, R>(reader: &mut R) -> anyhow::Result<PackedArrayReturn>
+pub fn deserialize_packed_array<'a, R>(
+    reader: &mut R,
+) -> anyhow::Result<PackedArrayReturn>
 where
     R: BinaryRead<'a>,
 {

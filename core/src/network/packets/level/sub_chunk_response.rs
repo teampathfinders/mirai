@@ -37,19 +37,25 @@ pub struct SubChunkEntry {
 
 impl SubChunkEntry {
     #[inline]
-    fn serialize_cached(&self, buffer: &mut MutableBuffer) -> anyhow::Result<()> {
+    fn serialize_cached<W>(&self, writer: W) -> anyhow::Result<()>
+    where
+        W: BinaryWrite
+    {
         todo!();
     }
     
     #[inline]
-    fn serialize(&self, buffer: &mut MutableBuffer) -> anyhow::Result<()> {
-        buffer.write_vecb(&self.offset)?;
-        buffer.write_u8(self.result as u8)?;
-        buffer.write_all(&self.payload)?;
-        buffer.write_u8(self.heightmap_type as u8)?;
+    fn serialize<W>(&self, writer: W) -> anyhow::Result<()>
+    where
+        W: BinaryWrite
+    {
+        writer.write_vecb(&self.offset)?;
+        writer.write_u8(self.result as u8)?;
+        writer.write_all(&self.payload)?;
+        writer.write_u8(self.heightmap_type as u8)?;
         
         if self.heightmap_type == HeightmapType::WithData {
-            buffer.write_all(bytemuck::cast_slice(&*self.heightmap))?;
+            writer.write_all(bytemuck::cast_slice(&*self.heightmap))?;
         }
         
         Ok(())
@@ -69,18 +75,21 @@ impl ConnectedPacket for SubChunkResponse {
 }
 
 impl Serialize for SubChunkResponse {
-    fn serialize(&self, buffer: &mut MutableBuffer) -> anyhow::Result<()> {
-        buffer.write_bool(self.cache_enabled)?;
-        buffer.write_var_i32(self.dimension as i32)?;
-        buffer.write_veci(&self.position)?;
+    fn serialize<W>(&self, writer: W) -> anyhow::Result<()>
+    where
+        W: BinaryWrite
+    {
+        writer.write_bool(self.cache_enabled)?;
+        writer.write_var_i32(self.dimension as i32)?;
+        writer.write_veci(&self.position)?;
         
         if self.cache_enabled {
             for entry in &self.entries {
-                entry.serialize_cached(buffer)?;
+                entry.serialize_cached(writer)?;
             }   
         } else {
             for entry in &self.entries {
-                entry.serialize(buffer)?;
+                entry.serialize(writer)?;
             }
         }
         

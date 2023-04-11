@@ -30,14 +30,17 @@ impl UnconnectedPong<'_> {
 }
 
 impl Serialize for UnconnectedPong<'_> {
-    fn serialize(&self, buffer: &mut MutableBuffer) -> anyhow::Result<()> {
-        buffer.write_u8(Self::ID)?;
-        buffer.write_u64_be(self.time)?;
-        buffer.write_u64_be(self.server_guid)?;
-        buffer.write_all(OFFLINE_MESSAGE_DATA)?;
+    fn serialize<W>(&self, writer: W) -> anyhow::Result<()>
+    where
+        W: BinaryWrite,
+    {
+        writer.write_u8(Self::ID)?;
+        writer.write_u64_be(self.time)?;
+        writer.write_u64_be(self.server_guid)?;
+        writer.write_all(OFFLINE_MESSAGE_DATA)?;
 
-        buffer.write_u16_be(self.metadata.len() as u16)?;
-        buffer.write_all(self.metadata.as_bytes())?;
+        writer.write_u16_be(self.metadata.len() as u16)?;
+        writer.write_all(self.metadata.as_bytes())?;
 
         Ok(())
     }

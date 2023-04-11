@@ -13,7 +13,10 @@ pub struct CacheBlob<'a> {
 }
 
 impl<'a> CacheBlob<'a> {
-    pub fn serialize(&self, buffer: &mut MutableBuffer) -> anyhow::Result<()> {
+    pub fn serialize<W>(&self, buffer: W) -> anyhow::Result<()>
+    where
+        W: BinaryWrite,
+    {
         buffer.write_u64_le(self.hash)?;
         buffer.write_all(&self.payload)?;
 

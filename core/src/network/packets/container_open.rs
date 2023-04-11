@@ -29,7 +29,7 @@ impl ConnectedPacket for ContainerOpen {
 }
 
 impl Serialize for ContainerOpen {
-    fn serialize(&self, buffer: &mut MutableBuffer) -> anyhow::Result<()> {
+    fn serialize<W>(&self, buffer: W) -> anyhow::Result<()> where W: BinaryWrite {
         buffer.write_u8(self.window_id)?;
         buffer.write_u8(self.container_type as u8)?;
         buffer.write_block_pos(&self.position)?;

@@ -25,19 +25,29 @@ impl OpenConnectionReply2 {
     pub const ID: u8 = 0x08;
 
     pub fn serialized_size(&self) -> usize {
-        1 + 16 + if self.client_address.is_ipv4() { IPV4_MEM_SIZE } else { IPV6_MEM_SIZE } + 2 + 1
+        1 + 16
+            + if self.client_address.is_ipv4() {
+                IPV4_MEM_SIZE
+            } else {
+                IPV6_MEM_SIZE
+            }
+            + 2
+            + 1
     }
 }
 
 impl Serialize for OpenConnectionReply2 {
-    fn serialize(&self, buffer: &mut MutableBuffer) -> anyhow::Result<()> {
-        buffer.write_u8(Self::ID)?;
-        buffer.write_all(OFFLINE_MESSAGE_DATA)?;
-        buffer.write_u64_be(self.server_guid)?;
-        buffer.write_addr(&self.client_address)?;
-        buffer.write_u16_be(self.mtu)?;
+    fn serialize<W>(&self, writer: W) -> anyhow::Result<()>
+    where
+        W: BinaryWrite,
+    {
+        writer.write_u8(Self::ID)?;
+        writer.write_all(OFFLINE_MESSAGE_DATA)?;
+        writer.write_u64_be(self.server_guid)?;
+        writer.write_addr(&self.client_address)?;
+        writer.write_u16_be(self.mtu)?;
         // Encryption not enabled, must be false to continue login sequence.
         // Actual encryption will be enabled later on, using `ServerToClientHandshake`.
-        buffer.write_bool(false)
+        writer.write_bool(false)
     }
 }

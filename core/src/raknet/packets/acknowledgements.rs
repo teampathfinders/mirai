@@ -15,18 +15,21 @@ pub enum AckRecord {
 }
 
 /// Encodes a list of acknowledgement records.
-fn encode_records(buffer: &mut MutableBuffer, records: &[AckRecord]) -> anyhow::Result<()> {
-    buffer.write_i16_be(records.len() as i16)?;
+fn encode_records(
+    writer: impl BinaryWrite,
+    records: &[AckRecord],
+) -> anyhow::Result<()> {
+    writer.write_i16_be(records.len() as i16)?;
     for record in records {
         match record {
             AckRecord::Single(id) => {
-                buffer.write_u8(1)?; // Is single
-                buffer.write_u24_le((*id).try_into()?)?;
+                writer.write_u8(1)?; // Is single
+                writer.write_u24_le((*id).try_into()?)?;
             }
             AckRecord::Range(range) => {
-                buffer.write_u8(0)?; // Is range
-                buffer.write_u24_le(range.start.try_into()?)?;
-                buffer.write_u24_le(range.end.try_into()?)?;
+                writer.write_u8(0)?; // Is range
+                writer.write_u24_le(range.start.try_into()?)?;
+                writer.write_u24_le(range.end.try_into()?)?;
             }
         }
     }
@@ -35,16 +38,20 @@ fn encode_records(buffer: &mut MutableBuffer, records: &[AckRecord]) -> anyhow::
 }
 
 /// Decodes a list of acknowledgement records.
-fn decode_records(mut buffer: SharedBuffer) -> anyhow::Result<Vec<AckRecord>> {
-    let record_count = buffer.read_u16_be()?;
+fn decode_records<'a>(
+    mut reader: impl BinaryRead<'a>,
+) -> anyhow::Result<Vec<AckRecord>> {
+    let record_count = reader.read_u16_be()?;
     let mut records = Vec::with_capacity(record_count as usize);
 
     for _ in 0..record_count {
-        let is_range = buffer.read_u8()? == 0;
+        let is_range = reader.read_u8()? == 0;
         if is_range {
-            records.push(AckRecord::Range(buffer.read_u24_le()?.into()..buffer.read_u24_le()?.into()));
+            records.push(AckRecord::Range(
+                reader.read_u24_le()?.into()..reader.read_u24_le()?.into(),
+            ));
         } else {
-            records.push(AckRecord::Single(buffer.read_u24_le()?.into()));
+            records.push(AckRecord::Single(reader.read_u24_le()?.into()));
         }
     }
 
@@ -73,18 +80,24 @@ impl Ack {
 }
 
 impl Serialize for Ack {
-    fn serialize(&self, buffer: &mut MutableBuffer) -> anyhow::Result<()> {
-        buffer.write_u8(Self::ID)?;
+    fn serialize<W>(&self, writer: W) -> anyhow::Result<()>
+    where
+        W: BinaryWrite,
+    {
+        writer.write_u8(Self::ID)?;
 
-        encode_records(buffer, &self.records)
+        encode_records(writer, &self.records)
     }
 }
 
-impl Deserialize<'_> for Ack {
-    fn deserialize(mut buffer: SharedBuffer) -> anyhow::Result<Self> {
-        pyassert!(buffer.read_u8()? == Self::ID);
+impl<'a> Deserialize<'a> for Ack {
+    fn deserialize<R>(mut reader: R) -> anyhow::Result<Self>
+    where
+        R: BinaryRead<'a> + 'a,
+    {
+        pyassert!(reader.read_u8()? == Self::ID);
 
-        let records = decode_records(buffer)?;
+        let records = decode_records(reader)?;
 
         Ok(Self { records })
     }
@@ -112,18 +125,24 @@ impl Nak {
 }
 
 impl Serialize for Nak {
-    fn serialize(&self, buffer: &mut MutableBuffer) -> anyhow::Result<()> {
-        buffer.write_u8(Self::ID)?;
+    fn serialize<W>(&self, writer: W) -> anyhow::Result<()>
+    where
+        W: BinaryWrite,
+    {
+        writer.write_u8(Self::ID)?;
 
-        encode_records(buffer, &self.records)
+        encode_records(writer, &self.records)
     }
 }
 
-impl Deserialize<'_> for Nak {
-    fn deserialize(mut buffer: SharedBuffer) -> anyhow::Result<Self> {
-        pyassert!(buffer.read_u8()? == Self::ID);
+impl<'a> Deserialize<'a> for Nak {
+    fn deserialize<R>(mut reader: R) -> anyhow::Result<Self>
+    where
+        R: BinaryRead<'a> + 'a,
+    {
+        pyassert!(reader.read_u8()? == Self::ID);
 
-        let records = decode_records(buffer)?;
+        let records = decode_records(reader)?;
 
         Ok(Self { records })
     }

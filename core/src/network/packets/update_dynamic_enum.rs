@@ -36,7 +36,7 @@ impl ConnectedPacket for UpdateDynamicEnum<'_> {
 }
 
 impl Serialize for UpdateDynamicEnum<'_> {
-    fn serialize(&self, buffer: &mut MutableBuffer) -> anyhow::Result<()> {
+    fn serialize<W>(&self, buffer: W) -> anyhow::Result<()> where W: BinaryWrite {
         buffer.write_str(self.enum_id)?;
         buffer.write_var_u32(self.options.len() as u32)?;
         for option in self.options {

@@ -35,13 +35,16 @@ pub struct EntityLink {
     pub is_rider_initiated: bool,
 }
 
-impl EntityLink {
-    pub fn encode(&self, buffer: &mut MutableBuffer) -> anyhow::Result<()> {
-        buffer.write_var_i64(self.ridden_entity_id)?;
-        buffer.write_var_i64(self.rider_entity_id)?;
-        buffer.write_u8(self.link_type as u8)?;
-        buffer.write_bool(self.is_immediate)?;
-        buffer.write_bool(self.is_rider_initiated)
+impl Serialize for EntityLink {
+    fn serialize<W>(&self, writer: W) -> anyhow::Result<()>
+    where
+        W: BinaryWrite
+    {
+        writer.write_var_i64(self.ridden_entity_id)?;
+        writer.write_var_i64(self.rider_entity_id)?;
+        writer.write_u8(self.link_type as u8)?;
+        writer.write_bool(self.is_immediate)?;
+        writer.write_bool(self.is_rider_initiated)
     }
 }
 
@@ -89,13 +92,16 @@ pub struct AbilityLayer {
     pub walk_speed: f32,
 }
 
-impl AbilityLayer {
-    pub fn encode(&self, buffer: &mut MutableBuffer) -> anyhow::Result<()> {
-        buffer.write_u16_le(self.ability_type as u16)?;
-        buffer.write_u32_le(self.abilities)?;
-        buffer.write_u32_le(self.values)?;
-        buffer.write_f32_le(self.fly_speed)?;
-        buffer.write_f32_le(self.walk_speed)
+impl Serialize for AbilityLayer {
+    fn serialize<W>(&self, writer: W) -> anyhow::Result<()>
+    where
+        W: BinaryWrite
+    {
+        writer.write_u16_le(self.ability_type as u16)?;
+        writer.write_u32_le(self.abilities)?;
+        writer.write_u32_le(self.values)?;
+        writer.write_f32_le(self.fly_speed)?;
+        writer.write_f32_le(self.walk_speed)
     }
 }
 
@@ -112,15 +118,18 @@ pub struct AbilityData<'a> {
     pub layers: &'a [AbilityLayer],
 }
 
-impl AbilityData<'_> {
-    pub fn encode(&self, buffer: &mut MutableBuffer) -> anyhow::Result<()> {
-        buffer.write_i64_le(self.entity_id)?; // For some reason this isn't a varint64.
-        buffer.write_u8(self.permission_level as u8)?;
-        buffer.write_u8(self.command_permission_level as u8)?;
+impl<'a> Serialize for AbilityData<'a> {
+    fn serialize<W>(&self, writer: W) -> anyhow::Result<()>
+    where
+        W: BinaryWrite
+    {
+        writer.write_i64_le(self.entity_id)?; // For some reason this isn't a varint64.
+        writer.write_u8(self.permission_level as u8)?;
+        writer.write_u8(self.command_permission_level as u8)?;
 
-        buffer.write_u8(self.layers.len() as u8)?;
+        writer.write_u8(self.layers.len() as u8)?;
         for layer in self.layers {
-            layer.encode(buffer)?;
+            layer.serialize(writer)?;
         }
 
         Ok(())
@@ -166,28 +175,31 @@ impl ConnectedPacket for AddPlayer<'_> {
 }
 
 impl Serialize for AddPlayer<'_> {
-    fn serialize(&self, buffer: &mut MutableBuffer) -> anyhow::Result<()> {
-        buffer.write_uuid_le(&self.uuid)?;
-        buffer.write_str(self.username)?;
-        buffer.write_var_u64(self.runtime_id)?;
-        buffer.write_str("")?; // Platform chat ID
-        buffer.write_vecf(&self.position)?;
-        buffer.write_vecf(&self.velocity)?;
-        buffer.write_vecf(&self.rotation)?;
-        self.held_item.serialize(buffer)?;
-        buffer.write_var_i32(self.game_mode as i32)?;
+    fn serialize<W>(&self, writer: W) -> anyhow::Result<()>
+    where
+        W: BinaryWrite
+    {
+        writer.write_uuid_le(&self.uuid)?;
+        writer.write_str(self.username)?;
+        writer.write_var_u64(self.runtime_id)?;
+        writer.write_str("")?; // Platform chat ID
+        writer.write_vecf(&self.position)?;
+        writer.write_vecf(&self.velocity)?;
+        writer.write_vecf(&self.rotation)?;
+        self.held_item.serialize(writer)?;
+        writer.write_var_i32(self.game_mode as i32)?;
         // buffer.put_metadata(&self.metadata);
-        buffer.write_var_u32(0)?; // TODO: Entity metadata.
-        buffer.write_var_u32(0)?; // Entity properties are unused.
-        buffer.write_var_u32(0)?; // Entity properties are unused.
-        self.ability_data.encode(buffer)?;
+        writer.write_var_u32(0)?; // TODO: Entity metadata.
+        writer.write_var_u32(0)?; // Entity properties are unused.
+        writer.write_var_u32(0)?; // Entity properties are unused.
+        self.ability_data.serialize(writer)?;
 
-        buffer.write_var_u32(self.links.len() as u32)?;
+        writer.write_var_u32(self.links.len() as u32)?;
         for link in self.links {
-            link.encode(buffer)?;
+            link.serialize(writer)?;
         }
 
-        buffer.write_str(self.device_id)?;
-        buffer.write_i32_le(self.device_os as i32)
+        writer.write_str(self.device_id)?;
+        writer.write_i32_le(self.device_os as i32)
     }
 }

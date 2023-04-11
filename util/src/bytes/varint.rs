@@ -3,7 +3,9 @@ use std::ops::ShrAssign;
 use num_traits::FromPrimitive;
 
 /// Trait implemented for types that can be used as variable integers.
-pub trait VarInt: Sized + FromPrimitive + ShrAssign<Self> + PartialOrd<Self> {
+pub trait VarInt:
+    Sized + FromPrimitive + ShrAssign<Self> + PartialOrd<Self>
+{
     fn var_len(self) -> usize {
         size_of_varint(self)
     }

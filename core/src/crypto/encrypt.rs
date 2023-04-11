@@ -22,7 +22,8 @@ use util::{bail, Result};
 type Aes256CtrBE = ctr::Ctr64BE<aes::Aes256>;
 
 /// Use the default Base64 format with no padding.
-const BASE64_ENGINE: base64::engine::GeneralPurpose = base64::engine::general_purpose::STANDARD_NO_PAD;
+const BASE64_ENGINE: base64::engine::GeneralPurpose =
+    base64::engine::general_purpose::STANDARD_NO_PAD;
 
 /// Payload of the encryption handshake token
 #[derive(serde::Serialize, Debug)]
@@ -68,14 +69,19 @@ impl Encryptor {
     /// The produced hash can then be used to encrypt packets.
     pub fn new(client_public_key_der: &str) -> anyhow::Result<(Self, String)> {
         // Generate a random salt using a cryptographically secure generator.
-        let salt = (0..16).map(|_| OsRng.sample(Alphanumeric) as char).collect::<String>();
+        let salt = (0..16)
+            .map(|_| OsRng.sample(Alphanumeric) as char)
+            .collect::<String>();
 
         // Generate a random private key for the session.
         let private_key: SigningKey = SigningKey::random(&mut OsRng);
         // Convert the key to the PKCS#8 DER format used by Minecraft.
         let private_key_der = match private_key.to_pkcs8_der() {
             Ok(k) => k,
-            Err(e) => bail!(Malformed, "Failed to convert private to PKCS#8 DER format: {e}"),
+            Err(e) => bail!(
+                Malformed,
+                "Failed to convert private to PKCS#8 DER format: {e}"
+            ),
         };
 
         // Extract and convert the public key, which will be sent to the client.
@@ -83,7 +89,10 @@ impl Encryptor {
         let public_key_der = {
             let binary_der = match public_key.to_public_key_der() {
                 Ok(d) => d,
-                Err(e) => bail!(Malformed, "Failed to convert public key to DER format: {e}"),
+                Err(e) => bail!(
+                    Malformed,
+                    "Failed to convert public key to DER format: {e}"
+                ),
             };
             BASE64_ENGINE.encode(binary_der)
         };
@@ -94,8 +103,10 @@ impl Encryptor {
         header.x5u = Some(public_key_der);
 
         // Create a JWT encoding key using the session's private key.
-        let signing_key = jsonwebtoken::EncodingKey::from_ec_der(&private_key_der.to_bytes());
-        let claims = EncryptionTokenClaims { salt: &BASE64_ENGINE.encode(&salt) };
+        let signing_key =
+            jsonwebtoken::EncodingKey::from_ec_der(&private_key_der.to_bytes());
+        let claims =
+            EncryptionTokenClaims { salt: &BASE64_ENGINE.encode(&salt) };
 
         // Generate a JWT containing the server public key and a salt.
         let jwt = jsonwebtoken::encode(&header, &claims, &signing_key)?;
@@ -103,12 +114,18 @@ impl Encryptor {
             let bytes = BASE64_ENGINE.decode(client_public_key_der)?;
             match PublicKey::from_public_key_der(&bytes) {
                 Ok(k) => k,
-                Err(e) => bail!(Malformed, "Failed to read DER-encoded client public key: {e}"),
+                Err(e) => bail!(
+                    Malformed,
+                    "Failed to read DER-encoded client public key: {e}"
+                ),
             }
         };
 
         // Perform the key exchange
-        let shared_secret = diffie_hellman(private_key.as_nonzero_scalar(), client_public_key.as_affine());
+        let shared_secret = diffie_hellman(
+            private_key.as_nonzero_scalar(),
+            client_public_key.as_affine(),
+        );
 
         // Shared key must be hashed with the salt to produce the shared secret.
         let mut hasher = Sha256::new();
@@ -142,15 +159,22 @@ impl Encryptor {
     /// The client must be disconnected if this fails, because the data has probably been tampered with.
     pub fn decrypt(&self, buffer: &mut MutableBuffer) -> anyhow::Result<()> {
         if buffer.len() < 9 {
-            bail!(Malformed, "Encrypted buffer must be at least 9 bytes, received {}", buffer.len());
+            bail!(
+                Malformed,
+                "Encrypted buffer must be at least 9 bytes, received {}",
+                buffer.len()
+            );
         }
 
-        self.cipher_decrypt.lock().apply_keystream(buffer.as_mut_slice());
+        self.cipher_decrypt
+            .lock()
+            .apply_keystream(buffer.as_mut_slice());
         let counter = self.receive_counter.fetch_add(1, Ordering::SeqCst);
 
         let slice = buffer.as_slice();
         let checksum = &slice[slice.len() - 8..];
-        let computed_checksum = self.compute_checksum(&slice[..slice.len() - 8], counter);
+        let computed_checksum =
+            self.compute_checksum(&slice[..slice.len() - 8], counter);
 
         if !checksum.eq(&computed_checksum) {
             bail!(Malformed, "Encryption checksums do not match");
@@ -169,7 +193,9 @@ impl Encryptor {
         let checksum = self.compute_checksum(&buffer.as_ref()[1..], counter);
         buffer.write_all(&checksum)?;
 
-        self.cipher_encrypt.lock().apply_keystream(&mut buffer.as_mut_slice()[1..]);
+        self.cipher_encrypt
+            .lock()
+            .apply_keystream(&mut buffer.as_mut_slice()[1..]);
 
         Ok(())
     }

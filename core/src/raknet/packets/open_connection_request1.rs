@@ -22,14 +22,17 @@ impl OpenConnectionRequest1 {
     pub const ID: u8 = 0x05;
 }
 
-impl Deserialize<'_> for OpenConnectionRequest1 {
-    fn deserialize(mut buffer: SharedBuffer) -> anyhow::Result<Self> {
-        let mtu = buffer.len() as u16 + 28;
+impl<'a> Deserialize<'a> for OpenConnectionRequest1 {
+    fn deserialize<R>(mut reader: R) -> anyhow::Result<Self>
+    where
+        R: BinaryRead<'a> + 'a,
+    {
+        let mtu = reader.remaining() as u16 + 28;
 
-        pyassert!(buffer.read_u8()? == Self::ID);
+        pyassert!(reader.read_u8()? == Self::ID);
 
-        buffer.advance(16); // Skip magic
-        let protocol_version = buffer.read_u8()?;
+        reader.advance(16); // Skip magic
+        let protocol_version = reader.read_u8()?;
 
         Ok(Self { protocol_version, mtu })
     }

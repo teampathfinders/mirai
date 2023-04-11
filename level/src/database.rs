@@ -71,7 +71,10 @@ impl<'a> KvRef<'a> {
             let result = ffi::level_iter_key(self.iter.as_ptr());
             debug_assert_eq!(result.status, LoadStatus::Success);
 
-            Guard::from_slice(std::slice::from_raw_parts(result.data as *const u8, result.size as usize))
+            Guard::from_slice(std::slice::from_raw_parts(
+                result.data as *const u8,
+                result.size as usize,
+            ))
         }
     }
 
@@ -83,7 +86,10 @@ impl<'a> KvRef<'a> {
             let result = ffi::level_iter_value(self.iter.as_ptr());
             debug_assert_eq!(result.status, LoadStatus::Success);
 
-            Guard::from_slice(std::slice::from_raw_parts(result.data as *const u8, result.size as usize))
+            Guard::from_slice(std::slice::from_raw_parts(
+                result.data as *const u8,
+                result.size as usize,
+            ))
         }
     }
 }
@@ -164,15 +170,15 @@ pub struct Database {
 
 impl Database {
     /// Opens the database at the specified path.
-    /// 
+    ///
     /// # Safety
-    /// 
+    ///
     /// It is up to the caller to ensure that the given `path` is not
     /// already in use by another `Database`.
     /// Multiple databases owning the same directory is *guaranteed* to cause corruption.
-    /// 
+    ///
     /// # Errors
-    /// 
+    ///
     /// This method returns an error if the database could not be opened.
     pub unsafe fn open<P>(path: P) -> anyhow::Result<Self>
     where
@@ -214,13 +220,20 @@ impl Database {
         //
         // A LevelDB database is thread-safe, this function can be used by multiple threads.
         unsafe {
-            let result = ffi::level_get(self.ptr.as_ptr(), raw_key.as_ptr() as *const c_char, raw_key.len() as c_int);
+            let result = ffi::level_get(
+                self.ptr.as_ptr(),
+                raw_key.as_ptr() as *const c_char,
+                raw_key.len() as c_int,
+            );
             if result.status == LoadStatus::Success {
                 debug_assert_ne!(result.data, std::ptr::null_mut());
 
                 // SAFETY: result.data is guaranteed by the caller to be a valid pointer.
                 // result.size is also guaranteed to be the size of the actual array.
-                let data = std::slice::from_raw_parts(result.data as *const u8, result.size as usize);
+                let data = std::slice::from_raw_parts(
+                    result.data as *const u8,
+                    result.size as usize,
+                );
 
                 // SAFETY: The data passed into the Guard has been allocated in the leveldb FFI code.
                 // It is therefore also required to deallocate the data there, which is what Guard
@@ -269,9 +282,15 @@ impl Database {
         /// SAFETY: This is safe because the data and lengths come from properly allocated vecs.
         /// Additionally, the remove method does not keep references to the data after the function has been called.
         unsafe {
-            let result = ffi::level_remove(self.ptr.as_ptr(), raw_key.as_ptr() as *mut c_char, raw_key.len() as c_int);
+            let result = ffi::level_remove(
+                self.ptr.as_ptr(),
+                raw_key.as_ptr() as *mut c_char,
+                raw_key.len() as c_int,
+            );
 
-            if result.status == LoadStatus::Success || result.status == LoadStatus::NotFound {
+            if result.status == LoadStatus::Success
+                || result.status == LoadStatus::NotFound
+            {
                 Ok(())
             } else {
                 Err(translate_ffi_error(result))

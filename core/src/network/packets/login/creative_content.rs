@@ -14,7 +14,7 @@ pub struct CreativeItem {
 }
 
 impl Serialize for CreativeItem {
-    fn serialize(&self, buffer: &mut MutableBuffer) -> anyhow::Result<()> {
+    fn serialize<W>(&self, buffer: W) -> anyhow::Result<()> where W: BinaryWrite {
         buffer.write_var_u32(self.network_id)?;
         self.stack.serialize(buffer)
     }
@@ -38,7 +38,7 @@ impl<'a> ConnectedPacket for CreativeContent<'a> {
 }
 
 impl<'a> Serialize for CreativeContent<'a> {
-    fn serialize(&self, buffer: &mut MutableBuffer) -> anyhow::Result<()> {
+    fn serialize<W>(&self, buffer: W) -> anyhow::Result<()> where W: BinaryWrite {
         buffer.write_var_u32(self.items.len() as u32)?;
         for item in self.items {
             item.serialize(buffer)?;

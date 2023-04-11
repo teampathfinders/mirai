@@ -25,19 +25,19 @@ impl Header {
 
 impl Serialize for Header {
     /// Encodes the header.
-    fn serialize(&self, buffer: &mut MutableBuffer) -> anyhow::Result<()> {
+    fn serialize(&self, writer: impl BinaryWrite) -> anyhow::Result<()> {
         let value = self.id
             | ((self.sender_subclient as u32) << 10)
             | ((self.target_subclient as u32) << 12);
 
-        buffer.write_var_u32(value)
+        writer.write_var_u32(value)
     }
 }
 
 impl Header {
     /// Decodes the header.
-    pub fn deserialize(buffer: &mut SharedBuffer) -> anyhow::Result<Self> {
-        let value = buffer.read_var_u32()?;
+    pub fn deserialize<'a>(reader: impl BinaryRead<'a>) -> anyhow::Result<Self> {
+        let value = reader.read_var_u32()?;
 
         let id = value & 0x3ff;
         let sender_subclient = ((value >> 10) & 0x3) as u8;

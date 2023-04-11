@@ -25,11 +25,11 @@ impl Provider {
     /// Opens the specified world.
     ///
     /// # Safety
-    /// 
+    ///
     /// It is up to the caller to ensure that the given `path` is not
     /// already in use by another `Provider`.
     /// Multiple databases owning the same directory is *guaranteed* to cause corruption.
-    /// 
+    ///
     /// # Errors
     ///
     /// This method can fail if the database cannot be opened (it does not exist, it is corrupted, etc.)
@@ -38,7 +38,12 @@ impl Provider {
     where
         P: AsRef<Path>,
     {
-        let database = Database::open(path.as_ref().join("db").to_str().ok_or_else(|| anyhow!("Invalid level path"))?)?;
+        let database = Database::open(
+            path.as_ref()
+                .join("db")
+                .to_str()
+                .ok_or_else(|| anyhow!("Invalid level path"))?,
+        )?;
         Ok(Self { database, path: path.as_ref().to_owned() })
     }
 
@@ -77,7 +82,11 @@ impl Provider {
     ///
     /// This method returns `None` if the requested chunk was not found
     /// and an error if the data could not be loaded.
-    pub fn get_version<I>(&self, coordinates: I, dimension: Dimension) -> anyhow::Result<Option<u8>>
+    pub fn get_version<I>(
+        &self,
+        coordinates: I,
+        dimension: Dimension,
+    ) -> anyhow::Result<Option<u8>>
     where
         I: Into<Vector<i32, 2>>,
     {
@@ -107,7 +116,11 @@ impl Provider {
     ///
     /// This method returns `None` if the requested chunk was not found
     /// and an error if the data could not be loaded.
-    pub fn get_biomes<I>(&self, coordinates: I, dimension: Dimension) -> anyhow::Result<Option<Biomes>>
+    pub fn get_biomes<I>(
+        &self,
+        coordinates: I,
+        dimension: Dimension,
+    ) -> anyhow::Result<Option<Biomes>>
     where
         I: Into<Vector<i32, 2>>,
     {
@@ -139,7 +152,12 @@ impl Provider {
     ///
     /// This method returns `None` if the sub chunk was not found
     /// and an error if the data could not be loaded.
-    pub fn get_subchunk<I>(&self, coordinates: I, index: i8, dimension: Dimension) -> anyhow::Result<Option<SubChunk>>
+    pub fn get_subchunk<I>(
+        &self,
+        coordinates: I,
+        index: i8,
+        dimension: Dimension,
+    ) -> anyhow::Result<Option<SubChunk>>
     where
         I: Into<Vector<i32, 2>>,
     {

@@ -16,11 +16,11 @@ impl ConnectedPing {
     pub const ID: u8 = 0x00;
 }
 
-impl Deserialize<'_> for ConnectedPing {
-    fn deserialize(mut buffer: SharedBuffer) -> anyhow::Result<Self> {
-        pyassert!(buffer.read_u8()? == Self::ID);
+impl<'a> Deserialize<'a> for ConnectedPing {
+    fn deserialize<R>(mut reader: R) -> anyhow::Result<Self> where R: BinaryRead<'a> + 'a {
+        pyassert!(reader.read_u8()? == Self::ID);
 
-        let time = buffer.read_i64_be()?;
+        let time = reader.read_i64_be()?;
 
         Ok(Self { time })
     }

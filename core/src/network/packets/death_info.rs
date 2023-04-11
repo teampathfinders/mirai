@@ -26,7 +26,7 @@ impl ConnectedPacket for DeathInfo<'_> {
 }
 
 impl Serialize for DeathInfo<'_> {
-    fn serialize(&self, buffer: &mut MutableBuffer) -> anyhow::Result<()> {
+    fn serialize<W>(&self, buffer: W) -> anyhow::Result<()> where W: BinaryWrite {
         buffer.write_str(self.cause)?;
 
         buffer.write_var_u32(self.messages.len() as u32)?;

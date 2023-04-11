@@ -56,7 +56,9 @@ impl PluginRuntime {
             let wasi = WasiCtxBuilder::new().inherit_stdio().build();
             let mut store = Store::new(&engine, wasi);
 
-            let module = cache.load(&engine, &path).context(format!("Failed to compile module `{path}`"))?;
+            let module = cache
+                .load(&engine, &path)
+                .context(format!("Failed to compile module `{path}`"))?;
             linker
                 .module(&mut store, &path, &module)
                 .context(format!("Failed to link module `{path}`"))?;
@@ -66,7 +68,9 @@ impl PluginRuntime {
                 .context(format!("Failed to instantiate module `{path}`"))?;
 
             let path_clone = path.clone();
-            let plugin = Plugin::new(path, instance, store).context(format!("Failed to initialize module `{path_clone}`"))?;
+            let plugin = Plugin::new(path, instance, store).context(
+                format!("Failed to initialize module `{path_clone}`"),
+            )?;
 
             plugins.push(plugin);
         }
@@ -76,11 +80,14 @@ impl PluginRuntime {
         }
 
         // Run startup function for each plugin.
-        plugins.iter_mut().map(Plugin::on_startup).for_each(|result| {
-            if let Err(err) = result {
-                tracing::error!("{err:?}");
-            }
-        });
+        plugins
+            .iter_mut()
+            .map(Plugin::on_startup)
+            .for_each(|result| {
+                if let Err(err) = result {
+                    tracing::error!("{err:?}");
+                }
+            });
 
         Ok(Self { engine, plugins })
     }
@@ -88,10 +95,13 @@ impl PluginRuntime {
 
 impl Drop for PluginRuntime {
     fn drop(&mut self) {
-        self.plugins.drain(..).map(Plugin::on_shutdown).for_each(|r| {
-            if let Err(err) = r {
-                tracing::error!("{err:?}");
-            }
-        });
+        self.plugins
+            .drain(..)
+            .map(Plugin::on_shutdown)
+            .for_each(|r| {
+                if let Err(err) = r {
+                    tracing::error!("{err:?}");
+                }
+            });
     }
 }

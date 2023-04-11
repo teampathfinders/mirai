@@ -13,7 +13,7 @@ use super::SessionLike;
 
 impl Session {
     pub fn process_interaction(&self, packet: MutableBuffer) -> anyhow::Result<()> {
-        let request = Interact::deserialize(packet.snapshot())?;
+        let request = Interact::deserialize(packet.as_ref())?;
         if request.action == InteractAction::OpenInventory {
             let mut lock = self.player.write();
             if !lock.is_inventory_open {
@@ -32,7 +32,7 @@ impl Session {
     }
 
     pub fn process_container_close(&self, packet: MutableBuffer) -> anyhow::Result<()> {
-        let request = ContainerClose::deserialize(packet.snapshot())?;
+        let request = ContainerClose::deserialize(packet.as_ref())?;
         if request.window_id == INVENTORY_WINDOW_ID {
             self.player.write().is_inventory_open = false;
 
@@ -47,7 +47,7 @@ impl Session {
     }
 
     pub fn process_move_player(&self, packet: MutableBuffer) -> anyhow::Result<()> {
-        let request = MovePlayer::deserialize(packet.snapshot())?;
+        let request = MovePlayer::deserialize(packet.as_ref())?;
         // dbg!(&request);
 
         self.broadcast_others(request)?;

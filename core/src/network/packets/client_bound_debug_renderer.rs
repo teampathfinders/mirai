@@ -38,7 +38,7 @@ impl ConnectedPacket for ClientBoundDebugRenderer<'_> {
 }
 
 impl Serialize for ClientBoundDebugRenderer<'_> {
-    fn serialize(&self, buffer: &mut MutableBuffer) -> anyhow::Result<()> {
+    fn serialize<W>(&self, buffer: W) -> anyhow::Result<()> where W: BinaryWrite {
         buffer.write_i32_le(self.action as i32)?;
         if self.action == DebugRendererAction::AddCube {
             buffer.write_str(self.text)?;

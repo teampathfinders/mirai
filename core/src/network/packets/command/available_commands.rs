@@ -28,7 +28,7 @@ impl ConnectedPacket for AvailableCommands<'_> {
 }
 
 impl Serialize for AvailableCommands<'_> {
-    fn serialize(&self, buffer: &mut MutableBuffer) -> anyhow::Result<()> {
+    fn serialize<W>(&self, buffer: W) -> anyhow::Result<()> where W: BinaryWrite {
         let mut value_indices = HashMap::new();
         let mut values = Vec::new();
         for command in self.commands {

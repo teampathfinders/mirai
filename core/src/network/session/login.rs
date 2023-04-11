@@ -30,7 +30,7 @@ impl IncompleteSession {
     /// Handles a [`ClientCacheStatus`] packet.
     /// This stores the result in the [`Session::cache_support`] field.
     pub fn process_cache_status(&self, packet: MutableBuffer) -> anyhow::Result<()> {
-        let request = CacheStatus::deserialize(packet.snapshot())?;
+        let request = CacheStatus::deserialize(packet.as_ref())?;
         self.cache_support.store(request.support, Ordering::Relaxed);
 
         Ok(())
@@ -38,7 +38,7 @@ impl IncompleteSession {
 
     /// Processes an error returned by a client.
     pub fn process_violation_warning(&self, packet: MutableBuffer) -> anyhow::Result<()> {
-        let request = ViolationWarning::deserialize(packet.snapshot())?;
+        let request = ViolationWarning::deserialize(packet.as_ref())?;
         tracing::error!("Received violation warning: {request:?}");
 
         self.kick("Violation warning")?;
@@ -51,7 +51,7 @@ impl IncompleteSession {
     /// All connected sessions are notified of the new player
     /// and the new player gets a list of all current players.
     pub fn process_local_initialized(&self, packet: MutableBuffer) -> anyhow::Result<()> {
-        let request = SetLocalPlayerAsInitialized::deserialize(packet.snapshot())?;
+        let request = SetLocalPlayerAsInitialized::deserialize(packet.as_ref())?;
         tracing::debug!("[{}] Initialised with runtime ID {}", self.get_display_name()?, request.runtime_id);
 
 //        // Initialise chunk loading
@@ -141,7 +141,7 @@ impl IncompleteSession {
 
     /// Handles a [`ChunkRadiusRequest`] packet by returning the maximum allowed render distance.
     pub fn process_radius_request(&self, packet: MutableBuffer) -> anyhow::Result<()> {
-        let request = ChunkRadiusRequest::deserialize(packet.snapshot())?;
+        let request = ChunkRadiusRequest::deserialize(packet.as_ref())?;
         let final_radius = std::cmp::min(
             SERVER_CONFIG.read().allowed_render_distance, request.radius
         );
@@ -159,7 +159,7 @@ impl IncompleteSession {
     }
 
     pub fn process_pack_client_response(&self, packet: MutableBuffer) -> anyhow::Result<()> {
-        let _request = ResourcePackClientResponse::deserialize(packet.snapshot())?;
+        let _request = ResourcePackClientResponse::deserialize(packet.as_ref())?;
 
         // TODO: Implement resource packs.
 
@@ -254,7 +254,7 @@ impl IncompleteSession {
     }
 
     pub fn process_cts_handshake(&self, packet: MutableBuffer) -> anyhow::Result<()> {
-        ClientToServerHandshake::deserialize(packet.snapshot())?;
+        ClientToServerHandshake::deserialize(packet.as_ref())?;
 
         let response = PlayStatus { status: Status::LoginSuccess };
         self.send(response)?;
@@ -284,7 +284,7 @@ impl IncompleteSession {
 
     /// Handles a [`Login`] packet.
     pub async fn process_login(&self, packet: MutableBuffer) -> anyhow::Result<()> {
-        let request = Login::deserialize(packet.snapshot());
+        let request = Login::deserialize(packet.as_ref());
         let request = match request {
             Ok(r) => r,
             Err(e) => {
@@ -307,7 +307,7 @@ impl IncompleteSession {
 
     /// Handles a [`RequestNetworkSettings`] packet.
     pub fn process_network_settings_request(&self, packet: MutableBuffer) -> anyhow::Result<()> {
-        let request = RequestNetworkSettings::deserialize(packet.snapshot())?;
+        let request = RequestNetworkSettings::deserialize(packet.as_ref())?;
         if request.protocol_version != NETWORK_VERSION {
             if request.protocol_version > NETWORK_VERSION {
                 let response = PlayStatus { status: Status::FailedServer };

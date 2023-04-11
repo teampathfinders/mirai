@@ -109,7 +109,7 @@ impl<'a> ConnectedPacket for ResourcePacksInfo<'a> {
 }
 
 impl<'a> Serialize for ResourcePacksInfo<'a> {
-    fn serialize(&self, buffer: &mut MutableBuffer) -> anyhow::Result<()> {
+    fn serialize<W>(&self, buffer: W) -> anyhow::Result<()> where W: BinaryWrite {
         buffer.write_bool(self.required)?;
         buffer.write_bool(self.scripting_enabled)?;
         buffer.write_bool(self.forcing_server_packs)?;

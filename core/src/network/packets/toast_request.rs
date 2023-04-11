@@ -23,7 +23,7 @@ impl ConnectedPacket for ToastRequest<'_> {
 }
 
 impl Serialize for ToastRequest<'_> {
-    fn serialize(&self, buffer: &mut MutableBuffer) -> anyhow::Result<()> {
+    fn serialize<W>(&self, buffer: W) -> anyhow::Result<()> where W: BinaryWrite {
         buffer.write_str(self.title)?;
         buffer.write_str(self.message)
     }

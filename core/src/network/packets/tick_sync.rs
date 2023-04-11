@@ -33,7 +33,7 @@ impl Deserialize<'_> for TickSync {
 }
 
 impl Serialize for TickSync {
-    fn serialize(&self, buffer: &mut MutableBuffer) -> anyhow::Result<()> {
+    fn serialize<W>(&self, buffer: W) -> anyhow::Result<()> where W: BinaryWrite {
         buffer.write_u64_le(self.request)?;
         buffer.write_u64_le(self.response)
     }

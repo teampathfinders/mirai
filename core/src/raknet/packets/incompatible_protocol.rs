@@ -28,10 +28,13 @@ impl IncompatibleProtocol {
 }
 
 impl Serialize for IncompatibleProtocol {
-    fn serialize(&self, buffer: &mut MutableBuffer) -> anyhow::Result<()> {
-        buffer.write_u8(Self::ID)?;
-        buffer.write_u8(RAKNET_VERSION)?;
-        buffer.write_all(OFFLINE_MESSAGE_DATA)?;
-        buffer.write_u64_be(self.server_guid)
+    fn serialize<W>(&self, writer: W) -> anyhow::Result<()>
+    where
+        W: BinaryWrite,
+    {
+        writer.write_u8(Self::ID)?;
+        writer.write_u8(RAKNET_VERSION)?;
+        writer.write_all(OFFLINE_MESSAGE_DATA)?;
+        writer.write_u64_be(self.server_guid)
     }
 }

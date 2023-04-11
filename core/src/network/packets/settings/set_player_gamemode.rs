@@ -46,7 +46,7 @@ impl ConnectedPacket for SetPlayerGameMode {
 }
 
 impl Serialize for SetPlayerGameMode {
-    fn serialize(&self, buffer: &mut MutableBuffer) -> anyhow::Result<()> {
+    fn serialize<W>(&self, buffer: W) -> anyhow::Result<()> where W: BinaryWrite {
         buffer.write_var_i32(self.game_mode as i32)
     }
 }

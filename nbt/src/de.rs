@@ -7,13 +7,21 @@ use serde::{de, Deserialize};
 use util::bytes::{BinaryRead, SharedBuffer};
 use util::{bail, Error};
 
-use crate::{BigEndian, FieldType, LittleEndian, NbtError, Variable, Variant, VariantImpl};
+use crate::{
+    BigEndian, FieldType, LittleEndian, NbtError, Variable, Variant,
+    VariantImpl,
+};
 
 /// Verifies that the deserialised type is equal to the expected type.
 macro_rules! is_ty {
     ($expected: ident, $actual: expr) => {
         if $actual != FieldType::$expected {
-            bail!(Malformed, "Expected type {:?}, but found {:?}", FieldType::$expected, $actual)
+            bail!(
+                Malformed,
+                "Expected type {:?}, but found {:?}",
+                FieldType::$expected,
+                $actual
+            )
         }
     };
 }
@@ -268,7 +276,9 @@ where
 
         let n = match F::AS_ENUM {
             Variant::BigEndian => self.input.read_i16_be(),
-            Variant::LittleEndian | Variant::Variable => self.input.read_i16_le(),
+            Variant::LittleEndian | Variant::Variable => {
+                self.input.read_i16_le()
+            }
         }?;
 
         visitor.visit_i16(n)
@@ -376,7 +386,10 @@ where
     where
         V: Visitor<'de>,
     {
-        bail!(Unsupported, "Deserializing borrowed byte arrays is not supported")
+        bail!(
+            Unsupported,
+            "Deserializing borrowed byte arrays is not supported"
+        )
     }
 
     fn deserialize_byte_buf<V>(self, visitor: V) -> Result<V::Value, NbtError>
@@ -413,18 +426,29 @@ where
         bail!(Unsupported, "Deserializing unit values is not supported")
     }
 
-    fn deserialize_unit_struct<V>(self, _name: &'static str, _visitor: V) -> Result<V::Value, NbtError>
+    fn deserialize_unit_struct<V>(
+        self,
+        _name: &'static str,
+        _visitor: V,
+    ) -> Result<V::Value, NbtError>
     where
         V: Visitor<'de>,
     {
         bail!(Unsupported, "Deserializing unit structs is not supported")
     }
 
-    fn deserialize_newtype_struct<V>(self, _name: &'static str, _visitor: V) -> Result<V::Value, NbtError>
+    fn deserialize_newtype_struct<V>(
+        self,
+        _name: &'static str,
+        _visitor: V,
+    ) -> Result<V::Value, NbtError>
     where
         V: Visitor<'de>,
     {
-        bail!(Unsupported, "Deserializing newtype structs is not supported")
+        bail!(
+            Unsupported,
+            "Deserializing newtype structs is not supported"
+        )
     }
 
     #[inline]
@@ -436,7 +460,11 @@ where
     }
 
     #[inline]
-    fn deserialize_tuple<V>(self, len: usize, visitor: V) -> Result<V::Value, NbtError>
+    fn deserialize_tuple<V>(
+        self,
+        len: usize,
+        visitor: V,
+    ) -> Result<V::Value, NbtError>
     where
         V: Visitor<'de>,
     {
@@ -451,7 +479,12 @@ where
         visitor.visit_seq(de)
     }
 
-    fn deserialize_tuple_struct<V>(self, _name: &'static str, _len: usize, _visitor: V) -> Result<V::Value, NbtError>
+    fn deserialize_tuple_struct<V>(
+        self,
+        _name: &'static str,
+        _len: usize,
+        _visitor: V,
+    ) -> Result<V::Value, NbtError>
     where
         V: Visitor<'de>,
     {
@@ -470,14 +503,24 @@ where
     }
 
     #[inline]
-    fn deserialize_struct<V>(self, _name: &'static str, _fields: &'static [&'static str], visitor: V) -> Result<V::Value, NbtError>
+    fn deserialize_struct<V>(
+        self,
+        _name: &'static str,
+        _fields: &'static [&'static str],
+        visitor: V,
+    ) -> Result<V::Value, NbtError>
     where
         V: Visitor<'de>,
     {
         self.deserialize_any(visitor)
     }
 
-    fn deserialize_enum<V>(self, _name: &'static str, _variants: &'static [&'static str], _visitor: V) -> Result<V::Value, NbtError>
+    fn deserialize_enum<V>(
+        self,
+        _name: &'static str,
+        _variants: &'static [&'static str],
+        _visitor: V,
+    ) -> Result<V::Value, NbtError>
     where
         V: Visitor<'de>,
     {
@@ -493,7 +536,10 @@ where
     }
 
     #[inline]
-    fn deserialize_ignored_any<V>(self, visitor: V) -> Result<V::Value, NbtError>
+    fn deserialize_ignored_any<V>(
+        self,
+        visitor: V,
+    ) -> Result<V::Value, NbtError>
     where
         V: Visitor<'de>,
     {
@@ -527,7 +573,11 @@ where
     F: VariantImpl,
 {
     #[inline]
-    pub fn new(de: &'a mut Deserializer<'de, F, R>, ty: FieldType, expected_len: u32) -> anyhow::Result<Self> {
+    pub fn new(
+        de: &'a mut Deserializer<'de, F, R>,
+        ty: FieldType,
+        expected_len: u32,
+    ) -> anyhow::Result<Self> {
         debug_assert_ne!(ty, FieldType::End);
 
         // ty is not read in here because the x_array types don't have a type prefix.
@@ -555,7 +605,10 @@ where
     type Error = NbtError;
 
     #[inline]
-    fn next_element_seed<E>(&mut self, seed: E) -> Result<Option<E::Value>, NbtError>
+    fn next_element_seed<E>(
+        &mut self,
+        seed: E,
+    ) -> Result<Option<E::Value>, NbtError>
     where
         E: DeserializeSeed<'de>,
     {
@@ -580,7 +633,8 @@ where
     de: &'a mut Deserializer<'de, F, R>,
 }
 
-impl<'de, 'a, F, R> From<&'a mut Deserializer<'de, F, R>> for MapDeserializer<'a, 'de, F, R>
+impl<'de, 'a, F, R> From<&'a mut Deserializer<'de, F, R>>
+    for MapDeserializer<'a, 'de, F, R>
 where
     R: BinaryRead<'de>,
     F: VariantImpl,
@@ -599,7 +653,10 @@ where
     type Error = NbtError;
 
     #[inline]
-    fn next_key_seed<K>(&mut self, seed: K) -> Result<Option<K::Value>, NbtError>
+    fn next_key_seed<K>(
+        &mut self,
+        seed: K,
+    ) -> Result<Option<K::Value>, NbtError>
     where
         K: DeserializeSeed<'de>,
     {

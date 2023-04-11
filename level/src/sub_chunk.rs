@@ -39,7 +39,9 @@ mod block_version {
 
     /// Deserializes a block version.
     #[inline]
-    pub fn deserialize<'de, D>(de: D) -> anyhow::Result<Option<[u8; 4]>, D::Error>
+    pub fn deserialize<'de, D>(
+        de: D,
+    ) -> anyhow::Result<Option<[u8; 4]>, D::Error>
     where
         D: Deserializer<'de>,
     {
@@ -49,7 +51,10 @@ mod block_version {
 
     /// Serializes a block version.
     #[inline]
-    pub fn serialize<S>(v: &Option<[u8; 4]>, ser: S) -> anyhow::Result<S::Ok, S::Error>
+    pub fn serialize<S>(
+        v: &Option<[u8; 4]>,
+        ser: S,
+    ) -> anyhow::Result<S::Ok, S::Error>
     where
         S: Serializer,
     {
@@ -161,8 +166,12 @@ impl SubLayer {
     {
         let indices = match crate::deserialize_packed_array(&mut reader)? {
             PackedArrayReturn::Data(data) => data,
-            PackedArrayReturn::Empty => anyhow::bail!("Sub layer packed array index size cannot be 0"),
-            PackedArrayReturn::Inherit => anyhow::bail!("Sub layer packed array does not support biome referral"),
+            PackedArrayReturn::Empty => {
+                anyhow::bail!("Sub layer packed array index size cannot be 0")
+            }
+            PackedArrayReturn::Inherit => anyhow::bail!(
+                "Sub layer packed array does not support biome referral"
+            ),
         };
 
         let len = reader.read_u32_le()? as usize;
@@ -183,7 +192,12 @@ impl SubLayer {
     where
         W: BinaryWrite,
     {
-        crate::serialize_packed_array(&mut writer, &self.indices, self.palette.len(), false)?;
+        crate::serialize_packed_array(
+            &mut writer,
+            &self.indices,
+            self.palette.len(),
+            false,
+        )?;
 
         writer.write_u32_le(self.palette.len() as u32)?;
         for entry in &self.palette {
@@ -245,7 +259,9 @@ impl Default for SubLayer {
 /// These coordinates should be in the range [0, 16) for each component.
 #[inline]
 pub fn to_offset(position: Vector<u8, 3>) -> usize {
-    16 * 16 * position.x as usize + 16 * position.z as usize + position.y as usize
+    16 * 16 * position.x as usize
+        + 16 * position.z as usize
+        + position.y as usize
 }
 
 /// Converts an offset back to coordinates.
@@ -253,7 +269,11 @@ pub fn to_offset(position: Vector<u8, 3>) -> usize {
 /// This offset should be in the range [0, 4096).
 #[inline]
 pub fn from_offset(offset: usize) -> Vector<u8, 3> {
-    Vector::from([(offset >> 8) as u8 & 0xf, offset as u8 & 0xf, (offset >> 4) as u8 & 0xf])
+    Vector::from([
+        (offset >> 8) as u8 & 0xf,
+        offset as u8 & 0xf,
+        (offset >> 4) as u8 & 0xf,
+    ])
 }
 
 /// A Minecraft sub chunk.
@@ -316,7 +336,11 @@ impl SubChunk {
             anyhow::bail!("Sub chunk must have 1 or 2 layers");
         }
 
-        let index = if version == SubChunkVersion::Limitless { reader.read_i8()? } else { 0 };
+        let index = if version == SubChunkVersion::Limitless {
+            reader.read_i8()?
+        } else {
+            0
+        };
 
         // let mut layers = SmallVec::with_capacity(layer_count as usize);
         let mut layers = Vec::with_capacity(layer_count as usize);

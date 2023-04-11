@@ -25,7 +25,7 @@ impl ConnectedPacket for Transfer {
 }
 
 impl Serialize for Transfer {
-    fn serialize(&self, buffer: &mut MutableBuffer) -> anyhow::Result<()> {
+    fn serialize<W>(&self, buffer: W) -> anyhow::Result<()> where W: BinaryWrite {
         buffer.write_str(&self.addr.to_string())?;
         buffer.write_u16_le(self.addr.port())
     }

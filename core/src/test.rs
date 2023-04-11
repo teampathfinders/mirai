@@ -14,7 +14,10 @@ use crate::raknet::{Frame, OrderChannel};
 
 #[test]
 fn biome_nbt() {
-    let biomes: nbt::Value = nbt::from_var_bytes(include_bytes!("../included/biomes.nbt").as_ref()).unwrap().0;
+    let biomes: nbt::Value =
+        nbt::from_var_bytes(include_bytes!("../included/biomes.nbt").as_ref())
+            .unwrap()
+            .0;
     dbg!(biomes);
 }
 

@@ -31,7 +31,9 @@ macro_rules! declare_primitive_fns {
 }
 
 pub trait BinaryWrite: Write {
-    declare_primitive_fns!(u16, i16, u24, u32, i32, u64, i64, u128, i128, f32, f64);
+    declare_primitive_fns!(
+        u16, i16, u24, u32, i32, u64, i64, u128, i128, f32, f64
+    );
 
     #[inline]
     fn write_bool(&mut self, v: bool) -> anyhow::Result<()> {
@@ -118,7 +120,10 @@ pub trait BinaryWrite: Write {
     }
 
     #[inline]
-    fn write_veci<const N: usize>(&mut self, v: &Vector<i32, N>) -> anyhow::Result<()> {
+    fn write_veci<const N: usize>(
+        &mut self,
+        v: &Vector<i32, N>,
+    ) -> anyhow::Result<()> {
         for v in v.components() {
             self.write_var_i32(v)?;
         }
@@ -127,7 +132,10 @@ pub trait BinaryWrite: Write {
     }
 
     #[inline]
-    fn write_vecf<const N: usize>(&mut self, v: &Vector<f32, N>) -> anyhow::Result<()> {
+    fn write_vecf<const N: usize>(
+        &mut self,
+        v: &Vector<f32, N>,
+    ) -> anyhow::Result<()> {
         for v in v.components() {
             self.write_f32_le(v)?;
         }
@@ -136,7 +144,10 @@ pub trait BinaryWrite: Write {
     }
 
     #[inline]
-    fn write_vecb<const N: usize>(&mut self, v: &Vector<i8, N>) -> anyhow::Result<()> {
+    fn write_vecb<const N: usize>(
+        &mut self,
+        v: &Vector<i8, N>,
+    ) -> anyhow::Result<()> {
         for v in v.components() {
             self.write_i8(v)?;
         }

@@ -40,7 +40,7 @@ impl ConnectedPacket for Respawn {
 }
 
 impl Serialize for Respawn {
-    fn serialize(&self, buffer: &mut MutableBuffer) -> anyhow::Result<()> {
+    fn serialize<W>(&self, buffer: W) -> anyhow::Result<()> where W: BinaryWrite {
         buffer.write_vecf(&self.position)?;
         buffer.write_u8(self.state as u8)?;
         buffer.write_var_u64(self.runtime_id)

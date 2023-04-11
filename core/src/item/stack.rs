@@ -27,7 +27,7 @@ pub struct ItemStack {
 }
 
 impl Serialize for ItemStack {
-    fn serialize(&self, buffer: &mut MutableBuffer) -> anyhow::Result<()> {
+    fn serialize<W>(&self, buffer: W) -> anyhow::Result<()> where W: BinaryWrite {
         buffer.write_var_u32(self.ty.network_id)?;
         if self.ty.network_id == NETWORK_ID_AIR {
             return Ok(())

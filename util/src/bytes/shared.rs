@@ -65,7 +65,11 @@ impl<'a> SharedBuffer<'a> {
 impl<'a> BinaryRead<'a> for &'a [u8] {
     fn advance(&mut self, n: usize) -> anyhow::Result<()> {
         if self.len() < n {
-            bail!(UnexpectedEof, "cannot advance past {n} bytes, remaining: {}", self.len())
+            bail!(
+                UnexpectedEof,
+                "cannot advance past {n} bytes, remaining: {}",
+                self.len()
+            )
         }
 
         let (_, b) = self.split_at(n);
@@ -89,7 +93,11 @@ impl<'a> BinaryRead<'a> for &'a [u8] {
     #[inline]
     fn take_n(&mut self, n: usize) -> anyhow::Result<&'a [u8]> {
         if self.len() < n {
-            bail!(UnexpectedEof, "expected {n} remaining bytes, got {}", self.len())
+            bail!(
+                UnexpectedEof,
+                "expected {n} remaining bytes, got {}",
+                self.len()
+            )
         } else {
             let (a, b) = self.split_at(n);
             // *self = SharedBuffer::from(b);
@@ -111,7 +119,11 @@ impl<'a> BinaryRead<'a> for &'a [u8] {
     #[inline]
     fn take_const<const N: usize>(&mut self) -> anyhow::Result<[u8; N]> {
         if self.len() < N {
-            bail!(UnexpectedEof, "expected {N} remaining bytes, got {}", self.len())
+            bail!(
+                UnexpectedEof,
+                "expected {N} remaining bytes, got {}",
+                self.len()
+            )
         } else {
             let (a, b) = self.split_at(N);
             // *self = SharedBuffer::from(b);
@@ -131,7 +143,11 @@ impl<'a> BinaryRead<'a> for &'a [u8] {
     #[inline]
     fn peek(&self, n: usize) -> anyhow::Result<&[u8]> {
         if self.len() < n {
-            bail!(UnexpectedEof, "expected {n} remaining bytes, got {}", self.len())
+            bail!(
+                UnexpectedEof,
+                "expected {n} remaining bytes, got {}",
+                self.len()
+            )
         } else {
             Ok(&self[..n])
         }
@@ -150,7 +166,11 @@ impl<'a> BinaryRead<'a> for &'a [u8] {
     #[inline]
     fn peek_const<const N: usize>(&self) -> anyhow::Result<[u8; N]> {
         if self.len() < N {
-            bail!(UnexpectedEof, "expected {N} remaining bytes, got {}", self.len())
+            bail!(
+                UnexpectedEof,
+                "expected {N} remaining bytes, got {}",
+                self.len()
+            )
         } else {
             let dst = &self[..N];
             // SAFETY: dst is guaranteed to be of length N
@@ -304,7 +324,8 @@ mod test {
 
     #[test]
     fn read_write_f32_le() {
-        const VALUES: [f32; 4] = [f32::MAX, f32::MIN, f32::MAX - 42.0, f32::MIN + 42.0];
+        const VALUES: [f32; 4] =
+            [f32::MAX, f32::MIN, f32::MAX - 42.0, f32::MIN + 42.0];
 
         let mut buffer = MutableBuffer::new();
         for v in VALUES {
@@ -319,7 +340,8 @@ mod test {
 
     #[test]
     fn read_write_f32_be() {
-        const VALUES: [f32; 4] = [f32::MAX, f32::MIN, f32::MAX - 42.0, f32::MIN + 42.0];
+        const VALUES: [f32; 4] =
+            [f32::MAX, f32::MIN, f32::MAX - 42.0, f32::MIN + 42.0];
 
         let mut buffer = MutableBuffer::new();
         for v in VALUES {
@@ -334,7 +356,8 @@ mod test {
 
     #[test]
     fn read_write_f64_le() {
-        const VALUES: [f64; 4] = [f64::MAX, f64::MIN, f64::MAX - 42.0, f64::MIN + 42.0];
+        const VALUES: [f64; 4] =
+            [f64::MAX, f64::MIN, f64::MAX - 42.0, f64::MIN + 42.0];
 
         let mut buffer = MutableBuffer::new();
         for v in VALUES {
@@ -349,7 +372,8 @@ mod test {
 
     #[test]
     fn read_write_f64_be() {
-        const VALUES: [f64; 4] = [f64::MAX, f64::MIN, f64::MAX - 42.0, f64::MIN + 42.0];
+        const VALUES: [f64; 4] =
+            [f64::MAX, f64::MIN, f64::MAX - 42.0, f64::MIN + 42.0];
 
         let mut buffer = MutableBuffer::new();
         for v in VALUES {

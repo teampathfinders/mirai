@@ -18,12 +18,15 @@ impl ConnectionRequest {
     pub const ID: u8 = 0x09;
 }
 
-impl Deserialize<'_> for ConnectionRequest {
-    fn deserialize(mut buffer: SharedBuffer) -> anyhow::Result<Self> {
-        pyassert!(buffer.read_u8()? == Self::ID);
+impl<'a> Deserialize<'a> for ConnectionRequest {
+    fn deserialize<R>(mut reader: R) -> anyhow::Result<Self>
+    where
+        R: BinaryRead<'a> + 'a,
+    {
+        pyassert!(reader.read_u8()? == Self::ID);
 
-        let guid = buffer.read_i64_be()?;
-        let time = buffer.read_i64_be()?;
+        let guid = reader.read_i64_be()?;
+        let time = reader.read_i64_be()?;
 
         Ok(Self { guid, time })
     }

@@ -26,7 +26,7 @@ pub struct AddPainting<'a> {
     pub name: &'a str,
 }
 
-impl ConnectedPacket for AddPainting<'_> {
+impl<'a> ConnectedPacket for AddPainting<'a> {
     const ID: u32 = 0x16;
 
     fn serialized_size(&self) -> usize {
@@ -38,12 +38,12 @@ impl ConnectedPacket for AddPainting<'_> {
     }
 }
 
-impl Serialize for AddPainting<'_> {
-    fn serialize(&self, buffer: &mut MutableBuffer) -> anyhow::Result<()> {
-        buffer.write_var_i64(self.runtime_id as i64)?; // Unique entity ID.
-        buffer.write_var_u64(self.runtime_id)?;
-        buffer.write_vecf(&self.position)?;
-        buffer.write_var_i32(self.direction as i32)?;
-        buffer.write_str(self.name)
+impl<'a> Serialize for AddPainting<'a> {
+    fn serialize(&self, writer: impl BinaryWrite) -> anyhow::Result<()> {
+        writer.write_var_i64(self.runtime_id as i64)?; // Unique entity ID.
+        writer.write_var_u64(self.runtime_id)?;
+        writer.write_vecf(&self.position)?;
+        writer.write_var_i32(self.direction as i32)?;
+        writer.write_str(self.name)
     }
 }

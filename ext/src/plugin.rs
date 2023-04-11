@@ -11,7 +11,10 @@ use crate::def;
 #[inline]
 fn to_version_string(version: [u8; 4]) -> String {
     // Iterator::intersperse is unstable, so this is a manual implementation.
-    let mut version = version.iter().map(|n| n.to_string() + ".").collect::<String>();
+    let mut version = version
+        .iter()
+        .map(|n| n.to_string() + ".")
+        .collect::<String>();
     version.truncate(version.len() - 1);
     version
 }
@@ -65,44 +68,61 @@ impl Plugin {
     /// # Panics
     ///
     /// This function panics if the instance was not created with the specified store.
-    pub fn new(file: String, instance: Instance, mut store: Store<WasiCtx>) -> anyhow::Result<Self> {
+    pub fn new(
+        file: String,
+        instance: Instance,
+        mut store: Store<WasiCtx>,
+    ) -> anyhow::Result<Self> {
         {
             // Run __pyro_initialize if it exists.
             // This function is used to initialise the language runtime before doing anything else.
             // AssemblyScript requires this or the majority of functions will abort the plugin.
-            if let Some(preinit) = instance.get_func(&mut store, def::IMPL_INITIALIZE_FN) {
+            if let Some(preinit) =
+                instance.get_func(&mut store, def::IMPL_INITIALIZE_FN)
+            {
                 let preinit = preinit.typed::<(), ()>(&mut store)?;
                 preinit.call(&mut store, ())?;
             }
         }
 
         let name = {
-            let name_fn = instance.get_typed_func::<(), i32>(&mut store, def::IMPL_EXT_NAME_FN)?;
+            let name_fn = instance
+                .get_typed_func::<(), i32>(&mut store, def::IMPL_EXT_NAME_FN)?;
             let ptr = name_fn.call(&mut store, ())?;
 
             let memory = instance
                 .get_memory(&mut store, "memory")
                 .ok_or_else(|| anyhow::anyhow!("Could not find memory"))?;
-            let cstr = unsafe { CStr::from_ptr(memory.data_ptr(&store).add(ptr as usize) as *const i8) };
+            let cstr = unsafe {
+                CStr::from_ptr(
+                    memory.data_ptr(&store).add(ptr as usize) as *const i8
+                )
+            };
 
             cstr.to_str()?.to_owned()
         };
 
         let version = {
-            let version_fn = instance.get_typed_func::<(), u32>(&mut store, def::IMPL_EXT_VERSION_FN)?;
+            let version_fn = instance.get_typed_func::<(), u32>(
+                &mut store,
+                def::IMPL_EXT_VERSION_FN,
+            )?;
             version_fn.call(&mut store, ())?.to_le_bytes()
         };
 
-        store
-            .data_mut()
-            .set_stdout(Box::new(ExtensionStdout { prefix: name.clone(), stdout: stdout() }));
+        store.data_mut().set_stdout(Box::new(ExtensionStdout {
+            prefix: name.clone(),
+            stdout: stdout(),
+        }));
 
         Ok(Self { name, file, version, instance, store })
     }
 
     /// Calls the optional startup function in the plugin.
     pub fn on_startup(&mut self) -> anyhow::Result<()> {
-        if let Some(untyped) = self.instance.get_func(&mut self.store, def::ENABLE_FN) {
+        if let Some(untyped) =
+            self.instance.get_func(&mut self.store, def::ENABLE_FN)
+        {
             let typed = untyped.typed::<(), ()>(&mut self.store)?;
             typed.call(&mut self.store, ())?;
         }
@@ -112,7 +132,9 @@ impl Plugin {
 
     /// Calls the optional shutdown function in the plugin and drops it.
     pub fn on_shutdown(mut self) -> anyhow::Result<()> {
-        if let Some(untyped) = self.instance.get_func(&mut self.store, def::DISABLE_FN) {
+        if let Some(untyped) =
+            self.instance.get_func(&mut self.store, def::DISABLE_FN)
+        {
             let typed = untyped.typed::<(), ()>(&mut self.store)?;
             typed.call(&mut self.store, ())?;
         }
@@ -155,13 +177,27 @@ impl Debug for Plugin {
 impl Drop for Plugin {
     fn drop(&mut self) {
         // Run cleanup function if it exists.
-        if let Some(disable_fn) = self.instance.get_func(&mut self.store, def::IMPL_CLEANUP_FN) {
-            if let Ok(disable_fn) = disable_fn.typed::<(), ()>(&mut self.store) {
+        if let Some(disable_fn) = self
+            .instance
+            .get_func(&mut self.store, def::IMPL_CLEANUP_FN)
+        {
+            if let Ok(disable_fn) = disable_fn.typed::<(), ()>(&mut self.store)
+            {
                 if let Err(err) = disable_fn.call(&mut self.store, ()) {
-                    tracing::error!("Failed to call `{}` in module `{}@{}`: {err}", def::IMPL_CLEANUP_FN, self.name, self.file);
+                    tracing::error!(
+                        "Failed to call `{}` in module `{}@{}`: {err}",
+                        def::IMPL_CLEANUP_FN,
+                        self.name,
+                        self.file
+                    );
                 }
             } else {
-                tracing::error!("`{}` in module `{}@{}` has invalid signature", def::IMPL_CLEANUP_FN, self.name, self.file);
+                tracing::error!(
+                    "`{}` in module `{}@{}` has invalid signature",
+                    def::IMPL_CLEANUP_FN,
+                    self.name,
+                    self.file
+                );
             }
         }
     }

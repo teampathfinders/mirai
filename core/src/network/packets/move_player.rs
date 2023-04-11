@@ -80,7 +80,7 @@ impl ConnectedPacket for MovePlayer {
 }
 
 impl Serialize for MovePlayer {
-    fn serialize(&self, buffer: &mut MutableBuffer) -> anyhow::Result<()> {
+    fn serialize<W>(&self, buffer: W) -> anyhow::Result<()> where W: BinaryWrite {
         buffer.write_var_u64(self.runtime_id)?;
         buffer.write_vecf(&self.position)?;
         buffer.write_vecf(&self.rotation)?;

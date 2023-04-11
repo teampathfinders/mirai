@@ -4,7 +4,7 @@ use std::time::{Instant, Duration};
 
 use async_recursion::async_recursion;
 
-use util::{bail, Result};
+use util::{bail, Result, Deserialize};
 use util::bytes::{BinaryRead, MutableBuffer};
 
 use crate::network::{CommandRequest, SettingsCommand, ContainerClose};
@@ -46,8 +46,8 @@ impl RakNetSession {
 
         let pk_id = *packet.first().unwrap();
         match pk_id {
-            Ack::ID => self.process_ack(packet.snapshot())?,
-            Nak::ID => self.process_nak(packet.snapshot()).await?,
+            Ack::ID => self.process_ack(packet.as_ref())?,
+            Nak::ID => self.process_nak(packet.as_ref()).await?,
             _ => self.process_frame_batch(packet).await?,
         }
 
@@ -80,7 +80,8 @@ impl RakNetSession {
     /// * Discarding old sequenced frames
     /// * Acknowledging reliable packets
     async fn process_frame_batch(&self, packet: MutableBuffer) -> anyhow::Result<()> {
-        let batch = FrameBatch::deserialize(packet.snapshot())?;
+        let batch = FrameBatch::deserialize(packet.as_ref())?;
+
         self
             .client_batch_number
             .fetch_max(batch.sequence_number, Ordering::SeqCst);

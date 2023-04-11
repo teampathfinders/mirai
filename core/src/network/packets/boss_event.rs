@@ -55,7 +55,7 @@ impl ConnectedPacket for BossEvent<'_> {
 }
 
 impl Serialize for BossEvent<'_> {
-    fn serialize(&self, buffer: &mut MutableBuffer) -> anyhow::Result<()> {
+    fn serialize<W>(&self, buffer: W) -> anyhow::Result<()> where W: BinaryWrite {
         buffer.write_var_i64(self.boss_unique_id)?;
         match self.event {
             BossEventType::Show {

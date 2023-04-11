@@ -2,8 +2,10 @@ use std::{collections::HashMap, sync::Mutex};
 use util::{bytes::MutableBuffer, Deserialize, Serialize, Vector};
 
 use crate::{
-    biome::Biomes, database::Database, provider::Provider, settings::LevelSettings, DataKey, Dimension, KeyType, PaletteEntry, SubChunk,
-    SubChunkVersion, SubLayer, BIOME_DATA, LOCAL_PLAYER, MOB_EVENTS, OVERWORLD, SCHEDULER, SCOREBOARD,
+    biome::Biomes, database::Database, provider::Provider,
+    settings::LevelSettings, DataKey, Dimension, KeyType, PaletteEntry,
+    SubChunk, SubChunkVersion, SubLayer, BIOME_DATA, LOCAL_PLAYER, MOB_EVENTS,
+    OVERWORLD, SCHEDULER, SCOREBOARD,
 };
 
 // digp [x] [z] [?dimension]
@@ -18,38 +20,34 @@ static LOCK: Mutex<()> = Mutex::new(());
 #[test]
 fn level_settings() {
     let _lock = LOCK.lock().unwrap();
-    let provider = unsafe {
-        Provider::open("test").unwrap()
-    };
+    let provider = unsafe { Provider::open("test").unwrap() };
     let settings = provider.get_settings().unwrap();
 }
 
 #[test]
 fn chunk_version() {
     let _lock = LOCK.lock().unwrap();
-    let provider = unsafe {
-        Provider::open("test").unwrap()
-    };
-    let version = provider.get_version(Vector::from([0, 0]), Dimension::Overworld).unwrap();
+    let provider = unsafe { Provider::open("test").unwrap() };
+    let version = provider
+        .get_version(Vector::from([0, 0]), Dimension::Overworld)
+        .unwrap();
     assert_eq!(version, Some(40));
 }
 
 #[test]
 fn key_not_found() {
     let _lock = LOCK.lock().unwrap();
-    let provider = unsafe {
-        Provider::open("test").unwrap()
-    };
-    let biome = provider.get_biomes(Vector::from([1290712972, 29372937]), Dimension::Overworld).unwrap();
+    let provider = unsafe { Provider::open("test").unwrap() };
+    let biome = provider
+        .get_biomes(Vector::from([1290712972, 29372937]), Dimension::Overworld)
+        .unwrap();
     assert_eq!(biome, None);
 }
 
 #[test]
 fn biomes() {
     let _lock = LOCK.lock().unwrap();
-    let database = unsafe {
-        Database::open("test/db").unwrap()
-    };
+    let database = unsafe { Database::open("test/db").unwrap() };
     let iter = database.iter();
 
     for kv in iter {
@@ -70,9 +68,7 @@ fn biomes() {
 #[test]
 fn subchunks() {
     let _lock = LOCK.lock().unwrap();
-    let database = unsafe {
-        Database::open("test/db").unwrap()
-    };
+    let database = unsafe { Database::open("test/db").unwrap() };
     let iter = database.iter();
     for kv in iter {
         let key = kv.key();
@@ -80,7 +76,8 @@ fn subchunks() {
             let subchunk = SubChunk::deserialize(&*kv.value()).unwrap();
 
             let serialized = subchunk.serialize().unwrap();
-            let deserialized = SubChunk::deserialize(serialized.as_slice()).unwrap();
+            let deserialized =
+                SubChunk::deserialize(serialized.as_slice()).unwrap();
 
             assert_eq!(subchunk, deserialized);
         }
@@ -91,9 +88,7 @@ fn subchunks() {
 #[test]
 fn bench_subchunk() {
     let _lock = LOCK.lock().unwrap();
-    let db = unsafe {
-        Database::open("test/db").unwrap()
-    };
+    let db = unsafe { Database::open("test/db").unwrap() };
 
     let mut count = 0;
     let mut failed = 0;
@@ -122,7 +117,11 @@ fn bench_subchunk() {
     let avg = sum as f64 / count as f64;
     println!("average: {avg}μs");
     println!("total chunks: {}", count as f64 / 1.0f64);
-    println!("failed: {} ({}%)", failed, failed as f64 / (count + failed) as f64);
+    println!(
+        "failed: {} ({}%)",
+        failed,
+        failed as f64 / (count + failed) as f64
+    );
 
     // let mut buffer = OwnedBuffer::new();
     // DatabaseKey {
@@ -145,7 +144,10 @@ fn palette_entry() {
     let entry = PaletteEntry {
         name: "minecraft:stone".to_owned(),
         version: Some([1, 18, 100, 0]),
-        states: HashMap::from([("stone_type".to_owned(), nbt::Value::String("andesite".to_owned()))]),
+        states: HashMap::from([(
+            "stone_type".to_owned(),
+            nbt::Value::String("andesite".to_owned()),
+        )]),
     };
 
     let ser = nbt::to_le_bytes(&entry).unwrap();

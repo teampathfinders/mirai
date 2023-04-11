@@ -135,7 +135,7 @@ impl<'a> ConnectedPacket for TextMessage<'a> {
 }
 
 impl<'a> Serialize for TextMessage<'a> {
-    fn serialize(&self, buffer: &mut MutableBuffer) -> anyhow::Result<()> {
+    fn serialize<W>(&self, buffer: W) -> anyhow::Result<()> where W: BinaryWrite {
         buffer.write_u8(self.data.discriminant())?;
         buffer.write_bool(self.needs_translation)?;
 

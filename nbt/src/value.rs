@@ -255,12 +255,22 @@ impl PartialEq<Value> for Value {
             Value::Long(lhs) => rhs.as_i64().map_or(false, |rhs| *lhs == rhs),
             Value::Float(lhs) => rhs.as_f32().map_or(false, |rhs| *lhs == rhs),
             Value::Double(lhs) => rhs.as_f64().map_or(false, |rhs| *lhs == rhs),
-            Value::ByteArray(lhs) => rhs.as_u8_array().map_or(false, |rhs| lhs == rhs),
-            Value::String(lhs) => rhs.as_string().map_or(false, |rhs| lhs == rhs),
+            Value::ByteArray(lhs) => {
+                rhs.as_u8_array().map_or(false, |rhs| lhs == rhs)
+            }
+            Value::String(lhs) => {
+                rhs.as_string().map_or(false, |rhs| lhs == rhs)
+            }
             Value::List(lhs) => rhs.as_list().map_or(false, |rhs| lhs == rhs),
-            Value::Compound(lhs) => rhs.as_compound().map_or(false, |rhs| lhs == rhs),
-            Value::IntArray(lhs) => rhs.as_i32_array().map_or(false, |rhs| lhs == rhs),
-            Value::LongArray(lhs) => rhs.as_i64_array().map_or(false, |rhs| lhs == rhs),
+            Value::Compound(lhs) => {
+                rhs.as_compound().map_or(false, |rhs| lhs == rhs)
+            }
+            Value::IntArray(lhs) => {
+                rhs.as_i32_array().map_or(false, |rhs| lhs == rhs)
+            }
+            Value::LongArray(lhs) => {
+                rhs.as_i64_array().map_or(false, |rhs| lhs == rhs)
+            }
         }
     }
 }
@@ -600,7 +610,10 @@ impl<'de> Deserialize<'de> for Value {
             }
 
             #[inline]
-            fn visit_string<E>(self, v: String) -> anyhow::Result<Self::Value, E>
+            fn visit_string<E>(
+                self,
+                v: String,
+            ) -> anyhow::Result<Self::Value, E>
             where
                 E: de::Error,
             {
@@ -608,7 +621,10 @@ impl<'de> Deserialize<'de> for Value {
             }
 
             #[inline]
-            fn visit_byte_buf<E>(self, v: Vec<u8>) -> anyhow::Result<Self::Value, E>
+            fn visit_byte_buf<E>(
+                self,
+                v: Vec<u8>,
+            ) -> anyhow::Result<Self::Value, E>
             where
                 E: de::Error,
             {
@@ -616,7 +632,10 @@ impl<'de> Deserialize<'de> for Value {
             }
 
             #[inline]
-            fn visit_seq<A>(self, mut seq: A) -> anyhow::Result<Self::Value, A::Error>
+            fn visit_seq<A>(
+                self,
+                mut seq: A,
+            ) -> anyhow::Result<Self::Value, A::Error>
             where
                 A: SeqAccess<'de>,
             {
@@ -633,7 +652,10 @@ impl<'de> Deserialize<'de> for Value {
             }
 
             #[inline]
-            fn visit_map<A>(self, mut map: A) -> anyhow::Result<Self::Value, A::Error>
+            fn visit_map<A>(
+                self,
+                mut map: A,
+            ) -> anyhow::Result<Self::Value, A::Error>
             where
                 A: MapAccess<'de>,
             {
