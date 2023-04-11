@@ -1,12 +1,13 @@
 use std::{sync::{atomic::{AtomicU32, AtomicBool, AtomicI32, Ordering}, Arc}, net::SocketAddr};
 
-use tokio::sync::{mpsc, OnceCell, broadcast};
+use tokio::sync::{mpsc, OnceCell, broadcast, Mutex, oneshot};
+use tokio_util::sync::CancellationToken;
 use util::{bytes::MutableBuffer, Deserialize, Serialize};
 use uuid::Uuid;
 
 use crate::{network::{Disconnect, ConnectedPacket, Skin, DeviceOS, ChunkRadiusRequest, CacheStatus, ChunkRadiusReply, RequestNetworkSettings, PlayStatus, NETWORK_VERSION, Status, NetworkSettings}, raknet::{RakNetSession, RakNetMessage, PacketConfig, Reliability, SendPriority, RakNetSessionBuilder, BroadcastPacket, RawPacket}, crypto::{UserData, IdentityData}, config::SERVER_CONFIG, instance::UdpController};
 
-use super::{SessionLike, SessionRef};
+use super::{SessionLike, SessionRef, SessionMapMessage};
 
 const RAKNET_MESSAGE_CHANNEL_SIZE: usize = 5;
 
@@ -77,25 +78,28 @@ impl SessionBuilder {
     ///
     /// This method panics if several required options were not set.
     #[inline]
-    pub fn build(mut self) -> SessionRef<IncompleteSession> {
+    pub fn build(mut self) -> (SessionRef<IncompleteSession>, oneshot::Receiver<()>) {
         let sender = self.sender.take().unwrap();
-        let session = IncompleteSession::new(self);
+        let (disconnect_sender, disconnect_receiver) = oneshot::channel();
 
-        SessionRef {
+        let session = IncompleteSession::new(self, disconnect_sender);
+
+        (SessionRef {
             sender, session
-        }
+        }, disconnect_receiver)
     }
 }
 
 #[derive(Debug)]
 pub struct IncompleteSession {
+    pub token: CancellationToken,
     pub expected: AtomicU32,
     pub cache_support: AtomicBool,
     pub render_distance: AtomicI32,
     pub guid: u64,
     pub compression: AtomicBool,
     pub sender: mpsc::Sender<RakNetMessage>,
-    pub receiver: mpsc::Receiver<RakNetMessage>,
+    pub receiver: Mutex<mpsc::Receiver<RakNetMessage>>,
     pub raknet: Arc<RakNetSession>,
     pub identity: OnceCell<IdentityData>,
     /// Extra user data, such as device OS and language.
@@ -104,7 +108,7 @@ pub struct IncompleteSession {
 }
 
 impl IncompleteSession {
-    pub fn new(builder: SessionBuilder) -> Self {
+    pub fn new(builder: SessionBuilder, disconnect_sender: oneshot::Sender<()>) -> Arc<Self> {
         let (session_sender, raknet_receiver) = mpsc::channel(RAKNET_MESSAGE_CHANNEL_SIZE);
         let (raknet_sender, session_receiver) = mpsc::channel(RAKNET_MESSAGE_CHANNEL_SIZE);
 
@@ -120,8 +124,8 @@ impl IncompleteSession {
             .channel((raknet_sender, raknet_receiver));
 
         let raknet = raknet_builder.build();
-
-        let incomplete = Self {
+        let incomplete = Arc::new(Self {
+            token: CancellationToken::new(),
             expected: AtomicU32::new(0),
             cache_support: AtomicBool::new(false),
             render_distance: AtomicI32::new(0),
@@ -129,13 +133,26 @@ impl IncompleteSession {
             compression: AtomicBool::new(false),
             raknet,
             sender: session_sender,
-            receiver: session_receiver,
+            receiver: Mutex::new(session_receiver),
             identity: OnceCell::new(),
             user_data: OnceCell::new(),
             skin: OnceCell::new()
-        };
+        });
+
+        {
+            let incomplete = incomplete.clone();
+            tokio::spawn(async move {
+                incomplete.receiver_task().await;
+                disconnect_sender.send(());
+            });
+        }
 
         incomplete
+    }
+
+    #[inline]
+    pub fn close(&self) {
+        self.token.cancel();
     }
 
     #[inline]
@@ -256,6 +273,52 @@ impl IncompleteSession {
 
         self.compression.store(true, Ordering::Relaxed);
         self.send(response)
+    }
+
+    #[inline]
+    fn on_disconnect(&self) -> anyhow::Result<()> {
+        self.close();
+        Ok(())
+    }
+
+    #[inline]
+    fn process_packet(&self, packet: MutableBuffer) -> anyhow::Result<()> {
+        println!("packet: {packet:?}");
+
+        Ok(())
+    }
+
+    #[inline]
+    fn process_message(&self, msg: RakNetMessage) -> anyhow::Result<()> {
+        match msg {
+            RakNetMessage::Message(buffer) => self.process_packet(buffer),
+            RakNetMessage::Disconnect => self.on_disconnect(),
+            msg => anyhow::bail!("Incomplete session received incorrect message: {msg:?}")
+        }
+    }
+
+    async fn receiver_task(&self) -> anyhow::Result<()> {
+        let mut receiver = self.receiver.lock().await;
+
+        loop {
+            tokio::select! {
+                _ = self.token.cancelled() => break,
+                msg = receiver.recv() => {
+                    if let Some(msg) = msg {
+                        match self.process_message(msg) {
+                            Ok(_) => (),
+                            Err(e) => tracing::error!("{e:?}")
+                        };
+                    } else {
+                        tracing::error!("RakNet message channel has been closed in an active session, this should not happen.");
+                        break
+                    }
+                }
+            }
+        }
+
+        dbg!("exit");
+        Ok(())
     }
 }
 

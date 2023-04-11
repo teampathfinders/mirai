@@ -220,8 +220,6 @@ impl RakNetSession {
             anyhow::bail!("RakNet message channel timed out");
         }
 
-        todo!();
-
         Ok(())
     }
 }

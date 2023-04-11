@@ -10,7 +10,7 @@ fn main() -> anyhow::Result<()> {
 }
 
 async fn app() -> anyhow::Result<()> {
-    let mut server = ServerInstance::new(19132, 100).await?;
+    let server = ServerInstance::new(19132, 100).await?;
     if let Err(error) = server.run().await {
         tracing::error!("Fatal error: {error:?}");
 

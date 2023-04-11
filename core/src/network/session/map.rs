@@ -5,7 +5,7 @@ use std::time::Duration;
 
 use dashmap::DashMap;
 use tokio::net::UdpSocket;
-use tokio::sync::{broadcast, mpsc, OnceCell};
+use tokio::sync::{broadcast, mpsc, OnceCell, oneshot};
 use tokio_util::sync::CancellationToken;
 
 use util::{Deserialize, Result, Serialize};
@@ -56,7 +56,12 @@ pub struct SessionRef<T> where T: SessionLike {
     /// Sender that sends packets to the session for processing.
     pub sender: mpsc::Sender<MutableBuffer>,
     /// The actual session.
-    pub session: T
+    pub session: Arc<T>
+}
+
+#[derive(Debug)]
+pub enum SessionMapMessage {
+    Disconnect(SocketAddr)
 }
 
 /// Keeps track of all the sessions connected to the current instance.
@@ -70,7 +75,7 @@ pub struct SessionMap {
     ///
     /// The sessions are listed by IP and are wrapped in an `Arc`
     /// due to several asynchronous tasks requiring access to them.
-    map: DashMap<SocketAddr, SessionRef<Session>>,
+    map: Arc<DashMap<SocketAddr, SessionRef<Session>>>,
     /// Channel used for packet broadcasting.
     ///
     /// Packets sent into this channel will be received by every client connected
@@ -87,7 +92,7 @@ impl SessionMap {
     /// Creates a new session tracker.
     pub fn new(token: CancellationToken, max_sessions: usize) -> Self {
         let incomplete_map = DashMap::new();
-        let map = DashMap::new();
+        let map = Arc::new(DashMap::new());
 
         // The receiver end can be created by the sessions.
         let (broadcast, _) = broadcast::channel(BROADCAST_CHANNEL_CAPACITY);
@@ -117,9 +122,16 @@ impl SessionMap {
             .broadcast(self.broadcast.clone())
             .channel(mpsc::channel(SINGLE_CHANNEL_CAPACITY));
 
-        let session_ref = builder.build();
+        let (session_ref, disconnect_receiver) = builder.build();
         if self.count() < self.max_count() {
             self.incomplete_map.insert(addr, session_ref);
+
+            let map = self.map.clone();
+            tokio::spawn(async move {
+                disconnect_receiver.await;
+                map.remove(&addr);
+            });
+
             true
         } else {
             false
@@ -132,6 +144,7 @@ impl SessionMap {
         } else if let Some(session) = self.incomplete_map.get(&packet.addr) {
             let result = session.sender.send_timeout(packet.buf, FORWARD_TIMEOUT).await;
             if result.is_err() {
+                session.value().session.close();
                 anyhow::bail!("Forwarding timed out");
             }
         } else {

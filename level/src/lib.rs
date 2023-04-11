@@ -12,13 +12,23 @@ const fn ceil_div(lhs: u32, rhs: u32) -> u32 {
     (lhs + rhs - 1) / rhs
 }
 
+/// Data returned by [`deserialize_packed_array`].
 #[derive(Debug, PartialEq, Eq)]
 pub enum PackedArrayReturn {
+    /// The packed array contained no data.
+    ///
+    /// This is used by biomes that only contain a single biome type.
     Empty,
-    ReferBack,
+    /// The packed array specified that it inherits from a previous block.
+    ///
+    /// This is used by biomes. Instead of providing multiple copies of the same data,
+    /// a biome can inherit from the previous entry.
+    Inherit,
+    /// The packed array contains new data.
     Data(Box<[u16; 4096]>),
 }
 
+/// Serialises a packed array.
 #[inline(always)]
 pub fn serialize_packed_array<W>(writer: &mut W, array: &[u16; 4096], max_index: usize, is_network: bool) -> anyhow::Result<()>
 where
@@ -73,7 +83,7 @@ where
     if index_size == 0 {
         return Ok(PackedArrayReturn::Empty);
     } else if index_size == 0x7f {
-        return Ok(PackedArrayReturn::ReferBack);
+        return Ok(PackedArrayReturn::Inherit);
     } else if ![1, 2, 3, 4, 5, 6, 8, 16].contains(&index_size) {
         anyhow::bail!(format!("Invalid index size: {index_size}"));
     }

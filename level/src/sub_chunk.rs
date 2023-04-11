@@ -162,7 +162,7 @@ impl SubLayer {
         let indices = match crate::deserialize_packed_array(&mut reader)? {
             PackedArrayReturn::Data(data) => data,
             PackedArrayReturn::Empty => anyhow::bail!("Sub layer packed array index size cannot be 0"),
-            PackedArrayReturn::ReferBack => anyhow::bail!("Sub layer packed array does not support biome referral"),
+            PackedArrayReturn::Inherit => anyhow::bail!("Sub layer packed array does not support biome referral"),
         };
 
         let len = reader.read_u32_le()? as usize;
