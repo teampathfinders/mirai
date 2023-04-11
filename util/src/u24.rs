@@ -1,7 +1,5 @@
 use core::fmt;
 
-use crate::{bail, Error, Result};
-
 /// A numerical type that can hold 3-byte integers.
 ///
 /// This type is mainly used by Raknet.
@@ -97,7 +95,7 @@ impl TryFrom<u32> for u24 {
 
     fn try_from(value: u32) -> anyhow::Result<Self> {
         if value > Self::MAX_U32 {
-            bail!(Other, "value {value} is too big to fit in u24");
+            anyhow::bail!(format!("Value {value} is too big to fit in u24"));
         }
 
         let bytes = value.to_ne_bytes();

@@ -4,9 +4,7 @@ use std::ops::{Deref, DerefMut, Index};
 use std::sync::Arc;
 use std::{cmp, fmt, io};
 
-use crate::bail;
 use crate::bytes::{BinaryRead, MutableBuffer};
-use crate::Result;
 
 #[derive(Debug, Clone)]
 pub struct ArcBuffer(Arc<Vec<u8>>);
@@ -65,11 +63,10 @@ impl<'a> SharedBuffer<'a> {
 impl<'a> BinaryRead<'a> for &'a [u8] {
     fn advance(&mut self, n: usize) -> anyhow::Result<()> {
         if self.len() < n {
-            bail!(
-                UnexpectedEof,
-                "cannot advance past {n} bytes, remaining: {}",
+            anyhow::bail!(format!(
+                "Cannot advance past {n} bytes, remaining: {}",
                 self.len()
-            )
+            ))
         }
 
         let (_, b) = self.split_at(n);
@@ -93,11 +90,10 @@ impl<'a> BinaryRead<'a> for &'a [u8] {
     #[inline]
     fn take_n(&mut self, n: usize) -> anyhow::Result<&'a [u8]> {
         if self.len() < n {
-            bail!(
-                UnexpectedEof,
-                "expected {n} remaining bytes, got {}",
+            anyhow::bail!(format!(
+                "Expected {n} remaining bytes, got {}",
                 self.len()
-            )
+            ))
         } else {
             let (a, b) = self.split_at(n);
             // *self = SharedBuffer::from(b);
@@ -119,11 +115,10 @@ impl<'a> BinaryRead<'a> for &'a [u8] {
     #[inline]
     fn take_const<const N: usize>(&mut self) -> anyhow::Result<[u8; N]> {
         if self.len() < N {
-            bail!(
-                UnexpectedEof,
-                "expected {N} remaining bytes, got {}",
+            anyhow::bail!(format!(
+                "Expected {N} remaining bytes, got {}",
                 self.len()
-            )
+            ))
         } else {
             let (a, b) = self.split_at(N);
             // *self = SharedBuffer::from(b);
@@ -143,11 +138,10 @@ impl<'a> BinaryRead<'a> for &'a [u8] {
     #[inline]
     fn peek(&self, n: usize) -> anyhow::Result<&[u8]> {
         if self.len() < n {
-            bail!(
-                UnexpectedEof,
-                "expected {n} remaining bytes, got {}",
+            anyhow::bail!(format!(
+                "Expected {n} remaining bytes, got {}",
                 self.len()
-            )
+            ))
         } else {
             Ok(&self[..n])
         }
@@ -166,11 +160,10 @@ impl<'a> BinaryRead<'a> for &'a [u8] {
     #[inline]
     fn peek_const<const N: usize>(&self) -> anyhow::Result<[u8; N]> {
         if self.len() < N {
-            bail!(
-                UnexpectedEof,
-                "expected {N} remaining bytes, got {}",
+            anyhow::bail!(format!(
+                "Expected {N} remaining bytes, got {}",
                 self.len()
-            )
+            ))
         } else {
             let dst = &self[..N];
             // SAFETY: dst is guaranteed to be of length N
@@ -250,9 +243,7 @@ impl<'a> Read for SharedBuffer<'a> {
 mod test {
     use paste::paste;
 
-    use crate::bytes::SharedBuffer;
     use crate::bytes::{BinaryRead, BinaryWrite, MutableBuffer};
-    use crate::u24::u24;
 
     macro_rules! define_test_fns {
         ($($ty: ident),+) => {
@@ -263,7 +254,7 @@ mod test {
 
                     let mut buffer = MutableBuffer::new();
                     for v in VALUES {
-                        buffer.[<write_ $ty _le>](v);
+                        buffer.[<write_ $ty _le>](v).unwrap();
                     }
 
                     let mut ss = buffer.snapshot();
@@ -278,7 +269,7 @@ mod test {
 
                     let mut buffer = MutableBuffer::new();
                     for v in VALUES {
-                        buffer.[<write_ $ty _be>](v);
+                        buffer.[<write_ $ty _be>](v).unwrap();
                     }
 
                     let mut ss = buffer.snapshot();

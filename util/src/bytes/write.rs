@@ -5,7 +5,6 @@ use paste::paste;
 use uuid::Uuid;
 
 use crate::u24::u24;
-use crate::Result;
 use crate::{BlockPosition, Vector};
 
 macro_rules! declare_primitive_fns {
