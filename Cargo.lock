@@ -269,7 +269,7 @@ dependencies = [
  "io-lifetimes",
  "ipnet",
  "maybe-owned",
- "rustix 0.37.11",
+ "rustix 0.37.13",
  "windows-sys 0.45.0",
  "winx",
 ]
@@ -293,7 +293,7 @@ dependencies = [
  "cap-primitives",
  "io-extras",
  "io-lifetimes",
- "rustix 0.37.11",
+ "rustix 0.37.13",
 ]
 
 [[package]]
@@ -304,7 +304,7 @@ checksum = "1c36aba6f39b14951cc10cc331441ffbdb471960d27e2f0813eb05f33d786e56"
 dependencies = [
  "cap-primitives",
  "once_cell",
- "rustix 0.37.11",
+ "rustix 0.37.13",
  "winx",
 ]
 
@@ -773,7 +773,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9799aefb4a2e4a01cc47610b1dd47c18ab13d991f27bbcaed9296f5a53d5cbad"
 dependencies = [
  "cfg-if",
- "rustix 0.37.11",
+ "rustix 0.37.13",
  "windows-sys 0.45.0",
 ]
 
@@ -840,7 +840,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "bba733060df596995a5b3945c5d4c7362cfe9ab006baaddac633733908ec2814"
 dependencies = [
  "io-lifetimes",
- "rustix 0.37.11",
+ "rustix 0.37.13",
  "windows-sys 0.45.0",
 ]
 
@@ -1191,7 +1191,7 @@ checksum = "256017f749ab3117e93acb91063009e1f1bb56d03965b14c2c8df4eb02c524d8"
 dependencies = [
  "hermit-abi 0.3.1",
  "io-lifetimes",
- "rustix 0.37.11",
+ "rustix 0.37.13",
  "windows-sys 0.45.0",
 ]
 
@@ -1288,9 +1288,9 @@ checksum = "f051f77a7c8e6957c0696eac88f26b0117e54f52d3fc682ab19397a8812846a4"
 
 [[package]]
 name = "linux-raw-sys"
-version = "0.3.1"
+version = "0.3.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d59d8c75012853d2e872fb56bc8a2e53718e2cafe1a4c823143141c6d90c322f"
+checksum = "9b085a4f2cde5781fc4b1717f2e86c62f5cda49de7ba99a7c2eae02b61c9064c"
 
 [[package]]
 name = "lock_api"
@@ -1362,7 +1362,7 @@ version = "0.6.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ffc89ccdc6e10d6907450f753537ebc5c5d3460d2e4e62ea74bd571db62c0f9e"
 dependencies = [
- "rustix 0.37.11",
+ "rustix 0.37.13",
 ]
 
 [[package]]
@@ -1723,7 +1723,7 @@ dependencies = [
  "async-trait",
  "flate2",
  "io-extras",
- "rustix 0.37.11",
+ "rustix 0.37.13",
  "sha2",
  "tracing",
  "wasi-common",
@@ -1941,16 +1941,16 @@ dependencies = [
 
 [[package]]
 name = "rustix"
-version = "0.37.11"
+version = "0.37.13"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "85597d61f83914ddeba6a47b3b8ffe7365107221c2e557ed94426489fefb5f77"
+checksum = "f79bef90eb6d984c72722595b5b1348ab39275a5e5123faca6863bf07d75a4e0"
 dependencies = [
  "bitflags",
  "errno",
  "io-lifetimes",
  "itoa",
  "libc",
- "linux-raw-sys 0.3.1",
+ "linux-raw-sys 0.3.3",
  "once_cell",
  "windows-sys 0.48.0",
 ]
@@ -2193,7 +2193,7 @@ dependencies = [
  "cap-std",
  "fd-lock",
  "io-lifetimes",
- "rustix 0.37.11",
+ "rustix 0.37.13",
  "windows-sys 0.45.0",
  "winx",
 ]
