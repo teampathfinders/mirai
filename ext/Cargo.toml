@@ -6,7 +6,7 @@ edition = "2021"
 [dependencies]
 anyhow = "1.0.70"
 async-trait = "0.1.68"
-flate2 = "1.0.25"
+flate2 = "1.0.26"
 sha2 = "0.10.6"
 tracing = "0.1.38"
 wasi-common = "7.0.0"
