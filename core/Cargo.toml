@@ -23,7 +23,7 @@ util = { package = "pyro-util", path = "../util" }
 level = { package = "pyro-level", path = "../level" }
 
 console-subscriber = { version = "0.1.9", optional = true }
-tokio = { version = "1.28.0", features = ["net", "rt-multi-thread", "macros", "time", "sync", "signal"] }
+tokio = { version = "1.28.1", features = ["net", "rt-multi-thread", "macros", "time", "sync", "signal"] }
 tokio-util = "0.7.8"
 tracing = "0.1.38"
 tracing-subscriber = { version = "0.3.17", features = ["ansi", "fmt", "json", "smallvec", "parking_lot"], default-features = false }
