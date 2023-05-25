@@ -171,9 +171,9 @@ checksum = "9e1b586273c5702936fe7b7d6896644d8be71e6314cfe09d3167c95f712589e8"
 
 [[package]]
 name = "base64"
-version = "0.21.0"
+version = "0.21.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a4a4ddaa51a5bc52a6948f74c06d20aaaddb71924eab79b8c97a8c556e942d6a"
+checksum = "604178f6c5c21f02dc555784810edfb88d34ac2c73b2eae109655649ee73ce3d"
 
 [[package]]
 name = "base64ct"
@@ -1239,7 +1239,7 @@ version = "8.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6971da4d9c3aa03c3d8f3ff0f4155b534aad021292003895a469716b2a230378"
 dependencies = [
- "base64 0.21.0",
+ "base64 0.21.2",
  "pem",
  "ring",
  "serde",
@@ -1681,7 +1681,7 @@ dependencies = [
  "aes",
  "anyhow",
  "async-recursion",
- "base64 0.21.0",
+ "base64 0.21.2",
  "bytemuck",
  "clap",
  "console-subscriber",
@@ -1754,7 +1754,7 @@ name = "pyro-util"
 version = "0.1.0"
 dependencies = [
  "anyhow",
- "base64 0.21.0",
+ "base64 0.21.2",
  "cipher",
  "dashmap",
  "jsonwebtoken",
@@ -2361,7 +2361,7 @@ checksum = "3082666a3a6433f7f511c7192923fa1fe07c69332d3c6a2e6bb040b569199d5a"
 dependencies = [
  "async-trait",
  "axum",
- "base64 0.21.0",
+ "base64 0.21.2",
  "bytes",
  "futures-core",
  "futures-util",
@@ -2750,7 +2750,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f3055fb327f795b4639f47b9dadad9d3d9b185fd3001adf8db08f5fa06d07032"
 dependencies = [
  "anyhow",
- "base64 0.21.0",
+ "base64 0.21.2",
  "bincode",
  "directories-next",
  "file-per-thread-logger",
