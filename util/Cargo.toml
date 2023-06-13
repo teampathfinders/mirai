@@ -21,4 +21,4 @@ serde = "1.0.164"
 serde_json = "1.0.96"
 snap = "1.1.0"
 tokio = { version = "1.28.2", features = ["sync"] }
-uuid = "1.3.3"
+uuid = "1.3.4"
