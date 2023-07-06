@@ -34,7 +34,7 @@ lazy_static = "1.4.0"
 flate2 = "1.0.26"
 async-recursion = "1.0.2"
 jsonwebtoken = "8.3.0"
-serde = { version = "1.0.164", default-features = false }
+serde = { version = "1.0.166", default-features = false }
 serde_json = "1.0.99"
 base64 = "0.21.2"
 p384 = { version = "0.13.0", features = ["std", "ecdh", "ecdsa", "pem"], default-features = false }

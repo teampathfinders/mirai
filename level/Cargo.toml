@@ -12,7 +12,7 @@ rust-version = "1.66.0"
 [dependencies]
 util = { package = "pyro-util", path = "../util" }
 nbt = { package = "pyro-nbt", path = "../nbt" }
-serde = { version = "1.0.164", features = ["derive"] }
+serde = { version = "1.0.166", features = ["derive"] }
 tokio-util = "0.7.8"
 tracing = "0.1.38"
 anyhow = { version = "1.0.71", features = ["backtrace"] }
