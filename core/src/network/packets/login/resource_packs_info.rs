@@ -137,6 +137,9 @@ impl<'a> Serialize for ResourcePacksInfo<'a> {
             buffer.write_bool(pack.rtx_enabled)?;
         }
 
+        // No CDN entries
+        buffer.write_var_u32(0);
+
         Ok(())
     }
 }
