@@ -1,0 +1,28 @@
+// Misc Guns
+{
+  "minecraft:entity": {
+    "format_version": "1.2.0",
+
+    "components": {
+      "minecraft:identifier": {
+        "id": "minecraft:splash_potion"
+      },
+      "minecraft:collision_box": {
+        "width": 0.25,
+        "height": 0.25
+      },
+      "minecraft:projectile": {
+        "onHit": {
+          "impact_damage": {
+            "damage": 6,
+            "knockback": false
+          },
+          "remove_on_hit": { }
+        },
+        "power": 20,
+        "gravity": 0.0001,
+        "angleoffset": 0.0
+      }
+    }
+  }
+}

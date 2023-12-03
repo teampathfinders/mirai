@@ -1,0 +1,28 @@
+// Shotgun
+{
+  "minecraft:entity": {
+    "format_version": "1.2.0",
+
+    "components": {
+      "minecraft:identifier": {
+        "id": "minecraft:ender_pearl"
+      },
+      "minecraft:collision_box": {
+        "width": 0.25,
+        "height": 0.25
+      },
+      "minecraft:projectile": {
+        "onHit": {
+          "impact_damage": {
+            "damage":10,
+            "destroyonhit": true
+          },
+          "remove_on_hit": {}
+        },
+        "power": 25,
+        "gravity": 0.0001,
+        "angleoffset": 0.0
+      }
+    }
+  }
+}

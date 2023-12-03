@@ -55,6 +55,6 @@ glob_export!(violation_warning);
 /// ID of Minecraft game packets.
 pub const CONNECTED_PACKET_ID: u8 = 0xfe;
 /// Semver version that this server supports.
-pub const CLIENT_VERSION_STRING: &str = "1.19.71.2";
+pub const CLIENT_VERSION_STRING: &str = "1.20.0";
 /// Protocol version that this server supports.
-pub const NETWORK_VERSION: u32 = 575;
+pub const NETWORK_VERSION: u32 = 589;
