@@ -1,0 +1,17 @@
+{
+    "format_version": 1,
+    "header": {
+        "description": "Created for Zombies - Owned and created by SkyGames",
+        "name": "SG: Zombies Guns",
+        "uuid": "11cad0f4-33cf-42d8-bd1a-48a09e18b294",
+        "version": [1, 0, 0]
+    },
+    "modules": [
+        {
+            "description": "Created for Zombies - Owned and created by SkyGames",
+            "type": "data",
+            "uuid": "319a8cfc-65e1-481a-8582-ebb7ea9eb872",
+            "version": [1, 0, 0]
+        }
+    ]
+}

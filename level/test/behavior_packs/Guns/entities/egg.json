@@ -1,0 +1,28 @@
+// Revolver
+{
+  "minecraft:entity": {
+    "format_version": "1.1.0",
+
+    "components": {
+      "minecraft:identifier": {
+        "id": "minecraft:egg"
+      },
+      "minecraft:collision_box": {
+        "width": 0.25,
+        "height": 0.25
+      },
+      "minecraft:projectile": {
+        "onHit": {
+          "impact_damage": {
+            "damage": 7,
+            "destroyonhit": true
+          },
+          "remove_on_hit": {}
+        },
+        "power": 20,
+        "gravity": 0.0001,
+        "angleoffset": 0.0
+      }
+    }
+  }
+}
