@@ -60,7 +60,7 @@ impl Provider {
             anyhow::bail!("Invalid `level.dat` file: header specified length of {file_size} bytes, but found {remaining}");
         }
 
-        let (settings, _) = nbt::from_le_bytes(reader)?;
+        let (settings, _) = nbt::from_le_bytes(reader).unwrap();
         Ok(settings)
     }
 
@@ -116,6 +116,7 @@ impl Provider {
             dimension,
             data: KeyType::Biome3d,
         };
+        tracing::debug!("key = {:?}", &key);
 
         if let Some(data) = self.database.get(key)? {
             let biome = Biomes::deserialize(&*data)?;
