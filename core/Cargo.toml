@@ -23,7 +23,7 @@ util = { package = "pyro-util", path = "../util" }
 level = { package = "pyro-level", path = "../level" }
 
 console-subscriber = { version = "0.1.9", optional = true }
-tokio = { version = "1.29.0", features = ["net", "rt-multi-thread", "macros", "time", "sync", "signal"] }
+tokio = { version = "1.32.0", features = ["net", "rt-multi-thread", "macros", "time", "sync", "signal"] }
 tokio-util = "0.7.8"
 tracing = "0.1.38"
 tracing-subscriber = { version = "0.3.17", features = ["ansi", "fmt", "json", "smallvec", "parking_lot"], default-features = false }
@@ -45,5 +45,5 @@ serde_repr = "0.1.11"
 uuid = { version = "1.4.0", features = ["serde"], default-features = false }
 clap = { version = "4.4.7", features = ["cargo", "std"], default-features = false }
 anyhow = { version = "1.0.71", features = ["backtrace"] }
-lru = "0.10.1"
+lru = "0.12.1"
 bytemuck = "1.13.1"
