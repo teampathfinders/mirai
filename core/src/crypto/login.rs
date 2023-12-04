@@ -12,7 +12,8 @@ use crate::network::{DeviceOS, UiProfile};
 
 /// Mojang's public key.
 /// Used to verify the second token in the identity chain.
-pub const MOJANG_PUBLIC_KEY: &str = "MHYwEAYHKoZIzj0CAQYFK4EEACIDYgAE8ELkixyLcwlZryUQcu1TvPOmI2B7vX83ndnWRUaXm74wFfa5f/lwQNTfrLVHa2PmenpGI6JhIMUJaWZrjmMj90NoKNFSNBuKdm8rYiXsfaz3K36x/1U26HpG0ZxK/V1V";
+// pub const MOJANG_PUBLIC_KEY: &str = "MHYwEAYHKoZIzj0CAQYFK4EEACIDYgAE8ELkixyLcwlZryUQcu1TvPOmI2B7vX83ndnWRUaXm74wFfa5f/lwQNTfrLVHa2PmenpGI6JhIMUJaWZrjmMj90NoKNFSNBuKdm8rYiXsfaz3K36x/1U26HpG0ZxK/V1V";
+pub const MOJANG_PUBLIC_KEY: &str = "MHYwEAYHKoZIzj0CAQYFK4EEACIDYgAECRXueJeTDqNRRgJi/vlRufByu/2G0i2Ebt6YMar5QX/R0DIIyrJMcUpruK4QveTfJSTp3Shlq4Gk34cD/4GUWwkv0DVuzeuB+tXija7HBxii03NHDbPAD0AKnLr2wdAp";
 
 /// Use the default Base64 format with no padding.
 const BASE64_ENGINE: base64::engine::GeneralPurpose = base64::engine::general_purpose::STANDARD_NO_PAD;
@@ -98,7 +99,6 @@ fn parse_initial_token(token: &str) -> anyhow::Result<String> {
     // Decode JWT header to get X5U.
     let header = jsonwebtoken::decode_header(token)?;
     let base64 = header.x5u.ok_or_else(|| anyhow!("Missing X.509 certificate URL (x5u)"))?;
-
     let bytes = BASE64_ENGINE.decode(base64)?;
 
     // Public key that can be used to verify the token.
@@ -199,6 +199,7 @@ pub fn parse_identity_data(buffer: &mut SharedBuffer) -> anyhow::Result<Identity
             if !key.eq(MOJANG_PUBLIC_KEY) {
                 bail!(Malformed, "Identity token was not signed by Mojang");
             }
+            tracing::debug!("Identity verified");
 
             key = parse_mojang_token(&tokens.chain[1], &key)?;
             parse_identity_token(&tokens.chain[2], &key)?

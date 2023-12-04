@@ -136,6 +136,8 @@ impl Session {
     }
 
     pub fn process_pack_client_response(&self, packet: MutableBuffer) -> anyhow::Result<()> {
+        tracing::debug!("Received client resource response");
+
         let _request = ResourcePackClientResponse::deserialize(packet.snapshot())?;
 
         // TODO: Implement resource packs.
@@ -216,6 +218,8 @@ impl Session {
             server_block_state_checksum: 0,
             world_template_id: 0,
             client_side_generation: false,
+            hashed_block_ids: false,
+            server_authoritative_sounds: false
         };
         self.send(start_game)?;
 
@@ -228,16 +232,18 @@ impl Session {
         let play_status = PlayStatus { status: Status::PlayerSpawn };
         self.send(play_status)?;
 
-        let commands = self.level_manager.get_commands().iter().map(|kv| kv.value().clone()).collect::<Vec<_>>();
-
-        let available_commands = AvailableCommands { commands: commands.as_slice() };
-
-        self.send(available_commands)?;
+        // let commands = self.level_manager.get_commands().iter().map(|kv| kv.value().clone()).collect::<Vec<_>>();
+        //
+        // let available_commands = AvailableCommands { commands: commands.as_slice() };
+        //
+        // self.send(available_commands)?;
 
         Ok(())
     }
 
     pub fn process_cts_handshake(&self, packet: MutableBuffer) -> anyhow::Result<()> {
+        tracing::debug!("Handshake received");
+
         ClientToServerHandshake::deserialize(packet.snapshot())?;
 
         let response = PlayStatus { status: Status::LoginSuccess };

@@ -298,6 +298,8 @@ pub struct StartGame<'a> {
     pub world_template_id: u128,
     /// Client side generation allows the client to generate its own chunks without the server having to send them over.
     pub client_side_generation: bool,
+    pub hashed_block_ids: bool,
+    pub server_authoritative_sounds: bool
 }
 
 impl ConnectedPacket for StartGame<'_> {
@@ -376,7 +378,12 @@ impl ConnectedPacket for StartGame<'_> {
             CLIENT_VERSION_STRING.var_len() +
             // self.property_data.serialized_net_size("") +
             8 +
-            16
+            16 +
+            1 +
+            1 +
+            1 +
+            1 +
+            1
     }
 }
 
@@ -398,6 +405,8 @@ impl<'a> Serialize for StartGame<'a> {
 
         buffer.write_bool(self.achievements_disabled)?;
         buffer.write_bool(self.editor_world)?;
+        buffer.write_bool(false)?; // Not created in editor
+        buffer.write_bool(false)?; // Not exported from editor
         buffer.write_var_i32(self.day_cycle_lock_time)?;
         buffer.write_var_i32(0)?; // Education offer.
         buffer.write_bool(self.education_features_enabled)?;
@@ -474,6 +483,8 @@ impl<'a> Serialize for StartGame<'a> {
 
         buffer.write_u64_le(self.server_block_state_checksum)?;
         buffer.write_u128_le(self.world_template_id)?;
-        buffer.write_bool(self.client_side_generation)
+        buffer.write_bool(self.client_side_generation)?;
+        buffer.write_bool(self.hashed_block_ids)?;
+        buffer.write_bool(self.server_authoritative_sounds)
     }
 }

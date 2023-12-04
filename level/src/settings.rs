@@ -41,6 +41,18 @@ pub struct Policies {
 #[serde(rename_all = "camelCase")]
 #[serde(deny_unknown_fields)]
 pub struct LevelSettings {
+    pub editor_world_type: i32,
+    #[serde(rename = "isCreatedInEditor")]
+    pub created_in_editor: bool,
+    #[serde(rename = "isExportedFromEditor")]
+    pub exported_from_editor: bool,
+    #[serde(rename = "isRandomSeedAllowed")]
+    pub random_seed_allowed: bool,
+    #[serde(rename = "playerssleepingpercentage")]
+    pub sleeping_percentage: i32,
+    #[serde(rename = "recipesunlock")]
+    pub recipes_unlock: bool,
+    pub cheats_enabled: bool,
     pub lightning_level: f32,
     pub lightning_time: i32,
     pub rain_level: f32,
@@ -106,8 +118,11 @@ pub struct LevelSettings {
     pub commands_enabled: bool,
     #[serde(rename = "ConfirmedPlatformLockedContent")]
     pub confirmed_platform_locked_content: bool,
+    pub daylight_cycle: i32,
     #[serde(rename = "dodaylightcycle")]
-    pub daylight_cycle: bool,
+    pub daylight_lock: bool,
+    #[serde(rename = "dolimitedcrafting")]
+    pub limited_crafting: bool,
     #[serde(rename = "doentitydrops")]
     pub entity_drops: bool,
     #[serde(rename = "dofiretick")]
