@@ -43,7 +43,7 @@ ctr = "0.9.2"
 aes = "0.8.3"
 serde_repr = "0.1.11"
 uuid = { version = "1.4.0", features = ["serde"], default-features = false }
-clap = { version = "4.3.10", features = ["cargo", "std"], default-features = false }
+clap = { version = "4.4.7", features = ["cargo", "std"], default-features = false }
 anyhow = { version = "1.0.71", features = ["backtrace"] }
 lru = "0.12.1"
 bytemuck = "1.13.1"
