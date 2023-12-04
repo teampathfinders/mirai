@@ -8,7 +8,7 @@ use util::{bail, BlockPosition, Deserialize, Result, Vector};
 
 use crate::config::SERVER_CONFIG;
 use crate::crypto::Encryptor;
-use crate::network::{CacheStatus, NetworkChunkPublisherUpdate};
+use crate::network::{CacheStatus, CreativeItem, ItemCollection, NetworkChunkPublisherUpdate};
 use crate::network::Session;
 use crate::network::{AvailableCommands, SubChunkRequestMode};
 use crate::network::{
@@ -96,10 +96,10 @@ impl Session {
             //     }],
             // })?;
 
-            let level_chunk = self.level_manager.request_biomes(Vector::from([0, 0]), Dimension::Overworld)?;
-            dbg!(level_chunk);
+            // let level_chunk = self.level_manager.request_biomes(Vector::from([0, 0]), Dimension::Overworld)?;
+            // dbg!(level_chunk);
 
-            self.broadcast_others(TextMessage {
+            self.broadcast(TextMessage {
                 data: TextData::System {
                     message: &format!("§e{} has joined the server.", identity_data.display_name),
                 },
@@ -223,8 +223,19 @@ impl Session {
         };
         self.send(start_game)?;
 
-        let creative_content = CreativeContent { items: &[] };
-        self.send(creative_content)?;
+        // let creative_content = CreativeContent {
+        //     items: &[CreativeItem {
+        //         collection: ItemCollection {
+        //             network_id: 1,
+        //             runtime_id: 0,
+        //             count: 64,
+        //             can_break: Vec::new(),
+        //             placeable_on: Vec::new(),
+        //             meta: 0
+        //         }
+        //     }]
+        // };
+        // self.send(creative_content)?;
 
         let biome_definition_list = BiomeDefinitionList;
         self.send(biome_definition_list)?;
@@ -232,11 +243,11 @@ impl Session {
         let play_status = PlayStatus { status: Status::PlayerSpawn };
         self.send(play_status)?;
 
-        // let commands = self.level_manager.get_commands().iter().map(|kv| kv.value().clone()).collect::<Vec<_>>();
-        //
-        // let available_commands = AvailableCommands { commands: commands.as_slice() };
-        //
-        // self.send(available_commands)?;
+        let commands = self.level_manager.get_commands().iter().map(|kv| kv.value().clone()).collect::<Vec<_>>();
+
+        let available_commands = AvailableCommands { commands: commands.as_slice() };
+
+        self.send(available_commands)?;
 
         Ok(())
     }

@@ -126,6 +126,8 @@ impl Serialize for AvailableCommands<'_> {
             buffer.write_str(value)?;
         }
 
+        buffer.write_var_u32(0); // No subcommand values
+
         buffer.write_var_u32(suffixes.len() as u32)?;
         for suffix in suffixes {
             buffer.write_str(suffix)?;
@@ -148,6 +150,7 @@ impl Serialize for AvailableCommands<'_> {
             }
         }
 
+        buffer.write_var_u32(0); // No subcommand data
         buffer.write_var_u32(self.commands.len() as u32)?;
         for command in self.commands {
             let alias = if !command.aliases.is_empty() {
@@ -162,8 +165,10 @@ impl Serialize for AvailableCommands<'_> {
             buffer.write_u8(command.permission_level as u8)?;
             buffer.write_i32_le(alias)?;
 
+            buffer.write_var_u32(0); // No subcommands
             buffer.write_var_u32(command.overloads.len() as u32)?;
             for overload in &command.overloads {
+                buffer.write_bool(false)?; // No chaining
                 buffer.write_var_u32(overload.parameters.len() as u32)?;
                 for parameter in &overload.parameters {
                     let mut command_type = parameter.data_type as u32;
