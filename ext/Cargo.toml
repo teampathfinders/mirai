@@ -17,5 +17,5 @@ wasmtime-wasi = "7.0.0"
 rustix = { version = "0.38.0", features = ["fs"] }
 
 [target.'cfg(windows)'.dependencies]
-io-extras = "0.17.4"
+io-extras = "0.18.1"
 rustix = { version = "0.38.0", features = ["net"] }
