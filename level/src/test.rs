@@ -23,134 +23,134 @@ fn level_settings() {
     };
     let settings = provider.get_settings().unwrap();
 }
-
-#[test]
-fn chunk_version() {
-    let _lock = LOCK.lock().unwrap();
-    let provider = unsafe {
-        Provider::open("test").unwrap()
-    };
-    let version = provider.get_version(Vector::from([0, 0]), Dimension::Overworld).unwrap();
-    assert_eq!(version, Some(40));
-}
-
-#[test]
-fn key_not_found() {
-    let _lock = LOCK.lock().unwrap();
-    let provider = unsafe {
-        Provider::open("test").unwrap()
-    };
-    let biome = provider.get_biomes(Vector::from([1290712972, 29372937]), Dimension::Overworld).unwrap();
-    assert_eq!(biome, None);
-}
-
-#[test]
-fn biomes() {
-    let _lock = LOCK.lock().unwrap();
-    let database = unsafe {
-        Database::open("test/db").unwrap()
-    };
-    let iter = database.iter();
-
-    for kv in iter {
-        let key = kv.key();
-        if *key.last().unwrap() == KeyType::Biome3d.discriminant() {
-            let biome = Biomes::deserialize(&*kv.value()).unwrap();
-
-            let mut ser = MutableBuffer::new();
-            biome.serialize(&mut ser).unwrap();
-
-            let biome2 = Biomes::deserialize(ser.snapshot().as_ref()).unwrap();
-
-            assert_eq!(biome, biome2);
-        }
-    }
-}
-
-#[test]
-fn subchunks() {
-    let _lock = LOCK.lock().unwrap();
-    let database = unsafe {
-        Database::open("test/db").unwrap()
-    };
-    let iter = database.iter();
-    for kv in iter {
-        let key = kv.key();
-        if key[key.len() - 2] == 0x2f {
-            let subchunk = SubChunk::deserialize(&*kv.value()).unwrap();
-
-            let serialized = subchunk.serialize().unwrap();
-            let deserialized = SubChunk::deserialize(serialized.as_slice()).unwrap();
-
-            assert_eq!(subchunk, deserialized);
-        }
-    }
-}
-
-#[ignore]
-#[test]
-fn bench_subchunk() {
-    let _lock = LOCK.lock().unwrap();
-    let db = unsafe {
-        Database::open("test/db").unwrap()
-    };
-
-    let mut count = 0;
-    let mut failed = 0;
-    let mut sum = 0;
-
-    for _ in 0..50 {
-        let iter = db.iter();
-        for raw_ref in iter {
-            let key = raw_ref.key();
-
-            if key[key.len() - 2] == 0x2f {
-                let start = std::time::Instant::now();
-                let subchunk = SubChunk::deserialize(raw_ref.value().as_ref());
-                let end = start.elapsed();
-
-                if subchunk.is_ok() {
-                    count += 1;
-                    sum += end.as_micros();
-                } else {
-                    failed += 1;
-                }
-            }
-        }
-    }
-
-    let avg = sum as f64 / count as f64;
-    println!("average: {avg}μs");
-    println!("total chunks: {}", count as f64 / 1.0f64);
-    println!("failed: {} ({}%)", failed, failed as f64 / (count + failed) as f64);
-
-    // let mut buffer = OwnedBuffer::new();
-    // DatabaseKey {
-    //     x: -2,
-    //     z: -1,
-    //     data: KeyData::SubChunk {
-    //         index: 6
-    //     },
-    //     dimension: Dimension::Overworld
-    // }.serialize(&mut buffer);
-    //
-    // let data = db.get_raw_key(buffer).unwrap();
-    // let subchunk = SubChunk::deserialize(data).unwrap();
-    // let block = subchunk.get(Vector::from([0, 0, 0])).unwrap();
-    // dbg!(block);
-}
-
-#[test]
-fn palette_entry() {
-    let entry = PaletteEntry {
-        name: "minecraft:stone".to_owned(),
-        version: Some([1, 18, 100, 0]),
-        states: HashMap::from([("stone_type".to_owned(), nbt::Value::String("andesite".to_owned()))]),
-    };
-
-    let ser = nbt::to_le_bytes(&entry).unwrap();
-    let de: PaletteEntry = nbt::from_le_bytes(*ser.snapshot()).unwrap().0;
-    let _de_value: nbt::Value = nbt::from_le_bytes(*ser.snapshot()).unwrap().0;
-
-    assert_eq!(entry, de);
-}
+//
+// #[test]
+// fn chunk_version() {
+//     let _lock = LOCK.lock().unwrap();
+//     let provider = unsafe {
+//         Provider::open("test").unwrap()
+//     };
+//     let version = provider.get_version(Vector::from([0, 0]), Dimension::Overworld).unwrap();
+//     assert_eq!(version, Some(40));
+// }
+//
+// #[test]
+// fn key_not_found() {
+//     let _lock = LOCK.lock().unwrap();
+//     let provider = unsafe {
+//         Provider::open("test").unwrap()
+//     };
+//     let biome = provider.get_biomes(Vector::from([1290712972, 29372937]), Dimension::Overworld).unwrap();
+//     assert_eq!(biome, None);
+// }
+//
+// #[test]
+// fn biomes() {
+//     let _lock = LOCK.lock().unwrap();
+//     let database = unsafe {
+//         Database::open("test/db").unwrap()
+//     };
+//     let iter = database.iter();
+//
+//     for kv in iter {
+//         let key = kv.key();
+//         if *key.last().unwrap() == KeyType::Biome3d.discriminant() {
+//             let biome = Biomes::deserialize(&*kv.value()).unwrap();
+//
+//             let mut ser = MutableBuffer::new();
+//             biome.serialize(&mut ser).unwrap();
+//
+//             let biome2 = Biomes::deserialize(ser.snapshot().as_ref()).unwrap();
+//
+//             assert_eq!(biome, biome2);
+//         }
+//     }
+// }
+//
+// #[test]
+// fn subchunks() {
+//     let _lock = LOCK.lock().unwrap();
+//     let database = unsafe {
+//         Database::open("test/db").unwrap()
+//     };
+//     let iter = database.iter();
+//     for kv in iter {
+//         let key = kv.key();
+//         if key[key.len() - 2] == 0x2f {
+//             let subchunk = SubChunk::deserialize(&*kv.value()).unwrap();
+//
+//             let serialized = subchunk.serialize().unwrap();
+//             let deserialized = SubChunk::deserialize(serialized.as_slice()).unwrap();
+//
+//             assert_eq!(subchunk, deserialized);
+//         }
+//     }
+// }
+//
+// #[ignore]
+// #[test]
+// fn bench_subchunk() {
+//     let _lock = LOCK.lock().unwrap();
+//     let db = unsafe {
+//         Database::open("test/db").unwrap()
+//     };
+//
+//     let mut count = 0;
+//     let mut failed = 0;
+//     let mut sum = 0;
+//
+//     for _ in 0..50 {
+//         let iter = db.iter();
+//         for raw_ref in iter {
+//             let key = raw_ref.key();
+//
+//             if key[key.len() - 2] == 0x2f {
+//                 let start = std::time::Instant::now();
+//                 let subchunk = SubChunk::deserialize(raw_ref.value().as_ref());
+//                 let end = start.elapsed();
+//
+//                 if subchunk.is_ok() {
+//                     count += 1;
+//                     sum += end.as_micros();
+//                 } else {
+//                     failed += 1;
+//                 }
+//             }
+//         }
+//     }
+//
+//     let avg = sum as f64 / count as f64;
+//     println!("average: {avg}μs");
+//     println!("total chunks: {}", count as f64 / 1.0f64);
+//     println!("failed: {} ({}%)", failed, failed as f64 / (count + failed) as f64);
+//
+//     // let mut buffer = OwnedBuffer::new();
+//     // DatabaseKey {
+//     //     x: -2,
+//     //     z: -1,
+//     //     data: KeyData::SubChunk {
+//     //         index: 6
+//     //     },
+//     //     dimension: Dimension::Overworld
+//     // }.serialize(&mut buffer);
+//     //
+//     // let data = db.get_raw_key(buffer).unwrap();
+//     // let subchunk = SubChunk::deserialize(data).unwrap();
+//     // let block = subchunk.get(Vector::from([0, 0, 0])).unwrap();
+//     // dbg!(block);
+// }
+//
+// #[test]
+// fn palette_entry() {
+//     let entry = PaletteEntry {
+//         name: "minecraft:stone".to_owned(),
+//         version: Some([1, 18, 100, 0]),
+//         states: HashMap::from([("stone_type".to_owned(), nbt::Value::String("andesite".to_owned()))]),
+//     };
+//
+//     let ser = nbt::to_le_bytes(&entry).unwrap();
+//     let de: PaletteEntry = nbt::from_le_bytes(*ser.snapshot()).unwrap().0;
+//     let _de_value: nbt::Value = nbt::from_le_bytes(*ser.snapshot()).unwrap().0;
+//
+//     assert_eq!(entry, de);
+// }

@@ -21,7 +21,7 @@ jobs:
     runs-on: ${{ matrix.os }}
   
     steps:
-    - run: rustup toolchain install 1.68.0 --profile minimal
+    - run: rustup toolchain install 1.74.0 --profile minimal
     
     - uses: actions/checkout@v3
       with:
@@ -31,7 +31,7 @@ jobs:
       uses: Swatinem/rust-cache@v2.2.1
 
     - name: Build
-      run: cargo +1.68.0 build
+      run: cargo +1.74.0 build
       
     - name: Test
-      run: cargo +1.68.0 test -- --test-threads 1
+      run: cargo +1.74.0 test -- --test-threads 1
