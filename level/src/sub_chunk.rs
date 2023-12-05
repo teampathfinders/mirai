@@ -278,22 +278,37 @@ pub struct SubChunk {
 }
 
 impl SubChunk {
+    /// Version of this subchunk.
+    /// See [`SubChunkVersion`] for more information.
     #[inline]
     pub fn version(&self) -> SubChunkVersion {
         self.version
     }
 
+    /// Vertical index of this subchunk
     #[inline]
     pub fn index(&self) -> i8 {
         self.index
     }
 
-    /// Returns the specified layer from the sub chunk.
+    /// The amount of layers that this subchunk contains
+    #[inline]
+    pub fn layer_len(&self) -> u8 {
+        self.layers.len() as u8
+    }
+
+    #[inline]
+    pub fn layers(&self) -> &[SubLayer] {
+        &self.layers
+    }
+
+    /// Get an immutable reference to the layer at the specified index.
     #[inline]
     pub fn layer(&self, index: usize) -> Option<&SubLayer> {
         self.layers.get(index)
     }
 
+    /// Get a mutable reference to the layer at the specified index.
     #[inline]
     pub fn layer_mut(&mut self, index: usize) -> Option<&mut SubLayer> {
         self.layers.get_mut(index)

@@ -57,13 +57,13 @@ impl Session {
     pub fn process_command_request(&self, packet: MutableBuffer) -> anyhow::Result<()> {
         let request = CommandRequest::deserialize(packet.snapshot())?;
 
-        let command_list = self.level_manager.get_commands();
+        let command_list = self.level.get_commands();
         let result = ParsedCommand::parse(command_list, request.command);
 
         if let Ok(parsed) = result {
             let output = match parsed.name.as_str() {
                 "gamerule" => {
-                    self.level_manager.execute_game_rule_command(parsed)
+                    self.level.execute_game_rule_command(parsed)
                 }
                 _ => todo!(),
             };

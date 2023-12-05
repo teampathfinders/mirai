@@ -62,7 +62,7 @@ pub struct Session {
     /// This is set to true after receiving the [`SetLocalPlayerAsInitialized`](crate::SetLocalPlayerAsInitialized) packet
     pub initialized: AtomicBool,
     /// Manages entire world.
-    pub level_manager: Arc<LevelManager>,
+    pub level: Arc<LevelManager>,
     /// Sends packets into the broadcasting channel.
     pub broadcast: broadcast::Sender<BroadcastPacket>,
     /// Indicates whether this session is active.
@@ -121,7 +121,7 @@ impl Session {
                 recovery_queue: Default::default(),
             },
             broadcast,
-            level_manager,
+            level: level_manager,
             active: CancellationToken::new(),
             current_tick: AtomicU64::new(0),
         });

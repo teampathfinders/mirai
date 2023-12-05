@@ -57,13 +57,6 @@ impl Session {
             lock.position.y.round() as i32,
             lock.position.z.round() as i32
         ]);
-
-        self.send(NetworkChunkPublisherUpdate {
-            position: rounded_position,
-            radius: self.player
-                .read()
-                .viewer.get_radius() as u32
-        })?;
         drop(lock);
 
         // Add player to other's player lists
@@ -169,7 +162,7 @@ impl Session {
             platform_broadcast_intent: BroadcastIntent::Public,
             enable_commands: true,
             texture_packs_required: true,
-            game_rules: &self.level_manager.get_game_rules(),
+            game_rules: &self.level.get_game_rules(),
             experiments: &[],
             experiments_previously_enabled: false,
             bonus_chest_enabled: false,
@@ -240,17 +233,20 @@ impl Session {
 
         let biome_definition_list = BiomeDefinitionList;
         self.send(biome_definition_list)?;
-        
-        let chunk_response = self.level_manager.request_subchunks(
-            Vector::from([0, 0, 0]), &[Vector::from([0, 0, 0])]
-        )?;
-        tracing::debug!("{:?}", &chunk_response);
-        // self.send(chunk_response)?;
+
+        self.send(NetworkChunkPublisherUpdate {
+            position: Vector::from([0, 0, 0]),
+            radius: self.player
+                .read()
+                .viewer.get_radius() as u32
+        })?;
+
+        self.level.request_subchunks(Vector::from([0, -4, 0]), &[])?;
 
         let play_status = PlayStatus { status: Status::PlayerSpawn };
         self.send(play_status)?;
 
-        let commands = self.level_manager.get_commands().iter().map(|kv| kv.value().clone()).collect::<Vec<_>>();
+        let commands = self.level.get_commands().iter().map(|kv| kv.value().clone()).collect::<Vec<_>>();
         let available_commands = AvailableCommands { commands: commands.as_slice() };
         self.send(available_commands)?;
 

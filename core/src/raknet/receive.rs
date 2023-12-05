@@ -215,6 +215,7 @@ impl Session {
         // Advance past the header.
         packet.advance_cursor(start_len - snapshot.len());
 
+        // dbg!(&header);
         match header.id {
             RequestNetworkSettings::ID => {
                 self.process_network_settings_request(packet)

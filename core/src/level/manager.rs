@@ -87,8 +87,7 @@ impl LevelManager {
             cache,
             commands: DashMap::new(),
             game_rules: DashMap::from_iter([
-                ("showcoordinates".to_owned(), GameRule::ShowCoordinates(false)),
-                ("naturalregeneration".to_owned(), GameRule::NaturalRegeneration(false)),
+                ("showcoordinates".to_owned(), GameRule::ShowCoordinates(true))
             ]),
             session_manager,
             tick: AtomicU64::new(0),
@@ -156,25 +155,22 @@ impl LevelManager {
         self.session_manager.broadcast(GameRulesChanged { game_rules })
     }
 
-    /// Loads all chunks in a radius around a specified center.
+    /// TODO: Loads all chunks in a radius around a specified center.
     pub fn request_subchunks(
         &self, center: Vector<i32, 3>, offsets: &[Vector<i8, 3>]
     ) -> anyhow::Result<SubChunkResponse> {
-        let mut entries = Vec::with_capacity(offsets.len());
-        for offset in offsets {
-            entries.push(SubChunkEntry {
-                offset: offset.clone(),
-                result: SubChunkResult::NotFound,
-                ..Default::default()
-            });
-        }
+        let subchunk = self.provider.get_subchunk(
+            Vector::from([center.x, center.z]),
+            center.y as i8, Dimension::Overworld
+        )?;
 
-        Ok(SubChunkResponse {
-            cache_enabled: false,
-            dimension: Dimension::Overworld,
-            position: center,
-            entries
-        })
+        if let Some(subchunk) = subchunk {
+
+        } else {
+
+        }
+        
+        todo!()
     }
 
     pub fn request_biomes(&self, coordinates: Vector<i32, 2>, dimension: Dimension) -> anyhow::Result<LevelChunk> {
