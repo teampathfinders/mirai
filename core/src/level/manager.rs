@@ -16,7 +16,7 @@ use util::{Result, Vector};
 
 use crate::command::Command;
 use crate::config::SERVER_CONFIG;
-use crate::network::{LevelChunk, SubChunkResponse, SubChunkRequestMode};
+use crate::network::{LevelChunk, SubChunkResponse, SubChunkRequestMode, SubChunkEntry, SubChunkResult};
 use crate::network::{
     SessionManager, {GameRule, GameRulesChanged},
 };
@@ -160,8 +160,21 @@ impl LevelManager {
     pub fn request_subchunks(
         &self, center: Vector<i32, 3>, offsets: &[Vector<i8, 3>]
     ) -> anyhow::Result<SubChunkResponse> {
-        todo!();
-        // https://github.com/df-mc/dragonfly/blob/5f8833e69a933fdbb15625217ebf3b6d8e28fbf5/server/session/chunk.go
+        let mut entries = Vec::with_capacity(offsets.len());
+        for offset in offsets {
+            entries.push(SubChunkEntry {
+                offset: offset.clone(),
+                result: SubChunkResult::NotFound,
+                ..Default::default()
+            });
+        }
+
+        Ok(SubChunkResponse {
+            cache_enabled: false,
+            dimension: Dimension::Overworld,
+            position: center,
+            entries
+        })
     }
 
     pub fn request_biomes(&self, coordinates: Vector<i32, 2>, dimension: Dimension) -> anyhow::Result<LevelChunk> {

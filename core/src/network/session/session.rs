@@ -20,12 +20,11 @@ use crate::network::{DeviceOS, Disconnect, PermissionLevel};
 use crate::network::GameMode;
 use crate::raknet::{BroadcastPacket, RaknetData};
 use crate::crypto::{Encryptor, IdentityData, UserData};
-use crate::level::LevelManager;
+use crate::level::{ChunkViewer, LevelManager};
 use crate::network::Skin;
 
 static RUNTIME_ID_COUNTER: AtomicU64 = AtomicU64::new(0);
 
-#[derive(Debug)]
 pub struct PlayerData {
     /// Whether the player's inventory is currently open.
     pub is_inventory_open: bool,
@@ -35,8 +34,6 @@ pub struct PlayerData {
     /// x and y components are general rotation.
     /// z component is head yaw.
     pub rotation: Vector<f32, 3>,
-    /// Render distance of the player in chunks.
-    pub render_distance: Option<NonZeroI32>,
     /// Game mode.
     pub game_mode: GameMode,
     /// General permission level.
@@ -45,6 +42,7 @@ pub struct PlayerData {
     pub skin: Option<Skin>,
     /// Runtime ID.
     pub runtime_id: u64,
+    pub viewer: ChunkViewer,
 }
 
 /// Sessions directly correspond to clients connected to the server.
@@ -67,10 +65,8 @@ pub struct Session {
     pub level_manager: Arc<LevelManager>,
     /// Sends packets into the broadcasting channel.
     pub broadcast: broadcast::Sender<BroadcastPacket>,
-
     /// Indicates whether this session is active.
     pub active: CancellationToken,
-
     /// Current tick of this session, this is increased every [`TICK_INTERVAL`].
     pub current_tick: AtomicU64,
     /// Minecraft-specific data.
@@ -98,13 +94,13 @@ impl Session {
             initialized: AtomicBool::new(false),
             player: RwLock::new(PlayerData {
                 is_inventory_open: false,
-                position: Vector::from([23.0, 23.0, 2.0]),
+                position: Vector::from([0.0, 0.0, 0.0]),
                 rotation: Vector::from([0.0; 3]),
-                render_distance: None,
                 runtime_id: RUNTIME_ID_COUNTER.fetch_add(1, Ordering::SeqCst),
                 game_mode: GameMode::Creative,
                 permission_level: PermissionLevel::Member,
                 skin: None,
+                viewer: ChunkViewer::new(level_manager.clone())
             }),
             raknet: RaknetData {
                 udp_socket: ipv4_socket,

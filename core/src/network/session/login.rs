@@ -8,7 +8,7 @@ use util::{bail, BlockPosition, Deserialize, Result, Vector};
 
 use crate::config::SERVER_CONFIG;
 use crate::crypto::Encryptor;
-use crate::network::{CacheStatus, CreativeItem, ItemCollection, NetworkChunkPublisherUpdate};
+use crate::network::{CacheStatus, CreativeItem, HeightmapType, ItemCollection, NetworkChunkPublisherUpdate, SubChunkEntry, SubChunkResponse, SubChunkResult};
 use crate::network::Session;
 use crate::network::{AvailableCommands, SubChunkRequestMode};
 use crate::network::{
@@ -62,11 +62,7 @@ impl Session {
             position: rounded_position,
             radius: self.player
                 .read()
-                .render_distance
-                .ok_or_else(||
-                    anyhow::anyhow!("Chunk radius was not set before initialising local player")
-                )?
-                .get() as u32
+                .viewer.get_radius() as u32
         })?;
         drop(lock);
 
@@ -119,19 +115,24 @@ impl Session {
     /// Handles a [`ChunkRadiusRequest`] packet by returning the maximum allowed render distance.
     pub fn process_radius_request(&self, packet: MutableBuffer) -> anyhow::Result<()> {
         let request = ChunkRadiusRequest::deserialize(packet.snapshot())?;
+        let allowed_radius = std::cmp::min(
+            SERVER_CONFIG.read().allowed_render_distance, request.radius
+        );
+
         self.send(ChunkRadiusReply {
-            allowed_radius: std::cmp::min(
-                SERVER_CONFIG.read().allowed_render_distance, request.radius
-            ),
+            allowed_radius,
         })?;
 
         if request.radius <= 0 {
             anyhow::bail!("Render distance must be greater than 0");
         }
+        tracing::debug!("Chunk radius updated to: {}", request.radius);
 
-        tracing::debug!("[{}] Chunk radius updated to: {}", self.get_display_name()?, request.radius);
+        {
+            let player = self.player.read();
+            player.viewer.set_radius(allowed_radius);
+        }
 
-        self.player.write().render_distance = Some(NonZeroI32::new(request.radius).unwrap());
         Ok(())
     }
 
@@ -227,7 +228,7 @@ impl Session {
         //     items: &[CreativeItem {
         //         collection: ItemCollection {
         //             network_id: 1,
-        //             runtime_id: 0,
+        //             runtime_id: 10421,
         //             count: 64,
         //             can_break: Vec::new(),
         //             placeable_on: Vec::new(),
@@ -239,14 +240,18 @@ impl Session {
 
         let biome_definition_list = BiomeDefinitionList;
         self.send(biome_definition_list)?;
+        
+        let chunk_response = self.level_manager.request_subchunks(
+            Vector::from([0, 0, 0]), &[Vector::from([0, 0, 0])]
+        )?;
+        tracing::debug!("{:?}", &chunk_response);
+        // self.send(chunk_response)?;
 
         let play_status = PlayStatus { status: Status::PlayerSpawn };
         self.send(play_status)?;
 
         let commands = self.level_manager.get_commands().iter().map(|kv| kv.value().clone()).collect::<Vec<_>>();
-
         let available_commands = AvailableCommands { commands: commands.as_slice() };
-
         self.send(available_commands)?;
 
         Ok(())
