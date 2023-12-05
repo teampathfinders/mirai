@@ -33,7 +33,7 @@ parking_lot = "0.12.1"
 lazy_static = "1.4.0"
 flate2 = "1.0.26"
 async-recursion = "1.0.2"
-jsonwebtoken = "8.3.0"
+jsonwebtoken = "9.2.0"
 serde = { version = "1.0.164", default-features = false }
 serde_json = "1.0.104"
 base64 = "0.21.2"
