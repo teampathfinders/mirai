@@ -3,7 +3,7 @@ use uuid::Uuid;
 use util::{Result, Serialize, Vector};
 use util::bytes::{BinaryWrite, MutableBuffer};
 
-use crate::network::{DeviceOS, ItemStack, PermissionLevel};
+use crate::network::{DeviceOS, PermissionLevel};
 use crate::network::{ConnectedPacket, GameMode};
 use crate::command::CommandPermissionLevel;
 
@@ -147,7 +147,7 @@ pub struct AddPlayer<'a> {
     /// Game mode of the player.
     pub game_mode: GameMode,
     /// Item held by the player.
-    pub held_item: ItemStack,
+    // pub held_item: ItemStack,
     // pub metadata: HashMap<u32, nbt::Value>,
     // pub properties: EntityProperties,
     /// Abilities of the player. See [`AbilityData`].
@@ -173,7 +173,7 @@ impl Serialize for AddPlayer<'_> {
         buffer.write_vecf(&self.position)?;
         buffer.write_vecf(&self.velocity)?;
         buffer.write_vecf(&self.rotation)?;
-        self.held_item.serialize(buffer)?;
+        // self.held_item.serialize(buffer)?;
         buffer.write_var_i32(self.game_mode as i32)?;
         // buffer.put_metadata(&self.metadata);
         buffer.write_var_u32(0)?; // TODO: Entity metadata.
