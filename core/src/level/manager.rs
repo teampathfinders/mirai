@@ -16,14 +16,14 @@ use util::{Result, Vector};
 
 use crate::command::Command;
 use crate::config::SERVER_CONFIG;
-use crate::network::{LevelChunk, SubChunkResponse, SubChunkRequestMode, SubChunkEntry, SubChunkResult};
+use crate::network::{LevelChunk, SubChunkEntry, SubChunkRequestMode, SubChunkResponse, SubChunkResult};
 use crate::network::{
     SessionManager, {GameRule, GameRulesChanged},
 };
 
+use crate::level::serialize::serialize_biomes;
 use lru::LruCache;
 use util::bytes::MutableBuffer;
-use crate::level::serialize::serialize_biomes;
 
 /// Interval between standard Minecraft ticks.
 const LEVEL_TICK_INTERVAL: Duration = Duration::from_millis(1000 / 20);
@@ -77,18 +77,14 @@ impl LevelManager {
             (config.level_path, config.autosave_interval)
         };
 
-        let provider = unsafe {
-            Provider::open(level_path)?
-        };
+        let provider = unsafe { Provider::open(level_path)? };
         let cache = RwLock::new(LevelCache::new());
 
         let manager = Arc::new(Self {
             provider,
             cache,
             commands: DashMap::new(),
-            game_rules: DashMap::from_iter([
-                ("showcoordinates".to_owned(), GameRule::ShowCoordinates(true))
-            ]),
+            game_rules: DashMap::from_iter([("showcoordinates".to_owned(), GameRule::ShowCoordinates(true))]),
             session_manager,
             tick: AtomicU64::new(0),
             token,
@@ -156,20 +152,15 @@ impl LevelManager {
     }
 
     /// TODO: Loads all chunks in a radius around a specified center.
-    pub fn request_subchunks(
-        &self, center: Vector<i32, 3>, offsets: &[Vector<i8, 3>]
-    ) -> anyhow::Result<SubChunkResponse> {
-        let subchunk = self.provider.get_subchunk(
-            Vector::from([center.x, center.z]),
-            center.y as i8, Dimension::Overworld
-        )?;
+    pub fn request_subchunks(&self, center: Vector<i32, 3>, offsets: &[Vector<i8, 3>]) -> anyhow::Result<SubChunkResponse> {
+        let subchunk = self
+            .provider
+            .get_subchunk(Vector::from([center.x, center.z]), center.y as i8, Dimension::Overworld)?;
 
         if let Some(subchunk) = subchunk {
-
         } else {
-
         }
-        
+
         todo!()
     }
 
@@ -195,10 +186,7 @@ impl LevelManager {
             })
             .collect::<Vec<_>>();
 
-        let count = sub_chunks
-            .iter()
-            .filter(|o| o.is_some())
-            .count();
+        let count = sub_chunks.iter().filter(|o| o.is_some()).count();
 
         let mut raw_payload = MutableBuffer::new();
         serialize_biomes(&mut raw_payload, &biomes)?;
@@ -209,7 +197,7 @@ impl LevelManager {
             highest_sub_chunk: count as u16,
             sub_chunk_count: count as u32,
             blob_hashes: None,
-            raw_payload
+            raw_payload,
         };
 
         Ok(packet)

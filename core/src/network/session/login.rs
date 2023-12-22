@@ -241,7 +241,7 @@ impl Session {
                 .viewer.get_radius() as u32
         })?;
 
-        self.level.request_subchunks(Vector::from([0, -4, 0]), &[])?;
+        // self.level.request_subchunks(Vector::from([0, -4, 0]), &[])?;
 
         let play_status = PlayStatus { status: Status::PlayerSpawn };
         self.send(play_status)?;

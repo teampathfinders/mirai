@@ -1,6 +1,4 @@
-use util::{
-    bail, Deserialize, Result,
-};
+use util::{bail, Deserialize, Result, TryExpect};
 use util::bytes::MutableBuffer;
 
 use crate::network::{
@@ -27,13 +25,26 @@ impl Session {
 
     pub fn process_text_message(&self, packet: MutableBuffer) -> anyhow::Result<()> {
         let request = TextMessage::deserialize(packet.snapshot())?;
-        if !matches!(request.data, TextData::Chat { .. }) {
-            anyhow::bail!("Client is only allowed to send chat messages");
-        }
+        if let TextData::Chat {
+            source, ..
+        } = request.data {
+            let actual = &self.identity.get()
+                .try_expect("Client does not have associated user data")?
+                .display_name;
 
-        // We must also return the packet to the client that sent it.
-        // Otherwise their message won't be displayed in their own chat.
-        self.broadcast(request)
+            // Check that the source is equal to the player name to prevent spoofing.
+            if actual != source {
+                self.kick("Illegal packet modifications detected")?;
+                anyhow::bail!("Client attempted to spoof chat name");
+            }
+
+            // We must also return the packet to the client that sent it.
+            // Otherwise their message won't be displayed in their own chat.
+            self.broadcast(request)
+        } else {
+            // Only the server is allowed to create text packets that are not of the chat type.
+            anyhow::bail!("Client sent an illegally modified text message packet")
+        }
     }
 
     pub fn process_skin_update(&self, packet: MutableBuffer) -> anyhow::Result<()> {

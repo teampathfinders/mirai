@@ -1,22 +1,18 @@
-use std::cell::OnceCell;
-use std::sync::Arc;
-use std::sync::atomic::{AtomicI32, Ordering};
-use util::Vector;
 use crate::level::LevelManager;
 use crate::network::{HeightmapType, SubChunkEntry, SubChunkResult};
+use std::cell::OnceCell;
+use std::sync::atomic::{AtomicI32, Ordering};
+use std::sync::Arc;
+use util::Vector;
 
 pub struct ChunkViewer {
     radius: AtomicI32,
-    level: Arc<LevelManager>
+    level: Arc<LevelManager>,
 }
 
 impl ChunkViewer {
-    pub fn new(
-        level: Arc<LevelManager>
-    ) -> Self {
-        Self {
-            radius: AtomicI32::new(0), level
-        }
+    pub fn new(level: Arc<LevelManager>) -> Self {
+        Self { radius: AtomicI32::new(0), level }
     }
 
     #[inline]
@@ -29,9 +25,7 @@ impl ChunkViewer {
         self.radius.load(Ordering::Acquire)
     }
 
-    pub fn recenter(&self, center: Vector<i32, 2>, offsets: &[Vector<i8, 3>])
-        -> anyhow::Result<Vec<SubChunkEntry>>
-    {
+    pub fn recenter(&self, center: Vector<i32, 2>, offsets: &[Vector<i8, 3>]) -> anyhow::Result<Vec<SubChunkEntry>> {
         todo!()
         //
         // let mut entries = Vec::with_capacity(offsets.len());
