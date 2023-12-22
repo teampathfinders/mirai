@@ -4,8 +4,8 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-anyhow = "1.0.71"
 async-trait = "0.1.75"
+anyhow = "1.0.76"
 flate2 = "1.0.26"
 sha2 = "0.10.7"
 tracing = "0.1.38"
