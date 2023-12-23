@@ -4,7 +4,7 @@ use util::Serialize;
 
 use crate::network::ConnectedPacket;
 
-/// Sent in response to [`ChunkRadiusRequest`](crate::ChunkRadiusRequest), to notify the client of the allowed render distance.
+/// Sent in response to [`ChunkRadiusRequest`](crate::network::ChunkRadiusRequest), to notify the client of the allowed render distance.
 #[derive(Debug, Clone)]
 pub struct ChunkRadiusReply {
     /// Maximum render distance that the server allows (in chunks).

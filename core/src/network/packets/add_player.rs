@@ -127,7 +127,7 @@ impl AbilityData<'_> {
 }
 
 /// Adds a player to the game.
-/// A [`PlayerListAdd`](crate::PlayerListAdd) packet, adding the player to the player list,
+/// A [`PlayerListAdd`](crate::network::PlayerListAdd) packet, adding the player to the player list,
 /// must be sent before using this.
 #[derive(Debug, Clone)]
 pub struct AddPlayer<'a> {

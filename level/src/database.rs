@@ -295,7 +295,7 @@ unsafe impl Send for Database {}
 // SAFETY: All LevelDB operations are thread-safe.
 unsafe impl Sync for Database {}
 
-/// Translates an error received from the FFI, into an [`Error`].
+/// Translates an error received from the FFI, into an [`anyhow::Error`].
 unsafe fn translate_ffi_error(result: ffi::LevelResult) -> anyhow::Error {
     debug_assert_ne!(result.status, LoadStatus::Success);
 

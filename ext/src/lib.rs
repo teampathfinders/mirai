@@ -1,13 +1,15 @@
+#![allow(rustdoc::private_intra_doc_links)]
+
 /// Location of the WebAssembly modules.
-const ASSEMBLY_DIRECTORY: &str = "plugins";
+const ASSEMBLY_DIRECTORY: &str = "extensions";
 /// Location of the cache.
 const CACHE_DIRECTORY: &str = "cache";
 
 mod cache;
 mod def;
-mod plugin;
+mod extension;
 mod runtime;
 mod stdio;
 
-pub use plugin::*;
+pub use extension::*;
 pub use runtime::*;

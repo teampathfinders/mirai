@@ -84,7 +84,7 @@ pub struct UserData {
     pub gui_scale: i32,
 }
 
-/// Data structure that splits the user data token into separate [`Skin`](crate::network::Skin) and
+/// Data structure that splits the user data token into separate [`Skin`] and
 /// [`UserData`] parts.
 #[derive(serde::Deserialize, Debug)]
 pub struct UserDataTokenPayload {

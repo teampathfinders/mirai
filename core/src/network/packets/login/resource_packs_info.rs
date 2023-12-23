@@ -75,10 +75,10 @@ impl ResourcePack {
 }
 
 /// Contains information about the addons used by the server.
-/// This should be sent after sending the [`PlayStatus`](crate::PlayStatus) packet with a
-/// [`LoginSuccess`](crate::Status::LoginSuccess) status.
+/// This should be sent after sending the [`PlayStatus`](crate::network::PlayStatus) packet with a
+/// [`LoginSuccess`](crate::network::Status::LoginSuccess) status.
 ///
-/// If the server has no resource packs, a [`ResourcePackStack`](crate::ResourcePackStack) packet can be sent immediately after this one
+/// If the server has no resource packs, a [`ResourcePackStack`](crate::network::ResourcePackStack) packet can be sent immediately after this one
 /// to prevent a client response.
 #[derive(Debug)]
 pub struct ResourcePacksInfo<'a> {

@@ -4,8 +4,8 @@ use paste::paste;
 use serde::de::{DeserializeSeed, MapAccess, SeqAccess, Visitor};
 use serde::{de, Deserialize};
 
-use util::bytes::{BinaryRead, SharedBuffer};
-use util::{bail, Error};
+use util::bytes::BinaryRead;
+use util::bail;
 
 use crate::{BigEndian, FieldType, LittleEndian, NbtError, Variable, Variant, VariantImpl};
 

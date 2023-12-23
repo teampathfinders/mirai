@@ -1,6 +1,6 @@
 use core::fmt;
 
-use crate::{bail, Error, Result};
+use crate::bail;
 
 /// A numerical type that can hold 3-byte integers.
 ///

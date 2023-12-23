@@ -6,7 +6,6 @@ use std::{cmp, fmt, io};
 
 use crate::bail;
 use crate::bytes::{BinaryRead, MutableBuffer};
-use crate::Result;
 
 #[derive(Debug, Clone)]
 pub struct ArcBuffer(Arc<Vec<u8>>);
@@ -43,7 +42,7 @@ impl Deref for ArcBuffer {
 
 /// Buffer that can be used to read binary data.
 ///
-/// See [`MutableBuffer`](crate::MutableBuffer) for an owned and writable buffer.
+/// See [`MutableBuffer`] for an owned and writable buffer.
 #[derive(Copy, Clone)]
 pub struct SharedBuffer<'a>(&'a [u8]);
 
@@ -82,10 +81,10 @@ impl<'a> BinaryRead<'a> for &'a [u8] {
     /// Takes a specified amount of bytes from the buffer.
     ///
     /// If the amount of bytes to take from the buffer is known at compile-time,
-    /// [`take_const`](Self::take_const) can be used instead.
+    /// [`take_const`](BinaryRead::take_const) can be used instead.
     ///
     /// # Errors
-    /// Returns [`UnexpectedEof`](Error::UnexpectedEof) if the read exceeds the buffer length.
+    /// Returns [`UnexpectedEof`](crate::ErrorKind::UnexpectedEof) if the read exceeds the buffer length.
     #[inline]
     fn take_n(&mut self, n: usize) -> anyhow::Result<&'a [u8]> {
         if self.len() < n {
@@ -104,10 +103,10 @@ impl<'a> BinaryRead<'a> for &'a [u8] {
     /// In case the amount is known at compile time, this function can be used to
     /// take a sized array from the buffer.
     ///
-    /// See [`take_n`](Self::take_n) for a runtime-sized alternative.
+    /// See [`take_n`](BinaryRead::take_n) for a runtime-sized alternative.
     ///
     /// # Errors
-    /// Returns [`UnexpectedEof`](Error::UnexpectedEof) if the read exceeds the buffer length.
+    /// Returns [`UnexpectedEof`](crate::ErrorKind::UnexpectedEof) if the read exceeds the buffer length.
     #[inline]
     fn take_const<const N: usize>(&mut self) -> anyhow::Result<[u8; N]> {
         if self.len() < N {
@@ -124,10 +123,10 @@ impl<'a> BinaryRead<'a> for &'a [u8] {
     /// Takes a specified amount of bytes from the buffer without advancing the cursor.
     ///
     /// If the amount of bytes to take from the buffer is known at compile-time,
-    /// [`peek_const`](Self::peek_const) can be used instead.
+    /// [`peek_const`](BinaryRead::peek_const) can be used instead.
     ///
     /// # Errors
-    /// Returns [`UnexpectedEof`](Error::UnexpectedEof) if the read exceeds the buffer length.
+    /// Returns [`UnexpectedEof`](crate::ErrorKind::UnexpectedEof) if the read exceeds the buffer length.
     #[inline]
     fn peek(&self, n: usize) -> anyhow::Result<&[u8]> {
         if self.len() < n {
@@ -143,10 +142,10 @@ impl<'a> BinaryRead<'a> for &'a [u8] {
     /// In case the amount is known at compile time, this function can be used to
     /// take a sized array from the buffer.
     ///
-    /// See [`peek`](Self::peek) for a runtime-sized alternative.
+    /// See [`peek`](BinaryRead::peek) for a runtime-sized alternative.
     ///
     /// # Errors
-    /// Returns [`UnexpectedEof`](Error::UnexpectedEof) if the read exceeds the buffer length.
+    /// Returns [`UnexpectedEof`](crate::ErrorKind::UnexpectedEof) if the read exceeds the buffer length.
     #[inline]
     fn peek_const<const N: usize>(&self) -> anyhow::Result<[u8; N]> {
         if self.len() < N {

@@ -1,7 +1,7 @@
 //! Contains the server instance.
 
 use anyhow::Context;
-use ext::PluginRuntime;
+use ext::ExtensionRuntime;
 use level::Dimension;
 use std::net::{Ipv4Addr, Ipv6Addr, SocketAddrV4};
 use std::sync::Arc;
@@ -48,7 +48,7 @@ const METADATA_REFRESH_INTERVAL: Duration = Duration::from_secs(2);
 /// shuts down properly when requested. It does this by signalling different jobs in the correct order.
 /// For example, the [`SessionManager`] is the first thing that is shut down to kick all the players from
 /// the server before continuing with the shutdown.
-pub struct InstanceManager {
+pub struct ServerInstance {
     /// IPv4 UDP socket
     udp4_socket: Arc<UdpSocket>,
     /// Token indicating whether the server is still running.
@@ -61,16 +61,16 @@ pub struct InstanceManager {
     /// Channel that the LevelManager sends a message to when it has fully shutdown.
     /// This is to make sure that the world has been saved and safely shut down before shutting down the server.
     level_notifier: Receiver<()>,
-    /// Virtual machine that runs and compiles the plugins.
-    plugins: PluginRuntime,
+    /// Virtual machine that runs and compiles the extensions.
+    extensions: ExtensionRuntime,
 }
 
-impl InstanceManager {
+impl ServerInstance {
     /// Creates a new server.
     ///
     /// This method is asynchronous and completes when the server is fully shut down again.
     pub async fn run() -> anyhow::Result<()> {
-        let extensions = PluginRuntime::new().context("Failed to start extension runtime")?;
+        let extensions = ExtensionRuntime::new().context("Failed to start extension runtime")?;
 
         let (ipv4_port, _ipv6_port) = {
             let lock = SERVER_CONFIG.read();
@@ -202,7 +202,7 @@ impl InstanceManager {
         Ok(())
     }
 
-    /// Generates a response to the [`OfflinePing`] packet with [`OfflinePong`].
+    /// Generates a response to the [`UnconnectedPing`] packet with [`UnconnectedPong`].
     #[inline]
     fn process_unconnected_ping(packet: RawPacket, server_guid: u64, metadata: &str) -> anyhow::Result<RawPacket> {
         let ping = UnconnectedPing::deserialize(packet.buf.snapshot())?;
@@ -241,7 +241,7 @@ impl InstanceManager {
 
     /// Responds to the [`OpenConnectionRequest2`] packet with [`OpenConnectionReply2`].
     /// This is also when a session is created for the client.
-    /// From this point, all packets are encoded in a [`Frame`](crate::Frame).
+    /// From this point, all packets are encoded in a [`Frame`](crate::raknet::Frame).
     #[inline]
     fn process_open_connection_request2(
         mut packet: RawPacket,

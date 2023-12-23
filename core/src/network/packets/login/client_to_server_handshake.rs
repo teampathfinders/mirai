@@ -4,7 +4,7 @@ use util::Result;
 
 use crate::network::ConnectedPacket;
 
-/// Sent by the client in response to a [`ServerToClientHandshake`](crate::ServerToClientHandshake)
+/// Sent by the client in response to a [`ServerToClientHandshake`](crate::network::ServerToClientHandshake)
 /// to confirm that encryption is working.
 ///
 /// It has no data.

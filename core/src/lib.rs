@@ -1,4 +1,5 @@
 #![allow(unused)]
+#![allow(rustdoc::private_intra_doc_links)]
 
 pub mod command;
 pub mod config;

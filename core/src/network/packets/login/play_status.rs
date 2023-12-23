@@ -7,7 +7,7 @@ use crate::network::ConnectedPacket;
 /// Status of the [`PlayStatus`] packet.
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum Status {
-    /// Sent by the server after receiving the [`ClientToServerHandshake`](crate::ClientToServerHandshake) packet.
+    /// Sent by the server after receiving the [`ClientToServerHandshake`](crate::network::ClientToServerHandshake) packet.
     /// This indicates the client has successfully logged in.
     LoginSuccess,
     /// Displays "Could not connect: Outdated client!"

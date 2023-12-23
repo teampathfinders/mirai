@@ -4,7 +4,7 @@ use util::Deserialize;
 use util::Result;
 
 /// Sent by the client to initiate a full connection.
-/// [`ConnectionRequestAccepted`](crate::connection_request_accepted::ConnectionRequestAccepted) should be sent in response.
+/// [`ConnectionRequestAccepted`](crate::raknet::ConnectionRequestAccepted) should be sent in response.
 #[derive(Debug)]
 pub struct ConnectionRequest {
     /// Client-provided GUID.
