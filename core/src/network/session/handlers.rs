@@ -1,10 +1,7 @@
 use util::{bail, Deserialize, Result, TryExpect};
 use util::bytes::MutableBuffer;
 
-use crate::network::{
-    CommandOutput, CommandOutputMessage, CommandOutputType, CommandRequest,
-    SettingsCommand, TextData,
-};
+use crate::network::{CommandOutput, CommandOutputMessage, CommandOutputType, CommandRequest, SettingsCommand, TextData, TickSync};
 use crate::network::{
     {
         Animate, RequestAbility,
@@ -23,6 +20,17 @@ impl Session {
         Ok(())
     }
 
+    pub fn process_tick_sync(&self, packet: MutableBuffer) -> anyhow::Result<()> {
+        let request = TickSync::deserialize(packet.snapshot())?;
+        // TODO: Implement tick synchronisation
+        Ok(())
+        // let response = TickSync {
+        //     request_tick: request.request_tick,
+        //     response_tick: self.level.
+        // };
+        // self.send(response)
+    }
+
     pub fn process_text_message(&self, packet: MutableBuffer) -> anyhow::Result<()> {
         let request = TextMessage::deserialize(packet.snapshot())?;
         if let TextData::Chat {
@@ -35,7 +43,10 @@ impl Session {
             // Check that the source is equal to the player name to prevent spoofing.
             if actual != source {
                 self.kick("Illegal packet modifications detected")?;
-                anyhow::bail!("Client attempted to spoof chat name");
+                anyhow::bail!(
+                    "Client attempted to spoof chat username. (actual: `{}`, spoofed: `{}`)",
+                    actual, source
+                );
             }
 
             // We must also return the packet to the client that sent it.

@@ -217,19 +217,19 @@ impl Session {
         };
         self.send(start_game)?;
 
-        // let creative_content = CreativeContent {
-        //     items: &[CreativeItem {
-        //         collection: ItemCollection {
-        //             network_id: 1,
-        //             runtime_id: 10421,
-        //             count: 64,
-        //             can_break: Vec::new(),
-        //             placeable_on: Vec::new(),
-        //             meta: 0
-        //         }
-        //     }]
-        // };
-        // self.send(creative_content)?;
+        let creative_content = CreativeContent {
+            items: &[CreativeItem {
+                collection: ItemCollection {
+                    network_id: 1,
+                    runtime_id: 1,
+                    count: 64,
+                    can_break: Vec::new(),
+                    placeable_on: Vec::new(),
+                    meta: 0
+                }
+            }]
+        };
+        self.send(creative_content)?;
 
         let biome_definition_list = BiomeDefinitionList;
         self.send(biome_definition_list)?;
