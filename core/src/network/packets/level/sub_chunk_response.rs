@@ -5,27 +5,29 @@ use util::{Vector, Serialize, bytes::{MutableBuffer, BinaryWrite}};
 
 use crate::network::ConnectedPacket;
 
-#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+#[derive(Debug, Default, Copy, Clone, PartialEq, Eq)]
 #[repr(u8)]
 pub enum SubChunkResult {
+    #[default]
     Success = 1,
-    NotFound,
-    InvalidDimension,
-    PlayerNotFound,
-    OutOfBounds,
-    AllAir
+    NotFound = 2,
+    InvalidDimension = 3,
+    PlayerNotFound = 4,
+    OutOfBounds = 5,
+    AllAir = 6
 }
 
-#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+#[derive(Debug, Default, Copy, Clone, PartialEq, Eq)]
 #[repr(u8)]
 pub enum HeightmapType {
+    #[default]
     None,
     WithData,
     TooHigh,
     TooLow
 }
 
-#[derive(Debug)]
+#[derive(Debug, Default)]
 pub struct SubChunkEntry {
     pub offset: Vector<i8, 3>,
     pub result: SubChunkResult,
@@ -73,7 +75,8 @@ impl Serialize for SubChunkResponse {
         buffer.write_bool(self.cache_enabled)?;
         buffer.write_var_i32(self.dimension as i32)?;
         buffer.write_veci(&self.position)?;
-        
+
+        buffer.write_u32_le(self.entries.len() as u32)?;
         if self.cache_enabled {
             for entry in &self.entries {
                 entry.serialize_cached(buffer)?;

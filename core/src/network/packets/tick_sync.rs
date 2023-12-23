@@ -10,9 +10,9 @@ use crate::network::ConnectedPacket;
 #[derive(Debug, Clone)]
 pub struct TickSync {
     /// Timestamp of when the client sent the packet.
-    pub request: u64,
+    pub request_tick: u64,
     /// Timestamp of when the server sent the packet.
-    pub response: u64,
+    pub response_tick: u64,
 }
 
 impl ConnectedPacket for TickSync {
@@ -28,13 +28,13 @@ impl Deserialize<'_> for TickSync {
         let request = buffer.read_u64_le()?;
         let response = buffer.read_u64_le()?;
 
-        Ok(Self { request, response })
+        Ok(Self { request_tick: request, response_tick: response })
     }
 }
 
 impl Serialize for TickSync {
     fn serialize(&self, buffer: &mut MutableBuffer) -> anyhow::Result<()> {
-        buffer.write_u64_le(self.request)?;
-        buffer.write_u64_le(self.response)
+        buffer.write_u64_le(self.request_tick)?;
+        buffer.write_u64_le(self.response_tick)
     }
 }

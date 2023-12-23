@@ -1,12 +1,7 @@
-use util::{
-    bail, Deserialize, Result,
-};
+use util::{bail, Deserialize, Result, TryExpect};
 use util::bytes::MutableBuffer;
 
-use crate::network::{
-    CommandOutput, CommandOutputMessage, CommandOutputType, CommandRequest,
-    SettingsCommand, TextData,
-};
+use crate::network::{CommandOutput, CommandOutputMessage, CommandOutputType, CommandRequest, SettingsCommand, TextData, TickSync};
 use crate::network::{
     {
         Animate, RequestAbility,
@@ -25,15 +20,42 @@ impl Session {
         Ok(())
     }
 
+    pub fn process_tick_sync(&self, packet: MutableBuffer) -> anyhow::Result<()> {
+        let request = TickSync::deserialize(packet.snapshot())?;
+        // TODO: Implement tick synchronisation
+        Ok(())
+        // let response = TickSync {
+        //     request_tick: request.request_tick,
+        //     response_tick: self.level.
+        // };
+        // self.send(response)
+    }
+
     pub fn process_text_message(&self, packet: MutableBuffer) -> anyhow::Result<()> {
         let request = TextMessage::deserialize(packet.snapshot())?;
-        if !matches!(request.data, TextData::Chat { .. }) {
-            anyhow::bail!("Client is only allowed to send chat messages");
-        }
+        if let TextData::Chat {
+            source, ..
+        } = request.data {
+            let actual = &self.identity.get()
+                .try_expect("Client does not have associated user data")?
+                .display_name;
 
-        // We must also return the packet to the client that sent it.
-        // Otherwise their message won't be displayed in their own chat.
-        self.broadcast(request)
+            // Check that the source is equal to the player name to prevent spoofing.
+            if actual != source {
+                self.kick("Illegal packet modifications detected")?;
+                anyhow::bail!(
+                    "Client attempted to spoof chat username. (actual: `{}`, spoofed: `{}`)",
+                    actual, source
+                );
+            }
+
+            // We must also return the packet to the client that sent it.
+            // Otherwise their message won't be displayed in their own chat.
+            self.broadcast(request)
+        } else {
+            // Only the server is allowed to create text packets that are not of the chat type.
+            anyhow::bail!("Client sent an illegally modified text message packet")
+        }
     }
 
     pub fn process_skin_update(&self, packet: MutableBuffer) -> anyhow::Result<()> {
@@ -57,13 +79,13 @@ impl Session {
     pub fn process_command_request(&self, packet: MutableBuffer) -> anyhow::Result<()> {
         let request = CommandRequest::deserialize(packet.snapshot())?;
 
-        let command_list = self.level_manager.get_commands();
+        let command_list = self.level.get_commands();
         let result = ParsedCommand::parse(command_list, request.command);
 
         if let Ok(parsed) = result {
             let output = match parsed.name.as_str() {
                 "gamerule" => {
-                    self.level_manager.execute_game_rule_command(parsed)
+                    self.level.execute_game_rule_command(parsed)
                 }
                 _ => todo!(),
             };

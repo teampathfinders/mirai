@@ -88,13 +88,10 @@ impl PluginRuntime {
 
 impl Drop for PluginRuntime {
     fn drop(&mut self) {
-        self.plugins
-            .drain(..)
-            .map(Plugin::on_shutdown)
-            .for_each(|r| {
-                if let Err(err) = r {
-                    tracing::error!("{err:?}");
-                }
-            });
+        self.plugins.drain(..).map(Plugin::on_shutdown).for_each(|r| {
+            if let Err(err) = r {
+                tracing::error!("{err:?}");
+            }
+        });
     }
 }

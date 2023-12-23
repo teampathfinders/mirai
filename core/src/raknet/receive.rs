@@ -7,7 +7,7 @@ use async_recursion::async_recursion;
 use util::{bail, Result};
 use util::bytes::{BinaryRead, MutableBuffer};
 
-use crate::network::{CommandRequest, SettingsCommand, ContainerClose};
+use crate::network::{CommandRequest, SettingsCommand, ContainerClose, TickSync};
 use crate::network::{
     ChunkRadiusRequest, ClientToServerHandshake, CompressionAlgorithm, Login,
     RequestNetworkSettings, ResourcePackClientResponse,
@@ -215,6 +215,7 @@ impl Session {
         // Advance past the header.
         packet.advance_cursor(start_len - snapshot.len());
 
+        // dbg!(&header);
         match header.id {
             RequestNetworkSettings::ID => {
                 self.process_network_settings_request(packet)
@@ -241,6 +242,7 @@ impl Session {
             UpdateSkin::ID => self.process_skin_update(packet),
             SettingsCommand::ID => self.process_settings_command(packet),
             ContainerClose::ID => self.process_container_close(packet),
+            TickSync::ID => self.process_tick_sync(packet),
             id => bail!(Malformed, "Invalid game packet: {id:#04x}"),
         }
     }

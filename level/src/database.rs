@@ -164,15 +164,15 @@ pub struct Database {
 
 impl Database {
     /// Opens the database at the specified path.
-    /// 
+    ///
     /// # Safety
-    /// 
+    ///
     /// It is up to the caller to ensure that the given `path` is not
     /// already in use by another `Database`.
     /// Multiple databases owning the same directory is *guaranteed* to cause corruption.
-    /// 
+    ///
     /// # Errors
-    /// 
+    ///
     /// This method returns an error if the database could not be opened.
     pub unsafe fn open<P>(path: P) -> anyhow::Result<Self>
     where

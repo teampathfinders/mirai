@@ -8,7 +8,7 @@ use util::{bail, BlockPosition, Deserialize, Result, Vector};
 
 use crate::config::SERVER_CONFIG;
 use crate::crypto::Encryptor;
-use crate::network::{CacheStatus, CreativeItem, ItemCollection, NetworkChunkPublisherUpdate};
+use crate::network::{CacheStatus, CreativeItem, HeightmapType, ItemCollection, NetworkChunkPublisherUpdate, SubChunkEntry, SubChunkResponse, SubChunkResult};
 use crate::network::Session;
 use crate::network::{AvailableCommands, SubChunkRequestMode};
 use crate::network::{
@@ -57,17 +57,6 @@ impl Session {
             lock.position.y.round() as i32,
             lock.position.z.round() as i32
         ]);
-
-        self.send(NetworkChunkPublisherUpdate {
-            position: rounded_position,
-            radius: self.player
-                .read()
-                .render_distance
-                .ok_or_else(||
-                    anyhow::anyhow!("Chunk radius was not set before initialising local player")
-                )?
-                .get() as u32
-        })?;
         drop(lock);
 
         // Add player to other's player lists
@@ -119,19 +108,24 @@ impl Session {
     /// Handles a [`ChunkRadiusRequest`] packet by returning the maximum allowed render distance.
     pub fn process_radius_request(&self, packet: MutableBuffer) -> anyhow::Result<()> {
         let request = ChunkRadiusRequest::deserialize(packet.snapshot())?;
+        let allowed_radius = std::cmp::min(
+            SERVER_CONFIG.read().allowed_render_distance, request.radius
+        );
+
         self.send(ChunkRadiusReply {
-            allowed_radius: std::cmp::min(
-                SERVER_CONFIG.read().allowed_render_distance, request.radius
-            ),
+            allowed_radius,
         })?;
 
         if request.radius <= 0 {
             anyhow::bail!("Render distance must be greater than 0");
         }
+        tracing::debug!("Chunk radius updated to: {}", request.radius);
 
-        tracing::debug!("[{}] Chunk radius updated to: {}", self.get_display_name()?, request.radius);
+        {
+            let player = self.player.read();
+            player.viewer.set_radius(allowed_radius);
+        }
 
-        self.player.write().render_distance = Some(NonZeroI32::new(request.radius).unwrap());
         Ok(())
     }
 
@@ -168,7 +162,7 @@ impl Session {
             platform_broadcast_intent: BroadcastIntent::Public,
             enable_commands: true,
             texture_packs_required: true,
-            game_rules: &self.level_manager.get_game_rules(),
+            game_rules: &self.level.get_game_rules(),
             experiments: &[],
             experiments_previously_enabled: false,
             bonus_chest_enabled: false,
@@ -223,30 +217,37 @@ impl Session {
         };
         self.send(start_game)?;
 
-        // let creative_content = CreativeContent {
-        //     items: &[CreativeItem {
-        //         collection: ItemCollection {
-        //             network_id: 1,
-        //             runtime_id: 0,
-        //             count: 64,
-        //             can_break: Vec::new(),
-        //             placeable_on: Vec::new(),
-        //             meta: 0
-        //         }
-        //     }]
-        // };
-        // self.send(creative_content)?;
+        let creative_content = CreativeContent {
+            items: &[CreativeItem {
+                collection: ItemCollection {
+                    network_id: 1,
+                    runtime_id: 1,
+                    count: 64,
+                    can_break: Vec::new(),
+                    placeable_on: Vec::new(),
+                    meta: 0
+                }
+            }]
+        };
+        self.send(creative_content)?;
 
         let biome_definition_list = BiomeDefinitionList;
         self.send(biome_definition_list)?;
 
+        self.send(NetworkChunkPublisherUpdate {
+            position: Vector::from([0, 0, 0]),
+            radius: self.player
+                .read()
+                .viewer.get_radius() as u32
+        })?;
+
+        // self.level.request_subchunks(Vector::from([0, -4, 0]), &[])?;
+
         let play_status = PlayStatus { status: Status::PlayerSpawn };
         self.send(play_status)?;
 
-        let commands = self.level_manager.get_commands().iter().map(|kv| kv.value().clone()).collect::<Vec<_>>();
-
+        let commands = self.level.get_commands().iter().map(|kv| kv.value().clone()).collect::<Vec<_>>();
         let available_commands = AvailableCommands { commands: commands.as_slice() };
-
         self.send(available_commands)?;
 
         Ok(())
