@@ -42,6 +42,12 @@ const RECV_BUF_SIZE: usize = 4096;
 /// This data is displayed in the server menu.
 const METADATA_REFRESH_INTERVAL: Duration = Duration::from_secs(2);
 
+/// Manages all the processes running within the server.
+///
+/// The instance is what makes sure that every job is started and that the server
+/// shuts down properly when requested. It does this by signalling different jobs in the correct order.
+/// For example, the [`SessionManager`] is the first thing that is shut down to kick all the players from
+/// the server before continuing with the shutdown.
 pub struct InstanceManager {
     /// IPv4 UDP socket
     udp4_socket: Arc<UdpSocket>,
@@ -61,6 +67,8 @@ pub struct InstanceManager {
 
 impl InstanceManager {
     /// Creates a new server.
+    ///
+    /// This method is asynchronous and completes when the server is fully shut down again.
     pub async fn run() -> anyhow::Result<()> {
         let extensions = PluginRuntime::new().context("Failed to start extension runtime")?;
 
