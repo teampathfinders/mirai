@@ -8,7 +8,7 @@ license = "Apache-2.0"
 rust-version = "1.65.0"
 
 [dependencies]
-anyhow = { version = "1.0.71", features = ["backtrace"] }
+anyhow = { version = "1.0.76", features = ["backtrace"] }
 base64 = "0.21.2"
 cipher = "0.4.4"
 dashmap = "5.4.0"
@@ -19,6 +19,6 @@ parking_lot = "0.12.1"
 paste = "1.0.12"
 serde = "1.0.164"
 serde_json = "1.0.104"
-snap = "1.1.0"
+snap = "1.1.1"
 tokio = { version = "1.32.0", features = ["sync"] }
 uuid = "1.4.0"
