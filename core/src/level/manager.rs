@@ -26,7 +26,7 @@ use lru::LruCache;
 use util::bytes::MutableBuffer;
 
 /// Interval between standard Minecraft ticks.
-const LEVEL_TICK_INTERVAL: Duration = Duration::from_millis(1000 / 20);
+pub const TICK_INTERVAL: Duration = Duration::from_millis(1000 / 20);
 
 #[derive(Debug)]
 pub struct CombinedChunk {

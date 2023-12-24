@@ -34,7 +34,7 @@ impl Session {
         Ok(())
     }
 
-    /// Handles an [`OnlinePing`] packet.
+    /// Handles an [`ConnectedPing`] packet.
     pub fn process_online_ping(&self, mut packet: MutableBuffer) -> anyhow::Result<()> {
         let ping = ConnectedPing::deserialize(packet.snapshot())?;
         let pong = ConnectedPong {

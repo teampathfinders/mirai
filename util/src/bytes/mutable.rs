@@ -6,7 +6,7 @@ use std::{fmt, io};
 use crate::bytes::SharedBuffer;
 
 /// A buffer that can be read from and written to.
-/// It is the owned version of [`ReadBuffer`].
+/// It is the owned version of [`SharedBuffer`].
 #[derive(Default)]
 pub struct MutableBuffer {
     data: Vec<u8>,

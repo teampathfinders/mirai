@@ -3,7 +3,7 @@ use util::pyassert;
 use util::Deserialize;
 use util::Result;
 
-/// Sent by the client, in response to [`OpenConnectionReply2`](crate::open_connection_reply2::OpenConnectionReply2).
+/// Sent by the client, in response to [`OpenConnectionReply2`](crate::raknet::OpenConnectionReply2).
 #[derive(Debug)]
 pub struct OpenConnectionRequest2 {
     /// MTU of the connection.

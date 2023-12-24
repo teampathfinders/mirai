@@ -11,7 +11,7 @@ pub struct RawPacket {
 }
 
 impl RawPacket {
-    /// Checks whether this frame is encapsulated in a [`Frame`](crate::frame::Frame).
+    /// Checks whether this frame is encapsulated in a [`Frame`](crate::raknet::Frame).
     #[inline]
     pub fn is_unconnected(&self) -> bool {
         self.buf

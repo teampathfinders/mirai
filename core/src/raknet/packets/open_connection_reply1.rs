@@ -6,14 +6,14 @@ use util::Serialize;
 
 use crate::raknet::OFFLINE_MESSAGE_DATA;
 
-/// Sent in response to [`OpenConnectionRequest1`](crate::open_connection_request1::OpenConnectionRequest1).
+/// Sent in response to [`OpenConnectionRequest1`](crate::raknet::OpenConnectionRequest1).
 #[derive(Debug)]
 pub struct OpenConnectionReply1 {
     /// GUID of the server.
-    /// Corresponds to [`ServerInstance::guid`](crate::ServerInstance::guid).
+    /// Corresponds to the random GUID generated on startup.
     pub server_guid: u64,
     /// MTU of the connection.
-    /// This should be given the same value as [`OpenConnectionRequest1::mtu`](crate::open_connection_request1::OpenConnectionRequest1::mtu).
+    /// This should be given the same value as [`OpenConnectionRequest1::mtu`](crate::raknet::OpenConnectionRequest1::mtu).
     pub mtu: u16,
 }
 

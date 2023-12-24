@@ -2,7 +2,7 @@ use util::bytes::{BinaryWrite, MutableBuffer};
 use util::Result;
 use util::Serialize;
 
-/// Sent by the server or client in response to an [`OnlinePing`](crate::OnlinePing) packet.
+/// Sent by the server or client in response to an [`ConnectedPing`](crate::raknet::ConnectedPing) packet.
 #[derive(Debug)]
 pub struct ConnectedPong {
     /// Timestamp of when the ping was sent.

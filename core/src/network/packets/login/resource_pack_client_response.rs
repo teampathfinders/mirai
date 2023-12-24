@@ -36,8 +36,8 @@ impl TryFrom<u8> for ResourcePackStatus {
     }
 }
 
-/// Sent in response to [`ResourcePacksInfo`](crate::ResourcePacksInfo) and
-/// [`ResourcePackStack`](crate::ResourcePackStack).
+/// Sent in response to [`ResourcePacksInfo`](crate::network::ResourcePacksInfo) and
+/// [`ResourcePackStack`](crate::network::ResourcePackStack).
 #[derive(Debug)]
 pub struct ResourcePackClientResponse<'a> {
     /// The response status.

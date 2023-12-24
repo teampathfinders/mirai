@@ -42,7 +42,7 @@ pub enum UiProfile {
 }
 
 /// Packet received by the client before initiating encryption.
-/// A [`ServerToClientHandshake`](crate::ServerToClientHandshake) should be sent in response.
+/// A [`ServerToClientHandshake`](crate::network::ServerToClientHandshake) should be sent in response.
 #[derive(Debug)]
 pub struct Login {
     /// Identity data (Xbox account ID, username, etc.)

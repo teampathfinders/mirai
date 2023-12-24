@@ -22,7 +22,7 @@ use crate::network::{
 };
 
 impl Session {
-    /// Handles a [`ClientCacheStatus`] packet.
+    /// Handles a [`CacheStatus`] packet.
     /// This stores the result in the [`Session::cache_support`] field.
     pub fn process_cache_status(&self, packet: MutableBuffer) -> anyhow::Result<()> {
         let request = CacheStatus::deserialize(packet.snapshot())?;

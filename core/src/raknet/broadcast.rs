@@ -9,12 +9,12 @@ use crate::network::{
     Session,
 };
 
-/// A packet that can be broadcasted to other sessions.
+/// A packet that can be broadcast to other sessions.
 ///
 /// Unlike standard packets, this packet contains an optional sender.
 /// As every session listens to a single broadcast channel, this sender field can be used
 /// to prevent a session from receiving its own broadcast.
-/// In case the session is meant to receive their own packet (such as with the [`Text`](crate::Text) packet)
+/// In case the session is meant to receive their own packet (such as with the [`Text`](crate::network::TextMessage) packet)
 /// this field should be set to `None`.
 ///
 /// Additionally, the actual buffer content is reference counted to allow for cheap cloning.

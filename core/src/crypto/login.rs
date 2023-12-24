@@ -12,7 +12,7 @@ use crate::network::{DeviceOS, UiProfile};
 
 /// Mojang's public key.
 /// Used to verify the second token in the identity chain.
-// pub const MOJANG_PUBLIC_KEY: &str = "MHYwEAYHKoZIzj0CAQYFK4EEACIDYgAE8ELkixyLcwlZryUQcu1TvPOmI2B7vX83ndnWRUaXm74wFfa5f/lwQNTfrLVHa2PmenpGI6JhIMUJaWZrjmMj90NoKNFSNBuKdm8rYiXsfaz3K36x/1U26HpG0ZxK/V1V";
+// OLD KEY: MHYwEAYHKoZIzj0CAQYFK4EEACIDYgAE8ELkixyLcwlZryUQcu1TvPOmI2B7vX83ndnWRUaXm74wFfa5f/lwQNTfrLVHa2PmenpGI6JhIMUJaWZrjmMj90NoKNFSNBuKdm8rYiXsfaz3K36x/1U26HpG0ZxK/V1V
 pub const MOJANG_PUBLIC_KEY: &str = "MHYwEAYHKoZIzj0CAQYFK4EEACIDYgAECRXueJeTDqNRRgJi/vlRufByu/2G0i2Ebt6YMar5QX/R0DIIyrJMcUpruK4QveTfJSTp3Shlq4Gk34cD/4GUWwkv0DVuzeuB+tXija7HBxii03NHDbPAD0AKnLr2wdAp";
 
 /// Use the default Base64 format with no padding.
@@ -84,6 +84,8 @@ pub struct UserData {
     pub gui_scale: i32,
 }
 
+/// Data structure that splits the user data token into separate [`Skin`] and
+/// [`UserData`] parts.
 #[derive(serde::Deserialize, Debug)]
 pub struct UserDataTokenPayload {
     #[serde(flatten)]
