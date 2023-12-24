@@ -83,9 +83,13 @@ impl Session {
         let result = ParsedCommand::parse(command_list, request.command);
 
         if let Ok(parsed) = result {
+            let caller = self.identity.get().unwrap().xuid;
             let output = match parsed.name.as_str() {
                 "gamerule" => {
-                    self.level.execute_game_rule_command(parsed)
+                    self.level.on_gamerule_command(caller, parsed)
+                },
+                "effect" => {
+                    self.level.on_effect_command(caller, parsed)
                 }
                 _ => todo!(),
             };

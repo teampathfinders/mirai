@@ -19,7 +19,7 @@ use util::{Result, Vector};
 use crate::command::{Command, CommandDataType, CommandEnum, CommandOverload, CommandParameter, CommandPermissionLevel};
 use crate::config::SERVER_CONFIG;
 use crate::level::LevelManager;
-use crate::network::SessionManager;
+use crate::network::{MOBEFFECT_NAMES, SessionManager};
 use crate::network::{BOOLEAN_GAME_RULES, CLIENT_VERSION_STRING, INTEGER_GAME_RULES, NETWORK_VERSION};
 use crate::raknet::IncompatibleProtocol;
 use crate::raknet::OpenConnectionReply1;
@@ -82,6 +82,7 @@ impl ServerInstance {
         let session_manager = Arc::new(SessionManager::new());
 
         let level = LevelManager::new(session_manager.clone(), token.clone())?;
+
         level.add_command(Command {
             name: "gamerule".to_owned(),
             description: "Sets or queries a game rule value.".to_owned(),
@@ -144,25 +145,90 @@ impl ServerInstance {
                 },
             ],
         });
+
         level.add_command(Command {
-            name: "daylock".to_owned(),
-            description: "Locks and unlocks the day-night cycle.".to_owned(),
+            name: String::from("effect"),
             aliases: vec![],
-            permission_level: CommandPermissionLevel::Normal,
-            overloads: vec![CommandOverload {
-                parameters: vec![CommandParameter {
-                    data_type: CommandDataType::String,
-                    name: "lock".to_owned(),
-                    suffix: "".to_owned(),
-                    command_enum: Some(CommandEnum {
-                        dynamic: false,
-                        enum_id: "boolean".to_owned(),
-                        options: vec!["true".to_owned(), "false".to_owned()],
-                    }),
-                    optional: true,
-                    options: 0,
-                }],
-            }],
+            description: String::from("Adds or removes the status effects of players and other entities."),
+            overloads: vec![
+                CommandOverload {
+                    parameters: vec![
+                        CommandParameter {
+                            name: String::from("target"),
+                            data_type: CommandDataType::Target,
+                            command_enum: None,
+                            suffix: String::new(),
+                            optional: false,
+                            options: 0
+                        },
+                        CommandParameter {
+                            name: String::from("effect"),
+                            data_type: CommandDataType::String,
+                            command_enum: Some(CommandEnum {
+                                enum_id: String::from("effect_clear"),
+                                options: vec![String::from("clear")],
+                                dynamic: false
+                            }),
+                            suffix: String::new(),
+                            optional: false,
+                            options: 0
+                        }
+                    ]
+                },
+                CommandOverload {
+                    parameters: vec![
+                        CommandParameter {
+                            name: String::from("target"),
+                            data_type: CommandDataType::Target,
+                            command_enum: None,
+                            suffix: String::new(),
+                            optional: false,
+                            options: 0
+                        },
+                        CommandParameter {
+                            name: String::from("effect"),
+                            data_type: CommandDataType::String,
+                            command_enum: Some(CommandEnum {
+                                enum_id: String::from("effect"),
+                                options: MOBEFFECT_NAMES.iter().map(|s| String::from(*s)).collect(),
+                                dynamic: false
+                            }),
+                            suffix: String::new(),
+                            optional: false,
+                            options: 0
+                        },
+                        CommandParameter {
+                            name: String::from("duration"),
+                            data_type: CommandDataType::Int,
+                            command_enum: None,
+                            suffix: String::new(),
+                            optional: true,
+                            options: 0
+                        },
+                        CommandParameter {
+                            name: String::from("amplifier"),
+                            data_type: CommandDataType::Int,
+                            command_enum: None,
+                            suffix: String::new(),
+                            optional: true,
+                            options: 0
+                        },
+                        CommandParameter {
+                            name: String::from("hideParticles"),
+                            data_type: CommandDataType::String,
+                            command_enum: Some(CommandEnum {
+                                enum_id: String::from("boolean"),
+                                dynamic: false,
+                                options: vec![String::from("true"), String::from("false")]
+                            }),
+                            suffix: String::new(),
+                            optional: true,
+                            options: 0
+                        }
+                    ]
+                }
+            ],
+            permission_level: CommandPermissionLevel::Normal
         });
 
         session_manager.set_level_manager(Arc::downgrade(&level))?;

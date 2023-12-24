@@ -52,6 +52,38 @@ pub enum MobEffectKind {
     Darkness,
 }
 
+pub const MOBEFFECT_NAMES: &[&str] = &[
+    "absorption",
+    "bad_omen",
+    "blindness",
+    "conduit_power",
+    "darkness",
+    "fatal_poison",
+    "fire_resistance",
+    "haste",
+    "health_boost",
+    "hunger",
+    "instant_damage",
+    "invisibility",
+    "jump_boost",
+    "levitation",
+    "mining_fatigue",
+    "nausea",
+    "night_vision",
+    "poison",
+    "regeneration",
+    "resistance",
+    "saturation",
+    "slow_falling",
+    "slowness",
+    "speed",
+    "strength",
+    "village_hero",
+    "water_breathing",
+    "weakness",
+    "wither"
+];
+
 /// Updates entity effects.
 #[derive(Debug, Clone)]
 pub struct MobEffectUpdate {
