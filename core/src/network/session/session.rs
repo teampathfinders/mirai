@@ -59,7 +59,7 @@ pub struct Session {
     /// Whether the client supports the chunk cache.
     pub cache_support: OnceCell<bool>,
     /// Whether the client has fully been initialised.
-    /// This is set to true after receiving the [`SetLocalPlayerAsInitialized`](crate::SetLocalPlayerAsInitialized) packet
+    /// This is set to true after receiving the [`SetLocalPlayerAsInitialized`](crate::network::SetLocalPlayerAsInitialized) packet
     pub initialized: AtomicBool,
     /// Manages entire world.
     pub level: Arc<LevelManager>,
@@ -67,7 +67,7 @@ pub struct Session {
     pub broadcast: broadcast::Sender<BroadcastPacket>,
     /// Indicates whether this session is active.
     pub active: CancellationToken,
-    /// Current tick of this session, this is increased every [`TICK_INTERVAL`].
+    /// Current tick of this session, this is increased every [`TICK_INTERVAL`](crate::level::TICK_INTERVAL).
     pub current_tick: AtomicU64,
     /// Minecraft-specific data.
     pub player: RwLock<PlayerData>,

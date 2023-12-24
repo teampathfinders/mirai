@@ -4,12 +4,12 @@ use util::bytes::{BinaryWrite, MutableBuffer, IPV4_MEM_SIZE, IPV6_MEM_SIZE};
 use util::Result;
 use util::Serialize;
 
-/// Sent in response to [`ConnectionRequest`](crate::connection_request::ConnectionRequest).
+/// Sent in response to [`ConnectionRequest`](crate::raknet::ConnectionRequest).
 #[derive(Debug)]
 pub struct ConnectionRequestAccepted {
     /// IP address of the client.
     pub client_address: SocketAddr,
-    /// Corresponds to [`ConnectionRequest::time`](crate::connection_request::ConnectionRequest::time).
+    /// Corresponds to [`ConnectionRequest::time`](crate::raknet::ConnectionRequest::time).
     pub request_time: i64,
 }
 

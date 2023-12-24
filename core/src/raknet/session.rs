@@ -7,6 +7,9 @@ use crate::raknet::{CompoundCollector, OrderChannel, RecoveryQueue, SendQueues};
 
 const ORDER_CHANNEL_COUNT: usize = 5;
 
+/// Container for Raknet-related data.
+///
+/// This container exists to clean up the [`Session`](crate::network::Session) implementation.
 #[derive(Debug)]
 pub struct RaknetData {
     /// IPv4 socket of the server.

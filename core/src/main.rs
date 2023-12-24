@@ -2,7 +2,7 @@ use std::sync::atomic::{AtomicU16, Ordering};
 
 use tokio::runtime;
 
-use pyro::instance::InstanceManager;
+use pyro::instance::ServerInstance;
 
 fn main() {
     init_logging();
@@ -20,7 +20,7 @@ fn init_runtime() {
         .build()
         .expect("Failed to build runtime");
 
-    if let Err(error) = runtime.block_on(InstanceManager::run()) {
+    if let Err(error) = runtime.block_on(ServerInstance::run()) {
         tracing::error!("Fatal error: {error:?}");
     }
 }

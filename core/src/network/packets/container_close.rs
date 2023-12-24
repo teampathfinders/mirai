@@ -5,7 +5,7 @@ use crate::network::ConnectedPacket;
 
 #[derive(Default, Debug, Clone)]
 pub struct ContainerClose {
-    /// Equal to the window ID sent in the [`ContainerOpen`](crate::ContainerOpen) packet.
+    /// Equal to the window ID sent in the [`ContainerOpen`](crate::network::ContainerOpen) packet.
     pub window_id: u8,
     /// Whether the server force-closed the container.
     pub server_initiated: bool,

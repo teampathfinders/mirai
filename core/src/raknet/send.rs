@@ -18,11 +18,15 @@ use crate::raknet::SendPriority;
 use crate::config::SERVER_CONFIG;
 use crate::network::Session;
 
+/// Specifies the reliability and priority of a packet.
 pub struct PacketConfig {
+    /// In case encryption is enabled, this reliability must always be reliable ordered.
     pub reliability: Reliability,
+    /// Priority specifies if this packet has sending priority over other packets.
     pub priority: SendPriority,
 }
 
+/// A default packet config that can be used for all packets.
 pub const DEFAULT_SEND_CONFIG: PacketConfig = PacketConfig {
     reliability: Reliability::ReliableOrdered,
     priority: SendPriority::Medium,

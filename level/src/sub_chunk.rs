@@ -343,8 +343,6 @@ impl SubChunk {
     }
 
     /// Serialises the sub chunk into a new buffer and returns the buffer.
-    ///
-    /// Use [`serialize_local_in`](Self::serialize_local_in) to serialize into an existing writer.
     pub(crate) fn serialize(&self) -> anyhow::Result<MutableBuffer> {
         let mut buffer = MutableBuffer::new();
         self.serialize_in(&mut buffer)?;

@@ -53,7 +53,7 @@ impl TryFrom<u32> for CommandOriginType {
 }
 
 /// Requests execution of a command.
-/// Even if the command isn't listed by the [`AvailableCommands`](crate::AvailableCommands) packet,
+/// Even if the command isn't listed by the [`AvailableCommands`](crate::network::AvailableCommands) packet,
 /// the client will still send a request.
 #[derive(Debug, Clone)]
 pub struct CommandRequest<'a> {

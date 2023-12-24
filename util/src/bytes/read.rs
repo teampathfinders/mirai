@@ -2,7 +2,7 @@ use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr};
 
 use paste::paste;
 
-use crate::{bail, BlockPosition, Result};
+use crate::{bail, BlockPosition};
 use crate::{u24::u24, Vector};
 
 /// Implements the read functions for integer primitives.

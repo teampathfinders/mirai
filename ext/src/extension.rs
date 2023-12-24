@@ -2,7 +2,7 @@ use std::ffi::CStr;
 use std::fmt::{self, Debug, Formatter};
 
 use crate::stdio::ExtensionStdout;
-use wasmtime::{Instance, Store, TypedFunc};
+use wasmtime::{Instance, Store};
 use wasmtime_wasi::stdio::stdout;
 use wasmtime_wasi::WasiCtx;
 
@@ -16,38 +16,38 @@ fn to_version_string(version: [u8; 4]) -> String {
     version
 }
 
-/// A WebAssembly server plugin.
-pub struct Plugin {
-    /// Name of the plugin
+/// A WebAssembly server extension.
+pub struct Extension {
+    /// Name of the extension
     ///
     /// This name is retrieved using the `_pyro_ext_name` export.
     name: String,
     /// Name of the WebAssemby file.
     file: String,
-    /// Version of this plugin.
+    /// Version of this extension.
     ///
     /// Retrieved using the `__pyro_ext_version` export.
     version: [u8; 4],
-    /// The instantiated plugin.
+    /// The instantiated extension.
     instance: Instance,
-    /// Contains all plugin imports and exports.
+    /// Contains all extension imports and exports.
     store: Store<WasiCtx>,
 }
 
-impl Plugin {
-    /// Creates a new plugin using the given instance and store.
+impl Extension {
+    /// Creates a new extension using the given instance and store.
     ///
     /// # Initialisation
     ///
-    /// This function loads all the required function exports and then loads the plugin name and version.
+    /// This function loads all the required function exports and then loads the extension name and version.
     ///
     /// Firstly, the `__pyro_initialize` function runs, which should be used to initialise runtime resources
     /// such as a garbage collector.
     ///
-    /// Secondly, the `__pyro_ext_name` function is called to retrieve the plugin name.
+    /// Secondly, the `__pyro_ext_name` function is called to retrieve the extension name.
     /// This function should return a pointer to a null-terminated string.
     ///
-    /// Lastly, the plugin version is simply retrieved using `__pyro_ext_version`.
+    /// Lastly, the extension version is simply retrieved using `__pyro_ext_version`.
     /// The version is encoded as an unsigned little-endian 32-bit integer. Each of the bytes in the integer
     /// is a component of the 4-component Semver version.
     ///
@@ -69,7 +69,7 @@ impl Plugin {
         {
             // Run __pyro_initialize if it exists.
             // This function is used to initialise the language runtime before doing anything else.
-            // AssemblyScript requires this or the majority of functions will abort the plugin.
+            // AssemblyScript requires this or the majority of functions will abort the extension.
             if let Some(preinit) = instance.get_func(&mut store, def::IMPL_INITIALIZE_FN) {
                 let preinit = preinit.typed::<(), ()>(&mut store)?;
                 preinit.call(&mut store, ())?;
@@ -100,7 +100,7 @@ impl Plugin {
         Ok(Self { name, file, version, instance, store })
     }
 
-    /// Calls the optional startup function in the plugin.
+    /// Calls the optional startup function in the extension.
     pub fn on_startup(&mut self) -> anyhow::Result<()> {
         if let Some(untyped) = self.instance.get_func(&mut self.store, def::ENABLE_FN) {
             let typed = untyped.typed::<(), ()>(&mut self.store)?;
@@ -110,7 +110,7 @@ impl Plugin {
         Ok(())
     }
 
-    /// Calls the optional shutdown function in the plugin and drops it.
+    /// Calls the optional shutdown function in the extension and drops it.
     pub fn on_shutdown(mut self) -> anyhow::Result<()> {
         if let Some(untyped) = self.instance.get_func(&mut self.store, def::DISABLE_FN) {
             let typed = untyped.typed::<(), ()>(&mut self.store)?;
@@ -120,7 +120,7 @@ impl Plugin {
         Ok(())
     }
 
-    /// Returns the name of this plugin.
+    /// Returns the name of this extension.
     ///
     /// See [`new`](Self::new) for an explanation of how this name is determined.
     #[inline]
@@ -128,7 +128,7 @@ impl Plugin {
         &self.name
     }
 
-    /// Returns the version of this plugin.
+    /// Returns the version of this extension.
     ///
     /// See [`new`](Self::new) for an explanation of how this version is determined.
     #[inline]
@@ -143,7 +143,7 @@ impl Plugin {
     }
 }
 
-impl Debug for Plugin {
+impl Debug for Extension {
     fn fmt(&self, fmt: &mut Formatter) -> fmt::Result {
         fmt.debug_struct("Extension")
             .field("name", &self.name)
@@ -152,7 +152,7 @@ impl Debug for Plugin {
     }
 }
 
-impl Drop for Plugin {
+impl Drop for Extension {
     fn drop(&mut self) {
         // Run cleanup function if it exists.
         if let Some(disable_fn) = self.instance.get_func(&mut self.store, def::IMPL_CLEANUP_FN) {

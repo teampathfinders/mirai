@@ -1,5 +1,4 @@
 use crate::bytes::{MutableBuffer, SharedBuffer};
-use crate::Result;
 use std::fmt::Debug;
 
 /// Trait that describes an object that can be serialised from raw bytes.

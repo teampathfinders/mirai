@@ -5,7 +5,7 @@ use util::Serialize;
 use crate::network::ConnectedPacket;
 
 /// Sent by the server to initiate encryption.
-/// The client responds with a [`ClientToServerHandshake`](crate::ClientToServerHandshake) to
+/// The client responds with a [`ClientToServerHandshake`](crate::network::ClientToServerHandshake) to
 /// indicate encryption has successfully been initiated.
 #[derive(Debug, Clone)]
 pub struct ServerToClientHandshake<'a> {

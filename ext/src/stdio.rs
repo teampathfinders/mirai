@@ -16,26 +16,35 @@ impl WasiFile for ExtensionStdout {
         self
     }
 
+    async fn get_filetype(&self) -> Result<FileType, Error> {
+        self.stdout.get_filetype().await
+    }
+
     #[cfg(unix)]
     fn pollable(&self) -> Option<rustix::fd::BorrowedFd> {
         self.stdout.pollable()
     }
+
 
     #[cfg(windows)]
     fn pollable(&self) -> Option<io_extras::os::windows::RawHandleOrSocket> {
         self.stdout.pollable()
     }
 
-    async fn get_filetype(&self) -> Result<FileType, Error> {
-        self.stdout.get_filetype().await
+    fn isatty(&self) -> bool {
+        self.stdout.isatty()
     }
 
     async fn get_fdflags(&self) -> Result<FdFlags, Error> {
         self.stdout.get_fdflags().await
     }
 
+    async fn set_times(&self, atime: Option<SystemTimeSpec>, mtime: Option<SystemTimeSpec>) -> Result<(), Error> {
+        self.stdout.set_times(atime, mtime).await
+    }
+
     async fn write_vectored<'a>(&self, bufs: &[io::IoSlice<'a>]) -> Result<u64, Error> {
-        let span = tracing::span!(tracing::Level::INFO, "plugin", id = self.prefix);
+        let span = tracing::span!(tracing::Level::INFO, "extension", id = self.prefix);
         let _guard = span.enter();
 
         let mut written = 0;
@@ -62,13 +71,5 @@ impl WasiFile for ExtensionStdout {
 
     async fn seek(&self, _pos: io::SeekFrom) -> Result<u64, Error> {
         Err(Error::seek_pipe())
-    }
-
-    async fn set_times(&self, atime: Option<SystemTimeSpec>, mtime: Option<SystemTimeSpec>) -> Result<(), Error> {
-        self.stdout.set_times(atime, mtime).await
-    }
-
-    fn isatty(&self) -> bool {
-        self.stdout.isatty()
     }
 }
