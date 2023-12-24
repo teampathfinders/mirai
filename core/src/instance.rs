@@ -8,7 +8,6 @@ use std::sync::Arc;
 use std::time::Duration;
 
 use parking_lot::RwLock;
-use rand::Rng;
 use tokio::net::UdpSocket;
 use tokio::sync::oneshot::Receiver;
 use tokio_util::sync::CancellationToken;
@@ -267,8 +266,10 @@ impl ServerInstance {
 
     /// Receives packets from IPv4 clients and adds them to the receive queue
     async fn udp_recv_job(token: CancellationToken, udp_socket: Arc<UdpSocket>, sess_manager: Arc<SessionManager>) {
-        let server_guid = rand::thread_rng().gen();
-        let metadata = Self::refresh_metadata("description", server_guid, sess_manager.session_count(), sess_manager.max_session_count());
+        let server_guid = rand::random();
+
+        // TODO: Customizable server description.
+        let metadata = Self::refresh_metadata("Server description", server_guid, sess_manager.session_count(), sess_manager.max_session_count());
 
         // This is heap-allocated because stack data is stored inline in tasks.
         // If it were to be stack-allocated, Tokio would have to copy the entire buffer each time

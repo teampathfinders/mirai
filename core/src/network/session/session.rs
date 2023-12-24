@@ -42,6 +42,7 @@ pub struct PlayerData {
     pub skin: Option<Skin>,
     /// Runtime ID.
     pub runtime_id: u64,
+    /// Helper type that loads the chunks around the player.
     pub viewer: ChunkViewer,
 }
 

@@ -47,13 +47,12 @@ impl SubChunkEntry {
     fn serialize(&self, buffer: &mut MutableBuffer) -> anyhow::Result<()> {
         buffer.write_vecb(&self.offset)?;
         buffer.write_u8(self.result as u8)?;
+        buffer.write_var_u32(self.payload.len() as u32)?;
         buffer.write_all(&self.payload)?;
         buffer.write_u8(self.heightmap_type as u8)?;
-        
         if self.heightmap_type == HeightmapType::WithData {
             buffer.write_all(bytemuck::cast_slice(&*self.heightmap))?;
         }
-        
         Ok(())
     }
 }

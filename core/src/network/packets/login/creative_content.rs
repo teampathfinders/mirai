@@ -1,3 +1,4 @@
+use std::io::Write;
 use util::Serialize;
 use util::bytes::{BinaryWrite, MutableBuffer, VarInt};
 use util::Result;
@@ -29,7 +30,7 @@ pub const ITEM_ID_SHIELD: u32 = 513;
 
 #[derive(Debug, Clone)]
 pub struct ItemCollection {
-    pub runtime_id: u32,
+    pub runtime_id: i32,
     pub network_id: u32,
     pub meta: u32,
     /// Amount of items that a single stack holds.
@@ -40,11 +41,11 @@ pub struct ItemCollection {
 
 impl ItemCollection {
     pub fn serialized_size(&self) -> usize {
-        0
+        30
     }
 
     pub fn serialize(&self, buffer: &mut MutableBuffer) -> anyhow::Result<()> {
-        buffer.write_var_u32(self.runtime_id)?;
+        buffer.write_var_i32(self.runtime_id)?;
         if self.network_id == 0 {
             // Item is air, nothing left to do.
             return Ok(())
@@ -52,100 +53,36 @@ impl ItemCollection {
 
         buffer.write_u16_le(self.count)?;
         buffer.write_var_u32(self.meta)?;
-        buffer.write_var_u32(self.runtime_id)?;
-        // No NBT data
-        buffer.write_u16_le(0)?;
+        buffer.write_var_i32(self.runtime_id)?;
 
-        // No placeable
-        buffer.write_u32_le(0)?;
-        // No breakable
-        buffer.write_u32_le(0)?;
+        let mut extra_buffer = MutableBuffer::new();
+
+        extra_buffer.write_u16_le(0)?;
+
+        extra_buffer.write_u32_le(self.placeable_on.len() as u32)?;
+        for block in &self.placeable_on {
+            extra_buffer.write_str(block)?;
+        }
+
+        extra_buffer.write_u32_le(self.can_break.len() as u32)?;
+        for block in &self.can_break {
+            extra_buffer.write_str(block)?;
+        }
 
         if self.network_id == ITEM_ID_SHIELD {
             todo!();
         }
+
+        buffer.write_var_u32(extra_buffer.len() as u32)?;
+        buffer.write(&extra_buffer.snapshot())?;
 
         Ok(())
     }
 }
 
 #[derive(Debug, Clone)]
-pub struct CreativeItem {
-    pub collection: ItemCollection
-}
-
-impl CreativeItem {
-    pub fn serialized_size(&self) -> usize {
-        0
-        // todo!();
-        // self.item_type.network_id.var_len() +
-        // if self.item_type.network_id != 0 {
-        //     2 +
-        //     self.item_type.metadata.var_len() +
-        //     self.runtime_id.var_len() +
-        //     2 +
-        //     if let Value::Compound(ref map) = self.nbt_data {
-        //         if !map.is_empty() {
-        //             1 + self.nbt_data.serialized_net_size("")
-        //         } else {
-        //             0
-        //         }
-        //     } else {
-        //         0
-        //     }
-        // } else {
-        //     0
-        // }
-    }
-
-    pub fn serialize(&self, buffer: &mut MutableBuffer) -> anyhow::Result<()> {
-        self.collection.serialize(buffer)
-
-        // buffer.write_var_u32(self.item_type.network_id)?;
-        // if self.item_type.network_id == 0 {
-        //     // Air has no data.
-        //     return Ok(());
-        // }
-        //
-        // buffer.write_u16_be(self.count)?;
-        // buffer.write_var_u32(self.item_type.metadata)?;
-        // buffer.write_var_u32(self.runtime_id)?;
-        //
-        // // if let Value::Compound(ref map) = self.nbt_data {
-        // //     let length = map.len();
-        // //     if length == 0 {
-        // //         buffer.put_i16(0); // Length
-        // //     } else {
-        // //         buffer.put_i16(-1); // Length
-        // //         buffer.write_u8(1)?; // Version
-        // //
-        // //         nbt::serialize_net("", &self.nbt_data, buffer);
-        // //     }
-        // // } else {
-        // //     todo!()
-        // // }
-        //
-        // buffer.write_u32_be(self.can_be_placed_on.len() as u32)?;
-        // for item in &self.can_be_placed_on {
-        //     buffer.write_str(item)?;
-        // }
-        //
-        // buffer.write_u32_be(self.can_break.len() as u32)?;
-        // for item in &self.can_break {
-        //     buffer.write_str(item)?;
-        // }
-        //
-        // if self.item_type.network_id == ITEM_ID_SHIELD {
-        //     buffer.write_u64_be(0)?; // Blocking tick.
-        // }
-        //
-        // Ok(())
-    }
-}
-
-#[derive(Debug, Clone)]
 pub struct CreativeContent<'a> {
-    pub items: &'a [CreativeItem],
+    pub items: &'a [ItemCollection],
 }
 
 impl ConnectedPacket for CreativeContent<'_> {
@@ -161,7 +98,7 @@ impl Serialize for CreativeContent<'_> {
     fn serialize(&self, buffer: &mut MutableBuffer) -> anyhow::Result<()> {
         buffer.write_var_u32(self.items.len() as u32)?;
         for (i, item) in self.items.iter().enumerate() {
-            buffer.write_var_u32(i as u32 + 1)?;
+            buffer.write_var_i32(i as i32 + 1)?;
             item.serialize(buffer)?;
         }
 

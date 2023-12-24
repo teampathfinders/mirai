@@ -8,7 +8,7 @@ use util::{bail, BlockPosition, Deserialize, Result, Vector};
 
 use crate::config::SERVER_CONFIG;
 use crate::crypto::Encryptor;
-use crate::network::{CacheStatus, CreativeItem, HeightmapType, ItemCollection, NetworkChunkPublisherUpdate, SubChunkEntry, SubChunkResponse, SubChunkResult};
+use crate::network::{CacheStatus, HeightmapType, ItemCollection, NetworkChunkPublisherUpdate, SubChunkEntry, SubChunkResponse, SubChunkResult};
 use crate::network::Session;
 use crate::network::{AvailableCommands, SubChunkRequestMode};
 use crate::network::{
@@ -194,16 +194,17 @@ impl Session {
             },
             time: 0,
             enchantment_seed: 0,
-            block_properties: &[BlockEntry {
-                name: "minecraft:bedrock".to_owned(),
-                properties: HashMap::from([("infiniburn_bit".to_owned(), nbt::Value::Byte(0))]),
-            }],
+            // block_properties: &[BlockEntry {
+            //     name: "minecraft:bedrock".to_owned(),
+            //     properties: HashMap::from([("infiniburn_bit".to_owned(), nbt::Value::Byte(0))]),
+            // }],
+            block_properties: &[],
             item_properties: &[
-//                ItemEntry {
-//                    name: "minecraft:bedrock".to_owned(),
-//                    runtime_id: 2,
-//                    component_based: false
-//                }
+               ItemEntry {
+                   name: "minecraft:stick".to_owned(),
+                   runtime_id: 1,
+                   component_based: false
+               }
             ],
             property_data: PropertyData {},
             server_authoritative_inventory: false,
@@ -218,15 +219,13 @@ impl Session {
         self.send(start_game)?;
 
         let creative_content = CreativeContent {
-            items: &[CreativeItem {
-                collection: ItemCollection {
-                    network_id: 1,
-                    runtime_id: 1,
-                    count: 64,
-                    can_break: Vec::new(),
-                    placeable_on: Vec::new(),
-                    meta: 0
-                }
+            items: &[ItemCollection {
+                network_id: 1,
+                runtime_id: 1,
+                count: 64,
+                can_break: vec![],
+                placeable_on: vec![],
+                meta: 0
             }]
         };
         self.send(creative_content)?;
@@ -242,6 +241,25 @@ impl Session {
         })?;
 
         // self.level.request_subchunks(Vector::from([0, -4, 0]), &[])?;
+
+        // let biomes = self.level.request_biomes(Vector::from([0, 0]), Dimension::Overworld)?;
+        // self.send(biomes)?;
+
+        // let subchunks = self.level.request_subchunks(Vector::from([0, 0, 0]), &[
+        //     Vector::from([0, 0, 0])
+        // ])?;
+        let subchunks = self.player.read().viewer.recenter(
+            Vector::from([0, 0]), &[
+                Vector::from([0, 0, 0])
+            ]
+        )?;
+        let response = SubChunkResponse {
+            entries: subchunks,
+            position: Vector::from([0, 0, 0]),
+            dimension: Dimension::Overworld,
+            cache_enabled: false
+        };
+        self.send(response)?;
 
         let play_status = PlayStatus { status: Status::PlayerSpawn };
         self.send(play_status)?;
