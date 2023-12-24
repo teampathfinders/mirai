@@ -21,26 +21,61 @@ pub struct CommandParseError {
     description: String,
 }
 
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum CommandTarget {
+    AllPlayers,
+    AllEntities,
+    ClosestPlayer,
+    RandomPlayer,
+    Yourself,
+    SpecificPlayer(String)
+}
+
+impl From<&str> for CommandTarget {
+    #[inline]
+    fn from(value: &str) -> CommandTarget {
+        match value {
+            "@a" => Self::AllPlayers,
+            "@e" => Self::AllEntities,
+            "@p" => Self::ClosestPlayer,
+            "@r" => Self::RandomPlayer,
+            "@s" => Self::Yourself,
+            username => Self::SpecificPlayer(username.to_owned())
+        }
+    }
+}
+
 #[derive(Debug)]
 pub enum ParsedArgument {
     Int(i32),
     Float(f32),
     String(String),
+    Target(CommandTarget)
 }
 
 impl ParsedArgument {
-    pub fn read_str(&self) -> anyhow::Result<&str> {
-        if let Self::String(ref value) = self {
-            Ok(value)
-        } else {
-            bail!(Malformed, "Expected string, found {:?}", self)
+    #[inline]
+    pub fn as_string(&self) -> Option<&str> {
+        match self {
+            Self::String(s) => Some(s),
+            _ => None
+        }
+    }
+
+    #[inline]
+    pub fn as_int(&self) -> Option<i32> {
+        match self {
+            Self::Int(i) => Some(*i),
+            _ => None
         }
     }
 }
 
 #[derive(Debug)]
 pub struct ParsedCommand {
+    /// The name of the command that is scheduled for execution.
     pub name: String,
+    /// Parameters given with the command.
     pub parameters: HashMap<String, ParsedArgument>,
 }
 
@@ -132,7 +167,8 @@ fn parse_overload(overload: &CommandOverload, mut parts: Split<char>)
 
         // Parse the value into the correct type.
         let value = match parameter.data_type {
-            CommandDataType::String => ParsedArgument::String(part.to_owned()),
+            CommandDataType::String => ParsedArgument::String(part.into()),
+            CommandDataType::Target => ParsedArgument::Target(part.into()),
             CommandDataType::Int => {
                 let result = part.parse();
                 if let Ok(value) = result {

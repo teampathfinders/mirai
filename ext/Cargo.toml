@@ -9,13 +9,13 @@ anyhow = "1.0.76"
 flate2 = "1.0.26"
 sha2 = "0.10.7"
 tracing = "0.1.38"
-wasi-common = "8.0.0"
-wasmtime = { version = "8.0.0", features = ["cranelift", "parallel-compilation"] }
-wasmtime-wasi = "8.0.0"
+wasi-common = "16.0.0"
+wasmtime = { version = "16.0.0", features = ["cranelift", "parallel-compilation"] }
+wasmtime-wasi = "16.0.0"
 
 [target.'cfg(unix)'.dependencies]
 rustix = { version = "0.38.28", features = ["fs"] }
 
 [target.'cfg(windows)'.dependencies]
-io-extras = "0.17.4"
+io-extras = "0.18.1"
 rustix = { version = "0.38.0", features = ["net"] }

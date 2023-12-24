@@ -26,23 +26,32 @@ impl ChunkViewer {
     }
 
     pub fn recenter(&self, center: Vector<i32, 2>, offsets: &[Vector<i8, 3>]) -> anyhow::Result<Vec<SubChunkEntry>> {
-        todo!()
-        //
-        // let mut entries = Vec::with_capacity(offsets.len());
-        // for offset in offsets {
-        //     // TODO: Check for out of bounds requests
-        //
-        //     if let Some(chunk) = self.level.get_subchunk()? {
-        //         todo!();
-        //     } else {
-        //         entries.push(SubChunkEntry {
-        //             offset: offset.clone(),
-        //             result: SubChunkResult::NotFound,
-        //             ..Default::default()
-        //         });
-        //     }
-        // }
-        //
-        // Ok(entries)
+        // todo!()
+
+        let mut entries = Vec::with_capacity(offsets.len());
+        for offset in offsets {
+            // TODO: Check for out of bounds requests
+
+            // if let Some(chunk) = self.level.get_subchunk()? {
+            //     todo!();
+            // } else {
+            //     entries.push(SubChunkEntry {
+            //         offset: offset.clone(),
+            //         result: SubChunkResult::NotFound,
+            //         ..Default::default()
+            //     });
+            // }
+
+            entries.push(SubChunkEntry {
+                offset: offset.clone(),
+                result: SubChunkResult::AllAir,
+                heightmap_type: HeightmapType::None,
+                heightmap: Box::default(),
+                payload: vec![],
+                blob_hash: 0
+            });
+        }
+
+        Ok(entries)
     }
 }
