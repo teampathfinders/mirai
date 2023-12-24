@@ -29,7 +29,7 @@ jobs:
       uses: Swatinem/rust-cache@v2.2.1
     
     - name: Generate documentation
-      run: RUSTFLAGS='--cfg skip_leveldb' cargo doc --no-deps
+      run: RUSTFLAGS='--cfg skip_leveldb' cargo doc --no-deps --document-private-items
       
     - name: Add root index
       run: |
