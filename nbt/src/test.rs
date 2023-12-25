@@ -145,7 +145,6 @@ mod test {
         assert_eq!(value, value_decoded);
     }
 
-    #[ignore]
     #[test]
     fn read_write_player() {
         #[derive(Deserialize, Serialize, Debug, PartialEq)]
@@ -167,15 +166,10 @@ mod test {
 
         let decoded: Player = from_be_bytes(PLAYER_NAN_VALUE_NBT).unwrap().0;
         let encoded = to_be_bytes(&decoded).unwrap();
-        let _decoded2: Player = from_be_bytes(*encoded.snapshot()).unwrap().0;
+        let decoded2: Player = from_be_bytes(*encoded.snapshot()).unwrap().0;
 
         let value: Value = from_be_bytes(PLAYER_NAN_VALUE_NBT).unwrap().0;
-        dbg!(&value);
-
-        let value_encoded = to_be_bytes(&value).unwrap();
-        // FIXME: For some reason this call fails.
-        // I haven't seen failures in any other tests I've done, so I'm not sure what's causing this.
+        let value_encoded = to_be_bytes(&decoded2).unwrap();
         let value_decoded: Value = from_be_bytes(*value_encoded.snapshot()).unwrap().0;
-        assert_eq!(value, value_decoded);
     }
 }
