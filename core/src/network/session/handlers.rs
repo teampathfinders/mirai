@@ -87,9 +87,9 @@ impl Session {
         let raw: (&str, &str) = serde_json::from_str(response.response_data.unwrap()).unwrap();
             
         dbg!(raw);
-        // self.send(Transfer {
-        //     addr: raw.0, port: raw.1.parse().unwrap()
-        // })?;
+        self.send(Transfer {
+            addr: raw.0, port: raw.1.parse().unwrap()
+        })?;
 
         Ok(())
     }
