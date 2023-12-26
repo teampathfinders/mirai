@@ -10,6 +10,7 @@ mod command;
 mod level;
 mod login;
 
+glob_export!(action);
 glob_export!(add_player);
 glob_export!(add_painting);
 glob_export!(animate);

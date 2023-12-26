@@ -1,7 +1,7 @@
 use util::{Deserialize};
 use util::bytes::MutableBuffer;
 
-use crate::network::{ContainerOpen, ContainerType, InteractAction, ContainerClose, INVENTORY_WINDOW_ID};
+use crate::network::{ContainerOpen, ContainerType, InteractAction, ContainerClose, INVENTORY_WINDOW_ID, PlayerAction};
 use crate::network::{
     {
         Interact, MovePlayer,
@@ -49,6 +49,13 @@ impl Session {
         // dbg!(&request);
 
         self.broadcast_others(request)?;
+
+        Ok(())
+    }
+
+    pub fn process_player_action(&self, packet: MutableBuffer) -> anyhow::Result<()> {
+        let request = PlayerAction::deserialize(packet.snapshot())?;
+        dbg!(request);
 
         Ok(())
     }
