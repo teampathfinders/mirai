@@ -14,7 +14,7 @@ use crate::network::{
     Session,
 };
 use crate::command::ParsedCommand;
-use crate::form::{FormButton, FormElement, FormInput, FormLabel, FormSlider, Form, Modal, FormButtonImage, FormDropdown, FormToggle, FormStepSlider, CustomForm};
+use crate::forms::{FormButton, FormElement, FormInput, FormLabel, FormSlider, MenuForm, Modal, FormButtonImage, FormDropdown, FormToggle, FormStepSlider, CustomForm};
 
 impl Session {
     pub fn process_settings_command(&self, packet: MutableBuffer) -> anyhow::Result<()> {
@@ -87,9 +87,9 @@ impl Session {
         let raw: (&str, &str) = serde_json::from_str(response.response_data.unwrap()).unwrap();
             
         dbg!(raw);
-        // self.send(Transfer {
-        //     addr: raw.0, port: raw.1.parse().unwrap()
-        // })?;
+        self.send(Transfer {
+            addr: raw.0, port: raw.1.parse().unwrap()
+        })?;
 
         Ok(())
     }
@@ -157,12 +157,12 @@ impl Session {
                             FormElement::Input(FormInput {
                                 label: "Address",
                                 placeholder: "",
-                                default: ""
+                                initial: ""
                             }),
                             FormElement::Input(FormInput {
                                 label: "Port",
                                 placeholder: "",
-                                default: "19132"
+                                initial: "19132"
                             })
                         ]
                     }).unwrap();

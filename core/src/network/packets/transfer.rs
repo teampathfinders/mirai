@@ -9,12 +9,14 @@ use crate::network::ConnectedPacket;
 /// Transfers the client to another server.
 /// The client does this by first returning to the main menu and then connecting to the selected server.
 #[derive(Debug, Clone)]
-pub struct Transfer {
-    /// Address of the server to transfer to.
-    pub addr: SocketAddr,
+pub struct Transfer<'a> {
+    /// Address of the server. This can either be a domain or an IP address.
+    pub addr: &'a str,
+    /// Port of the server.
+    pub port: u16
 }
 
-impl ConnectedPacket for Transfer {
+impl<'a> ConnectedPacket for Transfer<'a> {
     const ID: u32 = 0x55;
 
     fn serialized_size(&self) -> usize {
@@ -24,9 +26,9 @@ impl ConnectedPacket for Transfer {
     }
 }
 
-impl Serialize for Transfer {
+impl<'a> Serialize for Transfer<'a> {
     fn serialize(&self, buffer: &mut MutableBuffer) -> anyhow::Result<()> {
-        buffer.write_str(&self.addr.to_string())?;
-        buffer.write_u16_le(self.addr.port())
+        buffer.write_str(self.addr)?;
+        buffer.write_u16_le(self.port)
     }
 }

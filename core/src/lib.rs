@@ -4,7 +4,7 @@
 pub mod command;
 pub mod config;
 pub mod crypto;
-pub mod form;
+pub mod forms;
 pub mod instance;
 pub mod level;
 pub mod network;
