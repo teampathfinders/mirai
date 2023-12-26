@@ -8,6 +8,7 @@ use util::{bail, BlockPosition, Deserialize, Result, Vector};
 
 use crate::config::SERVER_CONFIG;
 use crate::crypto::Encryptor;
+use crate::form::FormInput;
 use crate::network::{CacheStatus, HeightmapType, ItemCollection, NetworkChunkPublisherUpdate, SubChunkEntry, SubChunkResponse, SubChunkResult};
 use crate::network::Session;
 use crate::network::{AvailableCommands, SubChunkRequestMode};
@@ -260,6 +261,13 @@ impl Session {
             cache_enabled: false
         };
         self.send(response)?;
+
+        let modal = serde_json::to_string(&FormInput {
+            label: "label",
+            default: "default",
+            placeholder: "placeholder"
+        })?;
+        dbg!(modal);
 
         let play_status = PlayStatus { status: Status::PlayerSpawn };
         self.send(play_status)?;
