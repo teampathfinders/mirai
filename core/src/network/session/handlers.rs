@@ -1,7 +1,8 @@
-use util::{bail, Deserialize, Result, TryExpect};
+use level::Dimension;
+use util::{bail, Deserialize, Result, TryExpect, Vector};
 use util::bytes::MutableBuffer;
 
-use crate::network::{CommandOutput, CommandOutputMessage, CommandOutputType, CommandRequest, FormRequest, FormResponse, SettingsCommand, TextData, TickSync};
+use crate::network::{CommandOutput, CommandOutputMessage, CommandOutputType, CommandRequest, FormRequest, FormResponse, SettingsCommand, SubChunkResponse, TextData, TickSync};
 use crate::network::{
     {
         Animate, RequestAbility,
@@ -11,7 +12,7 @@ use crate::network::{
     Session,
 };
 use crate::command::ParsedCommand;
-use crate::form::{FormElement, FormInput, FormLabel, Modal};
+use crate::form::{FormButton, FormElement, FormInput, FormLabel, FormSlider, Form, Modal};
 
 impl Session {
     pub fn process_settings_command(&self, packet: MutableBuffer) -> anyhow::Result<()> {
@@ -57,6 +58,8 @@ impl Session {
             // Only the server is allowed to create text packets that are not of the chat type.
             anyhow::bail!("Client sent an illegally modified text message packet")
         }
+
+
     }
 
     pub fn process_skin_update(&self, packet: MutableBuffer) -> anyhow::Result<()> {
@@ -99,25 +102,32 @@ impl Session {
                 "effect" => {
                     let out = self.level.on_effect_command(caller, parsed)?;
 
-                    let modal = serde_json::to_string(&Modal {
-                        title: "Test modal",
-                        button1: "Confirm",
-                        button2: "Close",
+                    let menu = serde_json::to_string(&Form {
+                        title: &String::from_utf8_lossy(&[0xee, 0x84, 0x88, 0x20]),
+                        buttons: &[
+                            FormButton {
+                                label: "button1",
+                                image: None
+                            },
+                            FormButton {
+                                label: "button2",
+                                image: Some("https://picsum.photos/200")
+                            }
+                        ],
                         elements: vec![
-                            FormElement::Label(FormLabel {
-                                label: "label text"
-                            }),
-                            FormElement::Input(FormInput {
-                                label: "input text",
-                                placeholder: "placeholder text",
-                                default: "default text"
+                            FormElement::Slider(FormSlider {
+                                label: "slider",
+                                default: 0.0,
+                                max: 1.0,
+                                min: 0.0,
+                                step: 0.1
                             })
                         ]
                     })?;
 
                     let modal_request = FormRequest {
                         id: 0,
-                        data: &modal
+                        data: &menu
                     };
                     self.send(modal_request);
                     Ok(out)

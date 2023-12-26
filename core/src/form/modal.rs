@@ -189,11 +189,11 @@ impl<'a> serde::Serialize for FormToggle<'a> {
 
 #[derive(Debug)]
 pub struct FormSlider<'a> {
-    label: &'a str,
-    min: f64,
-    max: f64,
-    step: f64,
-    default: f64,
+    pub(crate) label: &'a str,
+    pub(crate) min: f64,
+    pub(crate) max: f64,
+    pub(crate) step: f64,
+    pub(crate) default: f64,
 }
 
 impl<'a> serde::Serialize for FormSlider<'a> {
@@ -291,8 +291,8 @@ impl<'a> serde::Serialize for FormStepSlider<'a> {
 
 #[derive(Debug)]
 pub struct FormButton<'a> {
-    label: &'a str,
-    image: Option<&'a str>,
+    pub(crate) label: &'a str,
+    pub(crate) image: Option<&'a str>,
 }
 
 impl<'a> serde::Serialize for FormButton<'a> {
@@ -324,6 +324,7 @@ impl<'a> serde::Serialize for FormButton<'a> {
             let data = ImageData { img_type, data };
 
             map.serialize_field("image", &data)?;
+            map.serialize_field("text", "this is image")?;
         } else {
             map.serialize_field("text", self.label)?;
         }
@@ -355,23 +356,37 @@ impl<'a> serde::Serialize for FormButton<'a> {
 // }
 
 #[derive(Debug)]
-pub struct Menu<'a> {
-    title: &'a str,
-    content: &'a str,
-    buttons: &'a [&'a str],
+pub struct Form<'a> {
+    pub title: &'a str,
+    pub elements: Vec<FormElement<'a>>,
+    pub buttons: &'a [FormButton<'a>],
 }
 
-impl<'a> Menu<'a> {
-    pub fn to_json(&self) -> String {
-        let json = serde_json::json!({
-            "type": "form",
-            "title": self.title,
-            "content": self.content,
-            "buttons": self.buttons
-        });
-        json.to_string()
+impl<'a> serde::Serialize for Form<'a> {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer
+    {
+        let mut map = serializer.serialize_struct("modal", 5)?;
+        map.serialize_field("type", "form")?;
+        map.serialize_field("title", self.title)?;
+        map.serialize_field("content", &self.elements)?;
+        map.serialize_field("buttons", self.buttons)?;
+        map.end()
     }
 }
+
+// impl<'a> Menu<'a> {
+//     pub fn to_json(&self) -> String {
+//         let json = serde_json::json!({
+//             "type": "form",
+//             "title": self.title,
+//             "content": self.content,
+//             "buttons": self.buttons
+//         });
+//         json.to_string()
+//     }
+// }
 
 #[derive(Debug)]
 pub enum FormElement<'a> {
@@ -417,7 +432,7 @@ impl<'a> serde::Serialize for Modal<'a> {
         let mut map = serializer.serialize_struct("modal", 5)?;
         map.serialize_field("type", "modal")?;
         map.serialize_field("title", self.title)?;
-        map.serialize_field("content", &self.elements[1])?;
+        map.serialize_field("content", &self.elements)?;
         map.serialize_field("button1", self.button1)?;
         map.serialize_field("button2", self.button2)?;
         map.end()

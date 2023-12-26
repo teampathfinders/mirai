@@ -90,10 +90,12 @@ impl Session {
             // dbg!(level_chunk);
 
             self.broadcast(TextMessage {
-                data: TextData::System {
-                    message: &format!("§e{} has joined the server.", identity_data.display_name),
+                data: TextData::Translation {
+                    parameters: vec![&format!("§e{}", identity_data.display_name)],
+                    message: "multiplayer.player.joined"
+                    // message: &format!("§e{} has joined the server.", identity_data.display_name),
                 },
-                needs_translation: false,
+                needs_translation: true,
                 xuid: "",
                 platform_chat_id: "",
             })?;
@@ -249,25 +251,25 @@ impl Session {
         // let subchunks = self.level.request_subchunks(Vector::from([0, 0, 0]), &[
         //     Vector::from([0, 0, 0])
         // ])?;
-        let subchunks = self.player.read().viewer.recenter(
-            Vector::from([0, 0]), &[
-                Vector::from([0, 0, 0])
-            ]
-        )?;
-        let response = SubChunkResponse {
-            entries: subchunks,
-            position: Vector::from([0, 0, 0]),
-            dimension: Dimension::Overworld,
-            cache_enabled: false
-        };
-        self.send(response)?;
-
-        let play_status = PlayStatus { status: Status::PlayerSpawn };
-        self.send(play_status)?;
+        // let subchunks = self.player.read().viewer.recenter(
+        //     Vector::from([0, 0]), &[
+        //         Vector::from([0, 0, 0])
+        //     ]
+        // )?;
+        // let response = SubChunkResponse {
+        //     entries: subchunks,
+        //     position: Vector::from([0, 0, 0]),
+        //     dimension: Dimension::Overworld,
+        //     cache_enabled: false
+        // };
+        // self.send(response)?;
 
         let commands = self.level.get_commands().iter().map(|kv| kv.value().clone()).collect::<Vec<_>>();
         let available_commands = AvailableCommands { commands: commands.as_slice() };
         self.send(available_commands)?;
+
+        let play_status = PlayStatus { status: Status::PlayerSpawn };
+        self.send(play_status)?;
 
         Ok(())
     }
