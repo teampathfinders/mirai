@@ -51,6 +51,7 @@ glob_export!(tick_sync);
 glob_export!(toast_request);
 glob_export!(traits);
 glob_export!(transfer);
+glob_export!(update_abilities);
 glob_export!(update_dynamic_enum);
 glob_export!(update_fog_stack);
 glob_export!(violation_warning);

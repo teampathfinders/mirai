@@ -154,7 +154,7 @@ impl Session {
     }
 
     #[inline]
-    pub fn get_game_mode(&self) -> GameMode {
+    pub fn get_gamemode(&self) -> GameMode {
         self.player.read().game_mode
     }
 

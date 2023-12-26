@@ -2,7 +2,7 @@ use util::bytes::{BinaryRead, SharedBuffer};
 use util::{BlockPosition, Deserialize};
 use crate::network::ConnectedPacket;
 
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
 #[repr(i32)]
 pub enum PlayerActionType {
     StartBreak,

@@ -142,7 +142,7 @@ impl Session {
         let start_game = StartGame {
             entity_id: 1,
             runtime_id: 1,
-            game_mode: self.get_game_mode(),
+            game_mode: self.get_gamemode(),
             position: Vector::from([0.0, 60.0, 0.0]),
             rotation: Vector::from([0.0, 0.0]),
             world_seed: 0,
