@@ -102,13 +102,13 @@ use serde::ser::SerializeStruct;
 
 #[derive(Debug)]
 pub struct FormLabel<'a> {
-    pub(crate) label: &'a str
+    pub(crate) label: &'a str,
 }
 
 impl<'a> serde::Serialize for FormLabel<'a> {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
-        S: serde::Serializer
+        S: serde::Serializer,
     {
         let mut map = serializer.serialize_struct("label", 2)?;
         map.serialize_field("type", "label")?;
@@ -161,7 +161,7 @@ impl<'a> serde::Serialize for FormInput<'a> {
 #[derive(Debug)]
 pub struct FormToggle<'a> {
     label: &'a str,
-    default: bool
+    default: bool,
 }
 
 impl<'a> serde::Serialize for FormToggle<'a> {
@@ -193,13 +193,13 @@ pub struct FormSlider<'a> {
     min: f64,
     max: f64,
     step: f64,
-    default: f64
+    default: f64,
 }
 
 impl<'a> serde::Serialize for FormSlider<'a> {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
-        S: serde::Serializer
+        S: serde::Serializer,
     {
         let mut map = serializer.serialize_struct("slider", 6)?;
         map.serialize_field("type", "slider")?;
@@ -235,7 +235,7 @@ pub struct FormDropdown<'a> {
 impl<'a> serde::Serialize for FormDropdown<'a> {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
-        S: serde::Serializer
+        S: serde::Serializer,
     {
         let mut map = serializer.serialize_struct("dropdown", 4)?;
         map.serialize_field("type", "dropdown")?;
@@ -261,13 +261,13 @@ impl<'a> serde::Serialize for FormDropdown<'a> {
 pub struct FormStepSlider<'a> {
     label: &'a str,
     steps: &'a [&'a str],
-    default: i32
+    default: i32,
 }
 
 impl<'a> serde::Serialize for FormStepSlider<'a> {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
-        S: serde::Serializer
+        S: serde::Serializer,
     {
         let mut map = serializer.serialize_struct("step_slider", 4)?;
         map.serialize_field("type", "step_slider")?;
@@ -292,23 +292,23 @@ impl<'a> serde::Serialize for FormStepSlider<'a> {
 #[derive(Debug)]
 pub struct FormButton<'a> {
     label: &'a str,
-    image: Option<&'a str>
+    image: Option<&'a str>,
 }
 
 impl<'a> serde::Serialize for FormButton<'a> {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
-        S: serde::Serializer
+        S: serde::Serializer,
     {
         struct ImageData<'b> {
             pub img_type: &'b str,
-            pub data: &'b str
+            pub data: &'b str,
         }
 
         impl<'b> serde::Serialize for ImageData<'b> {
             fn serialize<S1>(&self, serializer: S1) -> Result<S1::Ok, S1::Error>
             where
-                S1: serde::Serializer
+                S1: serde::Serializer,
             {
                 let mut map = serializer.serialize_struct("image", 2)?;
                 map.serialize_field("type", self.img_type)?;
@@ -319,15 +319,9 @@ impl<'a> serde::Serialize for FormButton<'a> {
 
         let mut map = serializer.serialize_struct("button", 1)?;
         if let Some(data) = self.image {
-            let img_type = if data.starts_with("http") {
-                "url"
-            } else {
-                "path"
-            };
+            let img_type = if data.starts_with("http") { "url" } else { "path" };
 
-            let data = ImageData {
-                img_type, data
-            };
+            let data = ImageData { img_type, data };
 
             map.serialize_field("image", &data)?;
         } else {
@@ -364,7 +358,7 @@ impl<'a> serde::Serialize for FormButton<'a> {
 pub struct Menu<'a> {
     title: &'a str,
     content: &'a str,
-    buttons: &'a [&'a str]
+    buttons: &'a [&'a str],
 }
 
 impl<'a> Menu<'a> {
@@ -387,13 +381,13 @@ pub enum FormElement<'a> {
     Dropdown(FormDropdown<'a>),
     Slider(FormSlider<'a>),
     StepSlider(FormStepSlider<'a>),
-    Button(FormButton<'a>)
+    Button(FormButton<'a>),
 }
 
 impl<'a> serde::Serialize for FormElement<'a> {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
-        S: serde::Serializer
+        S: serde::Serializer,
     {
         match self {
             Self::Button(b) => b.serialize(serializer),
@@ -402,7 +396,7 @@ impl<'a> serde::Serialize for FormElement<'a> {
             Self::Label(l) => l.serialize(serializer),
             Self::Slider(s) => s.serialize(serializer),
             Self::StepSlider(s) => s.serialize(serializer),
-            Self::Toggle(t) => t.serialize(serializer)
+            Self::Toggle(t) => t.serialize(serializer),
         }
     }
 }
@@ -412,18 +406,18 @@ pub struct Modal<'a> {
     pub title: &'a str,
     pub elements: Vec<FormElement<'a>>,
     pub button1: &'a str,
-    pub button2: &'a str
+    pub button2: &'a str,
 }
 
 impl<'a> serde::Serialize for Modal<'a> {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
-        S: serde::Serializer
+        S: serde::Serializer,
     {
         let mut map = serializer.serialize_struct("modal", 5)?;
         map.serialize_field("type", "modal")?;
         map.serialize_field("title", self.title)?;
-        map.serialize_field("content", &self.elements)?;
+        map.serialize_field("content", &self.elements[1])?;
         map.serialize_field("button1", self.button1)?;
         map.serialize_field("button2", self.button2)?;
         map.end()

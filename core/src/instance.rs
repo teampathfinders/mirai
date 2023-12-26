@@ -19,7 +19,7 @@ use util::{Result, Vector};
 use crate::command::{Command, CommandDataType, CommandEnum, CommandOverload, CommandParameter, CommandPermissionLevel};
 use crate::config::SERVER_CONFIG;
 use crate::level::LevelManager;
-use crate::network::{MOBEFFECT_NAMES, SessionManager};
+use crate::network::{SessionManager, MOBEFFECT_NAMES};
 use crate::network::{BOOLEAN_GAME_RULES, CLIENT_VERSION_STRING, INTEGER_GAME_RULES, NETWORK_VERSION};
 use crate::raknet::IncompatibleProtocol;
 use crate::raknet::OpenConnectionReply1;
@@ -159,7 +159,7 @@ impl ServerInstance {
                             command_enum: None,
                             suffix: String::new(),
                             optional: false,
-                            options: 0
+                            options: 0,
                         },
                         CommandParameter {
                             name: String::from("effect"),
@@ -167,13 +167,13 @@ impl ServerInstance {
                             command_enum: Some(CommandEnum {
                                 enum_id: String::from("effect_clear"),
                                 options: vec![String::from("clear")],
-                                dynamic: false
+                                dynamic: false,
                             }),
                             suffix: String::new(),
                             optional: false,
-                            options: 0
-                        }
-                    ]
+                            options: 0,
+                        },
+                    ],
                 },
                 CommandOverload {
                     parameters: vec![
@@ -183,7 +183,7 @@ impl ServerInstance {
                             command_enum: None,
                             suffix: String::new(),
                             optional: false,
-                            options: 0
+                            options: 0,
                         },
                         CommandParameter {
                             name: String::from("effect"),
@@ -191,11 +191,11 @@ impl ServerInstance {
                             command_enum: Some(CommandEnum {
                                 enum_id: String::from("effect"),
                                 options: MOBEFFECT_NAMES.iter().map(|s| String::from(*s)).collect(),
-                                dynamic: false
+                                dynamic: false,
                             }),
                             suffix: String::new(),
                             optional: false,
-                            options: 0
+                            options: 0,
                         },
                         CommandParameter {
                             name: String::from("duration"),
@@ -203,7 +203,7 @@ impl ServerInstance {
                             command_enum: None,
                             suffix: String::new(),
                             optional: true,
-                            options: 0
+                            options: 0,
                         },
                         CommandParameter {
                             name: String::from("amplifier"),
@@ -211,7 +211,7 @@ impl ServerInstance {
                             command_enum: None,
                             suffix: String::new(),
                             optional: true,
-                            options: 0
+                            options: 0,
                         },
                         CommandParameter {
                             name: String::from("hideParticles"),
@@ -219,16 +219,16 @@ impl ServerInstance {
                             command_enum: Some(CommandEnum {
                                 enum_id: String::from("boolean"),
                                 dynamic: false,
-                                options: vec![String::from("true"), String::from("false")]
+                                options: vec![String::from("true"), String::from("false")],
                             }),
                             suffix: String::new(),
                             optional: true,
-                            options: 0
-                        }
-                    ]
-                }
+                            options: 0,
+                        },
+                    ],
+                },
             ],
-            permission_level: CommandPermissionLevel::Normal
+            permission_level: CommandPermissionLevel::Normal,
         });
 
         session_manager.set_level_manager(Arc::downgrade(&level))?;
@@ -335,7 +335,12 @@ impl ServerInstance {
         let server_guid = rand::random();
 
         // TODO: Customizable server description.
-        let metadata = Self::refresh_metadata("Server description", server_guid, sess_manager.session_count(), sess_manager.max_session_count());
+        let metadata = Self::refresh_metadata(
+            "Server description",
+            server_guid,
+            sess_manager.session_count(),
+            sess_manager.max_session_count(),
+        );
 
         // This is heap-allocated because stack data is stored inline in tasks.
         // If it were to be stack-allocated, Tokio would have to copy the entire buffer each time

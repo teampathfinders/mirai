@@ -4,7 +4,7 @@ use crate::network::ConnectedPacket;
 
 #[derive(Debug, Clone)]
 pub struct FormRequest<'a> {
-    pub id: i32,
+    pub id: u32,
     pub data: &'a str
 }
 
@@ -18,7 +18,7 @@ impl<'a> ConnectedPacket for FormRequest<'a> {
 
 impl<'a> Serialize for FormRequest<'a> {
     fn serialize(&self, buffer: &mut MutableBuffer) -> anyhow::Result<()> {
-        buffer.write_var_i32(self.id)?;
+        buffer.write_var_u32(self.id)?;
         buffer.write_str(self.data)
     }
 }

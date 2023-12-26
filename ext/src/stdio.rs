@@ -25,7 +25,6 @@ impl WasiFile for ExtensionStdout {
         self.stdout.pollable()
     }
 
-
     #[cfg(windows)]
     fn pollable(&self) -> Option<io_extras::os::windows::RawHandleOrSocket> {
         self.stdout.pollable()

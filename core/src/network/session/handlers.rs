@@ -1,7 +1,7 @@
 use util::{bail, Deserialize, Result, TryExpect};
 use util::bytes::MutableBuffer;
 
-use crate::network::{CommandOutput, CommandOutputMessage, CommandOutputType, CommandRequest, FormRequest, SettingsCommand, TextData, TickSync};
+use crate::network::{CommandOutput, CommandOutputMessage, CommandOutputType, CommandRequest, FormRequest, FormResponse, SettingsCommand, TextData, TickSync};
 use crate::network::{
     {
         Animate, RequestAbility,
@@ -77,6 +77,13 @@ impl Session {
         Ok(())
     }
 
+    pub fn process_form_response(&self, packet: MutableBuffer) -> anyhow::Result<()> {
+        let response = FormResponse::deserialize(packet.snapshot())?;
+        dbg!(response);
+
+        Ok(())
+    }
+
     pub fn process_command_request(&self, packet: MutableBuffer) -> anyhow::Result<()> {
         let request = CommandRequest::deserialize(packet.snapshot())?;
 
@@ -93,9 +100,9 @@ impl Session {
                     let out = self.level.on_effect_command(caller, parsed)?;
 
                     let modal = serde_json::to_string(&Modal {
-                        title: "modal title",
-                        button1: "yes",
-                        button2: "no",
+                        title: "Test modal",
+                        button1: "Confirm",
+                        button2: "Close",
                         elements: vec![
                             FormElement::Label(FormLabel {
                                 label: "label text"
