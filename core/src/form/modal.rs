@@ -246,9 +246,13 @@ impl<'a> serde::Serialize for FormElement<'a> {
 /// Unlike [`CustomForm`] [`FormButton`]s, these buttons cannot have images next to them.
 #[derive(Debug)]
 pub struct Modal<'a> {
+    /// Title displayed at the top of the window.
     pub title: &'a str,
+    /// Text displayed in the modal.
     pub content: &'a str,
+    /// Text body of the first button.
     pub button1: &'a str,
+    /// Text body of the second button.
     pub button2: &'a str,
 }
 
@@ -271,8 +275,11 @@ impl<'a> serde::Serialize for Modal<'a> {
 /// Unlike [`CustomForm`] [`FormButton`]s, these buttons cannot have images next to them.
 #[derive(Debug)]
 pub struct Form<'a> {
+    /// Title of the form. This is displayed at the top of the window.
     pub title: &'a str,
+    /// Content of the form. This is the text shown above the buttons.
     pub content: &'a str,
+    /// List of buttons that are available.
     pub buttons: &'a [FormButton<'a>],
 }
 
@@ -294,7 +301,9 @@ impl<'a> serde::Serialize for Form<'a> {
 /// Unlike the other form types, this form can make use of all the custom UI elements.
 #[derive(Debug)]
 pub struct CustomForm<'a> {
+    /// Title displayed at the top of the window.
     pub title: &'a str,
+    /// List of custom elements.
     pub content: &'a [FormElement<'a>],
 }
 
