@@ -48,7 +48,7 @@ impl ChunkViewer {
                 heightmap_type: HeightmapType::None,
                 heightmap: Box::default(),
                 payload: vec![],
-                blob_hash: 0
+                blob_hash: 0,
             });
         }
 

@@ -1,7 +1,10 @@
-use util::{bail, Deserialize, Result, TryExpect};
+use std::net::{Ipv4Addr, SocketAddr, SocketAddrV4};
+use std::str::FromStr;
+use level::Dimension;
+use util::{bail, Deserialize, Result, TryExpect, Vector};
 use util::bytes::MutableBuffer;
 
-use crate::network::{CommandOutput, CommandOutputMessage, CommandOutputType, CommandRequest, SettingsCommand, TextData, TickSync};
+use crate::network::{CommandOutput, CommandOutputMessage, CommandOutputType, CommandRequest, FormRequest, FormResponse, SettingsCommand, SubChunkResponse, TextData, TickSync, Transfer};
 use crate::network::{
     {
         Animate, RequestAbility,
@@ -11,6 +14,7 @@ use crate::network::{
     Session,
 };
 use crate::command::ParsedCommand;
+use crate::form::{FormButton, FormElement, FormInput, FormLabel, FormSlider, Form, Modal, FormButtonImage, FormDropdown, FormToggle, FormStepSlider, CustomForm};
 
 impl Session {
     pub fn process_settings_command(&self, packet: MutableBuffer) -> anyhow::Result<()> {
@@ -56,6 +60,8 @@ impl Session {
             // Only the server is allowed to create text packets that are not of the chat type.
             anyhow::bail!("Client sent an illegally modified text message packet")
         }
+
+
     }
 
     pub fn process_skin_update(&self, packet: MutableBuffer) -> anyhow::Result<()> {
@@ -76,6 +82,18 @@ impl Session {
         Ok(())
     }
 
+    pub fn process_form_response(&self, packet: MutableBuffer) -> anyhow::Result<()> {
+        let response = FormResponse::deserialize(packet.snapshot())?;
+        let raw: (&str, &str) = serde_json::from_str(response.response_data.unwrap()).unwrap();
+            
+        dbg!(raw);
+        // self.send(Transfer {
+        //     addr: raw.0, port: raw.1.parse().unwrap()
+        // })?;
+
+        Ok(())
+    }
+
     pub fn process_command_request(&self, packet: MutableBuffer) -> anyhow::Result<()> {
         let request = CommandRequest::deserialize(packet.snapshot())?;
 
@@ -89,7 +107,72 @@ impl Session {
                     self.level.on_gamerule_command(caller, parsed)
                 },
                 "effect" => {
-                    self.level.on_effect_command(caller, parsed)
+                    let out = self.level.on_effect_command(caller, parsed)?;
+
+                    // let custom_form = serde_json::to_string(&CustomForm {
+                    //     title: &String::from_utf8_lossy(&[0xee, 0x84, 0x88, 0x20]),
+                    //     content: &[
+                    //         FormElement::Slider(FormSlider {
+                    //             label: "Example slider",
+                    //             default: 0.0,
+                    //             max: 1.0,
+                    //             min: 0.0,
+                    //             step: 0.1
+                    //         }),
+                    //         FormElement::Dropdown(FormDropdown {
+                    //             label: "Example dropdown",
+                    //             default: 0,
+                    //             options: &[
+                    //                 "Option 1",
+                    //                 "Option 2",
+                    //                 "Option 3",
+                    //                 "Option 4"
+                    //             ]
+                    //         }),
+                    //         FormElement::Toggle(FormToggle {
+                    //             label: "Example toggle",
+                    //             default: false
+                    //         }),
+                    //         FormElement::Input(FormInput {
+                    //             label: "Example input",
+                    //             placeholder: "Example placeholder",
+                    //             default: "Default input"
+                    //         }),
+                    //         FormElement::StepSlider(FormStepSlider {
+                    //             label: "Example step slider",
+                    //             steps: &[
+                    //                 "Step 1",
+                    //                 "Step 2",
+                    //                 "Step 3",
+                    //                 "Step 4"
+                    //             ],
+                    //             default: 0
+                    //         })
+                    //     ]
+                    // })?;
+
+                    let custom_form = serde_json::to_string(&CustomForm {
+                        title: "Transfer to other server",
+                        content: &[
+                            FormElement::Input(FormInput {
+                                label: "Address",
+                                placeholder: "",
+                                default: ""
+                            }),
+                            FormElement::Input(FormInput {
+                                label: "Port",
+                                placeholder: "",
+                                default: "19132"
+                            })
+                        ]
+                    }).unwrap();
+
+                    let modal_request = FormRequest {
+                        id: 0,
+                        data: &custom_form
+                    };
+                    self.send(modal_request);
+                    Ok(out)
                 }
                 _ => todo!(),
             };
