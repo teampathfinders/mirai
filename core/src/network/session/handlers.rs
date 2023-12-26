@@ -1,8 +1,10 @@
+use std::net::{Ipv4Addr, SocketAddr, SocketAddrV4};
+use std::str::FromStr;
 use level::Dimension;
 use util::{bail, Deserialize, Result, TryExpect, Vector};
 use util::bytes::MutableBuffer;
 
-use crate::network::{CommandOutput, CommandOutputMessage, CommandOutputType, CommandRequest, FormRequest, FormResponse, SettingsCommand, SubChunkResponse, TextData, TickSync};
+use crate::network::{CommandOutput, CommandOutputMessage, CommandOutputType, CommandRequest, FormRequest, FormResponse, SettingsCommand, SubChunkResponse, TextData, TickSync, Transfer};
 use crate::network::{
     {
         Animate, RequestAbility,
@@ -12,7 +14,7 @@ use crate::network::{
     Session,
 };
 use crate::command::ParsedCommand;
-use crate::form::{FormButton, FormElement, FormInput, FormLabel, FormSlider, Form, Modal};
+use crate::form::{FormButton, FormElement, FormInput, FormLabel, FormSlider, Form, Modal, FormButtonImage, FormDropdown, FormToggle, FormStepSlider, CustomForm};
 
 impl Session {
     pub fn process_settings_command(&self, packet: MutableBuffer) -> anyhow::Result<()> {
@@ -82,7 +84,12 @@ impl Session {
 
     pub fn process_form_response(&self, packet: MutableBuffer) -> anyhow::Result<()> {
         let response = FormResponse::deserialize(packet.snapshot())?;
-        dbg!(response);
+        let raw: (&str, &str) = serde_json::from_str(response.response_data.unwrap()).unwrap();
+            
+        dbg!(raw);
+        // self.send(Transfer {
+        //     addr: raw.0, port: raw.1.parse().unwrap()
+        // })?;
 
         Ok(())
     }
@@ -102,32 +109,67 @@ impl Session {
                 "effect" => {
                     let out = self.level.on_effect_command(caller, parsed)?;
 
-                    let menu = serde_json::to_string(&Form {
-                        title: &String::from_utf8_lossy(&[0xee, 0x84, 0x88, 0x20]),
-                        buttons: &[
-                            FormButton {
-                                label: "button1",
-                                image: None
-                            },
-                            FormButton {
-                                label: "button2",
-                                image: Some("https://picsum.photos/200")
-                            }
-                        ],
-                        elements: vec![
-                            FormElement::Slider(FormSlider {
-                                label: "slider",
-                                default: 0.0,
-                                max: 1.0,
-                                min: 0.0,
-                                step: 0.1
+                    // let custom_form = serde_json::to_string(&CustomForm {
+                    //     title: &String::from_utf8_lossy(&[0xee, 0x84, 0x88, 0x20]),
+                    //     content: &[
+                    //         FormElement::Slider(FormSlider {
+                    //             label: "Example slider",
+                    //             default: 0.0,
+                    //             max: 1.0,
+                    //             min: 0.0,
+                    //             step: 0.1
+                    //         }),
+                    //         FormElement::Dropdown(FormDropdown {
+                    //             label: "Example dropdown",
+                    //             default: 0,
+                    //             options: &[
+                    //                 "Option 1",
+                    //                 "Option 2",
+                    //                 "Option 3",
+                    //                 "Option 4"
+                    //             ]
+                    //         }),
+                    //         FormElement::Toggle(FormToggle {
+                    //             label: "Example toggle",
+                    //             default: false
+                    //         }),
+                    //         FormElement::Input(FormInput {
+                    //             label: "Example input",
+                    //             placeholder: "Example placeholder",
+                    //             default: "Default input"
+                    //         }),
+                    //         FormElement::StepSlider(FormStepSlider {
+                    //             label: "Example step slider",
+                    //             steps: &[
+                    //                 "Step 1",
+                    //                 "Step 2",
+                    //                 "Step 3",
+                    //                 "Step 4"
+                    //             ],
+                    //             default: 0
+                    //         })
+                    //     ]
+                    // })?;
+
+                    let custom_form = serde_json::to_string(&CustomForm {
+                        title: "Transfer to other server",
+                        content: &[
+                            FormElement::Input(FormInput {
+                                label: "Address",
+                                placeholder: "",
+                                default: ""
+                            }),
+                            FormElement::Input(FormInput {
+                                label: "Port",
+                                placeholder: "",
+                                default: "19132"
                             })
                         ]
-                    })?;
+                    }).unwrap();
 
                     let modal_request = FormRequest {
                         id: 0,
-                        data: &menu
+                        data: &custom_form
                     };
                     self.send(modal_request);
                     Ok(out)

@@ -1,103 +1,3 @@
-// #[derive(Debug, Clone)]
-// pub struct FormDropdown<'a> {
-//     label: &'a str,
-//     options: &'a [&'a str]
-// }
-//
-// #[derive(Debug, Clone)]
-// pub struct FormText<'a> {
-//     label: &'a str,
-//     placeholder: &'a str,
-//     default: Option<&'a str>
-// }
-//
-// #[derive(Debug, Clone)]
-// pub struct FormToggle<'a> {
-//     label: &'a str,
-//     default: Option<bool>
-// }
-//
-// #[derive(Debug, Clone)]
-// pub struct FormSlider<'a> {
-//     label: &'a str,
-//     min: u32,
-//     max: u32,
-//     step: u32,
-//     default: Option<u32>
-// }
-//
-// #[derive(Debug, Clone)]
-// pub enum FormChild<'a> {
-//     Dropdown(FormDropdown<'a>),
-//     Text(FormText<'a>),
-//     Toggle(FormToggle<'a>),
-//     Slider(FormSlider<'a>)
-// }
-//
-// /// Builds form forms.
-// #[derive(Debug, Clone)]
-// pub struct FormBuilder<'a> {
-//     title: &'a str,
-//     children: Vec<FormChild<'a>>
-// }
-//
-// impl<'a> FormBuilder<'a> {
-//     /// Creates a new form form builder.
-//     pub fn new() -> Self {
-//         Self {
-//             title: "Modal title",
-//             children: Vec::new()
-//         }
-//     }
-//
-//     /// Sets the title of the form form.
-//     #[inline]
-//     pub fn title(&mut self, title: &'a str) -> &mut Self {
-//         self.title = title;
-//         self
-//     }
-//
-//     #[inline]
-//     pub fn dropdown(&mut self, label: &'a str, options: &'a [&'a str]) -> &mut Self {
-//         self.children.push(FormChild::Dropdown(FormDropdown {
-//             label, options
-//         }));
-//         self
-//     }
-//
-//     #[inline]
-//     pub fn text(&mut self, label: &'a str, placeholder: &'a str, default: Option<&'a str>) -> &mut Self {
-//         self.children.push(FormChild::Text(FormText {
-//             label, placeholder, default
-//         }));
-//         self
-//     }
-//
-//     #[inline]
-//     pub fn slider(&mut self, label: &'a str, min: u32, max: u32, step: u32, default: Option<u32>) -> &mut Self {
-//         self.children.push(FormChild::Slider(FormSlider {
-//             label, min, max, step, default
-//         }));
-//         self
-//     }
-//
-//     #[inline]
-//     pub fn toggle(&mut self, label: &'a str, default: Option<bool>) -> &mut Self {
-//         self.children.push(FormChild::Toggle(FormToggle {
-//             label, default
-//         }));
-//         self
-//     }
-//
-//     /// Builds the form and consumes the builder.
-//     pub fn build(self) -> Form<'a> {
-//         Form {
-//             title: self.title,
-//             children: self.children
-//         }
-//     }
-// }
-
 use serde::ser::SerializeStruct;
 
 #[derive(Debug)]
@@ -116,15 +16,6 @@ impl<'a> serde::Serialize for FormLabel<'a> {
         map.end()
     }
 }
-
-// impl<'a> FormLabel<'a> {
-//     pub fn to_json(&self) -> String {
-//         serde_json::json!({
-//             "type": "label",
-//             "text": self.label
-//         }).to_string()
-//     }
-// }
 
 #[derive(Debug)]
 pub struct FormInput<'a> {
@@ -147,21 +38,10 @@ impl<'a> serde::Serialize for FormInput<'a> {
     }
 }
 
-// impl<'a> FormInput<'a> {
-//     pub fn to_json(&self) -> String {
-//         serde_json::json!({
-//             "type": "input",
-//             "text": self.label,
-//             "default": self.default,
-//             "placeholder": self.placeholder
-//         }).to_string()
-//     }
-// }
-
 #[derive(Debug)]
 pub struct FormToggle<'a> {
-    label: &'a str,
-    default: bool,
+    pub(crate) label: &'a str,
+    pub(crate) default: bool,
 }
 
 impl<'a> serde::Serialize for FormToggle<'a> {
@@ -176,16 +56,6 @@ impl<'a> serde::Serialize for FormToggle<'a> {
         map.end()
     }
 }
-
-// impl<'a> FormToggle<'a> {
-//     pub fn to_json(&self) -> String {
-//         serde_json::json!({
-//             "type": "toggle",
-//             "text": self.label,
-//             "default": self.default
-//         }).to_string()
-//     }
-// }
 
 #[derive(Debug)]
 pub struct FormSlider<'a> {
@@ -212,24 +82,11 @@ impl<'a> serde::Serialize for FormSlider<'a> {
     }
 }
 
-// impl<'a> FormSlider<'a> {
-//     pub fn to_json(&self) -> String {
-//         serde_json::json!({
-//             "type": "slider",
-//             "text": self.label,
-//             "min": self.min,
-//             "max": self.max,
-//             "step": self.step,
-//             "default": self.default
-//         }).to_string()
-//     }
-// }
-
 #[derive(Debug)]
 pub struct FormDropdown<'a> {
-    label: &'a str,
-    options: &'a [&'a str],
-    default: i32,
+    pub(crate) label: &'a str,
+    pub(crate) options: &'a [&'a str],
+    pub(crate) default: i32,
 }
 
 impl<'a> serde::Serialize for FormDropdown<'a> {
@@ -246,22 +103,11 @@ impl<'a> serde::Serialize for FormDropdown<'a> {
     }
 }
 
-// impl<'a> FormDropdown<'a> {
-//     pub fn to_json(&self) -> String {
-//         serde_json::json!({
-//             "type": "dropdown",
-//             "text": self.label,
-//             "default": self.default,
-//             "options": self.options
-//         }).to_string()
-//     }
-// }
-
 #[derive(Debug)]
 pub struct FormStepSlider<'a> {
-    label: &'a str,
-    steps: &'a [&'a str],
-    default: i32,
+    pub(crate) label: &'a str,
+    pub(crate) steps: &'a [&'a str],
+    pub(crate) default: i32,
 }
 
 impl<'a> serde::Serialize for FormStepSlider<'a> {
@@ -278,21 +124,16 @@ impl<'a> serde::Serialize for FormStepSlider<'a> {
     }
 }
 
-// impl<'a> FormStepSlider<'a> {
-//     pub fn to_json(&self) -> String {
-//         serde_json::json!({
-//             "type": "step_slider",
-//             "text": self.label,
-//             "default": self.default,
-//             "steps": self.steps
-//         }).to_string()
-//     }
-// }
+#[derive(Debug, Copy, Clone)]
+pub enum FormButtonImage<'a> {
+    Url(&'a str),
+    Path(&'a str)
+}
 
 #[derive(Debug)]
 pub struct FormButton<'a> {
     pub(crate) label: &'a str,
-    pub(crate) image: Option<&'a str>,
+    pub(crate) image: Option<FormButtonImage<'a>>,
 }
 
 impl<'a> serde::Serialize for FormButton<'a> {
@@ -300,6 +141,7 @@ impl<'a> serde::Serialize for FormButton<'a> {
     where
         S: serde::Serializer,
     {
+        // Struct with custom serializer to serialize image data.
         struct ImageData<'b> {
             pub img_type: &'b str,
             pub data: &'b str,
@@ -318,75 +160,19 @@ impl<'a> serde::Serialize for FormButton<'a> {
         }
 
         let mut map = serializer.serialize_struct("button", 1)?;
-        if let Some(data) = self.image {
-            let img_type = if data.starts_with("http") { "url" } else { "path" };
+        if let Some(image) = self.image {
+            let (img_type, data) = match image {
+                FormButtonImage::Path(p) => ("path", p),
+                FormButtonImage::Url(u) => ("url", u)
+            };
 
             let data = ImageData { img_type, data };
-
             map.serialize_field("image", &data)?;
-            map.serialize_field("text", "this is image")?;
-        } else {
-            map.serialize_field("text", self.label)?;
         }
+        map.serialize_field("text", self.label)?;
         map.end()
     }
 }
-
-// impl<'a> FormButton<'a> {
-//     pub fn to_json(&self) -> String {
-//         if let Some(image) = self.image {
-//             let b_type = if image.starts_with("http") {
-//                 "url"
-//             } else {
-//                 "path"
-//             };
-//
-//             serde_json::json!({
-//                 "image": {
-//                     "type": b_type,
-//                     "data": image
-//                 }
-//             }).to_string()
-//         } else {
-//             serde_json::json!({
-//                 "text": self.label
-//             }).to_string()
-//         }
-//     }
-// }
-
-#[derive(Debug)]
-pub struct Form<'a> {
-    pub title: &'a str,
-    pub elements: Vec<FormElement<'a>>,
-    pub buttons: &'a [FormButton<'a>],
-}
-
-impl<'a> serde::Serialize for Form<'a> {
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: serde::Serializer
-    {
-        let mut map = serializer.serialize_struct("modal", 5)?;
-        map.serialize_field("type", "form")?;
-        map.serialize_field("title", self.title)?;
-        map.serialize_field("content", &self.elements)?;
-        map.serialize_field("buttons", self.buttons)?;
-        map.end()
-    }
-}
-
-// impl<'a> Menu<'a> {
-//     pub fn to_json(&self) -> String {
-//         let json = serde_json::json!({
-//             "type": "form",
-//             "title": self.title,
-//             "content": self.content,
-//             "buttons": self.buttons
-//         });
-//         json.to_string()
-//     }
-// }
 
 #[derive(Debug)]
 pub enum FormElement<'a> {
@@ -419,7 +205,7 @@ impl<'a> serde::Serialize for FormElement<'a> {
 #[derive(Debug)]
 pub struct Modal<'a> {
     pub title: &'a str,
-    pub elements: Vec<FormElement<'a>>,
+    pub content: &'a str,
     pub button1: &'a str,
     pub button2: &'a str,
 }
@@ -432,22 +218,49 @@ impl<'a> serde::Serialize for Modal<'a> {
         let mut map = serializer.serialize_struct("modal", 5)?;
         map.serialize_field("type", "modal")?;
         map.serialize_field("title", self.title)?;
-        map.serialize_field("content", &self.elements)?;
+        map.serialize_field("content", self.content)?;
         map.serialize_field("button1", self.button1)?;
         map.serialize_field("button2", self.button2)?;
         map.end()
     }
 }
 
-// impl<'a> Modal<'a> {
-//     pub fn to_json(&self) -> String {
-//         let json = serde_json::json!({
-//             "type": "modal",
-//             "title": self.title,
-//             "content": self.content,
-//             "button1": self.button1,
-//             "button2": self.button2
-//         });
-//         json.to_string()
-//     }
-// }
+#[derive(Debug)]
+pub struct Form<'a> {
+    pub title: &'a str,
+    pub content: &'a str,
+    pub buttons: &'a [FormButton<'a>],
+}
+
+impl<'a> serde::Serialize for Form<'a> {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+        where
+            S: serde::Serializer
+    {
+        let mut map = serializer.serialize_struct("form", 4)?;
+        map.serialize_field("type", "form")?;
+        map.serialize_field("title", self.title)?;
+        map.serialize_field("content", self.content)?;
+        map.serialize_field("buttons", self.buttons)?;
+        map.end()
+    }
+}
+
+#[derive(Debug)]
+pub struct CustomForm<'a> {
+    pub title: &'a str,
+    pub content: &'a [FormElement<'a>],
+}
+
+impl<'a> serde::Serialize for CustomForm<'a> {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        let mut map = serializer.serialize_struct("custom_form", 3)?;
+        map.serialize_field("type", "custom_form")?;
+        map.serialize_field("title", self.title)?;
+        map.serialize_field("content", self.content)?;
+        map.end()
+    }
+}
