@@ -157,12 +157,12 @@ impl Session {
                             FormElement::Input(FormInput {
                                 label: "Address",
                                 placeholder: "",
-                                default: ""
+                                initial: ""
                             }),
                             FormElement::Input(FormInput {
                                 label: "Port",
                                 placeholder: "",
-                                default: "19132"
+                                initial: "19132"
                             })
                         ]
                     }).unwrap();

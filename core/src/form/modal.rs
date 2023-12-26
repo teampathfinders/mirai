@@ -1,7 +1,9 @@
 use serde::ser::SerializeStruct;
 
+/// A plain piece of text.
 #[derive(Debug)]
 pub struct FormLabel<'a> {
+    /// Text to display.
     pub(crate) label: &'a str,
 }
 
@@ -17,11 +19,15 @@ impl<'a> serde::Serialize for FormLabel<'a> {
     }
 }
 
+/// A text input field.
 #[derive(Debug)]
 pub struct FormInput<'a> {
+    /// Label to display above the field.
     pub label: &'a str,
-    pub default: &'a str,
+    /// Placeholder to display inside the field when it is empty.
     pub placeholder: &'a str,
+    /// Initial state of the field.
+    pub initial: &'a str,
 }
 
 impl<'a> serde::Serialize for FormInput<'a> {
@@ -32,16 +38,19 @@ impl<'a> serde::Serialize for FormInput<'a> {
         let mut map = serializer.serialize_struct("input", 4)?;
         map.serialize_field("type", "input")?;
         map.serialize_field("text", self.label)?;
-        map.serialize_field("default", self.default)?;
         map.serialize_field("placeholder", self.placeholder)?;
+        map.serialize_field("default", self.initial)?;
         map.end()
     }
 }
 
+/// A simple boolean toggle that switches between true and false.
 #[derive(Debug)]
 pub struct FormToggle<'a> {
+    /// Label to display next to the toggle.
     pub(crate) label: &'a str,
-    pub(crate) default: bool,
+    /// Initial state of the toggle.
+    pub(crate) initial: bool,
 }
 
 impl<'a> serde::Serialize for FormToggle<'a> {
@@ -52,18 +61,24 @@ impl<'a> serde::Serialize for FormToggle<'a> {
         let mut map = serializer.serialize_struct("toggle", 3)?;
         map.serialize_field("type", "toggle")?;
         map.serialize_field("text", self.label)?;
-        map.serialize_field("default", &self.default)?;
+        map.serialize_field("default", &self.initial)?;
         map.end()
     }
 }
 
+/// A slider that picks numerical values.
 #[derive(Debug)]
 pub struct FormSlider<'a> {
+    /// Label to display above the slider.
     pub(crate) label: &'a str,
+    /// Minimum value of the slider.
     pub(crate) min: f64,
+    /// Maximum value of the slider.
     pub(crate) max: f64,
+    /// Minimum step of the slider.
     pub(crate) step: f64,
-    pub(crate) default: f64,
+    /// Initial state of the slider.
+    pub(crate) initial: f64,
 }
 
 impl<'a> serde::Serialize for FormSlider<'a> {
@@ -77,16 +92,21 @@ impl<'a> serde::Serialize for FormSlider<'a> {
         map.serialize_field("min", &self.min)?;
         map.serialize_field("max", &self.max)?;
         map.serialize_field("step", &self.step)?;
-        map.serialize_field("default", &self.default)?;
+        map.serialize_field("default", &self.initial)?;
         map.end()
     }
 }
 
+/// A dropdown list of selectable options.
 #[derive(Debug)]
 pub struct FormDropdown<'a> {
+    /// Label to display above the menu.
     pub(crate) label: &'a str,
+    /// List of options that can be selected.
+    /// The dropdown is of type radio and users can therefore only select a single option.
     pub(crate) options: &'a [&'a str],
-    pub(crate) default: i32,
+    /// Initial state of the dropdown.
+    pub(crate) initial: i32,
 }
 
 impl<'a> serde::Serialize for FormDropdown<'a> {
@@ -97,17 +117,22 @@ impl<'a> serde::Serialize for FormDropdown<'a> {
         let mut map = serializer.serialize_struct("dropdown", 4)?;
         map.serialize_field("type", "dropdown")?;
         map.serialize_field("text", self.label)?;
-        map.serialize_field("default", &self.default)?;
+        map.serialize_field("default", &self.initial)?;
         map.serialize_field("options", self.options)?;
         map.end()
     }
 }
 
+/// Similar to a dropdown, but in slider form.
 #[derive(Debug)]
 pub struct FormStepSlider<'a> {
+    /// Label to display above the slider.
     pub(crate) label: &'a str,
+    /// A list of available options.
+    /// The user can pick between these options using the slider.
     pub(crate) steps: &'a [&'a str],
-    pub(crate) default: i32,
+    /// Initial state of the step slider.
+    pub(crate) initial: i32,
 }
 
 impl<'a> serde::Serialize for FormStepSlider<'a> {
@@ -118,21 +143,28 @@ impl<'a> serde::Serialize for FormStepSlider<'a> {
         let mut map = serializer.serialize_struct("step_slider", 4)?;
         map.serialize_field("type", "step_slider")?;
         map.serialize_field("text", self.label)?;
-        map.serialize_field("default", &self.default)?;
+        map.serialize_field("default", &self.initial)?;
         map.serialize_field("steps", self.steps)?;
         map.end()
     }
 }
 
+/// An image displayed next to a button.
 #[derive(Debug, Copy, Clone)]
 pub enum FormButtonImage<'a> {
+    /// A URL pointing to an online image.
     Url(&'a str),
+    /// A path pointing to an image in an applied resource pack.
     Path(&'a str)
 }
 
+/// A simple button with optional image.
 #[derive(Debug)]
 pub struct FormButton<'a> {
+    /// Text displayed on the button.
     pub(crate) label: &'a str,
+    /// An optional image shown to the left of the button.
+    /// This button can either be a local file from a resource pack or a URL.
     pub(crate) image: Option<FormButtonImage<'a>>,
 }
 
@@ -174,14 +206,22 @@ impl<'a> serde::Serialize for FormButton<'a> {
     }
 }
 
+/// Abstraction over a form element.
 #[derive(Debug)]
 pub enum FormElement<'a> {
+    /// See [`FormLabel`].
     Label(FormLabel<'a>),
+    /// See [`FormInput`].
     Input(FormInput<'a>),
+    /// See [`FormToggle`].
     Toggle(FormToggle<'a>),
+    /// See [`FormDropdown`].
     Dropdown(FormDropdown<'a>),
+    /// See [`FormSlider`].
     Slider(FormSlider<'a>),
+    /// See [`FormStepSlider`].
     StepSlider(FormStepSlider<'a>),
+    /// See [`FormButton`].
     Button(FormButton<'a>),
 }
 
@@ -202,6 +242,8 @@ impl<'a> serde::Serialize for FormElement<'a> {
     }
 }
 
+/// A modal is a form that only has a body and two buttons.
+/// Unlike [`CustomForm`] [`FormButton`]s, these buttons cannot have images next to them.
 #[derive(Debug)]
 pub struct Modal<'a> {
     pub title: &'a str,
@@ -225,6 +267,8 @@ impl<'a> serde::Serialize for Modal<'a> {
     }
 }
 
+/// A form is similar to a modal but it has an arbitrary amount of buttons.
+/// Unlike [`CustomForm`] [`FormButton`]s, these buttons cannot have images next to them.
 #[derive(Debug)]
 pub struct Form<'a> {
     pub title: &'a str,
@@ -246,6 +290,8 @@ impl<'a> serde::Serialize for Form<'a> {
     }
 }
 
+/// A form with a custom body.
+/// Unlike the other form types, this form can make use of all the custom UI elements.
 #[derive(Debug)]
 pub struct CustomForm<'a> {
     pub title: &'a str,
