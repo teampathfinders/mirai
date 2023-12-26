@@ -14,7 +14,7 @@ use crate::network::{
     Session,
 };
 use crate::command::ParsedCommand;
-use crate::form::{FormButton, FormElement, FormInput, FormLabel, FormSlider, Form, Modal, FormButtonImage, FormDropdown, FormToggle, FormStepSlider, CustomForm};
+use crate::forms::{FormButton, FormElement, FormInput, FormLabel, FormSlider, MenuForm, Modal, FormButtonImage, FormDropdown, FormToggle, FormStepSlider, CustomForm};
 
 impl Session {
     pub fn process_settings_command(&self, packet: MutableBuffer) -> anyhow::Result<()> {

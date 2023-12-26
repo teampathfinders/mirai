@@ -8,7 +8,7 @@ use util::{bail, BlockPosition, Deserialize, Result, Vector};
 
 use crate::config::SERVER_CONFIG;
 use crate::crypto::Encryptor;
-use crate::form::{FormElement, FormInput, FormLabel, Modal};
+use crate::forms::{FormElement, FormInput, FormLabel, Modal};
 use crate::network::{FormRequest, CacheStatus, HeightmapType, ItemCollection, NetworkChunkPublisherUpdate, SubChunkEntry, SubChunkResponse, SubChunkResult};
 use crate::network::Session;
 use crate::network::{AvailableCommands, SubChunkRequestMode};

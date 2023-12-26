@@ -6,7 +6,7 @@ Lightweight dedicated server software for Minecraft: Bedrock Edition.
 
 The tools required the build the server are
 
-- Rust 1.68.0+
+- Rust 1.72.0+
 - CMake 3.0+
 
 After cloning the repository, make sure to run `git submodule update --init` to download the required dependencies.

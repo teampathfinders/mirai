@@ -15,7 +15,7 @@ impl TryFrom<u8> for FormCancelReason {
         Ok(match value {
             0 => FormCancelReason::Closed,
             1 => FormCancelReason::Busy,
-            v => anyhow::bail!("Expected either 0 or 1 for form cancel reason, got {v}")
+            v => anyhow::bail!("Expected either 0 or 1 for forms cancel reason, got {v}")
         })
     }
 }

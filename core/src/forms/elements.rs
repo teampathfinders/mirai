@@ -9,8 +9,8 @@ pub struct FormLabel<'a> {
 
 impl<'a> serde::Serialize for FormLabel<'a> {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: serde::Serializer,
+        where
+            S: serde::Serializer,
     {
         let mut map = serializer.serialize_struct("label", 2)?;
         map.serialize_field("type", "label")?;
@@ -32,8 +32,8 @@ pub struct FormInput<'a> {
 
 impl<'a> serde::Serialize for FormInput<'a> {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: serde::Serializer,
+        where
+            S: serde::Serializer,
     {
         let mut map = serializer.serialize_struct("input", 4)?;
         map.serialize_field("type", "input")?;
@@ -55,8 +55,8 @@ pub struct FormToggle<'a> {
 
 impl<'a> serde::Serialize for FormToggle<'a> {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: serde::Serializer,
+        where
+            S: serde::Serializer,
     {
         let mut map = serializer.serialize_struct("toggle", 3)?;
         map.serialize_field("type", "toggle")?;
@@ -83,8 +83,8 @@ pub struct FormSlider<'a> {
 
 impl<'a> serde::Serialize for FormSlider<'a> {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: serde::Serializer,
+        where
+            S: serde::Serializer,
     {
         let mut map = serializer.serialize_struct("slider", 6)?;
         map.serialize_field("type", "slider")?;
@@ -111,8 +111,8 @@ pub struct FormDropdown<'a> {
 
 impl<'a> serde::Serialize for FormDropdown<'a> {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: serde::Serializer,
+        where
+            S: serde::Serializer,
     {
         let mut map = serializer.serialize_struct("dropdown", 4)?;
         map.serialize_field("type", "dropdown")?;
@@ -123,7 +123,7 @@ impl<'a> serde::Serialize for FormDropdown<'a> {
     }
 }
 
-/// Similar to a dropdown, but in slider form.
+/// Similar to a dropdown, but in slider forms.
 #[derive(Debug)]
 pub struct FormStepSlider<'a> {
     /// Label to display above the slider.
@@ -137,8 +137,8 @@ pub struct FormStepSlider<'a> {
 
 impl<'a> serde::Serialize for FormStepSlider<'a> {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: serde::Serializer,
+        where
+            S: serde::Serializer,
     {
         let mut map = serializer.serialize_struct("step_slider", 4)?;
         map.serialize_field("type", "step_slider")?;
@@ -170,8 +170,8 @@ pub struct FormButton<'a> {
 
 impl<'a> serde::Serialize for FormButton<'a> {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: serde::Serializer,
+        where
+            S: serde::Serializer,
     {
         // Struct with custom serializer to serialize image data.
         struct ImageData<'b> {
@@ -181,8 +181,8 @@ impl<'a> serde::Serialize for FormButton<'a> {
 
         impl<'b> serde::Serialize for ImageData<'b> {
             fn serialize<S1>(&self, serializer: S1) -> Result<S1::Ok, S1::Error>
-            where
-                S1: serde::Serializer,
+                where
+                    S1: serde::Serializer,
             {
                 let mut map = serializer.serialize_struct("image", 2)?;
                 map.serialize_field("type", self.img_type)?;
@@ -206,7 +206,7 @@ impl<'a> serde::Serialize for FormButton<'a> {
     }
 }
 
-/// Abstraction over a form element.
+/// Abstraction over a forms element.
 #[derive(Debug)]
 pub enum FormElement<'a> {
     /// See [`FormLabel`].
@@ -227,8 +227,8 @@ pub enum FormElement<'a> {
 
 impl<'a> serde::Serialize for FormElement<'a> {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: serde::Serializer,
+        where
+            S: serde::Serializer,
     {
         match self {
             Self::Button(b) => b.serialize(serializer),
@@ -239,83 +239,5 @@ impl<'a> serde::Serialize for FormElement<'a> {
             Self::StepSlider(s) => s.serialize(serializer),
             Self::Toggle(t) => t.serialize(serializer),
         }
-    }
-}
-
-/// A modal is a form that only has a body and two buttons.
-/// Unlike [`CustomForm`] [`FormButton`]s, these buttons cannot have images next to them.
-#[derive(Debug)]
-pub struct Modal<'a> {
-    /// Title displayed at the top of the window.
-    pub title: &'a str,
-    /// Text displayed in the modal.
-    pub content: &'a str,
-    /// Text body of the first button.
-    pub button1: &'a str,
-    /// Text body of the second button.
-    pub button2: &'a str,
-}
-
-impl<'a> serde::Serialize for Modal<'a> {
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: serde::Serializer,
-    {
-        let mut map = serializer.serialize_struct("modal", 5)?;
-        map.serialize_field("type", "modal")?;
-        map.serialize_field("title", self.title)?;
-        map.serialize_field("content", self.content)?;
-        map.serialize_field("button1", self.button1)?;
-        map.serialize_field("button2", self.button2)?;
-        map.end()
-    }
-}
-
-/// A form is similar to a modal but it has an arbitrary amount of buttons.
-/// Unlike [`CustomForm`] [`FormButton`]s, these buttons cannot have images next to them.
-#[derive(Debug)]
-pub struct Form<'a> {
-    /// Title of the form. This is displayed at the top of the window.
-    pub title: &'a str,
-    /// Content of the form. This is the text shown above the buttons.
-    pub content: &'a str,
-    /// List of buttons that are available.
-    pub buttons: &'a [FormButton<'a>],
-}
-
-impl<'a> serde::Serialize for Form<'a> {
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-        where
-            S: serde::Serializer
-    {
-        let mut map = serializer.serialize_struct("form", 4)?;
-        map.serialize_field("type", "form")?;
-        map.serialize_field("title", self.title)?;
-        map.serialize_field("content", self.content)?;
-        map.serialize_field("buttons", self.buttons)?;
-        map.end()
-    }
-}
-
-/// A form with a custom body.
-/// Unlike the other form types, this form can make use of all the custom UI elements.
-#[derive(Debug)]
-pub struct CustomForm<'a> {
-    /// Title displayed at the top of the window.
-    pub title: &'a str,
-    /// List of custom elements.
-    pub content: &'a [FormElement<'a>],
-}
-
-impl<'a> serde::Serialize for CustomForm<'a> {
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: serde::Serializer,
-    {
-        let mut map = serializer.serialize_struct("custom_form", 3)?;
-        map.serialize_field("type", "custom_form")?;
-        map.serialize_field("title", self.title)?;
-        map.serialize_field("content", self.content)?;
-        map.end()
     }
 }
