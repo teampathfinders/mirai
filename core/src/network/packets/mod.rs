@@ -10,6 +10,7 @@ mod command;
 mod level;
 mod login;
 
+glob_export!(action);
 glob_export!(add_player);
 glob_export!(add_painting);
 glob_export!(animate);
@@ -50,6 +51,7 @@ glob_export!(tick_sync);
 glob_export!(toast_request);
 glob_export!(traits);
 glob_export!(transfer);
+glob_export!(update_abilities);
 glob_export!(update_dynamic_enum);
 glob_export!(update_fog_stack);
 glob_export!(violation_warning);

@@ -142,17 +142,17 @@ impl Session {
         let start_game = StartGame {
             entity_id: 1,
             runtime_id: 1,
-            game_mode: self.get_game_mode(),
-            position: Vector::from([0.0, 50.0, 0.0]),
+            game_mode: self.get_gamemode(),
+            position: Vector::from([0.0, 60.0, 0.0]),
             rotation: Vector::from([0.0, 0.0]),
-            world_seed: 69420,
+            world_seed: 0,
             spawn_biome_type: SpawnBiomeType::Default,
             custom_biome_name: "plains",
             dimension: Dimension::Overworld,
             generator: WorldGenerator::Infinite,
             world_game_mode: GameMode::Creative,
             difficulty: Difficulty::Normal,
-            world_spawn: BlockPosition::new(0, 50, 0),
+            world_spawn: BlockPosition::new(0, 60, 0),
             achievements_disabled: true,
             editor_world: false,
             day_cycle_lock_time: 0,
@@ -169,9 +169,9 @@ impl Session {
             experiments: &[],
             experiments_previously_enabled: false,
             bonus_chest_enabled: false,
-            starter_map_enabled: false,
+            starter_map_enabled: true,
             permission_level: PermissionLevel::Operator,
-            server_chunk_tick_range: 0,
+            server_chunk_tick_range: 4,
             has_locked_behavior_pack: false,
             has_locked_resource_pack: false,
             is_from_locked_world_template: false,
@@ -193,7 +193,7 @@ impl Session {
             movement_settings: PlayerMovementSettings {
                 movement_type: PlayerMovementType::ClientAuthoritative,
                 rewind_history_size: 0,
-                server_authoritative_breaking: true,
+                server_authoritative_breaking: false,
             },
             time: 0,
             enchantment_seed: 0,
@@ -202,16 +202,10 @@ impl Session {
             //     properties: HashMap::from([("infiniburn_bit".to_owned(), nbt::Value::Byte(0))]),
             // }],
             block_properties: &[],
-            item_properties: &[
-               ItemEntry {
-                   name: "minecraft:stick".to_owned(),
-                   runtime_id: 1,
-                   component_based: false
-               }
-            ],
+            item_properties: &[],
             property_data: PropertyData {},
             server_authoritative_inventory: false,
-            game_version: "1.19.60",
+            game_version: "1.20.50",
             // property_data: nbt::Value::Compound(HashMap::new()),
             server_block_state_checksum: 0,
             world_template_id: 0,
@@ -222,19 +216,19 @@ impl Session {
         self.send(start_game)?;
 
         let creative_content = CreativeContent {
-            items: &[ItemCollection {
-                network_id: 1,
-                runtime_id: 1,
-                count: 64,
-                can_break: vec![],
-                placeable_on: vec![],
-                meta: 0
-            }]
+            items: &[]
         };
         self.send(creative_content)?;
 
         let biome_definition_list = BiomeDefinitionList;
         self.send(biome_definition_list)?;
+
+        let commands = self.level.get_commands().iter().map(|kv| kv.value().clone()).collect::<Vec<_>>();
+        let available_commands = AvailableCommands { commands: commands.as_slice() };
+        self.send(available_commands)?;
+
+        let play_status = PlayStatus { status: Status::PlayerSpawn };
+        self.send(play_status)?;
 
         self.send(NetworkChunkPublisherUpdate {
             position: Vector::from([0, 0, 0]),
@@ -243,33 +237,16 @@ impl Session {
                 .viewer.get_radius() as u32
         })?;
 
-        // self.level.request_subchunks(Vector::from([0, -4, 0]), &[])?;
-
-        // let biomes = self.level.request_biomes(Vector::from([0, 0]), Dimension::Overworld)?;
-        // self.send(biomes)?;
-
-        // let subchunks = self.level.request_subchunks(Vector::from([0, 0, 0]), &[
-        //     Vector::from([0, 0, 0])
-        // ])?;
-        // let subchunks = self.player.read().viewer.recenter(
-        //     Vector::from([0, 0]), &[
-        //         Vector::from([0, 0, 0])
-        //     ]
-        // )?;
-        // let response = SubChunkResponse {
-        //     entries: subchunks,
-        //     position: Vector::from([0, 0, 0]),
-        //     dimension: Dimension::Overworld,
-        //     cache_enabled: false
-        // };
-        // self.send(response)?;
-
-        let commands = self.level.get_commands().iter().map(|kv| kv.value().clone()).collect::<Vec<_>>();
-        let available_commands = AvailableCommands { commands: commands.as_slice() };
-        self.send(available_commands)?;
-
-        let play_status = PlayStatus { status: Status::PlayerSpawn };
-        self.send(play_status)?;
+        let subchunks = self.player.read().viewer.recenter(
+            Vector::from([0, 0]), &(-4..16).map(|y| Vector::from([0, y, 0])).collect::<Vec<_>>()
+        )?;
+        let response = SubChunkResponse {
+            entries: subchunks,
+            position: Vector::from([0, 0, 0]),
+            dimension: Dimension::Overworld,
+            cache_enabled: false
+        };
+        self.send(response)?;
 
         Ok(())
     }

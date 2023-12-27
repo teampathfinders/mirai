@@ -15,6 +15,7 @@ use uuid::Uuid;
 
 use util::{error, Result, Vector};
 use util::bytes::MutableBuffer;
+use crate::command::CommandPermissionLevel;
 
 use crate::network::{DeviceOS, Disconnect, PermissionLevel};
 use crate::network::GameMode;
@@ -38,6 +39,8 @@ pub struct PlayerData {
     pub game_mode: GameMode,
     /// General permission level.
     pub permission_level: PermissionLevel,
+    /// Command permission level
+    pub command_permission_level: CommandPermissionLevel,
     /// The client's skin.
     pub skin: Option<Skin>,
     /// Runtime ID.
@@ -100,6 +103,7 @@ impl Session {
                 runtime_id: RUNTIME_ID_COUNTER.fetch_add(1, Ordering::SeqCst),
                 game_mode: GameMode::Creative,
                 permission_level: PermissionLevel::Member,
+                command_permission_level: CommandPermissionLevel::Normal,
                 skin: None,
                 viewer: ChunkViewer::new(level_manager.clone())
             }),
@@ -154,7 +158,7 @@ impl Session {
     }
 
     #[inline]
-    pub fn get_game_mode(&self) -> GameMode {
+    pub fn get_gamemode(&self) -> GameMode {
         self.player.read().game_mode
     }
 
@@ -171,6 +175,16 @@ impl Session {
     #[inline]
     pub fn get_permission_level(&self) -> PermissionLevel {
         self.player.read().permission_level
+    }
+
+    #[inline]
+    pub fn get_command_permission_level(&self) -> CommandPermissionLevel {
+        self.player.read().command_permission_level
+    }
+
+    #[inline]
+    pub fn get_runtime_id(&self) -> u64 {
+        self.player.read().runtime_id
     }
 
     /// Retrieves the identity of the client.

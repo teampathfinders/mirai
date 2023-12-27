@@ -1,7 +1,8 @@
 use util::{Deserialize};
 use util::bytes::MutableBuffer;
+use crate::command::CommandPermissionLevel;
 
-use crate::network::{ContainerOpen, ContainerType, InteractAction, ContainerClose, INVENTORY_WINDOW_ID};
+use crate::network::{ContainerOpen, ContainerType, InteractAction, ContainerClose, INVENTORY_WINDOW_ID, PlayerAction, PlayerActionType, GameMode, UpdateAbilities, AbilityData, AbilityLayer, Ability, AbilityType, ABILITY_FLYING, ABILITY_MAYFLY, ABILITY_FLAG_END, ABILITY_MUTED};
 use crate::network::{
     {
         Interact, MovePlayer,
@@ -49,6 +50,36 @@ impl Session {
         // dbg!(&request);
 
         self.broadcast_others(request)?;
+
+        Ok(())
+    }
+
+    pub fn process_player_action(&self, packet: MutableBuffer) -> anyhow::Result<()> {
+        let request = PlayerAction::deserialize(packet.snapshot())?;
+        dbg!(&request);
+
+        if request.action == PlayerActionType::StartFlying {
+            // Only allow flying if the player is in the correct gamemode.
+            let gamemode = self.get_gamemode();
+            if gamemode == GameMode::Creative || gamemode == GameMode::Spectator {
+                self.send(UpdateAbilities {
+                    data: AbilityData {
+                        command_permission_level: self.get_command_permission_level(),
+                        permission_level: self.get_permission_level(),
+                        unique_id: self.get_runtime_id(),
+                        layers: vec![
+                            AbilityLayer {
+                                fly_speed: 0.05,
+                                walk_speed: 0.1,
+                                values: ABILITY_MAYFLY | ABILITY_FLYING | ABILITY_MUTED,
+                                abilities: ABILITY_MAYFLY | ABILITY_FLYING | ABILITY_MUTED,
+                                ability_type: AbilityType::Base
+                            }
+                        ]
+                    },
+                })?;
+            }
+        }
 
         Ok(())
     }

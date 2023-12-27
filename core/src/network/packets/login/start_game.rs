@@ -29,12 +29,26 @@ impl WorldGenerator {
 }
 
 #[derive(Debug, Copy, Clone)]
-#[repr(i32)]
+#[repr(u8)]
 pub enum PermissionLevel {
     Visitor,
     Member,
     Operator,
     Custom,
+}
+
+impl TryFrom<u8> for PermissionLevel {
+    type Error = anyhow::Error;
+
+    fn try_from(value: u8) -> anyhow::Result<Self> {
+        if value <= 3 {
+            Ok(unsafe {
+                std::mem::transmute::<u8, PermissionLevel>(value)
+            })
+        } else {
+            anyhow::bail!("Permission level out of range <= 3, got {value}")
+        }
+    }
 }
 
 #[derive(Debug, Clone)]

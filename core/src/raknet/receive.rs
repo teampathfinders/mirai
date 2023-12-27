@@ -7,7 +7,7 @@ use async_recursion::async_recursion;
 use util::{bail, Result};
 use util::bytes::{BinaryRead, MutableBuffer};
 
-use crate::network::{CommandRequest, SettingsCommand, ContainerClose, TickSync, FormResponse};
+use crate::network::{CommandRequest, SettingsCommand, ContainerClose, TickSync, FormResponse, PlayerAction};
 use crate::network::{
     ChunkRadiusRequest, ClientToServerHandshake, CompressionAlgorithm, Login,
     RequestNetworkSettings, ResourcePackClientResponse,
@@ -236,6 +236,7 @@ impl Session {
                 self.process_local_initialized(packet)
             }
             MovePlayer::ID => self.process_move_player(packet),
+            PlayerAction::ID => self.process_player_action(packet),
             RequestAbility::ID => self.process_ability_request(packet),
             Animate::ID => self.process_animation(packet),
             CommandRequest::ID => self.process_command_request(packet),

@@ -3,7 +3,7 @@ use uuid::Uuid;
 use util::{Result, Serialize, Vector};
 use util::bytes::{BinaryWrite, MutableBuffer};
 
-use crate::network::{DeviceOS, PermissionLevel};
+use crate::network::{AbilityData, DeviceOS, PermissionLevel};
 use crate::network::{ConnectedPacket, GameMode};
 use crate::command::CommandPermissionLevel;
 
@@ -44,88 +44,6 @@ impl EntityLink {
     }
 }
 
-pub enum Ability {
-    Build = 1 << 0,
-    Mine = 1 << 1,
-    DoorsAndSwitches = 1 << 2,
-    OpenContainers = 1 << 3,
-    AttackPlayers = 1 << 4,
-    AttackMobs = 1 << 5,
-    OperatorCommands = 1 << 6,
-    Teleport = 1 << 7,
-    Invulnerable = 1 << 8,
-    Flying = 1 << 9,
-    MayFly = 1 << 10,
-    InstantBuild = 1 << 11,
-    Lightning = 1 << 12,
-    FlySpeed = 1 << 13,
-    WalkSpeed = 1 << 14,
-    Muted = 1 << 15,
-    WorldBuilder = 1 << 16,
-    NoClip = 1 << 17,
-    Count = 1 << 18,
-}
-
-#[derive(Debug, Copy, Clone, PartialEq, Eq)]
-pub enum AbilityType {
-    CustomCache,
-    Base,
-    Spectator,
-    Commands,
-    Editor,
-}
-
-#[derive(Debug, Clone)]
-pub struct AbilityLayer {
-    /// Type of ability layer.
-    pub ability_type: AbilityType,
-    /// Enabled abilities for this layer.
-    pub abilities: u32,
-    pub values: u32,
-    /// Default fly speed.
-    pub fly_speed: f32,
-    /// Default walk speed.
-    pub walk_speed: f32,
-}
-
-impl AbilityLayer {
-    pub fn encode(&self, buffer: &mut MutableBuffer) -> anyhow::Result<()> {
-        buffer.write_u16_le(self.ability_type as u16)?;
-        buffer.write_u32_le(self.abilities)?;
-        buffer.write_u32_le(self.values)?;
-        buffer.write_f32_le(self.fly_speed)?;
-        buffer.write_f32_le(self.walk_speed)
-    }
-}
-
-#[derive(Debug, Clone)]
-pub struct AbilityData<'a> {
-    /// Entity unique ID.
-    pub entity_id: i64,
-    /// Player permission level (visitor, member, operator, etc.)
-    /// This affects the icon shown in the player list.
-    pub permission_level: PermissionLevel,
-    /// The command permission level is separate from the standard level.
-    /// This level affects which commands the player is allowed to execute.
-    pub command_permission_level: CommandPermissionLevel,
-    pub layers: &'a [AbilityLayer],
-}
-
-impl AbilityData<'_> {
-    pub fn encode(&self, buffer: &mut MutableBuffer) -> anyhow::Result<()> {
-        buffer.write_i64_le(self.entity_id)?; // For some reason this isn't a varint64.
-        buffer.write_u8(self.permission_level as u8)?;
-        buffer.write_u8(self.command_permission_level as u8)?;
-
-        buffer.write_u8(self.layers.len() as u8)?;
-        for layer in self.layers {
-            layer.encode(buffer)?;
-        }
-
-        Ok(())
-    }
-}
-
 /// Adds a player to the game.
 /// A [`PlayerListAdd`](crate::network::PlayerListAdd) packet, adding the player to the player list,
 /// must be sent before using this.
@@ -151,7 +69,7 @@ pub struct AddPlayer<'a> {
     // pub metadata: HashMap<u32, nbt::Value>,
     // pub properties: EntityProperties,
     /// Abilities of the player. See [`AbilityData`].
-    pub ability_data: AbilityData<'a>,
+    pub ability_data: AbilityData,
     /// Entity links. See [`EntityLink`].
     pub links: &'a [EntityLink],
     /// ID of the user's device.
@@ -179,7 +97,7 @@ impl Serialize for AddPlayer<'_> {
         buffer.write_var_u32(0)?; // TODO: Entity metadata.
         buffer.write_var_u32(0)?; // Entity properties are unused.
         buffer.write_var_u32(0)?; // Entity properties are unused.
-        self.ability_data.encode(buffer)?;
+        self.ability_data.serialize(buffer)?;
 
         buffer.write_var_u32(self.links.len() as u32)?;
         for link in self.links {

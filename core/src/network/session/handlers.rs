@@ -19,7 +19,7 @@ use crate::forms::{FormButton, FormElement, FormInput, FormLabel, FormSlider, Me
 impl Session {
     pub fn process_settings_command(&self, packet: MutableBuffer) -> anyhow::Result<()> {
         let request = SettingsCommand::deserialize(packet.snapshot())?;
-        tracing::info!("{request:?}");
+        dbg!(request);
 
         Ok(())
     }
@@ -66,30 +66,27 @@ impl Session {
 
     pub fn process_skin_update(&self, packet: MutableBuffer) -> anyhow::Result<()> {
         let request = UpdateSkin::deserialize(packet.snapshot())?;
+        dbg!(&request);
         self.broadcast(request)
     }
 
     pub fn process_ability_request(&self, packet: MutableBuffer) -> anyhow::Result<()> {
         let request = RequestAbility::deserialize(packet.snapshot())?;
-        tracing::info!("{request:?}");
+        dbg!(request);
 
         Ok(())
     }
 
     pub fn process_animation(&self, packet: MutableBuffer) -> anyhow::Result<()> {
-        let _request = Animate::deserialize(packet.snapshot())?;
+        let request = Animate::deserialize(packet.snapshot())?;
+        dbg!(request);
 
         Ok(())
     }
 
     pub fn process_form_response(&self, packet: MutableBuffer) -> anyhow::Result<()> {
         let response = FormResponse::deserialize(packet.snapshot())?;
-        let raw: (&str, &str) = serde_json::from_str(response.response_data.unwrap()).unwrap();
-            
-        dbg!(raw);
-        self.send(Transfer {
-            addr: raw.0, port: raw.1.parse().unwrap()
-        })?;
+        dbg!(response);
 
         Ok(())
     }
@@ -107,72 +104,7 @@ impl Session {
                     self.level.on_gamerule_command(caller, parsed)
                 },
                 "effect" => {
-                    let out = self.level.on_effect_command(caller, parsed)?;
-
-                    // let custom_form = serde_json::to_string(&CustomForm {
-                    //     title: &String::from_utf8_lossy(&[0xee, 0x84, 0x88, 0x20]),
-                    //     content: &[
-                    //         FormElement::Slider(FormSlider {
-                    //             label: "Example slider",
-                    //             default: 0.0,
-                    //             max: 1.0,
-                    //             min: 0.0,
-                    //             step: 0.1
-                    //         }),
-                    //         FormElement::Dropdown(FormDropdown {
-                    //             label: "Example dropdown",
-                    //             default: 0,
-                    //             options: &[
-                    //                 "Option 1",
-                    //                 "Option 2",
-                    //                 "Option 3",
-                    //                 "Option 4"
-                    //             ]
-                    //         }),
-                    //         FormElement::Toggle(FormToggle {
-                    //             label: "Example toggle",
-                    //             default: false
-                    //         }),
-                    //         FormElement::Input(FormInput {
-                    //             label: "Example input",
-                    //             placeholder: "Example placeholder",
-                    //             default: "Default input"
-                    //         }),
-                    //         FormElement::StepSlider(FormStepSlider {
-                    //             label: "Example step slider",
-                    //             steps: &[
-                    //                 "Step 1",
-                    //                 "Step 2",
-                    //                 "Step 3",
-                    //                 "Step 4"
-                    //             ],
-                    //             default: 0
-                    //         })
-                    //     ]
-                    // })?;
-
-                    let custom_form = serde_json::to_string(&CustomForm {
-                        title: "Transfer to other server",
-                        content: &[
-                            FormElement::Input(FormInput {
-                                label: "Address",
-                                placeholder: "",
-                                initial: ""
-                            }),
-                            FormElement::Input(FormInput {
-                                label: "Port",
-                                placeholder: "",
-                                initial: "19132"
-                            })
-                        ]
-                    }).unwrap();
-
-                    let modal_request = FormRequest {
-                        id: 0,
-                        data: &custom_form
-                    };
-                    self.send(modal_request);
-                    Ok(out)
+                    self.level.on_effect_command(caller, parsed)
                 }
                 _ => todo!(),
             };

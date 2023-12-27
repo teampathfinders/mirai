@@ -1,4 +1,5 @@
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
+#[repr(u8)]
 pub enum CommandPermissionLevel {
     Normal,
     GameDirectors,
@@ -6,6 +7,20 @@ pub enum CommandPermissionLevel {
     Host,
     Owner,
     Internal,
+}
+
+impl TryFrom<u8> for CommandPermissionLevel {
+    type Error = anyhow::Error;
+
+    fn try_from(value: u8) -> anyhow::Result<Self> {
+        if value <= 5 {
+            Ok(unsafe {
+                std::mem::transmute::<u8, CommandPermissionLevel>(value)
+            })
+        } else {
+            anyhow::bail!("Command permission level out of range, expect <=5, got {value}")
+        }
+    }
 }
 
 /// Used for autocompletion.

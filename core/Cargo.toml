@@ -17,7 +17,6 @@ path = "src/lib.rs"
 tokio-console = ["console-subscriber"]
 
 [dependencies]
-ext = { package = "pyro-extensions", path = "../ext" }
 nbt = { package = "pyro-nbt", path = "../nbt" }
 util = { package = "pyro-util", path = "../util" }
 level = { package = "pyro-level", path = "../level" }
