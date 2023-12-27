@@ -54,6 +54,9 @@ impl<T: Component + 'static> Storage<T> {
 trait TypelessStorage: Debug {
     fn as_any_mut(&mut self) -> &mut dyn Any;
     fn as_any(&self) -> &dyn Any;
+    /// Drops all components owned by the given entity.
+    /// Returns `false` if the store is now empty and should be discarded.
+    fn despawn(&mut self, entity: EntityId) -> bool;
 }
 
 impl<T: Component + 'static> TypelessStorage for Storage<T> {
@@ -63,6 +66,19 @@ impl<T: Component + 'static> TypelessStorage for Storage<T> {
 
     fn as_any(&self) -> &dyn Any {
         self
+    }
+
+    fn despawn(&mut self, entity: EntityId) -> bool {
+        if let Some(index) = self.map.remove(&entity) {
+            // Remove component and move last component in the array to its place.
+            self.data.swap_remove(index);
+            // Change mapping for the affected entity.
+            let modified_id = self.reverse_map[self.reverse_map.len() - 1];
+            self.map.insert(modified_id, index);
+            self.reverse_map.swap_remove(index);
+        }
+
+        self.data.is_empty()
     }
 }
 
@@ -101,5 +117,12 @@ impl Components {
         let type_id = TypeId::of::<T>();
         let downcast: &mut Storage<T> = self.map.get_mut(&type_id)?.as_any_mut().downcast_mut().unwrap();
         downcast.get_mut(entity)
+    }
+
+    pub fn despawn(&mut self, entity: EntityId) {
+        self.map
+            .retain(|type_id, store| {
+                !store.despawn(entity)
+            });
     }
 }

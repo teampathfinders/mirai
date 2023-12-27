@@ -1,5 +1,5 @@
 use crate::component::{Component, Components};
-use crate::entity::{Entities, EntityId, EntityMut};
+use crate::entity::{Entities, Entity, EntityId, EntityMut};
 use crate::system::Systems;
 
 pub trait ComponentBundle {
@@ -30,9 +30,9 @@ impl<C1: Component, C2: Component, C3: Component> ComponentBundle for (C1, C2, C
 
 #[derive(Debug)]
 pub struct World {
-    entities: Entities,
-    components: Components,
-    systems: Systems,
+    pub(crate) entities: Entities,
+    pub(crate) components: Components,
+    pub(crate) systems: Systems,
 }
 
 impl World {
@@ -48,6 +48,14 @@ impl World {
         let id = self.entities.request_id();
         bundle.insert_into(id, &mut self.components);
 
+        EntityMut { id, world: self }
+    }
+
+    pub fn get(&self, id: EntityId) -> Entity {
+        Entity { id, world: self }
+    }
+
+    pub fn get_mut(&mut self, id: EntityId) -> EntityMut {
         EntityMut { id, world: self }
     }
 }
