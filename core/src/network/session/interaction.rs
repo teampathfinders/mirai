@@ -2,7 +2,7 @@ use util::{Deserialize};
 use util::bytes::MutableBuffer;
 use crate::command::CommandPermissionLevel;
 
-use crate::network::{ContainerOpen, ContainerType, InteractAction, ContainerClose, INVENTORY_WINDOW_ID, PlayerAction, PlayerActionType, GameMode, UpdateAbilities, AbilityData, AbilityLayer, Ability, AbilityType, ABILITY_FLYING};
+use crate::network::{ContainerOpen, ContainerType, InteractAction, ContainerClose, INVENTORY_WINDOW_ID, PlayerAction, PlayerActionType, GameMode, UpdateAbilities, AbilityData, AbilityLayer, Ability, AbilityType, ABILITY_FLYING, ABILITY_MAYFLY, ABILITY_FLAG_END, ABILITY_MUTED};
 use crate::network::{
     {
         Interact, MovePlayer,
@@ -69,10 +69,10 @@ impl Session {
                         unique_id: self.get_runtime_id(),
                         layers: vec![
                             AbilityLayer {
-                                fly_speed: 1.0,
-                                walk_speed: 1.0,
-                                values: 0,
-                                abilities: ABILITY_FLYING,
+                                fly_speed: 0.05,
+                                walk_speed: 0.1,
+                                values: ABILITY_MAYFLY | ABILITY_FLYING | ABILITY_MUTED,
+                                abilities: ABILITY_MAYFLY | ABILITY_FLYING | ABILITY_MUTED,
                                 ability_type: AbilityType::Base
                             }
                         ]

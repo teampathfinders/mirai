@@ -144,6 +144,8 @@ fn parse_mojang_token(token: &str, key: &str) -> anyhow::Result<String> {
 ///
 /// Just like the second one, this token can be verified using the identityPublicKey from the last token.
 fn parse_identity_token(token: &str, key: &str) -> anyhow::Result<IdentityTokenPayload> {
+    tracing::debug!("{token}");
+
     let bytes = BASE64_ENGINE.decode(key)?;
     let public_key = match spki::SubjectPublicKeyInfoRef::try_from(bytes.as_ref()) {
         Ok(p) => p,
@@ -163,6 +165,8 @@ fn parse_identity_token(token: &str, key: &str) -> anyhow::Result<IdentityTokenP
 
 /// Verifies and decodes the user data token.
 fn parse_user_data_token(token: &str, key: &str) -> anyhow::Result<UserDataTokenPayload> {
+    tracing::debug!("{token}");
+
     let bytes = BASE64_ENGINE.decode(key)?;
     let public_key = match spki::SubjectPublicKeyInfoRef::try_from(bytes.as_ref()) {
         Ok(p) => p,

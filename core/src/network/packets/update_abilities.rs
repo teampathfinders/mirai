@@ -44,7 +44,8 @@ pub const ABILITY_WALK_SPEED: u32 = 1 << 14;
 pub const ABILITY_MUTED: u32 = 1 << 15;
 pub const ABILITY_WORLD_BUILDER: u32 = 1 << 16;
 pub const ABILITY_NOCLIP: u32 = 1 << 17;
-pub const ABILITY_COUNT: u32 = 1 << 18;
+pub const ABILITY_PRIVILEGED_BUILDER: u32 = 1 << 18;
+pub const ABILITY_FLAG_END: u32 = 1 << 19;
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 #[repr(u16)]
@@ -110,7 +111,7 @@ impl AbilityLayer {
 #[derive(Debug, Clone)]
 pub struct AbilityData {
     /// Entity unique ID.
-    pub unique_id: i64,
+    pub unique_id: u64,
     /// Player permission level (visitor, member, operator, etc.)
     /// This affects the icon shown in the player list.
     pub permission_level: PermissionLevel,
@@ -122,7 +123,7 @@ pub struct AbilityData {
 
 impl Serialize for AbilityData {
     fn serialize(&self, buffer: &mut MutableBuffer) -> anyhow::Result<()> {
-        buffer.write_i64_le(self.unique_id)?; // For some reason this isn't a varint64.
+        buffer.write_u64_le(self.unique_id)?; // For some reason this isn't a varint64.
         buffer.write_u8(self.permission_level as u8)?;
         buffer.write_u8(self.command_permission_level as u8)?;
 
@@ -137,7 +138,7 @@ impl Serialize for AbilityData {
 
 impl<'a> Deserialize<'a> for AbilityData {
     fn deserialize(mut buffer: SharedBuffer<'a>) -> anyhow::Result<Self> {
-        let unique_id = buffer.read_i64_le()?;
+        let unique_id = buffer.read_u64_le()?;
         let permission_level = PermissionLevel::try_from(buffer.read_u8()?)?;
         let command_permission_level = CommandPermissionLevel::try_from(buffer.read_u8()?)?;
 
