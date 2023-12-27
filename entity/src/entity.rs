@@ -13,6 +13,11 @@ pub struct Entity<'w> {
 
 impl<'w> Entity<'w> {
     #[inline]
+    pub fn id(&self) -> EntityId {
+        self.id
+    }
+
+    #[inline]
     pub fn get<T: Component + 'static>(&self) -> Option<&T> {
         self.world.components.get(self.id)
     }
