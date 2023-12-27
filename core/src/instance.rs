@@ -1,7 +1,6 @@
 //! Contains the server instance.
 
 use anyhow::Context;
-use ext::ExtensionRuntime;
 use level::Dimension;
 use std::net::{Ipv4Addr, Ipv6Addr, SocketAddrV4};
 use std::sync::Arc;
@@ -59,9 +58,7 @@ pub struct ServerInstance {
     level_manager: Arc<LevelManager>,
     /// Channel that the LevelManager sends a message to when it has fully shutdown.
     /// This is to make sure that the world has been saved and safely shut down before shutting down the server.
-    level_notifier: Receiver<()>,
-    /// Virtual machine that runs and compiles the extensions.
-    extensions: ExtensionRuntime,
+    level_notifier: Receiver<()>
 }
 
 impl ServerInstance {
@@ -69,8 +66,6 @@ impl ServerInstance {
     ///
     /// This method is asynchronous and completes when the server is fully shut down again.
     pub async fn run() -> anyhow::Result<()> {
-        let extensions = ExtensionRuntime::new().context("Failed to start extension runtime")?;
-
         let (ipv4_port, _ipv6_port) = {
             let lock = SERVER_CONFIG.read();
             (lock.ipv4_port, lock.ipv6_port)
@@ -249,8 +244,6 @@ impl ServerInstance {
             _ = token.cancelled() => (),
             _ = tokio::signal::ctrl_c() => ()
         }
-
-        drop(extensions);
 
         // ...then shut down all services.
         if let Err(e) = session_manager.kick_all("Server closed").await {
