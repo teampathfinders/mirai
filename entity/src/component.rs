@@ -79,7 +79,7 @@ impl Components {
     /// Stores a component in the store for the given entity.
     ///
     /// If this component was already present for the entity it is replaced and the old component is returned.
-    pub fn store<T: Component + 'static>(&mut self, entity: EntityId, component: T) -> Option<T> {
+    pub fn insert<T: Component + 'static>(&mut self, entity: EntityId, component: T) -> Option<T> {
         let type_id = TypeId::of::<T>();
 
         if let Some(store) = self.map.get_mut(&type_id) {
