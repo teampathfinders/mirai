@@ -51,11 +51,19 @@ impl World {
         EntityMut { id, world: self }
     }
 
-    pub fn get(&self, id: EntityId) -> Entity {
-        Entity { id, world: self }
+    pub fn get(&self, id: EntityId) -> Option<Entity> {
+        if self.entities.is_spawned(id) {
+            Some(Entity { id, world: self })
+        } else {
+            None
+        }
     }
 
-    pub fn get_mut(&mut self, id: EntityId) -> EntityMut {
-        EntityMut { id, world: self }
+    pub fn get_mut(&mut self, id: EntityId) -> Option<EntityMut> {
+        if self.entities.is_spawned(id) {
+            Some(EntityMut { id, world: self })
+        } else {
+            None
+        }
     }
 }

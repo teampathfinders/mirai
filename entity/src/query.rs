@@ -1,6 +1,7 @@
-use std::marker::PhantomData;
 use crate::component::{Component, Components};
 use crate::entity::{Entity, EntityId};
+use crate::world::World;
+use std::marker::PhantomData;
 
 pub trait QueryBundle {
     const MUTABLE: bool;
@@ -9,7 +10,12 @@ pub trait QueryBundle {
 pub trait QueryReference {
     const MUTABLE: bool;
 
-    fn fetch(entity: Entity, components: &Components) -> Option<Self> where Self: Sized { None }
+    fn fetch(entity: Entity, components: &Components) -> Option<Self>
+    where
+        Self: Sized,
+    {
+        None
+    }
 }
 
 impl<T: Component + 'static> QueryReference for &T {
@@ -23,9 +29,11 @@ impl<T: Component + 'static> QueryReference for &mut T {
 impl<Q: QueryReference> QueryBundle for Q {
     const MUTABLE: bool = Q::MUTABLE;
 }
+
 impl<Q1: QueryReference, Q2: QueryReference> QueryBundle for (Q1, Q2) {
     const MUTABLE: bool = Q1::MUTABLE || Q2::MUTABLE;
 }
+
 impl<Q1: QueryReference, Q2: QueryReference, Q3: QueryReference> QueryBundle for (Q1, Q2, Q3) {
     const MUTABLE: bool = Q1::MUTABLE || Q2::MUTABLE || Q3::MUTABLE;
 }
@@ -35,19 +43,35 @@ pub trait Filter {
 }
 
 pub trait FilterBundle {
-
+    fn filter(entity: EntityId) -> bool;
 }
 
-impl<F: Filter> FilterBundle for F {}
-impl<F1: Filter, F2: Filter> FilterBundle for (F1, F2) {}
-impl<F1: Filter, F2: Filter, F3: Filter> FilterBundle for (F1, F2, F3) {}
+impl<F: Filter> FilterBundle for F {
+    fn filter(entity: EntityId) -> bool {
+        F::filter(entity)
+    }
+}
+
+impl<F1: Filter, F2: Filter> FilterBundle for (F1, F2) {
+    fn filter(entity: EntityId) -> bool {
+        F1::filter(entity) && F2::filter(entity)
+    }
+}
+
+impl<F1: Filter, F2: Filter, F3: Filter> FilterBundle for (F1, F2, F3) {
+    fn filter(entity: EntityId) -> bool {
+        F1::filter(entity) && F2::filter(entity) && F3::filter(entity)
+    }
+}
 
 pub struct With<T: Component + 'static> {
-    _marker: PhantomData<T>
+    _marker: PhantomData<T>,
 }
 
 impl Filter for () {
-    fn filter(_entity: EntityId) -> bool { true }
+    fn filter(_entity: EntityId) -> bool {
+        true
+    }
 }
 
 impl<T: Component + 'static> Filter for With<T> {
@@ -56,7 +80,15 @@ impl<T: Component + 'static> Filter for With<T> {
     }
 }
 
-pub struct Query<T: QueryBundle, F: FilterBundle = ()> {
-    _marker: PhantomData<(T, F)>
+pub struct Query<'w, T: QueryBundle, F: FilterBundle = ()> {
+    world: &'w World,
+    _marker: PhantomData<(T, F)>,
 }
 
+impl<'w, T: QueryBundle, F: FilterBundle> Iterator for Query<'w, T, F> {
+    type Item = T;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        todo!()
+    }
+}

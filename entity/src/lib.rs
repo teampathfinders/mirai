@@ -1,14 +1,14 @@
 mod component;
 mod entity;
+mod query;
 mod system;
 mod world;
-mod query;
 
 use crate::component::Component;
-use crate::world::World;
-use std::fmt::Debug;
 use crate::entity::EntityId;
 use crate::query::{Query, QueryBundle, With};
+use crate::world::World;
+use std::fmt::Debug;
 
 #[derive(Debug)]
 struct Health {
@@ -28,12 +28,21 @@ struct UniqueId(usize);
 impl Component for UniqueId {}
 
 fn query(query: Query<(&UniqueId, &mut Health), With<Alive>>) {
-
+    for (id, health) in query {
+        dbg!(id);
+        dbg!(health);
+    }
 }
 
 #[test]
 fn test1() {
     let mut world = World::new();
+    for i in 0..10 {
+        world.spawn((UniqueId(i), Alive, Health { value: i as f32 }));
+    }
+    world.get_mut(EntityId(2)).unwrap().despawn();
 
-    dbg!(<(&UniqueId, &Health)>::MUTABLE);
+    println!("{}", world.entities.is_spawned(EntityId(2)));
+
+    // dbg!(world);
 }

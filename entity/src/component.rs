@@ -120,9 +120,6 @@ impl Components {
     }
 
     pub fn despawn(&mut self, entity: EntityId) {
-        self.map
-            .retain(|type_id, store| {
-                !store.despawn(entity)
-            });
+        self.map.retain(|type_id, store| !store.despawn(entity));
     }
 }
