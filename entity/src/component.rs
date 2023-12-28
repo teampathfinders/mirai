@@ -4,9 +4,8 @@ use std::collections::HashMap;
 use std::fmt::Debug;
 
 /// Due to current language restrictions, components cannot contain non-static lifetimes.
-pub trait Component: Debug + 'static {}
+pub trait Component: 'static {}
 
-#[derive(Debug)]
 pub struct Storage<T: Component> {
     /// Maps entity IDs to indices in the data vector.
     map: HashMap<EntityId, usize>,
@@ -51,7 +50,8 @@ impl<T: Component + 'static> Storage<T> {
     }
 }
 
-trait TypelessStorage: Debug {
+/// Used to turn [`Storage`] into a trait object without generic parameter.
+trait TypelessStorage {
     fn as_any_mut(&mut self) -> &mut dyn Any;
     fn as_any(&self) -> &dyn Any;
     /// Drops all components owned by the given entity.
@@ -82,7 +82,6 @@ impl<T: Component + 'static> TypelessStorage for Storage<T> {
     }
 }
 
-#[derive(Debug)]
 pub struct Components {
     map: HashMap<TypeId, Box<dyn TypelessStorage>>,
 }

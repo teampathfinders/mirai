@@ -37,12 +37,8 @@ fn query(query: Query<(&UniqueId, &mut Health), With<Alive>>) {
 #[test]
 fn test1() {
     let mut world = World::new();
-    for i in 0..10 {
-        world.spawn((UniqueId(i), Alive, Health { value: i as f32 }));
-    }
-    world.get_mut(EntityId(2)).unwrap().despawn();
-
-    println!("{}", world.entities.is_spawned(EntityId(2)));
+    world.system(query);
+    world.spawn((Alive, Health { value: 1.0 }));
 
     // dbg!(world);
 }

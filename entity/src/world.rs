@@ -1,6 +1,6 @@
 use crate::component::{Component, Components};
 use crate::entity::{Entities, Entity, EntityId, EntityMut};
-use crate::system::Systems;
+use crate::system::{System, SystemParams, Systems};
 
 pub trait ComponentBundle {
     fn insert_into(self, entity: EntityId, store: &mut Components);
@@ -28,7 +28,6 @@ impl<C1: Component, C2: Component, C3: Component> ComponentBundle for (C1, C2, C
     }
 }
 
-#[derive(Debug)]
 pub struct World {
     pub(crate) entities: Entities,
     pub(crate) components: Components,
@@ -51,19 +50,15 @@ impl World {
         EntityMut { id, world: self }
     }
 
+    pub fn system<P: SystemParams>(&mut self, system: impl System<P>) {
+        self.systems.insert(system);
+    }
+
     pub fn get(&self, id: EntityId) -> Option<Entity> {
-        if self.entities.is_spawned(id) {
-            Some(Entity { id, world: self })
-        } else {
-            None
-        }
+        Some(Entity { id, world: self })
     }
 
     pub fn get_mut(&mut self, id: EntityId) -> Option<EntityMut> {
-        if self.entities.is_spawned(id) {
-            Some(EntityMut { id, world: self })
-        } else {
-            None
-        }
+        Some(EntityMut { id, world: self })
     }
 }
