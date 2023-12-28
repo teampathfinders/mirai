@@ -2,15 +2,16 @@ use crate::component::{Component, Components};
 use crate::entity::{Entity, EntityId};
 use crate::world::World;
 use std::marker::PhantomData;
+use crate::system::SysParam;
 
 pub trait QueryBundle {
     const EXCLUSIVE: bool;
 }
 
-pub trait QueryReference {
+pub trait QueryReference<'w> {
     const EXCLUSIVE: bool;
 
-    fn fetch(entity: Entity, components: &Components) -> Option<Self>
+    fn fetch(entity: Entity, components: &'w Components) -> Option<Self>
     where
         Self: Sized,
     {
@@ -18,23 +19,32 @@ pub trait QueryReference {
     }
 }
 
-impl<T: Component + 'static> QueryReference for &T {
+impl<'w, T: Component + 'static> QueryReference<'w> for &'w T {
     const EXCLUSIVE: bool = false;
 }
 
-impl<T: Component + 'static> QueryReference for &mut T {
+impl<'w, T: Component + 'static> QueryReference<'w> for &'w mut T {
     const EXCLUSIVE: bool = true;
 }
 
-impl<Q: QueryReference> QueryBundle for Q {
+impl<'w, Q> QueryBundle for Q
+where
+    Q: QueryReference<'w>
+{
     const EXCLUSIVE: bool = Q::EXCLUSIVE;
 }
 
-impl<Q1: QueryReference, Q2: QueryReference> QueryBundle for (Q1, Q2) {
+impl<'w1, 'w2, Q1, Q2> QueryBundle for (Q1, Q2)
+where
+    Q1: QueryReference<'w1>, Q2: QueryReference<'w2>
+{
     const EXCLUSIVE: bool = Q1::EXCLUSIVE || Q2::EXCLUSIVE;
 }
 
-impl<Q1: QueryReference, Q2: QueryReference, Q3: QueryReference> QueryBundle for (Q1, Q2, Q3) {
+impl<'w1, 'w2, 'w3, Q1, Q2, Q3> QueryBundle for (Q1, Q2, Q3)
+where
+    Q1: QueryReference<'w1>, Q2: QueryReference<'w2>, Q3: QueryReference<'w3>
+{
     const EXCLUSIVE: bool = Q1::EXCLUSIVE || Q2::EXCLUSIVE || Q3::EXCLUSIVE;
 }
 
@@ -83,6 +93,10 @@ impl<T: Component + 'static> Filter for With<T> {
 pub struct Query<'w, T: QueryBundle, F: FilterBundle = ()> {
     world: &'w World,
     _marker: PhantomData<(T, F)>,
+}
+
+impl<'w, Q: QueryBundle, F: FilterBundle> SysParam<'w> for Query<'w, Q, F> {
+    const EXCLUSIVE: bool = Q::EXCLUSIVE;
 }
 
 impl<'w, T: QueryBundle, F: FilterBundle> Iterator for Query<'w, T, F> {

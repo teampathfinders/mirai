@@ -12,7 +12,7 @@ pub struct Entity<'w> {
     pub(crate) world: &'w World,
 }
 
-impl<'w> Entity<'w> {
+impl Entity<'_> {
     #[inline]
     pub fn id(&self) -> EntityId {
         self.id
@@ -29,7 +29,7 @@ pub struct EntityMut<'w> {
     pub(crate) world: &'w mut World,
 }
 
-impl<'w> EntityMut<'w> {
+impl<'w, 's> EntityMut<'w> {
     #[inline]
     pub fn id(&self) -> EntityId {
         self.id

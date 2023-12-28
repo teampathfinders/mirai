@@ -12,6 +12,7 @@ impl<C: Component> ComponentBundle for C {
         store.insert(entity, self);
     }
 }
+
 impl<C1: Component, C2: Component> ComponentBundle for (C1, C2) {
     #[inline]
     fn insert_into(self, entity: EntityId, store: &mut Components) {
@@ -19,6 +20,7 @@ impl<C1: Component, C2: Component> ComponentBundle for (C1, C2) {
         store.insert(entity, self.1);
     }
 }
+
 impl<C1: Component, C2: Component, C3: Component> ComponentBundle for (C1, C2, C3) {
     #[inline]
     fn insert_into(self, entity: EntityId, store: &mut Components) {
@@ -50,11 +52,11 @@ impl World {
         EntityMut { id, world: self }
     }
 
-    pub fn system<'a, P, S>(&mut self, system: S)
+    pub fn system<'s, P, S>(&'s mut self, system: S)
     where
-        P: SysParamBundle<'a> + 'static,
-        S: NakedSys<'a, P> + 'static,
-        SysContainer<'a, P, S>: Sys<'a>
+        P: SysParamBundle + 'static,
+        S: NakedSys<'s, P> + 'static,
+        SysContainer<'s, P, S>: Sys<'s>
     {
         self.systems.insert(system);
     }

@@ -3,11 +3,20 @@ mod entity;
 mod query;
 mod system;
 mod world;
+mod resource;
 
 use crate::component::Component;
 use crate::query::{Query, QueryBundle, With};
 use crate::world::World;
 use std::fmt::Debug;
+use crate::resource::{Res, Resource};
+
+#[derive(Debug)]
+struct Timer {
+    pub time: u64
+}
+
+impl Resource for Timer {}
 
 #[derive(Debug)]
 struct Health {
@@ -33,14 +42,14 @@ fn system1(query: Query<(&UniqueId, &mut Health), With<Alive>>) {
     }
 }
 
-fn system2(query: Query<(&UniqueId, &Health), With<Alive>>, query2: Query<&Alive>) {
-
-}
+// fn system2(query: Query<(&UniqueId, &Health), With<Alive>>, query2: Res<Timer>) {
+//
+// }
 
 #[test]
 fn test1() {
     let mut world = World::new();
-    world.system(system1);
+    // world.system(system1);
     // world.system(system2);
     world.spawn((Alive, Health { value: 1.0 }));
 
