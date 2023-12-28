@@ -1,6 +1,6 @@
 use crate::component::{Component, Components};
 use crate::entity::{Entities, Entity, EntityId, EntityMut};
-use crate::system::{System, SystemParams, Systems};
+use crate::system::{SysContainer, NakedSys, Sys, Systems, SysParamBundle};
 
 pub trait ComponentBundle {
     fn insert_into(self, entity: EntityId, store: &mut Components);
@@ -50,7 +50,12 @@ impl World {
         EntityMut { id, world: self }
     }
 
-    pub fn system<P: SystemParams>(&mut self, system: impl System<P>) {
+    pub fn system<'a, P, S>(&mut self, system: S)
+    where
+        P: SysParamBundle<'a> + 'static,
+        S: NakedSys<'a, P> + 'static,
+        SysContainer<'a, P, S>: Sys<'a>
+    {
         self.systems.insert(system);
     }
 

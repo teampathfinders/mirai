@@ -4,11 +4,11 @@ use crate::world::World;
 use std::marker::PhantomData;
 
 pub trait QueryBundle {
-    const MUTABLE: bool;
+    const EXCLUSIVE: bool;
 }
 
 pub trait QueryReference {
-    const MUTABLE: bool;
+    const EXCLUSIVE: bool;
 
     fn fetch(entity: Entity, components: &Components) -> Option<Self>
     where
@@ -19,23 +19,23 @@ pub trait QueryReference {
 }
 
 impl<T: Component + 'static> QueryReference for &T {
-    const MUTABLE: bool = false;
+    const EXCLUSIVE: bool = false;
 }
 
 impl<T: Component + 'static> QueryReference for &mut T {
-    const MUTABLE: bool = true;
+    const EXCLUSIVE: bool = true;
 }
 
 impl<Q: QueryReference> QueryBundle for Q {
-    const MUTABLE: bool = Q::MUTABLE;
+    const EXCLUSIVE: bool = Q::EXCLUSIVE;
 }
 
 impl<Q1: QueryReference, Q2: QueryReference> QueryBundle for (Q1, Q2) {
-    const MUTABLE: bool = Q1::MUTABLE || Q2::MUTABLE;
+    const EXCLUSIVE: bool = Q1::EXCLUSIVE || Q2::EXCLUSIVE;
 }
 
 impl<Q1: QueryReference, Q2: QueryReference, Q3: QueryReference> QueryBundle for (Q1, Q2, Q3) {
-    const MUTABLE: bool = Q1::MUTABLE || Q2::MUTABLE || Q3::MUTABLE;
+    const EXCLUSIVE: bool = Q1::EXCLUSIVE || Q2::EXCLUSIVE || Q3::EXCLUSIVE;
 }
 
 pub trait Filter {
