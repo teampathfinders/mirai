@@ -39,15 +39,15 @@ fn system1(query: Query<(&UniqueId, &mut Health), With<Alive>>) {
     println!("system1");
 }
 
-// fn system2(query: Query<(&UniqueId, &Health), With<Alive>>, query2: Res<Timer>) {
-//     println!("system2");
-// }
+fn system2(query: Query<(&UniqueId, &Health), With<Alive>>, query2: Res<Timer>) {
+    println!("system2");
+}
 
 #[test]
 fn test1() {
     let mut world = World::new();
     world.system(system1);
-    // world.system(system2);
+    world.system(system2);
     world.spawn((Alive, Health { value: 1.0 }));
 
     // dbg!(world);
