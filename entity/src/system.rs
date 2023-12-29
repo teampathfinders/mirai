@@ -108,88 +108,45 @@ impl<P1, P2, P3> SysParamBundle for (P1, P2, P3)
     const MUTABLE: bool = P1::MUTABLE || P2::MUTABLE || P3::MUTABLE;
 }
 
-// /// Represents a function pointer that is a valid system.
-// pub trait NakedSys<P: SysParamBundle>: Sized {
-//     /// Puts the system into a container and then moves it to the heap to allow for proper storage.
-//     fn into_container(self) -> Box<dyn Sys> {
-//         Box::new(SysContainer { system: self, _marker: PhantomData })
-//     }
-//
-//     fn call(&self, world: &World);
-// }
-//
-// impl<F> NakedSys<()> for F where F: Fn() {
-//     fn call(&self, _world: &World) {
-//         self();
-//     }
-// }
-//
-// impl<F, P> NakedSys<P> for F
-// where
-//     F: Fn(P), P: SysParam,
-// {
-//     fn call(&self, world: &World) {
-//         let p = P::fetch(world);
-//         self(p);
-//     }
-// }
-//
-// impl<F, P1, P2> NakedSys<(P1, P2)> for F
-// where
-//     F: Fn(P1, P2), P1: SysParam, P2: SysParam
-// {
-//     fn call(&self, world: &World) {
-//         let p1 = P1::fetch(world);
-//         let p2 = P2::fetch(world);
-//
-//         self(p1, p2);
-//     }
-// }
-//
-// impl<F, P1, P2, P3> NakedSys<(P1, P2, P3)> for F
-// where
-//     F: Fn(P1, P2, P3), P1: SysParam, P2: SysParam, P3: SysParam
-// {
-//     fn call(&self, world: &World) {
-//         let p1 = P1::fetch(world);
-//         let p2 = P2::fetch(world);
-//         let p3 = P3::fetch(world);
-//
-//         self(p1, p2, p3);
-//     }
-// }
-
 /// Represents a function pointer that is a valid system.
-pub trait NakedSys: Sized {
+pub trait NakedSys<P>: Sized {
     /// Puts the system into a container and then moves it to the heap to allow for proper storage.
+    fn into_container(self) -> Box<dyn Sys>;
+    fn call(&self, world: &World);
+}
+
+impl<F> NakedSys<()> for F where F: Fn() + 'static {
     fn into_container(self) -> Box<dyn Sys> {
         Box::new(SysContainer { system: self, _marker: PhantomData })
     }
 
-    fn call(&self, world: &World);
-}
-
-impl<F> NakedSys for F where F: Fn() {
     fn call(&self, _world: &World) {
         self();
     }
 }
 
-impl<F, P> NakedSys for F
+impl<F, P> NakedSys<P> for F
 where
-    F: Fn(P), P: SysParam,
+    F: Fn(P) + 'static, P: SysParam + 'static,
 {
+    fn into_container(self) -> Box<dyn Sys> {
+        Box::new(SysContainer { system: self, _marker: PhantomData })
+    }
+
     fn call(&self, world: &World) {
         let p = P::fetch(world);
         self(p);
     }
 }
 
-impl<F, P1, P2> NakedSys for F
+impl<F, P1, P2> NakedSys<(P1, P2)> for F
 where
-    F: Fn(P1, P2),
-    (P1, P2): SysParamBundle
+    F: Fn(P1, P2) + 'static, P1: SysParam + 'static, P2: SysParam + 'static
 {
+    fn into_container(self) -> Box<dyn Sys> {
+        Box::new(SysContainer { system: self, _marker: PhantomData })
+    }
+
     fn call(&self, world: &World) {
         let p1 = P1::fetch(world);
         let p2 = P2::fetch(world);
@@ -198,11 +155,15 @@ where
     }
 }
 
-impl<F, P1, P2, P3> NakedSys for F
+impl<F, P1, P2, P3> NakedSys<(P1, P2, P3)> for F
 where
-    F: Fn(P1, P2, P3),
-    (P1, P2, P3): SysParamBundle
+    F: Fn(P1, P2, P3) + 'static,
+    P1: SysParam + 'static, P2: SysParam + 'static, P3: SysParam + 'static
 {
+    fn into_container(self) -> Box<dyn Sys> {
+        Box::new(SysContainer { system: self, _marker: PhantomData })
+    }
+
     fn call(&self, world: &World) {
         let p1 = P1::fetch(world);
         let p2 = P2::fetch(world);
