@@ -104,7 +104,7 @@ impl<'w, Q: QueryBundle, F: FilterBundle> Query<'w, Q, F> {
     }
 }
 
-impl<'w, Q: QueryBundle, F: FilterBundle> SysParam for Query<'w, Q, F> {
+impl<'w, Q: QueryBundle, F: FilterBundle> SysParam<'w> for Query<'w, Q, F> {
     const MUTABLE: bool = Q::EXCLUSIVE;
 
     fn fetch(components: &'w Components) -> Self {

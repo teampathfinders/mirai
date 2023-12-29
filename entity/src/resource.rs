@@ -18,7 +18,7 @@ impl<T: Resource> Deref for Res<T> {
     }
 }
 
-impl<T: Resource> SysParam for Res<T> {
+impl<'w, T: Resource> SysParam<'w> for Res<T> {
     const MUTABLE: bool = false;
 }
 
@@ -40,6 +40,6 @@ impl<T: Resource> DerefMut for ResMut<T> {
     }
 }
 
-impl<T: Resource> SysParam for ResMut<T> {
+impl<'w, T: Resource> SysParam<'w> for ResMut<T> {
     const MUTABLE: bool = true;
 }

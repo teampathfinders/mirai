@@ -4,12 +4,12 @@ use crate::world::World;
 #[derive(Copy, Clone, PartialEq, Eq, Hash)]
 pub struct EntityId(pub(crate) usize);
 
-pub struct Entity<'w> {
+pub struct Entity<'w1, 'w2> {
     pub(crate) id: EntityId,
-    pub(crate) world: &'w World,
+    pub(crate) world: &'w1 World<'w2>,
 }
 
-impl Entity<'_> {
+impl Entity<'_, '_> {
     #[inline]
     pub fn id(&self) -> EntityId {
         self.id
@@ -21,19 +21,19 @@ impl Entity<'_> {
     }
 }
 
-pub struct EntityMut<'w> {
+pub struct EntityMut<'w1, 'w2> {
     pub(crate) id: EntityId,
-    pub(crate) world: &'w mut World,
+    pub(crate) world: &'w1 mut World<'w2>,
 }
 
-impl<'w, 's> EntityMut<'w> {
+impl<'w1, 'w2> EntityMut<'w1, 'w2> {
     #[inline]
     pub fn id(&self) -> EntityId {
         self.id
     }
 
     #[inline]
-    pub fn freeze(self) -> Entity<'w> {
+    pub fn freeze(self) -> Entity<'w1, 'w2> {
         Entity { id: self.id, world: self.world }
     }
 

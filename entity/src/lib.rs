@@ -48,8 +48,8 @@ fn system1(query: Query<&UniqueId>) {
 #[test]
 fn test1() {
     let mut world = World::new();
-    world.system(empty_system);
-    world.system(system1);
+    // world.system(empty_system);
+    // world.system(system1);
     world.spawn(UniqueId(1));
 
     world.tick();

@@ -31,13 +31,13 @@ impl<C1: Component, C2: Component, C3: Component> ComponentBundle for (C1, C2, C
     }
 }
 
-pub struct World {
+pub struct World<'w> {
     pub(crate) entities: Entities,
     pub(crate) components: Components,
-    pub(crate) systems: Systems,
+    pub(crate) systems: Systems<'w>,
 }
 
-impl World {
+impl<'w> World<'w> {
     pub fn new() -> Self {
         Self {
             entities: Entities::new(),
@@ -46,7 +46,7 @@ impl World {
         }
     }
 
-    pub fn spawn(&mut self, bundle: impl ComponentBundle) -> EntityMut {
+    pub fn spawn<'a>(&'a mut self, bundle: impl ComponentBundle) -> EntityMut<'a, 'w> {
         let id = self.entities.request_id();
         bundle.insert_into(id, &mut self.components);
 
@@ -54,15 +54,15 @@ impl World {
     }
 
     #[inline]
-    pub fn spawn_empty(&mut self) -> EntityMut {
+    pub fn spawn_empty(&'w mut self) -> EntityMut {
         self.spawn(())
     }
 
     pub fn system<P, S>(&mut self, system: S)
     where
-        P: SysParamBundle + 'static,
-        S: NakedSys<P> + 'static,
-        SysContainer<P, S>: Sys
+        P: SysParamBundle + 'w,
+        S: NakedSys<'w, P>,
+        SysContainer<'w, P, S>: Sys<'w>
     {
         self.systems.insert(system);
     }
@@ -71,11 +71,11 @@ impl World {
         self.systems.tick(&self.components);
     }
 
-    pub fn get(&self, id: EntityId) -> Option<Entity> {
+    pub fn get<'a>(&'a self, id: EntityId) -> Option<Entity<'a, 'w>> {
         Some(Entity { id, world: self })
     }
 
-    pub fn get_mut(&mut self, id: EntityId) -> Option<EntityMut> {
+    pub fn get_mut<'a>(&'a mut self, id: EntityId) -> Option<EntityMut<'a, 'w>> {
         Some(EntityMut { id, world: self })
     }
 }
