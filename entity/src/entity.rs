@@ -1,8 +1,5 @@
 use crate::component::Component;
 use crate::world::World;
-use bitvec::macros::internal::funty::Fundamental;
-use bitvec::vec::BitVec;
-use std::ops::Deref;
 
 #[derive(Copy, Clone, PartialEq, Eq, Hash)]
 pub struct EntityId(pub(crate) usize);

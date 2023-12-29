@@ -64,18 +64,18 @@ where
 /// Anything that implements this trait can be used as a parameter in a system.
 ///
 /// Restricted to [`Sized`] types to be able to use [`Self`] in return types.
-pub trait SysParam: Sized {
+pub trait SysParam<'w>: Sized {
     /// Indicates whether the parameter requires mutable (and therefore non-parallel)
     /// access to an item.
     const MUTABLE: bool;
 
     /// Fetches the request object(s) using an immutable reference to the world.
-    fn fetch(_components: &Components) -> Self {
+    fn fetch(_components: &'w Components) -> Self {
         panic!("{} does not support immutable fetching", std::any::type_name::<Self>());
     }
 
     /// Fetches the request object(s) using a mutable reference to the world.
-    fn fetch_mut(_components: &mut Components) -> Self {
+    fn fetch_mut(_components: &'w mut Components) -> Self {
         panic!("{} does not support mutable fetching", std::any::type_name::<Self>());
     }
 }

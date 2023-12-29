@@ -14,7 +14,7 @@ pub trait QueryReference<'w> {
     /// Indicates whether the reference is mutable or immutable.
     const MUTABLE: bool;
 
-    fn fetch(entity: Entity, components: &'w Components) -> Option<Self>
+    fn fetch(entity: EntityId, components: &'w Components) -> Option<Self>
     where
         Self: Sized,
     {
@@ -93,13 +93,23 @@ impl<T: Component + 'static> Filter for With<T> {
     }
 }
 
-pub struct Query<'w, T: QueryBundle, F: FilterBundle = ()> {
-    world: &'w World,
-    _marker: PhantomData<(T, F)>,
+pub struct Query<'w, Q: QueryBundle, F: FilterBundle = ()> {
+    components: &'w Components,
+    _marker: PhantomData<(Q, F)>,
+}
+
+impl<'w, Q: QueryBundle, F: FilterBundle> Query<'w, Q, F> {
+    pub(crate) fn new(components: &'w Components) -> Self {
+        Self { components, _marker: PhantomData }
+    }
 }
 
 impl<'w, Q: QueryBundle, F: FilterBundle> SysParam for Query<'w, Q, F> {
     const MUTABLE: bool = Q::EXCLUSIVE;
+
+    fn fetch(components: &'w Components) -> Self {
+        Query::new(components)
+    }
 }
 
 impl<'w, T: QueryBundle, F: FilterBundle> Iterator for Query<'w, T, F> {

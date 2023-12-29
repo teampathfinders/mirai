@@ -6,15 +6,17 @@ pub trait ComponentBundle {
     fn insert_into(self, entity: EntityId, store: &mut Components);
 }
 
+impl ComponentBundle for () {
+    fn insert_into(self, entity: EntityId, store: &mut Components) {}
+}
+
 impl<C: Component> ComponentBundle for C {
-    #[inline]
     fn insert_into(self, entity: EntityId, store: &mut Components) {
         store.insert(entity, self);
     }
 }
 
 impl<C1: Component, C2: Component> ComponentBundle for (C1, C2) {
-    #[inline]
     fn insert_into(self, entity: EntityId, store: &mut Components) {
         store.insert(entity, self.0);
         store.insert(entity, self.1);
@@ -22,7 +24,6 @@ impl<C1: Component, C2: Component> ComponentBundle for (C1, C2) {
 }
 
 impl<C1: Component, C2: Component, C3: Component> ComponentBundle for (C1, C2, C3) {
-    #[inline]
     fn insert_into(self, entity: EntityId, store: &mut Components) {
         store.insert(entity, self.0);
         store.insert(entity, self.1);
@@ -50,6 +51,11 @@ impl World {
         bundle.insert_into(id, &mut self.components);
 
         EntityMut { id, world: self }
+    }
+
+    #[inline]
+    pub fn spawn_empty(&mut self) -> EntityMut {
+        self.spawn(())
     }
 
     pub fn system<P, S>(&mut self, system: S)
