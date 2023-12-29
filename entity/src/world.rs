@@ -61,6 +61,10 @@ impl World {
         self.systems.insert(system);
     }
 
+    pub fn tick(&mut self) {
+        self.systems.tick(&self.components);
+    }
+
     pub fn get(&self, id: EntityId) -> Option<Entity> {
         Some(Entity { id, world: self })
     }

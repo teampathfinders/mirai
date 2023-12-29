@@ -1,10 +1,11 @@
 use std::fmt::Debug;
 use std::marker::PhantomData;
+use crate::component::Components;
 use crate::world::World;
 
 /// Represents a system that can be executed.
 pub trait Sys {
-    fn call(&self, world: &World);
+    fn call(&self, components: &Components);
 }
 
 /// This container is needed to constrain the `P` generic.
@@ -21,8 +22,8 @@ impl<F> Sys for SysContainer<(), F>
 where
     F: NakedSys<()>
 {
-    fn call(&self, world: &World) {
-        self.system.call(world);
+    fn call(&self, components: &Components) {
+        self.system.call(components);
     }
 }
 
@@ -31,8 +32,8 @@ where
     F: NakedSys<P>,
     P: SysParam
 {
-    fn call(&self, world: &World) {
-        self.system.call(world);
+    fn call(&self, components: &Components) {
+        self.system.call(components);
     }
 }
 
@@ -42,8 +43,8 @@ where
     (P1, P2): SysParamBundle
     // P1: SysParam, P2: SysParam
 {
-    fn call(&self, world: &World) {
-        self.system.call(world);
+    fn call(&self, components: &Components) {
+        self.system.call(components);
     }
 }
 
@@ -53,8 +54,8 @@ where
     (P1, P2, P3): SysParamBundle
     // P1: SysParam, P2: SysParam, P3: SysParam
 {
-    fn call(&self, world: &World) {
-        self.system.call(world);
+    fn call(&self, components: &Components) {
+        self.system.call(components);
     }
 }
 
@@ -69,12 +70,12 @@ pub trait SysParam: Sized {
     const MUTABLE: bool;
 
     /// Fetches the request object(s) using an immutable reference to the world.
-    fn fetch(_world: &World) -> Self {
+    fn fetch(_components: &Components) -> Self {
         panic!("{} does not support immutable fetching", std::any::type_name::<Self>());
     }
 
     /// Fetches the request object(s) using a mutable reference to the world.
-    fn fetch_mut(_world: &mut World) -> Self {
+    fn fetch_mut(_components: &mut Components) -> Self {
         panic!("{} does not support mutable fetching", std::any::type_name::<Self>());
     }
 }
@@ -112,7 +113,7 @@ impl<P1, P2, P3> SysParamBundle for (P1, P2, P3)
 pub trait NakedSys<P>: Sized {
     /// Puts the system into a container and then moves it to the heap to allow for proper storage.
     fn into_container(self) -> Box<dyn Sys>;
-    fn call(&self, world: &World);
+    fn call(&self, components: &Components);
 }
 
 impl<F> NakedSys<()> for F where F: Fn() + 'static {
@@ -120,7 +121,7 @@ impl<F> NakedSys<()> for F where F: Fn() + 'static {
         Box::new(SysContainer { system: self, _marker: PhantomData })
     }
 
-    fn call(&self, _world: &World) {
+    fn call(&self, _components: &Components) {
         self();
     }
 }
@@ -133,8 +134,8 @@ where
         Box::new(SysContainer { system: self, _marker: PhantomData })
     }
 
-    fn call(&self, world: &World) {
-        let p = P::fetch(world);
+    fn call(&self, components: &Components) {
+        let p = P::fetch(components);
         self(p);
     }
 }
@@ -147,9 +148,9 @@ where
         Box::new(SysContainer { system: self, _marker: PhantomData })
     }
 
-    fn call(&self, world: &World) {
-        let p1 = P1::fetch(world);
-        let p2 = P2::fetch(world);
+    fn call(&self, components: &Components) {
+        let p1 = P1::fetch(components);
+        let p2 = P2::fetch(components);
 
         self(p1, p2);
     }
@@ -164,21 +165,21 @@ where
         Box::new(SysContainer { system: self, _marker: PhantomData })
     }
 
-    fn call(&self, world: &World) {
-        let p1 = P1::fetch(world);
-        let p2 = P2::fetch(world);
-        let p3 = P3::fetch(world);
+    fn call(&self, components: &Components) {
+        let p1 = P1::fetch(components);
+        let p2 = P2::fetch(components);
+        let p3 = P3::fetch(components);
 
         self(p1, p2, p3);
     }
 }
 
 /// Stores and executes the systems.
-pub struct Systems {
+pub(crate) struct Systems {
     /// Systems that have to be executed sequentially because they require mutable access to the world.
-    pub(crate) exclusive: Vec<Box<dyn Sys>>,
+    exclusive: Vec<Box<dyn Sys>>,
     /// Systems that only need immutable access and can therefore run in parallel.
-    pub(crate) parallel: Vec<Box<dyn Sys>>
+    parallel: Vec<Box<dyn Sys>>
 }
 
 impl Systems {
@@ -196,8 +197,11 @@ impl Systems {
         SysContainer<P, S>: Sys
     {
         self.exclusive.push(system.into_container());
+    }
 
-        // println!("is exclusive: {}", P::MUTABLE);
-        // todo!()
+    pub fn tick(&mut self, components: &Components) {
+        for system in &self.exclusive {
+            system.call(components)
+        }
     }
 }
