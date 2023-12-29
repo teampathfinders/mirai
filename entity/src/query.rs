@@ -4,12 +4,15 @@ use crate::world::World;
 use std::marker::PhantomData;
 use crate::system::SysParam;
 
+/// A collection of [`QueryReference`].
 pub trait QueryBundle {
     const EXCLUSIVE: bool;
 }
 
+/// Represents a reference to a component.
 pub trait QueryReference<'w> {
-    const EXCLUSIVE: bool;
+    /// Indicates whether the reference is mutable or immutable.
+    const MUTABLE: bool;
 
     fn fetch(entity: Entity, components: &'w Components) -> Option<Self>
     where
@@ -20,32 +23,32 @@ pub trait QueryReference<'w> {
 }
 
 impl<'w, T: Component + 'static> QueryReference<'w> for &'w T {
-    const EXCLUSIVE: bool = false;
+    const MUTABLE: bool = false;
 }
 
 impl<'w, T: Component + 'static> QueryReference<'w> for &'w mut T {
-    const EXCLUSIVE: bool = true;
+    const MUTABLE: bool = true;
 }
 
 impl<'w, Q> QueryBundle for Q
 where
     Q: QueryReference<'w>
 {
-    const EXCLUSIVE: bool = Q::EXCLUSIVE;
+    const EXCLUSIVE: bool = Q::MUTABLE;
 }
 
 impl<'w1, 'w2, Q1, Q2> QueryBundle for (Q1, Q2)
 where
     Q1: QueryReference<'w1>, Q2: QueryReference<'w2>
 {
-    const EXCLUSIVE: bool = Q1::EXCLUSIVE || Q2::EXCLUSIVE;
+    const EXCLUSIVE: bool = Q1::MUTABLE || Q2::MUTABLE;
 }
 
 impl<'w1, 'w2, 'w3, Q1, Q2, Q3> QueryBundle for (Q1, Q2, Q3)
 where
     Q1: QueryReference<'w1>, Q2: QueryReference<'w2>, Q3: QueryReference<'w3>
 {
-    const EXCLUSIVE: bool = Q1::EXCLUSIVE || Q2::EXCLUSIVE || Q3::EXCLUSIVE;
+    const EXCLUSIVE: bool = Q1::MUTABLE || Q2::MUTABLE || Q3::MUTABLE;
 }
 
 pub trait Filter {
@@ -95,8 +98,8 @@ pub struct Query<'w, T: QueryBundle, F: FilterBundle = ()> {
     _marker: PhantomData<(T, F)>,
 }
 
-impl<'w, Q: QueryBundle, F: FilterBundle> SysParam<'w> for Query<'w, Q, F> {
-    const EXCLUSIVE: bool = Q::EXCLUSIVE;
+impl<'w, Q: QueryBundle, F: FilterBundle> SysParam for Query<'w, Q, F> {
+    const MUTABLE: bool = Q::EXCLUSIVE;
 }
 
 impl<'w, T: QueryBundle, F: FilterBundle> Iterator for Query<'w, T, F> {

@@ -18,8 +18,8 @@ impl<T: Resource> Deref for Res<T> {
     }
 }
 
-impl<'a, T: Resource> SysParam<'a> for Res<T> {
-    const EXCLUSIVE: bool = false;
+impl<T: Resource> SysParam for Res<T> {
+    const MUTABLE: bool = false;
 }
 
 pub struct ResMut<T: Resource> {
@@ -40,6 +40,6 @@ impl<T: Resource> DerefMut for ResMut<T> {
     }
 }
 
-impl<'a, T: Resource> SysParam<'a> for ResMut<T> {
-    const EXCLUSIVE: bool = true;
+impl<T: Resource> SysParam for ResMut<T> {
+    const MUTABLE: bool = true;
 }

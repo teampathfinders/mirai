@@ -52,11 +52,11 @@ impl World {
         EntityMut { id, world: self }
     }
 
-    pub fn system<'s, P, S>(&'s mut self, system: S)
+    pub fn system<P, S>(&mut self, system: S)
     where
         P: SysParamBundle + 'static,
-        S: NakedSys<'s, P> + 'static,
-        SysContainer<'s, P, S>: Sys<'s>
+        S: NakedSys<P> + 'static,
+        SysContainer<P, S>: Sys
     {
         self.systems.insert(system);
     }
