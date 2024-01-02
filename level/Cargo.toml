@@ -15,7 +15,7 @@ nbt = { package = "pyro-nbt", path = "../nbt" }
 serde = { version = "1.0.194", features = ["derive"] }
 tokio-util = "0.7.8"
 tracing = "0.1.38"
-anyhow = { version = "1.0.78", features = ["backtrace"] }
+anyhow = { version = "1.0.79", features = ["backtrace"] }
 bytemuck = "1.13.1"
 
 [build-dependencies]
