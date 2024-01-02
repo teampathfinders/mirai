@@ -1,6 +1,6 @@
 use dashmap::DashMap;
+use proto::raknet::AckRecord;
 
-use crate::raknet::AckRecord;
 use crate::raknet::FrameBatch;
 
 /// Holds previously sent raknet to be able to recover them when packet loss occurs.

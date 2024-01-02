@@ -5,15 +5,13 @@ use std::time::Duration;
 use dashmap::DashMap;
 use tokio::net::UdpSocket;
 use tokio::sync::{broadcast, mpsc, OnceCell};
+use proto::bedrock::{ConnectedPacket, Disconnect, DISCONNECTED_TIMEOUT};
 
 use util::{Result, Serialize};
-use util::bytes::MutableBuffer;
+use util::MutableBuffer;
 
-use crate::network::{
-    Disconnect, DISCONNECTED_TIMEOUT,
-};
 use crate::raknet::{BroadcastPacket, RawPacket};
-use crate::{config::SERVER_CONFIG, network::ConnectedPacket};
+use crate::config::SERVER_CONFIG;
 use crate::level::LevelManager;
 use crate::network::Session;
 

@@ -4,15 +4,14 @@ use std::sync::atomic::Ordering;
 use async_recursion::async_recursion;
 use flate2::Compression;
 use flate2::write::DeflateEncoder;
+use proto::bedrock::{CompressionAlgorithm, CONNECTED_PACKET_ID, ConnectedPacket, Packet};
+use proto::raknet::{Ack, AckRecord};
 
-use util::bytes::{BinaryWrite, MutableBuffer};
+use util::{BinaryWrite, MutableBuffer};
 use util::Result;
 use util::Serialize;
 
-use crate::network::{CONNECTED_PACKET_ID, ConnectedPacket, Packet};
-use crate::raknet::{Ack, AckRecord};
 use crate::raknet::{Frame, FrameBatch};
-use crate::network::CompressionAlgorithm;
 use crate::raknet::Reliability;
 use crate::raknet::SendPriority;
 use crate::config::SERVER_CONFIG;

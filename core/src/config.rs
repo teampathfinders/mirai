@@ -2,9 +2,9 @@
 
 use std::time::Duration;
 
-use crate::network::{ClientThrottleSettings, CompressionAlgorithm};
 use lazy_static::lazy_static;
 use parking_lot::RwLock;
+use proto::bedrock::{ClientThrottleSettings, CompressionAlgorithm};
 
 /// Global service that contains all configuration settings
 pub struct ServerConfig {

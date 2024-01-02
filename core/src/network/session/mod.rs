@@ -1,5 +1,6 @@
 use ::util::glob_export;
 
+glob_export!(level);
 glob_export!(session);
 glob_export!(manager);
 glob_export!(login);

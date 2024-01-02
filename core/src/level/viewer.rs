@@ -1,8 +1,8 @@
 use crate::level::LevelManager;
-use crate::network::{HeightmapType, SubChunkEntry, SubChunkResult};
 use std::cell::OnceCell;
 use std::sync::atomic::{AtomicI32, Ordering};
 use std::sync::Arc;
+use proto::bedrock::{HeightmapType, SubChunkEntry, SubChunkResult};
 use util::Vector;
 
 pub struct ChunkViewer {

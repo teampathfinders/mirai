@@ -1,5 +1,5 @@
 use level::{BiomeEncoding, Biomes, SubChunk, SubChunkVersion, SubLayer};
-use util::bytes::{BinaryWrite, MutableBuffer};
+use util::{BinaryWrite, MutableBuffer};
 
 #[inline]
 fn serialize_biome_palette(buffer: &mut MutableBuffer, palette: &[u32]) -> anyhow::Result<()> {

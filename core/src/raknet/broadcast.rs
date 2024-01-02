@@ -1,13 +1,10 @@
 use std::num::NonZeroU64;
 use anyhow::anyhow;
+use proto::bedrock::{ConnectedPacket, Packet};
 
-use util::{error, Result, Serialize};
-use util::bytes::ArcBuffer;
+use util::{ArcBuffer, error, Result, Serialize};
 
-use crate::network::{
-    {ConnectedPacket, Packet},
-    Session,
-};
+use crate::network::Session;
 
 /// A packet that can be broadcast to other sessions.
 ///

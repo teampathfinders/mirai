@@ -1,7 +1,7 @@
 use anyhow::anyhow;
+use proto::bedrock::{GameRule, ParsedCommand};
 use util::{error, pyassert, Result, TryExpect};
-
-use crate::{command::ParsedCommand, level::LevelManager, network::GameRule};
+use crate::level::LevelManager;
 
 pub const DEFAULT_EFFECT_DURATION: i32 = 30;
 

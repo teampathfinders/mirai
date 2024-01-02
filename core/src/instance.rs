@@ -1,7 +1,7 @@
 //! Contains the server instance.
 
 use anyhow::Context;
-use level::Dimension;
+use proto::types::Dimension;
 use std::net::{Ipv4Addr, Ipv6Addr, SocketAddrV4};
 use std::sync::Arc;
 use std::time::Duration;
@@ -11,24 +11,16 @@ use tokio::net::UdpSocket;
 use tokio::sync::oneshot::Receiver;
 use tokio_util::sync::CancellationToken;
 
-use util::bytes::MutableBuffer;
+use util::MutableBuffer;
 use util::{Deserialize, Serialize};
 use util::{Result, Vector};
 
-use crate::command::{Command, CommandDataType, CommandEnum, CommandOverload, CommandParameter, CommandPermissionLevel};
+use proto::bedrock::{BOOLEAN_GAME_RULES, CLIENT_VERSION_STRING, Command, CommandDataType, CommandEnum, CommandOverload, CommandParameter, CommandPermissionLevel, INTEGER_GAME_RULES, MOBEFFECT_NAMES, NETWORK_VERSION};
+use proto::raknet::{IncompatibleProtocol, OpenConnectionReply1, OpenConnectionReply2, OpenConnectionRequest1, OpenConnectionRequest2, RAKNET_VERSION, UnconnectedPing, UnconnectedPong};
 use crate::config::SERVER_CONFIG;
 use crate::level::LevelManager;
-use crate::network::{SessionManager, MOBEFFECT_NAMES};
-use crate::network::{BOOLEAN_GAME_RULES, CLIENT_VERSION_STRING, INTEGER_GAME_RULES, NETWORK_VERSION};
-use crate::raknet::IncompatibleProtocol;
-use crate::raknet::OpenConnectionReply1;
-use crate::raknet::OpenConnectionReply2;
-use crate::raknet::OpenConnectionRequest1;
-use crate::raknet::OpenConnectionRequest2;
+use crate::network::SessionManager;
 use crate::raknet::RawPacket;
-use crate::raknet::UnconnectedPing;
-use crate::raknet::UnconnectedPong;
-use crate::raknet::RAKNET_VERSION;
 
 /// Local IPv4 address
 pub const IPV4_LOCAL_ADDR: Ipv4Addr = Ipv4Addr::LOCALHOST;

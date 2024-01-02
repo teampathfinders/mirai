@@ -1,19 +1,11 @@
 use std::net::{Ipv4Addr, SocketAddr, SocketAddrV4};
 use std::str::FromStr;
-use level::Dimension;
+use proto::bedrock::{Animate, CommandOutput, CommandOutputMessage, CommandOutputType, CommandRequest, FormResponse, ParsedCommand, RequestAbility, SettingsCommand, TextData, TextMessage, TickSync, UpdateSkin};
+use proto::types::Dimension;
 use util::{bail, Deserialize, Result, TryExpect, Vector};
-use util::bytes::MutableBuffer;
+use util::MutableBuffer;
 
-use crate::network::{CommandOutput, CommandOutputMessage, CommandOutputType, CommandRequest, FormRequest, FormResponse, SettingsCommand, SubChunkResponse, TextData, TickSync, Transfer};
-use crate::network::{
-    {
-        Animate, RequestAbility,
-        TextMessage,
-        UpdateSkin,
-    },
-    Session,
-};
-use crate::command::ParsedCommand;
+use crate::network::Session;
 use crate::forms::{FormButton, FormElement, FormInput, FormLabel, FormSlider, MenuForm, Modal, FormButtonImage, FormDropdown, FormToggle, FormStepSlider, CustomForm};
 
 impl Session {

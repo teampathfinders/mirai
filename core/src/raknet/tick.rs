@@ -4,13 +4,11 @@ use std::{
 };
 
 use tokio::sync::mpsc;
+use proto::bedrock::{PlayerListRemove, TextData, TextMessage};
 
-use util::bytes::MutableBuffer;
+use util::MutableBuffer;
 
-use crate::network::{
-    {PlayerListRemove, TextMessage},
-    Session, TextData,
-};
+use crate::network::Session;
 
 /// Tick interval of the internal session tick.
 const INTERNAL_TICK_INTERVAL: Duration = Duration::from_millis(1000 / 20);

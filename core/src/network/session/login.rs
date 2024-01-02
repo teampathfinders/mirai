@@ -1,26 +1,16 @@
 use std::collections::HashMap;
 use std::num::{NonZeroI32, NonZeroU32};
 use std::sync::atomic::Ordering;
+use proto::bedrock::{AvailableCommands, BiomeDefinitionList, BroadcastIntent, CacheStatus, ChatRestrictionLevel, ChunkRadiusReply, ChunkRadiusRequest, CLIENT_VERSION_STRING, ClientToServerHandshake, CreativeContent, Difficulty, DISCONNECTED_LOGIN_FAILED, GameMode, Login, NETWORK_VERSION, NetworkChunkPublisherUpdate, NetworkSettings, PermissionLevel, PlayerMovementSettings, PlayerMovementType, PlayStatus, PropertyData, RequestNetworkSettings, ResourcePackClientResponse, ResourcePacksInfo, ResourcePackStack, ServerToClientHandshake, SetLocalPlayerAsInitialized, SpawnBiomeType, StartGame, Status, SubChunkResponse, TextData, TextMessage, ViolationWarning, WorldGenerator};
+use proto::crypto::Encryptor;
+use proto::types::Dimension;
 
-use level::Dimension;
-use util::bytes::MutableBuffer;
+use util::MutableBuffer;
 use util::{bail, BlockPosition, Deserialize, Result, Vector};
 
 use crate::config::SERVER_CONFIG;
-use crate::crypto::Encryptor;
 use crate::forms::{FormElement, FormInput, FormLabel, Modal};
-use crate::network::{FormRequest, CacheStatus, HeightmapType, ItemCollection, NetworkChunkPublisherUpdate, SubChunkEntry, SubChunkResponse, SubChunkResult};
 use crate::network::Session;
-use crate::network::{AvailableCommands, SubChunkRequestMode};
-use crate::network::{
-    BiomeDefinitionList, Difficulty, GameMode, SetLocalPlayerAsInitialized, TextMessage, ViolationWarning, CLIENT_VERSION_STRING, NETWORK_VERSION,
-};
-use crate::network::{BlockEntry, ItemEntry, LevelChunk, PropertyData, TextData};
-use crate::network::{
-    BroadcastIntent, ChatRestrictionLevel, ChunkRadiusReply, ChunkRadiusRequest, ClientToServerHandshake, CreativeContent, Login, NetworkSettings,
-    PermissionLevel, PlayStatus, PlayerMovementSettings, PlayerMovementType, RequestNetworkSettings, ResourcePackClientResponse, ResourcePackStack,
-    ResourcePacksInfo, ServerToClientHandshake, SpawnBiomeType, StartGame, Status, WorldGenerator, DISCONNECTED_LOGIN_FAILED,
-};
 
 impl Session {
     /// Handles a [`CacheStatus`] packet.

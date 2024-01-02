@@ -1,6 +1,6 @@
 use std::io::Write;
 
-use util::bytes::{BinaryRead, BinaryWrite, MutableBuffer, SharedBuffer};
+use util::{BinaryRead, BinaryWrite, MutableBuffer, SharedBuffer};
 use util::Result;
 
 use crate::raknet::Reliability;
