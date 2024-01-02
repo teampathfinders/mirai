@@ -44,6 +44,6 @@ aes = "0.8.3"
 serde_repr = "0.1.18"
 uuid = { version = "1.4.0", features = ["serde"], default-features = false }
 clap = { version = "4.4.12", features = ["cargo", "std"], default-features = false }
-anyhow = { version = "1.0.78", features = ["backtrace"] }
+anyhow = { version = "1.0.79", features = ["backtrace"] }
 lru = "0.12.1"
 bytemuck = "1.13.1"
