@@ -1,14 +1,22 @@
-pub fn add(left: usize, right: usize) -> usize {
-    left + right
+#[cfg(test)] mod test;
+
+pub struct SessionTransform {
+    translation: util::Vector<f32, 3>,
+    rotation: util::Vector<f32, 3>
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
+pub struct Replicator {
+    con: redis::aio::MultiplexedConnection
+}
 
-    #[test]
-    fn it_works() {
-        let result = add(2, 2);
-        assert_eq!(result, 4);
+impl Replicator {
+    pub async fn new() -> anyhow::Result<Self> {
+        let client = redis::Client::open("redis://127.0.0.1:6379/")?;
+        let mut con = client.get_multiplexed_tokio_connection().await?;
+
+        Ok(Self {
+            con
+        })
     }
 }
+

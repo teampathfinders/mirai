@@ -1,8 +1,11 @@
 [package]
-name = "replicator"
+name = "pyro-replicator"
 version = "0.1.0"
 edition = "2021"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
 [dependencies]
+util = { package = "pyro-util", path = "../util" }
+
+anyhow = "1.0.79"
+tokio = { version = "1.35.1", features = ["macros", "rt"] }
+redis = { version = "0.24.0", default-features = false, features = ["aio", "ahash", "streams", "tokio-comp", "connection-manager"] }
