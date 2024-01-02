@@ -11,4 +11,4 @@ rust-version = "1.65.0"
 util = { package = "pyro-util", path = "../util" }
 serde = { version = "1.0.164", features = ["derive"] }
 paste = "1.0.12"
-anyhow = "1.0.78"
+anyhow = "1.0.79"
