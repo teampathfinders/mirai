@@ -165,13 +165,13 @@ impl SessionManager {
 
     /// Returns how many clients are currently connected this tracker.
     #[inline]
-    pub fn session_count(&self) -> usize {
+    pub fn player_count(&self) -> usize {
         self.list.len()
     }
 
     /// Returns the maximum amount of sessions this tracker will allow.
     #[inline]
-    pub fn max_session_count(&self) -> usize {
+    pub fn max_player_count(&self) -> usize {
         SERVER_CONFIG.read().max_players
     }
 

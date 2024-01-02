@@ -31,7 +31,7 @@ use crate::raknet::UnconnectedPong;
 use crate::raknet::RAKNET_VERSION;
 
 /// Local IPv4 address
-pub const IPV4_LOCAL_ADDR: Ipv4Addr = Ipv4Addr::UNSPECIFIED;
+pub const IPV4_LOCAL_ADDR: Ipv4Addr = Ipv4Addr::LOCALHOST;
 /// Local IPv6 address
 pub const IPV6_LOCAL_ADDR: Ipv6Addr = Ipv6Addr::UNSPECIFIED;
 /// Size of the UDP receive buffer.
@@ -331,8 +331,8 @@ impl ServerInstance {
         let metadata = Self::refresh_metadata(
             &String::from_utf8_lossy(&[0xee, 0x84, 0x88, 0x20]),
             server_guid,
-            sess_manager.session_count(),
-            sess_manager.max_session_count(),
+            sess_manager.player_count(),
+            sess_manager.max_player_count(),
         );
 
         // This is heap-allocated because stack data is stored inline in tasks.

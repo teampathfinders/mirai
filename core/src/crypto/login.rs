@@ -144,8 +144,6 @@ fn parse_mojang_token(token: &str, key: &str) -> anyhow::Result<String> {
 ///
 /// Just like the second one, this token can be verified using the identityPublicKey from the last token.
 fn parse_identity_token(token: &str, key: &str) -> anyhow::Result<IdentityTokenPayload> {
-    tracing::debug!("{token}");
-
     let bytes = BASE64_ENGINE.decode(key)?;
     let public_key = match spki::SubjectPublicKeyInfoRef::try_from(bytes.as_ref()) {
         Ok(p) => p,
@@ -165,8 +163,6 @@ fn parse_identity_token(token: &str, key: &str) -> anyhow::Result<IdentityTokenP
 
 /// Verifies and decodes the user data token.
 fn parse_user_data_token(token: &str, key: &str) -> anyhow::Result<UserDataTokenPayload> {
-    tracing::debug!("{token}");
-
     let bytes = BASE64_ENGINE.decode(key)?;
     let public_key = match spki::SubjectPublicKeyInfoRef::try_from(bytes.as_ref()) {
         Ok(p) => p,
@@ -205,7 +201,7 @@ pub fn parse_identity_data(buffer: &mut SharedBuffer) -> anyhow::Result<Identity
             if !key.eq(MOJANG_PUBLIC_KEY) {
                 bail!(Malformed, "Identity token was not signed by Mojang");
             }
-            tracing::debug!("Identity verified");
+            tracing::trace!("Identity verified");
 
             key = parse_mojang_token(&tokens.chain[1], &key)?;
             parse_identity_token(&tokens.chain[2], &key)?

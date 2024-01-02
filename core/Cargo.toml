@@ -47,3 +47,4 @@ clap = { version = "4.4.11", features = ["cargo", "std"], default-features = fal
 anyhow = { version = "1.0.76", features = ["backtrace"] }
 lru = "0.12.1"
 bytemuck = "1.13.1"
+legion = "0.4.0"

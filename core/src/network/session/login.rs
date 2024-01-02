@@ -29,8 +29,6 @@ impl Session {
         let request = CacheStatus::deserialize(packet.snapshot())?;
         self.cache_support.set(request.supports_cache)?;
 
-        tracing::debug!("[{}] Cache status is: {}", self.get_display_name()?, request.supports_cache);
-
         Ok(())
     }
 
@@ -49,7 +47,6 @@ impl Session {
     /// and the new player gets a list of all current players.
     pub fn process_local_initialized(&self, packet: MutableBuffer) -> anyhow::Result<()> {
         let request = SetLocalPlayerAsInitialized::deserialize(packet.snapshot())?;
-        tracing::debug!("[{}] Initialised with runtime ID {}", self.get_display_name()?, request.runtime_id);
 
         // Initialise chunk loading
         let lock = self.player.read();
@@ -122,7 +119,6 @@ impl Session {
         if request.radius <= 0 {
             anyhow::bail!("Render distance must be greater than 0");
         }
-        tracing::debug!("Chunk radius updated to: {}", request.radius);
 
         {
             let player = self.player.read();
@@ -133,8 +129,6 @@ impl Session {
     }
 
     pub fn process_pack_client_response(&self, packet: MutableBuffer) -> anyhow::Result<()> {
-        tracing::debug!("Received client resource response");
-
         let _request = ResourcePackClientResponse::deserialize(packet.snapshot())?;
 
         // TODO: Implement resource packs.
@@ -252,8 +246,6 @@ impl Session {
     }
 
     pub fn process_cts_handshake(&self, packet: MutableBuffer) -> anyhow::Result<()> {
-        tracing::debug!("Handshake received");
-
         ClientToServerHandshake::deserialize(packet.snapshot())?;
 
         let response = PlayStatus { status: Status::LoginSuccess };
@@ -304,8 +296,6 @@ impl Session {
 
         self.send(ServerToClientHandshake { jwt: &jwt })?;
         self.encryptor.set(encryptor)?;
-
-        tracing::info!("`{}` has connected", self.get_display_name()?);
 
         Ok(())
     }

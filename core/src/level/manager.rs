@@ -54,6 +54,7 @@ impl Default for LevelCache {
 }
 
 pub struct LevelManager {
+    world: legion::World,
     cache: RwLock<LevelCache>,
     /// Used to load world data from disk.
     provider: Provider,
@@ -81,6 +82,7 @@ impl LevelManager {
         let cache = RwLock::new(LevelCache::new());
 
         let manager = Arc::new(Self {
+            world: legion::World::default(),
             provider,
             cache,
             commands: DashMap::new(),

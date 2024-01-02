@@ -47,7 +47,7 @@ pub struct Encryptor {
 impl Debug for Encryptor {
     /// Allow usage in debug derived structs, but prevent logging the secret.
     fn fmt(&self, fmt: &mut Formatter<'_>) -> std::fmt::Result {
-        fmt.write_str("Encryptor")
+        fmt.write_str("Encryptor(*secret hidden*)")
     }
 }
 
@@ -99,8 +99,6 @@ impl Encryptor {
 
         // Generate a JWT containing the server public key and a salt.
         let jwt = jsonwebtoken::encode(&header, &claims, &signing_key)?;
-        tracing::debug!("{jwt}");
-
         let client_public_key = {
             let bytes = BASE64_ENGINE.decode(client_public_key_der)?;
             match PublicKey::from_public_key_der(&bytes) {
@@ -119,8 +117,6 @@ impl Encryptor {
 
         let mut secret = [0u8; 32];
         secret.copy_from_slice(&hasher.finalize()[..32]);
-
-        tracing::debug!("{secret:?}");
 
         // Initialisation vector is composed of the first 12 bytes of the secret and 0x0000000002
         let mut iv = [0u8; 16];

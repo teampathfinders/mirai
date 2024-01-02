@@ -45,6 +45,7 @@ impl Session {
                 .display_name;
 
             // Check that the source is equal to the player name to prevent spoofing.
+            #[cfg(not(debug_assertions))] // Allow modifications for development purposes.
             if actual != source {
                 self.kick("Illegal packet modifications detected")?;
                 anyhow::bail!(
