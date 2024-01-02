@@ -17,6 +17,7 @@ use util::{Result, Vector};
 
 use proto::bedrock::{BOOLEAN_GAME_RULES, CLIENT_VERSION_STRING, Command, CommandDataType, CommandEnum, CommandOverload, CommandParameter, CommandPermissionLevel, INTEGER_GAME_RULES, MOBEFFECT_NAMES, NETWORK_VERSION};
 use proto::raknet::{IncompatibleProtocol, OpenConnectionReply1, OpenConnectionReply2, OpenConnectionRequest1, OpenConnectionRequest2, RAKNET_VERSION, UnconnectedPing, UnconnectedPong};
+use replicator::Replicator;
 use crate::config::SERVER_CONFIG;
 use crate::level::LevelManager;
 use crate::network::SessionManager;
@@ -66,7 +67,10 @@ impl ServerInstance {
         let token = CancellationToken::new();
         let udp_socket = Arc::new(UdpSocket::bind(SocketAddrV4::new(IPV4_LOCAL_ADDR, ipv4_port)).await?);
 
-        let session_manager = Arc::new(SessionManager::new());
+        let replicator = Arc::new(Replicator::new().await?);
+        // replicator.sub_text_message();
+
+        let session_manager = Arc::new(SessionManager::new(replicator));
 
         let level = LevelManager::new(session_manager.clone(), token.clone())?;
 

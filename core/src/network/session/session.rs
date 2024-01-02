@@ -14,6 +14,7 @@ use tokio_util::sync::CancellationToken;
 use proto::bedrock::{CommandPermissionLevel, DeviceOS, Disconnect, GameMode, PermissionLevel, Skin};
 use proto::crypto::{Encryptor, IdentityData, UserData};
 use proto::uuid::Uuid;
+use replicator::Replicator;
 
 use util::{error, Result, Vector};
 use util::MutableBuffer;
@@ -74,6 +75,7 @@ pub struct Session {
     pub player: RwLock<PlayerData>,
     /// Raknet-specific data.
     pub raknet: RaknetData,
+    pub replicator: Arc<Replicator>
 }
 
 impl Session {
@@ -82,6 +84,7 @@ impl Session {
         broadcast: broadcast::Sender<BroadcastPacket>,
         receiver: mpsc::Receiver<MutableBuffer>,
         level_manager: Arc<LevelManager>,
+        replicator: Arc<Replicator>,
         ipv4_socket: Arc<UdpSocket>,
         address: SocketAddr,
         mtu: u16,
@@ -124,6 +127,7 @@ impl Session {
             },
             broadcast,
             level: level_manager,
+            replicator,
             active: CancellationToken::new(),
             current_tick: AtomicU64::new(0),
         });

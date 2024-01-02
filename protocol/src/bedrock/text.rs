@@ -100,7 +100,7 @@ pub struct TextMessage<'a> {
     /// Whether strings containing `%` should be translated by the client.
     pub needs_translation: bool,
     /// XUID of the source.
-    pub xuid: &'a str,
+    pub xuid: u64,
     /// Platform chat ID of the source.
     pub platform_chat_id: &'a str
 }
@@ -166,7 +166,7 @@ impl<'a> Serialize for TextMessage<'a> {
             }
         }
 
-        buffer.write_str(self.xuid)?;
+        buffer.write_str(&self.xuid.to_string())?;
         buffer.write_str(self.platform_chat_id)?;
 
         Ok(())
@@ -248,7 +248,7 @@ impl<'a> Deserialize<'a> for TextMessage<'a> {
             _ => anyhow::bail!("Invalid message type")
         };
 
-        let xuid = buffer.read_str()?;
+        let xuid = buffer.read_str()?.parse()?;
         let platform_chat_id = buffer.read_str()?;
 
         Ok(Self {

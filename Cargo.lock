@@ -1406,6 +1406,7 @@ dependencies = [
  "pyro-level",
  "pyro-nbt",
  "pyro-proto",
+ "pyro-repl",
  "pyro-util",
  "rand",
  "serde",
@@ -1465,13 +1466,15 @@ dependencies = [
 ]
 
 [[package]]
-name = "pyro-replicator"
+name = "pyro-repl"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "pyro-proto",
  "pyro-util",
  "redis",
  "tokio",
+ "tracing",
 ]
 
 [[package]]

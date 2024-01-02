@@ -46,6 +46,9 @@ impl Session {
                 );
             }
 
+            // Send chat message to replication layer
+            self.replicator.pub_text_message(&request);
+
             // We must also return the packet to the client that sent it.
             // Otherwise their message won't be displayed in their own chat.
             self.broadcast(request)
