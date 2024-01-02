@@ -16,7 +16,7 @@ use rand::rngs::OsRng;
 use rand::Rng;
 use sha2::{Digest, Sha256};
 
-use util::bytes::MutableBuffer;
+use util::MutableBuffer;
 use util::{bail, Result};
 
 type Aes256CtrBE = ctr::Ctr64BE<aes::Aes256>;

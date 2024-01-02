@@ -2,7 +2,7 @@ use util::{Result, Serialize};
 use util::{BinaryWrite, MutableBuffer};
 
 use crate::bedrock::ConnectedPacket;
-use crate::bedrock::cache_blob::CacheBlob;
+use crate::bedrock::CacheBlob;
 
 #[derive(Debug, Clone)]
 pub struct CacheMissResponse<'a> {

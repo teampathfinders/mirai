@@ -3,6 +3,7 @@ use std::io::Write;
 use util::{Vector, Serialize, {MutableBuffer, BinaryWrite}};
 
 use crate::bedrock::ConnectedPacket;
+use crate::types::Dimension;
 
 #[derive(Debug, Default, Copy, Clone, PartialEq, Eq)]
 #[repr(u8)]

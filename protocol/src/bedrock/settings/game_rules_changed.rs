@@ -3,7 +3,7 @@ use std::fmt;
 use util::{bail, Result, Serialize};
 use util::{BinaryWrite, MutableBuffer, size_of_varint, VarInt, VarString};
 
-use crate::{command::ParsedArgument, network::ConnectedPacket};
+use crate::{bedrock::ParsedArgument, bedrock::ConnectedPacket};
 
 // FIXME: This whole module could use some cleanup...
 

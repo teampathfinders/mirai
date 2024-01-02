@@ -1,7 +1,6 @@
 //! Code for working with encryption, decryption and login tokens.
 
-pub use encrypt::*;
-pub use login::*;
+use util::glob_export;
 
-mod encrypt;
-mod login;
+glob_export!(encrypt);
+glob_export!(login);

@@ -1,4 +1,4 @@
-use level::Dimension;
+use crate::types::Dimension;
 use util::{Result, Vector};
 use util::{BinaryWrite, MutableBuffer};
 use util::Serialize;

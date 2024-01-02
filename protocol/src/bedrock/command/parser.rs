@@ -4,9 +4,7 @@ use std::str::Split;
 
 use dashmap::DashMap;
 
-use util::{bail, Result};
-
-use crate::command::{Command, CommandDataType, CommandOverload};
+use crate::bedrock::{Command, CommandDataType, CommandOverload};
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum CommandParseErrorKind {

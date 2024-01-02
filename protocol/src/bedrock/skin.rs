@@ -6,7 +6,7 @@ use serde_repr::Deserialize_repr;
 use util::{
     bail, Error, Result,
 };
-use util::bytes::{BinaryRead, BinaryWrite, MutableBuffer, SharedBuffer};
+use util::{BinaryRead, BinaryWrite, MutableBuffer, SharedBuffer};
 
 /// Size of arms of a skin.
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Deserialize)]
@@ -382,7 +382,7 @@ mod base64 {
     use base64::Engine;
     use serde::{Deserialize, Deserializer};
 
-    use util::bytes::MutableBuffer;
+    use util::MutableBuffer;
 
     const ENGINE: base64::engine::GeneralPurpose = base64::engine::general_purpose::STANDARD;
 

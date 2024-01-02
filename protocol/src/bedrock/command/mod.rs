@@ -1,7 +1,9 @@
 use util::glob_export;
 
-util::glob_export!(available_commands);
-util::glob_export!(command_output);
-util::glob_export!(command_request);
-util::glob_export!(connect_automation_client);
-util::glob_export!(settings_command);
+glob_export!(available_commands);
+glob_export!(command);
+glob_export!(command_output);
+glob_export!(command_request);
+glob_export!(connect_automation_client);
+glob_export!(parser);
+glob_export!(settings_command);

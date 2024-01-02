@@ -1,4 +1,4 @@
-use level::Dimension;
+use crate::types::Dimension;
 
 use crate::bedrock::ConnectedPacket;
 

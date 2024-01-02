@@ -1,6 +1,6 @@
 use std::io::Write;
 
-use util::bytes::{BinaryWrite, MutableBuffer, SharedBuffer};
+use util::{BinaryWrite, MutableBuffer, SharedBuffer};
 use util::Result;
 
 /// A blob used in the cache protocol.

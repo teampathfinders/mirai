@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use level::Dimension;
+use crate::types::Dimension;
 use util::{Serialize, Vector};
 use util::Result;
 use util::BlockPosition;

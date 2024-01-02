@@ -4,11 +4,11 @@ use jsonwebtoken::{Algorithm, DecodingKey, Validation};
 use p384::pkcs8::spki;
 use uuid::Uuid;
 
-use util::bytes::{BinaryRead, SharedBuffer};
+use util::{BinaryRead, SharedBuffer};
 use util::{bail, error, Result};
 
-use crate::network::Skin;
-use crate::network::{DeviceOS, UiProfile};
+use crate::bedrock::Skin;
+use crate::bedrock::{DeviceOS, UiProfile};
 
 /// Mojang's public key.
 /// Used to verify the second token in the identity chain.
@@ -201,7 +201,6 @@ pub fn parse_identity_data(buffer: &mut SharedBuffer) -> anyhow::Result<Identity
             if !key.eq(MOJANG_PUBLIC_KEY) {
                 bail!(Malformed, "Identity token was not signed by Mojang");
             }
-            tracing::trace!("Identity verified");
 
             key = parse_mojang_token(&tokens.chain[1], &key)?;
             parse_identity_token(&tokens.chain[2], &key)?

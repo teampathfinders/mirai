@@ -1,4 +1,4 @@
-use level::Dimension;
+use crate::types::Dimension;
 use util::{BinaryRead, SharedBuffer};
 use util::{Deserialize, Vector};
 use crate::bedrock::ConnectedPacket;
