@@ -71,7 +71,7 @@ impl FrameBatch {
     }
 }
 
-/// Encapsulates game packets.
+/// Encapsulates game raknet.
 ///
 /// A frame provides extra metadata for the Raknet reliability layer.
 #[derive(Debug, Default)]

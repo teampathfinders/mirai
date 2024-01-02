@@ -291,7 +291,7 @@ impl Session {
         self.user_data.set(request.user_data)?;
         self.player.write().skin = Some(request.skin);
 
-        // Flush packets before enabling encryption
+        // Flush raknet before enabling encryption
         self.flush().await?;
 
         self.send(ServerToClientHandshake { jwt: &jwt })?;

@@ -22,11 +22,11 @@ use crate::network::Session;
 pub struct PacketConfig {
     /// In case encryption is enabled, this reliability must always be reliable ordered.
     pub reliability: Reliability,
-    /// Priority specifies if this packet has sending priority over other packets.
+    /// Priority specifies if this packet has sending priority over other raknet.
     pub priority: SendPriority,
 }
 
-/// A default packet config that can be used for all packets.
+/// A default packet config that can be used for all raknet.
 pub const DEFAULT_SEND_CONFIG: PacketConfig = PacketConfig {
     reliability: Reliability::ReliableOrdered,
     priority: SendPriority::Medium,
@@ -126,7 +126,7 @@ impl Session {
         }
 
         if tick % 2 == 0 {
-            // Also flush broadcast packets.
+            // Also flush broadcast raknet.
             if let Some(frames) =
                 self.raknet.send_queue.flush(SendPriority::Medium)
             {
@@ -288,7 +288,7 @@ impl Session {
             }
         }
 
-        // Send remaining packets not sent by loop
+        // Send remaining raknet not sent by loop
         if !batch.is_empty() {
             serialized.clear();
             batch.serialize(&mut serialized)?;

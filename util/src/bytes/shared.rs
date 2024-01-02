@@ -4,7 +4,6 @@ use std::ops::{Deref, DerefMut, Index};
 use std::sync::Arc;
 use std::{cmp, fmt, io};
 
-use crate::bail;
 use crate::bytes::{BinaryRead, MutableBuffer};
 
 #[derive(Debug, Clone)]
@@ -88,7 +87,7 @@ impl<'a> BinaryRead<'a> for &'a [u8] {
     #[inline]
     fn take_n(&mut self, n: usize) -> anyhow::Result<&'a [u8]> {
         if self.len() < n {
-            bail!(UnexpectedEof, "expected {n} remaining bytes, got {}", self.len())
+            crate::bail!(UnexpectedEof, "expected {n} remaining bytes, got {}", self.len())
         } else {
             let (a, b) = self.split_at(n);
             // *self = SharedBuffer::from(b);

@@ -1,0 +1,13 @@
+[package]
+name = "pyro-protocol"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+util = { package = "pyro-util", path = "../util" }
+nbt = { package = "pyro-nbt", path = "../nbt" }
+
+anyhow = "1.0.79"
+bytemuck = "1.14.0"
+uuid = "1.6.1"
+serde_repr = "0.1.18"

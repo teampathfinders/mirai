@@ -1,4 +1,4 @@
-use util::bytes::{BinaryRead, BinaryWrite};
+use util::{BinaryRead, BinaryWrite};
 
 use crate::PackedArrayReturn;
 

@@ -33,17 +33,17 @@ pub struct RaknetData {
     /// Compound ID last used by the server.
     pub compound_id: AtomicU16,
     /// Latest sequence index that was received.
-    /// Sequenced packets with sequence numbers less than this one will be discarded.
+    /// Sequenced raknet with sequence numbers less than this one will be discarded.
     pub client_batch_number: AtomicU32,
-    /// Collects fragmented packets.
+    /// Collects fragmented raknet.
     pub compound_collector: CompoundCollector,
-    /// Channels used to order packets.
+    /// Channels used to order raknet.
     pub order_channels: [OrderChannel; ORDER_CHANNEL_COUNT],
-    /// Keeps track of all packets that are waiting to be sent.
+    /// Keeps track of all raknet that are waiting to be sent.
     pub send_queue: SendQueues,
     /// Packets that are ready to be acknowledged.
     pub confirmed_packets: Mutex<Vec<u32>>,
-    /// Queue that stores packets in case they need to be recovered due to packet loss.
+    /// Queue that stores raknet in case they need to be recovered due to packet loss.
     pub recovery_queue: RecoveryQueue,
     /// Whether compression has been configured for this session.
     /// This is set to true after network settings have been sent to the client.

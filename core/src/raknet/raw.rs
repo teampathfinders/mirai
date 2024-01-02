@@ -24,7 +24,7 @@ impl RawPacket {
     /// If the packet is encapsulated, this will always return a frame ID in the range 0x80 to 0x8d.
     /// When the packet is not encapsulated, the actual packet ID will be used.
     ///
-    /// So this should generally only be used for packets that are not encapsulated.
+    /// So this should generally only be used for raknet that are not encapsulated.
     #[inline]
     pub fn packet_id(&self) -> Option<u8> {
         self.buf.first().copied()

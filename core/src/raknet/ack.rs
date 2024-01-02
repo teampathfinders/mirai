@@ -22,7 +22,7 @@ impl Session {
     pub async fn process_nak(&self, packet: SharedBuffer<'_>) -> anyhow::Result<()> {
         let nack = Nak::deserialize(packet)?;
         let frame_batches = self.raknet.recovery_queue.recover(&nack.records);
-        tracing::info!("Recovered packets: {:?}", nack.records);
+        tracing::info!("Recovered raknet: {:?}", nack.records);
 
         let mut serialized = MutableBuffer::new();
         for frame_batch in frame_batches {

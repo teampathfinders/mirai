@@ -8,7 +8,7 @@ use anyhow::anyhow;
 use std::fs::File;
 use std::io::Read;
 use std::path::{Path, PathBuf};
-use util::bytes::BinaryRead;
+use util::BinaryRead;
 use util::Vector;
 
 /// Provides world data.

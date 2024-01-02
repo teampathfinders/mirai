@@ -299,7 +299,7 @@ impl ServerInstance {
 
     /// Responds to the [`OpenConnectionRequest2`] packet with [`OpenConnectionReply2`].
     /// This is also when a session is created for the client.
-    /// From this point, all packets are encoded in a [`Frame`](crate::raknet::Frame).
+    /// From this point, all raknet are encoded in a [`Frame`](crate::raknet::Frame).
     #[inline]
     fn process_open_connection_request2(
         mut packet: RawPacket,
@@ -323,7 +323,7 @@ impl ServerInstance {
         Ok(packet)
     }
 
-    /// Receives packets from IPv4 clients and adds them to the receive queue
+    /// Receives raknet from IPv4 clients and adds them to the receive queue
     async fn udp_recv_job(token: CancellationToken, udp_socket: Arc<UdpSocket>, sess_manager: Arc<SessionManager>) {
         let server_guid = rand::random();
 

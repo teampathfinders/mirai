@@ -1,7 +1,7 @@
 use util::{Result, Serialize};
 use util::bytes::{BinaryRead, BinaryWrite, MutableBuffer, SharedBuffer, size_of_varint};
 
-/// Game packets are prefixed with a length and a header.
+/// Game raknet are prefixed with a length and a header.
 /// The header contains the packet ID and target/subclient IDs in case of split screen multiplayer.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Header {

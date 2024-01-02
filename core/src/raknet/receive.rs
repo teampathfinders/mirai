@@ -66,10 +66,10 @@ impl Session {
     /// Processes a batch of frames.
     ///
     /// This performs the actions required by the Raknet reliability layer, such as
-    /// * Inserting packets into the order channels
-    /// * Inserting packets into the compound collector
+    /// * Inserting raknet into the order channels
+    /// * Inserting raknet into the compound collector
     /// * Discarding old sequenced frames
-    /// * Acknowledging reliable packets
+    /// * Acknowledging reliable raknet
     async fn process_frame_batch(&self, packet: MutableBuffer) -> anyhow::Result<()> {
         let batch = FrameBatch::deserialize(packet.snapshot())?;
         self.raknet

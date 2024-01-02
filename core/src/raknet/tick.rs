@@ -45,12 +45,12 @@ impl Session {
                 }
             }
 
-            // Flush last packets before closing
+            // Flush last raknet before closing
             match self.flush().await {
                 Ok(_) => (),
                 Err(_e) => {
                     tracing::error!(
-                        "Failed to flush last packets before session close"
+                        "Failed to flush last raknet before session close"
                     );
                 }
             }

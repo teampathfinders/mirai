@@ -4,7 +4,7 @@ use paste::paste;
 use serde::ser::{Impossible, SerializeMap, SerializeSeq, SerializeStruct, SerializeTuple};
 use serde::{ser, Serialize};
 
-use util::bytes::{BinaryWrite, MutableBuffer};
+use util::{BinaryWrite, MutableBuffer};
 
 use crate::{BigEndian, FieldType, LittleEndian, NbtError, Variable, Variant, VariantImpl};
 

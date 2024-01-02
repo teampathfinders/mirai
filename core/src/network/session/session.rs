@@ -58,7 +58,7 @@ pub struct Session {
     pub identity: OnceCell<IdentityData>,
     /// Extra user data, such as device OS and language.
     pub user_data: OnceCell<UserData>,
-    /// Used to encrypt and decrypt packets.
+    /// Used to encrypt and decrypt raknet.
     pub encryptor: OnceCell<Encryptor>,
     /// Whether the client supports the chunk cache.
     pub cache_support: OnceCell<bool>,
@@ -67,7 +67,7 @@ pub struct Session {
     pub initialized: AtomicBool,
     /// Manages entire world.
     pub level: Arc<LevelManager>,
-    /// Sends packets into the broadcasting channel.
+    /// Sends raknet into the broadcasting channel.
     pub broadcast: broadcast::Sender<BroadcastPacket>,
     /// Indicates whether this session is active.
     pub active: CancellationToken,

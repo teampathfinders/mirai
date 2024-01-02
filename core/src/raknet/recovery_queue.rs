@@ -3,11 +3,11 @@ use dashmap::DashMap;
 use crate::raknet::AckRecord;
 use crate::raknet::FrameBatch;
 
-/// Holds previously sent packets to be able to recover them when packet loss occurs.
+/// Holds previously sent raknet to be able to recover them when packet loss occurs.
 ///
-/// This data structures keeps track of all packets that have been sent by the server.
-/// When the client sends an ACK, the specified packets are remove from the queue.
-/// If a NAK is received, the specified packets can be recovered from the queue.
+/// This data structures keeps track of all raknet that have been sent by the server.
+/// When the client sends an ACK, the specified raknet are remove from the queue.
+/// If a NAK is received, the specified raknet can be recovered from the queue.
 #[derive(Default, Debug)]
 pub struct RecoveryQueue {
     frames: DashMap<u32, FrameBatch>,
@@ -27,7 +27,7 @@ impl RecoveryQueue {
         self.frames.insert(batch.sequence_number, batch);
     }
 
-    /// Removes the specified packets from the recovery queue.
+    /// Removes the specified raknet from the recovery queue.
     ///
     /// This method should be called when an ACK is received.
     pub fn confirm(&self, records: &[AckRecord]) {
@@ -45,7 +45,7 @@ impl RecoveryQueue {
         }
     }
 
-    /// Recovers the specified packets from the recovery queue.
+    /// Recovers the specified raknet from the recovery queue.
     ///
     /// This method should be called when a NAK is received.
     pub fn recover(&self, records: &[AckRecord]) -> Vec<FrameBatch> {

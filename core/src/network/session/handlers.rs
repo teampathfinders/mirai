@@ -58,7 +58,7 @@ impl Session {
             // Otherwise their message won't be displayed in their own chat.
             self.broadcast(request)
         } else {
-            // Only the server is allowed to create text packets that are not of the chat type.
+            // Only the server is allowed to create text raknet that are not of the chat type.
             anyhow::bail!("Client sent an illegally modified text message packet")
         }
 

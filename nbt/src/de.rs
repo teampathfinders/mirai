@@ -5,7 +5,7 @@ use serde::de::{DeserializeSeed, MapAccess, SeqAccess, Visitor};
 use serde::{de, Deserialize};
 
 use util::bail;
-use util::bytes::BinaryRead;
+use util::BinaryRead;
 
 use crate::{BigEndian, FieldType, LittleEndian, NbtError, Variable, Variant, VariantImpl};
 

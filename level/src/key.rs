@@ -1,5 +1,5 @@
 use util::{
-    bytes::{BinaryRead, BinaryWrite},
+    BinaryRead, BinaryWrite,
     Vector,
 };
 
