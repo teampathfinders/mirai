@@ -1,26 +1,16 @@
 use std::collections::HashMap;
 use std::num::{NonZeroI32, NonZeroU32};
 use std::sync::atomic::Ordering;
+use proto::bedrock::{AvailableCommands, BiomeDefinitionList, BroadcastIntent, CacheStatus, ChatRestrictionLevel, ChunkRadiusReply, ChunkRadiusRequest, CLIENT_VERSION_STRING, ClientToServerHandshake, CreativeContent, Difficulty, DISCONNECTED_LOGIN_FAILED, GameMode, Login, NETWORK_VERSION, NetworkChunkPublisherUpdate, NetworkSettings, PermissionLevel, PlayerMovementSettings, PlayerMovementType, PlayStatus, PropertyData, RequestNetworkSettings, ResourcePackClientResponse, ResourcePacksInfo, ResourcePackStack, ServerToClientHandshake, SetLocalPlayerAsInitialized, SpawnBiomeType, StartGame, Status, SubChunkResponse, TextData, TextMessage, ViolationWarning, WorldGenerator};
+use proto::crypto::Encryptor;
+use proto::types::Dimension;
 
-use level::Dimension;
-use util::bytes::MutableBuffer;
+use util::MutableBuffer;
 use util::{bail, BlockPosition, Deserialize, Result, Vector};
 
 use crate::config::SERVER_CONFIG;
-use crate::crypto::Encryptor;
 use crate::forms::{FormElement, FormInput, FormLabel, Modal};
-use crate::network::{FormRequest, CacheStatus, HeightmapType, ItemCollection, NetworkChunkPublisherUpdate, SubChunkEntry, SubChunkResponse, SubChunkResult};
 use crate::network::Session;
-use crate::network::{AvailableCommands, SubChunkRequestMode};
-use crate::network::{
-    BiomeDefinitionList, Difficulty, GameMode, SetLocalPlayerAsInitialized, TextMessage, ViolationWarning, CLIENT_VERSION_STRING, NETWORK_VERSION,
-};
-use crate::network::{BlockEntry, ItemEntry, LevelChunk, PropertyData, TextData};
-use crate::network::{
-    BroadcastIntent, ChatRestrictionLevel, ChunkRadiusReply, ChunkRadiusRequest, ClientToServerHandshake, CreativeContent, Login, NetworkSettings,
-    PermissionLevel, PlayStatus, PlayerMovementSettings, PlayerMovementType, RequestNetworkSettings, ResourcePackClientResponse, ResourcePackStack,
-    ResourcePacksInfo, ServerToClientHandshake, SpawnBiomeType, StartGame, Status, WorldGenerator, DISCONNECTED_LOGIN_FAILED,
-};
 
 impl Session {
     /// Handles a [`CacheStatus`] packet.
@@ -28,8 +18,6 @@ impl Session {
     pub fn process_cache_status(&self, packet: MutableBuffer) -> anyhow::Result<()> {
         let request = CacheStatus::deserialize(packet.snapshot())?;
         self.cache_support.set(request.supports_cache)?;
-
-        tracing::debug!("[{}] Cache status is: {}", self.get_display_name()?, request.supports_cache);
 
         Ok(())
     }
@@ -49,7 +37,6 @@ impl Session {
     /// and the new player gets a list of all current players.
     pub fn process_local_initialized(&self, packet: MutableBuffer) -> anyhow::Result<()> {
         let request = SetLocalPlayerAsInitialized::deserialize(packet.snapshot())?;
-        tracing::debug!("[{}] Initialised with runtime ID {}", self.get_display_name()?, request.runtime_id);
 
         // Initialise chunk loading
         let lock = self.player.read();
@@ -122,7 +109,6 @@ impl Session {
         if request.radius <= 0 {
             anyhow::bail!("Render distance must be greater than 0");
         }
-        tracing::debug!("Chunk radius updated to: {}", request.radius);
 
         {
             let player = self.player.read();
@@ -133,8 +119,6 @@ impl Session {
     }
 
     pub fn process_pack_client_response(&self, packet: MutableBuffer) -> anyhow::Result<()> {
-        tracing::debug!("Received client resource response");
-
         let _request = ResourcePackClientResponse::deserialize(packet.snapshot())?;
 
         // TODO: Implement resource packs.
@@ -252,8 +236,6 @@ impl Session {
     }
 
     pub fn process_cts_handshake(&self, packet: MutableBuffer) -> anyhow::Result<()> {
-        tracing::debug!("Handshake received");
-
         ClientToServerHandshake::deserialize(packet.snapshot())?;
 
         let response = PlayStatus { status: Status::LoginSuccess };
@@ -299,13 +281,11 @@ impl Session {
         self.user_data.set(request.user_data)?;
         self.player.write().skin = Some(request.skin);
 
-        // Flush packets before enabling encryption
+        // Flush raknet before enabling encryption
         self.flush().await?;
 
         self.send(ServerToClientHandshake { jwt: &jwt })?;
         self.encryptor.set(encryptor)?;
-
-        tracing::info!("`{}` has connected", self.get_display_name()?);
 
         Ok(())
     }

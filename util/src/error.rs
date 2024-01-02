@@ -29,7 +29,6 @@ macro_rules! bail {
 }
 
 /// Creates a new [`Error`].
-///
 #[macro_export]
 macro_rules! error {
     ($err_type: ident, $fmt: expr, $($args:expr),+) => {
@@ -40,6 +39,10 @@ macro_rules! error {
         $crate::Error::new($crate::ErrorKind::$err_type, $fmt.to_string()).into()
     };
 }
+
+pub use pyassert;
+pub use bail;
+pub use error;
 
 /// Shorthand for `Result<T, Error>`.
 pub type Result<T> = std::result::Result<T, Error>;

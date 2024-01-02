@@ -1,10 +1,11 @@
 use std::{collections::HashMap, sync::Mutex};
-use util::{bytes::MutableBuffer, Deserialize, Serialize, Vector};
+use util::{MutableBuffer, Deserialize, Serialize, Vector};
 
 use crate::{
-    biome::Biomes, database::Database, provider::Provider, settings::LevelSettings, DataKey, Dimension, KeyType, PaletteEntry, SubChunk,
+    biome::Biomes, database::Database, provider::Provider, settings::LevelSettings, DataKey, KeyType, PaletteEntry, SubChunk,
     SubChunkVersion, SubLayer, BIOME_DATA, LOCAL_PLAYER, MOB_EVENTS, OVERWORLD, SCHEDULER, SCOREBOARD,
 };
+use proto::types::Dimension;
 
 // digp [x] [z] [?dimension]
 // contains two int32

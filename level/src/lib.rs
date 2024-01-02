@@ -4,7 +4,7 @@
 #[cfg(target_endian = "big")]
 compile_error!("Big endian architectures are not supported");
 
-use util::bytes::{BinaryRead, BinaryWrite};
+use util::{BinaryRead, BinaryWrite};
 
 /// Performs ceiling division on two u32s.
 #[inline(always)]

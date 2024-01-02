@@ -1,9 +1,7 @@
 #![allow(unused)]
 #![allow(rustdoc::private_intra_doc_links)]
 
-pub mod command;
 pub mod config;
-pub mod crypto;
 pub mod forms;
 pub mod instance;
 pub mod level;

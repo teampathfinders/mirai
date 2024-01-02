@@ -1,6 +1,6 @@
 use std::io::Write;
 
-use util::bytes::{BinaryRead, BinaryWrite, MutableBuffer, SharedBuffer};
+use util::{BinaryRead, BinaryWrite, MutableBuffer, SharedBuffer};
 use util::Result;
 
 use crate::raknet::Reliability;
@@ -71,7 +71,7 @@ impl FrameBatch {
     }
 }
 
-/// Encapsulates game packets.
+/// Encapsulates game raknet.
 ///
 /// A frame provides extra metadata for the Raknet reliability layer.
 #[derive(Debug, Default)]

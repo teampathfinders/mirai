@@ -1,14 +1,8 @@
+use proto::bedrock::{ABILITY_FLYING, ABILITY_MAYFLY, ABILITY_MUTED, AbilityData, AbilityLayer, AbilityType, ContainerClose, ContainerOpen, ContainerType, GameMode, Interact, InteractAction, INVENTORY_WINDOW_ID, MovePlayer, PlayerAction, PlayerActionType, UpdateAbilities};
 use util::{Deserialize};
-use util::bytes::MutableBuffer;
-use crate::command::CommandPermissionLevel;
+use util::MutableBuffer;
 
-use crate::network::{ContainerOpen, ContainerType, InteractAction, ContainerClose, INVENTORY_WINDOW_ID, PlayerAction, PlayerActionType, GameMode, UpdateAbilities, AbilityData, AbilityLayer, Ability, AbilityType, ABILITY_FLYING, ABILITY_MAYFLY, ABILITY_FLAG_END, ABILITY_MUTED};
-use crate::network::{
-    {
-        Interact, MovePlayer,
-    },
-    Session,
-};
+use crate::network::Session;
 
 impl Session {
     pub fn process_interaction(&self, packet: MutableBuffer) -> anyhow::Result<()> {

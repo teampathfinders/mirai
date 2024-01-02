@@ -2,9 +2,9 @@
 
 use std::time::Duration;
 
-use crate::network::{ClientThrottleSettings, CompressionAlgorithm};
 use lazy_static::lazy_static;
 use parking_lot::RwLock;
+use proto::bedrock::{ClientThrottleSettings, CompressionAlgorithm};
 
 /// Global service that contains all configuration settings
 pub struct ServerConfig {
@@ -41,7 +41,7 @@ lazy_static! {
         ipv6_port: 19133,
         max_players: 1000,
         compression_algorithm: CompressionAlgorithm::Deflate,
-        compression_threshold: 1, // Compress all packets
+        compression_threshold: 1, // Compress all raknet
         client_throttle: ClientThrottleSettings { // Disable client throttling
             enabled: false,
             threshold: 0,

@@ -3,7 +3,7 @@ use std::ops::{Index, IndexMut};
 
 use serde::{Deserialize, Serialize};
 
-use util::bytes::{BinaryRead, BinaryWrite, MutableBuffer};
+use util::{BinaryRead, BinaryWrite, MutableBuffer};
 use util::{bail, Vector};
 
 use crate::PackedArrayReturn;

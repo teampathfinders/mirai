@@ -3,12 +3,13 @@
 use crate::biome::Biomes;
 use crate::database::Database;
 use crate::settings::LevelSettings;
-use crate::{DataKey, Dimension, KeyType, SubChunk};
+use crate::{DataKey, KeyType, SubChunk};
 use anyhow::anyhow;
 use std::fs::File;
 use std::io::Read;
 use std::path::{Path, PathBuf};
-use util::bytes::BinaryRead;
+use proto::types::Dimension;
+use util::BinaryRead;
 use util::Vector;
 
 /// Provides world data.

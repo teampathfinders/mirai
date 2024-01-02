@@ -4,13 +4,11 @@ use std::{
 };
 
 use tokio::sync::mpsc;
+use proto::bedrock::{PlayerListRemove, TextData, TextMessage};
 
-use util::bytes::MutableBuffer;
+use util::MutableBuffer;
 
-use crate::network::{
-    {PlayerListRemove, TextMessage},
-    Session, TextData,
-};
+use crate::network::Session;
 
 /// Tick interval of the internal session tick.
 const INTERNAL_TICK_INTERVAL: Duration = Duration::from_millis(1000 / 20);
@@ -45,12 +43,12 @@ impl Session {
                 }
             }
 
-            // Flush last packets before closing
+            // Flush last raknet before closing
             match self.flush().await {
                 Ok(_) => (),
                 Err(_e) => {
                     tracing::error!(
-                        "Failed to flush last packets before session close"
+                        "Failed to flush last raknet before session close"
                     );
                 }
             }

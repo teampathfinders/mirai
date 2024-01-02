@@ -1,7 +1,7 @@
 //! Contains the server instance.
 
 use anyhow::Context;
-use level::Dimension;
+use proto::types::Dimension;
 use std::net::{Ipv4Addr, Ipv6Addr, SocketAddrV4};
 use std::sync::Arc;
 use std::time::Duration;
@@ -11,27 +11,19 @@ use tokio::net::UdpSocket;
 use tokio::sync::oneshot::Receiver;
 use tokio_util::sync::CancellationToken;
 
-use util::bytes::MutableBuffer;
+use util::MutableBuffer;
 use util::{Deserialize, Serialize};
 use util::{Result, Vector};
 
-use crate::command::{Command, CommandDataType, CommandEnum, CommandOverload, CommandParameter, CommandPermissionLevel};
+use proto::bedrock::{BOOLEAN_GAME_RULES, CLIENT_VERSION_STRING, Command, CommandDataType, CommandEnum, CommandOverload, CommandParameter, CommandPermissionLevel, INTEGER_GAME_RULES, MOBEFFECT_NAMES, NETWORK_VERSION};
+use proto::raknet::{IncompatibleProtocol, OpenConnectionReply1, OpenConnectionReply2, OpenConnectionRequest1, OpenConnectionRequest2, RAKNET_VERSION, UnconnectedPing, UnconnectedPong};
 use crate::config::SERVER_CONFIG;
 use crate::level::LevelManager;
-use crate::network::{SessionManager, MOBEFFECT_NAMES};
-use crate::network::{BOOLEAN_GAME_RULES, CLIENT_VERSION_STRING, INTEGER_GAME_RULES, NETWORK_VERSION};
-use crate::raknet::IncompatibleProtocol;
-use crate::raknet::OpenConnectionReply1;
-use crate::raknet::OpenConnectionReply2;
-use crate::raknet::OpenConnectionRequest1;
-use crate::raknet::OpenConnectionRequest2;
+use crate::network::SessionManager;
 use crate::raknet::RawPacket;
-use crate::raknet::UnconnectedPing;
-use crate::raknet::UnconnectedPong;
-use crate::raknet::RAKNET_VERSION;
 
 /// Local IPv4 address
-pub const IPV4_LOCAL_ADDR: Ipv4Addr = Ipv4Addr::UNSPECIFIED;
+pub const IPV4_LOCAL_ADDR: Ipv4Addr = Ipv4Addr::LOCALHOST;
 /// Local IPv6 address
 pub const IPV6_LOCAL_ADDR: Ipv6Addr = Ipv6Addr::UNSPECIFIED;
 /// Size of the UDP receive buffer.
@@ -299,7 +291,7 @@ impl ServerInstance {
 
     /// Responds to the [`OpenConnectionRequest2`] packet with [`OpenConnectionReply2`].
     /// This is also when a session is created for the client.
-    /// From this point, all packets are encoded in a [`Frame`](crate::raknet::Frame).
+    /// From this point, all raknet are encoded in a [`Frame`](crate::raknet::Frame).
     #[inline]
     fn process_open_connection_request2(
         mut packet: RawPacket,
@@ -323,7 +315,7 @@ impl ServerInstance {
         Ok(packet)
     }
 
-    /// Receives packets from IPv4 clients and adds them to the receive queue
+    /// Receives raknet from IPv4 clients and adds them to the receive queue
     async fn udp_recv_job(token: CancellationToken, udp_socket: Arc<UdpSocket>, sess_manager: Arc<SessionManager>) {
         let server_guid = rand::random();
 
@@ -331,8 +323,8 @@ impl ServerInstance {
         let metadata = Self::refresh_metadata(
             &String::from_utf8_lossy(&[0xee, 0x84, 0x88, 0x20]),
             server_guid,
-            sess_manager.session_count(),
-            sess_manager.max_session_count(),
+            sess_manager.player_count(),
+            sess_manager.max_player_count(),
         );
 
         // This is heap-allocated because stack data is stored inline in tasks.

@@ -11,18 +11,15 @@ use parking_lot::{Mutex, RwLock};
 use tokio::net::UdpSocket;
 use tokio::sync::{broadcast, mpsc, OnceCell};
 use tokio_util::sync::CancellationToken;
-use uuid::Uuid;
+use proto::bedrock::{CommandPermissionLevel, DeviceOS, Disconnect, GameMode, PermissionLevel, Skin};
+use proto::crypto::{Encryptor, IdentityData, UserData};
+use proto::uuid::Uuid;
 
 use util::{error, Result, Vector};
-use util::bytes::MutableBuffer;
-use crate::command::CommandPermissionLevel;
+use util::MutableBuffer;
 
-use crate::network::{DeviceOS, Disconnect, PermissionLevel};
-use crate::network::GameMode;
 use crate::raknet::{BroadcastPacket, RaknetData};
-use crate::crypto::{Encryptor, IdentityData, UserData};
 use crate::level::{ChunkViewer, LevelManager};
-use crate::network::Skin;
 
 static RUNTIME_ID_COUNTER: AtomicU64 = AtomicU64::new(0);
 
@@ -58,7 +55,7 @@ pub struct Session {
     pub identity: OnceCell<IdentityData>,
     /// Extra user data, such as device OS and language.
     pub user_data: OnceCell<UserData>,
-    /// Used to encrypt and decrypt packets.
+    /// Used to encrypt and decrypt raknet.
     pub encryptor: OnceCell<Encryptor>,
     /// Whether the client supports the chunk cache.
     pub cache_support: OnceCell<bool>,
@@ -67,7 +64,7 @@ pub struct Session {
     pub initialized: AtomicBool,
     /// Manages entire world.
     pub level: Arc<LevelManager>,
-    /// Sends packets into the broadcasting channel.
+    /// Sends raknet into the broadcasting channel.
     pub broadcast: broadcast::Sender<BroadcastPacket>,
     /// Indicates whether this session is active.
     pub active: CancellationToken,

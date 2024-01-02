@@ -3,28 +3,14 @@ use std::sync::atomic::Ordering;
 use std::time::Instant;
 
 use async_recursion::async_recursion;
+use proto::bedrock::{Animate, CacheStatus, ChunkRadiusRequest, ClientToServerHandshake, CommandRequest, CompressionAlgorithm, CONNECTED_PACKET_ID, ConnectedPacket, ContainerClose, FormResponse, Header, Interact, Login, MovePlayer, PlayerAction, RequestAbility, RequestNetworkSettings, ResourcePackClientResponse, SetLocalPlayerAsInitialized, SettingsCommand, TextMessage, TickSync, UpdateSkin, ViolationWarning};
+use proto::raknet::{Ack, ConnectedPing, ConnectionRequest, DisconnectNotification, Nak, NewIncomingConnection};
 
 use util::{bail, Result};
-use util::bytes::{BinaryRead, MutableBuffer};
+use util::{BinaryRead, MutableBuffer};
 
-use crate::network::{CommandRequest, SettingsCommand, ContainerClose, TickSync, FormResponse, PlayerAction};
-use crate::network::{
-    ChunkRadiusRequest, ClientToServerHandshake, CompressionAlgorithm, Login,
-    RequestNetworkSettings, ResourcePackClientResponse,
-};
-use crate::network::{
-    Animate, CONNECTED_PACKET_ID, ConnectedPacket, Interact, MovePlayer,
-    RequestAbility, SetLocalPlayerAsInitialized, TextMessage, UpdateSkin,
-    ViolationWarning,
-};
-use crate::raknet::{
-    Ack, ConnectionRequest, DisconnectNotification, Nak, NewIncomingConnection,
-};
 use crate::raknet::{BroadcastPacket, Frame, FrameBatch};
-use crate::network::CacheStatus;
-use crate::raknet::ConnectedPing;
 use crate::raknet::DEFAULT_SEND_CONFIG;
-use crate::network::Header;
 use crate::config::SERVER_CONFIG;
 use crate::network::Session;
 
@@ -66,10 +52,10 @@ impl Session {
     /// Processes a batch of frames.
     ///
     /// This performs the actions required by the Raknet reliability layer, such as
-    /// * Inserting packets into the order channels
-    /// * Inserting packets into the compound collector
+    /// * Inserting raknet into the order channels
+    /// * Inserting raknet into the compound collector
     /// * Discarding old sequenced frames
-    /// * Acknowledging reliable packets
+    /// * Acknowledging reliable raknet
     async fn process_frame_batch(&self, packet: MutableBuffer) -> anyhow::Result<()> {
         let batch = FrameBatch::deserialize(packet.snapshot())?;
         self.raknet

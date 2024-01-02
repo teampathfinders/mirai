@@ -7,7 +7,7 @@ use crate::raknet::Frame;
 /// Ensures that frames are processed in the correct order.
 ///
 /// Frames that are marked as ordered, should be pushed into this channel.
-/// The channel makes sure that old packets are received before processing further ones.
+/// The channel makes sure that old raknet are received before processing further ones.
 /// It also puts the received frames into the correct order.
 #[derive(Default, Debug)]
 pub struct OrderChannel {
@@ -36,7 +36,7 @@ impl OrderChannel {
     ///
     /// In case a sequence of frames is completed, the ready frames will be returned.
     pub fn insert(&self, frame: Frame) -> Option<Vec<Frame>> {
-        // FIXME: Return some kind of status code to indicate missing packets.
+        // FIXME: Return some kind of status code to indicate missing raknet.
         // This should be returned when misses have occurred multiple consecutive times
         // and triggers a NAK to be sent.
         // This mechanism might have to work using sequence numbers though.

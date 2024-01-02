@@ -1,17 +1,14 @@
 use std::num::NonZeroU64;
 use anyhow::anyhow;
+use proto::bedrock::{ConnectedPacket, Packet};
 
-use util::{error, Result, Serialize};
-use util::bytes::ArcBuffer;
+use util::{ArcBuffer, error, Result, Serialize};
 
-use crate::network::{
-    {ConnectedPacket, Packet},
-    Session,
-};
+use crate::network::Session;
 
 /// A packet that can be broadcast to other sessions.
 ///
-/// Unlike standard packets, this packet contains an optional sender.
+/// Unlike standard raknet, this packet contains an optional sender.
 /// As every session listens to a single broadcast channel, this sender field can be used
 /// to prevent a session from receiving its own broadcast.
 /// In case the session is meant to receive their own packet (such as with the [`Text`](crate::network::TextMessage) packet)
@@ -24,7 +21,7 @@ pub struct BroadcastPacket {
     ///
     /// If this is Some, every session that receives the broadcast will check the XUID with its own.
     /// If it matches, the packet will not be sent.
-    /// This can be used to broadcast packets to every client other than self.
+    /// This can be used to broadcast raknet to every client other than self.
     pub sender: Option<NonZeroU64>,
     /// Content of the packet.
     ///

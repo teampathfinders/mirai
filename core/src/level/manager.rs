@@ -11,19 +11,17 @@ use tokio::sync::oneshot::{Receiver, Sender};
 use tokio_util::sync::CancellationToken;
 
 use level::provider::Provider;
-use level::{Biomes, Dimension, SubChunk};
+use level::{Biomes, SubChunk};
+use proto::types::Dimension;
 use util::{Result, Vector};
 
-use crate::command::Command;
+use proto::bedrock::{Command, GameRule, GameRulesChanged, LevelChunk, SubChunkRequestMode, SubChunkResponse};
 use crate::config::SERVER_CONFIG;
-use crate::network::{LevelChunk, SubChunkEntry, SubChunkRequestMode, SubChunkResponse, SubChunkResult};
-use crate::network::{
-    SessionManager, {GameRule, GameRulesChanged},
-};
+use crate::network::SessionManager;
 
 use crate::level::serialize::serialize_biomes;
 use lru::LruCache;
-use util::bytes::MutableBuffer;
+use util::MutableBuffer;
 
 /// Interval between standard Minecraft ticks.
 pub const TICK_INTERVAL: Duration = Duration::from_millis(1000 / 20);
@@ -54,6 +52,7 @@ impl Default for LevelCache {
 }
 
 pub struct LevelManager {
+    world: legion::World,
     cache: RwLock<LevelCache>,
     /// Used to load world data from disk.
     provider: Provider,
@@ -81,6 +80,7 @@ impl LevelManager {
         let cache = RwLock::new(LevelCache::new());
 
         let manager = Arc::new(Self {
+            world: legion::World::default(),
             provider,
             cache,
             commands: DashMap::new(),

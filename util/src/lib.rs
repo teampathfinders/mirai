@@ -1,19 +1,11 @@
-pub use error::*;
-pub use traits::*;
+#[macro_use] mod macros;
+#[macro_use] mod error;
+mod u24;
+
 pub use u24::*;
-pub use vector::*;
+pub use error::*;
 
-/// Shorthand for `mod module; pub use module::*;`.
-#[macro_export]
-macro_rules! glob_export {
-    ($module: ident) => {
-        mod $module;
-        pub use $module::*;
-    };
-}
+glob_export!(bytes);
+glob_export!(traits);
+glob_export!(vector);
 
-pub mod bytes;
-mod error;
-mod traits;
-pub mod u24;
-mod vector;

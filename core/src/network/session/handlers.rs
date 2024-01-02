@@ -1,19 +1,11 @@
 use std::net::{Ipv4Addr, SocketAddr, SocketAddrV4};
 use std::str::FromStr;
-use level::Dimension;
+use proto::bedrock::{Animate, CommandOutput, CommandOutputMessage, CommandOutputType, CommandRequest, FormResponse, ParsedCommand, RequestAbility, SettingsCommand, TextData, TextMessage, TickSync, UpdateSkin};
+use proto::types::Dimension;
 use util::{bail, Deserialize, Result, TryExpect, Vector};
-use util::bytes::MutableBuffer;
+use util::MutableBuffer;
 
-use crate::network::{CommandOutput, CommandOutputMessage, CommandOutputType, CommandRequest, FormRequest, FormResponse, SettingsCommand, SubChunkResponse, TextData, TickSync, Transfer};
-use crate::network::{
-    {
-        Animate, RequestAbility,
-        TextMessage,
-        UpdateSkin,
-    },
-    Session,
-};
-use crate::command::ParsedCommand;
+use crate::network::Session;
 use crate::forms::{FormButton, FormElement, FormInput, FormLabel, FormSlider, MenuForm, Modal, FormButtonImage, FormDropdown, FormToggle, FormStepSlider, CustomForm};
 
 impl Session {
@@ -45,6 +37,7 @@ impl Session {
                 .display_name;
 
             // Check that the source is equal to the player name to prevent spoofing.
+            #[cfg(not(debug_assertions))] // Allow modifications for development purposes.
             if actual != source {
                 self.kick("Illegal packet modifications detected")?;
                 anyhow::bail!(
@@ -57,7 +50,7 @@ impl Session {
             // Otherwise their message won't be displayed in their own chat.
             self.broadcast(request)
         } else {
-            // Only the server is allowed to create text packets that are not of the chat type.
+            // Only the server is allowed to create text raknet that are not of the chat type.
             anyhow::bail!("Client sent an illegally modified text message packet")
         }
 
