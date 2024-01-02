@@ -13,7 +13,7 @@ use tokio::sync::{broadcast, mpsc, OnceCell};
 use tokio_util::sync::CancellationToken;
 use proto::bedrock::{CommandPermissionLevel, DeviceOS, Disconnect, GameMode, PermissionLevel, Skin};
 use proto::crypto::{Encryptor, IdentityData, UserData};
-use proto::Uuid;
+use proto::uuid::Uuid;
 
 use util::{error, Result, Vector};
 use util::MutableBuffer;

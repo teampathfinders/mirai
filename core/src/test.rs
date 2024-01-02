@@ -2,14 +2,14 @@ use std::io::{Read, Write};
 use std::net::{IpAddr, SocketAddr};
 use std::sync::Arc;
 
-use base64::Engine;
+use proto::base64::Engine;
 use flate2::read::DeflateDecoder;
 
-use util::bytes::MutableBuffer;
+use util::MutableBuffer;
 use util::{Result, Serialize};
 
 use crate::instance::{IPV4_LOCAL_ADDR, IPV6_LOCAL_ADDR};
-use crate::network::Header;
+use proto::bedrock::Header;
 use crate::raknet::{Frame, OrderChannel};
 
 #[test]

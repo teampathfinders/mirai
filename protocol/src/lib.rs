@@ -5,4 +5,5 @@ pub mod bedrock;
 pub mod crypto;
 pub mod types;
 
-pub use uuid::Uuid;
+pub use uuid;
+pub use base64;
