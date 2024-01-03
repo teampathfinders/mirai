@@ -275,6 +275,8 @@ impl Session {
             }
         };
 
+        self.replicator.save_xuid(request.identity.xuid, request.identity.display_name.clone()).await?;
+
         let (encryptor, jwt) = Encryptor::new(&request.identity.public_key)?;
 
         self.identity.set(request.identity)?;

@@ -11,6 +11,18 @@ pub struct Vector<T, const N: usize> {
     components: [T; N],
 }
 
+impl<T, const N: usize> AsRef<[T; N]> for Vector<T, N> {
+    fn as_ref(&self) -> &[T; N] {
+        &self.components
+    }
+}
+
+impl<T, const N: usize> AsMut<[T; N]> for Vector<T, N> {
+    fn as_mut(&mut self) -> &mut [T; N] {
+        &mut self.components
+    }
+}
+
 impl<T, const N: usize> Hash for Vector<T, N>
 where
     [T; N]: Hash,
@@ -48,20 +60,6 @@ impl<T: Clone, const N: usize> Vector<T, N> {
     #[inline]
     pub fn components(&self) -> [T; N] {
         self.components.clone()
-    }
-}
-
-impl<T, const N: usize> Vector<T, N> {
-    /// Returns a reference to the components of this vector.
-    #[inline]
-    pub fn components_ref(&self) -> &[T; N] {
-        &self.components
-    }
-
-    /// Returns a mutable reference to the components of this vector.
-    #[inline]
-    pub fn components_mut(&mut self) -> &mut [T; N] {
-        &mut self.components
     }
 }
 

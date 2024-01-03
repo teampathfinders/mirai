@@ -53,7 +53,7 @@ impl TryFrom<i32> for TeleportCause {
 #[derive(Debug, Clone)]
 pub struct MovePlayer {
     pub runtime_id: u64,
-    pub position: Vector<f32, 3>,
+    pub translation: Vector<f32, 3>,
     pub rotation: Vector<f32, 3>,
     pub mode: MovementMode,
     pub on_ground: bool,
@@ -82,7 +82,7 @@ impl ConnectedPacket for MovePlayer {
 impl Serialize for MovePlayer {
     fn serialize(&self, buffer: &mut MutableBuffer) -> anyhow::Result<()> {
         buffer.write_var_u64(self.runtime_id)?;
-        buffer.write_vecf(&self.position)?;
+        buffer.write_vecf(&self.translation)?;
         buffer.write_vecf(&self.rotation)?;
         buffer.write_u8(self.mode as u8)?;
         buffer.write_bool(self.on_ground)?;
@@ -119,7 +119,7 @@ impl Deserialize<'_> for MovePlayer {
 
         Ok(Self {
             runtime_id,
-            position,
+            translation: position,
             rotation,
             mode,
             on_ground,

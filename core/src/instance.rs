@@ -68,8 +68,6 @@ impl ServerInstance {
         let udp_socket = Arc::new(UdpSocket::bind(SocketAddrV4::new(IPV4_LOCAL_ADDR, ipv4_port)).await?);
 
         let replicator = Arc::new(Replicator::new().await?);
-        // replicator.sub_text_message();
-
         let session_manager = Arc::new(SessionManager::new(replicator));
 
         let level = LevelManager::new(session_manager.clone(), token.clone())?;

@@ -1,4 +1,4 @@
-use proto::bedrock::{ABILITY_FLYING, ABILITY_MAYFLY, ABILITY_MUTED, AbilityData, AbilityLayer, AbilityType, ContainerClose, ContainerOpen, ContainerType, GameMode, Interact, InteractAction, INVENTORY_WINDOW_ID, MovePlayer, PlayerAction, PlayerActionType, UpdateAbilities};
+use proto::bedrock::{ABILITY_FLYING, ABILITY_MAYFLY, ABILITY_MUTED, AbilityData, AbilityLayer, AbilityType, ContainerClose, ContainerOpen, ContainerType, GameMode, Interact, InteractAction, INVENTORY_WINDOW_ID, MovementMode, MovePlayer, PlayerAction, PlayerActionType, TeleportCause, UpdateAbilities};
 use util::{Deserialize};
 use util::MutableBuffer;
 
@@ -39,18 +39,20 @@ impl Session {
         Ok(())
     }
 
-    pub fn process_move_player(&self, packet: MutableBuffer) -> anyhow::Result<()> {
-        let request = MovePlayer::deserialize(packet.snapshot())?;
-        // dbg!(&request);
+    pub async fn process_move_player(&self, packet: MutableBuffer) -> anyhow::Result<()> {
+        let mut request = MovePlayer::deserialize(packet.snapshot())?;
 
-        self.broadcast_others(request)?;
+        self.replicator.move_player(self.get_xuid()?, &request).await?;
 
-        Ok(())
+        request.mode = MovementMode::Normal;
+        
+        dbg!(&request);
+        self.broadcast(request)
     }
 
     pub fn process_player_action(&self, packet: MutableBuffer) -> anyhow::Result<()> {
         let request = PlayerAction::deserialize(packet.snapshot())?;
-        dbg!(&request);
+        // dbg!(&request);
 
         if request.action == PlayerActionType::StartFlying {
             // Only allow flying if the player is in the correct gamemode.

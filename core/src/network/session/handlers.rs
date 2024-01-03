@@ -27,7 +27,7 @@ impl Session {
         // self.send(response)
     }
 
-    pub fn process_text_message(&self, packet: MutableBuffer) -> anyhow::Result<()> {
+    pub async fn process_text_message(&self, packet: MutableBuffer) -> anyhow::Result<()> {
         let request = TextMessage::deserialize(packet.snapshot())?;
         if let TextData::Chat {
             source, ..
@@ -47,7 +47,7 @@ impl Session {
             }
 
             // Send chat message to replication layer
-            self.replicator.pub_text_message(&request);
+            self.replicator.text_msg(&request).await?;
 
             // We must also return the packet to the client that sent it.
             // Otherwise their message won't be displayed in their own chat.

@@ -9,5 +9,5 @@ util = { package = "pyro-util", path = "../util" }
 
 anyhow = "1.0.79"
 tokio = { version = "1.35.1", features = ["macros", "rt"] }
-redis = { version = "0.24.0", default-features = false, features = ["aio", "ahash", "streams", "tokio-comp", "connection-manager"] }
+redis = { version = "0.24.0", default-features = false, features = ["aio", "ahash", "geospatial", "streams", "tokio-comp", "connection-manager"] }
 tracing = "0.1.40"
