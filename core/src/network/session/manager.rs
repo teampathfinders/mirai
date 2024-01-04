@@ -6,6 +6,7 @@ use dashmap::DashMap;
 use tokio::net::UdpSocket;
 use tokio::sync::{broadcast, mpsc, OnceCell};
 use proto::bedrock::{ConnectedPacket, Disconnect, DISCONNECTED_TIMEOUT};
+use replicator::Replicator;
 
 use util::{Result, Serialize};
 use util::MutableBuffer;
@@ -25,13 +26,14 @@ pub struct SessionManager {
     list: Arc<DashMap<SocketAddr, (mpsc::Sender<MutableBuffer>, Arc<Session>)>>,
     /// The level manager.
     level_manager: OnceCell<Weak<LevelManager>>,
+    replicator: Arc<Replicator>,
     /// Channel used for packet broadcasting.
     broadcast: broadcast::Sender<BroadcastPacket>,
 }
 
 impl SessionManager {
     /// Creates a new session tracker.
-    pub fn new() -> Self {
+    pub fn new(replicator: Arc<Replicator>) -> Self {
         let list = Arc::new(DashMap::new());
         {
             let list = list.clone();
@@ -44,6 +46,7 @@ impl SessionManager {
         Self {
             list,
             level_manager: OnceCell::new(),
+            replicator,
             broadcast,
         }
     }
@@ -61,10 +64,12 @@ impl SessionManager {
         let level_manager =
             self.level_manager.get().unwrap().upgrade().unwrap();
 
+        let replicator = self.replicator.clone();
         let session = Session::new(
             self.broadcast.clone(),
             receiver,
             level_manager,
+            replicator,
             ipv4_socket,
             address,
             mtu,
@@ -183,11 +188,5 @@ impl SessionManager {
 
             interval.tick().await;
         }
-    }
-}
-
-impl Default for SessionManager {
-    fn default() -> Self {
-        Self::new()
     }
 }

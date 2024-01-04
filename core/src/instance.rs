@@ -17,13 +17,14 @@ use util::{Result, Vector};
 
 use proto::bedrock::{BOOLEAN_GAME_RULES, CLIENT_VERSION_STRING, Command, CommandDataType, CommandEnum, CommandOverload, CommandParameter, CommandPermissionLevel, INTEGER_GAME_RULES, MOBEFFECT_NAMES, NETWORK_VERSION};
 use proto::raknet::{IncompatibleProtocol, OpenConnectionReply1, OpenConnectionReply2, OpenConnectionRequest1, OpenConnectionRequest2, RAKNET_VERSION, UnconnectedPing, UnconnectedPong};
+use replicator::Replicator;
 use crate::config::SERVER_CONFIG;
 use crate::level::LevelManager;
 use crate::network::SessionManager;
 use crate::raknet::RawPacket;
 
 /// Local IPv4 address
-pub const IPV4_LOCAL_ADDR: Ipv4Addr = Ipv4Addr::LOCALHOST;
+pub const IPV4_LOCAL_ADDR: Ipv4Addr = Ipv4Addr::UNSPECIFIED;
 /// Local IPv6 address
 pub const IPV6_LOCAL_ADDR: Ipv6Addr = Ipv6Addr::UNSPECIFIED;
 /// Size of the UDP receive buffer.
@@ -31,6 +32,33 @@ const RECV_BUF_SIZE: usize = 4096;
 /// Refresh rate of the server's metadata.
 /// This data is displayed in the server menu.
 const METADATA_REFRESH_INTERVAL: Duration = Duration::from_secs(2);
+
+async fn signal_listener(token: CancellationToken) -> anyhow::Result<()> {
+    tokio::select! {
+        _ = token.cancelled() => (),
+        _ = tokio::signal::ctrl_c() => ()
+    }
+
+    // #[cfg(windows)]
+    // tokio::select! {
+    //     _ = token.cancelled() => (),
+    //     _ = tokio::signal::ctrl_c() => ()
+    // }
+
+    // #[cfg(unix)]
+    // {
+    //     use tokio::signal::unix::{signal, SignalKind};
+
+    //     let mut sig = signal(SignalKind::terminate())?;
+    //     tokio::select! {
+    //         _ = token.cancelled() => (),
+    //         _ = tokio::signal::ctrl_c() => (),
+    //         _ = sig.recv() => ()
+    //     }
+    // }
+
+    Ok(())
+}
 
 /// Manages all the processes running within the server.
 ///
@@ -64,9 +92,19 @@ impl ServerInstance {
         };
 
         let token = CancellationToken::new();
-        let udp_socket = Arc::new(UdpSocket::bind(SocketAddrV4::new(IPV4_LOCAL_ADDR, ipv4_port)).await?);
+        
+        let udp_socket = Arc::new(
+            UdpSocket::bind(SocketAddrV4::new(IPV4_LOCAL_ADDR, ipv4_port))
+                .await
+                .context("Unable to create UDP socket")?
+        );
 
-        let session_manager = Arc::new(SessionManager::new());
+        let replicator = Arc::new(
+            Replicator::new()
+                .await
+                .context("Cannot create replication layer")?
+        );
+        let session_manager = Arc::new(SessionManager::new(replicator));
 
         let level = LevelManager::new(session_manager.clone(), token.clone())?;
 
@@ -231,11 +269,10 @@ impl ServerInstance {
 
         tracing::info!("Ready!");
 
-        // Wait for either Ctrl-C or token cancel...
-        tokio::select! {
-            _ = token.cancelled() => (),
-            _ = tokio::signal::ctrl_c() => ()
-        }
+        // Wait for a shutdown signal...
+        signal_listener(token.clone()).await;
+
+        tracing::info!("Shutting down server. This can take several seconds...");
 
         // ...then shut down all services.
         if let Err(e) = session_manager.kick_all("Server closed").await {

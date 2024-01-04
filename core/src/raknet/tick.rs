@@ -100,7 +100,7 @@ impl Session {
 
                 let _ = self.broadcast_others(TextMessage {
                     needs_translation: false,
-                    xuid: "",
+                    xuid: 0,
                     platform_chat_id: "",
                     data: TextData::System {
                         message: &format!("§e{display_name} has left the server.")

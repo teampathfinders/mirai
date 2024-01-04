@@ -46,7 +46,8 @@ impl FrameBatch {
     }
 
     pub fn deserialize(mut buffer: SharedBuffer) -> anyhow::Result<Self> {
-        debug_assert_ne!(buffer.read_u8()? & 0x80, 0);
+        let id = buffer.read_u8()?;
+        debug_assert_ne!(id & 0x80, 0);
 
         let batch_number = buffer.read_u24_le()?;
         let mut frames = Vec::new();

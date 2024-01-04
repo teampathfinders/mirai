@@ -217,11 +217,11 @@ impl Session {
             ViolationWarning::ID => self.process_violation_warning(packet),
             ChunkRadiusRequest::ID => self.process_radius_request(packet),
             Interact::ID => self.process_interaction(packet),
-            TextMessage::ID => self.process_text_message(packet),
+            TextMessage::ID => self.process_text_message(packet).await,
             SetLocalPlayerAsInitialized::ID => {
                 self.process_local_initialized(packet)
             }
-            MovePlayer::ID => self.process_move_player(packet),
+            MovePlayer::ID => self.process_move_player(packet).await,
             PlayerAction::ID => self.process_player_action(packet),
             RequestAbility::ID => self.process_ability_request(packet),
             Animate::ID => self.process_animation(packet),

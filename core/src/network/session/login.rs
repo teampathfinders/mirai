@@ -83,7 +83,7 @@ impl Session {
                     // message: &format!("§e{} has joined the server.", identity_data.display_name),
                 },
                 needs_translation: true,
-                xuid: "",
+                xuid: 0,
                 platform_chat_id: "",
             })?;
         }
@@ -274,6 +274,8 @@ impl Session {
                 return Err(e);
             }
         };
+
+        self.replicator.save_xuid(request.identity.xuid, request.identity.display_name.clone()).await?;
 
         let (encryptor, jwt) = Encryptor::new(&request.identity.public_key)?;
 

@@ -21,6 +21,7 @@ nbt = { package = "pyro-nbt", path = "../nbt" }
 util = { package = "pyro-util", path = "../util" }
 level = { package = "pyro-level", path = "../level" }
 proto = { package = "pyro-proto", path = "../protocol" }
+replicator = { package = "pyro-repl", path = "../replicator" }
 
 paste = "1.0.14"
 console-subscriber = { version = "0.2.0", optional = true }

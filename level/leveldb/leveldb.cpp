@@ -1,5 +1,6 @@
 #include "leveldb.h"
 
+#include <iostream>
 #include <memory>
 
 #include <leveldb/cache.h>
@@ -56,7 +57,6 @@ LevelResult level_open(const char *path) {
       leveldb::DB::Open(database->options, path, &database->database);
 
   result.status = translate_status(status);
-  printf("%i, %i\n", result.status, sizeof(Database));
 
   if (status.ok()) {
     result.size = sizeof(Database);
@@ -68,6 +68,8 @@ LevelResult level_open(const char *path) {
 
     result.size = static_cast<int>(src_size);
     result.data = new char[src_size];
+    ((char*)result.data)[src_size] = 0; // Explicitly zero null character.
+
     memcpy(result.data, src, src_size);
   }
 
