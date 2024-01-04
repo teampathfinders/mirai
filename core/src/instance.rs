@@ -267,7 +267,7 @@ impl ServerInstance {
             tokio::spawn(async move { Self::udp_recv_job(token, udp_socket, session_manager).await })
         };
 
-        tracing::info!("Ready!");
+        tracing::info!("Ready on localhost:{}!", ipv4_port);
 
         // Wait for a shutdown signal...
         signal_listener(token.clone()).await;

@@ -1,15 +1,24 @@
+use std::process::ExitCode;
+use std::str::FromStr;
 use std::sync::atomic::{AtomicU16, Ordering};
 
 use tokio::runtime;
+use tracing_subscriber::EnvFilter;
+use tracing_subscriber::filter::LevelFilter;
 
 use pyro::instance::ServerInstance;
 
-fn main() {
-    init_logging();
-    init_runtime();
+fn main() -> ExitCode {
+    if let Err(e) = init_logging() {
+        init_error_log();
+        tracing::error!("Failed to initialise tracing: {e}");
+
+        return ExitCode::FAILURE;
+    }
+    start_server()
 }
 
-fn init_runtime() {
+fn start_server() -> ExitCode {
     let runtime = runtime::Builder::new_multi_thread()
         .enable_io()
         .enable_time()
@@ -21,17 +30,12 @@ fn init_runtime() {
         .expect("Failed to build runtime");
 
     if let Err(error) = runtime.block_on(ServerInstance::run()) {
-        tracing::error!("Fatal error: {error:?}");
+        tracing::error!("Exited due to fatal error: {error:?}");
+        ExitCode::FAILURE
+    } else {
+        ExitCode::SUCCESS
     }
 }
-
-// /// The Cranelift compiler inside of Wasmer logs verbose things to the console when the level is set
-// /// to info. This function disables that.
-// fn disable_wasmer_log() {
-//     if std::env::var_os("RUST_LOG").is_none() {
-//         std::env::set_var("RUST_LOG", "info,wasmer_compiler_cranelift=warn");
-//     }
-// }
 
 /// Initialises logging with tokio-console.
 #[cfg(feature = "tokio-console")]
@@ -54,10 +58,23 @@ fn init_logging() {
 
 /// Initialises logging without tokio-console.
 #[cfg(not(feature = "tokio-console"))]
-fn init_logging() {
+fn init_logging() -> anyhow::Result<()> {
+    let max_level = LevelFilter::from_str(&std::env::vars()
+        .find_map(|(k, v)| if k == "PYRO_LOG" { Some(v) } else { None })
+        .unwrap_or(String::from("info"))
+    )?;
+
     tracing_subscriber::fmt()
         .with_target(false)
-        .with_max_level(tracing::Level::DEBUG)
-        .pretty()
+        .with_max_level(max_level)
+        .init();
+
+    Ok(())
+}
+
+fn init_error_log() {
+    tracing_subscriber::fmt()
+        .with_target(false)
+        .with_max_level(LevelFilter::ERROR)
         .init();
 }

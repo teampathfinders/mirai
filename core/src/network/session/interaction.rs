@@ -46,7 +46,6 @@ impl Session {
 
         request.mode = MovementMode::Normal;
 
-        dbg!(&request);
         self.broadcast(request)
     }
 

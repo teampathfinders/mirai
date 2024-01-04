@@ -7,23 +7,39 @@ use util::{BinaryWrite, MutableBuffer, size_of_string};
 
 #[cfg(test)] mod test;
 
-const TRANSFORM_KEY: &str = "player:transform";
-const XUID_KEY: &str = "player:xuid";
-const TEXT_KEY: &str = "player:chat";
-
 pub struct Replicator {
     client: RedisClient
 }
 
 impl Replicator {
     pub async fn new() -> anyhow::Result<Self> {
+        let host = std::env::vars()
+            .find_map(|(k , v)| if k == "REDIS_HOST" { Some(v) } else { None });
+
+        let host = if let Some(host) = host {
+            host
+        } else {
+            tracing::debug!("No REDIS_HOST environment variable found, using default host 127.0.0.1");
+            String::from("127.0.0.1")
+        };
+
+        let port = std::env::vars()
+            .find_map(|(k, v)| if k == "REDIS_PORT" { Some(v) } else { None });
+
+        let port: u16 = if let Some(port) = port {
+            port.parse().context("Failed to parse REDIS_PORT argument")?
+        } else {
+            tracing::debug!("No REDIS_PORT environment variable found, using default port 6379");
+            6379
+        };
+
         let client = RedisClient::new(
             RedisConfig {
                 version: RespVersion::RESP3,
                 server: ServerConfig::Centralized {
                     server: Server {
-                        host: "replication".into(),
-                        port: 6379
+                        host: host.into(),
+                        port
                     }
                 },
                 ..Default::default()
@@ -33,14 +49,16 @@ impl Replicator {
         let _ = client.connect();
         let _ = client.wait_for_connect().await?;
 
+        tracing::debug!("Replication layer created");
+
         Ok(Self {
             client
         })
     }
 
     pub async fn save_session(&self, xuid: u64, name: &str) -> anyhow::Result<()> {
-        self.client.hset(format!("player:{}", xuid), 
-        ("username", name))
+        self.client.hset(format!("user:{}", xuid),
+        ("name", name))
             .await
             .context("Unable to cache player XUID")
     }
@@ -51,7 +69,7 @@ impl Replicator {
         buf.write_vecf(&data.rotation)?;
         buf.write_u64_le(xuid)?;
 
-        self.client.publish(TRANSFORM_KEY, buf.as_ref())
+        self.client.publish("user:transform", buf.as_ref())
             .await
             .context("Unable to update player position")
     }
@@ -65,7 +83,7 @@ impl Replicator {
             buf.write_str(source)?;
             buf.write_str(message)?;
 
-            self.client.publish(TEXT_KEY, buf.as_ref())
+            self.client.publish("user:text", buf.as_ref())
                 .await
                 .context("Unable to publish chat message")
         } else {

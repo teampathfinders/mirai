@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use std::iter::FusedIterator;
 use std::ops::{Index, IndexMut};
 
 use serde::{Deserialize, Serialize};
@@ -107,6 +108,7 @@ impl SubLayer {
         LayerIter::from(self)
     }
 
+    /// Gets a reference to a block inside the subchunk.
     pub fn get(&self, pos: Vector<u8, 3>) -> Option<&PaletteEntry> {
         if pos.x > 16 || pos.y > 16 || pos.z > 16 {
             return None;
@@ -119,6 +121,8 @@ impl SubLayer {
         Some(&self.palette[index])
     }
 
+    // FIXME: Using this method will modify every block with the same index
+    // instead of only the block at the specified position.
     pub fn get_mut(&mut self, pos: Vector<u8, 3>) -> Option<&mut PaletteEntry> {
         if pos.x > 16 || pos.y > 16 || pos.z > 16 {
             return None;
@@ -131,22 +135,22 @@ impl SubLayer {
         Some(&mut self.palette[index])
     }
 
-    #[inline]
+    /// Returns a reference to the block palette.
     pub fn palette(&self) -> &[PaletteEntry] {
         &self.palette
     }
 
-    #[inline]
+    /// Returns a mutable reference to the block palette.
     pub fn palette_mut(&mut self) -> &mut [PaletteEntry] {
         &mut self.palette
     }
 
-    #[inline]
+    /// Returns a reference to the block indices.
     pub fn indices(&self) -> &[u16; 4096] {
         &self.indices
     }
 
-    #[inline]
+    /// Returns a mutable reference to the block indices.
     pub fn indices_mut(&mut self) -> &mut [u16; 4096] {
         &mut self.indices
     }
@@ -155,7 +159,7 @@ impl SubLayer {
 impl SubLayer {
     /// Deserializes a single layer from the given buffer.
     #[inline]
-    fn deserialize<'a, R>(mut reader: R) -> anyhow::Result<Self>
+    fn deserialize_disk<'a, R>(mut reader: R) -> anyhow::Result<Self>
     where
         R: BinaryRead<'a> + Copy + 'a,
     {
@@ -179,7 +183,7 @@ impl SubLayer {
     }
 
     #[inline]
-    fn serialize<W>(&self, mut writer: W) -> anyhow::Result<()>
+    fn serialize_disk<W>(&self, mut writer: W) -> anyhow::Result<()>
     where
         W: BinaryWrite,
     {
@@ -336,7 +340,7 @@ impl SubChunk {
         // let mut layers = SmallVec::with_capacity(layer_count as usize);
         let mut layers = Vec::with_capacity(layer_count as usize);
         for _ in 0..layer_count {
-            layers.push(SubLayer::deserialize(reader)?);
+            layers.push(SubLayer::deserialize_disk(reader)?);
         }
 
         Ok(Self { version, index, layers })
@@ -362,7 +366,7 @@ impl SubChunk {
         }
 
         for layer in &self.layers {
-            layer.serialize(&mut writer)?;
+            layer.serialize_disk(&mut writer)?;
         }
 
         Ok(())
@@ -407,7 +411,6 @@ impl<'a> From<&'a SubLayer> for LayerIter<'a> {
 impl<'a> Iterator for LayerIter<'a> {
     type Item = &'a PaletteEntry;
 
-    #[inline]
     fn next(&mut self) -> Option<Self::Item> {
         // ExactSizeIterator::is_empty is unstable
         if self.len() == 0 {
@@ -419,14 +422,14 @@ impl<'a> Iterator for LayerIter<'a> {
         self.palette.get(a[0] as usize)
     }
 
-    #[inline]
     fn size_hint(&self) -> (usize, Option<usize>) {
         (0, Some(self.len()))
     }
 }
 
-impl<'a> ExactSizeIterator for LayerIter<'a> {
-    #[inline]
+impl FusedIterator for LayerIter<'_> {}
+
+impl ExactSizeIterator for LayerIter<'_> {
     fn len(&self) -> usize {
         self.indices.len()
     }
