@@ -5,7 +5,7 @@ use std::sync::atomic::{AtomicU16, Ordering};
 use tokio::runtime;
 use tracing_subscriber::EnvFilter;
 use tracing_subscriber::filter::LevelFilter;
-use pyro::data::{RUNTIME_ID_MAP};
+use pyro::data::{BLOCK_STATE_DATA, RUNTIME_ID_DATA};
 
 use pyro::instance::ServerInstance;
 

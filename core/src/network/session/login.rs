@@ -222,7 +222,7 @@ impl Session {
         })?;
 
         let subchunks = self.player.read().viewer.recenter(
-            Vector::from([0, 0]), &(-4..16).map(|y| Vector::from([0, y, 0])).collect::<Vec<_>>()
+            Vector::from([0, 0]), &(0..5).map(|y| Vector::from([0, y, 0])).collect::<Vec<_>>()
         )?;
         let response = SubChunkResponse {
             entries: subchunks,

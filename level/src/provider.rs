@@ -117,7 +117,6 @@ impl Provider {
             dimension,
             data: KeyType::Biome3d,
         };
-        tracing::debug!("key = {:?}", &key);
 
         if let Some(data) = self.database.get(key)? {
             let biome = Biomes::deserialize(&*data)?;
@@ -150,7 +149,6 @@ impl Provider {
             dimension,
             data: KeyType::SubChunk { index },
         };
-        dbg!(&key);
 
         if let Some(data) = self.database.get(key)? {
             let sub_chunk = SubChunk::deserialize_disk(&*data)?;

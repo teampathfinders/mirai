@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use std::hash::{DefaultHasher, Hash, Hasher};
 use std::iter::FusedIterator;
 use std::ops::{Index, IndexMut};
 
@@ -73,6 +74,21 @@ pub struct PaletteEntry {
     pub version: Option<[u8; 4]>,
     /// Block-specific properties.
     pub states: HashMap<String, nbt::Value>,
+}
+
+impl PaletteEntry {
+    /// Hashes this block.
+    pub fn hash(&self) -> u64 {
+        let mut hasher = DefaultHasher::new();
+
+        hasher.write(self.name.as_bytes());
+        for (k, v) in &self.states {
+            hasher.write(k.as_bytes());
+            v.hash(&mut hasher);
+        }
+
+        hasher.finish()
+    }
 }
 
 /// A layer in a sub chunk.

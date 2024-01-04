@@ -1,11 +1,11 @@
 use level::{PaletteEntry, SubChunk, SubChunkVersion, SubLayer, to_offset};
 use util::BinaryWrite;
-use crate::data::RUNTIME_ID_MAP;
+use crate::data::{BLOCK_STATE_DATA, RUNTIME_ID_DATA};
 
 #[derive(Debug)]
 pub struct NetSubLayer {
     indices: Box<[u16; 4096]>,
-    palette: Vec<i32>
+    palette: Vec<u32>
 }
 
 impl NetSubLayer {
@@ -20,7 +20,7 @@ impl NetSubLayer {
         }
 
         for entry in &self.palette {
-            writer.write_var_i32(*entry)?;
+            writer.write_var_u32(*entry)?;
         }
 
         Ok(())
@@ -32,8 +32,10 @@ impl From<SubLayer> for NetSubLayer {
         let palette = value
             .palette()
             .iter()
-            .flat_map(|entry| RUNTIME_ID_MAP.get(&entry.name))
-            .collect::<Vec<i32>>();
+            .flat_map(|entry| BLOCK_STATE_DATA.get(entry))
+            .collect::<Vec<u32>>();
+
+        println!("Palette: {palette:?}");
 
         Self {
             palette,
