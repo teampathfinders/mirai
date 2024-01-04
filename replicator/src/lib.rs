@@ -60,9 +60,10 @@ pub struct Replicator {
 
 impl Replicator {
     pub async fn new() -> anyhow::Result<Self> {
+        let client = redis::Client::open("redis://replication:6379/")?;
+        let conn = client.get_multiplexed_tokio_connection().await?;
+
         Ok(Self {})
-        // let client = redis::Client::open("redis://replication:6379/")?;
-        // let conn = client.get_multiplexed_tokio_connection().await?;
 
         // Ok(Self {
         //     conn

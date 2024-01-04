@@ -1,8 +1,11 @@
+version: "3"
+
 services:
   replication:
     image: redis/redis-stack:latest
-    ports:
+    expose:
       - "6379:6379"
+    ports:
       - "8001:8001"
     volumes:
       - replication-data:/data
@@ -11,8 +14,10 @@ services:
     depends_on:
       - replication
     ports:
-      - "19132:19132"
-      - "19133:19133"
+      - target: 19132
+        published: 19132
+        protocol: udp
+        mode: host
     environment:
       - "RUST_BACKTRACE=1"
 

@@ -24,7 +24,7 @@ use crate::network::SessionManager;
 use crate::raknet::RawPacket;
 
 /// Local IPv4 address
-pub const IPV4_LOCAL_ADDR: Ipv4Addr = Ipv4Addr::LOCALHOST;
+pub const IPV4_LOCAL_ADDR: Ipv4Addr = Ipv4Addr::UNSPECIFIED;
 /// Local IPv6 address
 pub const IPV6_LOCAL_ADDR: Ipv6Addr = Ipv6Addr::UNSPECIFIED;
 /// Size of the UDP receive buffer.
@@ -32,6 +32,33 @@ const RECV_BUF_SIZE: usize = 4096;
 /// Refresh rate of the server's metadata.
 /// This data is displayed in the server menu.
 const METADATA_REFRESH_INTERVAL: Duration = Duration::from_secs(2);
+
+async fn signal_listener(token: CancellationToken) -> anyhow::Result<()> {
+    tokio::select! {
+        _ = token.cancelled() => (),
+        _ = tokio::signal::ctrl_c() => ()
+    }
+
+    // #[cfg(windows)]
+    // tokio::select! {
+    //     _ = token.cancelled() => (),
+    //     _ = tokio::signal::ctrl_c() => ()
+    // }
+
+    // #[cfg(unix)]
+    // {
+    //     use tokio::signal::unix::{signal, SignalKind};
+
+    //     let mut sig = signal(SignalKind::terminate())?;
+    //     tokio::select! {
+    //         _ = token.cancelled() => (),
+    //         _ = tokio::signal::ctrl_c() => (),
+    //         _ = sig.recv() => ()
+    //     }
+    // }
+
+    Ok(())
+}
 
 /// Manages all the processes running within the server.
 ///
@@ -242,11 +269,8 @@ impl ServerInstance {
 
         tracing::info!("Ready!");
 
-        // Wait for either Ctrl-C or token cancel...
-        tokio::select! {
-            _ = token.cancelled() => (),
-            _ = tokio::signal::ctrl_c() => ()
-        }
+        // Wait for a shutdown signal...
+        signal_listener(token.clone()).await;
 
         tracing::info!("Shutting down server. This can take several seconds...");
 

@@ -53,14 +53,10 @@ LevelResult level_open(const char *path) {
   database->read_options.decompress_allocator =
       new leveldb::DecompressAllocator();
 
-  std::string cpp_path = path;
-
   leveldb::Status status =
-      leveldb::DB::Open(database->options, cpp_path, &database->database);
+      leveldb::DB::Open(database->options, path, &database->database);
 
   result.status = translate_status(status);
-
-  std::cout << "Status is:" << status.ToString() << std::endl;
 
   if (status.ok()) {
     result.size = sizeof(Database);
@@ -75,8 +71,6 @@ LevelResult level_open(const char *path) {
     ((char*)result.data)[src_size] = 0; // Explicitly zero null character.
 
     memcpy(result.data, src, src_size);
-
-    std::cout << "Converted data is: " << (char*)result.data << std::endl;
   }
 
   return result;

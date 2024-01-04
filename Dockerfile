@@ -19,5 +19,6 @@ FROM debian:bookworm-slim as exec
 WORKDIR /var/lib/pyro
 COPY --from=build /usr/local/cargo/bin/pyro /usr/local/bin/pyro
 COPY test-level /var/lib/pyro/test-level
+
 CMD pyro
 
