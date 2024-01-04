@@ -45,7 +45,7 @@ impl Session {
         self.replicator.move_player(self.get_xuid()?, &request).await?;
 
         request.mode = MovementMode::Normal;
-        
+
         dbg!(&request);
         self.broadcast(request)
     }

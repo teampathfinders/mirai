@@ -181,6 +181,8 @@ impl Database {
         // Ensure that there can only be a single database open at once.
         // Multiple databases causes corruption.
         let ffi_path = CString::new(path.as_ref())?;
+        
+        dbg!(path.as_ref());
 
         // SAFETY: This function is guaranteed to not return exceptions.
         // It also does not modify the argument and returns a valid struct.

@@ -65,9 +65,18 @@ impl ServerInstance {
         };
 
         let token = CancellationToken::new();
-        let udp_socket = Arc::new(UdpSocket::bind(SocketAddrV4::new(IPV4_LOCAL_ADDR, ipv4_port)).await?);
+        
+        let udp_socket = Arc::new(
+            UdpSocket::bind(SocketAddrV4::new(IPV4_LOCAL_ADDR, ipv4_port))
+                .await
+                .context("Unable to create UDP socket")?
+        );
 
-        let replicator = Arc::new(Replicator::new().await?);
+        let replicator = Arc::new(
+            Replicator::new()
+                .await
+                .context("Cannot create replication layer")?
+        );
         let session_manager = Arc::new(SessionManager::new(replicator));
 
         let level = LevelManager::new(session_manager.clone(), token.clone())?;
@@ -238,6 +247,8 @@ impl ServerInstance {
             _ = token.cancelled() => (),
             _ = tokio::signal::ctrl_c() => ()
         }
+
+        tracing::info!("Shutting down server. This can take several seconds...");
 
         // ...then shut down all services.
         if let Err(e) = session_manager.kick_all("Server closed").await {

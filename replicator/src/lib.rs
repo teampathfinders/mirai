@@ -55,46 +55,50 @@ impl FromRedisValue for TextObject {
 }
 
 pub struct Replicator {
-    conn: MultiplexedConnection
+    // conn: MultiplexedConnection
 }
 
 impl Replicator {
     pub async fn new() -> anyhow::Result<Self> {
-        let client = redis::Client::open("redis://127.0.0.1:6379/")?;
-        let conn = client.get_multiplexed_tokio_connection().await?;
+        Ok(Self {})
+        // let client = redis::Client::open("redis://replication:6379/")?;
+        // let conn = client.get_multiplexed_tokio_connection().await?;
 
-        Ok(Self {
-            conn
-        })
+        // Ok(Self {
+        //     conn
+        // })
     }
 
     pub async fn save_xuid(&self, xuid: u64, name: String) -> RedisResult<()> {
-        self.conn.clone().hset(XUID_MAP_KEY, xuid, name).await
+        Ok(())
+        // self.conn.clone().hset(XUID_MAP_KEY, xuid, name).await
     }
     
     pub async fn move_player(&self, xuid: u64, data: &MovePlayer) -> RedisResult<()> {
-        self.conn
-            .clone()
-            .geo_add(TRANS_GEO_KEY, (data.translation.x, data.translation.z, xuid))
-            .await
+        Ok(())
+        // self.conn
+        //     .clone()
+        //     .geo_add(TRANS_GEO_KEY, (data.translation.x, data.translation.z, xuid))
+        //     .await
     }
 
     /// Publishes a message to the text chat stream in the replication layer.
     pub async fn text_msg(&self, msg: &TextMessage<'_>) -> RedisResult<()> {
-        let body = match msg.data {
-            TextData::Chat { message, source } => {
-                message
-            },
-            _ => todo!()
-        };
+        Ok(())
+        // let body = match msg.data {
+        //     TextData::Chat { message, source } => {
+        //         message
+        //     },
+        //     _ => todo!()
+        // };
 
-        redis::cmd("XADD")
-            .arg(TEXT_KEY)
-            .arg("*")
-            .arg("xuid").arg(msg.xuid)
-            .arg("body").arg(body)
-            .query_async(&mut self.conn.clone())
-            .await
+        // redis::cmd("XADD")
+        //     .arg(TEXT_KEY)
+        //     .arg("*")
+        //     .arg("xuid").arg(msg.xuid)
+        //     .arg("body").arg(body)
+        //     .query_async(&mut self.conn.clone())
+        //     .await
     }
 }
 
