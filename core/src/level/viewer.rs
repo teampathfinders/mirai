@@ -1,9 +1,10 @@
-use crate::level::LevelManager;
+use crate::level::{LevelManager, SubChunkPosition};
 use std::cell::OnceCell;
 use std::sync::atomic::{AtomicI32, Ordering};
 use std::sync::Arc;
 use proto::bedrock::{HeightmapType, SubChunkEntry, SubChunkResult};
-use util::Vector;
+use util::{MutableBuffer, Vector};
+use crate::level::subchunk::NetSubChunk;
 
 pub struct ChunkViewer {
     radius: AtomicI32,
@@ -26,30 +27,33 @@ impl ChunkViewer {
     }
 
     pub fn recenter(&self, center: Vector<i32, 2>, offsets: &[Vector<i8, 3>]) -> anyhow::Result<Vec<SubChunkEntry>> {
-        // todo!()
-
         let mut entries = Vec::with_capacity(offsets.len());
         for offset in offsets {
-            // TODO: Check for out of bounds requests
+            let coords = SubChunkPosition {
+                x: center.x + offset.x as i32,
+                y: offset.y,
+                z: center.y + offset.z as i32
+            };
 
-            // if let Some(chunk) = self.level.get_subchunk()? {
-            //     todo!();
-            // } else {
-            //     entries.push(SubChunkEntry {
-            //         offset: offset.clone(),
-            //         result: SubChunkResult::NotFound,
-            //         ..Default::default()
-            //     });
-            // }
+            if let Some(subchunk) = self.level.get_subchunk(coords)? {
+                let subchunk = NetSubChunk::from(subchunk);
+                let mut payload = MutableBuffer::new();
 
-            entries.push(SubChunkEntry {
-                offset: offset.clone(),
-                result: SubChunkResult::AllAir,
-                heightmap_type: HeightmapType::None,
-                heightmap: Box::default(),
-                payload: vec![],
-                blob_hash: 0,
-            });
+                subchunk.serialize_in(&mut payload)?;
+
+                entries.push(SubChunkEntry {
+                    offset: offset.clone(),
+                    result: SubChunkResult::Success,
+                    payload: payload.into_inner(),
+                    ..Default::default()
+                });
+            } else {
+                entries.push(SubChunkEntry {
+                    offset: offset.clone(),
+                    result: SubChunkResult::AllAir,
+                    ..Default::default()
+                });
+            }
         }
 
         Ok(entries)

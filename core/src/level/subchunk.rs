@@ -2,6 +2,7 @@ use level::{PaletteEntry, SubChunk, SubChunkVersion, SubLayer, to_offset};
 use util::BinaryWrite;
 use crate::data::RUNTIME_ID_MAP;
 
+#[derive(Debug)]
 pub struct NetSubLayer {
     indices: Box<[u16; 4096]>,
     palette: Vec<i32>
@@ -41,6 +42,7 @@ impl From<SubLayer> for NetSubLayer {
     }
 }
 
+#[derive(Debug)]
 pub struct NetSubChunk {
     version: SubChunkVersion,
     index: i8,

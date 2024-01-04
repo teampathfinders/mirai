@@ -114,14 +114,8 @@ impl SessionManager {
                         // Session incoming queue is full.
                         // If after a 20 ms timeout it is still full, destroy the session,
                         // it probably froze.
-                        let xuid = session
-                            .1
-                            .get_xuid()
-                            .map(|x| x.to_string())
-                            .unwrap_or_else(|_| "unknown".to_owned());
-
                         tracing::error!(
-                            "It seems like session (with XUID {xuid}) is hanging. Closing it"
+                            "Closing hanging session"
                         );
 
                         // Attempt to send a disconnect packet.

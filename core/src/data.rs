@@ -21,6 +21,6 @@ impl RuntimeIdMap {
     }
 
     pub fn get(&self, name: &str) -> Option<i32> {
-        todo!()
+        self.map.get(name).cloned()
     }
 }

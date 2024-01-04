@@ -31,6 +31,11 @@ pub struct CombinedChunk {
     sub_chunks: Vec<SubChunk>,
 }
 
+#[derive(Debug)]
+pub struct SubChunkPosition {
+    pub x: i32, pub y: i8, pub z: i32
+}
+
 pub struct LevelManager {
     world: legion::World,
     /// Used to load world data from disk.
@@ -128,17 +133,8 @@ impl LevelManager {
         self.session_manager.broadcast(GameRulesChanged { game_rules })
     }
 
-    /// TODO: Loads all chunks in a radius around a specified center.
-    pub fn request_subchunks(&self, center: Vector<i32, 3>, offsets: &[Vector<i8, 3>]) -> anyhow::Result<SubChunkResponse> {
-        let subchunk = self
-            .provider
-            .get_subchunk(Vector::from([center.x, center.z]), center.y as i8, Dimension::Overworld)?;
-
-        if let Some(subchunk) = subchunk {
-        } else {
-        }
-
-        todo!()
+    pub fn get_subchunk(&self, coords: SubChunkPosition) -> anyhow::Result<Option<SubChunk>> {
+        self.provider.get_subchunk(Vector::from([coords.x, coords.z]), coords.y, Dimension::Overworld)
     }
 
     pub fn request_biomes(&self, coordinates: Vector<i32, 2>, dimension: Dimension) -> anyhow::Result<LevelChunk> {
