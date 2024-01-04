@@ -20,7 +20,6 @@ use crate::config::SERVER_CONFIG;
 use crate::network::SessionManager;
 
 use crate::level::serialize::serialize_biomes;
-use lru::LruCache;
 use util::MutableBuffer;
 
 /// Interval between standard Minecraft ticks.
@@ -32,28 +31,8 @@ pub struct CombinedChunk {
     sub_chunks: Vec<SubChunk>,
 }
 
-#[derive(Debug)]
-pub struct LevelCache {
-    cache: LruCache<Vector<i32, 2>, CombinedChunk>,
-}
-
-impl LevelCache {
-    pub fn new() -> Self {
-        Default::default()
-    }
-}
-
-impl Default for LevelCache {
-    fn default() -> Self {
-        Self {
-            cache: LruCache::new(NonZeroUsize::new(25).unwrap()),
-        }
-    }
-}
-
 pub struct LevelManager {
     world: legion::World,
-    cache: RwLock<LevelCache>,
     /// Used to load world data from disk.
     provider: Provider,
     /// List of commands available in this level.
@@ -77,12 +56,10 @@ impl LevelManager {
         };
 
         let provider = unsafe { Provider::open(level_path)? };
-        let cache = RwLock::new(LevelCache::new());
 
         let manager = Arc::new(Self {
             world: legion::World::default(),
             provider,
-            cache,
             commands: DashMap::new(),
             game_rules: DashMap::from_iter([("showcoordinates".to_owned(), GameRule::ShowCoordinates(true))]),
             session_manager,
