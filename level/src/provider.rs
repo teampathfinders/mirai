@@ -153,7 +153,7 @@ impl Provider {
         dbg!(&key);
 
         if let Some(data) = self.database.get(key)? {
-            let sub_chunk = SubChunk::deserialize(&*data)?;
+            let sub_chunk = SubChunk::deserialize_disk(&*data)?;
             Ok(Some(sub_chunk))
         } else {
             Ok(None)

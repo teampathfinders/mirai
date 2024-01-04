@@ -1,6 +1,6 @@
-#![allow(unused)]
 #![allow(rustdoc::private_intra_doc_links)]
 
+pub mod data;
 pub mod config;
 pub mod forms;
 pub mod instance;

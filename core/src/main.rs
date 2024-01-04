@@ -5,6 +5,7 @@ use std::sync::atomic::{AtomicU16, Ordering};
 use tokio::runtime;
 use tracing_subscriber::EnvFilter;
 use tracing_subscriber::filter::LevelFilter;
+use pyro::data::{RUNTIME_ID_MAP};
 
 use pyro::instance::ServerInstance;
 
@@ -19,6 +20,8 @@ fn main() -> ExitCode {
 }
 
 fn start_server() -> ExitCode {
+    dbg!(&*RUNTIME_ID_MAP);
+
     let runtime = runtime::Builder::new_multi_thread()
         .enable_io()
         .enable_time()

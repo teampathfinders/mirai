@@ -109,8 +109,8 @@ mod ffi;
 mod key;
 pub mod provider;
 mod settings;
-mod sub_chunk;
+mod subchunk;
 
 pub use biome::*;
 pub use key::*;
-pub use sub_chunk::*;
+pub use subchunk::*;

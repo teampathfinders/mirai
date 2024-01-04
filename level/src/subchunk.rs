@@ -154,11 +154,12 @@ impl SubLayer {
     pub fn indices_mut(&mut self) -> &mut [u16; 4096] {
         &mut self.indices
     }
+
+    pub fn take_indices(self) -> Box<[u16; 4096]> { self.indices }
 }
 
 impl SubLayer {
     /// Deserializes a single layer from the given buffer.
-    #[inline]
     fn deserialize_disk<'a, R>(mut reader: R) -> anyhow::Result<Self>
     where
         R: BinaryRead<'a> + Copy + 'a,
@@ -182,7 +183,19 @@ impl SubLayer {
         Ok(Self { indices, palette })
     }
 
-    #[inline]
+    fn deserialize_network<'a, R>(mut reader: R) -> anyhow::Result<Self>
+    where
+        R: BinaryRead<'a> + Copy + 'a,
+    {
+        let indices = match crate::deserialize_packed_array(&mut reader)? {
+            PackedArrayReturn::Data(data) => data,
+            PackedArrayReturn::Empty => anyhow::bail!("Sub layer packed array index size cannot be 0"),
+            PackedArrayReturn::ReferBack => anyhow::bail!("Sub layer packed array does not support biome referral"),
+        };
+
+        todo!();
+    }
+
     fn serialize_disk<W>(&self, mut writer: W) -> anyhow::Result<()>
     where
         W: BinaryWrite,
@@ -195,6 +208,25 @@ impl SubLayer {
         }
 
         Ok(())
+    }
+
+    fn serialize_network<W>(&self, mut writer: W) -> anyhow::Result<()>
+    where
+        W: BinaryWrite,
+    {
+        crate::serialize_packed_array(&mut writer, &self.indices, self.palette.len(), true)?;
+
+        if !self.palette.is_empty() {
+            writer.write_var_i32(self.palette.len() as i32)?;
+        }
+
+        for entry in &self.palette {
+
+            // https://github.com/df-mc/dragonfly/blob/master/server/world/chunk/paletted_storage.go#L35
+            // Requires new palette storage that only stores runtime IDs.
+        }
+
+        todo!()
     }
 }
 
@@ -284,44 +316,42 @@ pub struct SubChunk {
 impl SubChunk {
     /// Version of this subchunk.
     /// See [`SubChunkVersion`] for more information.
-    #[inline]
     pub fn version(&self) -> SubChunkVersion {
         self.version
     }
 
     /// Vertical index of this subchunk
-    #[inline]
     pub fn index(&self) -> i8 {
         self.index
     }
 
     /// The amount of layers that this subchunk contains
-    #[inline]
     pub fn layer_len(&self) -> u8 {
         self.layers.len() as u8
     }
 
-    #[inline]
     pub fn layers(&self) -> &[SubLayer] {
         &self.layers
     }
 
     /// Get an immutable reference to the layer at the specified index.
-    #[inline]
     pub fn layer(&self, index: usize) -> Option<&SubLayer> {
         self.layers.get(index)
     }
 
     /// Get a mutable reference to the layer at the specified index.
-    #[inline]
     pub fn layer_mut(&mut self, index: usize) -> Option<&mut SubLayer> {
         self.layers.get_mut(index)
+    }
+
+    pub fn take_layers(self) -> Vec<SubLayer> {
+        self.layers
     }
 }
 
 impl SubChunk {
     /// Deserialize a full sub chunk from the given buffer.
-    pub(crate) fn deserialize<'a, R>(mut reader: R) -> anyhow::Result<Self>
+    pub fn deserialize_disk<'a, R>(mut reader: R) -> anyhow::Result<Self>
     where
         R: BinaryRead<'a> + Copy + 'a,
     {
@@ -347,14 +377,14 @@ impl SubChunk {
     }
 
     /// Serialises the sub chunk into a new buffer and returns the buffer.
-    pub(crate) fn serialize(&self) -> anyhow::Result<MutableBuffer> {
+    pub fn serialize_disk(&self) -> anyhow::Result<MutableBuffer> {
         let mut buffer = MutableBuffer::new();
-        self.serialize_in(&mut buffer)?;
+        self.serialize_disk_in(&mut buffer)?;
         Ok(buffer)
     }
 
     /// Serialises the sub chunk into the given writer.
-    pub(crate) fn serialize_in<W>(&self, mut writer: W) -> anyhow::Result<()>
+    pub fn serialize_disk_in<W>(&self, mut writer: W) -> anyhow::Result<()>
     where
         W: BinaryWrite,
     {
@@ -371,6 +401,8 @@ impl SubChunk {
 
         Ok(())
     }
+
+
 }
 
 impl Index<usize> for SubChunk {

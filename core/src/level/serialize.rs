@@ -33,37 +33,6 @@ pub fn serialize_biomes(buffer: &mut MutableBuffer, biomes: &Biomes) -> anyhow::
     Ok(())
 }
 
-pub fn serialize_subchunk(subchunk: &SubChunk, buffer: &mut MutableBuffer) -> anyhow::Result<()> {
-    buffer.write_u8(subchunk.version() as u8)?;
-    if subchunk.version() != SubChunkVersion::Legacy {
-        buffer.write_u8(subchunk.layer_len() as u8);
-    }
-    buffer.write_i8(subchunk.index());
-
-    for layer in subchunk.layers() {
-        serialize_layer(layer, buffer)?;
-    }
-
-    Ok(())
-}
-
-#[inline]
-fn serialize_layer(layer: &SubLayer, buffer: &mut MutableBuffer) -> anyhow::Result<()> {
-    buffer.reserve(4096 * 4 + 1);
-
-    // Check whether layers are equal and if so refer to previous one
-    let layers_equal = false;
-    if layers_equal {
-        buffer.write_u8(0x7f << 1 | 1); // Refer to previous layer.
-        return Ok(())
-    }
-
-    level::serialize_packed_array(buffer, layer.indices(), layer.palette().len(), true)?;
-    level::serialize_block_palette(buffer, layer.palette(), true)?;
-
-    Ok(())
-}
-
 //
 // #[inline]
 // pub fn encode_biome(biome: &Biome, buffer: &mut MutableBuffer) -> anyhow::Result<()> {
