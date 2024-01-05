@@ -75,7 +75,7 @@ impl ParsedArgument {
     /// Converts the argument to a float if it is a float type.
     pub fn as_float(&self) -> Option<f32> {
         match self {
-            Self::Float(f) => Some(f),
+            Self::Float(f) => Some(*f),
             _ => None
         }
     }
@@ -83,7 +83,7 @@ impl ParsedArgument {
     /// Converts the argument to a target if it is a target type.
     pub fn as_target(&self) -> Option<CommandTarget> {
         match self {
-            Self::Target(t) => Some(t),
+            Self::Target(t) => Some(*t),
             _ => None
         }
     }
