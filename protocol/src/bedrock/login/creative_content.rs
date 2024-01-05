@@ -28,25 +28,28 @@ pub const ITEM_ID_SHIELD: u32 = 513;
 //     pub has_network_id: bool,
 // }
 
+/// Represents a stack of items.
 #[derive(Debug, Clone)]
-pub struct ItemCollection {
+pub struct ItemStack {
+    /// Runtime ID of the item. This is the ID with which the item is registered in the [`RUNTIME_ID_DATA`](core::RUNTIME_ID_DATA) map.
     pub runtime_id: i32,
-    pub network_id: u32,
+    /// Damage value of the item.
     pub meta: u32,
     /// Amount of items that a single stack holds.
     pub count: u16,
+    /// On which blocks the item can be placed.
     pub placeable_on: Vec<String>,
+    /// Which blocks the item can break.
     pub can_break: Vec<String>
 }
 
-impl ItemCollection {
+impl ItemStack {
     pub fn serialized_size(&self) -> usize {
         30
     }
 
-    pub fn serialize(&self, buffer: &mut MutableBuffer) -> anyhow::Result<()> {
-        buffer.write_var_i32(self.runtime_id)?;
-        if self.network_id == 0 {
+    pub fn serialize(&self, network_id: u32, buffer: &mut MutableBuffer) -> anyhow::Result<()> {
+        if network_id == 0 {
             // Item is air, nothing left to do.
             return Ok(())
         }
@@ -82,7 +85,7 @@ impl ItemCollection {
 
 #[derive(Debug, Clone)]
 pub struct CreativeContent<'a> {
-    pub items: &'a [ItemCollection],
+    pub items: &'a [ItemStack],
 }
 
 impl ConnectedPacket for CreativeContent<'_> {
@@ -98,8 +101,8 @@ impl Serialize for CreativeContent<'_> {
     fn serialize(&self, buffer: &mut MutableBuffer) -> anyhow::Result<()> {
         buffer.write_var_u32(self.items.len() as u32)?;
         for (i, item) in self.items.iter().enumerate() {
-            buffer.write_var_i32(i as i32 + 1)?;
-            item.serialize(buffer)?;
+            buffer.write_var_u32(i as u32 + 1)?;
+            item.serialize(i as u32 + 1, buffer)?;
         }
 
         Ok(())

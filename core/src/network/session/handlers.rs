@@ -30,9 +30,9 @@ impl Session {
     pub async fn process_text_message(&self, packet: MutableBuffer) -> anyhow::Result<()> {
         let request = TextMessage::deserialize(packet.snapshot())?;
         if let TextData::Chat {
-             ..
+            source, ..
         } = request.data {
-            let _actual = &self.identity.get()
+            let actual = &self.identity.get()
                 .try_expect("Client does not have associated user data")?
                 .display_name;
 

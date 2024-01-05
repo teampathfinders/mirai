@@ -231,13 +231,15 @@ impl Session {
                 index += 1;
             }
         }
-
-        debug_assert!(
-            frames
-                .iter()
-                .any(|f| f.body.len() > self.raknet.mtu as usize - std::mem::size_of::<Frame>()),
-            "Frames were not split properly"
-        );
+        
+        let large_frames = frames.iter().find(|f| f.body.len() > self.raknet.mtu as usize - std::mem::size_of::<Frame>());
+        dbg!(large_frames.map(|f| f.body.len()));
+        // debug_assert!(
+        //     frames
+        //         .iter()
+        //         .any(|f| f.body.len() > self.raknet.mtu as usize - std::mem::size_of::<Frame>()),
+        //     "Frames were not split properly"
+        // );
 
         let mut batch = FrameBatch {
             sequence_number: self

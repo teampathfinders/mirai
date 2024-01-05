@@ -1,6 +1,7 @@
 use lazy_static::lazy_static;
 use level::PaletteEntry;
 use nohash_hasher::BuildNoHashHasher;
+use proto::bedrock::ItemStack;
 use std::collections::HashMap;
 use serde::Deserialize;
 use tokio_util::bytes::Buf;
@@ -83,15 +84,18 @@ impl BlockStateMap {
 
 #[derive(Debug, Deserialize)]
 pub struct CreativeItemsEntry {
+    /// Name of the creative item.
     pub name: String,
     pub meta: i16,
+    /// This field only exists if the given item has NBT data. This can be a command block or chest with data for example.
     pub nbt: Option<HashMap<String, nbt::Value>>,
+    /// This field only exists if the given item is a block.
     pub block_properties: Option<HashMap<String, nbt::Value>>
 }
 
 #[derive(Debug)]
 pub struct CreativeItemsMap {
-    pub items: Vec<CreativeItemsEntry>
+    pub item_stacks: Vec<ItemStack>
 }
 
 impl CreativeItemsMap {
@@ -101,6 +105,39 @@ impl CreativeItemsMap {
         const BYTES: &[u8] = include_bytes!("../include/creative_items.nbt");
         let items: Vec<CreativeItemsEntry> = nbt::from_var_bytes(BYTES)?.0;
 
-        Ok(Self { items })
+        let mut item_stacks = Vec::with_capacity(items.len());
+        for item in &items[..10] {
+            let runtime_id = if let Some(rid) = RUNTIME_ID_DATA.get(&item.name) {
+                rid
+            } else {
+                continue
+            };
+
+            let stack = if let Some(properties) = &item.block_properties {
+                ItemStack {
+                    runtime_id,
+                    meta: item.meta as u32,
+                    count: 64,
+                    can_break: vec![],
+                    placeable_on: vec![]
+                }
+            } else {
+                ItemStack {
+                    runtime_id,
+                    meta: item.meta as u32,
+                    count: 1,
+                    can_break: vec![],
+                    placeable_on: vec![]
+                }
+            };
+
+            item_stacks.push(stack);
+        }
+
+        Ok(Self { item_stacks })
+    }
+
+    pub fn items(&self) -> &[ItemStack] {
+        &self.item_stacks
     }
 }

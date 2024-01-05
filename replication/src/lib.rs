@@ -1,8 +1,8 @@
 use anyhow::Context;
 use fred::{
     clients::RedisClient,
-    interfaces::{ClientLike, HashesInterface, PubsubInterface},
-    types::{RedisConfig, RespVersion, Server, ServerConfig},
+    interfaces::{ClientLike, HashesInterface, PubsubInterface, StreamsInterface},
+    types::{RedisConfig, RespVersion, Server, ServerConfig, XCap},
 };
 use proto::bedrock::{MovePlayer, TextData, TextMessage};
 use util::{size_of_string, BinaryWrite, MutableBuffer};
@@ -79,11 +79,16 @@ impl Replicator {
             buf.write_u64_le(msg.xuid)?;
             buf.write_str(source)?;
             buf.write_str(message)?;
-
+            
             self.client
-                .publish("user:text", buf.as_ref())
+                .xadd("user:text", false, None, "*", vec![("xuid", msg.xuid.to_string().as_str()), ("name", source), ("body", message)])
                 .await
-                .context("Unable to publish chat message")
+                .context("Unable to add to user text stream")
+
+            // self.client
+            //     .publish("user:text", buf.as_ref())
+            //     .await
+            //     .context("Unable to publish chat message")
         } else {
             todo!()
         }
