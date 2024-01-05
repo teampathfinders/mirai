@@ -138,7 +138,7 @@ impl Session {
                 success_count: 0,
                 output: &[CommandOutputMessage {
                     is_success: false,
-                    message: &result.unwrap_err(),
+                    message: &result.unwrap_err().to_string(),
                     parameters: &[],
                 }],
             })?;
