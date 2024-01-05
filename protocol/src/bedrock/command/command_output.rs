@@ -17,17 +17,26 @@ pub enum CommandOutputType {
 
 #[derive(Debug, Clone)]
 pub struct CommandOutputMessage<'a> {
+    /// Whether the execution was a success. This determines whether the message
+    /// is white or red.
     pub is_success: bool,
+    /// Message to display in the output.
     pub message: &'a str,
+    /// Parameters to use in the outputted message.
     pub parameters: &'a [String],
 }
 
+/// Returns the output of a command back to the user.
 #[derive(Debug, Clone)]
 pub struct CommandOutput<'a> {
+    /// Origin of the executed command.
     pub origin: CommandOriginType,
     pub request_id: &'a str,
+    /// Type of output.
     pub output_type: CommandOutputType,
+    /// How many of the executions were successful.
     pub success_count: u32,
+    /// Output(s)
     pub output: &'a [CommandOutputMessage<'a>],
 }
 

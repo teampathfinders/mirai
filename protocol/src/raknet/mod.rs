@@ -1,3 +1,5 @@
+//! All types and packets implemented in the RakNet protocol.
+
 use util::glob_export;
 
 glob_export!(acknowledgements);
