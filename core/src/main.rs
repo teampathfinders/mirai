@@ -61,7 +61,7 @@ fn init_logging() {
 fn init_logging() -> anyhow::Result<()> {
     let max_level = LevelFilter::from_str(
         &std::env::vars()
-            .find_map(|(k, v)| if k == "PYRO_LOG" { Some(v) } else { None })
+            .find_map(|(k, v)| if k == "LOG_LEVEL" { Some(v) } else { None })
             .unwrap_or(String::from("info")),
     )?;
 
