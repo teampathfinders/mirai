@@ -4,6 +4,7 @@ use std::sync::atomic::{AtomicU16, Ordering};
 
 use tokio::runtime;
 use tracing_subscriber::filter::LevelFilter;
+use pyro::data::{BLOCK_STATE_DATA, CREATIVE_ITEMS_DATA};
 
 use pyro::instance::ServerInstance;
 

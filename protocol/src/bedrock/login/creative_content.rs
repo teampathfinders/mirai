@@ -69,9 +69,9 @@ impl ItemCollection {
             extra_buffer.write_str(block)?;
         }
 
-        if self.network_id == ITEM_ID_SHIELD {
-            todo!();
-        }
+        // if self.network_id == ITEM_ID_SHIELD {
+        //     todo!();
+        // }
 
         buffer.write_var_u32(extra_buffer.len() as u32)?;
         buffer.write(&extra_buffer.snapshot())?;

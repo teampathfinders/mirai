@@ -55,8 +55,8 @@ where
     #[inline]
     pub fn new(mut input: R) -> anyhow::Result<Self> {
         let next_ty = FieldType::try_from(input.read_u8()?)?;
-        if next_ty != FieldType::Compound {
-            bail!(Malformed, "Expected compound tag as root");
+        if next_ty != FieldType::Compound && next_ty != FieldType::List {
+            bail!(Malformed, "Expected compound or list tag as root");
         }
 
         let mut de = Deserializer {
@@ -81,6 +81,8 @@ where
 
         let data = self.input.take_n(len as usize)?;
         let str = std::str::from_utf8(data)?;
+
+        // dbg!(str);
 
         Ok(str)
     }
@@ -350,6 +352,8 @@ where
         let data = self.input.take_n(len as usize)?;
         let str = std::str::from_utf8(data)?;
 
+        // dbg!(str);
+
         visitor.visit_str(str)
     }
 
@@ -368,6 +372,8 @@ where
 
         let data = self.input.take_n(len as usize)?;
         let string = String::from_utf8(data.to_vec())?;
+
+        // dbg!(&string);
 
         visitor.visit_string(string)
     }
@@ -537,7 +543,9 @@ where
             Variant::BigEndian => de.input.read_i32_be()? as u32,
             Variant::LittleEndian => de.input.read_i32_le()? as u32,
             Variant::Variable => de.input.read_var_u32()?,
-        };
+        } - 1729;
+        // let remaining = 100;
+        dbg!(remaining);
 
         if expected_len != 0 && expected_len != remaining {
             bail!(Malformed, "Expected sequence of length {expected_len}, got length {remaining}");
@@ -561,6 +569,7 @@ where
     {
         if self.remaining > 0 {
             self.remaining -= 1;
+
             let output = seed.deserialize(&mut *self.de).map(Some);
             self.de.next_ty = self.ty;
             output

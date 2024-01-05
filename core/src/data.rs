@@ -2,11 +2,13 @@ use lazy_static::lazy_static;
 use level::PaletteEntry;
 use nohash_hasher::BuildNoHashHasher;
 use std::collections::HashMap;
+use serde::Deserialize;
 use tokio_util::bytes::Buf;
 
 lazy_static! {
     pub static ref RUNTIME_ID_DATA: RuntimeIdMap = RuntimeIdMap::new().unwrap();
     pub static ref BLOCK_STATE_DATA: BlockStateMap = BlockStateMap::new().unwrap();
+    pub static ref CREATIVE_ITEMS_DATA: CreativeItemsMap = CreativeItemsMap::new().unwrap();
 }
 
 #[derive(Debug)]
@@ -20,8 +22,6 @@ impl RuntimeIdMap {
 
         const BYTES: &[u8] = include_bytes!("../include/item_runtime_ids.nbt");
         let map = nbt::from_var_bytes(BYTES)?.0;
-
-        dbg!(&map);
 
         Ok(Self { map })
     }
@@ -40,7 +40,7 @@ pub struct BlockStateMap {
 
 impl BlockStateMap {
     pub fn new() -> anyhow::Result<Self> {
-        tracing::debug!("Generating block state map...");
+        tracing::debug!("Generating block state data...");
 
         const BYTES: &[u8] = include_bytes!("../include/block_states.nbt");
         const STATE_COUNT: usize = 14127;
@@ -57,16 +57,14 @@ impl BlockStateMap {
             let state_hash = item.hash();
             map.runtime_hashes.insert(state_hash, current_id);
 
-            if item.name == "minecraft:planks" {
-                dbg!(&item);
-            }
-
             if item.name == "minecraft:air" {
                 map.air_id = current_id;
             }
 
             current_id += 1;
         }
+
+        assert_eq!(STATE_COUNT, current_id as usize);
 
         Ok(map)
     }
@@ -75,10 +73,34 @@ impl BlockStateMap {
         let hash = block.hash();
         let found = self.runtime_hashes.get(&hash).cloned();
 
-        if found.is_none() {
-            dbg!(block);
-        }
+        // if found.is_none() {
+        //     dbg!(block);
+        // }
 
         found
+    }
+}
+
+#[derive(Debug, Deserialize)]
+pub struct CreativeItemsEntry {
+    pub name: String,
+    pub meta: i16,
+    pub nbt: Option<HashMap<String, nbt::Value>>,
+    pub block_properties: Option<HashMap<String, nbt::Value>>
+}
+
+#[derive(Debug)]
+pub struct CreativeItemsMap {
+    pub items: Vec<CreativeItemsEntry>
+}
+
+impl CreativeItemsMap {
+    pub fn new() -> anyhow::Result<Self> {
+        tracing::debug!("Generating creative items data...");
+
+        const BYTES: &[u8] = include_bytes!("../include/creative_items.nbt");
+        let items: Vec<CreativeItemsEntry> = nbt::from_var_bytes(BYTES)?.0;
+
+        Ok(Self { items })
     }
 }

@@ -1,7 +1,7 @@
 
 
 use std::sync::atomic::Ordering;
-use proto::bedrock::{AvailableCommands, BiomeDefinitionList, BroadcastIntent, CacheStatus, ChatRestrictionLevel, ChunkRadiusReply, ChunkRadiusRequest, CLIENT_VERSION_STRING, ClientToServerHandshake, CreativeContent, Difficulty, DISCONNECTED_LOGIN_FAILED, GameMode, Login, NETWORK_VERSION, NetworkChunkPublisherUpdate, NetworkSettings, PermissionLevel, PlayerMovementSettings, PlayerMovementType, PlayStatus, PropertyData, RequestNetworkSettings, ResourcePackClientResponse, ResourcePacksInfo, ResourcePackStack, ServerToClientHandshake, SetLocalPlayerAsInitialized, SpawnBiomeType, StartGame, Status, SubChunkResponse, TextData, TextMessage, ViolationWarning, WorldGenerator};
+use proto::bedrock::{AvailableCommands, BiomeDefinitionList, BroadcastIntent, CacheStatus, ChatRestrictionLevel, ChunkRadiusReply, ChunkRadiusRequest, CLIENT_VERSION_STRING, ClientToServerHandshake, CreativeContent, Difficulty, DISCONNECTED_LOGIN_FAILED, GameMode, ItemCollection, Login, NETWORK_VERSION, NetworkChunkPublisherUpdate, NetworkSettings, PermissionLevel, PlayerMovementSettings, PlayerMovementType, PlayStatus, PropertyData, RequestNetworkSettings, ResourcePackClientResponse, ResourcePacksInfo, ResourcePackStack, ServerToClientHandshake, SetLocalPlayerAsInitialized, SpawnBiomeType, StartGame, Status, SubChunkResponse, TextData, TextMessage, ViolationWarning, WorldGenerator};
 use proto::crypto::Encryptor;
 use proto::types::Dimension;
 
@@ -9,6 +9,7 @@ use util::MutableBuffer;
 use util::{bail, BlockPosition, Deserialize, Vector};
 
 use crate::config::SERVER_CONFIG;
+use crate::data::{CREATIVE_ITEMS_DATA, RUNTIME_ID_DATA};
 
 use crate::network::Session;
 
@@ -199,7 +200,22 @@ impl Session {
         };
         self.send(start_game)?;
 
+        // let mut creative_items = Vec::with_capacity(CREATIVE_ITEMS_DATA.items.len());
+        // for (i, item) in CREATIVE_ITEMS_DATA.items.iter().enumerate() {
+        //     let runtime_id = RUNTIME_ID_DATA.get(&item.name).unwrap();
+        //
+        //     creative_items.push(ItemCollection {
+        //         network_id: i as u32,
+        //         runtime_id,
+        //         meta: item.meta as u32,
+        //         count: 64,
+        //         can_break: vec![],
+        //         placeable_on: vec![],
+        //     });
+        // }
+
         let creative_content = CreativeContent {
+            // items: &creative_items
             items: &[]
         };
         self.send(creative_content)?;
