@@ -2,7 +2,7 @@ use std::num::NonZeroU64;
 use anyhow::anyhow;
 use proto::bedrock::{ConnectedPacket, Packet};
 
-use util::{ArcBuffer, error, Result, Serialize};
+use util::{ArcBuffer, Serialize};
 
 use crate::network::Session;
 

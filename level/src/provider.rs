@@ -5,10 +5,10 @@ use crate::database::Database;
 use crate::settings::LevelSettings;
 use crate::{DataKey, KeyType, SubChunk};
 use anyhow::anyhow;
+use proto::types::Dimension;
 use std::fs::File;
 use std::io::Read;
 use std::path::{Path, PathBuf};
-use proto::types::Dimension;
 use util::BinaryRead;
 use util::Vector;
 
@@ -117,7 +117,6 @@ impl Provider {
             dimension,
             data: KeyType::Biome3d,
         };
-        tracing::debug!("key = {:?}", &key);
 
         if let Some(data) = self.database.get(key)? {
             let biome = Biomes::deserialize(&*data)?;
@@ -150,10 +149,9 @@ impl Provider {
             dimension,
             data: KeyType::SubChunk { index },
         };
-        dbg!(&key);
 
         if let Some(data) = self.database.get(key)? {
-            let sub_chunk = SubChunk::deserialize(&*data)?;
+            let sub_chunk = SubChunk::deserialize_disk(&*data)?;
             Ok(Some(sub_chunk))
         } else {
             Ok(None)

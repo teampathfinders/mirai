@@ -8,7 +8,7 @@ use tokio::sync::{broadcast, mpsc, OnceCell};
 use proto::bedrock::{ConnectedPacket, Disconnect, DISCONNECTED_TIMEOUT};
 use replicator::Replicator;
 
-use util::{Result, Serialize};
+use util::{Serialize};
 use util::MutableBuffer;
 
 use crate::raknet::{BroadcastPacket, RawPacket};
@@ -114,14 +114,8 @@ impl SessionManager {
                         // Session incoming queue is full.
                         // If after a 20 ms timeout it is still full, destroy the session,
                         // it probably froze.
-                        let xuid = session
-                            .1
-                            .get_xuid()
-                            .map(|x| x.to_string())
-                            .unwrap_or_else(|_| "unknown".to_owned());
-
                         tracing::error!(
-                            "It seems like session (with XUID {xuid}) is hanging. Closing it"
+                            "Closing hanging session"
                         );
 
                         // Attempt to send a disconnect packet.

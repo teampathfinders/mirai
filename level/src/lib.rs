@@ -7,7 +7,6 @@ compile_error!("Big endian architectures are not supported");
 use util::{BinaryRead, BinaryWrite};
 
 /// Performs ceiling division on two u32s.
-#[inline(always)]
 const fn ceil_div(lhs: u32, rhs: u32) -> u32 {
     (lhs + rhs - 1) / rhs
 }
@@ -19,7 +18,6 @@ pub enum PackedArrayReturn {
     Data(Box<[u16; 4096]>),
 }
 
-#[inline(always)]
 pub fn serialize_packed_array<W>(writer: &mut W, array: &[u16; 4096], max_index: usize, is_network: bool) -> anyhow::Result<()>
 where
     W: BinaryWrite,
@@ -64,7 +62,6 @@ where
     Ok(())
 }
 
-#[inline(always)]
 pub fn deserialize_packed_array<'a, R>(reader: &mut R) -> anyhow::Result<PackedArrayReturn>
 where
     R: BinaryRead<'a>,
@@ -112,8 +109,8 @@ mod ffi;
 mod key;
 pub mod provider;
 mod settings;
-mod sub_chunk;
+mod subchunk;
 
 pub use biome::*;
 pub use key::*;
-pub use sub_chunk::*;
+pub use subchunk::*;

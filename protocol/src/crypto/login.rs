@@ -172,7 +172,7 @@ fn parse_user_data_token(token: &str, key: &str) -> anyhow::Result<UserDataToken
     let decoding_key = DecodingKey::from_ec_der(public_key.subject_public_key.raw_bytes());
     let mut validation = Validation::new(Algorithm::ES384);
 
-    // No special header data included in this token, don't verify anything.
+    // No special header data include in this token, don't verify anything.
     validation.required_spec_claims.clear();
 
     let payload = jsonwebtoken::decode::<UserDataTokenPayload>(token, &decoding_key, &validation)?;

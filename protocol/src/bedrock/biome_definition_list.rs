@@ -6,7 +6,7 @@ use util::Serialize;
 
 use crate::bedrock::ConnectedPacket;
 
-const DEFINITIONS: &[u8] = include_bytes!("../../../core/included/biomes.nbt");
+const DEFINITIONS: &[u8] = include_bytes!("../../../core/include/biomes.nbt");
 
 /// Sends a list of available biomes to the client.
 #[derive(Debug, Clone)]

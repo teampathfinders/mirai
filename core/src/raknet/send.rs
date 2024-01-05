@@ -8,7 +8,7 @@ use proto::bedrock::{CompressionAlgorithm, CONNECTED_PACKET_ID, ConnectedPacket,
 use proto::raknet::{Ack, AckRecord};
 
 use util::{BinaryWrite, MutableBuffer};
-use util::Result;
+
 use util::Serialize;
 
 use crate::raknet::{Frame, FrameBatch};
@@ -211,22 +211,33 @@ impl Session {
     }
 
     #[async_recursion]
-    async fn send_raw_frames(&self, frames: Vec<Frame>) -> anyhow::Result<()> {
+    async fn send_raw_frames(&self, mut frames: Vec<Frame>) -> anyhow::Result<()> {
         let mut serialized = MutableBuffer::new();
 
         // Process fragments first to prevent sequence number duplication.
-        for frame in &frames {
-            let frame_size = frame.body.len() + std::mem::size_of::<Frame>();
+        let mut index = 0;
+        while index < frames.len() {
+            let frame_size = frames[index].body.len() + std::mem::size_of::<Frame>();
 
             if frame_size > self.raknet.mtu as usize {
                 self.raknet
                     .batch_sequence_number
                     .fetch_sub(1, Ordering::SeqCst);
 
-                let compound = self.split_frame(frame);
+                let large_frame = frames.swap_remove(index);
+                let compound = self.split_frame(&large_frame);
                 self.send_raw_frames(compound).await?;
+            } else {
+                index += 1;
             }
         }
+
+        debug_assert!(
+            frames
+                .iter()
+                .any(|f| f.body.len() > self.raknet.mtu as usize - std::mem::size_of::<Frame>()),
+            "Frames were not split properly"
+        );
 
         let mut batch = FrameBatch {
             sequence_number: self
@@ -314,6 +325,7 @@ impl Session {
         let chunk_max_size = self.raknet.mtu as usize
             - std::mem::size_of::<Frame>()
             - std::mem::size_of::<FrameBatch>();
+
         let compound_size = {
             let frame_size = frame.body.len() + std::mem::size_of::<Frame>();
 

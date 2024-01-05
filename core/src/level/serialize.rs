@@ -1,4 +1,4 @@
-use level::{BiomeEncoding, Biomes, SubChunk, SubChunkVersion, SubLayer};
+use level::{BiomeEncoding, Biomes};
 use util::{BinaryWrite, MutableBuffer};
 
 #[inline]
@@ -22,34 +22,13 @@ pub fn serialize_biomes(buffer: &mut MutableBuffer, biomes: &Biomes) -> anyhow::
                 level::serialize_packed_array(buffer, indices, max_index, true)?;
                 serialize_biome_palette(buffer, paletted.palette())?;
             }
-            BiomeEncoding::Single(id) => {}
+            BiomeEncoding::Single(_id) => {}
             _ => {
                 // TODO: other encoding types
                 todo!()
             }
         }
     }
-
-    Ok(())
-}
-
-pub fn encode_subchunk(subchunk: &SubChunk, buffer: &mut MutableBuffer) -> anyhow::Result<()> {
-    buffer.write_u8(subchunk.version() as u8)?;
-    if subchunk.version() != SubChunkVersion::Legacy {
-        buffer.write_u8(subchunk.layer_len())?;
-    }
-    buffer.write_i8(subchunk.index())?;
-
-    for layer in subchunk.layers() {
-        encode_layer(layer, buffer)?;
-    }
-
-    Ok(())
-}
-
-#[inline]
-fn encode_layer(layer: &SubLayer, buffer: &mut MutableBuffer) -> anyhow::Result<()> {
-    buffer.reserve(4096 * 4 + 1);
 
     Ok(())
 }

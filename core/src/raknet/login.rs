@@ -1,7 +1,7 @@
 use proto::raknet::{ConnectedPing, ConnectedPong, ConnectionRequest, ConnectionRequestAccepted, NewIncomingConnection};
 use util::{Deserialize, Serialize};
 use util::MutableBuffer;
-use util::Result;
+
 
 use crate::raknet::{PacketConfig, SendPriority};
 use crate::raknet::Reliability;

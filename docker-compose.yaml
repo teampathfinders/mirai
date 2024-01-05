@@ -19,7 +19,10 @@ services:
         protocol: udp
         mode: host
     environment:
+      - "PYRO_LOG=DEBUG"
       - "RUST_BACKTRACE=1"
+      - "REDIS_HOST=replication"
+      - "REDIS_PORT=6379"
 
 volumes:
   replication-data:

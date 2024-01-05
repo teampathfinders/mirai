@@ -1,26 +1,22 @@
-use std::num::NonZeroUsize;
-use std::ops::Range;
 use std::sync::atomic::AtomicU64;
 use std::sync::Arc;
 use std::time::Duration;
 
 use dashmap::mapref::one::Ref;
 use dashmap::DashMap;
-use parking_lot::RwLock;
-use tokio::sync::oneshot::{Receiver, Sender};
+
 use tokio_util::sync::CancellationToken;
 
 use level::provider::Provider;
 use level::{Biomes, SubChunk};
 use proto::types::Dimension;
-use util::{Result, Vector};
+use util::Vector;
 
-use proto::bedrock::{Command, GameRule, GameRulesChanged, LevelChunk, SubChunkRequestMode, SubChunkResponse};
 use crate::config::SERVER_CONFIG;
 use crate::network::SessionManager;
+use proto::bedrock::{Command, GameRule, GameRulesChanged, LevelChunk, SubChunkRequestMode};
 
 use crate::level::serialize::serialize_biomes;
-use lru::LruCache;
 use util::MutableBuffer;
 
 /// Interval between standard Minecraft ticks.
@@ -33,27 +29,14 @@ pub struct CombinedChunk {
 }
 
 #[derive(Debug)]
-pub struct LevelCache {
-    cache: LruCache<Vector<i32, 2>, CombinedChunk>,
-}
-
-impl LevelCache {
-    pub fn new() -> Self {
-        Default::default()
-    }
-}
-
-impl Default for LevelCache {
-    fn default() -> Self {
-        Self {
-            cache: LruCache::new(NonZeroUsize::new(25).unwrap()),
-        }
-    }
+pub struct SubChunkPosition {
+    pub x: i32,
+    pub y: i8,
+    pub z: i32,
 }
 
 pub struct LevelManager {
     world: legion::World,
-    cache: RwLock<LevelCache>,
     /// Used to load world data from disk.
     provider: Provider,
     /// List of commands available in this level.
@@ -71,18 +54,16 @@ pub struct LevelManager {
 
 impl LevelManager {
     pub fn new(session_manager: Arc<SessionManager>, token: CancellationToken) -> anyhow::Result<Arc<Self>> {
-        let (level_path, autosave_interval) = {
+        let (level_path, _autosave_interval) = {
             let config = SERVER_CONFIG.read();
             (config.level_path, config.autosave_interval)
         };
 
         let provider = unsafe { Provider::open(level_path)? };
-        let cache = RwLock::new(LevelCache::new());
 
         let manager = Arc::new(Self {
             world: legion::World::default(),
             provider,
-            cache,
             commands: DashMap::new(),
             game_rules: DashMap::from_iter([("showcoordinates".to_owned(), GameRule::ShowCoordinates(true))]),
             session_manager,
@@ -151,17 +132,9 @@ impl LevelManager {
         self.session_manager.broadcast(GameRulesChanged { game_rules })
     }
 
-    /// TODO: Loads all chunks in a radius around a specified center.
-    pub fn request_subchunks(&self, center: Vector<i32, 3>, offsets: &[Vector<i8, 3>]) -> anyhow::Result<SubChunkResponse> {
-        let subchunk = self
-            .provider
-            .get_subchunk(Vector::from([center.x, center.z]), center.y as i8, Dimension::Overworld)?;
-
-        if let Some(subchunk) = subchunk {
-        } else {
-        }
-
-        todo!()
+    pub fn get_subchunk(&self, coords: SubChunkPosition) -> anyhow::Result<Option<SubChunk>> {
+        self.provider
+            .get_subchunk(Vector::from([coords.x, coords.z]), coords.y, Dimension::Overworld)
     }
 
     pub fn request_biomes(&self, coordinates: Vector<i32, 2>, dimension: Dimension) -> anyhow::Result<LevelChunk> {
@@ -172,17 +145,12 @@ impl LevelManager {
         let biomes = biomes.unwrap();
 
         let sub_chunks = (-4..20)
-            .into_iter()
-            .filter_map(|cy| {
-                let sub = match self.provider.get_subchunk(coordinates.clone(), cy, dimension) {
-                    Ok(sub) => Some(sub),
-                    Err(err) => {
-                        tracing::error!("Failed to load sub chunk [{},{},{}]: {err:?}", coordinates.x, cy, coordinates.y);
-                        return None;
-                    }
-                };
-
-                sub
+            .filter_map(|cy| match self.provider.get_subchunk(coordinates.clone(), cy, dimension) {
+                Ok(sub) => Some(sub),
+                Err(err) => {
+                    tracing::error!("Failed to load sub chunk [{},{},{}]: {err:?}", coordinates.x, cy, coordinates.y);
+                    None
+                }
             })
             .collect::<Vec<_>>();
 

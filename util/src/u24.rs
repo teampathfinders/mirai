@@ -24,7 +24,7 @@ impl u24 {
 
     /// Converts this value to 3 little endian bytes.
     #[inline]
-    pub fn to_le_bytes(&self) -> [u8; 3] {
+    pub fn to_le_bytes(self) -> [u8; 3] {
         let mut out = self.0;
         if cfg!(target_endian = "big") {
             out.reverse();
@@ -34,7 +34,7 @@ impl u24 {
 
     /// Converts this value to 3 big endian bytes.
     #[inline]
-    pub fn to_be_bytes(&self) -> [u8; 3] {
+    pub fn to_be_bytes(self) -> [u8; 3] {
         let mut out = self.0;
         if cfg!(target_endian = "little") {
             out.reverse();

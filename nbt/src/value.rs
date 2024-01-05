@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 use std::fmt;
+use std::hash::{Hash, Hasher};
 
 use serde::de::{MapAccess, SeqAccess, Visitor};
 use serde::ser::{SerializeMap, SerializeSeq};
@@ -516,6 +517,37 @@ impl<'a> PartialEq<&[i64]> for &'a mut Value {
     #[inline]
     fn eq(&self, rhs: &&[i64]) -> bool {
         self.as_i64_array().map_or(false, |lhs| lhs == *rhs)
+    }
+}
+
+impl Hash for Value {
+    fn hash<H>(&self, state: &mut H)
+    where
+        H: Hasher,
+    {
+        match self {
+            Value::Byte(v) => state.write_i8(*v),
+            Value::Short(v) => state.write_i16(*v),
+            Value::Int(v) => state.write_i32(*v),
+            Value::Long(v) => state.write_i64(*v),
+            Value::String(v) => state.write(v.as_bytes()),
+            Value::Float(_v) => {
+                todo!()
+            }
+            Value::Double(_v) => {
+                todo!()
+            }
+            Value::Compound(map) => {
+                for (k, v) in map {
+                    state.write(k.as_bytes());
+                    v.hash(state);
+                }
+            }
+            Value::List(v) => Self::hash_slice(v, state),
+            Value::ByteArray(v) => u8::hash_slice(v, state),
+            Value::IntArray(v) => i32::hash_slice(v, state),
+            Value::LongArray(v) => i64::hash_slice(v, state),
+        }
     }
 }
 

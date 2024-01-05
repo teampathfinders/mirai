@@ -1,8 +1,5 @@
 use proto::types::Dimension;
-use util::{
-    BinaryRead, BinaryWrite,
-    Vector,
-};
+use util::{BinaryRead, BinaryWrite, Vector};
 
 pub const AUTONOMOUS_ENTITIES: &[u8] = "AutonomousEntities".as_bytes();
 pub const BIOME_DATA: &[u8] = "BiomeData".as_bytes();

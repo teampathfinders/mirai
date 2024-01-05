@@ -1,12 +1,12 @@
-use std::net::{Ipv4Addr, SocketAddr, SocketAddrV4};
-use std::str::FromStr;
+
+
 use proto::bedrock::{Animate, CommandOutput, CommandOutputMessage, CommandOutputType, CommandRequest, FormResponse, ParsedCommand, RequestAbility, SettingsCommand, TextData, TextMessage, TickSync, UpdateSkin};
-use proto::types::Dimension;
-use util::{bail, Deserialize, Result, TryExpect, Vector};
+
+use util::{Deserialize, TryExpect};
 use util::MutableBuffer;
 
 use crate::network::Session;
-use crate::forms::{FormButton, FormElement, FormInput, FormLabel, FormSlider, MenuForm, Modal, FormButtonImage, FormDropdown, FormToggle, FormStepSlider, CustomForm};
+
 
 impl Session {
     pub fn process_settings_command(&self, packet: MutableBuffer) -> anyhow::Result<()> {
@@ -17,7 +17,7 @@ impl Session {
     }
 
     pub fn process_tick_sync(&self, packet: MutableBuffer) -> anyhow::Result<()> {
-        let request = TickSync::deserialize(packet.snapshot())?;
+        let _request = TickSync::deserialize(packet.snapshot())?;
         // TODO: Implement tick synchronisation
         Ok(())
         // let response = TickSync {
@@ -30,9 +30,9 @@ impl Session {
     pub async fn process_text_message(&self, packet: MutableBuffer) -> anyhow::Result<()> {
         let request = TextMessage::deserialize(packet.snapshot())?;
         if let TextData::Chat {
-            source, ..
+             ..
         } = request.data {
-            let actual = &self.identity.get()
+            let _actual = &self.identity.get()
                 .try_expect("Client does not have associated user data")?
                 .display_name;
 

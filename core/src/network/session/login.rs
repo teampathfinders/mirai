@@ -1,15 +1,16 @@
-use std::collections::HashMap;
-use std::num::{NonZeroI32, NonZeroU32};
+
+
 use std::sync::atomic::Ordering;
-use proto::bedrock::{AvailableCommands, BiomeDefinitionList, BroadcastIntent, CacheStatus, ChatRestrictionLevel, ChunkRadiusReply, ChunkRadiusRequest, CLIENT_VERSION_STRING, ClientToServerHandshake, CreativeContent, Difficulty, DISCONNECTED_LOGIN_FAILED, GameMode, Login, NETWORK_VERSION, NetworkChunkPublisherUpdate, NetworkSettings, PermissionLevel, PlayerMovementSettings, PlayerMovementType, PlayStatus, PropertyData, RequestNetworkSettings, ResourcePackClientResponse, ResourcePacksInfo, ResourcePackStack, ServerToClientHandshake, SetLocalPlayerAsInitialized, SpawnBiomeType, StartGame, Status, SubChunkResponse, TextData, TextMessage, ViolationWarning, WorldGenerator};
+use proto::bedrock::{AvailableCommands, BiomeDefinitionList, BroadcastIntent, CacheStatus, ChatRestrictionLevel, ChunkRadiusReply, ChunkRadiusRequest, CLIENT_VERSION_STRING, ClientToServerHandshake, CreativeContent, Difficulty, DISCONNECTED_LOGIN_FAILED, GameMode, ItemCollection, Login, NETWORK_VERSION, NetworkChunkPublisherUpdate, NetworkSettings, PermissionLevel, PlayerMovementSettings, PlayerMovementType, PlayStatus, PropertyData, RequestNetworkSettings, ResourcePackClientResponse, ResourcePacksInfo, ResourcePackStack, ServerToClientHandshake, SetLocalPlayerAsInitialized, SpawnBiomeType, StartGame, Status, SubChunkResponse, TextData, TextMessage, ViolationWarning, WorldGenerator};
 use proto::crypto::Encryptor;
 use proto::types::Dimension;
 
 use util::MutableBuffer;
-use util::{bail, BlockPosition, Deserialize, Result, Vector};
+use util::{bail, BlockPosition, Deserialize, Vector};
 
 use crate::config::SERVER_CONFIG;
-use crate::forms::{FormElement, FormInput, FormLabel, Modal};
+use crate::data::{CREATIVE_ITEMS_DATA, RUNTIME_ID_DATA};
+
 use crate::network::Session;
 
 impl Session {
@@ -36,11 +37,11 @@ impl Session {
     /// All connected sessions are notified of the new player
     /// and the new player gets a list of all current players.
     pub fn process_local_initialized(&self, packet: MutableBuffer) -> anyhow::Result<()> {
-        let request = SetLocalPlayerAsInitialized::deserialize(packet.snapshot())?;
+        let _request = SetLocalPlayerAsInitialized::deserialize(packet.snapshot())?;
 
         // Initialise chunk loading
         let lock = self.player.read();
-        let rounded_position = Vector::from([
+        let _rounded_position = Vector::from([
             lock.position.x.round() as i32,
             lock.position.y.round() as i32,
             lock.position.z.round() as i32
@@ -199,7 +200,22 @@ impl Session {
         };
         self.send(start_game)?;
 
+        // let mut creative_items = Vec::with_capacity(CREATIVE_ITEMS_DATA.items.len());
+        // for (i, item) in CREATIVE_ITEMS_DATA.items.iter().enumerate() {
+        //     let runtime_id = RUNTIME_ID_DATA.get(&item.name).unwrap();
+        //
+        //     creative_items.push(ItemCollection {
+        //         network_id: i as u32,
+        //         runtime_id,
+        //         meta: item.meta as u32,
+        //         count: 64,
+        //         can_break: vec![],
+        //         placeable_on: vec![],
+        //     });
+        // }
+
         let creative_content = CreativeContent {
+            // items: &creative_items
             items: &[]
         };
         self.send(creative_content)?;
@@ -222,7 +238,7 @@ impl Session {
         })?;
 
         let subchunks = self.player.read().viewer.recenter(
-            Vector::from([0, 0]), &(-4..16).map(|y| Vector::from([0, y, 0])).collect::<Vec<_>>()
+            Vector::from([0, 0]), &(0..5).map(|y| Vector::from([0, y, 0])).collect::<Vec<_>>()
         )?;
         let response = SubChunkResponse {
             entries: subchunks,
@@ -275,7 +291,7 @@ impl Session {
             }
         };
 
-        self.replicator.save_xuid(request.identity.xuid, request.identity.display_name.clone()).await?;
+        self.replicator.save_session(request.identity.xuid, &request.identity.display_name).await?;
 
         let (encryptor, jwt) = Encryptor::new(&request.identity.public_key)?;
 

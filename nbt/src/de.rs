@@ -55,8 +55,8 @@ where
     #[inline]
     pub fn new(mut input: R) -> anyhow::Result<Self> {
         let next_ty = FieldType::try_from(input.read_u8()?)?;
-        if next_ty != FieldType::Compound {
-            bail!(Malformed, "Expected compound tag as root");
+        if next_ty != FieldType::Compound && next_ty != FieldType::List {
+            bail!(Malformed, "Expected compound or list tag as root");
         }
 
         let mut de = Deserializer {
@@ -81,6 +81,8 @@ where
 
         let data = self.input.take_n(len as usize)?;
         let str = std::str::from_utf8(data)?;
+
+        // dbg!(str);
 
         Ok(str)
     }
@@ -113,15 +115,23 @@ where
 ///
 /// # Example
 ///
-/// ```rust, ignore
+/// ```rust
 /// # use pyro_nbt as nbt;
+/// # use util::MutableBuffer;
 /// # fn main() {
-///  #[derive(serde::Deserialize, Debug)]
+///  #[derive(serde::Serialize, serde::Deserialize, Debug)]
 ///  struct Data {
 ///     value: String
 ///  }
+/// 
+/// # let data = Data {
+/// #   value: String::from("Hello, World!")
+/// # };
+/// # let buffer = nbt::to_le_bytes(&data).unwrap();
+/// # let owned_buffer = buffer.into_inner();
+/// # let buffer = owned_buffer.as_slice();
 ///
-///  let result = nbt::from_le_bytes(&buffer).unwrap();
+///  let result = nbt::from_le_bytes(buffer).unwrap();
 ///  let data: Data = result.0;
 ///
 ///  println!("Got {data:?}!");
@@ -145,15 +155,23 @@ where
 ///
 /// # Example
 ///
-/// ```rust, ignore
+/// ```rust
 /// # use pyro_nbt as nbt;
+/// # use util::MutableBuffer;
 /// # fn main() {
-///  #[derive(serde::Deserialize, Debug)]
+///  #[derive(serde::Serialize, serde::Deserialize, Debug)]
 ///  struct Data {
 ///     value: String
 ///  }
+/// 
+/// # let data = Data {
+/// #   value: String::from("Hello, World!")
+/// # };
+/// # let buffer = nbt::to_be_bytes(&data).unwrap();
+/// # let owned_buffer = buffer.into_inner();
+/// # let buffer = owned_buffer.as_slice();
 ///
-///  let result = nbt::from_le_bytes(&buffer).unwrap();
+///  let result = nbt::from_be_bytes(buffer).unwrap();
 ///  let data: Data = result.0;
 ///
 ///  println!("Got {data:?}!");
@@ -177,15 +195,23 @@ where
 ///
 /// # Example
 ///
-/// ```rust, ignore
+/// ```rust
 /// # use pyro_nbt as nbt;
+/// # use util::MutableBuffer;
 /// # fn main() {
-///  #[derive(serde::Deserialize, Debug)]
+///  #[derive(serde::Serialize, serde::Deserialize, Debug)]
 ///  struct Data {
 ///     value: String
 ///  }
+/// 
+/// # let data = Data {
+/// #   value: String::from("Hello, World!")
+/// # };
+/// # let buffer = nbt::to_var_bytes(&data).unwrap();
+/// # let owned_buffer = buffer.into_inner();
+/// # let buffer = owned_buffer.as_slice();
 ///
-///  let result = nbt::from_le_bytes(&buffer).unwrap();
+///  let result = nbt::from_var_bytes(buffer).unwrap();
 ///  let data: Data = result.0;
 ///
 ///  println!("Got {data:?}!");
@@ -350,6 +376,8 @@ where
         let data = self.input.take_n(len as usize)?;
         let str = std::str::from_utf8(data)?;
 
+        // dbg!(str);
+
         visitor.visit_str(str)
     }
 
@@ -368,6 +396,8 @@ where
 
         let data = self.input.take_n(len as usize)?;
         let string = String::from_utf8(data.to_vec())?;
+
+        // dbg!(&string);
 
         visitor.visit_string(string)
     }
@@ -561,6 +591,7 @@ where
     {
         if self.remaining > 0 {
             self.remaining -= 1;
+
             let output = seed.deserialize(&mut *self.de).map(Some);
             self.de.next_ty = self.ty;
             output

@@ -1,10 +1,13 @@
+use std::collections::hash_map::DefaultHasher;
 use std::collections::HashMap;
+use std::hash::{Hash, Hasher};
+use std::iter::FusedIterator;
 use std::ops::{Index, IndexMut};
 
 use serde::{Deserialize, Serialize};
 
-use util::{BinaryRead, BinaryWrite, MutableBuffer};
 use util::{bail, Vector};
+use util::{BinaryRead, BinaryWrite, MutableBuffer};
 
 use crate::PackedArrayReturn;
 
@@ -74,6 +77,21 @@ pub struct PaletteEntry {
     pub states: HashMap<String, nbt::Value>,
 }
 
+impl PaletteEntry {
+    /// Hashes this block.
+    pub fn hash(&self) -> u64 {
+        let mut hasher = DefaultHasher::new();
+
+        hasher.write(self.name.as_bytes());
+        for (k, v) in &self.states {
+            hasher.write(k.as_bytes());
+            v.hash(&mut hasher);
+        }
+
+        hasher.finish()
+    }
+}
+
 /// A layer in a sub chunk.
 ///
 /// Sub chunks can have multiple layers.
@@ -107,6 +125,7 @@ impl SubLayer {
         LayerIter::from(self)
     }
 
+    /// Gets a reference to a block inside the subchunk.
     pub fn get(&self, pos: Vector<u8, 3>) -> Option<&PaletteEntry> {
         if pos.x > 16 || pos.y > 16 || pos.z > 16 {
             return None;
@@ -119,6 +138,8 @@ impl SubLayer {
         Some(&self.palette[index])
     }
 
+    // FIXME: Using this method will modify every block with the same index
+    // instead of only the block at the specified position.
     pub fn get_mut(&mut self, pos: Vector<u8, 3>) -> Option<&mut PaletteEntry> {
         if pos.x > 16 || pos.y > 16 || pos.z > 16 {
             return None;
@@ -131,31 +152,34 @@ impl SubLayer {
         Some(&mut self.palette[index])
     }
 
-    #[inline]
+    /// Returns a reference to the block palette.
     pub fn palette(&self) -> &[PaletteEntry] {
         &self.palette
     }
 
-    #[inline]
+    /// Returns a mutable reference to the block palette.
     pub fn palette_mut(&mut self) -> &mut [PaletteEntry] {
         &mut self.palette
     }
 
-    #[inline]
+    /// Returns a reference to the block indices.
     pub fn indices(&self) -> &[u16; 4096] {
         &self.indices
     }
 
-    #[inline]
+    /// Returns a mutable reference to the block indices.
     pub fn indices_mut(&mut self) -> &mut [u16; 4096] {
         &mut self.indices
+    }
+
+    pub fn take_indices(self) -> Box<[u16; 4096]> {
+        self.indices
     }
 }
 
 impl SubLayer {
     /// Deserializes a single layer from the given buffer.
-    #[inline]
-    fn deserialize<'a, R>(mut reader: R) -> anyhow::Result<Self>
+    fn deserialize_disk<'a, R>(mut reader: R) -> anyhow::Result<Self>
     where
         R: BinaryRead<'a> + Copy + 'a,
     {
@@ -178,8 +202,20 @@ impl SubLayer {
         Ok(Self { indices, palette })
     }
 
-    #[inline]
-    fn serialize<W>(&self, mut writer: W) -> anyhow::Result<()>
+    fn deserialize_network<'a, R>(mut reader: R) -> anyhow::Result<Self>
+    where
+        R: BinaryRead<'a> + Copy + 'a,
+    {
+        let indices = match crate::deserialize_packed_array(&mut reader)? {
+            PackedArrayReturn::Data(data) => data,
+            PackedArrayReturn::Empty => anyhow::bail!("Sub layer packed array index size cannot be 0"),
+            PackedArrayReturn::ReferBack => anyhow::bail!("Sub layer packed array does not support biome referral"),
+        };
+
+        todo!();
+    }
+
+    fn serialize_disk<W>(&self, mut writer: W) -> anyhow::Result<()>
     where
         W: BinaryWrite,
     {
@@ -191,6 +227,25 @@ impl SubLayer {
         }
 
         Ok(())
+    }
+
+    fn serialize_network<W>(&self, mut writer: W) -> anyhow::Result<()>
+    where
+        W: BinaryWrite,
+    {
+        crate::serialize_packed_array(&mut writer, &self.indices, self.palette.len(), true)?;
+
+        if !self.palette.is_empty() {
+            writer.write_var_i32(self.palette.len() as i32)?;
+        }
+
+        for entry in &self.palette {
+
+            // https://github.com/df-mc/dragonfly/blob/master/server/world/chunk/paletted_storage.go#L35
+            // Requires new palette storage that only stores runtime IDs.
+        }
+
+        todo!()
     }
 }
 
@@ -280,44 +335,42 @@ pub struct SubChunk {
 impl SubChunk {
     /// Version of this subchunk.
     /// See [`SubChunkVersion`] for more information.
-    #[inline]
     pub fn version(&self) -> SubChunkVersion {
         self.version
     }
 
     /// Vertical index of this subchunk
-    #[inline]
     pub fn index(&self) -> i8 {
         self.index
     }
 
     /// The amount of layers that this subchunk contains
-    #[inline]
     pub fn layer_len(&self) -> u8 {
         self.layers.len() as u8
     }
 
-    #[inline]
     pub fn layers(&self) -> &[SubLayer] {
         &self.layers
     }
 
     /// Get an immutable reference to the layer at the specified index.
-    #[inline]
     pub fn layer(&self, index: usize) -> Option<&SubLayer> {
         self.layers.get(index)
     }
 
     /// Get a mutable reference to the layer at the specified index.
-    #[inline]
     pub fn layer_mut(&mut self, index: usize) -> Option<&mut SubLayer> {
         self.layers.get_mut(index)
+    }
+
+    pub fn take_layers(self) -> Vec<SubLayer> {
+        self.layers
     }
 }
 
 impl SubChunk {
     /// Deserialize a full sub chunk from the given buffer.
-    pub(crate) fn deserialize<'a, R>(mut reader: R) -> anyhow::Result<Self>
+    pub fn deserialize_disk<'a, R>(mut reader: R) -> anyhow::Result<Self>
     where
         R: BinaryRead<'a> + Copy + 'a,
     {
@@ -336,21 +389,21 @@ impl SubChunk {
         // let mut layers = SmallVec::with_capacity(layer_count as usize);
         let mut layers = Vec::with_capacity(layer_count as usize);
         for _ in 0..layer_count {
-            layers.push(SubLayer::deserialize(reader)?);
+            layers.push(SubLayer::deserialize_disk(reader)?);
         }
 
         Ok(Self { version, index, layers })
     }
 
     /// Serialises the sub chunk into a new buffer and returns the buffer.
-    pub(crate) fn serialize(&self) -> anyhow::Result<MutableBuffer> {
+    pub fn serialize_disk(&self) -> anyhow::Result<MutableBuffer> {
         let mut buffer = MutableBuffer::new();
-        self.serialize_in(&mut buffer)?;
+        self.serialize_disk_in(&mut buffer)?;
         Ok(buffer)
     }
 
     /// Serialises the sub chunk into the given writer.
-    pub(crate) fn serialize_in<W>(&self, mut writer: W) -> anyhow::Result<()>
+    pub fn serialize_disk_in<W>(&self, mut writer: W) -> anyhow::Result<()>
     where
         W: BinaryWrite,
     {
@@ -362,7 +415,7 @@ impl SubChunk {
         }
 
         for layer in &self.layers {
-            layer.serialize(&mut writer)?;
+            layer.serialize_disk(&mut writer)?;
         }
 
         Ok(())
@@ -407,7 +460,6 @@ impl<'a> From<&'a SubLayer> for LayerIter<'a> {
 impl<'a> Iterator for LayerIter<'a> {
     type Item = &'a PaletteEntry;
 
-    #[inline]
     fn next(&mut self) -> Option<Self::Item> {
         // ExactSizeIterator::is_empty is unstable
         if self.len() == 0 {
@@ -419,14 +471,14 @@ impl<'a> Iterator for LayerIter<'a> {
         self.palette.get(a[0] as usize)
     }
 
-    #[inline]
     fn size_hint(&self) -> (usize, Option<usize>) {
         (0, Some(self.len()))
     }
 }
 
-impl<'a> ExactSizeIterator for LayerIter<'a> {
-    #[inline]
+impl FusedIterator for LayerIter<'_> {}
+
+impl ExactSizeIterator for LayerIter<'_> {
     fn len(&self) -> usize {
         self.indices.len()
     }

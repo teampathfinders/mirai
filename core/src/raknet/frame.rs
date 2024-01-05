@@ -1,7 +1,7 @@
 use std::io::Write;
 
 use util::{BinaryRead, BinaryWrite, MutableBuffer, SharedBuffer};
-use util::Result;
+
 
 use crate::raknet::Reliability;
 
@@ -162,6 +162,8 @@ impl Frame {
         if self.is_compound {
             flags |= COMPOUND_BIT_FLAG;
         }
+
+        dbg!(self.body.len());
 
         buffer.write_u8(flags)?;
         buffer.write_u16_be(self.body.len() as u16 * 8)?;

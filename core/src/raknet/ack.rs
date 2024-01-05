@@ -1,5 +1,5 @@
 use util::{MutableBuffer, SharedBuffer};
-use util::{Deserialize, Result};
+use util::{Deserialize};
 
 use proto::raknet::{Ack, Nak};
 use crate::network::Session;
