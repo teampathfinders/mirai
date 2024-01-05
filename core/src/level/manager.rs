@@ -149,7 +149,7 @@ impl LevelManager {
                 Ok(sub) => Some(sub),
                 Err(err) => {
                     tracing::error!("Failed to load sub chunk [{},{},{}]: {err:?}", coordinates.x, cy, coordinates.y);
-                    return None;
+                    None
                 }
             })
             .collect::<Vec<_>>();

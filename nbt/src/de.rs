@@ -115,15 +115,23 @@ where
 ///
 /// # Example
 ///
-/// ```rust, ignore
+/// ```rust
 /// # use pyro_nbt as nbt;
+/// # use util::MutableBuffer;
 /// # fn main() {
-///  #[derive(serde::Deserialize, Debug)]
+///  #[derive(serde::Serialize, serde::Deserialize, Debug)]
 ///  struct Data {
 ///     value: String
 ///  }
+/// 
+/// # let data = Data {
+/// #   value: String::from("Hello, World!")
+/// # };
+/// # let buffer = nbt::to_le_bytes(&data).unwrap();
+/// # let owned_buffer = buffer.into_inner();
+/// # let buffer = owned_buffer.as_slice();
 ///
-///  let result = nbt::from_le_bytes(&buffer).unwrap();
+///  let result = nbt::from_le_bytes(buffer).unwrap();
 ///  let data: Data = result.0;
 ///
 ///  println!("Got {data:?}!");
@@ -147,15 +155,23 @@ where
 ///
 /// # Example
 ///
-/// ```rust, ignore
+/// ```rust
 /// # use pyro_nbt as nbt;
+/// # use util::MutableBuffer;
 /// # fn main() {
-///  #[derive(serde::Deserialize, Debug)]
+///  #[derive(serde::Serialize, serde::Deserialize, Debug)]
 ///  struct Data {
 ///     value: String
 ///  }
+/// 
+/// # let data = Data {
+/// #   value: String::from("Hello, World!")
+/// # };
+/// # let buffer = nbt::to_be_bytes(&data).unwrap();
+/// # let owned_buffer = buffer.into_inner();
+/// # let buffer = owned_buffer.as_slice();
 ///
-///  let result = nbt::from_le_bytes(&buffer).unwrap();
+///  let result = nbt::from_be_bytes(buffer).unwrap();
 ///  let data: Data = result.0;
 ///
 ///  println!("Got {data:?}!");
@@ -179,15 +195,23 @@ where
 ///
 /// # Example
 ///
-/// ```rust, ignore
+/// ```rust
 /// # use pyro_nbt as nbt;
+/// # use util::MutableBuffer;
 /// # fn main() {
-///  #[derive(serde::Deserialize, Debug)]
+///  #[derive(serde::Serialize, serde::Deserialize, Debug)]
 ///  struct Data {
 ///     value: String
 ///  }
+/// 
+/// # let data = Data {
+/// #   value: String::from("Hello, World!")
+/// # };
+/// # let buffer = nbt::to_var_bytes(&data).unwrap();
+/// # let owned_buffer = buffer.into_inner();
+/// # let buffer = owned_buffer.as_slice();
 ///
-///  let result = nbt::from_le_bytes(&buffer).unwrap();
+///  let result = nbt::from_var_bytes(buffer).unwrap();
 ///  let data: Data = result.0;
 ///
 ///  println!("Got {data:?}!");
@@ -543,9 +567,7 @@ where
             Variant::BigEndian => de.input.read_i32_be()? as u32,
             Variant::LittleEndian => de.input.read_i32_le()? as u32,
             Variant::Variable => de.input.read_var_u32()?,
-        } - 1729;
-        // let remaining = 100;
-        dbg!(remaining);
+        };
 
         if expected_len != 0 && expected_len != remaining {
             bail!(Malformed, "Expected sequence of length {expected_len}, got length {remaining}");

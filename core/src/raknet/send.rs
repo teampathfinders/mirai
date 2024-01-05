@@ -235,8 +235,7 @@ impl Session {
         debug_assert!(
             frames
                 .iter()
-                .find(|f| f.body.len() > self.raknet.mtu as usize - std::mem::size_of::<Frame>())
-                .is_none(),
+                .any(|f| f.body.len() > self.raknet.mtu as usize - std::mem::size_of::<Frame>()),
             "Frames were not split properly"
         );
 

@@ -74,7 +74,7 @@ impl ItemCollection {
         // }
 
         buffer.write_var_u32(extra_buffer.len() as u32)?;
-        buffer.write(&extra_buffer.snapshot())?;
+        buffer.write_all(&extra_buffer.snapshot())?;
 
         Ok(())
     }
