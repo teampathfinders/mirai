@@ -81,9 +81,9 @@ impl ParsedArgument {
     }
 
     /// Converts the argument to a target if it is a target type.
-    pub fn as_target(&self) -> Option<CommandTarget> {
+    pub fn as_target(&self) -> Option<&CommandTarget> {
         match self {
-            Self::Target(t) => Some(*t),
+            Self::Target(t) => Some(t),
             _ => None
         }
     }
