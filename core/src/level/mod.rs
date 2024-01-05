@@ -2,8 +2,8 @@
 
 mod manager;
 mod serialize;
-mod viewer;
 mod subchunk;
+mod viewer;
 
 pub use manager::*;
 pub use viewer::*;

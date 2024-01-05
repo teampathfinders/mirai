@@ -9,8 +9,8 @@ pub struct FormLabel<'a> {
 
 impl<'a> serde::Serialize for FormLabel<'a> {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-        where
-            S: serde::Serializer,
+    where
+        S: serde::Serializer,
     {
         let mut map = serializer.serialize_struct("label", 2)?;
         map.serialize_field("type", "label")?;
@@ -32,8 +32,8 @@ pub struct FormInput<'a> {
 
 impl<'a> serde::Serialize for FormInput<'a> {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-        where
-            S: serde::Serializer,
+    where
+        S: serde::Serializer,
     {
         let mut map = serializer.serialize_struct("input", 4)?;
         map.serialize_field("type", "input")?;
@@ -55,8 +55,8 @@ pub struct FormToggle<'a> {
 
 impl<'a> serde::Serialize for FormToggle<'a> {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-        where
-            S: serde::Serializer,
+    where
+        S: serde::Serializer,
     {
         let mut map = serializer.serialize_struct("toggle", 3)?;
         map.serialize_field("type", "toggle")?;
@@ -83,8 +83,8 @@ pub struct FormSlider<'a> {
 
 impl<'a> serde::Serialize for FormSlider<'a> {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-        where
-            S: serde::Serializer,
+    where
+        S: serde::Serializer,
     {
         let mut map = serializer.serialize_struct("slider", 6)?;
         map.serialize_field("type", "slider")?;
@@ -111,8 +111,8 @@ pub struct FormDropdown<'a> {
 
 impl<'a> serde::Serialize for FormDropdown<'a> {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-        where
-            S: serde::Serializer,
+    where
+        S: serde::Serializer,
     {
         let mut map = serializer.serialize_struct("dropdown", 4)?;
         map.serialize_field("type", "dropdown")?;
@@ -137,8 +137,8 @@ pub struct FormStepSlider<'a> {
 
 impl<'a> serde::Serialize for FormStepSlider<'a> {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-        where
-            S: serde::Serializer,
+    where
+        S: serde::Serializer,
     {
         let mut map = serializer.serialize_struct("step_slider", 4)?;
         map.serialize_field("type", "step_slider")?;
@@ -155,7 +155,7 @@ pub enum FormButtonImage<'a> {
     /// A URL pointing to an online image.
     Url(&'a str),
     /// A path pointing to an image in an applied resource pack.
-    Path(&'a str)
+    Path(&'a str),
 }
 
 /// A simple button with optional image.
@@ -170,8 +170,8 @@ pub struct FormButton<'a> {
 
 impl<'a> serde::Serialize for FormButton<'a> {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-        where
-            S: serde::Serializer,
+    where
+        S: serde::Serializer,
     {
         // Struct with custom serializer to serialize image data.
         struct ImageData<'b> {
@@ -181,8 +181,8 @@ impl<'a> serde::Serialize for FormButton<'a> {
 
         impl<'b> serde::Serialize for ImageData<'b> {
             fn serialize<S1>(&self, serializer: S1) -> Result<S1::Ok, S1::Error>
-                where
-                    S1: serde::Serializer,
+            where
+                S1: serde::Serializer,
             {
                 let mut map = serializer.serialize_struct("image", 2)?;
                 map.serialize_field("type", self.img_type)?;
@@ -195,7 +195,7 @@ impl<'a> serde::Serialize for FormButton<'a> {
         if let Some(image) = self.image {
             let (img_type, data) = match image {
                 FormButtonImage::Path(p) => ("path", p),
-                FormButtonImage::Url(u) => ("url", u)
+                FormButtonImage::Url(u) => ("url", u),
             };
 
             let data = ImageData { img_type, data };
@@ -227,8 +227,8 @@ pub enum FormElement<'a> {
 
 impl<'a> serde::Serialize for FormElement<'a> {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-        where
-            S: serde::Serializer,
+    where
+        S: serde::Serializer,
     {
         match self {
             Self::Button(b) => b.serialize(serializer),

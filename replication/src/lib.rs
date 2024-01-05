@@ -1,20 +1,22 @@
-use std::ops::Deref;
-use std::sync::Mutex;
 use anyhow::Context;
-use fred::{clients::RedisClient, interfaces::{ClientLike, KeysInterface, HashesInterface, PubsubInterface}, types::{RedisConfig, RespVersion, ServerConfig, Server}};
+use fred::{
+    clients::RedisClient,
+    interfaces::{ClientLike, HashesInterface, PubsubInterface},
+    types::{RedisConfig, RespVersion, Server, ServerConfig},
+};
 use proto::bedrock::{MovePlayer, TextData, TextMessage};
-use util::{BinaryWrite, MutableBuffer, size_of_string};
+use util::{size_of_string, BinaryWrite, MutableBuffer};
 
-#[cfg(test)] mod test;
+#[cfg(test)]
+mod test;
 
 pub struct Replicator {
-    client: RedisClient
+    client: RedisClient,
 }
 
 impl Replicator {
     pub async fn new() -> anyhow::Result<Self> {
-        let host = std::env::vars()
-            .find_map(|(k , v)| if k == "REDIS_HOST" { Some(v) } else { None });
+        let host = std::env::vars().find_map(|(k, v)| if k == "REDIS_HOST" { Some(v) } else { None });
 
         let host = if let Some(host) = host {
             host
@@ -23,8 +25,7 @@ impl Replicator {
             String::from("127.0.0.1")
         };
 
-        let port = std::env::vars()
-            .find_map(|(k, v)| if k == "REDIS_PORT" { Some(v) } else { None });
+        let port = std::env::vars().find_map(|(k, v)| if k == "REDIS_PORT" { Some(v) } else { None });
 
         let port: u16 = if let Some(port) = port {
             port.parse().context("Failed to parse REDIS_PORT argument")?
@@ -37,28 +38,25 @@ impl Replicator {
             RedisConfig {
                 version: RespVersion::RESP3,
                 server: ServerConfig::Centralized {
-                    server: Server {
-                        host: host.into(),
-                        port
-                    }
+                    server: Server { host: host.into(), port },
                 },
                 ..Default::default()
             },
-            None, None, None
+            None,
+            None,
+            None,
         );
         let _ = client.connect();
         let _ = client.wait_for_connect().await?;
 
         tracing::debug!("Replication layer created");
 
-        Ok(Self {
-            client
-        })
+        Ok(Self { client })
     }
 
     pub async fn save_session(&self, xuid: u64, name: &str) -> anyhow::Result<()> {
-        self.client.hset(format!("user:{}", xuid),
-        ("name", name))
+        self.client
+            .hset(format!("user:{}", xuid), ("name", name))
             .await
             .context("Unable to cache player XUID")
     }
@@ -69,21 +67,21 @@ impl Replicator {
         buf.write_vecf(&data.rotation)?;
         buf.write_u64_le(xuid)?;
 
-        self.client.publish("user:transform", buf.as_ref())
+        self.client
+            .publish("user:transform", buf.as_ref())
             .await
             .context("Unable to update player position")
     }
 
     pub async fn text_msg(&self, msg: &TextMessage<'_>) -> anyhow::Result<()> {
-        if let TextData::Chat {
-            message, source
-        } = msg.data {
+        if let TextData::Chat { message, source } = msg.data {
             let mut buf = MutableBuffer::with_capacity(8 + size_of_string(message) + size_of_string(source));
             buf.write_u64_le(msg.xuid)?;
             buf.write_str(source)?;
             buf.write_str(message)?;
 
-            self.client.publish("user:text", buf.as_ref())
+            self.client
+                .publish("user:text", buf.as_ref())
                 .await
                 .context("Unable to publish chat message")
         } else {
@@ -91,4 +89,3 @@ impl Replicator {
         }
     }
 }
-

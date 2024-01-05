@@ -1,10 +1,10 @@
 use crate::level::{LevelManager, SubChunkPosition};
-use std::cell::OnceCell;
+
+use crate::level::subchunk::NetSubChunk;
+use proto::bedrock::{SubChunkEntry, SubChunkResult};
 use std::sync::atomic::{AtomicI32, Ordering};
 use std::sync::Arc;
-use proto::bedrock::{HeightmapType, SubChunkEntry, SubChunkResult};
 use util::{MutableBuffer, Vector};
-use crate::level::subchunk::NetSubChunk;
 
 pub struct ChunkViewer {
     radius: AtomicI32,
@@ -32,7 +32,7 @@ impl ChunkViewer {
             let coords = SubChunkPosition {
                 x: center.x + offset.x as i32,
                 y: offset.y,
-                z: center.y + offset.z as i32
+                z: center.y + offset.z as i32,
             };
 
             if let Some(subchunk) = self.level.get_subchunk(coords)? {

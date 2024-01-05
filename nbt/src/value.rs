@@ -523,7 +523,7 @@ impl<'a> PartialEq<&[i64]> for &'a mut Value {
 impl Hash for Value {
     fn hash<H>(&self, state: &mut H)
     where
-        H: Hasher
+        H: Hasher,
     {
         match self {
             Value::Byte(v) => state.write_i8(*v),
@@ -531,8 +531,12 @@ impl Hash for Value {
             Value::Int(v) => state.write_i32(*v),
             Value::Long(v) => state.write_i64(*v),
             Value::String(v) => state.write(v.as_bytes()),
-            Value::Float(v) => { todo!() },
-            Value::Double(v) => { todo!() },
+            Value::Float(_v) => {
+                todo!()
+            }
+            Value::Double(_v) => {
+                todo!()
+            }
             Value::Compound(map) => {
                 for (k, v) in map {
                     state.write(k.as_bytes());

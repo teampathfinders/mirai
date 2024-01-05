@@ -2,15 +2,15 @@ use std::io::{Read, Write};
 use std::net::{IpAddr, SocketAddr};
 use std::sync::Arc;
 
-use proto::base64::Engine;
 use flate2::read::DeflateDecoder;
+use proto::base64::Engine;
 
 use util::MutableBuffer;
 use util::{Result, Serialize};
 
 use crate::instance::{IPV4_LOCAL_ADDR, IPV6_LOCAL_ADDR};
-use proto::bedrock::Header;
 use crate::raknet::{Frame, OrderChannel};
+use proto::bedrock::Header;
 
 #[test]
 fn biome_nbt() {

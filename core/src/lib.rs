@@ -1,7 +1,7 @@
 #![allow(rustdoc::private_intra_doc_links)]
 
-pub mod data;
 pub mod config;
+pub mod data;
 pub mod forms;
 pub mod instance;
 pub mod level;

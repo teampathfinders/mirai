@@ -1,12 +1,12 @@
-use anyhow::anyhow;
+
 use proto::bedrock::{GameRule, ParsedCommand};
-use util::{error, pyassert, Result, TryExpect};
+use util::{TryExpect};
 use crate::level::LevelManager;
 
 pub const DEFAULT_EFFECT_DURATION: i32 = 30;
 
 impl LevelManager {
-    pub fn on_gamerule_command(&self, caller: u64, command: ParsedCommand) -> anyhow::Result<String> {
+    pub fn on_gamerule_command(&self, _caller: u64, command: ParsedCommand) -> anyhow::Result<String> {
         debug_assert_eq!(command.name, "gamerule");
 
         // Parsing should already verify that these parameters are provided.
@@ -38,7 +38,7 @@ impl LevelManager {
         }
     }
 
-    pub fn on_effect_command(&self, caller: u64, command: ParsedCommand) -> anyhow::Result<String> {
+    pub fn on_effect_command(&self, _caller: u64, command: ParsedCommand) -> anyhow::Result<String> {
         debug_assert_eq!(command.name, "effect");
 
         // Parsing should already verify that these parameters are provided.
@@ -67,13 +67,9 @@ impl LevelManager {
                 1
             };
 
-            let hide_particles = if let Some(hide_particles) = command.parameters.get("hideParticles") {
+            let _hide_particles = if let Some(hide_particles) = command.parameters.get("hideParticles") {
                 let h = hide_particles.as_string().try_expect("Expected `hideParticles` of type String")?;
-                if h == "true" {
-                    true
-                } else {
-                    false
-                }
+                h == "true"
             } else {
                 false
             };

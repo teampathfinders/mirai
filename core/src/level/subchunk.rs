@@ -1,17 +1,17 @@
-use level::{PaletteEntry, SubChunk, SubChunkVersion, SubLayer, to_offset};
+use crate::data::BLOCK_STATE_DATA;
+use level::{SubChunk, SubChunkVersion, SubLayer};
 use util::BinaryWrite;
-use crate::data::{BLOCK_STATE_DATA, RUNTIME_ID_DATA};
 
 #[derive(Debug)]
 pub struct NetSubLayer {
     indices: Box<[u16; 4096]>,
-    palette: Vec<u32>
+    palette: Vec<u32>,
 }
 
 impl NetSubLayer {
     pub fn serialize<W>(&self, writer: &mut W) -> anyhow::Result<()>
     where
-        W: BinaryWrite
+        W: BinaryWrite,
     {
         level::serialize_packed_array(writer, &self.indices, self.palette.len(), true)?;
 
@@ -29,18 +29,11 @@ impl NetSubLayer {
 
 impl From<SubLayer> for NetSubLayer {
     fn from(value: SubLayer) -> Self {
-        let palette = value
-            .palette()
-            .iter()
-            .flat_map(|entry| BLOCK_STATE_DATA.get(entry))
-            .collect::<Vec<u32>>();
+        let palette = value.palette().iter().flat_map(|entry| BLOCK_STATE_DATA.get(entry)).collect::<Vec<u32>>();
 
         println!("Palette: {palette:?}");
 
-        Self {
-            palette,
-            indices: value.take_indices()
-        }
+        Self { palette, indices: value.take_indices() }
     }
 }
 
@@ -48,13 +41,13 @@ impl From<SubLayer> for NetSubLayer {
 pub struct NetSubChunk {
     version: SubChunkVersion,
     index: i8,
-    layers: Vec<NetSubLayer>
+    layers: Vec<NetSubLayer>,
 }
 
 impl NetSubChunk {
     pub fn serialize_in<W>(&self, mut writer: W) -> anyhow::Result<()>
-        where
-            W: BinaryWrite
+    where
+        W: BinaryWrite,
     {
         writer.write_u8(self.version as u8)?;
         if self.version != SubChunkVersion::Legacy {
@@ -75,7 +68,7 @@ impl From<SubChunk> for NetSubChunk {
         Self {
             version: value.version(),
             index: value.index(),
-            layers: value.take_layers().into_iter().map(NetSubLayer::from).collect()
+            layers: value.take_layers().into_iter().map(NetSubLayer::from).collect(),
         }
     }
 }

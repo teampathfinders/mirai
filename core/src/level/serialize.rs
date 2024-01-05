@@ -1,4 +1,4 @@
-use level::{BiomeEncoding, Biomes, SubChunk, SubChunkVersion, SubLayer};
+use level::{BiomeEncoding, Biomes};
 use util::{BinaryWrite, MutableBuffer};
 
 #[inline]
@@ -22,7 +22,7 @@ pub fn serialize_biomes(buffer: &mut MutableBuffer, biomes: &Biomes) -> anyhow::
                 level::serialize_packed_array(buffer, indices, max_index, true)?;
                 serialize_biome_palette(buffer, paletted.palette())?;
             }
-            BiomeEncoding::Single(id) => {}
+            BiomeEncoding::Single(_id) => {}
             _ => {
                 // TODO: other encoding types
                 todo!()

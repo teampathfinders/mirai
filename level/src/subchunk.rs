@@ -1,12 +1,13 @@
+use std::collections::hash_map::DefaultHasher;
 use std::collections::HashMap;
-use std::hash::{DefaultHasher, Hash, Hasher};
+use std::hash::{Hash, Hasher};
 use std::iter::FusedIterator;
 use std::ops::{Index, IndexMut};
 
 use serde::{Deserialize, Serialize};
 
-use util::{BinaryRead, BinaryWrite, MutableBuffer};
 use util::{bail, Vector};
+use util::{BinaryRead, BinaryWrite, MutableBuffer};
 
 use crate::PackedArrayReturn;
 
@@ -171,7 +172,9 @@ impl SubLayer {
         &mut self.indices
     }
 
-    pub fn take_indices(self) -> Box<[u16; 4096]> { self.indices }
+    pub fn take_indices(self) -> Box<[u16; 4096]> {
+        self.indices
+    }
 }
 
 impl SubLayer {
@@ -417,8 +420,6 @@ impl SubChunk {
 
         Ok(())
     }
-
-
 }
 
 impl Index<usize> for SubChunk {

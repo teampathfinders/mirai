@@ -1,27 +1,31 @@
 //! Contains the server instance.
 
 use anyhow::Context;
-use proto::types::Dimension;
+
 use std::net::{Ipv4Addr, Ipv6Addr, SocketAddrV4};
 use std::sync::Arc;
 use std::time::Duration;
 
-use parking_lot::RwLock;
 use tokio::net::UdpSocket;
 use tokio::sync::oneshot::Receiver;
 use tokio_util::sync::CancellationToken;
 
 use util::MutableBuffer;
 use util::{Deserialize, Serialize};
-use util::{Result, Vector};
 
-use proto::bedrock::{BOOLEAN_GAME_RULES, CLIENT_VERSION_STRING, Command, CommandDataType, CommandEnum, CommandOverload, CommandParameter, CommandPermissionLevel, INTEGER_GAME_RULES, MOBEFFECT_NAMES, NETWORK_VERSION};
-use proto::raknet::{IncompatibleProtocol, OpenConnectionReply1, OpenConnectionReply2, OpenConnectionRequest1, OpenConnectionRequest2, RAKNET_VERSION, UnconnectedPing, UnconnectedPong};
-use replicator::Replicator;
 use crate::config::SERVER_CONFIG;
 use crate::level::LevelManager;
 use crate::network::SessionManager;
 use crate::raknet::RawPacket;
+use proto::bedrock::{
+    Command, CommandDataType, CommandEnum, CommandOverload, CommandParameter, CommandPermissionLevel, BOOLEAN_GAME_RULES, CLIENT_VERSION_STRING,
+    INTEGER_GAME_RULES, MOBEFFECT_NAMES, NETWORK_VERSION,
+};
+use proto::raknet::{
+    IncompatibleProtocol, OpenConnectionReply1, OpenConnectionReply2, OpenConnectionRequest1, OpenConnectionRequest2, UnconnectedPing,
+    UnconnectedPong, RAKNET_VERSION,
+};
+use replicator::Replicator;
 
 /// Local IPv4 address
 pub const IPV4_LOCAL_ADDR: Ipv4Addr = Ipv4Addr::UNSPECIFIED;
@@ -78,7 +82,7 @@ pub struct ServerInstance {
     level_manager: Arc<LevelManager>,
     /// Channel that the LevelManager sends a message to when it has fully shutdown.
     /// This is to make sure that the world has been saved and safely shut down before shutting down the server.
-    level_notifier: Receiver<()>
+    level_notifier: Receiver<()>,
 }
 
 impl ServerInstance {
@@ -92,18 +96,14 @@ impl ServerInstance {
         };
 
         let token = CancellationToken::new();
-        
+
         let udp_socket = Arc::new(
             UdpSocket::bind(SocketAddrV4::new(IPV4_LOCAL_ADDR, ipv4_port))
                 .await
-                .context("Unable to create UDP socket")?
+                .context("Unable to create UDP socket")?,
         );
 
-        let replicator = Arc::new(
-            Replicator::new()
-                .await
-                .context("Cannot create replication layer")?
-        );
+        let replicator = Arc::new(Replicator::new().await.context("Cannot create replication layer")?);
         let session_manager = Arc::new(SessionManager::new(replicator));
 
         let level = LevelManager::new(session_manager.clone(), token.clone())?;
@@ -270,7 +270,7 @@ impl ServerInstance {
         tracing::info!("Ready on localhost:{}!", ipv4_port);
 
         // Wait for a shutdown signal...
-        signal_listener(token.clone()).await;
+        signal_listener(token.clone()).await?;
 
         tracing::info!("Shutting down server. This can take several seconds...");
 

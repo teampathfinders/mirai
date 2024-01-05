@@ -1,10 +1,8 @@
-use std::collections::HashMap;
-use std::hash::{DefaultHasher, Hash, Hasher};
 use lazy_static::lazy_static;
-use nohash_hasher::BuildNoHashHasher;
-use tokio_util::bytes::Buf;
 use level::PaletteEntry;
-use proto::bedrock::CommandDataType::BlockStates;
+use nohash_hasher::BuildNoHashHasher;
+use std::collections::HashMap;
+use tokio_util::bytes::Buf;
 
 lazy_static! {
     pub static ref RUNTIME_ID_DATA: RuntimeIdMap = RuntimeIdMap::new().unwrap();
@@ -13,7 +11,7 @@ lazy_static! {
 
 #[derive(Debug)]
 pub struct RuntimeIdMap {
-    map: HashMap<String, i32>
+    map: HashMap<String, i32>,
 }
 
 impl RuntimeIdMap {
@@ -37,7 +35,7 @@ impl RuntimeIdMap {
 pub struct BlockStateMap {
     /// Converts state hashes to runtime IDs.
     runtime_hashes: HashMap<u64, u32, BuildNoHashHasher<u64>>,
-    air_id: u32
+    air_id: u32,
 }
 
 impl BlockStateMap {
@@ -59,9 +57,13 @@ impl BlockStateMap {
             let state_hash = item.hash();
             map.runtime_hashes.insert(state_hash, current_id);
 
-            if item.name == "minecraft:planks" { dbg!(&item); }
+            if item.name == "minecraft:planks" {
+                dbg!(&item);
+            }
 
-            if item.name == "minecraft:air" { map.air_id = current_id; }
+            if item.name == "minecraft:air" {
+                map.air_id = current_id;
+            }
 
             current_id += 1;
         }

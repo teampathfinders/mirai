@@ -1,23 +1,20 @@
-use std::num::NonZeroUsize;
-use std::ops::Range;
 use std::sync::atomic::AtomicU64;
 use std::sync::Arc;
 use std::time::Duration;
 
 use dashmap::mapref::one::Ref;
 use dashmap::DashMap;
-use parking_lot::RwLock;
-use tokio::sync::oneshot::{Receiver, Sender};
+
 use tokio_util::sync::CancellationToken;
 
 use level::provider::Provider;
 use level::{Biomes, SubChunk};
 use proto::types::Dimension;
-use util::{Result, Vector};
+use util::Vector;
 
-use proto::bedrock::{Command, GameRule, GameRulesChanged, LevelChunk, SubChunkRequestMode, SubChunkResponse};
 use crate::config::SERVER_CONFIG;
 use crate::network::SessionManager;
+use proto::bedrock::{Command, GameRule, GameRulesChanged, LevelChunk, SubChunkRequestMode};
 
 use crate::level::serialize::serialize_biomes;
 use util::MutableBuffer;
@@ -33,7 +30,9 @@ pub struct CombinedChunk {
 
 #[derive(Debug)]
 pub struct SubChunkPosition {
-    pub x: i32, pub y: i8, pub z: i32
+    pub x: i32,
+    pub y: i8,
+    pub z: i32,
 }
 
 pub struct LevelManager {
@@ -55,7 +54,7 @@ pub struct LevelManager {
 
 impl LevelManager {
     pub fn new(session_manager: Arc<SessionManager>, token: CancellationToken) -> anyhow::Result<Arc<Self>> {
-        let (level_path, autosave_interval) = {
+        let (level_path, _autosave_interval) = {
             let config = SERVER_CONFIG.read();
             (config.level_path, config.autosave_interval)
         };
@@ -134,7 +133,8 @@ impl LevelManager {
     }
 
     pub fn get_subchunk(&self, coords: SubChunkPosition) -> anyhow::Result<Option<SubChunk>> {
-        self.provider.get_subchunk(Vector::from([coords.x, coords.z]), coords.y, Dimension::Overworld)
+        self.provider
+            .get_subchunk(Vector::from([coords.x, coords.z]), coords.y, Dimension::Overworld)
     }
 
     pub fn request_biomes(&self, coordinates: Vector<i32, 2>, dimension: Dimension) -> anyhow::Result<LevelChunk> {
@@ -145,17 +145,12 @@ impl LevelManager {
         let biomes = biomes.unwrap();
 
         let sub_chunks = (-4..20)
-            .into_iter()
-            .filter_map(|cy| {
-                let sub = match self.provider.get_subchunk(coordinates.clone(), cy, dimension) {
-                    Ok(sub) => Some(sub),
-                    Err(err) => {
-                        tracing::error!("Failed to load sub chunk [{},{},{}]: {err:?}", coordinates.x, cy, coordinates.y);
-                        return None;
-                    }
-                };
-
-                sub
+            .filter_map(|cy| match self.provider.get_subchunk(coordinates.clone(), cy, dimension) {
+                Ok(sub) => Some(sub),
+                Err(err) => {
+                    tracing::error!("Failed to load sub chunk [{},{},{}]: {err:?}", coordinates.x, cy, coordinates.y);
+                    return None;
+                }
             })
             .collect::<Vec<_>>();
 

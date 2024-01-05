@@ -15,8 +15,8 @@ pub struct MenuForm<'a> {
 
 impl<'a> serde::Serialize for MenuForm<'a> {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-        where
-            S: serde::Serializer
+    where
+        S: serde::Serializer,
     {
         let mut map = serializer.serialize_struct("forms", 4)?;
         map.serialize_field("type", "forms")?;

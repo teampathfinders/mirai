@@ -17,8 +17,8 @@ pub struct Modal<'a> {
 
 impl<'a> serde::Serialize for Modal<'a> {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-        where
-            S: serde::Serializer,
+    where
+        S: serde::Serializer,
     {
         let mut map = serializer.serialize_struct("modal", 5)?;
         map.serialize_field("type", "modal")?;

@@ -5,10 +5,10 @@ use crate::database::Database;
 use crate::settings::LevelSettings;
 use crate::{DataKey, KeyType, SubChunk};
 use anyhow::anyhow;
+use proto::types::Dimension;
 use std::fs::File;
 use std::io::Read;
 use std::path::{Path, PathBuf};
-use proto::types::Dimension;
 use util::BinaryRead;
 use util::Vector;
 

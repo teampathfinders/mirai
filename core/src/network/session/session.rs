@@ -1,5 +1,5 @@
 use std::net::SocketAddr;
-use std::num::{NonZeroI32, NonZeroU32};
+
 use std::sync::Arc;
 use std::sync::atomic::{
     AtomicBool, AtomicU64, Ordering,
@@ -16,7 +16,7 @@ use proto::crypto::{Encryptor, IdentityData, UserData};
 use proto::uuid::Uuid;
 use replicator::Replicator;
 
-use util::{error, Result, Vector};
+use util::{error, Vector};
 use util::MutableBuffer;
 
 use crate::raknet::{BroadcastPacket, RaknetData};

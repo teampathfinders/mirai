@@ -3,9 +3,7 @@ use std::str::FromStr;
 use std::sync::atomic::{AtomicU16, Ordering};
 
 use tokio::runtime;
-use tracing_subscriber::EnvFilter;
 use tracing_subscriber::filter::LevelFilter;
-use pyro::data::{BLOCK_STATE_DATA, RUNTIME_ID_DATA};
 
 use pyro::instance::ServerInstance;
 
@@ -60,22 +58,17 @@ fn init_logging() {
 /// Initialises logging without tokio-console.
 #[cfg(not(feature = "tokio-console"))]
 fn init_logging() -> anyhow::Result<()> {
-    let max_level = LevelFilter::from_str(&std::env::vars()
-        .find_map(|(k, v)| if k == "PYRO_LOG" { Some(v) } else { None })
-        .unwrap_or(String::from("info"))
+    let max_level = LevelFilter::from_str(
+        &std::env::vars()
+            .find_map(|(k, v)| if k == "PYRO_LOG" { Some(v) } else { None })
+            .unwrap_or(String::from("info")),
     )?;
 
-    tracing_subscriber::fmt()
-        .with_target(false)
-        .with_max_level(max_level)
-        .init();
+    tracing_subscriber::fmt().with_target(false).with_max_level(max_level).init();
 
     Ok(())
 }
 
 fn init_error_log() {
-    tracing_subscriber::fmt()
-        .with_target(false)
-        .with_max_level(LevelFilter::ERROR)
-        .init();
+    tracing_subscriber::fmt().with_target(false).with_max_level(LevelFilter::ERROR).init();
 }

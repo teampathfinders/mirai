@@ -8,7 +8,7 @@ use proto::bedrock::{CompressionAlgorithm, CONNECTED_PACKET_ID, ConnectedPacket,
 use proto::raknet::{Ack, AckRecord};
 
 use util::{BinaryWrite, MutableBuffer};
-use util::Result;
+
 use util::Serialize;
 
 use crate::raknet::{Frame, FrameBatch};

@@ -8,7 +8,7 @@ use tokio::sync::{broadcast, mpsc, OnceCell};
 use proto::bedrock::{ConnectedPacket, Disconnect, DISCONNECTED_TIMEOUT};
 use replicator::Replicator;
 
-use util::{Result, Serialize};
+use util::{Serialize};
 use util::MutableBuffer;
 
 use crate::raknet::{BroadcastPacket, RawPacket};
