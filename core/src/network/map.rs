@@ -62,7 +62,8 @@ impl UserMap {
         let (tx, rx) = mpsc::channel(BROADCAST_CHANNEL_CAPACITY);
 
         let address = info.address.clone();
-        let (state, mut state_rx) = RaknetUser::new(info, rx);
+        let (state, mut state_rx) = 
+            RaknetUser::new(info, self.broadcast.clone(), rx);
         
         self.connecting_map.insert(address, ChannelUser {
             channel: tx, state
@@ -77,8 +78,20 @@ impl UserMap {
         });
     }
 
-    pub fn forward(&self, packet: ForwardablePacket) -> anyhow::Result<()> {
-        todo!()
+    pub async fn forward(&self, packet: ForwardablePacket) -> anyhow::Result<()> {
+        if let Some(user) = self.connected_map.get(&packet.addr) {
+            return user.channel.send_timeout(packet.buf, FORWARD_TIMEOUT)
+                .await
+                .context("Forwarding packet to user timed out")
+        }
+
+        if let Some(user) = self.connecting_map.get(&packet.addr) {
+            return user.channel.send_timeout(packet.buf, FORWARD_TIMEOUT)
+                .await
+                .context("Forwarding packet to connecting user timed out")
+        }
+
+        anyhow::bail!("Attempted to forward packet to user that does not exist")
     }
 
     pub fn broadcast<T: ConnectedPacket + Serialize>(&self, packet: T) -> anyhow::Result<()> {

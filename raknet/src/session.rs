@@ -58,7 +58,11 @@ impl RaknetUser {
         self.active.cancel();
     }
 
-    pub fn new(info: UserCreateInfo, rx: mpsc::Receiver<MutableBuffer>) -> (Arc<Self>, mpsc::Receiver<MutableBuffer>) {
+    pub fn new(
+        info: UserCreateInfo, 
+        broadcast: broadcast::Sender<BroadcastPacket>,
+        forward_rx: mpsc::Receiver<MutableBuffer>
+    ) -> (Arc<Self>, mpsc::Receiver<MutableBuffer>) {
         let mut order_channels: [MaybeUninit<OrderChannel>; ORDER_CHANNEL_COUNT] = unsafe {
             MaybeUninit::uninit().assume_init()
         };
@@ -74,14 +78,14 @@ impl RaknetUser {
             >(order_channels)
         };
 
-        let (tx, rx) = mpsc::channel(OUTPUT_CHANNEL_SIZE);
+        let (output_tx, output_rx) = mpsc::channel(OUTPUT_CHANNEL_SIZE);
 
         let state = Arc::new(RaknetUser {
             active: CancellationToken::new(),
             address: info.address,
             last_update: RwLock::new(Instant::now()),
             socket: info.socket,
-            broadcast: todo!(),
+            broadcast,
             tick: AtomicU64::new(0),
             batch_number: AtomicU32::new(0),
             send: SendQueues::new(),
@@ -93,12 +97,12 @@ impl RaknetUser {
             compounds: Compounds::new(),
             sequence_index: AtomicU32::new(0),
             order: order_channels,
-            output: tx,
+            output: output_tx,
         });
 
-        state.clone().start_packet_job(rx);
+        state.clone().start_packet_job(forward_rx);
         state.clone().start_tick_job();
 
-        (state, rx)
+        (state, output_rx)
     }
 }
