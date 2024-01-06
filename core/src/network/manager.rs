@@ -6,7 +6,7 @@ use std::time::{Duration, Instant};
 use anyhow::Context;
 use dashmap::DashMap;
 use parking_lot::{RwLock, Mutex};
-use raknet::RaknetUser;
+use raknet::{RaknetUser, BroadcastPacket, UserCreateInfo};
 use tokio::net::UdpSocket;
 use tokio::sync::{broadcast, mpsc, OnceCell};
 use proto::bedrock::{ConnectedPacket, Disconnect, DISCONNECTED_TIMEOUT};
@@ -18,6 +18,8 @@ use util::MutableBuffer;
 
 use crate::config::SERVER_CONFIG;
 use crate::level::LevelManager;
+
+use super::ForwardablePacket;
 
 const BROADCAST_CHANNEL_CAPACITY: usize = 16;
 const FORWARD_TIMEOUT: Duration = Duration::from_millis(10);
@@ -33,36 +35,6 @@ impl<T> ChannelUser<T> {
     pub async fn forward(&self, packet: MutableBuffer) -> anyhow::Result<()> {
         self.channel.send_timeout(packet, FORWARD_TIMEOUT).await.context("Server-side client timed out")?;
         Ok(())
-    }
-}
-
-pub struct UserCreateInfo {
-    pub address: SocketAddr,
-    pub mtu: u16,
-    pub guid: u64,
-    pub socket: Arc<UdpSocket>
-}
-
-impl RaknetUser {
-    pub fn new(info: UserCreateInfo, rx: mpsc::Receiver<MutableBuffer>) -> Arc<Self> {
-        let state = Arc::new(RaknetUser {
-            active: CancellationToken::new(),
-            address: info.address,
-            last_update: RwLock::new(Instant::now()),
-            socket: info.socket,
-            broadcast: todo!(),
-            tick: AtomicU64::new(0),
-            batch_number: AtomicU32::new(0),
-            send: SendQueues::new(),
-            acknowledged: Mutex::new(Vec::with_capacity(5)),
-            recovery: Recovery::new(),
-            output: todo!(),
-        });
-
-        state.clone().start_packet_job(rx);
-        state.clone().start_tick_job();
-
-        state
     }
 }
 

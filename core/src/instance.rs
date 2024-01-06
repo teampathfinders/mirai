@@ -1,6 +1,7 @@
 //! Contains the server instance.
 
 use anyhow::Context;
+use raknet::UserCreateInfo;
 
 use std::net::{Ipv4Addr, Ipv6Addr, SocketAddrV4};
 use std::sync::Arc;
@@ -15,7 +16,7 @@ use util::{Deserialize, Serialize};
 
 use crate::config::SERVER_CONFIG;
 use crate::level::LevelManager;
-use crate::network::{UserMap, UserCreateInfo, ForwardablePacket};
+use crate::network::{UserMap, ForwardablePacket};
 use proto::bedrock::{
     Command, CommandDataType, CommandEnum, CommandOverload, CommandParameter, CommandPermissionLevel, BOOLEAN_GAME_RULES, CLIENT_VERSION_STRING,
     INTEGER_GAME_RULES, MOBEFFECT_NAMES, NETWORK_VERSION,

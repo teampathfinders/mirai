@@ -1,5 +1,6 @@
 use std::net::SocketAddr;
 
+use raknet::CONNECTED_PEER_BIT_FLAG;
 use util::MutableBuffer;
 
 /// An unprocessed packet.

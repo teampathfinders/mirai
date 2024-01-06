@@ -1,4 +1,4 @@
-use std::io::Read;
+use std::io::{Read, Write};
 use std::net::SocketAddr;
 
 use std::sync::Arc;
@@ -20,7 +20,7 @@ use proto::crypto::{Encryptor, IdentityData, UserData};
 use proto::uuid::Uuid;
 use replicator::Replicator;
 
-use util::{error, Vector, AtomicFlag, Serialize, BinaryRead};
+use util::{error, Vector, AtomicFlag, Serialize, BinaryRead, BinaryWrite};
 use util::MutableBuffer;
 
 use crate::config::SERVER_CONFIG;

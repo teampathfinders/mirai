@@ -1,4 +1,4 @@
-use std::{net::SocketAddr, sync::{Arc, atomic::{AtomicBool, AtomicU16, AtomicU32, AtomicU64}}, time::Instant};
+use std::{net::SocketAddr, sync::{Arc, atomic::{AtomicBool, AtomicU16, AtomicU32, AtomicU64}}, time::Instant, mem::MaybeUninit};
 
 use parking_lot::{Mutex, RwLock};
 use tokio::{net::UdpSocket, sync::{broadcast, mpsc}};
@@ -8,6 +8,13 @@ use util::MutableBuffer;
 use crate::{Compounds, SendQueues, Recovery, BroadcastPacket, OrderChannel};
 
 const ORDER_CHANNEL_COUNT: usize = 5;
+
+pub struct UserCreateInfo {
+    pub address: SocketAddr,
+    pub mtu: u16,
+    pub guid: u64,
+    pub socket: Arc<UdpSocket>
+}
 
 /// The Raknet layer of the user. This handles the entire Raknet protocol for the client.
 pub struct RaknetUser {
@@ -48,5 +55,47 @@ pub struct RaknetUser {
 impl RaknetUser {
     pub fn handle_disconnect(&self) {
         self.active.cancel();
+    }
+
+    pub fn new(info: UserCreateInfo, rx: mpsc::Receiver<MutableBuffer>) -> Arc<Self> {
+        let mut order_channels: [MaybeUninit<OrderChannel>; ORDER_CHANNEL_COUNT] = unsafe {
+            MaybeUninit::uninit().assume_init()
+        };
+        
+        for channel in &mut order_channels {
+            channel.write(OrderChannel::new());
+        }
+
+        let order_channels = unsafe { 
+            std::mem::transmute::<
+                [MaybeUninit<OrderChannel>; ORDER_CHANNEL_COUNT], 
+                [OrderChannel; ORDER_CHANNEL_COUNT]
+            >(order_channels)
+        };
+
+        let state = Arc::new(RaknetUser {
+            active: CancellationToken::new(),
+            address: info.address,
+            last_update: RwLock::new(Instant::now()),
+            socket: info.socket,
+            broadcast: todo!(),
+            tick: AtomicU64::new(0),
+            batch_number: AtomicU32::new(0),
+            send: SendQueues::new(),
+            acknowledged: Mutex::new(Vec::with_capacity(5)),
+            recovery: Recovery::new(),
+            output: todo!(),
+            mtu: info.mtu,
+            acknowledge_index: AtomicU32::new(0),
+            compound_index: AtomicU16::new(0),
+            compounds: Compounds::new(),
+            sequence_index: AtomicU32::new(0),
+            order: order_channels,
+        });
+
+        state.clone().start_packet_job(rx);
+        state.clone().start_tick_job();
+
+        state
     }
 }
