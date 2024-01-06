@@ -11,7 +11,7 @@ use util::{BinaryWrite, MutableBuffer};
 
 use util::Serialize;
 
-use crate::network::{RaknetUserLayer, BedrockUserLayer};
+use crate::network::{RaknetUser, BedrockUserLayer};
 use crate::raknet::{Frame, FrameBatch};
 use crate::raknet::Reliability;
 use crate::raknet::SendPriority;
@@ -31,7 +31,7 @@ pub const DEFAULT_SEND_CONFIG: PacketConfig = PacketConfig {
     priority: SendPriority::Medium,
 };
 
-impl RaknetUserLayer {
+impl RaknetUser {
     /// Sends a game packet with default settings
     /// (reliable ordered and medium priority)
     pub fn send<T: ConnectedPacket + Serialize>(&self, packet: T) -> anyhow::Result<()> {
@@ -115,7 +115,7 @@ impl RaknetUserLayer {
 
     pub async fn flush_acknowledgements(&self) -> anyhow::Result<()> {
         let mut confirmed = {
-            let mut lock = self.confirmed.lock();
+            let mut lock = self.acknowledged.lock();
             if lock.is_empty() {
                 return Ok(());
             }
@@ -167,10 +167,8 @@ impl RaknetUserLayer {
         while index < frames.len() {
             let frame_size = frames[index].body.len() + std::mem::size_of::<Frame>();
 
-            if frame_size > self.raknet.mtu as usize {
-                self.raknet
-                    .batch_sequence_number
-                    .fetch_sub(1, Ordering::SeqCst);
+            if frame_size > self.mtu as usize {
+                self.batch_number.fetch_sub(1, Ordering::SeqCst);
 
                 let large_frame = frames.swap_remove(index);
                 let compound = self.split_frame(&large_frame);
@@ -180,20 +178,15 @@ impl RaknetUserLayer {
             }
         }
         
-        let large_frames = frames.iter().find(|f| f.body.len() > self.raknet.mtu as usize - std::mem::size_of::<Frame>());
-        dbg!(large_frames.map(|f| f.body.len()));
-        // debug_assert!(
-        //     frames
-        //         .iter()
-        //         .any(|f| f.body.len() > self.raknet.mtu as usize - std::mem::size_of::<Frame>()),
-        //     "Frames were not split properly"
-        // );
+        debug_assert!(
+            !frames
+                .iter()
+                .any(|f| f.body.len() > self.mtu as usize - std::mem::size_of::<Frame>()),
+            "Frames were not split properly"
+        );
 
         let mut batch = FrameBatch {
-            sequence_number: self
-                .raknet
-                .batch_sequence_number
-                .fetch_add(1, Ordering::SeqCst),
+            sequence_number: self.batch_number.fetch_add(1, Ordering::SeqCst),
 
             frames: vec![],
         };
@@ -203,45 +196,44 @@ impl RaknetUserLayer {
             let frame_size = frame.body.len() + std::mem::size_of::<Frame>();
 
             if frame.reliability.is_ordered() {
-                let order_index = self.raknet.order_channels
-                    [frame.order_channel as usize]
-                    .fetch_index();
+                let order_index = self.order[frame.order_channel as usize]
+                    .alloc_index();
                 frame.order_index = order_index;
             }
 
             if frame.reliability.is_sequenced() {
                 let sequence_index =
-                    self.raknet.sequence_index.fetch_add(1, Ordering::SeqCst);
+                    self.sequence_index.fetch_add(1, Ordering::SeqCst);
+
                 frame.sequence_index = sequence_index;
             }
 
             if frame.reliability.is_reliable() {
                 frame.reliable_index =
-                    self.raknet.ack_index.fetch_add(1, Ordering::SeqCst);
+                    self.acknowledge_index.fetch_add(1, Ordering::SeqCst);
+
                 has_reliable_packet = true;
             }
 
-            if batch.estimate_size() + frame_size <= self.raknet.mtu as usize {
+            if batch.estimate_size() + frame_size <= self.mtu as usize {
                 batch.frames.push(frame);
             } else if !batch.is_empty() {
                 serialized.clear();
                 batch.serialize(&mut serialized)?;
 
                 // TODO: Add IPv6 support
-                self.raknet
-                    .udp_socket
-                    .send_to(serialized.as_ref(), self.raknet.address)
+                self.socket
+                    .send_to(serialized.as_ref(), self.address)
                     .await?;
 
                 if has_reliable_packet {
-                    self.raknet.recovery_queue.insert(batch);
+                    self.recovery.insert(batch);
                 }
 
                 has_reliable_packet = false;
                 batch = FrameBatch {
                     sequence_number: self
-                        .raknet
-                        .batch_sequence_number
+                        .batch_number
                         .fetch_add(1, Ordering::SeqCst),
                     frames: vec![frame],
                 };
@@ -254,25 +246,22 @@ impl RaknetUserLayer {
             batch.serialize(&mut serialized)?;
 
             if has_reliable_packet {
-                self.raknet.recovery_queue.insert(batch);
+                self.recovery.insert(batch);
             }
 
             // TODO: Add IPv6 support
-            self.raknet
-                .udp_socket
-                .send_to(serialized.as_ref(), self.raknet.address)
+            self.socket
+                .send_to(serialized.as_ref(), self.address)
                 .await?;
         } else {
-            self.raknet
-                .batch_sequence_number
-                .fetch_sub(1, Ordering::SeqCst);
+            self.batch_number.fetch_sub(1, Ordering::SeqCst);
         }
 
         Ok(())
     }
 
     fn split_frame(&self, frame: &Frame) -> Vec<Frame> {
-        let chunk_max_size = self.raknet.mtu as usize
+        let chunk_max_size = self.mtu as usize
             - std::mem::size_of::<Frame>()
             - std::mem::size_of::<FrameBatch>();
 
@@ -290,7 +279,7 @@ impl RaknetUserLayer {
         debug_assert_eq!(chunks.len(), compound_size);
 
         let compound_id =
-            self.raknet.compound_id.fetch_add(1, Ordering::SeqCst);
+            self.compound_index.fetch_add(1, Ordering::SeqCst);
 
         for (i, chunk) in chunks.enumerate() {
             let fragment = Frame {
@@ -317,7 +306,7 @@ impl BedrockUserLayer {
             B: AsRef<[u8]>
     {
         let mut out;
-        if self.compression.get() {
+        if self.compressed.get() {
             let (algorithm, threshold) = {
                 let config = SERVER_CONFIG.read();
                 (config.compression_algorithm, config.compression_threshold)
@@ -356,7 +345,7 @@ impl BedrockUserLayer {
 
         self.encryptor.encrypt(&mut out)?;
 
-        self.send_raw_buffer_with_config(out, config);
+        self.raknet.send_raw_buffer_with_config(out, config);
         Ok(())
     }
 }

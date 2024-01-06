@@ -28,7 +28,7 @@ impl OrderChannel {
     ///
     /// Every time this is called, the index is increased by 1.
     #[inline]
-    pub fn fetch_index(&self) -> u32 {
+    pub fn alloc_index(&self) -> u32 {
         self.next_index.fetch_add(1, Ordering::SeqCst)
     }
 

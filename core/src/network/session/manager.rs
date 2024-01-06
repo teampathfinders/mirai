@@ -1,59 +1,103 @@
 use std::net::SocketAddr;
+use std::sync::atomic::{AtomicU64, AtomicU32};
 use std::sync::{Arc, Weak};
-use std::time::Duration;
+use std::time::{Duration, Instant};
 
+use anyhow::Context;
 use dashmap::DashMap;
+use parking_lot::{RwLock, Mutex};
 use tokio::net::UdpSocket;
 use tokio::sync::{broadcast, mpsc, OnceCell};
 use proto::bedrock::{ConnectedPacket, Disconnect, DISCONNECTED_TIMEOUT};
 use replicator::Replicator;
 
+use tokio_util::sync::CancellationToken;
 use util::{Serialize};
 use util::MutableBuffer;
 
-use crate::raknet::{BroadcastPacket, ForwardablePacket};
+use crate::raknet::{BroadcastPacket, ForwardablePacket, SendQueues, Recovery};
 use crate::config::SERVER_CONFIG;
 use crate::level::LevelManager;
 
+use super::{UserState, RaknetUser};
+
 const BROADCAST_CHANNEL_CAPACITY: usize = 16;
-const FORWARD_TIMEOUT: Duration = Duration::from_millis(20);
+const FORWARD_TIMEOUT: Duration = Duration::from_millis(10);
 const GARBAGE_COLLECT_INTERVAL: Duration = Duration::from_secs(1);
 
-pub struct ChannelUser {
-    pub channel: mpsc::Sender<MutableBuffer>,
-    pub session: Arc<User>
+pub struct ChannelUser<T> {
+    channel: mpsc::Sender<MutableBuffer>,
+    state: Arc<T>
+}
+
+impl<T> ChannelUser<T> {
+    #[inline]
+    pub async fn forward(&self, packet: MutableBuffer) -> anyhow::Result<()> {
+        self.channel.send_timeout(packet, FORWARD_TIMEOUT).await.context("Server-side client timed out")?;
+        Ok(())
+    }
 }
 
 pub struct UserCreateInfo {
     pub address: SocketAddr,
     pub mtu: u16,
-    pub guid: u64
+    pub guid: u64,
+    pub socket: Arc<UdpSocket>
+}
+
+impl RaknetUser {
+    pub fn new(info: UserCreateInfo, rx: mpsc::Receiver<MutableBuffer>) -> Arc<Self> {
+        let state = Arc::new(RaknetUser {
+            active: CancellationToken::new(),
+            address: info.address,
+            last_update: RwLock::new(Instant::now()),
+            socket: info.socket,
+            broadcast: todo!(),
+            tick: AtomicU64::new(0),
+            batch_number: AtomicU32::new(0),
+            send: SendQueues::new(),
+            acknowledged: Mutex::new(Vec::with_capacity(5)),
+            recovery: Recovery::new(),
+            output: todo!(),
+        });
+
+        state.clone().start_packet_job(rx);
+        state.clone().start_tick_job();
+
+        state
+    }
+}
+
+pub struct ConnectedUser {
+    raknet: RaknetUser
 }
 
 pub struct UserMap {
     replicator: Replicator,
-    map: DashMap<SocketAddr, ChannelUser>,
+    connecting_map: DashMap<SocketAddr, ChannelUser<RaknetUser>>,
+    connected_map: DashMap<SocketAddr, ChannelUser<ConnectedUser>>,
     /// Channel that sends a packet to all connected sessions.
     broadcast: broadcast::Sender<BroadcastPacket>
 }
 
 impl UserMap {
     pub fn new(replicator: Replicator) -> Self {
-        let list = DashMap::new();
+        let connecting_map = DashMap::new();
+        let connected_map = DashMap::new();
+
         let (broadcast, _) = broadcast::channel(BROADCAST_CHANNEL_CAPACITY);
 
         Self {
-            replicator, map: list, broadcast
+            replicator, connecting_map, connected_map, broadcast
         }
     }
 
     pub fn insert(&self, info: UserCreateInfo) {
         let (tx, rx) = mpsc::channel(BROADCAST_CHANNEL_CAPACITY);
-        let user = todo!();
+        let state = RaknetUser::new(info, rx);
 
-        self.map.insert(info.address, ChannelUser {
-            channel: tx,
-            session: user
+        self.connecting_map.insert(info.address, ChannelUser {
+            channel: tx, state
         });
     }
 
@@ -83,7 +127,7 @@ impl UserMap {
     }
 
     pub fn count(&self) -> usize {
-        self.map.len()
+        self.connected_map.len()
     }
 
     pub fn max_count(&self) -> usize {

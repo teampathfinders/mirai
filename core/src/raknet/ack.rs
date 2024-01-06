@@ -3,15 +3,15 @@ use util::{Deserialize};
 
 use proto::raknet::{Ack, Nak};
 
-use crate::network::RaknetUserLayer;
+use crate::network::RaknetUser;
 
-impl RaknetUserLayer {
+impl RaknetUser {
     /// Processes an acknowledgement received from the client.
     ///
     /// This function unregisters the specified packet IDs from the recovery queue.
     pub fn handle_ack(&self, packet: SharedBuffer<'_>) -> anyhow::Result<()> {
         let ack = Ack::deserialize(packet)?;
-        self.raknet.recovery_queue.confirm(&ack.records);
+        self.recovery.acknowledge(&ack.records);
 
         Ok(())
     }

@@ -1,6 +1,6 @@
 use std::io::Read;
 use std::sync::atomic::Ordering;
-use std::time::Instant;
+use std::time::{Instant, Duration};
 
 use async_recursion::async_recursion;
 use proto::bedrock::{Animate, CacheStatus, ChunkRadiusRequest, ClientToServerHandshake, CommandRequest, CompressionAlgorithm, CONNECTED_PACKET_ID, ConnectedPacket, ContainerClose, FormResponse, Header, Interact, Login, MovePlayer, PlayerAction, RequestAbility, RequestNetworkSettings, ResourcePackClientResponse, SetLocalPlayerAsInitialized, SettingsCommand, TextMessage, TickSync, UpdateSkin, ViolationWarning};
@@ -8,12 +8,14 @@ use proto::raknet::{Ack, ConnectedPing, ConnectionRequest, DisconnectNotificatio
 
 use util::{BinaryRead, MutableBuffer};
 
-use crate::network::{RaknetUserLayer, BedrockUserLayer};
+use crate::network::{RaknetUser, BedrockUserLayer};
 use crate::raknet::{BroadcastPacket, Frame, FrameBatch};
 use crate::raknet::DEFAULT_SEND_CONFIG;
 use crate::config::SERVER_CONFIG;
 
-impl RaknetUserLayer {
+const RAKNET_OUTPUT_TIMEOUT: Duration = Duration::from_millis(10);
+
+impl RaknetUser {
     /// Processes the raw packet coming directly from the network.
     ///
     /// If a packet is an ACK or NACK type, it will be responded to accordingly (using [`Session::process_ack`] and [`Session::process_nak`]).
@@ -37,12 +39,10 @@ impl RaknetUserLayer {
 
     /// Processes a broadcasted packet sent by another client connected to the server.
     pub fn handle_broadcast(&self, packet: BroadcastPacket) -> anyhow::Result<()> {
-        if let Ok(xuid) = self.get_xuid() {
-            if let Some(sender) = packet.sender {
-                if sender.get() == xuid {
-                    // Source is self, do not send.
-                    return Ok(());
-                }
+        if let Some(sender) = packet.sender {
+            if sender == self.address {
+                // Source is self, do not send.
+                return Ok(());
             }
         }
 
@@ -77,7 +77,7 @@ impl RaknetUserLayer {
     ) -> anyhow::Result<()> {
         if frame.reliability.is_sequenced()
             && frame.sequence_index
-            < self.raknet.client_batch_number.load(Ordering::SeqCst)
+            < self.batch_number.load(Ordering::SeqCst)
         {
             // Discard packet
             return Ok(());
@@ -85,12 +85,12 @@ impl RaknetUserLayer {
 
         if frame.reliability.is_reliable() {
             // Confirm packet
-            let mut lock = self.raknet.confirmed_packets.lock();
+            let mut lock = self.acknowledged.lock();
             lock.push(batch_number);
         }
 
         if frame.is_compound {
-            let possible_frag = self.raknet.compound_collector.insert(frame)?;
+            let possible_frag = self.compounds.insert(frame)?;
 
             return if let Some(packet) = possible_frag {
                 self.handle_frame(packet, batch_number).await
@@ -103,8 +103,7 @@ impl RaknetUserLayer {
         // Sequenced implies ordered
         if frame.reliability.is_ordered() || frame.reliability.is_sequenced() {
             // Add packet to order queue
-            if let Some(ready) = self.raknet.order_channels
-                [frame.order_channel as usize]
+            if let Some(ready) = self.order[frame.order_channel as usize]
                 .insert(frame)
             {
                 for packet in ready {
@@ -121,7 +120,8 @@ impl RaknetUserLayer {
     async fn handle_frame_body(&self, packet: MutableBuffer) -> anyhow::Result<()> {
         let packet_id = *packet.first().expect("Game packet buffer was empty");
         match packet_id {
-            CONNECTED_PACKET_ID => self.handle_encrypted_frame(packet).await?,
+            // CONNECTED_PACKET_ID => self.handle_encrypted_frame(packet).await?,
+            CONNECTED_PACKET_ID => self.output.send_timeout(packet, RAKNET_OUTPUT_TIMEOUT).await?,
             DisconnectNotification::ID => self.on_disconnect(),
             ConnectionRequest::ID => self.handle_connection_request(packet)?,
             NewIncomingConnection::ID => {

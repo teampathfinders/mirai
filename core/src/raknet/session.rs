@@ -3,7 +3,7 @@ use std::{net::SocketAddr, sync::{Arc, atomic::{AtomicBool, AtomicU16, AtomicU32
 use parking_lot::{Mutex, RwLock};
 use tokio::net::UdpSocket;
 
-use crate::raknet::{CompoundCollector, OrderChannel, Recovery, SendQueues};
+use crate::raknet::{Compounds, OrderChannel, Recovery, SendQueues};
 
 const ORDER_CHANNEL_COUNT: usize = 5;
 
@@ -36,7 +36,7 @@ pub struct RaknetData {
     /// Sequenced raknet with sequence numbers less than this one will be discarded.
     pub client_batch_number: AtomicU32,
     /// Collects fragmented raknet.
-    pub compound_collector: CompoundCollector,
+    pub compound_collector: Compounds,
     /// Channels used to order raknet.
     pub order_channels: [OrderChannel; ORDER_CHANNEL_COUNT],
     /// Keeps track of all raknet that are waiting to be sent.

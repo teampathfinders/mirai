@@ -15,7 +15,7 @@ use util::{Deserialize, Serialize};
 
 use crate::config::SERVER_CONFIG;
 use crate::level::LevelManager;
-use crate::network::UserMap;
+use crate::network::{UserMap, UserCreateInfo};
 use crate::raknet::ForwardablePacket;
 use proto::bedrock::{
     Command, CommandDataType, CommandEnum, CommandOverload, CommandParameter, CommandPermissionLevel, BOOLEAN_GAME_RULES, CLIENT_VERSION_STRING,
@@ -333,7 +333,7 @@ impl ServerInstance {
     fn process_open_connection_request2(
         mut packet: ForwardablePacket,
         udp_socket: Arc<UdpSocket>,
-        sess_manager: Arc<UserMap>,
+        user_manager: Arc<UserMap>,
         server_guid: u64,
     ) -> anyhow::Result<ForwardablePacket> {
         let request = OpenConnectionRequest2::deserialize(packet.buf.snapshot())?;
@@ -347,7 +347,12 @@ impl ServerInstance {
         packet.buf.reserve_to(reply.serialized_size());
         reply.serialize(&mut packet.buf)?;
 
-        sess_manager.add_session(udp_socket, packet.addr, request.mtu, request.client_guid);
+        user_manager.insert(UserCreateInfo {
+            address: packet.addr,
+            guid: request.client_guid,
+            mtu: request.mtu,
+            socket: udp_socket
+        });
 
         Ok(packet)
     }

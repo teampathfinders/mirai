@@ -1,10 +1,10 @@
-use std::num::NonZeroU64;
+use std::{num::NonZeroU64, net::SocketAddr};
 use anyhow::anyhow;
 use proto::bedrock::{ConnectedPacket, Packet};
 
 use util::{ArcBuffer, Serialize};
 
-use crate::network::RaknetUserLayer;
+use crate::network::RaknetUser;
 
 /// A packet that can be broadcast to other sessions.
 ///
@@ -22,7 +22,7 @@ pub struct BroadcastPacket {
     /// If this is Some, every session that receives the broadcast will check the XUID with its own.
     /// If it matches, the packet will not be sent.
     /// This can be used to broadcast raknet to every client other than self.
-    pub sender: Option<NonZeroU64>,
+    pub sender: Option<SocketAddr>,
     /// Content of the packet.
     ///
     /// This must be an already serialized packet (use the [`Serialize`] trait)
@@ -34,7 +34,7 @@ impl BroadcastPacket {
     /// Creates a new broadcast packet from the given packet.
     pub fn new<T: ConnectedPacket + Serialize>(
         packet: T,
-        sender: Option<NonZeroU64>,
+        sender: Option<SocketAddr>,
     ) -> anyhow::Result<Self> {
         let packet = Packet::new(packet);
 
@@ -45,7 +45,7 @@ impl BroadcastPacket {
     }
 }
 
-impl RaknetUserLayer {
+impl RaknetUser {
     /// Sends a packet to all initialised sessions including self.
     pub fn broadcast<P: ConnectedPacket + Serialize + Clone>(
         &self,
@@ -63,8 +63,7 @@ impl RaknetUserLayer {
         self.broadcast.send(BroadcastPacket::new(
             packet,
             Some(
-                NonZeroU64::new(self.get_xuid()?)
-                    .ok_or_else(|| anyhow!("XUID was 0"))?,
+                self.address
             ),
         )?)?;
 

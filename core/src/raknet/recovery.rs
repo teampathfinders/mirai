@@ -30,7 +30,7 @@ impl Recovery {
     /// Removes the specified raknet from the recovery queue.
     ///
     /// This method should be called when an ACK is received.
-    pub fn confirm(&self, records: &[AckRecord]) {
+    pub fn acknowledge(&self, records: &[AckRecord]) {
         for record in records {
             match record {
                 AckRecord::Single(id) => {

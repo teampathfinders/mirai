@@ -3,16 +3,16 @@ use util::{Deserialize, Serialize};
 use util::MutableBuffer;
 
 
-use crate::network::RaknetUserLayer;
+use crate::network::RaknetUser;
 use crate::raknet::{PacketConfig, SendPriority};
 use crate::raknet::Reliability;
 
-impl RaknetUserLayer {
+impl RaknetUser {
     /// Handles a [`ConnectionRequest`] packet.
     pub fn handle_connection_request(&self, mut packet: MutableBuffer) -> anyhow::Result<()> {
         let request = ConnectionRequest::deserialize(packet.snapshot())?;
         let reply = ConnectionRequestAccepted {
-            client_address: self.raknet.address,
+            client_address: self.address,
             request_time: request.time,
         };
 
