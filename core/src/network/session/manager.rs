@@ -19,25 +19,25 @@ const BROADCAST_CHANNEL_CAPACITY: usize = 16;
 const FORWARD_TIMEOUT: Duration = Duration::from_millis(20);
 const GARBAGE_COLLECT_INTERVAL: Duration = Duration::from_secs(1);
 
-pub struct ChanneledSession {
+pub struct ChannelUser {
     pub channel: mpsc::Sender<MutableBuffer>,
     pub session: Arc<User>
 }
 
-pub struct SessionCreateInfo {
+pub struct UserCreateInfo {
     pub address: SocketAddr,
     pub mtu: u16,
     pub guid: u64
 }
 
-pub struct SessionManager {
+pub struct UserMap {
     replicator: Replicator,
-    map: DashMap<SocketAddr, ChanneledSession>,
+    map: DashMap<SocketAddr, ChannelUser>,
     /// Channel that sends a packet to all connected sessions.
     broadcast: broadcast::Sender<BroadcastPacket>
 }
 
-impl SessionManager {
+impl UserMap {
     pub fn new(replicator: Replicator) -> Self {
         let list = DashMap::new();
         let (broadcast, _) = broadcast::channel(BROADCAST_CHANNEL_CAPACITY);
@@ -47,11 +47,11 @@ impl SessionManager {
         }
     }
 
-    pub fn insert(&self, info: SessionCreateInfo) {
+    pub fn insert(&self, info: UserCreateInfo) {
         let (tx, rx) = mpsc::channel(BROADCAST_CHANNEL_CAPACITY);
         let user = todo!();
 
-        self.map.insert(info.address, ChanneledSession {
+        self.map.insert(info.address, ChannelUser {
             channel: tx,
             session: user
         });

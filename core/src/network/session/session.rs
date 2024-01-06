@@ -11,12 +11,12 @@ use parking_lot::{Mutex, RwLock};
 use tokio::net::UdpSocket;
 use tokio::sync::{broadcast, mpsc, OnceCell};
 use tokio_util::sync::CancellationToken;
-use proto::bedrock::{CommandPermissionLevel, DeviceOS, Disconnect, GameMode, PermissionLevel, Skin};
+use proto::bedrock::{CommandPermissionLevel, DeviceOS, Disconnect, GameMode, PermissionLevel, Skin, ConnectedPacket};
 use proto::crypto::{Encryptor, IdentityData, UserData};
 use proto::uuid::Uuid;
 use replicator::Replicator;
 
-use util::{error, Vector, AtomicFlag};
+use util::{error, Vector, AtomicFlag, Serialize};
 use util::MutableBuffer;
 
 use crate::raknet::{BroadcastPacket, RaknetData, Recovery, SendQueues};
@@ -36,35 +36,49 @@ pub struct RaknetUserLayer {
     // Raknet data
     /// Keeps track of when the last update was received from the client.
     /// This enables disconnecting users that have lost connection to the server.
-    pub last_update: Instant,
+    pub last_update: RwLock<Instant>,
     pub tick: AtomicU64,
     /// This client's current batch number. It is increased for every packet batch sent.
     pub batch_number: AtomicU32,
 
     pub send: SendQueues,
-    pub confirmed: Vec<u32>,
-    pub recovery: Recovery
+    /// Wrapped in a mutex since reading this will also clear it.
+    pub confirmed: Mutex<Vec<u32>>,
+    pub recovery: Recovery,
+
+    pub output: mpsc::Sender<MutableBuffer>
+}
+
+pub enum UserState {
+    Connected(BedrockUserLayer)
 }
 
 pub struct BedrockUserLayer {
     pub compressed: AtomicFlag,
     pub encryptor: Encryptor,
     pub xuid: u64,
-    pub name: String
+    pub name: String,
+
+    pub raknet: RaknetUserLayer,
+    pub receiver: mpsc::Receiver<MutableBuffer>
 }
 
-pub struct ConnectingUser {
-    raknet_guid: u64,
+impl BedrockUserLayer {
+    /// Sends a packet to all initialised sessions including self.
+    pub fn broadcast<P: ConnectedPacket + Serialize + Clone>(
+        &self,
+        packet: P,
+    ) -> anyhow::Result<()> {
+        self.raknet.broadcast(packet)
+    }
 
-}
-
-pub struct ConnectedUser {
-
-}
-
-pub enum UserState {
-    Connecting(ConnectingUser),
-    Connected(ConnectedUser)
+    /// Sends a packet to all initialised sessions other than self.
+    pub fn broadcast_others<P: ConnectedPacket + Serialize + Clone>(
+        &self,
+        packet: P,
+    ) -> anyhow::Result<()> {
+        self.raknet.broadcast_others(packet)
+    }
 }
 
 // pub struct PlayerData {

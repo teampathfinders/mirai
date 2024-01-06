@@ -11,19 +11,19 @@ use util::{bail, BlockPosition, Deserialize, Vector};
 use crate::config::SERVER_CONFIG;
 use crate::data::{CREATIVE_ITEMS_DATA, RUNTIME_ID_DATA};
 
-use crate::network::User;
+use super::BedrockUserLayer;
 
-impl User {
+impl BedrockUserLayer {
     /// Handles a [`CacheStatus`] packet.
     /// This stores the result in the [`Session::cache_support`] field.
-    pub fn process_cache_status(&self, packet: MutableBuffer) -> anyhow::Result<()> {
+    pub fn handle_cache_status(&self, packet: MutableBuffer) -> anyhow::Result<()> {
         let request = CacheStatus::deserialize(packet.snapshot())?;
         self.cache_support.set(request.supports_cache)?;
 
         Ok(())
     }
 
-    pub fn process_violation_warning(&self, packet: MutableBuffer) -> anyhow::Result<()> {
+    pub fn handle_violation_warning(&self, packet: MutableBuffer) -> anyhow::Result<()> {
         let request = ViolationWarning::deserialize(packet.snapshot())?;
         tracing::error!("Received violation warning: {request:?}");
 
@@ -36,7 +36,7 @@ impl User {
     ///
     /// All connected sessions are notified of the new player
     /// and the new player gets a list of all current players.
-    pub fn process_local_initialized(&self, packet: MutableBuffer) -> anyhow::Result<()> {
+    pub fn handle_local_initialized(&self, packet: MutableBuffer) -> anyhow::Result<()> {
         let _request = SetLocalPlayerAsInitialized::deserialize(packet.snapshot())?;
 
         // Initialise chunk loading
@@ -97,7 +97,7 @@ impl User {
     }
 
     /// Handles a [`ChunkRadiusRequest`] packet by returning the maximum allowed render distance.
-    pub fn process_radius_request(&self, packet: MutableBuffer) -> anyhow::Result<()> {
+    pub fn handle_chunk_radius_request(&self, packet: MutableBuffer) -> anyhow::Result<()> {
         let request = ChunkRadiusRequest::deserialize(packet.snapshot())?;
         let allowed_radius = std::cmp::min(
             SERVER_CONFIG.read().allowed_render_distance, request.radius
@@ -119,7 +119,7 @@ impl User {
         Ok(())
     }
 
-    pub fn process_pack_client_response(&self, packet: MutableBuffer) -> anyhow::Result<()> {
+    pub fn handle_resource_client_response(&self, packet: MutableBuffer) -> anyhow::Result<()> {
         let _request = ResourcePackClientResponse::deserialize(packet.snapshot())?;
 
         // TODO: Implement resource packs.
@@ -237,7 +237,7 @@ impl User {
         Ok(())
     }
 
-    pub fn process_cts_handshake(&self, packet: MutableBuffer) -> anyhow::Result<()> {
+    pub fn handle_client_to_server_handshake(&self, packet: MutableBuffer) -> anyhow::Result<()> {
         ClientToServerHandshake::deserialize(packet.snapshot())?;
 
         let response = PlayStatus { status: Status::LoginSuccess };
@@ -267,7 +267,7 @@ impl User {
     }
 
     /// Handles a [`Login`] packet.
-    pub async fn process_login(&self, packet: MutableBuffer) -> anyhow::Result<()> {
+    pub async fn handle_login(&self, packet: MutableBuffer) -> anyhow::Result<()> {
         let request = Login::deserialize(packet.snapshot());
         let request = match request {
             Ok(r) => r,
@@ -295,15 +295,14 @@ impl User {
     }
 
     /// Handles a [`RequestNetworkSettings`] packet.
-    pub fn process_network_settings_request(&self, packet: MutableBuffer) -> anyhow::Result<()> {
+    pub fn handle_network_settings_request(&self, packet: MutableBuffer) -> anyhow::Result<()> {
         let request = RequestNetworkSettings::deserialize(packet.snapshot())?;
         if request.protocol_version != NETWORK_VERSION {
             if request.protocol_version > NETWORK_VERSION {
                 let response = PlayStatus { status: Status::FailedServer };
                 self.send(response)?;
 
-                bail!(
-                    Outdated,
+                anyhow::bail!(
                     "Client is using a newer protocol ({} vs. {})",
                     request.protocol_version,
                     NETWORK_VERSION
@@ -312,8 +311,7 @@ impl User {
                 let response = PlayStatus { status: Status::FailedClient };
                 self.send(response)?;
 
-                bail!(
-                    Outdated,
+                anyhow::bail!(
                     "Client is using an older protocol ({} vs. {})",
                     request.protocol_version,
                     NETWORK_VERSION
@@ -331,7 +329,7 @@ impl User {
         };
 
         self.send(response)?;
-        self.raknet.compression_enabled.store(true, Ordering::SeqCst);
+        self.compressed.set();
 
         Ok(())
     }

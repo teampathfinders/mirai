@@ -31,13 +31,9 @@ impl BedrockUserLayer {
         if let TextData::Chat {
             source, ..
         } = request.data {
-            let actual = &self.identity.get()
-                .try_expect("Client does not have associated user data")?
-                .display_name;
-
             // Check that the source is equal to the player name to prevent spoofing.
             #[cfg(not(debug_assertions))] // Allow modifications for development purposes.
-            if actual != source {
+            if self.name != source {
                 self.kick("Illegal packet modifications detected")?;
                 anyhow::bail!(
                     "Client attempted to spoof chat username. (actual: `{}`, spoofed: `{}`)",

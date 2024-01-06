@@ -65,16 +65,16 @@ impl RaknetUserLayer {
 
     /// Flushes the send queue.
     pub async fn flush(&self) -> anyhow::Result<()> {
-        let tick = self.current_tick.load(Ordering::SeqCst);
+        let tick = self.tick.load(Ordering::SeqCst);
 
-        if let Some(frames) = self.raknet.send_queue.flush(SendPriority::High) {
+        if let Some(frames) = self.send.flush(SendPriority::High) {
             self.send_raw_frames(frames).await?;
         }
 
         if tick % 2 == 0 {
             // Also flush broadcast raknet.
             if let Some(frames) =
-                self.raknet.send_queue.flush(SendPriority::Medium)
+                self.send.flush(SendPriority::Medium)
             {
                 self.send_raw_frames(frames).await?;
             }
@@ -82,7 +82,7 @@ impl RaknetUserLayer {
 
         if tick % 4 == 0 {
             if let Some(frames) =
-                self.raknet.send_queue.flush(SendPriority::Low)
+                self.send.flush(SendPriority::Low)
             {
                 self.send_raw_frames(frames).await?;
             }
@@ -110,8 +110,7 @@ impl RaknetUserLayer {
             self.send_raw_frames(frames).await?;
         }
 
-        self.flush_acknowledgements().await?;
-        Ok(())
+        self.flush_acknowledgements().await
     }
 
     pub async fn flush_acknowledgements(&self) -> anyhow::Result<()> {
@@ -121,7 +120,9 @@ impl RaknetUserLayer {
                 return Ok(());
             }
 
-            let mut confirmed = Vec::new();
+            // Usually no more than 5 packets will be acknowledged at a time.
+            // Reserving 5 elements will prevent reallocations.
+            let mut confirmed = Vec::with_capacity(5);
             std::mem::swap(lock.as_mut(), &mut confirmed);
 
             confirmed

@@ -13,7 +13,7 @@ use proto::types::Dimension;
 use util::Vector;
 
 use crate::config::SERVER_CONFIG;
-use crate::network::SessionManager;
+use crate::network::UserMap;
 use proto::bedrock::{Command, GameRule, GameRulesChanged, LevelChunk, SubChunkRequestMode};
 
 use crate::level::serialize::serialize_biomes;
@@ -44,7 +44,7 @@ pub struct LevelManager {
     /// Currently set game rules.
     game_rules: DashMap<String, GameRule>,
     /// Used to broadcast level events to the sessions.
-    session_manager: Arc<SessionManager>,
+    session_manager: Arc<UserMap>,
     /// Current world tick.
     /// This is the standard Minecraft tick.
     /// The level is ticked 20 times every second.
@@ -53,7 +53,7 @@ pub struct LevelManager {
 }
 
 impl LevelManager {
-    pub fn new(session_manager: Arc<SessionManager>, token: CancellationToken) -> anyhow::Result<Arc<Self>> {
+    pub fn new(session_manager: Arc<UserMap>, token: CancellationToken) -> anyhow::Result<Arc<Self>> {
         let (level_path, _autosave_interval) = {
             let config = SERVER_CONFIG.read();
             (config.level_path, config.autosave_interval)

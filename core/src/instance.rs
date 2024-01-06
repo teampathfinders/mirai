@@ -15,7 +15,7 @@ use util::{Deserialize, Serialize};
 
 use crate::config::SERVER_CONFIG;
 use crate::level::LevelManager;
-use crate::network::SessionManager;
+use crate::network::UserMap;
 use crate::raknet::ForwardablePacket;
 use proto::bedrock::{
     Command, CommandDataType, CommandEnum, CommandOverload, CommandParameter, CommandPermissionLevel, BOOLEAN_GAME_RULES, CLIENT_VERSION_STRING,
@@ -77,7 +77,7 @@ pub struct ServerInstance {
     /// All services listen to this token to determine whether they should shut down.
     token: CancellationToken,
     /// Service that manages all player sessions.
-    session_manager: Arc<SessionManager>,
+    session_manager: Arc<UserMap>,
     /// Manages the level.
     level_manager: Arc<LevelManager>,
     /// Channel that the LevelManager sends a message to when it has fully shutdown.
@@ -104,7 +104,7 @@ impl ServerInstance {
         );
 
         let replicator = Replicator::new().await.context("Cannot create replication layer")?;
-        let session_manager = Arc::new(SessionManager::new(replicator));
+        let session_manager = Arc::new(UserMap::new(replicator));
 
         let level = LevelManager::new(session_manager.clone(), token.clone())?;
 
@@ -333,7 +333,7 @@ impl ServerInstance {
     fn process_open_connection_request2(
         mut packet: ForwardablePacket,
         udp_socket: Arc<UdpSocket>,
-        sess_manager: Arc<SessionManager>,
+        sess_manager: Arc<UserMap>,
         server_guid: u64,
     ) -> anyhow::Result<ForwardablePacket> {
         let request = OpenConnectionRequest2::deserialize(packet.buf.snapshot())?;
@@ -353,7 +353,7 @@ impl ServerInstance {
     }
 
     /// Receives raknet from IPv4 clients and adds them to the receive queue
-    async fn udp_recv_job(token: CancellationToken, udp_socket: Arc<UdpSocket>, user_manager: Arc<SessionManager>) {
+    async fn udp_recv_job(token: CancellationToken, udp_socket: Arc<UdpSocket>, user_manager: Arc<UserMap>) {
         let server_guid = rand::random();
 
         // TODO: Customizable server description.
