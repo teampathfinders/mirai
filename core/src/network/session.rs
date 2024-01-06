@@ -5,6 +5,7 @@ use std::sync::atomic::{
     AtomicBool, AtomicU64, Ordering, AtomicU32,
 };
 
+use anyhow::Context;
 use flate2::Compression;
 use flate2::write::DeflateEncoder;
 use parking_lot::RwLock;
@@ -15,6 +16,7 @@ use proto::crypto::{Encryptor, BedrockIdentity, BedrockClientInfo};
 use proto::uuid::Uuid;
 use replicator::Replicator;
 
+use tokio::task::JoinHandle;
 use util::{Vector, AtomicFlag, Serialize, BinaryRead, BinaryWrite};
 use util::MutableBuffer;
 
@@ -35,17 +37,63 @@ pub struct BedrockUser {
 
     pub replicator: Arc<Replicator>,
     pub level: Arc<Level>,
-    pub raknet: RaknetUser,
-    pub player: PlayerData,
-    pub receiver: mpsc::Receiver<MutableBuffer>,
+    pub raknet: Arc<RaknetUser>,
+    pub player: OnceLock<PlayerData>,
+
+    pub handle: OnceLock<JoinHandle<()>>
 }
 
 impl BedrockUser {
+    pub fn new(
+        raknet: Arc<RaknetUser>,
+        level: Arc<Level>,
+        replicator: Arc<Replicator>,
+        receiver: mpsc::Receiver<MutableBuffer>
+    ) -> Arc<Self> {
+        let user = Arc::new(Self {
+            encryptor: OnceLock::new(),
+            identity: OnceLock::new(),
+            client_info: OnceLock::new(),
+            expected: AtomicU32::new(RequestNetworkSettings::ID),
+            compressed: AtomicFlag::new(),
+            supports_cache: AtomicBool::new(false),
+            
+            replicator,
+            level,
+            raknet,
+            player: OnceLock::new(),
+
+            handle: OnceLock::new()
+        });
+
+        let clone = user.clone();
+        tokio::spawn(async move {
+            clone.start_job(receiver).await;
+        });
+
+        user
+    }
+
+    async fn start_job(&self, mut receiver: mpsc::Receiver<MutableBuffer>) {
+        tracing::debug!("Bedrock layer receiver created");
+
+        while let Some(packet) = receiver.recv().await {
+            if let Err(err) = self.handle_encrypted_frame(packet).await {
+                tracing::error!("Failed to handle packet: {err:#}");
+            }
+        }
+
+        tracing::debug!("Bedrock layer receiver exited");
+    }
+
     pub fn kick(&self, message: &str) -> anyhow::Result<()> {
         let disconnect_packet = Disconnect {
             message, hide_message: false
         };
-        self.send(disconnect_packet)
+        self.send(disconnect_packet)?;
+        self.raknet.active.cancel();
+
+        Ok(())
     }
 
     /// Sends a packet to all initialised sessions including self.
@@ -122,17 +170,23 @@ impl BedrockUser {
             out.write_all(packet.as_ref())?;
         };
 
-        self.encryptor().encrypt(&mut out)?;
+        if let Some(encryptor) = self.encryptor.get() {
+            encryptor.encrypt(&mut out).context("Failed to encrypt packet")?;
+        }
 
         self.raknet.send_raw_buffer_with_config(out, config);
         Ok(())
     }
   
     async fn handle_encrypted_frame(&self, mut packet: MutableBuffer) -> anyhow::Result<()> {
+        debug_assert_eq!(packet[0], 0xfe);
+
         // Remove 0xfe packet ID.
         packet.advance_cursor(1);
 
-        self.encryptor().decrypt(&mut packet)?;
+        if let Some(encryptor) = self.encryptor.get() {
+            encryptor.decrypt(&mut packet).context("Failed to decrypt packet")?;
+        }
 
         let compression_threshold = SERVER_CONFIG.read().compression_threshold;
 
@@ -179,10 +233,13 @@ impl BedrockUser {
         let expected = self.expected();
         if expected != u32::MAX && header.id != expected {
             // Server received an unexpected packet.
-            return self.kick("Invalid packet")
+            tracing::error!(
+                "Client sent unexpected packet while logging in (expected {:#04x}, got {:#04x})",
+                expected, header.id
+            );
+            return self.kick("Unexpected packet")
         }
 
-        // dbg!(&header);
         match header.id {
             RequestNetworkSettings::ID => {
                 self.handle_network_settings_request(packet)
@@ -252,6 +309,11 @@ impl BedrockUser {
     pub fn initialized(&self) -> bool {
         self.expected() == u32::MAX
     }
+
+    /// This functions panic if the player data was not initialized.
+    pub fn player(&self) -> &PlayerData {
+        self.player.get().unwrap()
+    }
 }
 
 pub struct PlayerData {
@@ -270,7 +332,7 @@ pub struct PlayerData {
     /// Command permission level
     pub command_permission_level: CommandPermissionLevel,
     /// The client's skin.
-    pub skin: RwLock<Option<Skin>>,
+    pub skin: RwLock<Skin>,
     /// Runtime ID.
     pub runtime_id: u64,
     /// Helper type that loads the chunks around the player.
@@ -278,6 +340,20 @@ pub struct PlayerData {
 }
 
 impl PlayerData {
+    pub fn new(skin: Skin, level: Arc<Level>) -> Self {
+        Self {
+            is_inventory_open: AtomicBool::new(false),
+            position: Vector::from([0.0, 50.0, 0.0]),
+            rotation: Vector::from([0.0; 3]),
+            game_mode: GameMode::Creative,
+            permission_level: PermissionLevel::Operator,
+            command_permission_level: CommandPermissionLevel::Owner,
+            skin: RwLock::new(skin),
+            runtime_id: 1,
+            viewer: ChunkViewer::new(level)
+        }
+    }
+
     pub fn gamemode(&self) -> GameMode {
         self.game_mode
     }

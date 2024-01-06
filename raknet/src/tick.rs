@@ -80,8 +80,12 @@ impl RaknetUser {
                             }
                         }
                     }
-                }
-                ;
+                };
+            }
+
+            // Flush everything before closing.
+            if let Err(err) = self.flush_all().await {
+                tracing::error!("Failed to flush last packets: {err:#}");
             }
         });
     }

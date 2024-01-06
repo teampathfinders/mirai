@@ -103,10 +103,11 @@ impl ServerInstance {
                 .context("Unable to create UDP socket")?,
         );
 
-        let replicator = Replicator::new().await.context("Cannot create replication layer")?;
-        let session_manager = Arc::new(UserMap::new(replicator));
+        let replicator = Arc::new(Replicator::new().await.context("Cannot create replication layer")?);
+        let user_map = Arc::new(UserMap::new(replicator));
 
-        let level = Level::new(session_manager.clone(), token.clone())?;
+        let level = Level::new(user_map.clone(), token.clone())?;
+        user_map.set_level(level.clone());
 
         level.add_command(Command {
             name: "gamerule".to_owned(),
@@ -261,7 +262,7 @@ impl ServerInstance {
         // UDP receiver job.
         let receiver_task = {
             let udp_socket = udp_socket.clone();
-            let session_manager = session_manager.clone();
+            let session_manager = user_map.clone();
             let token = token.clone();
 
             tokio::spawn(async move { Self::udp_recv_job(token, udp_socket, session_manager).await })
@@ -275,13 +276,13 @@ impl ServerInstance {
         tracing::info!("Shutting down server. This can take several seconds...");
 
         // ...then shut down all services.
-        if let Err(e) = session_manager.kick_all("Server closed") {
+        if let Err(e) = user_map.kick_all("Server closed") {
             tracing::error!("Failed to kick remaining sessions: {e}");
         }
 
         token.cancel();
 
-        drop(session_manager);
+        drop(user_map);
         // drop(level_manager);
 
         let _ = tokio::join!(receiver_task /*, level_notifier*/);

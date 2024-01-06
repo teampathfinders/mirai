@@ -162,8 +162,6 @@ impl Frame {
             flags |= COMPOUND_BIT_FLAG;
         }
 
-        dbg!(self.body.len());
-
         buffer.write_u8(flags)?;
         buffer.write_u16_be(self.body.len() as u16 * 8)?;
         if self.reliability.is_reliable() {

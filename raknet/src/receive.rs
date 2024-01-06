@@ -119,7 +119,10 @@ impl RaknetUser {
         let packet_id = *packet.first().expect("Game packet buffer was empty");
         match packet_id {
             // CONNECTED_PACKET_ID => self.handle_encrypted_frame(packet).await?,
-            CONNECTED_PACKET_ID => self.output.send_timeout(packet, RAKNET_OUTPUT_TIMEOUT).await?,
+            CONNECTED_PACKET_ID => {
+                tracing::debug!("Received Bedrock packet");
+                self.output.send_timeout(packet, RAKNET_OUTPUT_TIMEOUT).await?
+            },
             DisconnectNotification::ID => self.handle_disconnect(),
             ConnectionRequest::ID => self.handle_connection_request(packet)?,
             NewIncomingConnection::ID => {

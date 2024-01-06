@@ -1,6 +1,6 @@
 use std::net::SocketAddr;
 use std::sync::atomic::{AtomicU64, AtomicU32};
-use std::sync::{Arc, Weak};
+use std::sync::{Arc, Weak, OnceLock};
 use std::time::{Duration, Instant};
 
 use anyhow::Context;
@@ -21,7 +21,7 @@ use crate::level::Level;
 
 use super::{ForwardablePacket, BedrockUser};
 
-const BROADCAST_CHANNEL_CAPACITY: usize = 16;
+const BROADCAST_CHANNEL_CAPACITY: usize = 5;
 const FORWARD_TIMEOUT: Duration = Duration::from_millis(10);
 const GARBAGE_COLLECT_INTERVAL: Duration = Duration::from_secs(1);
 
@@ -39,22 +39,30 @@ impl<T> ChannelUser<T> {
 }
 
 pub struct UserMap {
-    replicator: Replicator,
+    replicator: Arc<Replicator>,
+    level: OnceLock<Arc<Level>>,
+
     connecting_map: Arc<DashMap<SocketAddr, ChannelUser<RaknetUser>>>,
-    connected_map: DashMap<SocketAddr, ChannelUser<BedrockUser>>,
+    connected_map: Arc<DashMap<SocketAddr, ChannelUser<BedrockUser>>>,
     /// Channel that sends a packet to all connected sessions.
     broadcast: broadcast::Sender<BroadcastPacket>
 }
 
 impl UserMap {
-    pub fn new(replicator: Replicator) -> Self {
+    pub fn new(replicator: Arc<Replicator>) -> Self {
         let connecting_map = Arc::new(DashMap::new());
-        let connected_map = DashMap::new();
+        let connected_map = Arc::new(DashMap::new());
 
         let (broadcast, _) = broadcast::channel(BROADCAST_CHANNEL_CAPACITY);
 
         Self {
-            replicator, connecting_map, connected_map, broadcast
+            replicator, connecting_map, connected_map, broadcast, level: OnceLock::new()
+        }
+    }
+
+    pub fn set_level(&self, level: Arc<Level>) {
+        if self.level.set(level).is_err() {
+            tracing::error!("Level reference was already set");
         }
     }
 
@@ -62,19 +70,44 @@ impl UserMap {
         let (tx, rx) = mpsc::channel(BROADCAST_CHANNEL_CAPACITY);
 
         let address = info.address.clone();
-        let (state, mut state_rx) = 
+        let (state, state_rx) = 
             RaknetUser::new(info, self.broadcast.clone(), rx);
         
-        self.connecting_map.insert(address, ChannelUser {
-            channel: tx, state
-        });
+        let connecting_map = self.connecting_map.clone();
+        let connected_map = self.connected_map.clone();
+        let level = self.level.get().unwrap().clone();
+        let replicator = self.replicator.clone();
 
         // Callback to move the client from the connecting map to the connected map.
         // This is done when the Raknet layer attempts to send a message to the Bedrock layer
         // signalling that the Raknet connection is fully set up.
         tokio::spawn(async move {
-            let buffer = state_rx.recv().await;
-            todo!("Client has connected");
+            if let Some((_, raknet_user)) = connecting_map.remove(&address) {
+                let bedrock_user = ChannelUser {
+                    channel: raknet_user.channel, state: BedrockUser::new(
+                        raknet_user.state, level, replicator, state_rx
+                    )
+                };
+
+                connected_map.insert(address, bedrock_user);
+            } else {
+                tracing::error!("Raknet client exists but is not tracked by user map");
+            }
+        });
+
+        let connecting_map = self.connecting_map.clone();
+        let connected_map = self.connected_map.clone();
+        let state_clone = state.clone();
+        tokio::spawn(async move {
+            state_clone.active.cancelled().await;
+            connected_map.remove(&state_clone.address);
+            connecting_map.remove(&state_clone.address);
+
+            tracing::debug!("Stopped tracking inactive session");
+        });
+
+        self.connecting_map.insert(address, ChannelUser {
+            channel: tx, state
         });
     }
 
@@ -91,7 +124,7 @@ impl UserMap {
                 .context("Forwarding packet to connecting user timed out")
         }
 
-        anyhow::bail!("Attempted to forward packet to user that does not exist")
+        Ok(())
     }
 
     pub fn broadcast<T: ConnectedPacket + Serialize>(&self, packet: T) -> anyhow::Result<()> {

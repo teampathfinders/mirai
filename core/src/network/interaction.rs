@@ -9,7 +9,7 @@ impl BedrockUser {
     pub fn process_interaction(&self, packet: MutableBuffer) -> anyhow::Result<()> {
         let request = Interact::deserialize(packet.snapshot())?;
         if request.action == InteractAction::OpenInventory {
-            if !self.player.is_inventory_open.fetch_or(true, Ordering::Relaxed) {
+            if !self.player().is_inventory_open.fetch_or(true, Ordering::Relaxed) {
                 self.send(ContainerOpen {
                     window_id: INVENTORY_WINDOW_ID,
                     container_type: ContainerType::Inventory,
@@ -24,7 +24,7 @@ impl BedrockUser {
     pub fn process_container_close(&self, packet: MutableBuffer) -> anyhow::Result<()> {
         let request = ContainerClose::deserialize(packet.snapshot())?;
         if request.window_id == INVENTORY_WINDOW_ID {
-            self.player.is_inventory_open.store(false, Ordering::Relaxed);
+            self.player().is_inventory_open.store(false, Ordering::Relaxed);
 
             // The server also needs to send a container close packet back.
             self.send(ContainerClose {
@@ -52,13 +52,13 @@ impl BedrockUser {
 
         if request.action == PlayerActionType::StartFlying {
             // Only allow flying if the player is in the correct gamemode.
-            let gamemode = self.player.gamemode();
+            let gamemode = self.player().gamemode();
             if gamemode == GameMode::Creative || gamemode == GameMode::Spectator {
                 self.send(UpdateAbilities {
                     data: AbilityData {
-                        command_permission_level: self.player.command_permission_level(),
-                        permission_level: self.player.permission_level(),
-                        unique_id: self.player.runtime_id(),
+                        command_permission_level: self.player().command_permission_level(),
+                        permission_level: self.player().permission_level(),
+                        unique_id: self.player().runtime_id(),
                         layers: vec![
                             AbilityLayer {
                                 fly_speed: 0.05,
