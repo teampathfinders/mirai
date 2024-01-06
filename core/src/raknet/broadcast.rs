@@ -4,7 +4,7 @@ use proto::bedrock::{ConnectedPacket, Packet};
 
 use util::{ArcBuffer, Serialize};
 
-use crate::network::Session;
+use crate::network::RaknetUserLayer;
 
 /// A packet that can be broadcast to other sessions.
 ///
@@ -45,7 +45,7 @@ impl BroadcastPacket {
     }
 }
 
-impl Session {
+impl RaknetUserLayer {
     /// Sends a packet to all initialised sessions including self.
     pub fn broadcast<P: ConnectedPacket + Serialize + Clone>(
         &self,

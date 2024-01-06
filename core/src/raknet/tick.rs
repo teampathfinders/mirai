@@ -8,7 +8,7 @@ use proto::bedrock::{PlayerListRemove, TextData, TextMessage};
 
 use util::MutableBuffer;
 
-use crate::network::Session;
+use crate::network::User;
 
 /// Tick interval of the internal session tick.
 const INTERNAL_TICK_INTERVAL: Duration = Duration::from_millis(1000 / 20);
@@ -20,7 +20,7 @@ const INTERNAL_TICK_INTERVAL: Duration = Duration::from_millis(1000 / 20);
 /// Hence, they have to be disconnected manually after the timeout passes.
 const SESSION_TIMEOUT: Duration = Duration::from_secs(5);
 
-impl Session {
+impl User {
     pub fn start_tick_job(self: Arc<Self>) {
         tokio::spawn(async move {
             let mut interval = tokio::time::interval(INTERNAL_TICK_INTERVAL);

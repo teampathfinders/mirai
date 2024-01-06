@@ -3,7 +3,7 @@ use std::{net::SocketAddr, sync::{Arc, atomic::{AtomicBool, AtomicU16, AtomicU32
 use parking_lot::{Mutex, RwLock};
 use tokio::net::UdpSocket;
 
-use crate::raknet::{CompoundCollector, OrderChannel, RecoveryQueue, SendQueues};
+use crate::raknet::{CompoundCollector, OrderChannel, Recovery, SendQueues};
 
 const ORDER_CHANNEL_COUNT: usize = 5;
 
@@ -44,7 +44,7 @@ pub struct RaknetData {
     /// Packets that are ready to be acknowledged.
     pub confirmed_packets: Mutex<Vec<u32>>,
     /// Queue that stores raknet in case they need to be recovered due to packet loss.
-    pub recovery_queue: RecoveryQueue,
+    pub recovery_queue: Recovery,
     /// Whether compression has been configured for this session.
     /// This is set to true after network settings have been sent to the client.
     pub compression_enabled: AtomicBool,

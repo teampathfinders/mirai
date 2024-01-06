@@ -5,10 +5,7 @@ use proto::bedrock::{Animate, CommandOutput, CommandOutputMessage, CommandOutput
 use util::{Deserialize, TryExpect};
 use util::MutableBuffer;
 
-use crate::network::Session;
-
-
-impl Session {
+impl User {
     pub fn process_settings_command(&self, packet: MutableBuffer) -> anyhow::Result<()> {
         let request = SettingsCommand::deserialize(packet.snapshot())?;
         dbg!(request);

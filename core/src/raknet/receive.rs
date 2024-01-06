@@ -6,37 +6,37 @@ use async_recursion::async_recursion;
 use proto::bedrock::{Animate, CacheStatus, ChunkRadiusRequest, ClientToServerHandshake, CommandRequest, CompressionAlgorithm, CONNECTED_PACKET_ID, ConnectedPacket, ContainerClose, FormResponse, Header, Interact, Login, MovePlayer, PlayerAction, RequestAbility, RequestNetworkSettings, ResourcePackClientResponse, SetLocalPlayerAsInitialized, SettingsCommand, TextMessage, TickSync, UpdateSkin, ViolationWarning};
 use proto::raknet::{Ack, ConnectedPing, ConnectionRequest, DisconnectNotification, Nak, NewIncomingConnection};
 
-use util::{bail};
 use util::{BinaryRead, MutableBuffer};
 
+use crate::network::RaknetUserLayer;
 use crate::raknet::{BroadcastPacket, Frame, FrameBatch};
 use crate::raknet::DEFAULT_SEND_CONFIG;
 use crate::config::SERVER_CONFIG;
-use crate::network::Session;
 
-impl Session {
+impl RaknetUserLayer {
     /// Processes the raw packet coming directly from the network.
     ///
     /// If a packet is an ACK or NACK type, it will be responded to accordingly (using [`Session::process_ack`] and [`Session::process_nak`]).
     /// Frame batches are processed by [`Session::process_frame_batch`].
     pub async fn process_raw_packet(&self, packet: MutableBuffer) -> anyhow::Result<bool> {
-        *self.raknet.last_update.write() = Instant::now();
+        *self.last_update.write() = Instant::now();
 
         if packet.is_empty() {
-            bail!(Malformed, "Packet is empty");
+            anyhow::bail!("Packet is empty");
         }
 
         let pk_id = *packet.first().unwrap();
         match pk_id {
-            Ack::ID => self.process_ack(packet.snapshot())?,
-            Nak::ID => self.process_nak(packet.snapshot()).await?,
-            _ => self.process_frame_batch(packet).await?,
+            Ack::ID => self.handle_ack(packet.snapshot())?,
+            Nak::ID => self.handle_nack(packet.snapshot()).await?,
+            _ => self.handle_frame_batch(packet).await?,
         }
 
         Ok(true)
     }
 
-    pub fn process_broadcast(&self, packet: BroadcastPacket) -> anyhow::Result<()> {
+    /// Processes a broadcasted packet sent by another client connected to the server.
+    pub fn handle_broadcast(&self, packet: BroadcastPacket) -> anyhow::Result<()> {
         if let Ok(xuid) = self.get_xuid() {
             if let Some(sender) = packet.sender {
                 if sender.get() == xuid {
@@ -56,21 +56,21 @@ impl Session {
     /// * Inserting raknet into the compound collector
     /// * Discarding old sequenced frames
     /// * Acknowledging reliable raknet
-    async fn process_frame_batch(&self, packet: MutableBuffer) -> anyhow::Result<()> {
+    async fn handle_frame_batch(&self, packet: MutableBuffer) -> anyhow::Result<()> {
         let batch = FrameBatch::deserialize(packet.snapshot())?;
-        self.raknet
-            .client_batch_number
+        self
+            .batch_number
             .fetch_max(batch.sequence_number, Ordering::SeqCst);
 
         for frame in batch.frames {
-            self.process_frame(frame, batch.sequence_number).await?;
+            self.handle_frame(frame, batch.sequence_number).await?;
         }
 
         Ok(())
     }
 
     #[async_recursion]
-    async fn process_frame(
+    async fn handle_frame(
         &self,
         frame: Frame,
         batch_number: u32,
@@ -93,7 +93,7 @@ impl Session {
             let possible_frag = self.raknet.compound_collector.insert(frame)?;
 
             return if let Some(packet) = possible_frag {
-                self.process_frame(packet, batch_number).await
+                self.handle_frame(packet, batch_number).await
             } else {
                 // Compound incomplete
                 Ok(())
@@ -108,35 +108,35 @@ impl Session {
                 .insert(frame)
             {
                 for packet in ready {
-                    self.process_frame_data(packet.body).await?;
+                    self.handle_frame_body(packet.body).await?;
                 }
             }
             return Ok(());
         }
 
-        self.process_frame_data(frame.body).await
+        self.handle_frame_body(frame.body).await
     }
 
     /// Processes an unencapsulated game packet.
-    async fn process_frame_data(&self, packet: MutableBuffer) -> anyhow::Result<()> {
+    async fn handle_frame_body(&self, packet: MutableBuffer) -> anyhow::Result<()> {
         let packet_id = *packet.first().expect("Game packet buffer was empty");
         match packet_id {
-            CONNECTED_PACKET_ID => self.process_connected_packet(packet).await?,
+            CONNECTED_PACKET_ID => self.handle_encrypted_frame(packet).await?,
             DisconnectNotification::ID => self.on_disconnect(),
-            ConnectionRequest::ID => self.process_connection_request(packet)?,
+            ConnectionRequest::ID => self.handle_connection_request(packet)?,
             NewIncomingConnection::ID => {
-                self.process_new_incoming_connection(packet)?
+                self.handle_new_incoming_connection(packet)?
             }
-            ConnectedPing::ID => self.process_online_ping(packet)?,
-            id => bail!(Malformed, "Invalid Raknet packet ID: {}", id),
+            ConnectedPing::ID => self.handle_connected_ping(packet)?,
+            id => anyhow::bail!("Invalid Raknet packet ID: {}", id),
         }
 
         Ok(())
     }
+}
 
-    async fn process_connected_packet(&self, mut packet: MutableBuffer) -> anyhow::Result<()> {
-        // dbg!(&packet);
-
+impl BedrockUserLayer {   
+    async fn handle_encrypted_frame(&self, mut packet: MutableBuffer) -> anyhow::Result<()> {
         // Remove 0xfe packet ID.
         packet.advance_cursor(1);
 
@@ -180,15 +180,15 @@ impl Session {
                     reader.read_to_end(&mut decompressed)?;
 
                     let buffer = MutableBuffer::from(decompressed);
-                    self.process_decompressed_packet(buffer).await
+                    self.handle_uncompressed_frame(buffer).await
                 }
             }
         } else {
-            self.process_decompressed_packet(packet).await
+            self.handle_uncompressed_frame(packet).await
         }
     }
 
-    async fn process_decompressed_packet(
+    async fn handle_uncompressed_frame(
         &self,
         mut packet: MutableBuffer,
     ) -> anyhow::Result<()> {
@@ -204,9 +204,9 @@ impl Session {
         // dbg!(&header);
         match header.id {
             RequestNetworkSettings::ID => {
-                self.process_network_settings_request(packet)
+                self.handle_network_settings_request(packet)
             }
-            Login::ID => self.process_login(packet).await,
+            Login::ID => self.handle_login(packet).await,
             ClientToServerHandshake::ID => {
                 self.process_cts_handshake(packet)
             }

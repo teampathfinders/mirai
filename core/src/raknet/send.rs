@@ -15,7 +15,7 @@ use crate::raknet::{Frame, FrameBatch};
 use crate::raknet::Reliability;
 use crate::raknet::SendPriority;
 use crate::config::SERVER_CONFIG;
-use crate::network::Session;
+use crate::network::User;
 
 /// Specifies the reliability and priority of a packet.
 pub struct PacketConfig {
@@ -31,7 +31,7 @@ pub const DEFAULT_SEND_CONFIG: PacketConfig = PacketConfig {
     priority: SendPriority::Medium,
 };
 
-impl Session {
+impl User {
     /// Sends a game packet with default settings
     /// (reliable ordered and medium priority)
     #[inline]

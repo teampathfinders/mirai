@@ -2,9 +2,9 @@ use proto::bedrock::{ABILITY_FLYING, ABILITY_MAYFLY, ABILITY_MUTED, AbilityData,
 use util::{Deserialize};
 use util::MutableBuffer;
 
-use crate::network::Session;
+use crate::network::User;
 
-impl Session {
+impl User {
     pub fn process_interaction(&self, packet: MutableBuffer) -> anyhow::Result<()> {
         let request = Interact::deserialize(packet.snapshot())?;
         if request.action == InteractAction::OpenInventory {

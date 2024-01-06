@@ -11,9 +11,9 @@ use util::{bail, BlockPosition, Deserialize, Vector};
 use crate::config::SERVER_CONFIG;
 use crate::data::{CREATIVE_ITEMS_DATA, RUNTIME_ID_DATA};
 
-use crate::network::Session;
+use crate::network::User;
 
-impl Session {
+impl User {
     /// Handles a [`CacheStatus`] packet.
     /// This stores the result in the [`Session::cache_support`] field.
     pub fn process_cache_status(&self, packet: MutableBuffer) -> anyhow::Result<()> {
