@@ -18,7 +18,7 @@ impl BedrockUserLayer {
     /// This stores the result in the [`Session::cache_support`] field.
     pub fn handle_cache_status(&self, packet: MutableBuffer) -> anyhow::Result<()> {
         let request = CacheStatus::deserialize(packet.snapshot())?;
-        self.cache_support.set(request.supports_cache)?;
+        self.supports_cache.store(request.supports_cache, Ordering::Relaxed);
 
         Ok(())
     }
@@ -38,22 +38,14 @@ impl BedrockUserLayer {
     /// and the new player gets a list of all current players.
     pub fn handle_local_initialized(&self, packet: MutableBuffer) -> anyhow::Result<()> {
         let _request = SetLocalPlayerAsInitialized::deserialize(packet.snapshot())?;
-
-        // Initialise chunk loading
-        let lock = self.player.read();
-        let _rounded_position = Vector::from([
-            lock.position.x.round() as i32,
-            lock.position.y.round() as i32,
-            lock.position.z.round() as i32
-        ]);
-        drop(lock);
+        self.expected.store(u32::MAX, Ordering::SeqCst);
 
         // Add player to other's player lists
 
         // Tell rest of server that this client has joined...
         {
-            let identity_data = self.get_identity_data()?;
-            let _user_data = self.get_user_data()?;
+            // let identity_data = self.get_identity_data()?;
+            // let _user_data = self.get_user_data()?;
 
             // self.broadcast_others(PlayerListAdd {
             //     entries: &[PlayerListAddEntry {
@@ -79,7 +71,7 @@ impl BedrockUserLayer {
 
             self.broadcast(TextMessage {
                 data: TextData::Translation {
-                    parameters: vec![&format!("§e{}", identity_data.display_name)],
+                    parameters: vec![&format!("§e{}", self.name())],
                     message: "multiplayer.player.joined"
                     // message: &format!("§e{} has joined the server.", identity_data.display_name),
                 },
@@ -88,7 +80,6 @@ impl BedrockUserLayer {
                 platform_chat_id: "",
             })?;
         }
-        self.initialized.store(true, Ordering::SeqCst);
 
         // ...then tell the client about all the other players.
         // TODO
@@ -286,10 +277,15 @@ impl BedrockUserLayer {
         self.player.write().skin = Some(request.skin);
 
         // Flush raknet before enabling encryption
-        self.flush().await?;
+        self.raknet.flush().await?;
 
         self.send(ServerToClientHandshake { jwt: &jwt })?;
-        self.encryptor.set(encryptor)?;
+        if self.encryptor.set(encryptor).is_err() {
+            // Client sent a second login packet?
+            // Something is wrong, disconnect the client.
+            tracing::error!("Client sent a second login packet.");
+            self.kick("Invalid packet");
+        }
 
         Ok(())
     }

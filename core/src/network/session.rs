@@ -1,7 +1,7 @@
 use std::io::{Read, Write};
 use std::net::SocketAddr;
 
-use std::sync::Arc;
+use std::sync::{Arc, OnceLock};
 use std::sync::atomic::{
     AtomicBool, AtomicU64, Ordering, AtomicU32, AtomicU16,
 };
@@ -28,17 +28,33 @@ use crate::level::{ChunkViewer, LevelManager};
 
 static RUNTIME_ID_COUNTER: AtomicU64 = AtomicU64::new(0);
 
+pub struct BedrockIdentity {
+    uuid: Uuid,
+    name: String,
+    xuid: u64
+}
+
 pub struct BedrockUserLayer {
+    /// Next packet that the server is expecting to receive.
+    pub expected: AtomicU32,
     pub compressed: AtomicFlag,
-    pub encryptor: Encryptor,
-    pub xuid: u64,
-    pub name: String,
+    pub encryptor: OnceLock<Encryptor>,
+    pub identity: OnceLock<BedrockIdentity>,
+
+    pub supports_cache: AtomicBool,
 
     pub raknet: RaknetUser,
     pub receiver: mpsc::Receiver<MutableBuffer>
 }
 
 impl BedrockUserLayer {
+    pub fn kick(&self, message: &str) -> anyhow::Result<()> {
+        let disconnect_packet = Disconnect {
+            message, hide_message: false
+        };
+        self.send(disconnect_packet)
+    }
+
     /// Sends a packet to all initialised sessions including self.
     pub fn broadcast<P: ConnectedPacket + Serialize + Clone>(
         &self,
@@ -113,7 +129,7 @@ impl BedrockUserLayer {
             out.write_all(packet.as_ref())?;
         };
 
-        self.encryptor.encrypt(&mut out)?;
+        self.encryptor().encrypt(&mut out)?;
 
         self.raknet.send_raw_buffer_with_config(out, config);
         Ok(())
@@ -123,7 +139,7 @@ impl BedrockUserLayer {
         // Remove 0xfe packet ID.
         packet.advance_cursor(1);
 
-        self.encryptor.decrypt(&mut packet)?;
+        self.encryptor().decrypt(&mut packet)?;
 
         let compression_threshold = SERVER_CONFIG.read().compression_threshold;
 
@@ -167,6 +183,12 @@ impl BedrockUserLayer {
         // Advance past the header.
         packet.advance_cursor(start_len - snapshot.len());
 
+        let expected = self.expected();
+        if expected != u32::MAX && header.id != expected {
+            // Server received an unexpected packet.
+            return self.kick("Invalid packet")
+        }
+
         // dbg!(&header);
         match header.id {
             RequestNetworkSettings::ID => {
@@ -199,6 +221,34 @@ impl BedrockUserLayer {
             TickSync::ID => self.handle_tick_sync(packet),
             id => anyhow::bail!("Invalid game packet: {id:#04x}"),
         }
+    }
+
+    pub fn identity(&self) -> &BedrockIdentity {
+        self.identity.get().unwrap()
+    }
+
+    pub fn name(&self) -> &str {
+        &self.identity().name
+    }
+
+    pub fn xuid(&self) -> u64 {
+        self.identity().xuid
+    }
+
+    pub fn uuid(&self) -> &Uuid {
+        &self.identity().uuid
+    }
+
+    pub fn encryptor(&self) -> &Encryptor {
+        self.encryptor.get().unwrap()
+    }
+
+    pub fn expected(&self) -> u32 {
+        self.expected.load(Ordering::SeqCst)
+    }
+
+    pub fn initialized(&self) -> bool {
+        self.expected() == u32::MAX
     }
 }
 

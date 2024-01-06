@@ -41,7 +41,7 @@ impl BedrockUserLayer {
     pub async fn process_move_player(&self, packet: MutableBuffer) -> anyhow::Result<()> {
         let mut request = MovePlayer::deserialize(packet.snapshot())?;
 
-        self.replicator.move_player(self.get_xuid()?, &request).await?;
+        self.replicator.move_player(self.xuid()?, &request).await?;
 
         request.mode = MovementMode::Normal;
 

@@ -89,7 +89,7 @@ impl BedrockUserLayer {
         let result = ParsedCommand::parse(command_list, request.command);
 
         if let Ok(parsed) = result {
-            let caller = self.identity.get().unwrap().xuid;
+            let caller = self.xuid();
             let output = match parsed.name.as_str() {
                 "gamerule" => {
                     self.level.on_gamerule_command(caller, parsed)
