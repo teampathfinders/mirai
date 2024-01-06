@@ -5,15 +5,17 @@ use proto::bedrock::{Animate, CommandOutput, CommandOutputMessage, CommandOutput
 use util::{Deserialize, TryExpect};
 use util::MutableBuffer;
 
-impl User {
-    pub fn process_settings_command(&self, packet: MutableBuffer) -> anyhow::Result<()> {
+use super::BedrockUserLayer;
+
+impl BedrockUserLayer {
+    pub fn handle_settings_command(&self, packet: MutableBuffer) -> anyhow::Result<()> {
         let request = SettingsCommand::deserialize(packet.snapshot())?;
         dbg!(request);
 
         Ok(())
     }
 
-    pub fn process_tick_sync(&self, packet: MutableBuffer) -> anyhow::Result<()> {
+    pub fn handle_tick_sync(&self, packet: MutableBuffer) -> anyhow::Result<()> {
         let _request = TickSync::deserialize(packet.snapshot())?;
         // TODO: Implement tick synchronisation
         Ok(())
@@ -24,7 +26,7 @@ impl User {
         // self.send(response)
     }
 
-    pub async fn process_text_message(&self, packet: MutableBuffer) -> anyhow::Result<()> {
+    pub async fn handle_text_message(&self, packet: MutableBuffer) -> anyhow::Result<()> {
         let request = TextMessage::deserialize(packet.snapshot())?;
         if let TextData::Chat {
             source, ..
@@ -57,34 +59,34 @@ impl User {
 
     }
 
-    pub fn process_skin_update(&self, packet: MutableBuffer) -> anyhow::Result<()> {
+    pub fn handle_skin_update(&self, packet: MutableBuffer) -> anyhow::Result<()> {
         let request = UpdateSkin::deserialize(packet.snapshot())?;
         dbg!(&request);
         self.broadcast(request)
     }
 
-    pub fn process_ability_request(&self, packet: MutableBuffer) -> anyhow::Result<()> {
+    pub fn handle_ability_request(&self, packet: MutableBuffer) -> anyhow::Result<()> {
         let request = RequestAbility::deserialize(packet.snapshot())?;
         dbg!(request);
 
         Ok(())
     }
 
-    pub fn process_animation(&self, packet: MutableBuffer) -> anyhow::Result<()> {
+    pub fn handle_animation(&self, packet: MutableBuffer) -> anyhow::Result<()> {
         let request = Animate::deserialize(packet.snapshot())?;
         dbg!(request);
 
         Ok(())
     }
 
-    pub fn process_form_response(&self, packet: MutableBuffer) -> anyhow::Result<()> {
+    pub fn handle_form_response(&self, packet: MutableBuffer) -> anyhow::Result<()> {
         let response = FormResponse::deserialize(packet.snapshot())?;
         dbg!(response);
 
         Ok(())
     }
 
-    pub fn process_command_request(&self, packet: MutableBuffer) -> anyhow::Result<()> {
+    pub fn handle_command_request(&self, packet: MutableBuffer) -> anyhow::Result<()> {
         let request = CommandRequest::deserialize(packet.snapshot())?;
 
         let command_list = self.level.get_commands();

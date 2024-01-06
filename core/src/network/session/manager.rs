@@ -11,10 +11,9 @@ use replicator::Replicator;
 use util::{Serialize};
 use util::MutableBuffer;
 
-use crate::raknet::{BroadcastPacket, RawPacket};
+use crate::raknet::{BroadcastPacket, ForwardablePacket};
 use crate::config::SERVER_CONFIG;
 use crate::level::LevelManager;
-use crate::network::User;
 
 const BROADCAST_CHANNEL_CAPACITY: usize = 16;
 const FORWARD_TIMEOUT: Duration = Duration::from_millis(20);
@@ -48,10 +47,6 @@ impl SessionManager {
         }
     }
 
-    pub fn count(&self) -> usize {
-        self.map.len()
-    }
-
     pub fn insert(&self, info: SessionCreateInfo) {
         let (tx, rx) = mpsc::channel(BROADCAST_CHANNEL_CAPACITY);
         let user = todo!();
@@ -60,6 +55,39 @@ impl SessionManager {
             channel: tx,
             session: user
         });
+    }
+
+    pub fn forward(&self, packet: ForwardablePacket) -> anyhow::Result<()> {
+        todo!()
+    }
+
+    /// Sends a [`Disconnect`] packet to every connected user.
+    /// 
+    /// This does not wait for the users to actually be disconnected.
+    ///
+    /// # Errors
+    /// 
+    /// This function returns an error when the [`Disconnect`] packet fails to serialize.
+    pub fn kick_all(&self, message: &str) -> anyhow::Result<()> {
+        // Ignore result because it can only fail if there are no receivers remaining.
+        // In that case this shouldn't do anything anyways.
+        let _ = self.broadcast.send(BroadcastPacket::new(
+            Disconnect {
+                hide_message: false,
+                message,
+            },
+            None,
+        )?);
+
+        Ok(())
+    }
+
+    pub fn count(&self) -> usize {
+        self.map.len()
+    }
+
+    pub fn max_count(&self) -> usize {
+        SERVER_CONFIG.read().max_players
     }
 }
 

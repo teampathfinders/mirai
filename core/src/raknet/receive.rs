@@ -8,7 +8,7 @@ use proto::raknet::{Ack, ConnectedPing, ConnectionRequest, DisconnectNotificatio
 
 use util::{BinaryRead, MutableBuffer};
 
-use crate::network::RaknetUserLayer;
+use crate::network::{RaknetUserLayer, BedrockUserLayer};
 use crate::raknet::{BroadcastPacket, Frame, FrameBatch};
 use crate::raknet::DEFAULT_SEND_CONFIG;
 use crate::config::SERVER_CONFIG;
@@ -157,7 +157,7 @@ impl BedrockUserLayer {
         };
 
         let compression_enabled =
-            self.raknet.compression_enabled.load(Ordering::SeqCst);
+            self.compression_enabled.load(Ordering::SeqCst);
 
         let compression_threshold = SERVER_CONFIG.read().compression_threshold;
 
@@ -217,20 +217,20 @@ impl BedrockUserLayer {
             ViolationWarning::ID => self.process_violation_warning(packet),
             ChunkRadiusRequest::ID => self.process_radius_request(packet),
             Interact::ID => self.process_interaction(packet),
-            TextMessage::ID => self.process_text_message(packet).await,
+            TextMessage::ID => self.handle_text_message(packet).await,
             SetLocalPlayerAsInitialized::ID => {
                 self.process_local_initialized(packet)
             }
             MovePlayer::ID => self.process_move_player(packet).await,
             PlayerAction::ID => self.process_player_action(packet),
-            RequestAbility::ID => self.process_ability_request(packet),
-            Animate::ID => self.process_animation(packet),
-            CommandRequest::ID => self.process_command_request(packet),
-            UpdateSkin::ID => self.process_skin_update(packet),
-            SettingsCommand::ID => self.process_settings_command(packet),
+            RequestAbility::ID => self.handle_ability_request(packet),
+            Animate::ID => self.handle_animation(packet),
+            CommandRequest::ID => self.handle_command_request(packet),
+            UpdateSkin::ID => self.handle_skin_update(packet),
+            SettingsCommand::ID => self.handle_settings_command(packet),
             ContainerClose::ID => self.process_container_close(packet),
-            FormResponse::ID => self.process_form_response(packet),
-            TickSync::ID => self.process_tick_sync(packet),
+            FormResponse::ID => self.handle_form_response(packet),
+            TickSync::ID => self.handle_tick_sync(packet),
             id => bail!(Malformed, "Invalid game packet: {id:#04x}"),
         }
     }

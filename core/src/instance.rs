@@ -16,7 +16,7 @@ use util::{Deserialize, Serialize};
 use crate::config::SERVER_CONFIG;
 use crate::level::LevelManager;
 use crate::network::SessionManager;
-use crate::raknet::RawPacket;
+use crate::raknet::ForwardablePacket;
 use proto::bedrock::{
     Command, CommandDataType, CommandEnum, CommandOverload, CommandParameter, CommandPermissionLevel, BOOLEAN_GAME_RULES, CLIENT_VERSION_STRING,
     INTEGER_GAME_RULES, MOBEFFECT_NAMES, NETWORK_VERSION,
@@ -103,7 +103,7 @@ impl ServerInstance {
                 .context("Unable to create UDP socket")?,
         );
 
-        let replicator = Arc::new(Replicator::new().await.context("Cannot create replication layer")?);
+        let replicator = Replicator::new().await.context("Cannot create replication layer")?;
         let session_manager = Arc::new(SessionManager::new(replicator));
 
         let level = LevelManager::new(session_manager.clone(), token.clone())?;
@@ -256,7 +256,7 @@ impl ServerInstance {
             permission_level: CommandPermissionLevel::Normal,
         });
 
-        session_manager.set_level_manager(Arc::downgrade(&level))?;
+        // session_manager.set_level_manager(Arc::downgrade(&level))?;
 
         // UDP receiver job.
         let receiver_task = {
@@ -275,7 +275,7 @@ impl ServerInstance {
         tracing::info!("Shutting down server. This can take several seconds...");
 
         // ...then shut down all services.
-        if let Err(e) = session_manager.kick_all("Server closed").await {
+        if let Err(e) = session_manager.kick_all("Server closed") {
             tracing::error!("Failed to kick remaining sessions: {e}");
         }
 
@@ -291,21 +291,21 @@ impl ServerInstance {
 
     /// Generates a response to the [`UnconnectedPing`] packet with [`UnconnectedPong`].
     #[inline]
-    fn process_unconnected_ping(packet: RawPacket, server_guid: u64, metadata: &str) -> anyhow::Result<RawPacket> {
+    fn process_unconnected_ping(packet: ForwardablePacket, server_guid: u64, metadata: &str) -> anyhow::Result<ForwardablePacket> {
         let ping = UnconnectedPing::deserialize(packet.buf.snapshot())?;
         let pong = UnconnectedPong { time: ping.time, server_guid, metadata };
 
         let mut serialized = MutableBuffer::with_capacity(pong.serialized_size());
         pong.serialize(&mut serialized)?;
 
-        let packet = RawPacket { buf: serialized, addr: packet.addr };
+        let packet = ForwardablePacket { buf: serialized, addr: packet.addr };
 
         Ok(packet)
     }
 
     /// Generates a response to the [`OpenConnectionRequest1`] packet with [`OpenConnectionReply1`].
     #[inline]
-    fn process_open_connection_request1(mut packet: RawPacket, server_guid: u64) -> anyhow::Result<RawPacket> {
+    fn process_open_connection_request1(mut packet: ForwardablePacket, server_guid: u64) -> anyhow::Result<ForwardablePacket> {
         let request = OpenConnectionRequest1::deserialize(packet.buf.snapshot())?;
 
         packet.buf.clear();
@@ -331,11 +331,11 @@ impl ServerInstance {
     /// From this point, all raknet are encoded in a [`Frame`](crate::raknet::Frame).
     #[inline]
     fn process_open_connection_request2(
-        mut packet: RawPacket,
+        mut packet: ForwardablePacket,
         udp_socket: Arc<UdpSocket>,
         sess_manager: Arc<SessionManager>,
         server_guid: u64,
-    ) -> anyhow::Result<RawPacket> {
+    ) -> anyhow::Result<ForwardablePacket> {
         let request = OpenConnectionRequest2::deserialize(packet.buf.snapshot())?;
         let reply = OpenConnectionReply2 {
             server_guid,
@@ -353,15 +353,15 @@ impl ServerInstance {
     }
 
     /// Receives raknet from IPv4 clients and adds them to the receive queue
-    async fn udp_recv_job(token: CancellationToken, udp_socket: Arc<UdpSocket>, sess_manager: Arc<SessionManager>) {
+    async fn udp_recv_job(token: CancellationToken, udp_socket: Arc<UdpSocket>, user_manager: Arc<SessionManager>) {
         let server_guid = rand::random();
 
         // TODO: Customizable server description.
         let metadata = Self::refresh_metadata(
             &String::from_utf8_lossy(&[0xee, 0x84, 0x88, 0x20]),
             server_guid,
-            sess_manager.player_count(),
-            sess_manager.max_player_count(),
+            user_manager.count(),
+            user_manager.max_count(),
         );
 
         // This is heap-allocated because stack data is stored inline in tasks.
@@ -375,7 +375,7 @@ impl ServerInstance {
                     match r {
                         Ok(r) => r,
                         Err(e) => {
-                            tracing::error!("UdpSocket recv_from failed: {e}");
+                            tracing::error!("Failed to receive UDP packet from client: {e}");
                             continue
                         }
                     }
@@ -383,14 +383,14 @@ impl ServerInstance {
                 _ = token.cancelled() => break
             };
 
-            let packet = RawPacket {
+            let packet = ForwardablePacket {
                 buf: MutableBuffer::from(recv_buf[..n].to_vec()),
                 addr: address,
             };
 
             if packet.is_unconnected() {
                 let udp_socket = udp_socket.clone();
-                let session_manager = sess_manager.clone();
+                let session_manager = user_manager.clone();
                 let metadata = metadata.clone();
 
                 tokio::spawn(async move {
@@ -426,7 +426,7 @@ impl ServerInstance {
                     }
                 });
             } else {
-                sess_manager.forward_packet(packet);
+                user_manager.forward(packet);
             }
         }
     }

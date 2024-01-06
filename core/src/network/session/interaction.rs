@@ -1,10 +1,9 @@
 use proto::bedrock::{ABILITY_FLYING, ABILITY_MAYFLY, ABILITY_MUTED, AbilityData, AbilityLayer, AbilityType, ContainerClose, ContainerOpen, ContainerType, GameMode, Interact, InteractAction, INVENTORY_WINDOW_ID, MovementMode, MovePlayer, PlayerAction, PlayerActionType, UpdateAbilities};
-use util::{Deserialize};
-use util::MutableBuffer;
+use util::{MutableBuffer, Deserialize};
 
-use crate::network::User;
+use super::BedrockUserLayer;
 
-impl User {
+impl BedrockUserLayer {
     pub fn process_interaction(&self, packet: MutableBuffer) -> anyhow::Result<()> {
         let request = Interact::deserialize(packet.snapshot())?;
         if request.action == InteractAction::OpenInventory {

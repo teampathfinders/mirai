@@ -16,10 +16,10 @@ use proto::crypto::{Encryptor, IdentityData, UserData};
 use proto::uuid::Uuid;
 use replicator::Replicator;
 
-use util::{error, Vector};
+use util::{error, Vector, AtomicFlag};
 use util::MutableBuffer;
 
-use crate::raknet::{BroadcastPacket, RaknetData, Recovery};
+use crate::raknet::{BroadcastPacket, RaknetData, Recovery, SendQueues};
 use crate::level::{ChunkViewer, LevelManager};
 
 static RUNTIME_ID_COUNTER: AtomicU64 = AtomicU64::new(0);
@@ -37,9 +37,20 @@ pub struct RaknetUserLayer {
     /// Keeps track of when the last update was received from the client.
     /// This enables disconnecting users that have lost connection to the server.
     pub last_update: Instant,
+    pub tick: AtomicU64,
     /// This client's current batch number. It is increased for every packet batch sent.
     pub batch_number: AtomicU32,
+
+    pub send: SendQueues,
+    pub confirmed: Vec<u32>,
     pub recovery: Recovery
+}
+
+pub struct BedrockUserLayer {
+    pub compressed: AtomicFlag,
+    pub encryptor: Encryptor,
+    pub xuid: u64,
+    pub name: String
 }
 
 pub struct ConnectingUser {

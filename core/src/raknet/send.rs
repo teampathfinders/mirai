@@ -11,11 +11,11 @@ use util::{BinaryWrite, MutableBuffer};
 
 use util::Serialize;
 
+use crate::network::{RaknetUserLayer, BedrockUserLayer};
 use crate::raknet::{Frame, FrameBatch};
 use crate::raknet::Reliability;
 use crate::raknet::SendPriority;
 use crate::config::SERVER_CONFIG;
-use crate::network::User;
 
 /// Specifies the reliability and priority of a packet.
 pub struct PacketConfig {
@@ -31,10 +31,9 @@ pub const DEFAULT_SEND_CONFIG: PacketConfig = PacketConfig {
     priority: SendPriority::Medium,
 };
 
-impl User {
+impl RaknetUserLayer {
     /// Sends a game packet with default settings
     /// (reliable ordered and medium priority)
-    #[inline]
     pub fn send<T: ConnectedPacket + Serialize>(&self, packet: T) -> anyhow::Result<()> {
         let packet = Packet::new(packet);
         let serialized = packet.serialize()?;
@@ -42,60 +41,8 @@ impl User {
         self.send_serialized(serialized, DEFAULT_SEND_CONFIG)
     }
 
-    /// Sends a game packet with custom reliability and priority
-    pub fn send_serialized<B>(&self, packet: B, config: PacketConfig) -> anyhow::Result<()>
-        where
-            B: AsRef<[u8]>
-    {
-        let mut out;
-        if self.raknet.compression_enabled.load(Ordering::SeqCst) {
-            let (algorithm, threshold) = {
-                let config = SERVER_CONFIG.read();
-                (config.compression_algorithm, config.compression_threshold)
-            };
-
-            if packet.as_ref().len() > threshold as usize {
-                // Compress packet
-                match algorithm {
-                    CompressionAlgorithm::Snappy => {
-                        unimplemented!("Snappy compression");
-                    }
-                    CompressionAlgorithm::Deflate => {
-                        let mut writer = DeflateEncoder::new(
-                            vec![CONNECTED_PACKET_ID],
-                            Compression::best(),
-                        );
-
-                        writer.write_all(packet.as_ref())?;
-                        out = MutableBuffer::from(writer.finish()?)
-                    }
-                }
-            } else {
-                // Also reserve capacity for checksum even if encryption is disabled,
-                // preventing allocations.
-                out = MutableBuffer::with_capacity(1 + packet.as_ref().len() + 8);
-                out.write_u8(CONNECTED_PACKET_ID)?;
-                out.write_all(packet.as_ref())?;
-            }
-        } else {
-            // Also reserve capacity for checksum even if encryption is disabled,
-            // preventing allocations.
-            out = MutableBuffer::with_capacity(1 + packet.as_ref().len() + 8);
-            out.write_u8(CONNECTED_PACKET_ID)?;
-            out.write_all(packet.as_ref())?;
-        };
-
-        if let Some(encryptor) = self.encryptor.get() {
-            encryptor.encrypt(&mut out)?;
-        };
-
-        self.send_raw_buffer_with_config(out, config);
-        Ok(())
-    }
-
     /// Sends a raw buffer with default settings
     /// (reliable ordered and medium priority).
-    #[inline]
     pub fn send_raw_buffer<B>(&self, buffer: B)
         where
             B: Into<MutableBuffer>
@@ -110,7 +57,7 @@ impl User {
         config: PacketConfig,
     ) where B: Into<MutableBuffer> {
         let buffer = buffer.into();
-        self.raknet.send_queue.insert_raw(
+        self.send.insert_raw(
             config.priority,
             Frame::new(config.reliability, buffer),
         );
@@ -150,16 +97,16 @@ impl User {
     }
 
     pub async fn flush_all(&self) -> anyhow::Result<()> {
-        if let Some(frames) = self.raknet.send_queue.flush(SendPriority::High) {
+        if let Some(frames) = self.send.flush(SendPriority::High) {
             self.send_raw_frames(frames).await?;
         }
 
-        if let Some(frames) = self.raknet.send_queue.flush(SendPriority::Medium)
+        if let Some(frames) = self.send.flush(SendPriority::Medium)
         {
             self.send_raw_frames(frames).await?;
         }
 
-        if let Some(frames) = self.raknet.send_queue.flush(SendPriority::Low) {
+        if let Some(frames) = self.send.flush(SendPriority::Low) {
             self.send_raw_frames(frames).await?;
         }
 
@@ -169,7 +116,7 @@ impl User {
 
     pub async fn flush_acknowledgements(&self) -> anyhow::Result<()> {
         let mut confirmed = {
-            let mut lock = self.raknet.confirmed_packets.lock();
+            let mut lock = self.confirmed.lock();
             if lock.is_empty() {
                 return Ok(());
             }
@@ -202,9 +149,9 @@ impl User {
         let mut serialized = MutableBuffer::with_capacity(ack.serialized_size());
         ack.serialize(&mut serialized)?;
 
-        self.raknet
-            .udp_socket
-            .send_to(serialized.as_ref(), self.raknet.address)
+        self
+            .socket
+            .send_to(serialized.as_ref(), self.address)
             .await?;
 
         Ok(())
@@ -359,5 +306,56 @@ impl User {
         }
 
         compound
+    }
+}
+
+impl BedrockUserLayer {
+    /// Sends a game packet with custom reliability and priority
+    pub fn send_serialized<B>(&self, packet: B, config: PacketConfig) -> anyhow::Result<()>
+        where
+            B: AsRef<[u8]>
+    {
+        let mut out;
+        if self.compression.get() {
+            let (algorithm, threshold) = {
+                let config = SERVER_CONFIG.read();
+                (config.compression_algorithm, config.compression_threshold)
+            };
+
+            if packet.as_ref().len() > threshold as usize {
+                // Compress packet
+                match algorithm {
+                    CompressionAlgorithm::Snappy => {
+                        unimplemented!("Snappy compression");
+                    }
+                    CompressionAlgorithm::Deflate => {
+                        let mut writer = DeflateEncoder::new(
+                            vec![CONNECTED_PACKET_ID],
+                            Compression::best(),
+                        );
+
+                        writer.write_all(packet.as_ref())?;
+                        out = MutableBuffer::from(writer.finish()?)
+                    }
+                }
+            } else {
+                // Also reserve capacity for checksum even if encryption is disabled,
+                // preventing allocations.
+                out = MutableBuffer::with_capacity(1 + packet.as_ref().len() + 8);
+                out.write_u8(CONNECTED_PACKET_ID)?;
+                out.write_all(packet.as_ref())?;
+            }
+        } else {
+            // Also reserve capacity for checksum even if encryption is disabled,
+            // preventing allocations.
+            out = MutableBuffer::with_capacity(1 + packet.as_ref().len() + 8);
+            out.write_u8(CONNECTED_PACKET_ID)?;
+            out.write_all(packet.as_ref())?;
+        };
+
+        self.encryptor.encrypt(&mut out)?;
+
+        self.send_raw_buffer_with_config(out, config);
+        Ok(())
     }
 }
