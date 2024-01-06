@@ -1,62 +1,12 @@
-use std::convert::Infallible;
-
-use proc_macro::{TokenStream};
+use proc_macro::TokenStream;
 use proc_macro2::Span;
 use quote::{format_ident, quote, quote_spanned};
-use syn::{parse::{Parse, ParseStream, Result}, Visibility, Ident, Token, Block, Attribute, Meta, DeriveInput, Expr, spanned::Spanned, Data, Fields};
+use syn::{Ident, DeriveInput, spanned::Spanned, Data, Fields};
 
-// struct AtomicEnumInput {
-//     repr: String,
-//     enum_size: usize,
-//     visibility: Visibility,
-//     name: Ident,
-//     items: Block
-// }
-
-// impl Parse for AtomicEnumInput {
-//     fn parse(input: ParseStream) -> Result<Self> {
-//         let attributes: Vec<Attribute> = input.call(Attribute::parse_outer)?;
-//         let mut repr = String::from("u32");
-
-//         for attr in attributes {
-//             if attr.path().is_ident("repr") {
-//                 attr.parse_nested_meta(|meta| {
-//                     if meta.path.is_ident("i8") { repr = String::from("i8"); }
-//                     if meta.path.is_ident("i16") { repr = String::from("i16"); }
-//                     if meta.path.is_ident("i32") { repr = String::from("i32"); }
-//                     if meta.path.is_ident("i64") { repr = String::from("i64"); }
-//                     if meta.path.is_ident("u8") { repr = String::from("u8"); }
-//                     if meta.path.is_ident("u16") { repr = String::from("u16"); }
-//                     if meta.path.is_ident("u32") { repr = String::from("u32"); }
-//                     if meta.path.is_ident("u64") { repr = String::from("u64"); }
-//                     if meta.path.is_ident("isize") { repr = String::from("isize"); }
-//                     if meta.path.is_ident("usize") { repr = String::from("usize"); }
-
-//                     Ok(())
-//                 })?;
-
-//                 break
-//             }
-//         }
-
-//         let visibility: Visibility = input.parse()?;
-//         input.parse::<Token![enum]>()?;
-
-//         let name: Ident = input.parse()?;
-//         let items: Block = input.parse()?;
-
-//         Ok(Self {
-//             repr, visibility, name, items
-//         })
-//     }
-// }
-
+/// Generates a new type prefixed with `Atomic` that is the same as the affected
+/// enum but provides atomic load and store operations.
 #[proc_macro_attribute]
 pub fn atomic_enum(_attrs: TokenStream, item: TokenStream) -> TokenStream {
-    // let AtomicEnumInput {
-    //     repr, enum_size, visibility, name, items
-    // } = syn::parse_macro_input!(item as AtomicEnumInput);
-
     let mut input = syn::parse_macro_input!(item as DeriveInput);
     let DeriveInput {
         attrs, vis, ident, data,
@@ -118,6 +68,7 @@ pub fn atomic_enum(_attrs: TokenStream, item: TokenStream) -> TokenStream {
     }
 
     let variants = &enum_data.variants;
+    let doc_comment = format!("Atomic version of {}", ident.to_string());
 
     TokenStream::from(quote! {
         #[repr(#repr)]
@@ -125,10 +76,12 @@ pub fn atomic_enum(_attrs: TokenStream, item: TokenStream) -> TokenStream {
         #vis enum #ident {
             #variants
         }
-
+        
+        #[doc = #doc_comment]
         #vis struct #atomic_ident(::std::sync::atomic::#atomic_inner);
 
         impl #atomic_ident {
+            /// Loads the current value of this atomic enum.
             pub fn load(&self, ordering: ::std::sync::atomic::Ordering) -> #ident {
                 let disc = self.0.load(ordering);
                 unsafe {
@@ -136,6 +89,7 @@ pub fn atomic_enum(_attrs: TokenStream, item: TokenStream) -> TokenStream {
                 }
             }
 
+            /// Stores a new value into this atomic enum.
             pub fn store(&self, value: #ident, ordering: ::std::sync::atomic::Ordering) {
                 self.0.store(value as #repr, ordering);
             }
@@ -147,34 +101,4 @@ pub fn atomic_enum(_attrs: TokenStream, item: TokenStream) -> TokenStream {
             }
         }
     })
-
-    // let atomic_ident = format_ident!("Atomic{}", name);
-    // let atomic_inner = format_ident!("Atomic{}", repr.to_uppercase());
-
-    // let expanded = quote! {
-    //     #visibility struct #atomic_ident(::std::sync::atomic::#atomic_inner);
-
-    //     impl #atomic_ident {
-    //         const ENUM_SIZE: #repr = #enum_size;
-
-    //         pub fn store(value: Self, ordering: ::std::sync::atomic::Ordering) {
-    //             let disc = unsafe {
-    //                 std::mem::transmute<Self, #repr>(value)
-    //             };
-    //             self.0.store(ordering);
-    //         }
-
-    //         #[inline]
-    //         pub fn load(ordering: ::std::sync::atomic::Ordering) -> Self {
-    //             let disc = self.0.load(ordering);
-    //             assert!(disc < ENUM_SIZE);
-
-    //             unsafe {
-    //                 std::mem::transmute::<#repr, Self>(disc)
-    //             }
-    //         }
-    //     }
-    // };
-
-    // TokenStream::from(expanded) 
 }

@@ -5,6 +5,7 @@ edition = "2021"
 
 [dependencies]
 util = { package = "pyro-util", path = "../util" }
+macros = { package = "pyro-macros", path = "../macros" }
 nbt = { package = "pyro-nbt", path = "../nbt" }
 
 anyhow = "1.0.79"

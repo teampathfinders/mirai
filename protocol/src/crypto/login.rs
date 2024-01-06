@@ -20,54 +20,20 @@ const BASE64_ENGINE: base64::engine::GeneralPurpose = base64::engine::general_pu
 
 /// Data contained in the identity token chain.
 #[derive(Debug, Clone)]
-pub struct IdentityData {
+pub struct BedrockIdentity {
     /// Xbox account ID.
     pub xuid: u64,
     /// UUID unique for this player.
     pub uuid: Uuid,
     /// Xbox username.
-    pub display_name: String,
+    pub name: String,
     /// Public key used for token verification and encryption.
-    pub public_key: String,
-}
-
-/// A chain of JSON web tokens.
-#[derive(serde::Deserialize, Debug)]
-pub struct TokenChain {
-    /// Chain of JWTs.
-    pub chain: Vec<String>,
-}
-
-/// Used to extract the public key from the identity tokens.
-#[derive(serde::Deserialize, Debug)]
-pub struct KeyTokenPayload {
-    #[serde(rename = "identityPublicKey")]
-    pub public_key: String,
-}
-
-/// Data extracted from the "extraData" field in the last token in the identity chain.
-#[derive(serde::Deserialize, Debug)]
-pub struct RawIdentityData {
-    #[serde(rename = "XUID")]
-    pub xuid: String,
-    #[serde(rename = "displayName")]
-    pub display_name: String,
-    #[serde(rename = "identity")]
-    pub uuid: Uuid,
-}
-
-/// Used to extract the identity data and public key from the last identity token.
-#[derive(serde::Deserialize, Debug)]
-pub struct IdentityTokenPayload {
-    #[serde(rename = "extraData")]
-    pub client_data: RawIdentityData,
-    #[serde(rename = "identityPublicKey")]
     pub public_key: String,
 }
 
 /// Used to extract data from the user data token.
 #[derive(serde::Deserialize, Debug, Clone)]
-pub struct UserData {
+pub struct BedrockClientInfo {
     /// Operating system of the client.
     #[serde(rename = "DeviceOS")]
     pub build_platform: DeviceOS,
@@ -84,12 +50,46 @@ pub struct UserData {
     pub gui_scale: i32,
 }
 
+/// A chain of JSON web tokens.
+#[derive(serde::Deserialize, Debug)]
+struct TokenChain {
+    /// Chain of JWTs.
+    pub chain: Vec<String>,
+}
+
+/// Used to extract the public key from the identity tokens.
+#[derive(serde::Deserialize, Debug)]
+struct KeyTokenPayload {
+    #[serde(rename = "identityPublicKey")]
+    pub public_key: String,
+}
+
+/// Data extracted from the "extraData" field in the last token in the identity chain.
+#[derive(serde::Deserialize, Debug)]
+pub(crate) struct RawIdentityData {
+    #[serde(rename = "XUID")]
+    pub xuid: String,
+    #[serde(rename = "displayName")]
+    pub display_name: String,
+    #[serde(rename = "identity")]
+    pub uuid: Uuid,
+}
+
+/// Used to extract the identity data and public key from the last identity token.
+#[derive(serde::Deserialize, Debug)]
+pub(crate) struct IdentityTokenPayload {
+    #[serde(rename = "extraData")]
+    pub client_data: RawIdentityData,
+    #[serde(rename = "identityPublicKey")]
+    pub public_key: String,
+}
+
 /// Data structure that splits the user data token into separate [`Skin`] and
 /// [`UserData`] parts.
 #[derive(serde::Deserialize, Debug)]
-pub struct UserDataTokenPayload {
+pub(crate) struct UserDataTokenPayload {
     #[serde(flatten)]
-    pub data: UserData,
+    pub data: BedrockClientInfo,
     #[serde(flatten)]
     pub skin: Skin,
 }

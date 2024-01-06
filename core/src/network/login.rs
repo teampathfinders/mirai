@@ -11,9 +11,9 @@ use util::{bail, BlockPosition, Deserialize, Vector};
 use crate::config::SERVER_CONFIG;
 use crate::data::{CREATIVE_ITEMS_DATA, RUNTIME_ID_DATA};
 
-use super::BedrockUserLayer;
+use super::BedrockUser;
 
-impl BedrockUserLayer {
+impl BedrockUser {
     /// Handles a [`CacheStatus`] packet.
     /// This stores the result in the [`Session::cache_support`] field.
     pub fn handle_cache_status(&self, packet: MutableBuffer) -> anyhow::Result<()> {
@@ -102,10 +102,7 @@ impl BedrockUserLayer {
             anyhow::bail!("Render distance must be greater than 0");
         }
 
-        {
-            let player = self.player.read();
-            player.viewer.set_radius(allowed_radius);
-        }
+        self.player.viewer.set_radius(allowed_radius);
 
         Ok(())
     }
@@ -118,7 +115,7 @@ impl BedrockUserLayer {
         let start_game = StartGame {
             entity_id: 1,
             runtime_id: 1,
-            game_mode: self.get_gamemode(),
+            game_mode: self.player.gamemode(),
             position: Vector::from([0.0, 60.0, 0.0]),
             rotation: Vector::from([0.0, 0.0]),
             world_seed: 0,
@@ -209,12 +206,10 @@ impl BedrockUserLayer {
 
         self.send(NetworkChunkPublisherUpdate {
             position: Vector::from([0, 0, 0]),
-            radius: self.player
-                .read()
-                .viewer.get_radius() as u32
+            radius: self.player.viewer.get_radius() as u32
         })?;
 
-        let subchunks = self.player.read().viewer.recenter(
+        let subchunks = self.player.viewer.recenter(
             Vector::from([0, 0]), &(0..5).map(|y| Vector::from([0, y, 0])).collect::<Vec<_>>()
         )?;
         let response = SubChunkResponse {
@@ -268,13 +263,13 @@ impl BedrockUserLayer {
             }
         };
 
-        self.replicator.save_session(request.identity.xuid, &request.identity.display_name).await?;
+        self.replicator.save_session(request.identity.xuid, &request.identity.name).await?;
 
         let (encryptor, jwt) = Encryptor::new(&request.identity.public_key)?;
 
-        self.identity.set(request.identity)?;
-        self.user_data.set(request.user_data)?;
-        self.player.write().skin = Some(request.skin);
+        self.identity.set(request.identity).unwrap();
+        self.client_info.set(request.client_info).unwrap();
+        *self.player.skin.write() = Some(request.skin);
 
         // Flush raknet before enabling encryption
         self.raknet.flush().await?;

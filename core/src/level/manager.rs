@@ -35,7 +35,7 @@ pub struct SubChunkPosition {
     pub z: i32,
 }
 
-pub struct LevelManager {
+pub struct Level {
     world: legion::World,
     /// Used to load world data from disk.
     provider: Provider,
@@ -44,7 +44,7 @@ pub struct LevelManager {
     /// Currently set game rules.
     game_rules: DashMap<String, GameRule>,
     /// Used to broadcast level events to the sessions.
-    session_manager: Arc<UserMap>,
+    user_map: Arc<UserMap>,
     /// Current world tick.
     /// This is the standard Minecraft tick.
     /// The level is ticked 20 times every second.
@@ -52,7 +52,7 @@ pub struct LevelManager {
     token: CancellationToken,
 }
 
-impl LevelManager {
+impl Level {
     pub fn new(session_manager: Arc<UserMap>, token: CancellationToken) -> anyhow::Result<Arc<Self>> {
         let (level_path, _autosave_interval) = {
             let config = SERVER_CONFIG.read();
@@ -66,7 +66,7 @@ impl LevelManager {
             provider,
             commands: DashMap::new(),
             game_rules: DashMap::from_iter([("showcoordinates".to_owned(), GameRule::ShowCoordinates(true))]),
-            session_manager,
+            user_map: session_manager,
             tick: AtomicU64::new(0),
             token,
         });
@@ -116,7 +116,7 @@ impl LevelManager {
     pub fn set_game_rule(&self, game_rule: GameRule) -> anyhow::Result<Option<GameRule>> {
         let name = game_rule.name();
 
-        self.session_manager.broadcast(GameRulesChanged { game_rules: &[game_rule] })?;
+        self.user_map.broadcast(GameRulesChanged { game_rules: &[game_rule] })?;
         Ok(self.game_rules.insert(name.to_owned(), game_rule))
     }
 
@@ -129,7 +129,7 @@ impl LevelManager {
             self.game_rules.insert(name.to_owned(), *game_rule);
         }
 
-        self.session_manager.broadcast(GameRulesChanged { game_rules })
+        self.user_map.broadcast(GameRulesChanged { game_rules })
     }
 
     pub fn get_subchunk(&self, coords: SubChunkPosition) -> anyhow::Result<Option<SubChunk>> {

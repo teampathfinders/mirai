@@ -15,7 +15,7 @@ use util::MutableBuffer;
 use util::{Deserialize, Serialize};
 
 use crate::config::SERVER_CONFIG;
-use crate::level::LevelManager;
+use crate::level::Level;
 use crate::network::{UserMap, ForwardablePacket};
 use proto::bedrock::{
     Command, CommandDataType, CommandEnum, CommandOverload, CommandParameter, CommandPermissionLevel, BOOLEAN_GAME_RULES, CLIENT_VERSION_STRING,
@@ -79,7 +79,7 @@ pub struct ServerInstance {
     /// Service that manages all player sessions.
     session_manager: Arc<UserMap>,
     /// Manages the level.
-    level_manager: Arc<LevelManager>,
+    level_manager: Arc<Level>,
     /// Channel that the LevelManager sends a message to when it has fully shutdown.
     /// This is to make sure that the world has been saved and safely shut down before shutting down the server.
     level_notifier: Receiver<()>,
@@ -106,7 +106,7 @@ impl ServerInstance {
         let replicator = Replicator::new().await.context("Cannot create replication layer")?;
         let session_manager = Arc::new(UserMap::new(replicator));
 
-        let level = LevelManager::new(session_manager.clone(), token.clone())?;
+        let level = Level::new(session_manager.clone(), token.clone())?;
 
         level.add_command(Command {
             name: "gamerule".to_owned(),

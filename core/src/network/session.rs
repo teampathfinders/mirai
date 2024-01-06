@@ -1,53 +1,46 @@
 use std::io::{Read, Write};
-use std::net::SocketAddr;
 
 use std::sync::{Arc, OnceLock};
 use std::sync::atomic::{
-    AtomicBool, AtomicU64, Ordering, AtomicU32, AtomicU16,
+    AtomicBool, AtomicU64, Ordering, AtomicU32,
 };
-use std::time::Instant;
-use anyhow::anyhow;
 
 use flate2::Compression;
 use flate2::write::DeflateEncoder;
-use parking_lot::{Mutex, RwLock};
+use parking_lot::RwLock;
 use raknet::{PacketConfig, DEFAULT_SEND_CONFIG, RaknetUser};
-use tokio::net::UdpSocket;
-use tokio::sync::{broadcast, mpsc, OnceCell};
-use tokio_util::sync::CancellationToken;
-use proto::bedrock::{CommandPermissionLevel, DeviceOS, Disconnect, GameMode, PermissionLevel, Skin, ConnectedPacket, CONNECTED_PACKET_ID, CompressionAlgorithm, Packet, Header, RequestNetworkSettings, Login, ClientToServerHandshake, CacheStatus, ResourcePackClientResponse, ViolationWarning, ChunkRadiusRequest, Interact, TextMessage, SetLocalPlayerAsInitialized, MovePlayer, PlayerAction, RequestAbility, Animate, CommandRequest, SettingsCommand, ContainerClose, FormResponse, TickSync, UpdateSkin};
-use proto::crypto::{Encryptor, IdentityData, UserData};
+use tokio::sync::mpsc;
+use proto::bedrock::{CommandPermissionLevel, Disconnect, GameMode, PermissionLevel, Skin, ConnectedPacket, CONNECTED_PACKET_ID, CompressionAlgorithm, Packet, Header, RequestNetworkSettings, Login, ClientToServerHandshake, CacheStatus, ResourcePackClientResponse, ViolationWarning, ChunkRadiusRequest, Interact, TextMessage, SetLocalPlayerAsInitialized, MovePlayer, PlayerAction, RequestAbility, Animate, CommandRequest, SettingsCommand, ContainerClose, FormResponse, TickSync, UpdateSkin};
+use proto::crypto::{Encryptor, BedrockIdentity, BedrockClientInfo};
 use proto::uuid::Uuid;
 use replicator::Replicator;
 
-use util::{error, Vector, AtomicFlag, Serialize, BinaryRead, BinaryWrite};
+use util::{Vector, AtomicFlag, Serialize, BinaryRead, BinaryWrite};
 use util::MutableBuffer;
 
 use crate::config::SERVER_CONFIG;
-use crate::level::{ChunkViewer, LevelManager};
+use crate::level::{ChunkViewer, Level};
 
 static RUNTIME_ID_COUNTER: AtomicU64 = AtomicU64::new(0);
 
-pub struct BedrockIdentity {
-    uuid: Uuid,
-    name: String,
-    xuid: u64
-}
+pub struct BedrockUser {
+    pub encryptor: OnceLock<Encryptor>,
+    pub identity: OnceLock<BedrockIdentity>,
+    pub client_info: OnceLock<BedrockClientInfo>,
 
-pub struct BedrockUserLayer {
     /// Next packet that the server is expecting to receive.
     pub expected: AtomicU32,
     pub compressed: AtomicFlag,
-    pub encryptor: OnceLock<Encryptor>,
-    pub identity: OnceLock<BedrockIdentity>,
-
     pub supports_cache: AtomicBool,
 
+    pub replicator: Arc<Replicator>,
+    pub level: Arc<Level>,
     pub raknet: RaknetUser,
-    pub receiver: mpsc::Receiver<MutableBuffer>
+    pub player: PlayerData,
+    pub receiver: mpsc::Receiver<MutableBuffer>,
 }
 
-impl BedrockUserLayer {
+impl BedrockUser {
     pub fn kick(&self, message: &str) -> anyhow::Result<()> {
         let disconnect_packet = Disconnect {
             message, hide_message: false
@@ -223,58 +216,84 @@ impl BedrockUserLayer {
         }
     }
 
+    /// This function panics if the identity was not set.
     pub fn identity(&self) -> &BedrockIdentity {
         self.identity.get().unwrap()
     }
 
+    /// This function panics if the name was not set.
     pub fn name(&self) -> &str {
         &self.identity().name
     }
 
+    /// This function panics if the XUID was not set.
     pub fn xuid(&self) -> u64 {
         self.identity().xuid
     }
 
+    /// This function panics if the UUID was not set.
     pub fn uuid(&self) -> &Uuid {
         &self.identity().uuid
     }
 
+    /// This function panics if the encryptor was not set.
     pub fn encryptor(&self) -> &Encryptor {
         self.encryptor.get().unwrap()
     }
 
+    /// Returns the next expected packet for this session.
+    /// The expected packet will be [`u32::MAX`] if the user is fully
+    /// initialized and therefore doesn't follow a strict packet order anymore.
     pub fn expected(&self) -> u32 {
         self.expected.load(Ordering::SeqCst)
     }
 
+    /// Returns whether the user is fully initialized.
     pub fn initialized(&self) -> bool {
         self.expected() == u32::MAX
     }
 }
 
+pub struct PlayerData {
+    /// Whether the player's inventory is currently open.
+    pub is_inventory_open: AtomicBool,
+    /// Position of the player.
+    pub position: Vector<f32, 3>,
+    /// Rotation of the player.
+    /// x and y components are general rotation.
+    /// z component is head yaw.
+    pub rotation: Vector<f32, 3>,
+    /// Game mode.
+    pub game_mode: GameMode,
+    /// General permission level.
+    pub permission_level: PermissionLevel,
+    /// Command permission level
+    pub command_permission_level: CommandPermissionLevel,
+    /// The client's skin.
+    pub skin: RwLock<Option<Skin>>,
+    /// Runtime ID.
+    pub runtime_id: u64,
+    /// Helper type that loads the chunks around the player.
+    pub viewer: ChunkViewer,
+}
 
-// pub struct PlayerData {
-//     /// Whether the player's inventory is currently open.
-//     pub is_inventory_open: bool,
-//     /// Position of the player.
-//     pub position: Vector<f32, 3>,
-//     /// Rotation of the player.
-//     /// x and y components are general rotation.
-//     /// z component is head yaw.
-//     pub rotation: Vector<f32, 3>,
-//     /// Game mode.
-//     pub game_mode: GameMode,
-//     /// General permission level.
-//     pub permission_level: PermissionLevel,
-//     /// Command permission level
-//     pub command_permission_level: CommandPermissionLevel,
-//     /// The client's skin.
-//     pub skin: Option<Skin>,
-//     /// Runtime ID.
-//     pub runtime_id: u64,
-//     /// Helper type that loads the chunks around the player.
-//     pub viewer: ChunkViewer,
-// }
+impl PlayerData {
+    pub fn gamemode(&self) -> GameMode {
+        self.game_mode
+    }
+
+    pub fn runtime_id(&self) -> u64 {
+        self.runtime_id
+    }
+
+    pub fn permission_level(&self) -> PermissionLevel {
+        self.permission_level
+    }
+
+    pub fn command_permission_level(&self) -> CommandPermissionLevel {
+        self.command_permission_level
+    }
+}
 
 // /// Sessions directly correspond to clients connected to the server.
 // ///

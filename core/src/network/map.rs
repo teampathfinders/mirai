@@ -17,9 +17,9 @@ use util::{Serialize};
 use util::MutableBuffer;
 
 use crate::config::SERVER_CONFIG;
-use crate::level::LevelManager;
+use crate::level::Level;
 
-use super::ForwardablePacket;
+use super::{ForwardablePacket, BedrockUser};
 
 const BROADCAST_CHANNEL_CAPACITY: usize = 16;
 const FORWARD_TIMEOUT: Duration = Duration::from_millis(10);
@@ -38,21 +38,17 @@ impl<T> ChannelUser<T> {
     }
 }
 
-pub struct ConnectedUser {
-    raknet: RaknetUser
-}
-
 pub struct UserMap {
     replicator: Replicator,
-    connecting_map: DashMap<SocketAddr, ChannelUser<RaknetUser>>,
-    connected_map: DashMap<SocketAddr, ChannelUser<ConnectedUser>>,
+    connecting_map: Arc<DashMap<SocketAddr, ChannelUser<RaknetUser>>>,
+    connected_map: DashMap<SocketAddr, ChannelUser<BedrockUser>>,
     /// Channel that sends a packet to all connected sessions.
     broadcast: broadcast::Sender<BroadcastPacket>
 }
 
 impl UserMap {
     pub fn new(replicator: Replicator) -> Self {
-        let connecting_map = DashMap::new();
+        let connecting_map = Arc::new(DashMap::new());
         let connected_map = DashMap::new();
 
         let (broadcast, _) = broadcast::channel(BROADCAST_CHANNEL_CAPACITY);
@@ -64,14 +60,28 @@ impl UserMap {
 
     pub fn insert(&self, info: UserCreateInfo) {
         let (tx, rx) = mpsc::channel(BROADCAST_CHANNEL_CAPACITY);
-        let state = RaknetUser::new(info, rx);
 
-        self.connecting_map.insert(info.address, ChannelUser {
+        let address = info.address.clone();
+        let (state, mut state_rx) = RaknetUser::new(info, rx);
+        
+        self.connecting_map.insert(address, ChannelUser {
             channel: tx, state
+        });
+
+        // Callback to move the client from the connecting map to the connected map.
+        // This is done when the Raknet layer attempts to send a message to the Bedrock layer
+        // signalling that the Raknet connection is fully set up.
+        tokio::spawn(async move {
+            let buffer = state_rx.recv().await;
+            todo!("Client has connected");
         });
     }
 
     pub fn forward(&self, packet: ForwardablePacket) -> anyhow::Result<()> {
+        todo!()
+    }
+
+    pub fn broadcast<T: ConnectedPacket + Serialize>(&self, packet: T) -> anyhow::Result<()> {
         todo!()
     }
 

@@ -19,6 +19,7 @@ level = { package = "pyro-level", path = "../level" }
 proto = { package = "pyro-proto", path = "../protocol" }
 replicator = { package = "pyro-repl", path = "../replication" }
 raknet = { package = "pyro-raknet", path = "../raknet" }
+macros = { package = "pyro-macros", path = "../macros" }
 
 tokio = { version = "1.32.0", features = ["net", "rt-multi-thread", "macros", "time", "sync", "signal"] }
 tokio-util = "0.7.8"

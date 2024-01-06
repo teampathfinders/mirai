@@ -5,9 +5,9 @@ use proto::bedrock::{Animate, CommandOutput, CommandOutputMessage, CommandOutput
 use util::{Deserialize, TryExpect};
 use util::MutableBuffer;
 
-use super::BedrockUserLayer;
+use super::BedrockUser;
 
-impl BedrockUserLayer {
+impl BedrockUser {
     pub fn handle_settings_command(&self, packet: MutableBuffer) -> anyhow::Result<()> {
         let request = SettingsCommand::deserialize(packet.snapshot())?;
         dbg!(request);
