@@ -11,6 +11,7 @@ use crate::bedrock::ExperimentData;
 
 const MULTIPLAYER_CORRELATION_ID: &str = "5b39a9d6-f1a1-411a-b749-b30742f81771";
 
+/// Which world generator type the server is using.
 #[derive(Debug, Copy, Clone)]
 #[repr(i32)]
 pub enum WorldGenerator {
@@ -22,18 +23,23 @@ pub enum WorldGenerator {
 }
 
 impl WorldGenerator {
-    #[inline]
+    /// Serializes the enum.
     pub fn serialize(&self, buffer: &mut MutableBuffer) -> anyhow::Result<()> {
         buffer.write_var_i32(*self as i32)
     }
 }
 
+/// The permission level of the client.
 #[derive(Debug, Copy, Clone)]
 #[repr(u8)]
 pub enum PermissionLevel {
+    /// A visitor is a player that has most permissions removed.
     Visitor,
+    /// A member is the default permission level for players.
     Member,
+    /// An operator is a player that is allowed to run commands.
     Operator,
+    /// A combination of any of the above.
     Custom,
 }
 
@@ -58,50 +64,64 @@ pub struct EducationResourceURI {
 }
 
 impl EducationResourceURI {
-    #[inline]
+    /// Serializes the struct.
     pub fn serialize(&self, buffer: &mut MutableBuffer) -> anyhow::Result<()> {
         buffer.write_str(&self.button_name)?;
         buffer.write_str(&self.link_uri)
     }
 }
 
+/// How restricted chat is.
 #[derive(Debug, Copy, Clone)]
 #[repr(u8)]
 pub enum ChatRestrictionLevel {
+    /// Chat has no restrictions, this is how Minecraft normally works.
     None,
+    /// Same as `Disabled`.
     Dropped,
+    /// Prevents the user from sending any chat messages and displays `Chat is disabled`.
     Disabled,
 }
 
 impl ChatRestrictionLevel {
-    #[inline]
+    /// Serializes the enum.
     pub fn serialize(&self, buffer: &mut MutableBuffer) -> anyhow::Result<()> {
         buffer.write_u8(*self as u8)
     }
 }
 
+/// Determines how player movement is handled.
 #[derive(Debug, Copy, Clone)]
 #[repr(i32)]
 pub enum PlayerMovementType {
+    /// The client has full control over its movement.
     ClientAuthoritative,
+    /// The server needs to authorise player movement.
     ServerAuthoritative,
+    /// Same as `ServerAuthoritative` but adds the ability to rewind player movement.
     ServerAuthoritativeWithRewind,
 }
 
+/// Sets the player movement settings.
 #[derive(Debug, Copy, Clone)]
 pub struct PlayerMovementSettings {
+    /// See [`PlayerMovementType`].
     pub movement_type: PlayerMovementType,
+    /// Determines how far back a rewind can go.
     pub rewind_history_size: i32,
+    /// Whether the server authorises block breaking.
     pub server_authoritative_breaking: bool,
 }
 
 impl PlayerMovementSettings {
+    /// Returns the serialized size of the struct.
     pub fn serialized_size(&self) -> usize {
         (self.movement_type as i32).var_len() +
             self.rewind_history_size.var_len() +
             1
     }
 
+    /// Serializes the struct.
     pub fn serialize(&self, buffer: &mut MutableBuffer) -> anyhow::Result<()> {
         buffer.write_var_i32(self.movement_type as i32)?;
         buffer.write_var_i32(self.rewind_history_size)?;

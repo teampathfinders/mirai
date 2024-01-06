@@ -34,10 +34,13 @@ pub enum DeviceOS {
     Linux,
 }
 
+/// The UI profile setting that the client is using.
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Deserialize_repr)]
 #[repr(i32)]
 pub enum UiProfile {
+    /// The classic UI profile.
     Classic,
+    /// The Pocket Edition UI profile.
     Pocket,
 }
 

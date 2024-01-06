@@ -15,6 +15,8 @@ pub enum CompressionAlgorithm {
     Deflate,
     /// The Snappy compression algorithm.
     /// Available since Minecraft 1.19.30.
+    /// 
+    /// WARNING: This option is currently not support by the server.
     Snappy,
 }
 

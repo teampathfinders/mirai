@@ -7,28 +7,6 @@ use crate::bedrock::ConnectedPacket;
 
 pub const ITEM_ID_SHIELD: u32 = 513;
 
-// /// Represents a combination of a network ID and metadata value.
-// #[derive(Debug, Clone)]
-// pub struct ItemType {
-//     /// Numerical ID of the item.
-//     pub network_id: u32,
-//     /// Damage value or variant of the item.
-//     pub metadata: u32,
-// }
-//
-// /// Represents an item instance/stack.
-// #[derive(Debug, Clone)]
-// pub struct ItemStack {
-//     pub item_type: ItemType,
-//     pub runtime_id: u32,
-//     pub count: u16,
-//     // pub nbt_data: nbt::Value,
-//     pub can_be_placed_on: Vec<String>,
-//     pub can_break: Vec<String>,
-//     pub has_network_id: bool,
-// }
-
-/// Represents a stack of items.
 #[derive(Debug, Clone)]
 pub struct ItemStack {
     /// Runtime ID of the item. This is the ID with which the item is registered in the [`RUNTIME_ID_DATA`](core::RUNTIME_ID_DATA) map.

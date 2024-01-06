@@ -8,6 +8,7 @@ use crate::bedrock::command::Command;
 use crate::bedrock::command::CommandEnum;
 use crate::bedrock::ConnectedPacket;
 
+/// Bitflag added to every valid command parameter.
 pub const COMMAND_PARAMETER_VALID: u32 = 0x100000;
 pub const COMMAND_PARAMETER_ENUM: u32 = 0x200000;
 pub const COMMAND_PARAMETER_SUFFIXED: u32 = 0x1000000;

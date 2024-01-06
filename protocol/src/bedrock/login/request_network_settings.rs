@@ -5,7 +5,8 @@ use util::Result;
 /// Sent by the client to request a [`NetworkSettings`](crate::bedrock::NetworkSettings) packet.
 #[derive(Debug)]
 pub struct RequestNetworkSettings {
-    /// Minecraft network version
+    /// Minecraft network version. In case this version does not match the server's version,
+    /// the client is disconnected using a [`PlayStatus`](crate::bedrock::PlayStatus) packet.
     pub protocol_version: u32,
 }
 

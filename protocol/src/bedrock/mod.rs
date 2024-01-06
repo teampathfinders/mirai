@@ -1,3 +1,5 @@
+//! All types and packets implemented in the Bedrock protocol.
+
 use util::glob_export;
 
 glob_export!(login);

@@ -6,16 +6,23 @@ use dashmap::DashMap;
 
 use crate::bedrock::{Command, CommandDataType, CommandOverload};
 
+/// A type of error that occurred while parsing a command.
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum CommandParseErrorKind {
+    /// The command issued does not exist.
     NonExistentCommand,
+    /// The command is missing a required argument.
     MissingArgument,
+    /// An invalid option was used in an argument.
     InvalidOption,
 }
 
+/// Error that occurred while parsing a command.
 #[derive(Debug, Clone)]
 pub struct CommandParseError {
+    /// Type of error that occurred.
     kind: CommandParseErrorKind,
+    /// Information about the error.
     description: String,
 }
 
@@ -43,16 +50,21 @@ impl From<&str> for CommandTarget {
     }
 }
 
+/// Represents a command argument that has successfully been parsed.
 #[derive(Debug)]
 pub enum ParsedArgument {
+    /// An integer argument.
     Int(i32),
+    /// A floating point argument.
     Float(f32),
+    /// A string argument.
     String(String),
+    /// A selector or target argument. These are the `@s`, `@p`, etc. targets that you often see in commands.
     Target(CommandTarget)
 }
 
 impl ParsedArgument {
-    #[inline]
+    /// Converts the argument to a string if it is a string type.
     pub fn as_string(&self) -> Option<&str> {
         match self {
             Self::String(s) => Some(s),
@@ -60,7 +72,23 @@ impl ParsedArgument {
         }
     }
 
-    #[inline]
+    /// Converts the argument to a float if it is a float type.
+    pub fn as_float(&self) -> Option<f32> {
+        match self {
+            Self::Float(f) => Some(*f),
+            _ => None
+        }
+    }
+
+    /// Converts the argument to a target if it is a target type.
+    pub fn as_target(&self) -> Option<&CommandTarget> {
+        match self {
+            Self::Target(t) => Some(t),
+            _ => None
+        }
+    }
+
+    /// Converts the argument to an integer if it is an integer type.
     pub fn as_int(&self) -> Option<i32> {
         match self {
             Self::Int(i) => Some(*i),
@@ -69,6 +97,8 @@ impl ParsedArgument {
     }
 }
 
+/// A command that has successfully been parsed.
+/// Receiving this struct means that the syntax of the command was completely valid.
 #[derive(Debug)]
 pub struct ParsedCommand {
     /// The name of the command that is scheduled for execution.
@@ -80,7 +110,7 @@ pub struct ParsedCommand {
 impl ParsedCommand {
     /// Parses the command and verifies the arguments.
     pub fn parse(command_list: &DashMap<String, Command>, raw: &str)
-        -> std::result::Result<Self, String>
+        -> anyhow::Result<Self>
     {
         let mut parts = raw.split(' ');
 
@@ -90,7 +120,7 @@ impl ParsedCommand {
             chars.next();
             chars.as_str().to_owned()
         } else {
-            return Err("Command line cannot be empty".to_owned());
+            anyhow::bail!("Command cannot be empty")
         };
 
         // Verify the command exists and find the command's parameters.
@@ -123,17 +153,16 @@ impl ParsedCommand {
                 }
             }
 
-            Err(format!(
-                "Syntax error: {latest_error}"
-            ))
+            anyhow::bail!("Syntax error: {latest_error}")
         } else {
-            Err(format!("Unknown command: {name}. Please check that the command exists and you have permission to use it."))
+            anyhow::bail!("Unknown command: {name}. Please check that the comamnd exists and you have permission to use it.")
         }
     }
 }
 
+/// Parses a specific overload from the command.
 fn parse_overload(overload: &CommandOverload, mut parts: Split<char>)
-    -> std::result::Result<HashMap<String, ParsedArgument>, (String, usize)>
+    -> Result<HashMap<String, ParsedArgument>, (String, usize)>
 {
     let mut parsed = HashMap::new();
     for (i, parameter) in overload.parameters.iter().enumerate() {

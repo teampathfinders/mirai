@@ -1,4 +1,4 @@
-//! Code for working with encryption, decryption and login tokens.
+//! Utilities for working with encryption, decryption and login tokens.
 
 use util::glob_export;
 

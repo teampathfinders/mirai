@@ -1,3 +1,5 @@
+/// A permission level within the command system.
+/// Commands use permission levels separate from the standard permission levels.
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 #[repr(u8)]
 pub enum CommandPermissionLevel {
@@ -41,7 +43,9 @@ pub struct CommandEnum {
 /// Type of a parameter.
 #[derive(Debug, Copy, Clone)]
 pub enum CommandDataType {
+    /// An integer.
     Int = 1,
+    /// A float.
     Float = 3,
     Value = 4,
     WildcardInt = 5,
@@ -100,43 +104,3 @@ pub struct Command {
     /// All different argument combinations of the command.
     pub overloads: Vec<CommandOverload>,
 }
-
-// #[derive(Debug, Clone)]
-// pub struct CommandEnum {
-//     pub name: String,
-//     pub options: Vec<String>
-// }
-
-// #[derive(Debug, Clone)]
-// pub enum CommandParameterType {
-
-// }
-
-// #[derive(Debug, Clone)]
-// pub struct CommandParameter {
-//     pub name: String,
-//     pub param_type: CommandParameterType,
-//     pub optional: bool,
-//     pub options: u8,
-//     pub enum_data: Option<CommandEnum>,
-//     pub suffix: Option<String>
-// }
-
-// #[derive(Debug, Clone)]
-// pub struct CommandOverload {
-//     pub parameters: Vec<CommandParameter>
-// }
-
-// #[derive(Debug, Clone)]
-// pub struct Command {
-//     pub name: String,
-//     pub aliases: Option<CommandEnum>,
-//     pub description: String,
-//     pub overloads: Vec<CommandOverload>,
-//     pub permission_level: CommandPermissionLevel
-// }
-
-// #[derive(Debug, Clone)]
-// pub enum CommandPermissionLevel {
-
-// }
