@@ -1,3 +1,4 @@
+use std::io::Read;
 use std::net::SocketAddr;
 
 use std::sync::Arc;
@@ -7,28 +8,25 @@ use std::sync::atomic::{
 use std::time::Instant;
 use anyhow::anyhow;
 
+use flate2::Compression;
+use flate2::write::DeflateEncoder;
 use parking_lot::{Mutex, RwLock};
+use raknet::{PacketConfig, DEFAULT_SEND_CONFIG, RaknetUser};
 use tokio::net::UdpSocket;
 use tokio::sync::{broadcast, mpsc, OnceCell};
 use tokio_util::sync::CancellationToken;
-use proto::bedrock::{CommandPermissionLevel, DeviceOS, Disconnect, GameMode, PermissionLevel, Skin, ConnectedPacket};
+use proto::bedrock::{CommandPermissionLevel, DeviceOS, Disconnect, GameMode, PermissionLevel, Skin, ConnectedPacket, CONNECTED_PACKET_ID, CompressionAlgorithm, Packet, Header, RequestNetworkSettings, Login, ClientToServerHandshake, CacheStatus, ResourcePackClientResponse, ViolationWarning, ChunkRadiusRequest, Interact, TextMessage, SetLocalPlayerAsInitialized, MovePlayer, PlayerAction, RequestAbility, Animate, CommandRequest, SettingsCommand, ContainerClose, FormResponse, TickSync, UpdateSkin};
 use proto::crypto::{Encryptor, IdentityData, UserData};
 use proto::uuid::Uuid;
 use replicator::Replicator;
 
-use util::{error, Vector, AtomicFlag, Serialize};
+use util::{error, Vector, AtomicFlag, Serialize, BinaryRead};
 use util::MutableBuffer;
 
-use crate::raknet::{BroadcastPacket, RaknetData, Recovery, SendQueues, Compounds, OrderChannel};
+use crate::config::SERVER_CONFIG;
 use crate::level::{ChunkViewer, LevelManager};
 
 static RUNTIME_ID_COUNTER: AtomicU64 = AtomicU64::new(0);
-
-impl RaknetUser {
-    pub fn handle_disconnect(&self) {
-        self.active.cancel();
-    }
-}
 
 pub struct BedrockUserLayer {
     pub compressed: AtomicFlag,

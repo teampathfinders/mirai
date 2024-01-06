@@ -15,7 +15,7 @@ use util::{Deserialize, Serialize};
 
 use crate::config::SERVER_CONFIG;
 use crate::level::LevelManager;
-use crate::network::{UserMap, UserCreateInfo};
+use crate::network::{UserMap, UserCreateInfo, ForwardablePacket};
 use proto::bedrock::{
     Command, CommandDataType, CommandEnum, CommandOverload, CommandParameter, CommandPermissionLevel, BOOLEAN_GAME_RULES, CLIENT_VERSION_STRING,
     INTEGER_GAME_RULES, MOBEFFECT_NAMES, NETWORK_VERSION,

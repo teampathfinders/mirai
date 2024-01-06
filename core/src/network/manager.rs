@@ -6,6 +6,7 @@ use std::time::{Duration, Instant};
 use anyhow::Context;
 use dashmap::DashMap;
 use parking_lot::{RwLock, Mutex};
+use raknet::RaknetUser;
 use tokio::net::UdpSocket;
 use tokio::sync::{broadcast, mpsc, OnceCell};
 use proto::bedrock::{ConnectedPacket, Disconnect, DISCONNECTED_TIMEOUT};
@@ -15,11 +16,8 @@ use tokio_util::sync::CancellationToken;
 use util::{Serialize};
 use util::MutableBuffer;
 
-use crate::raknet::{BroadcastPacket, ForwardablePacket, SendQueues, Recovery};
 use crate::config::SERVER_CONFIG;
 use crate::level::LevelManager;
-
-use super::{UserState, RaknetUser};
 
 const BROADCAST_CHANNEL_CAPACITY: usize = 16;
 const FORWARD_TIMEOUT: Duration = Duration::from_millis(10);
