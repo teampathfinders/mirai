@@ -34,18 +34,17 @@ impl RaknetUser {
         Ok(true)
     }
 
-    /// Processes a broadcasted packet sent by another client connected to the server.
-    pub fn handle_broadcast(&self, packet: BroadcastPacket) -> anyhow::Result<()> {
-        if let Some(sender) = packet.sender {
-            if sender == self.address {
-                // Source is self, do not send.
-                return Ok(());
-            }
-        }
+    // /// Processes a broadcasted packet sent by another client connected to the server.
+    // pub fn handle_broadcast(&self, packet: BroadcastPacket) -> anyhow::Result<()> {
+    //     if let Some(sender) = packet.sender {
+    //         if sender == self.address {
+    //             // Source is self, do not send.
+    //             return Ok(());
+    //         }
+    //     }
 
-        todo!("Broadcast");
-        // self.send_serialized(packet.content, DEFAULT_SEND_CONFIG)
-    }
+    //     self.send_serialized(packet.content, DEFAULT_SEND_CONFIG)
+    // }
 
     /// Processes a batch of frames.
     ///

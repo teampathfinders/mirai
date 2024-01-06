@@ -9,8 +9,8 @@ use anyhow::Context;
 use flate2::Compression;
 use flate2::write::DeflateEncoder;
 use parking_lot::RwLock;
-use raknet::{PacketConfig, DEFAULT_SEND_CONFIG, RaknetUser};
-use tokio::sync::mpsc;
+use raknet::{PacketConfig, DEFAULT_SEND_CONFIG, RaknetUser, BroadcastPacket};
+use tokio::sync::{mpsc, broadcast};
 use proto::bedrock::{CommandPermissionLevel, Disconnect, GameMode, PermissionLevel, Skin, ConnectedPacket, CONNECTED_PACKET_ID, CompressionAlgorithm, Packet, Header, RequestNetworkSettings, Login, ClientToServerHandshake, CacheStatus, ResourcePackClientResponse, ViolationWarning, ChunkRadiusRequest, Interact, TextMessage, SetLocalPlayerAsInitialized, MovePlayer, PlayerAction, RequestAbility, Animate, CommandRequest, SettingsCommand, ContainerClose, FormResponse, TickSync, UpdateSkin};
 use proto::crypto::{Encryptor, BedrockIdentity, BedrockClientInfo};
 use proto::uuid::Uuid;
@@ -40,6 +40,7 @@ pub struct BedrockUser {
     pub raknet: Arc<RaknetUser>,
     pub player: OnceLock<PlayerData>,
 
+    pub broadcast: broadcast::Sender<BroadcastPacket>,
     pub handle: OnceLock<JoinHandle<()>>
 }
 
@@ -48,7 +49,8 @@ impl BedrockUser {
         raknet: Arc<RaknetUser>,
         level: Arc<Level>,
         replicator: Arc<Replicator>,
-        receiver: mpsc::Receiver<MutableBuffer>
+        receiver: mpsc::Receiver<MutableBuffer>,
+        broadcast: broadcast::Sender<BroadcastPacket>
     ) -> Arc<Self> {
         let user = Arc::new(Self {
             encryptor: OnceLock::new(),
@@ -62,7 +64,8 @@ impl BedrockUser {
             level,
             raknet,
             player: OnceLock::new(),
-
+            
+            broadcast,
             handle: OnceLock::new()
         });
 
@@ -77,13 +80,40 @@ impl BedrockUser {
     async fn start_job(&self, mut receiver: mpsc::Receiver<MutableBuffer>) {
         tracing::debug!("Bedrock layer receiver created");
 
-        while let Some(packet) = receiver.recv().await {
-            if let Err(err) = self.handle_encrypted_frame(packet).await {
-                tracing::error!("Failed to handle packet: {err:#}");
-            }
+        let mut broadcast = self.broadcast.subscribe();
+        while !self.raknet.active.is_cancelled() {
+            tokio::select! {
+                packet = receiver.recv() => {            
+                    if let Some(packet) = packet {
+                        if let Err(err) = self.handle_encrypted_frame(packet).await {
+                            tracing::error!("Failed to handle packet: {err:#}");
+                        }
+                    } else {
+                        break
+                    }
+                },
+                packet = broadcast.recv() => {
+                    if let Ok(packet) = packet {
+                        if let Err(err) = self.handle_broadcast(packet) {
+                            tracing::error!("Failed to handle broadcast: {err:#}");
+                        }
+                    }
+                },
+                _ = self.raknet.active.cancelled() => break
+            };
+
         }
 
         tracing::debug!("Bedrock layer receiver exited");
+    }
+
+    pub fn handle_broadcast(&self, packet: BroadcastPacket) -> anyhow::Result<()> {
+        let should_send = packet.sender.map(|sender| sender != self.raknet.address).unwrap_or(true);
+        if should_send {
+            self.send_serialized(packet.content, DEFAULT_SEND_CONFIG)?;
+        }
+
+        Ok(())
     }
 
     pub fn kick(&self, message: &str) -> anyhow::Result<()> {

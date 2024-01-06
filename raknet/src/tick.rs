@@ -60,27 +60,10 @@ impl RaknetUser {
         mut receiver: mpsc::Receiver<MutableBuffer>,
     ) {
         tokio::spawn(async move {
-            let mut broadcast_recv = self.broadcast.subscribe();
-
-            while !self.active.is_cancelled() {
-                tokio::select! {
-                    packet = receiver.recv() => {
-                        if let Some(packet) = packet {
-                            match self.handle_raw_packet(packet).await {
-                                Ok(_) => (),
-                                Err(e) => tracing::error!("{e}"),
-                            }
-                        }
-                    },
-                    packet = broadcast_recv.recv() => {
-                        if let Ok(packet) = packet {
-                            match self.handle_broadcast(packet) {
-                                Ok(_) => (),
-                                Err(e) => tracing::error!("{e}"),
-                            }
-                        }
-                    }
-                };
+            while let Some(packet) = receiver.recv().await {
+                if let Err(err) = self.handle_raw_packet(packet).await {
+                    tracing::error!("{err:#}")
+                }
             }
 
             // Flush everything before closing.

@@ -77,6 +77,7 @@ impl UserMap {
         let connected_map = self.connected_map.clone();
         let level = self.level.get().unwrap().clone();
         let replicator = self.replicator.clone();
+        let broadcast = self.broadcast.clone();
 
         // Callback to move the client from the connecting map to the connected map.
         // This is done when the Raknet layer attempts to send a message to the Bedrock layer
@@ -85,7 +86,7 @@ impl UserMap {
             if let Some((_, raknet_user)) = connecting_map.remove(&address) {
                 let bedrock_user = ChannelUser {
                     channel: raknet_user.channel, state: BedrockUser::new(
-                        raknet_user.state, level, replicator, state_rx
+                        raknet_user.state, level, replicator, state_rx, broadcast
                     )
                 };
 
