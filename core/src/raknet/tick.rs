@@ -86,34 +86,6 @@ impl RaknetUser {
         });
     }
 
-    /// Signals to the session that it needs to close.
-    pub fn on_disconnect(&self) {
-        if !self.is_active() {
-            return;
-        }
-
-        self.initialized.store(false, Ordering::SeqCst);
-
-        if let Ok(display_name) = self.get_display_name() {
-            if let Ok(uuid) = self.get_uuid() {
-                tracing::info!("`{display_name}` has disconnected");
-
-                let _ = self.broadcast_others(TextMessage {
-                    needs_translation: false,
-                    xuid: 0,
-                    platform_chat_id: "",
-                    data: TextData::System {
-                        message: &format!("§e{display_name} has left the server.")
-                    }
-                });
-
-                let _ = self
-                    .broadcast_others(PlayerListRemove { entries: &[*uuid] });
-            }
-        }
-        self.active.cancel();
-    }
-
     /// Performs tasks not related to packet processing
     pub async fn tick(&self) -> anyhow::Result<()> {
         let _current_tick = self.tick.fetch_add(1, Ordering::SeqCst);
@@ -122,7 +94,7 @@ impl RaknetUser {
         if Instant::now().duration_since(*self.last_update.read())
             > SESSION_TIMEOUT
         {
-            self.on_disconnect();
+            self.active.cancel();
         }
 
         self.flush().await?;

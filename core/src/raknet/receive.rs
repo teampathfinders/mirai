@@ -20,7 +20,7 @@ impl RaknetUser {
     ///
     /// If a packet is an ACK or NACK type, it will be responded to accordingly (using [`Session::process_ack`] and [`Session::process_nak`]).
     /// Frame batches are processed by [`Session::process_frame_batch`].
-    pub async fn process_raw_packet(&self, packet: MutableBuffer) -> anyhow::Result<bool> {
+    pub async fn handle_raw_packet(&self, packet: MutableBuffer) -> anyhow::Result<bool> {
         *self.last_update.write() = Instant::now();
 
         if packet.is_empty() {
@@ -46,7 +46,8 @@ impl RaknetUser {
             }
         }
 
-        self.send_serialized(packet.content, DEFAULT_SEND_CONFIG)
+        todo!("Broadcast");
+        // self.send_serialized(packet.content, DEFAULT_SEND_CONFIG)
     }
 
     /// Processes a batch of frames.
@@ -122,7 +123,7 @@ impl RaknetUser {
         match packet_id {
             // CONNECTED_PACKET_ID => self.handle_encrypted_frame(packet).await?,
             CONNECTED_PACKET_ID => self.output.send_timeout(packet, RAKNET_OUTPUT_TIMEOUT).await?,
-            DisconnectNotification::ID => self.on_disconnect(),
+            DisconnectNotification::ID => self.handle_disconnect(),
             ConnectionRequest::ID => self.handle_connection_request(packet)?,
             NewIncomingConnection::ID => {
                 self.handle_new_incoming_connection(packet)?
@@ -163,15 +164,15 @@ impl BedrockUserLayer {
                     reader.read_to_end(&mut decompressed)?;
 
                     let buffer = MutableBuffer::from(decompressed);
-                    self.handle_uncompressed_frame(buffer).await
+                    self.handle_frame_body(buffer).await
                 }
             }
         } else {
-            self.handle_uncompressed_frame(packet).await
+            self.handle_frame_body(packet).await
         }
     }
 
-    async fn handle_uncompressed_frame(
+    async fn handle_frame_body(
         &self,
         mut packet: MutableBuffer,
     ) -> anyhow::Result<()> {

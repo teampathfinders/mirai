@@ -62,8 +62,10 @@ pub struct RaknetUser {
     pub output: mpsc::Sender<MutableBuffer>
 }
 
-pub enum UserState {
-    Connected(BedrockUserLayer)
+impl RaknetUser {
+    pub fn handle_disconnect(&self) {
+        self.active.cancel();
+    }
 }
 
 pub struct BedrockUserLayer {
@@ -91,6 +93,12 @@ impl BedrockUserLayer {
         packet: P,
     ) -> anyhow::Result<()> {
         self.raknet.broadcast_others(packet)
+    }
+
+    pub fn handle_disconnect(&self) {
+        self.raknet.active.cancel();
+
+        todo!("Disconnect");
     }
 }
 

@@ -32,15 +32,6 @@ pub const DEFAULT_SEND_CONFIG: PacketConfig = PacketConfig {
 };
 
 impl RaknetUser {
-    /// Sends a game packet with default settings
-    /// (reliable ordered and medium priority)
-    pub fn send<T: ConnectedPacket + Serialize>(&self, packet: T) -> anyhow::Result<()> {
-        let packet = Packet::new(packet);
-        let serialized = packet.serialize()?;
-
-        self.send_serialized(serialized, DEFAULT_SEND_CONFIG)
-    }
-
     /// Sends a raw buffer with default settings
     /// (reliable ordered and medium priority).
     pub fn send_raw_buffer<B>(&self, buffer: B)
@@ -300,6 +291,15 @@ impl RaknetUser {
 }
 
 impl BedrockUserLayer {
+    /// Sends a game packet with default settings
+    /// (reliable ordered and medium priority)
+    pub fn send<T: ConnectedPacket + Serialize>(&self, packet: T) -> anyhow::Result<()> {
+        let packet = Packet::new(packet);
+        let serialized = packet.serialize()?;
+
+        self.send_serialized(serialized, DEFAULT_SEND_CONFIG)
+    }
+
     /// Sends a game packet with custom reliability and priority
     pub fn send_serialized<B>(&self, packet: B, config: PacketConfig) -> anyhow::Result<()>
         where
