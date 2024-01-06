@@ -1,9 +1,8 @@
-use util::{MutableBuffer, SharedBuffer};
-use util::{Deserialize};
+use util::{MutableBuffer, SharedBuffer, Deserialize};
 
 use proto::raknet::{Ack, Nak};
 
-use crate::network::RaknetUser;
+use crate::RaknetUser;
 
 impl RaknetUser {
     /// Processes an acknowledgement received from the client.

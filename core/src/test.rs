@@ -9,7 +9,6 @@ use util::MutableBuffer;
 use util::{Result, Serialize};
 
 use crate::instance::{IPV4_LOCAL_ADDR, IPV6_LOCAL_ADDR};
-use crate::raknet::{Frame, OrderChannel};
 use proto::bedrock::Header;
 
 #[test]

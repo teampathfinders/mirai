@@ -6,7 +6,6 @@ pub mod forms;
 pub mod instance;
 pub mod level;
 pub mod network;
-pub mod raknet;
 
 #[cfg(test)]
 mod test;

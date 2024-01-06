@@ -4,7 +4,7 @@ use proto::bedrock::{ConnectedPacket, Packet};
 
 use util::{ArcBuffer, Serialize};
 
-use crate::network::RaknetUser;
+use crate::RaknetUser;
 
 /// A packet that can be broadcast to other sessions.
 ///

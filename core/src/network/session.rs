@@ -62,7 +62,148 @@ impl BedrockUserLayer {
 
         todo!("Disconnect");
     }
+
+    /// Sends a game packet with default settings
+    /// (reliable ordered and medium priority)
+    pub fn send<T: ConnectedPacket + Serialize>(&self, packet: T) -> anyhow::Result<()> {
+        let packet = Packet::new(packet);
+        let serialized = packet.serialize()?;
+
+        self.send_serialized(serialized, DEFAULT_SEND_CONFIG)
+    }
+
+    /// Sends a game packet with custom reliability and priority
+    pub fn send_serialized<B>(&self, packet: B, config: PacketConfig) -> anyhow::Result<()>
+        where
+            B: AsRef<[u8]>
+    {
+        let mut out;
+        if self.compressed.get() {
+            let (algorithm, threshold) = {
+                let config = SERVER_CONFIG.read();
+                (config.compression_algorithm, config.compression_threshold)
+            };
+
+            if packet.as_ref().len() > threshold as usize {
+                // Compress packet
+                match algorithm {
+                    CompressionAlgorithm::Snappy => {
+                        unimplemented!("Snappy compression");
+                    }
+                    CompressionAlgorithm::Deflate => {
+                        let mut writer = DeflateEncoder::new(
+                            vec![CONNECTED_PACKET_ID],
+                            Compression::best(),
+                        );
+
+                        writer.write_all(packet.as_ref())?;
+                        out = MutableBuffer::from(writer.finish()?)
+                    }
+                }
+            } else {
+                // Also reserve capacity for checksum even if encryption is disabled,
+                // preventing allocations.
+                out = MutableBuffer::with_capacity(1 + packet.as_ref().len() + 8);
+                out.write_u8(CONNECTED_PACKET_ID)?;
+                out.write_all(packet.as_ref())?;
+            }
+        } else {
+            // Also reserve capacity for checksum even if encryption is disabled,
+            // preventing allocations.
+            out = MutableBuffer::with_capacity(1 + packet.as_ref().len() + 8);
+            out.write_u8(CONNECTED_PACKET_ID)?;
+            out.write_all(packet.as_ref())?;
+        };
+
+        self.encryptor.encrypt(&mut out)?;
+
+        self.raknet.send_raw_buffer_with_config(out, config);
+        Ok(())
+    }
+  
+    async fn handle_encrypted_frame(&self, mut packet: MutableBuffer) -> anyhow::Result<()> {
+        // Remove 0xfe packet ID.
+        packet.advance_cursor(1);
+
+        self.encryptor.decrypt(&mut packet)?;
+
+        let compression_threshold = SERVER_CONFIG.read().compression_threshold;
+
+        if self.compressed.get()
+            && compression_threshold != 0
+            && packet.len() > compression_threshold as usize
+        {
+            let alg = SERVER_CONFIG.read().compression_algorithm;
+
+            // Packet is compressed
+            match alg {
+                CompressionAlgorithm::Snappy => {
+                    unimplemented!("Snappy decompression");
+                }
+                CompressionAlgorithm::Deflate => {
+                    let mut reader =
+                        flate2::read::DeflateDecoder::new(packet.as_slice());
+
+                    let mut decompressed = Vec::new();
+                    reader.read_to_end(&mut decompressed)?;
+
+                    let buffer = MutableBuffer::from(decompressed);
+                    self.handle_frame_body(buffer).await
+                }
+            }
+        } else {
+            self.handle_frame_body(packet).await
+        }
+    }
+
+    async fn handle_frame_body(
+        &self,
+        mut packet: MutableBuffer,
+    ) -> anyhow::Result<()> {
+        let mut snapshot = packet.snapshot();
+        let start_len = snapshot.len();
+        let _length = snapshot.read_var_u32()?;
+
+        let header = Header::deserialize(&mut snapshot)?;
+
+        // Advance past the header.
+        packet.advance_cursor(start_len - snapshot.len());
+
+        // dbg!(&header);
+        match header.id {
+            RequestNetworkSettings::ID => {
+                self.handle_network_settings_request(packet)
+            }
+            Login::ID => self.handle_login(packet).await,
+            ClientToServerHandshake::ID => {
+                self.handle_client_to_server_handshake(packet)
+            }
+            CacheStatus::ID => self.handle_cache_status(packet),
+            ResourcePackClientResponse::ID => {
+                self.handle_resource_client_response(packet)
+            }
+            ViolationWarning::ID => self.handle_violation_warning(packet),
+            ChunkRadiusRequest::ID => self.handle_chunk_radius_request(packet),
+            Interact::ID => self.process_interaction(packet),
+            TextMessage::ID => self.handle_text_message(packet).await,
+            SetLocalPlayerAsInitialized::ID => {
+                self.handle_local_initialized(packet)
+            }
+            MovePlayer::ID => self.process_move_player(packet).await,
+            PlayerAction::ID => self.process_player_action(packet),
+            RequestAbility::ID => self.handle_ability_request(packet),
+            Animate::ID => self.handle_animation(packet),
+            CommandRequest::ID => self.handle_command_request(packet),
+            UpdateSkin::ID => self.handle_skin_update(packet),
+            SettingsCommand::ID => self.handle_settings_command(packet),
+            ContainerClose::ID => self.process_container_close(packet),
+            FormResponse::ID => self.handle_form_response(packet),
+            TickSync::ID => self.handle_tick_sync(packet),
+            id => anyhow::bail!("Invalid game packet: {id:#04x}"),
+        }
+    }
 }
+
 
 // pub struct PlayerData {
 //     /// Whether the player's inventory is currently open.

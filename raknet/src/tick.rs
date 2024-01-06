@@ -8,7 +8,7 @@ use proto::bedrock::{PlayerListRemove, TextData, TextMessage};
 
 use util::MutableBuffer;
 
-use crate::network::RaknetUser;
+use crate::RaknetUser;
 
 /// Tick interval of the internal session tick.
 const INTERNAL_TICK_INTERVAL: Duration = Duration::from_millis(1000 / 20);

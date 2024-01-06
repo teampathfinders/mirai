@@ -2,8 +2,7 @@ use std::io::Write;
 
 use util::{BinaryRead, BinaryWrite, MutableBuffer, SharedBuffer};
 
-
-use crate::raknet::Reliability;
+use crate::Reliability;
 
 /// Bit flag indicating that the packet is encapsulated in a frame.
 pub const CONNECTED_PEER_BIT_FLAG: u8 = 0x80;

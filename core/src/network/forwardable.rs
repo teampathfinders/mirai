@@ -2,8 +2,6 @@ use std::net::SocketAddr;
 
 use util::MutableBuffer;
 
-use crate::raknet::CONNECTED_PEER_BIT_FLAG;
-
 /// An unprocessed packet.
 pub struct ForwardablePacket {
     pub buf: MutableBuffer,

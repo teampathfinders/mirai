@@ -1,9 +1,11 @@
-use std::{net::SocketAddr, sync::{Arc, atomic::{AtomicBool, AtomicU16, AtomicU32}}, time::Instant};
+use std::{net::SocketAddr, sync::{Arc, atomic::{AtomicBool, AtomicU16, AtomicU32, AtomicU64}}, time::Instant};
 
 use parking_lot::{Mutex, RwLock};
-use tokio::net::UdpSocket;
+use tokio::{net::UdpSocket, sync::{broadcast, mpsc}};
+use tokio_util::sync::CancellationToken;
+use util::MutableBuffer;
 
-use crate::raknet::{Compounds, OrderChannel, Recovery, SendQueues};
+use crate::{Compounds, SendQueues, Recovery, BroadcastPacket, OrderChannel};
 
 const ORDER_CHANNEL_COUNT: usize = 5;
 
@@ -41,4 +43,10 @@ pub struct RaknetUser {
     pub order: [OrderChannel; ORDER_CHANNEL_COUNT],
 
     pub output: mpsc::Sender<MutableBuffer>
+}
+
+impl RaknetUser {
+    pub fn handle_disconnect(&self) {
+        self.active.cancel();
+    }
 }

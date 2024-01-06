@@ -2,7 +2,7 @@ use std::sync::atomic::{AtomicU32, Ordering};
 
 use dashmap::DashMap;
 
-use crate::raknet::Frame;
+use crate::Frame;
 
 /// Ensures that frames are processed in the correct order.
 ///

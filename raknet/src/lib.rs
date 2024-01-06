@@ -1,14 +1,17 @@
-pub fn add(left: usize, right: usize) -> usize {
-    left + right
-}
+//! Rust implementation of the RakNet protocol.
 
-#[cfg(test)]
-mod tests {
-    use super::*;
+use util::glob_export;
 
-    #[test]
-    fn it_works() {
-        let result = add(2, 2);
-        assert_eq!(result, 4);
-    }
-}
+glob_export!(ack);
+glob_export!(broadcast);
+glob_export!(compound);
+glob_export!(frame);
+glob_export!(login);
+glob_export!(order);
+glob_export!(receive);
+glob_export!(recovery);
+glob_export!(reliability);
+glob_export!(send_queue);
+glob_export!(send);
+glob_export!(session);
+glob_export!(tick);

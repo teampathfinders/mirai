@@ -1,11 +1,9 @@
 use std::io::Write;
 
 use dashmap::DashMap;
-
 use util::MutableBuffer;
 
-
-use crate::raknet::Frame;
+use crate::Frame;
 
 /// Keeps track of packet fragments, merging them when all fragments have been received.
 #[derive(Default, Debug)]
