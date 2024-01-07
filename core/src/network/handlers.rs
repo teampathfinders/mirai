@@ -5,18 +5,17 @@ use proto::bedrock::{Animate, CommandOutput, CommandOutputMessage, CommandOutput
 use util::{Deserialize, TryExpect};
 use util::MutableBuffer;
 
-use crate::network::Session;
+use super::BedrockUser;
 
-
-impl Session {
-    pub fn process_settings_command(&self, packet: MutableBuffer) -> anyhow::Result<()> {
+impl BedrockUser {
+    pub fn handle_settings_command(&self, packet: MutableBuffer) -> anyhow::Result<()> {
         let request = SettingsCommand::deserialize(packet.snapshot())?;
         dbg!(request);
 
         Ok(())
     }
 
-    pub fn process_tick_sync(&self, packet: MutableBuffer) -> anyhow::Result<()> {
+    pub fn handle_tick_sync(&self, packet: MutableBuffer) -> anyhow::Result<()> {
         let _request = TickSync::deserialize(packet.snapshot())?;
         // TODO: Implement tick synchronisation
         Ok(())
@@ -27,18 +26,14 @@ impl Session {
         // self.send(response)
     }
 
-    pub async fn process_text_message(&self, packet: MutableBuffer) -> anyhow::Result<()> {
+    pub async fn handle_text_message(&self, packet: MutableBuffer) -> anyhow::Result<()> {
         let request = TextMessage::deserialize(packet.snapshot())?;
         if let TextData::Chat {
-             ..
+            source, ..
         } = request.data {
-            let _actual = &self.identity.get()
-                .try_expect("Client does not have associated user data")?
-                .display_name;
-
             // Check that the source is equal to the player name to prevent spoofing.
             #[cfg(not(debug_assertions))] // Allow modifications for development purposes.
-            if actual != source {
+            if self.name != source {
                 self.kick("Illegal packet modifications detected")?;
                 anyhow::bail!(
                     "Client attempted to spoof chat username. (actual: `{}`, spoofed: `{}`)",
@@ -60,41 +55,41 @@ impl Session {
 
     }
 
-    pub fn process_skin_update(&self, packet: MutableBuffer) -> anyhow::Result<()> {
+    pub fn handle_skin_update(&self, packet: MutableBuffer) -> anyhow::Result<()> {
         let request = UpdateSkin::deserialize(packet.snapshot())?;
         dbg!(&request);
         self.broadcast(request)
     }
 
-    pub fn process_ability_request(&self, packet: MutableBuffer) -> anyhow::Result<()> {
+    pub fn handle_ability_request(&self, packet: MutableBuffer) -> anyhow::Result<()> {
         let request = RequestAbility::deserialize(packet.snapshot())?;
         dbg!(request);
 
         Ok(())
     }
 
-    pub fn process_animation(&self, packet: MutableBuffer) -> anyhow::Result<()> {
+    pub fn handle_animation(&self, packet: MutableBuffer) -> anyhow::Result<()> {
         let request = Animate::deserialize(packet.snapshot())?;
         dbg!(request);
 
         Ok(())
     }
 
-    pub fn process_form_response(&self, packet: MutableBuffer) -> anyhow::Result<()> {
+    pub fn handle_form_response(&self, packet: MutableBuffer) -> anyhow::Result<()> {
         let response = FormResponse::deserialize(packet.snapshot())?;
         dbg!(response);
 
         Ok(())
     }
 
-    pub fn process_command_request(&self, packet: MutableBuffer) -> anyhow::Result<()> {
+    pub fn handle_command_request(&self, packet: MutableBuffer) -> anyhow::Result<()> {
         let request = CommandRequest::deserialize(packet.snapshot())?;
 
         let command_list = self.level.get_commands();
         let result = ParsedCommand::parse(command_list, request.command);
 
         if let Ok(parsed) = result {
-            let caller = self.identity.get().unwrap().xuid;
+            let caller = self.xuid();
             let output = match parsed.name.as_str() {
                 "gamerule" => {
                     self.level.on_gamerule_command(caller, parsed)

@@ -6,7 +6,7 @@ use util::Result;
 
 use crate::bedrock::ConnectedPacket;
 use crate::crypto::{
-    IdentityData, parse_identity_data, parse_user_data, UserData,
+    BedrockIdentity, parse_identity_data, parse_user_data, BedrockClientInfo,
 };
 use crate::bedrock::Skin;
 
@@ -49,9 +49,9 @@ pub enum UiProfile {
 #[derive(Debug)]
 pub struct Login {
     /// Identity data (Xbox account ID, username, etc.)
-    pub identity: IdentityData,
+    pub identity: BedrockIdentity,
     /// User data (device OS, language, etc.)
-    pub user_data: UserData,
+    pub client_info: BedrockClientInfo,
     /// Skin.
     pub skin: Skin,
 }
@@ -70,13 +70,13 @@ impl Deserialize<'_> for Login {
             parse_user_data(&mut buffer, &identity_data.public_key)?;
 
         Ok(Self {
-            identity: IdentityData {
+            identity: BedrockIdentity {
                 uuid: identity_data.client_data.uuid,
                 xuid: identity_data.client_data.xuid.parse()?,
-                display_name: identity_data.client_data.display_name,
+                name: identity_data.client_data.display_name,
                 public_key: identity_data.public_key,
             },
-            user_data: data.data,
+            client_info: data.data,
             skin: data.skin,
         })
     }

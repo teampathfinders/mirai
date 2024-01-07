@@ -256,9 +256,9 @@ checksum = "396de984970346b0d9e93d1415082923c679e5ae5c3ee3dcbd104f5610af126b"
 
 [[package]]
 name = "cpufeatures"
-version = "0.2.11"
+version = "0.2.12"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ce420fe07aecd3e67c5f910618fe65e94158f6dcc0adf44e00d69ce2bdfe0fd0"
+checksum = "53fe5e26ff1b7aef8bca9c6080520cfb8d9333c7568e1829cef191a9723e5504"
 dependencies = [
  "libc",
 ]
@@ -1069,9 +1069,9 @@ dependencies = [
 
 [[package]]
 name = "proc-macro2"
-version = "1.0.75"
+version = "1.0.76"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "907a61bd0f64c2f29cd1cf1dc34d05176426a3f504a78010f08416ddb7b13708"
+checksum = "95fc56cda0b5c3325f5fbbd7ff9fda9e02bb00bb3dac51252d2f1bfa1cb8cc8c"
 dependencies = [
  "unicode-ident",
 ]
@@ -1090,8 +1090,10 @@ dependencies = [
  "nohash-hasher",
  "parking_lot 0.12.1",
  "pyro-level",
+ "pyro-macros",
  "pyro-nbt",
  "pyro-proto",
+ "pyro-raknet",
  "pyro-repl",
  "pyro-util",
  "rand",
@@ -1119,6 +1121,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "pyro-macros"
+version = "0.1.0"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn 2.0.48",
+]
+
+[[package]]
 name = "pyro-nbt"
 version = "0.1.0"
 dependencies = [
@@ -1141,6 +1152,7 @@ dependencies = [
  "jsonwebtoken",
  "p384",
  "parking_lot 0.12.1",
+ "pyro-macros",
  "pyro-nbt",
  "pyro-util",
  "rand",
@@ -1149,6 +1161,21 @@ dependencies = [
  "serde_repr",
  "sha2",
  "uuid 1.6.1",
+]
+
+[[package]]
+name = "pyro-raknet"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "async-recursion",
+ "dashmap",
+ "parking_lot 0.12.1",
+ "pyro-proto",
+ "pyro-util",
+ "tokio",
+ "tokio-util",
+ "tracing",
 ]
 
 [[package]]
@@ -1388,18 +1415,18 @@ checksum = "b97ed7a9823b74f99c7742f5336af7be5ecd3eeafcb1507d1fa93347b1d589b0"
 
 [[package]]
 name = "serde"
-version = "1.0.194"
+version = "1.0.195"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0b114498256798c94a0689e1a15fec6005dee8ac1f41de56404b67afc2a4b773"
+checksum = "63261df402c67811e9ac6def069e4786148c4563f4b50fd4bf30aa370d626b02"
 dependencies = [
  "serde_derive",
 ]
 
 [[package]]
 name = "serde_derive"
-version = "1.0.194"
+version = "1.0.195"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a3385e45322e8f9931410f01b3031ec534c3947d0e94c18049af4d9f9907d4e0"
+checksum = "46fe8f8603d81ba86327b23a2e9cdf49e1255fb94a4c5f297f6ee0547178ea2c"
 dependencies = [
  "proc-macro2",
  "quote",

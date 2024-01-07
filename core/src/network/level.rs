@@ -1,11 +1,11 @@
 
 use proto::bedrock::{GameRule, ParsedCommand};
 use util::{TryExpect};
-use crate::level::LevelManager;
+use crate::level::Level;
 
 pub const DEFAULT_EFFECT_DURATION: i32 = 30;
 
-impl LevelManager {
+impl Level {
     pub fn on_gamerule_command(&self, _caller: u64, command: ParsedCommand) -> anyhow::Result<String> {
         debug_assert_eq!(command.name, "gamerule");
 

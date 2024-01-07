@@ -1,7 +1,7 @@
 use dashmap::DashMap;
 use proto::raknet::AckRecord;
 
-use crate::raknet::FrameBatch;
+use crate::FrameBatch;
 
 /// Holds previously sent raknet to be able to recover them when packet loss occurs.
 ///
@@ -9,11 +9,11 @@ use crate::raknet::FrameBatch;
 /// When the client sends an ACK, the specified raknet are remove from the queue.
 /// If a NAK is received, the specified raknet can be recovered from the queue.
 #[derive(Default, Debug)]
-pub struct RecoveryQueue {
+pub struct Recovery {
     frames: DashMap<u32, FrameBatch>,
 }
 
-impl RecoveryQueue {
+impl Recovery {
     /// Creates a new recovery queue.
     pub fn new() -> Self {
         Default::default()
@@ -30,7 +30,7 @@ impl RecoveryQueue {
     /// Removes the specified raknet from the recovery queue.
     ///
     /// This method should be called when an ACK is received.
-    pub fn confirm(&self, records: &[AckRecord]) {
+    pub fn acknowledge(&self, records: &[AckRecord]) {
         for record in records {
             match record {
                 AckRecord::Single(id) => {

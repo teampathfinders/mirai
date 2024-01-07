@@ -1,4 +1,7 @@
+use macros::atomic_enum;
+
 /// The Minecraft dimensions.
+#[atomic_enum]
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
 #[repr(u32)]
 pub enum Dimension {

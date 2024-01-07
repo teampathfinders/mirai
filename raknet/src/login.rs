@@ -2,17 +2,14 @@ use proto::raknet::{ConnectedPing, ConnectedPong, ConnectionRequest, ConnectionR
 use util::{Deserialize, Serialize};
 use util::MutableBuffer;
 
+use crate::{RaknetUser, Reliability, SendPriority, PacketConfig};
 
-use crate::raknet::{PacketConfig, SendPriority};
-use crate::raknet::Reliability;
-use crate::network::Session;
-
-impl Session {
+impl RaknetUser {
     /// Handles a [`ConnectionRequest`] packet.
-    pub fn process_connection_request(&self, mut packet: MutableBuffer) -> anyhow::Result<()> {
+    pub fn handle_connection_request(&self, mut packet: MutableBuffer) -> anyhow::Result<()> {
         let request = ConnectionRequest::deserialize(packet.snapshot())?;
         let reply = ConnectionRequestAccepted {
-            client_address: self.raknet.address,
+            client_address: self.address,
             request_time: request.time,
         };
 
@@ -25,13 +22,13 @@ impl Session {
     }
 
     /// Handles a [`NewIncomingConnection`] packet.
-    pub fn process_new_incoming_connection(&self, packet: MutableBuffer) -> anyhow::Result<()> {
+    pub fn handle_new_incoming_connection(&self, packet: MutableBuffer) -> anyhow::Result<()> {
         let _request = NewIncomingConnection::deserialize(packet.snapshot())?;
         Ok(())
     }
 
     /// Handles an [`ConnectedPing`] packet.
-    pub fn process_online_ping(&self, mut packet: MutableBuffer) -> anyhow::Result<()> {
+    pub fn handle_connected_ping(&self, mut packet: MutableBuffer) -> anyhow::Result<()> {
         let ping = ConnectedPing::deserialize(packet.snapshot())?;
         let pong = ConnectedPong {
             ping_time: ping.time,

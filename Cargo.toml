@@ -6,7 +6,9 @@ members = [
     "util",
     "nbt",
     "protocol",
-    "replication"
+    "replication",
+    "raknet",
+    "macros"
 ]
 
 #[profile.release]

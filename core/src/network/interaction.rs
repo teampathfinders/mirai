@@ -1,18 +1,15 @@
+use std::sync::atomic::Ordering;
+
 use proto::bedrock::{ABILITY_FLYING, ABILITY_MAYFLY, ABILITY_MUTED, AbilityData, AbilityLayer, AbilityType, ContainerClose, ContainerOpen, ContainerType, GameMode, Interact, InteractAction, INVENTORY_WINDOW_ID, MovementMode, MovePlayer, PlayerAction, PlayerActionType, UpdateAbilities};
-use util::{Deserialize};
-use util::MutableBuffer;
+use util::{MutableBuffer, Deserialize};
 
-use crate::network::Session;
+use super::BedrockUser;
 
-impl Session {
+impl BedrockUser {
     pub fn process_interaction(&self, packet: MutableBuffer) -> anyhow::Result<()> {
         let request = Interact::deserialize(packet.snapshot())?;
         if request.action == InteractAction::OpenInventory {
-            let mut lock = self.player.write();
-            if !lock.is_inventory_open {
-                lock.is_inventory_open = true;
-                drop(lock);
-
+            if !self.player().is_inventory_open.fetch_or(true, Ordering::Relaxed) {
                 self.send(ContainerOpen {
                     window_id: INVENTORY_WINDOW_ID,
                     container_type: ContainerType::Inventory,
@@ -27,7 +24,7 @@ impl Session {
     pub fn process_container_close(&self, packet: MutableBuffer) -> anyhow::Result<()> {
         let request = ContainerClose::deserialize(packet.snapshot())?;
         if request.window_id == INVENTORY_WINDOW_ID {
-            self.player.write().is_inventory_open = false;
+            self.player().is_inventory_open.store(false, Ordering::Relaxed);
 
             // The server also needs to send a container close packet back.
             self.send(ContainerClose {
@@ -42,7 +39,7 @@ impl Session {
     pub async fn process_move_player(&self, packet: MutableBuffer) -> anyhow::Result<()> {
         let mut request = MovePlayer::deserialize(packet.snapshot())?;
 
-        self.replicator.move_player(self.get_xuid()?, &request).await?;
+        self.replicator.move_player(self.xuid(), &request).await?;
 
         request.mode = MovementMode::Normal;
 
@@ -55,13 +52,13 @@ impl Session {
 
         if request.action == PlayerActionType::StartFlying {
             // Only allow flying if the player is in the correct gamemode.
-            let gamemode = self.get_gamemode();
+            let gamemode = self.player().gamemode();
             if gamemode == GameMode::Creative || gamemode == GameMode::Spectator {
                 self.send(UpdateAbilities {
                     data: AbilityData {
-                        command_permission_level: self.get_command_permission_level(),
-                        permission_level: self.get_permission_level(),
-                        unique_id: self.get_runtime_id(),
+                        command_permission_level: self.player().command_permission_level(),
+                        permission_level: self.player().permission_level(),
+                        unique_id: self.player().runtime_id(),
                         layers: vec![
                             AbilityLayer {
                                 fly_speed: 0.05,

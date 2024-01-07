@@ -1,4 +1,4 @@
-use crate::level::{LevelManager, SubChunkPosition};
+use crate::level::{Level, SubChunkPosition};
 
 use crate::level::subchunk::NetSubChunk;
 use proto::bedrock::{SubChunkEntry, SubChunkResult};
@@ -8,11 +8,11 @@ use util::{MutableBuffer, Vector};
 
 pub struct ChunkViewer {
     radius: AtomicI32,
-    level: Arc<LevelManager>,
+    level: Arc<Level>,
 }
 
 impl ChunkViewer {
-    pub fn new(level: Arc<LevelManager>) -> Self {
+    pub fn new(level: Arc<Level>) -> Self {
         Self { radius: AtomicI32::new(0), level }
     }
 

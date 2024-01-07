@@ -1,19 +1,17 @@
 use std::io::Write;
 
 use dashmap::DashMap;
-
 use util::MutableBuffer;
 
-
-use crate::raknet::Frame;
+use crate::Frame;
 
 /// Keeps track of packet fragments, merging them when all fragments have been received.
 #[derive(Default, Debug)]
-pub struct CompoundCollector {
+pub struct Compounds {
     compounds: DashMap<u16, Vec<Option<Frame>>>,
 }
 
-impl CompoundCollector {
+impl Compounds {
     /// Creates a new collector.
     pub fn new() -> Self {
         Self { compounds: DashMap::new() }

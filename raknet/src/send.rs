@@ -2,8 +2,6 @@ use std::io::Write;
 use std::sync::atomic::Ordering;
 
 use async_recursion::async_recursion;
-use flate2::Compression;
-use flate2::write::DeflateEncoder;
 use proto::bedrock::{CompressionAlgorithm, CONNECTED_PACKET_ID, ConnectedPacket, Packet};
 use proto::raknet::{Ack, AckRecord};
 
@@ -11,11 +9,7 @@ use util::{BinaryWrite, MutableBuffer};
 
 use util::Serialize;
 
-use crate::raknet::{Frame, FrameBatch};
-use crate::raknet::Reliability;
-use crate::raknet::SendPriority;
-use crate::config::SERVER_CONFIG;
-use crate::network::Session;
+use crate::{SendPriority, RaknetUser, Reliability, Frame, FrameBatch};
 
 /// Specifies the reliability and priority of a packet.
 pub struct PacketConfig {
@@ -31,71 +25,9 @@ pub const DEFAULT_SEND_CONFIG: PacketConfig = PacketConfig {
     priority: SendPriority::Medium,
 };
 
-impl Session {
-    /// Sends a game packet with default settings
-    /// (reliable ordered and medium priority)
-    #[inline]
-    pub fn send<T: ConnectedPacket + Serialize>(&self, packet: T) -> anyhow::Result<()> {
-        let packet = Packet::new(packet);
-        let serialized = packet.serialize()?;
-
-        self.send_serialized(serialized, DEFAULT_SEND_CONFIG)
-    }
-
-    /// Sends a game packet with custom reliability and priority
-    pub fn send_serialized<B>(&self, packet: B, config: PacketConfig) -> anyhow::Result<()>
-        where
-            B: AsRef<[u8]>
-    {
-        let mut out;
-        if self.raknet.compression_enabled.load(Ordering::SeqCst) {
-            let (algorithm, threshold) = {
-                let config = SERVER_CONFIG.read();
-                (config.compression_algorithm, config.compression_threshold)
-            };
-
-            if packet.as_ref().len() > threshold as usize {
-                // Compress packet
-                match algorithm {
-                    CompressionAlgorithm::Snappy => {
-                        unimplemented!("Snappy compression");
-                    }
-                    CompressionAlgorithm::Deflate => {
-                        let mut writer = DeflateEncoder::new(
-                            vec![CONNECTED_PACKET_ID],
-                            Compression::best(),
-                        );
-
-                        writer.write_all(packet.as_ref())?;
-                        out = MutableBuffer::from(writer.finish()?)
-                    }
-                }
-            } else {
-                // Also reserve capacity for checksum even if encryption is disabled,
-                // preventing allocations.
-                out = MutableBuffer::with_capacity(1 + packet.as_ref().len() + 8);
-                out.write_u8(CONNECTED_PACKET_ID)?;
-                out.write_all(packet.as_ref())?;
-            }
-        } else {
-            // Also reserve capacity for checksum even if encryption is disabled,
-            // preventing allocations.
-            out = MutableBuffer::with_capacity(1 + packet.as_ref().len() + 8);
-            out.write_u8(CONNECTED_PACKET_ID)?;
-            out.write_all(packet.as_ref())?;
-        };
-
-        if let Some(encryptor) = self.encryptor.get() {
-            encryptor.encrypt(&mut out)?;
-        };
-
-        self.send_raw_buffer_with_config(out, config);
-        Ok(())
-    }
-
+impl RaknetUser {
     /// Sends a raw buffer with default settings
     /// (reliable ordered and medium priority).
-    #[inline]
     pub fn send_raw_buffer<B>(&self, buffer: B)
         where
             B: Into<MutableBuffer>
@@ -110,7 +42,7 @@ impl Session {
         config: PacketConfig,
     ) where B: Into<MutableBuffer> {
         let buffer = buffer.into();
-        self.raknet.send_queue.insert_raw(
+        self.send.insert_raw(
             config.priority,
             Frame::new(config.reliability, buffer),
         );
@@ -118,16 +50,16 @@ impl Session {
 
     /// Flushes the send queue.
     pub async fn flush(&self) -> anyhow::Result<()> {
-        let tick = self.current_tick.load(Ordering::SeqCst);
+        let tick = self.tick.load(Ordering::SeqCst);
 
-        if let Some(frames) = self.raknet.send_queue.flush(SendPriority::High) {
+        if let Some(frames) = self.send.flush(SendPriority::High) {
             self.send_raw_frames(frames).await?;
         }
 
         if tick % 2 == 0 {
             // Also flush broadcast raknet.
             if let Some(frames) =
-                self.raknet.send_queue.flush(SendPriority::Medium)
+                self.send.flush(SendPriority::Medium)
             {
                 self.send_raw_frames(frames).await?;
             }
@@ -135,7 +67,7 @@ impl Session {
 
         if tick % 4 == 0 {
             if let Some(frames) =
-                self.raknet.send_queue.flush(SendPriority::Low)
+                self.send.flush(SendPriority::Low)
             {
                 self.send_raw_frames(frames).await?;
             }
@@ -150,31 +82,32 @@ impl Session {
     }
 
     pub async fn flush_all(&self) -> anyhow::Result<()> {
-        if let Some(frames) = self.raknet.send_queue.flush(SendPriority::High) {
+        if let Some(frames) = self.send.flush(SendPriority::High) {
             self.send_raw_frames(frames).await?;
         }
 
-        if let Some(frames) = self.raknet.send_queue.flush(SendPriority::Medium)
+        if let Some(frames) = self.send.flush(SendPriority::Medium)
         {
             self.send_raw_frames(frames).await?;
         }
 
-        if let Some(frames) = self.raknet.send_queue.flush(SendPriority::Low) {
+        if let Some(frames) = self.send.flush(SendPriority::Low) {
             self.send_raw_frames(frames).await?;
         }
 
-        self.flush_acknowledgements().await?;
-        Ok(())
+        self.flush_acknowledgements().await
     }
 
     pub async fn flush_acknowledgements(&self) -> anyhow::Result<()> {
         let mut confirmed = {
-            let mut lock = self.raknet.confirmed_packets.lock();
+            let mut lock = self.acknowledged.lock();
             if lock.is_empty() {
                 return Ok(());
             }
 
-            let mut confirmed = Vec::new();
+            // Usually no more than 5 packets will be acknowledged at a time.
+            // Reserving 5 elements will prevent reallocations.
+            let mut confirmed = Vec::with_capacity(5);
             std::mem::swap(lock.as_mut(), &mut confirmed);
 
             confirmed
@@ -202,9 +135,9 @@ impl Session {
         let mut serialized = MutableBuffer::with_capacity(ack.serialized_size());
         ack.serialize(&mut serialized)?;
 
-        self.raknet
-            .udp_socket
-            .send_to(serialized.as_ref(), self.raknet.address)
+        self
+            .socket
+            .send_to(serialized.as_ref(), self.address)
             .await?;
 
         Ok(())
@@ -219,10 +152,8 @@ impl Session {
         while index < frames.len() {
             let frame_size = frames[index].body.len() + std::mem::size_of::<Frame>();
 
-            if frame_size > self.raknet.mtu as usize {
-                self.raknet
-                    .batch_sequence_number
-                    .fetch_sub(1, Ordering::SeqCst);
+            if frame_size > self.mtu as usize {
+                self.batch_number.fetch_sub(1, Ordering::SeqCst);
 
                 let large_frame = frames.swap_remove(index);
                 let compound = self.split_frame(&large_frame);
@@ -231,19 +162,16 @@ impl Session {
                 index += 1;
             }
         }
-
+        
         debug_assert!(
-            frames
+            !frames
                 .iter()
-                .any(|f| f.body.len() > self.raknet.mtu as usize - std::mem::size_of::<Frame>()),
+                .any(|f| f.body.len() > self.mtu as usize - std::mem::size_of::<Frame>()),
             "Frames were not split properly"
         );
 
         let mut batch = FrameBatch {
-            sequence_number: self
-                .raknet
-                .batch_sequence_number
-                .fetch_add(1, Ordering::SeqCst),
+            sequence_number: self.batch_number.fetch_add(1, Ordering::SeqCst),
 
             frames: vec![],
         };
@@ -253,45 +181,44 @@ impl Session {
             let frame_size = frame.body.len() + std::mem::size_of::<Frame>();
 
             if frame.reliability.is_ordered() {
-                let order_index = self.raknet.order_channels
-                    [frame.order_channel as usize]
-                    .fetch_index();
+                let order_index = self.order[frame.order_channel as usize]
+                    .alloc_index();
                 frame.order_index = order_index;
             }
 
             if frame.reliability.is_sequenced() {
                 let sequence_index =
-                    self.raknet.sequence_index.fetch_add(1, Ordering::SeqCst);
+                    self.sequence_index.fetch_add(1, Ordering::SeqCst);
+
                 frame.sequence_index = sequence_index;
             }
 
             if frame.reliability.is_reliable() {
                 frame.reliable_index =
-                    self.raknet.ack_index.fetch_add(1, Ordering::SeqCst);
+                    self.acknowledge_index.fetch_add(1, Ordering::SeqCst);
+
                 has_reliable_packet = true;
             }
 
-            if batch.estimate_size() + frame_size <= self.raknet.mtu as usize {
+            if batch.estimate_size() + frame_size <= self.mtu as usize {
                 batch.frames.push(frame);
             } else if !batch.is_empty() {
                 serialized.clear();
                 batch.serialize(&mut serialized)?;
 
                 // TODO: Add IPv6 support
-                self.raknet
-                    .udp_socket
-                    .send_to(serialized.as_ref(), self.raknet.address)
+                self.socket
+                    .send_to(serialized.as_ref(), self.address)
                     .await?;
 
                 if has_reliable_packet {
-                    self.raknet.recovery_queue.insert(batch);
+                    self.recovery.insert(batch);
                 }
 
                 has_reliable_packet = false;
                 batch = FrameBatch {
                     sequence_number: self
-                        .raknet
-                        .batch_sequence_number
+                        .batch_number
                         .fetch_add(1, Ordering::SeqCst),
                     frames: vec![frame],
                 };
@@ -304,25 +231,22 @@ impl Session {
             batch.serialize(&mut serialized)?;
 
             if has_reliable_packet {
-                self.raknet.recovery_queue.insert(batch);
+                self.recovery.insert(batch);
             }
 
             // TODO: Add IPv6 support
-            self.raknet
-                .udp_socket
-                .send_to(serialized.as_ref(), self.raknet.address)
+            self.socket
+                .send_to(serialized.as_ref(), self.address)
                 .await?;
         } else {
-            self.raknet
-                .batch_sequence_number
-                .fetch_sub(1, Ordering::SeqCst);
+            self.batch_number.fetch_sub(1, Ordering::SeqCst);
         }
 
         Ok(())
     }
 
     fn split_frame(&self, frame: &Frame) -> Vec<Frame> {
-        let chunk_max_size = self.raknet.mtu as usize
+        let chunk_max_size = self.mtu as usize
             - std::mem::size_of::<Frame>()
             - std::mem::size_of::<FrameBatch>();
 
@@ -340,7 +264,7 @@ impl Session {
         debug_assert_eq!(chunks.len(), compound_size);
 
         let compound_id =
-            self.raknet.compound_id.fetch_add(1, Ordering::SeqCst);
+            self.compound_index.fetch_add(1, Ordering::SeqCst);
 
         for (i, chunk) in chunks.enumerate() {
             let fragment = Frame {

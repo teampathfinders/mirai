@@ -3,7 +3,7 @@ use std::sync::atomic::{AtomicBool, Ordering};
 
 use parking_lot::Mutex;
 
-use crate::raknet::Frame;
+use crate::Frame;
 
 /// Priority of the packet.
 /// This affects when they're sent.

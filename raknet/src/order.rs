@@ -2,7 +2,7 @@ use std::sync::atomic::{AtomicU32, Ordering};
 
 use dashmap::DashMap;
 
-use crate::raknet::Frame;
+use crate::Frame;
 
 /// Ensures that frames are processed in the correct order.
 ///
@@ -28,7 +28,7 @@ impl OrderChannel {
     ///
     /// Every time this is called, the index is increased by 1.
     #[inline]
-    pub fn fetch_index(&self) -> u32 {
+    pub fn alloc_index(&self) -> u32 {
         self.next_index.fetch_add(1, Ordering::SeqCst)
     }
 

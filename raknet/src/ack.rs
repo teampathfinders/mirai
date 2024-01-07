@@ -1,16 +1,16 @@
-use util::{MutableBuffer, SharedBuffer};
-use util::{Deserialize};
+use util::{MutableBuffer, SharedBuffer, Deserialize};
 
 use proto::raknet::{Ack, Nak};
-use crate::network::Session;
 
-impl Session {
+use crate::RaknetUser;
+
+impl RaknetUser {
     /// Processes an acknowledgement received from the client.
     ///
     /// This function unregisters the specified packet IDs from the recovery queue.
-    pub fn process_ack(&self, packet: SharedBuffer<'_>) -> anyhow::Result<()> {
+    pub fn handle_ack(&self, packet: SharedBuffer<'_>) -> anyhow::Result<()> {
         let ack = Ack::deserialize(packet)?;
-        self.raknet.recovery_queue.confirm(&ack.records);
+        self.recovery.acknowledge(&ack.records);
 
         Ok(())
     }
@@ -19,19 +19,18 @@ impl Session {
     ///
     /// This function makes sure the packet is retrieved from the recovery queue and sent to the
     /// client again.
-    pub async fn process_nak(&self, packet: SharedBuffer<'_>) -> anyhow::Result<()> {
+    pub async fn handle_nack(&self, packet: SharedBuffer<'_>) -> anyhow::Result<()> {
         let nack = Nak::deserialize(packet)?;
-        let frame_batches = self.raknet.recovery_queue.recover(&nack.records);
-        tracing::info!("Recovered raknet: {:?}", nack.records);
+        let frame_batches = self.recovery.recover(&nack.records);
 
         let mut serialized = MutableBuffer::new();
         for frame_batch in frame_batches {
             frame_batch.serialize(&mut serialized)?;
 
-            self.raknet
-                .udp_socket
+            self
+                .socket
                 .send_to(
-                    serialized.as_ref(), self.raknet.address,
+                    serialized.as_ref(), self.address,
                 )
                 .await?;
 

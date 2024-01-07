@@ -20,27 +20,46 @@ const BASE64_ENGINE: base64::engine::GeneralPurpose = base64::engine::general_pu
 
 /// Data contained in the identity token chain.
 #[derive(Debug, Clone)]
-pub struct IdentityData {
+pub struct BedrockIdentity {
     /// Xbox account ID.
     pub xuid: u64,
     /// UUID unique for this player.
     pub uuid: Uuid,
     /// Xbox username.
-    pub display_name: String,
+    pub name: String,
     /// Public key used for token verification and encryption.
     pub public_key: String,
 }
 
+/// Used to extract data from the user data token.
+#[derive(serde::Deserialize, Debug, Clone)]
+pub struct BedrockClientInfo {
+    /// Operating system of the client.
+    #[serde(rename = "DeviceOS")]
+    pub build_platform: DeviceOS,
+    #[serde(rename = "DeviceModel")]
+    pub device_model: String,
+    #[serde(rename = "DeviceId")]
+    pub device_id: String,
+    /// Language in ISO format (i.e. en_GB)
+    #[serde(rename = "LanguageCode")]
+    pub language_code: String,
+    #[serde(rename = "UIProfile")]
+    pub ui_profile: UiProfile,
+    #[serde(rename = "GuiScale")]
+    pub gui_scale: i32,
+}
+
 /// A chain of JSON web tokens.
 #[derive(serde::Deserialize, Debug)]
-pub struct TokenChain {
+struct TokenChain {
     /// Chain of JWTs.
     pub chain: Vec<String>,
 }
 
 /// Used to extract the public key from the identity tokens.
 #[derive(serde::Deserialize, Debug)]
-pub struct KeyTokenPayload {
+struct KeyTokenPayload {
     #[serde(rename = "identityPublicKey")]
     pub public_key: String,
 }
@@ -65,31 +84,12 @@ pub struct IdentityTokenPayload {
     pub public_key: String,
 }
 
-/// Used to extract data from the user data token.
-#[derive(serde::Deserialize, Debug, Clone)]
-pub struct UserData {
-    /// Operating system of the client.
-    #[serde(rename = "DeviceOS")]
-    pub build_platform: DeviceOS,
-    #[serde(rename = "DeviceModel")]
-    pub device_model: String,
-    #[serde(rename = "DeviceId")]
-    pub device_id: String,
-    /// Language in ISO format (i.e. en_GB)
-    #[serde(rename = "LanguageCode")]
-    pub language_code: String,
-    #[serde(rename = "UIProfile")]
-    pub ui_profile: UiProfile,
-    #[serde(rename = "GuiScale")]
-    pub gui_scale: i32,
-}
-
 /// Data structure that splits the user data token into separate [`Skin`] and
 /// [`UserData`] parts.
 #[derive(serde::Deserialize, Debug)]
 pub struct UserDataTokenPayload {
     #[serde(flatten)]
-    pub data: UserData,
+    pub data: BedrockClientInfo,
     #[serde(flatten)]
     pub skin: Skin,
 }

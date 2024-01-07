@@ -1,16 +1,15 @@
 use std::net::SocketAddr;
 
+use raknet::CONNECTED_PEER_BIT_FLAG;
 use util::MutableBuffer;
 
-use crate::raknet::CONNECTED_PEER_BIT_FLAG;
-
 /// An unprocessed packet.
-pub struct RawPacket {
+pub struct ForwardablePacket {
     pub buf: MutableBuffer,
     pub addr: SocketAddr,
 }
 
-impl RawPacket {
+impl ForwardablePacket {
     /// Checks whether this frame is encapsulated in a [`Frame`](crate::raknet::Frame).
     #[inline]
     pub fn is_unconnected(&self) -> bool {

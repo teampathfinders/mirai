@@ -1,7 +1,7 @@
 
 
 use std::sync::atomic::Ordering;
-use proto::bedrock::{AvailableCommands, BiomeDefinitionList, BroadcastIntent, CacheStatus, ChatRestrictionLevel, ChunkRadiusReply, ChunkRadiusRequest, CLIENT_VERSION_STRING, ClientToServerHandshake, CreativeContent, Difficulty, DISCONNECTED_LOGIN_FAILED, GameMode, ItemCollection, Login, NETWORK_VERSION, NetworkChunkPublisherUpdate, NetworkSettings, PermissionLevel, PlayerMovementSettings, PlayerMovementType, PlayStatus, PropertyData, RequestNetworkSettings, ResourcePackClientResponse, ResourcePacksInfo, ResourcePackStack, ServerToClientHandshake, SetLocalPlayerAsInitialized, SpawnBiomeType, StartGame, Status, SubChunkResponse, TextData, TextMessage, ViolationWarning, WorldGenerator};
+use proto::bedrock::{AvailableCommands, BiomeDefinitionList, BroadcastIntent, CacheStatus, ChatRestrictionLevel, ChunkRadiusReply, ChunkRadiusRequest, CLIENT_VERSION_STRING, ClientToServerHandshake, CreativeContent, Difficulty, DISCONNECTED_LOGIN_FAILED, GameMode, ItemStack, Login, NETWORK_VERSION, NetworkChunkPublisherUpdate, NetworkSettings, PermissionLevel, PlayerMovementSettings, PlayerMovementType, PlayStatus, PropertyData, RequestNetworkSettings, ResourcePackClientResponse, ResourcePacksInfo, ResourcePackStack, ServerToClientHandshake, SetLocalPlayerAsInitialized, SpawnBiomeType, StartGame, Status, SubChunkResponse, TextData, TextMessage, ViolationWarning, WorldGenerator, BossEvent, SetTitle, TitleAction, ConnectedPacket};
 use proto::crypto::Encryptor;
 use proto::types::Dimension;
 
@@ -9,21 +9,23 @@ use util::MutableBuffer;
 use util::{bail, BlockPosition, Deserialize, Vector};
 
 use crate::config::SERVER_CONFIG;
-use crate::data::{CREATIVE_ITEMS_DATA, RUNTIME_ID_DATA};
+use crate::network::PlayerData;
 
-use crate::network::Session;
+use super::BedrockUser;
 
-impl Session {
+impl BedrockUser {
     /// Handles a [`CacheStatus`] packet.
     /// This stores the result in the [`Session::cache_support`] field.
-    pub fn process_cache_status(&self, packet: MutableBuffer) -> anyhow::Result<()> {
+    pub fn handle_cache_status(&self, packet: MutableBuffer) -> anyhow::Result<()> {
+        self.expected.store(ResourcePackClientResponse::ID, Ordering::SeqCst);
+
         let request = CacheStatus::deserialize(packet.snapshot())?;
-        self.cache_support.set(request.supports_cache)?;
+        self.supports_cache.store(request.supports_cache, Ordering::Relaxed);
 
         Ok(())
     }
 
-    pub fn process_violation_warning(&self, packet: MutableBuffer) -> anyhow::Result<()> {
+    pub fn handle_violation_warning(&self, packet: MutableBuffer) -> anyhow::Result<()> {
         let request = ViolationWarning::deserialize(packet.snapshot())?;
         tracing::error!("Received violation warning: {request:?}");
 
@@ -36,24 +38,16 @@ impl Session {
     ///
     /// All connected sessions are notified of the new player
     /// and the new player gets a list of all current players.
-    pub fn process_local_initialized(&self, packet: MutableBuffer) -> anyhow::Result<()> {
+    pub fn handle_local_initialized(&self, packet: MutableBuffer) -> anyhow::Result<()> {
         let _request = SetLocalPlayerAsInitialized::deserialize(packet.snapshot())?;
-
-        // Initialise chunk loading
-        let lock = self.player.read();
-        let _rounded_position = Vector::from([
-            lock.position.x.round() as i32,
-            lock.position.y.round() as i32,
-            lock.position.z.round() as i32
-        ]);
-        drop(lock);
+        self.expected.store(u32::MAX, Ordering::SeqCst);
 
         // Add player to other's player lists
 
         // Tell rest of server that this client has joined...
         {
-            let identity_data = self.get_identity_data()?;
-            let _user_data = self.get_user_data()?;
+            // let identity_data = self.get_identity_data()?;
+            // let _user_data = self.get_user_data()?;
 
             // self.broadcast_others(PlayerListAdd {
             //     entries: &[PlayerListAddEntry {
@@ -79,7 +73,7 @@ impl Session {
 
             self.broadcast(TextMessage {
                 data: TextData::Translation {
-                    parameters: vec![&format!("§e{}", identity_data.display_name)],
+                    parameters: vec![&format!("§e{}", self.name())],
                     message: "multiplayer.player.joined"
                     // message: &format!("§e{} has joined the server.", identity_data.display_name),
                 },
@@ -88,7 +82,6 @@ impl Session {
                 platform_chat_id: "",
             })?;
         }
-        self.initialized.store(true, Ordering::SeqCst);
 
         // ...then tell the client about all the other players.
         // TODO
@@ -97,7 +90,7 @@ impl Session {
     }
 
     /// Handles a [`ChunkRadiusRequest`] packet by returning the maximum allowed render distance.
-    pub fn process_radius_request(&self, packet: MutableBuffer) -> anyhow::Result<()> {
+    pub fn handle_chunk_radius_request(&self, packet: MutableBuffer) -> anyhow::Result<()> {
         let request = ChunkRadiusRequest::deserialize(packet.snapshot())?;
         let allowed_radius = std::cmp::min(
             SERVER_CONFIG.read().allowed_render_distance, request.radius
@@ -111,15 +104,14 @@ impl Session {
             anyhow::bail!("Render distance must be greater than 0");
         }
 
-        {
-            let player = self.player.read();
-            player.viewer.set_radius(allowed_radius);
-        }
+        self.player().viewer.set_radius(allowed_radius);
 
         Ok(())
     }
 
-    pub fn process_pack_client_response(&self, packet: MutableBuffer) -> anyhow::Result<()> {
+    pub fn handle_resource_client_response(&self, packet: MutableBuffer) -> anyhow::Result<()> {
+        self.expected.store(u32::MAX, Ordering::SeqCst);
+
         let _request = ResourcePackClientResponse::deserialize(packet.snapshot())?;
 
         // TODO: Implement resource packs.
@@ -127,7 +119,7 @@ impl Session {
         let start_game = StartGame {
             entity_id: 1,
             runtime_id: 1,
-            game_mode: self.get_gamemode(),
+            game_mode: self.player().gamemode(),
             position: Vector::from([0.0, 60.0, 0.0]),
             rotation: Vector::from([0.0, 0.0]),
             world_seed: 0,
@@ -200,22 +192,8 @@ impl Session {
         };
         self.send(start_game)?;
 
-        // let mut creative_items = Vec::with_capacity(CREATIVE_ITEMS_DATA.items.len());
-        // for (i, item) in CREATIVE_ITEMS_DATA.items.iter().enumerate() {
-        //     let runtime_id = RUNTIME_ID_DATA.get(&item.name).unwrap();
-        //
-        //     creative_items.push(ItemCollection {
-        //         network_id: i as u32,
-        //         runtime_id,
-        //         meta: item.meta as u32,
-        //         count: 64,
-        //         can_break: vec![],
-        //         placeable_on: vec![],
-        //     });
-        // }
-
         let creative_content = CreativeContent {
-            // items: &creative_items
+            // items: CREATIVE_ITEMS_DATA.items()
             items: &[]
         };
         self.send(creative_content)?;
@@ -232,12 +210,10 @@ impl Session {
 
         self.send(NetworkChunkPublisherUpdate {
             position: Vector::from([0, 0, 0]),
-            radius: self.player
-                .read()
-                .viewer.get_radius() as u32
+            radius: self.player().viewer.get_radius() as u32
         })?;
 
-        let subchunks = self.player.read().viewer.recenter(
+        let subchunks = self.player().viewer.recenter(
             Vector::from([0, 0]), &(0..5).map(|y| Vector::from([0, y, 0])).collect::<Vec<_>>()
         )?;
         let response = SubChunkResponse {
@@ -251,7 +227,9 @@ impl Session {
         Ok(())
     }
 
-    pub fn process_cts_handshake(&self, packet: MutableBuffer) -> anyhow::Result<()> {
+    pub fn handle_client_to_server_handshake(&self, packet: MutableBuffer) -> anyhow::Result<()> {
+        self.expected.store(CacheStatus::ID, Ordering::SeqCst);
+
         ClientToServerHandshake::deserialize(packet.snapshot())?;
 
         let response = PlayStatus { status: Status::LoginSuccess };
@@ -281,7 +259,9 @@ impl Session {
     }
 
     /// Handles a [`Login`] packet.
-    pub async fn process_login(&self, packet: MutableBuffer) -> anyhow::Result<()> {
+    pub async fn handle_login(&self, packet: MutableBuffer) -> anyhow::Result<()> {
+        self.expected.store(ClientToServerHandshake::ID, Ordering::SeqCst);
+
         let request = Login::deserialize(packet.snapshot());
         let request = match request {
             Ok(r) => r,
@@ -291,33 +271,46 @@ impl Session {
             }
         };
 
-        self.replicator.save_session(request.identity.xuid, &request.identity.display_name).await?;
+        self.replicator.save_session(request.identity.xuid, &request.identity.name).await?;
 
         let (encryptor, jwt) = Encryptor::new(&request.identity.public_key)?;
 
-        self.identity.set(request.identity)?;
-        self.user_data.set(request.user_data)?;
-        self.player.write().skin = Some(request.skin);
+        tracing::debug!("Identity verified as {}", request.identity.name);
+
+        self.identity.set(request.identity).unwrap();
+        self.client_info.set(request.client_info).unwrap();
 
         // Flush raknet before enabling encryption
-        self.flush().await?;
+        self.raknet.flush().await?;
+
+        tracing::debug!("Initiating encryption");
 
         self.send(ServerToClientHandshake { jwt: &jwt })?;
-        self.encryptor.set(encryptor)?;
+        if self.encryptor.set(encryptor).is_err() {
+            // Client sent a second login packet?
+            // Something is wrong, disconnect the client.
+            tracing::error!("Client sent a second login packet.");
+            self.kick("Invalid packet")?;
+        }
+
+        if self.player.set(PlayerData::new(request.skin, self.level.clone())).is_err() {
+            anyhow::bail!("Player data was already set");
+        };
 
         Ok(())
     }
 
     /// Handles a [`RequestNetworkSettings`] packet.
-    pub fn process_network_settings_request(&self, packet: MutableBuffer) -> anyhow::Result<()> {
+    pub fn handle_network_settings_request(&self, packet: MutableBuffer) -> anyhow::Result<()> {
+        self.expected.store(Login::ID, Ordering::SeqCst);
+
         let request = RequestNetworkSettings::deserialize(packet.snapshot())?;
         if request.protocol_version != NETWORK_VERSION {
             if request.protocol_version > NETWORK_VERSION {
                 let response = PlayStatus { status: Status::FailedServer };
                 self.send(response)?;
 
-                bail!(
-                    Outdated,
+                anyhow::bail!(
                     "Client is using a newer protocol ({} vs. {})",
                     request.protocol_version,
                     NETWORK_VERSION
@@ -326,8 +319,7 @@ impl Session {
                 let response = PlayStatus { status: Status::FailedClient };
                 self.send(response)?;
 
-                bail!(
-                    Outdated,
+                anyhow::bail!(
                     "Client is using an older protocol ({} vs. {})",
                     request.protocol_version,
                     NETWORK_VERSION
@@ -345,7 +337,7 @@ impl Session {
         };
 
         self.send(response)?;
-        self.raknet.compression_enabled.store(true, Ordering::SeqCst);
+        self.compressed.set();
 
         Ok(())
     }

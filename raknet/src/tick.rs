@@ -8,7 +8,7 @@ use proto::bedrock::{PlayerListRemove, TextData, TextMessage};
 
 use util::MutableBuffer;
 
-use crate::network::Session;
+use crate::RaknetUser;
 
 /// Tick interval of the internal session tick.
 const INTERNAL_TICK_INTERVAL: Duration = Duration::from_millis(1000 / 20);
@@ -20,7 +20,7 @@ const INTERNAL_TICK_INTERVAL: Duration = Duration::from_millis(1000 / 20);
 /// Hence, they have to be disconnected manually after the timeout passes.
 const SESSION_TIMEOUT: Duration = Duration::from_secs(5);
 
-impl Session {
+impl RaknetUser {
     pub fn start_tick_job(self: Arc<Self>) {
         tokio::spawn(async move {
             let mut interval = tokio::time::interval(INTERNAL_TICK_INTERVAL);
@@ -60,69 +60,28 @@ impl Session {
         mut receiver: mpsc::Receiver<MutableBuffer>,
     ) {
         tokio::spawn(async move {
-            let mut broadcast_recv = self.broadcast.subscribe();
-
-            while !self.active.is_cancelled() {
-                tokio::select! {
-                    packet = receiver.recv() => {
-                        if let Some(packet) = packet {
-                            match self.process_raw_packet(packet).await {
-                                Ok(_) => (),
-                                Err(e) => tracing::error!("{e}"),
-                            }
-                        }
-                    },
-                    packet = broadcast_recv.recv() => {
-                        if let Ok(packet) = packet {
-                            match self.process_broadcast(packet) {
-                                Ok(_) => (),
-                                Err(e) => tracing::error!("{e}"),
-                            }
-                        }
-                    }
+            while let Some(packet) = receiver.recv().await {
+                if let Err(err) = self.handle_raw_packet(packet).await {
+                    tracing::error!("{err:#}")
                 }
-                ;
+            }
+
+            // Flush everything before closing.
+            if let Err(err) = self.flush_all().await {
+                tracing::error!("Failed to flush last packets: {err:#}");
             }
         });
     }
 
-    /// Signals to the session that it needs to close.
-    pub fn on_disconnect(&self) {
-        if !self.is_active() {
-            return;
-        }
-
-        self.initialized.store(false, Ordering::SeqCst);
-
-        if let Ok(display_name) = self.get_display_name() {
-            if let Ok(uuid) = self.get_uuid() {
-                tracing::info!("`{display_name}` has disconnected");
-
-                let _ = self.broadcast_others(TextMessage {
-                    needs_translation: false,
-                    xuid: 0,
-                    platform_chat_id: "",
-                    data: TextData::System {
-                        message: &format!("§e{display_name} has left the server.")
-                    }
-                });
-
-                let _ = self
-                    .broadcast_others(PlayerListRemove { entries: &[*uuid] });
-            }
-        }
-        self.active.cancel();
-    }
-
     /// Performs tasks not related to packet processing
     pub async fn tick(&self) -> anyhow::Result<()> {
-        let _current_tick = self.current_tick.fetch_add(1, Ordering::SeqCst);
+        let _current_tick = self.tick.fetch_add(1, Ordering::SeqCst);
 
         // Session has timed out
-        if Instant::now().duration_since(*self.raknet.last_update.read())
+        if Instant::now().duration_since(*self.last_update.read())
             > SESSION_TIMEOUT
         {
-            self.on_disconnect();
+            self.active.cancel();
         }
 
         self.flush().await?;
