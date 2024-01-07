@@ -19,7 +19,7 @@ services:
         protocol: udp
         mode: host
     environment:
-      - "PYRO_LOG=DEBUG"
+      - "LOG_LEVEL=DEBUG"
       - "RUST_BACKTRACE=1"
       - "REDIS_HOST=replication"
       - "REDIS_PORT=6379"

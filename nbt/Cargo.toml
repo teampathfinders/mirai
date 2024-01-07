@@ -1,14 +1,14 @@
 [package]
-name = "pyro-nbt"
+name = "inferno-nbt"
 version = "0.1.0"
 edition = "2021"
 authors = ["Ruben Adema"]
-repository = "https://github.com/teampathfinders/pyro"
+repository = "https://github.com/teampathfinders/inferno"
 license = "Apache-2.0"
 rust-version = "1.65.0"
 
 [dependencies]
-util = { package = "pyro-util", path = "../util" }
+util = { package = "inferno-util", path = "../util" }
 
 serde = { version = "1.0.194", features = ["derive"] }
 paste = "1.0.12"

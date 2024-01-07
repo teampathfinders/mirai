@@ -1,18 +1,18 @@
 [package]
-name = "pyro-level"
+name = "inferno-level"
 version = "0.1.0"
 edition = "2021"
 authors = ["Ruben Adema"]
-repository = "https://github.com/teampathfinders/pyro"
+repository = "https://github.com/teampathfinders/inferno"
 license = "Apache-2.0"
 links = "leveldb-mcpe"
 build = "build.rs"
 rust-version = "1.66.0"
 
 [dependencies]
-util = { package = "pyro-util", path = "../util" }
-nbt = { package = "pyro-nbt", path = "../nbt" }
-proto = { package = "pyro-proto", path = "../protocol" }
+util = { package = "inferno-util", path = "../util" }
+nbt = { package = "inferno-nbt", path = "../nbt" }
+proto = { package = "inferno-proto", path = "../protocol" }
 
 serde = { version = "1.0.194", features = ["derive"] }
 tokio-util = "0.7.8"

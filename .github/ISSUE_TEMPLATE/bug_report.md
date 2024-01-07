@@ -28,7 +28,7 @@ If applicable, add screenshots to help explain your problem.
 
 - Server OS: [e.g. Windows]
 - User OS (if applicable)
-- Server version [e.g. 7af58e2, this version can be found by running `pyro --version`]
+- Server version [e.g. 7af58e2, this version can be found by running `inferno --version`]
 
 **Additional context**
 Add any other context about the problem here.

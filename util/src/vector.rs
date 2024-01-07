@@ -117,7 +117,7 @@ impl<T> From<(T, T, T, T)> for Vector<T, 4> {
 /// # Example
 ///
 /// ```rust
-/// # use pyro_util::Vector;
+/// # use inferno_util::Vector;
 /// # fn main() { ///
 /// let mut vec = Vector::from([0]);
 /// vec.x = 1;
@@ -169,7 +169,7 @@ impl<T> DerefMut for Vector<T, 1> {
 /// # Example
 ///
 /// ```rust
-/// # use pyro_util::Vector;
+/// # use inferno_util::Vector;
 /// # fn main() { ///
 /// let mut vec = Vector::from([0, 1]);
 /// vec.x = 1;
@@ -223,7 +223,7 @@ impl<T> DerefMut for Vector<T, 2> {
 /// # Example
 ///
 /// ```rust
-/// # use pyro_util::Vector;
+/// # use inferno_util::Vector;
 /// # fn main() { ///
 /// let mut vec = Vector::from([0, 1, 2]);
 /// vec.x = 1;
@@ -279,7 +279,7 @@ impl<T> DerefMut for Vector<T, 3> {
 /// # Example
 ///
 /// ```rust
-/// # use pyro_util::Vector;
+/// # use inferno_util::Vector;
 /// # fn main() { ///
 /// let mut vec = Vector::from([0, 1, 2, 3]);
 /// vec.x = 1;

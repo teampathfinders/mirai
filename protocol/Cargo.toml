@@ -1,12 +1,12 @@
 [package]
-name = "pyro-proto"
+name = "inferno-proto"
 version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-util = { package = "pyro-util", path = "../util" }
-macros = { package = "pyro-macros", path = "../macros" }
-nbt = { package = "pyro-nbt", path = "../nbt" }
+util = { package = "inferno-util", path = "../util" }
+macros = { package = "inferno-macros", path = "../macros" }
+nbt = { package = "inferno-nbt", path = "../nbt" }
 
 anyhow = "1.0.79"
 bytemuck = "1.14.0"

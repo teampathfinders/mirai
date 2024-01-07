@@ -116,7 +116,7 @@ where
 /// # Example
 ///
 /// ```rust
-/// # use pyro_nbt as nbt;
+/// # use inferno_nbt as nbt;
 /// # use util::MutableBuffer;
 /// # fn main() {
 ///  #[derive(serde::Serialize, serde::Deserialize, Debug)]
@@ -156,7 +156,7 @@ where
 /// # Example
 ///
 /// ```rust
-/// # use pyro_nbt as nbt;
+/// # use inferno_nbt as nbt;
 /// # use util::MutableBuffer;
 /// # fn main() {
 ///  #[derive(serde::Serialize, serde::Deserialize, Debug)]
@@ -196,7 +196,7 @@ where
 /// # Example
 ///
 /// ```rust
-/// # use pyro_nbt as nbt;
+/// # use inferno_nbt as nbt;
 /// # use util::MutableBuffer;
 /// # fn main() {
 ///  #[derive(serde::Serialize, serde::Deserialize, Debug)]

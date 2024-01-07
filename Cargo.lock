@@ -943,6 +943,141 @@ dependencies = [
 ]
 
 [[package]]
+name = "inferno"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "async-recursion",
+ "clap",
+ "console-subscriber",
+ "dashmap",
+ "flate2",
+ "inferno-level",
+ "inferno-macros",
+ "inferno-nbt",
+ "inferno-proto",
+ "inferno-raknet",
+ "inferno-repl",
+ "inferno-util",
+ "lazy_static",
+ "legion",
+ "nohash-hasher",
+ "parking_lot 0.12.1",
+ "rand",
+ "serde",
+ "serde_json",
+ "tokio",
+ "tokio-util",
+ "tracing",
+ "tracing-subscriber",
+]
+
+[[package]]
+name = "inferno-level"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "bytemuck",
+ "cmake",
+ "inferno-nbt",
+ "inferno-proto",
+ "inferno-util",
+ "serde",
+ "tokio-util",
+ "tracing",
+]
+
+[[package]]
+name = "inferno-macros"
+version = "0.1.0"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn 2.0.48",
+]
+
+[[package]]
+name = "inferno-nbt"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "inferno-util",
+ "paste",
+ "serde",
+]
+
+[[package]]
+name = "inferno-proto"
+version = "0.1.0"
+dependencies = [
+ "aes",
+ "anyhow",
+ "base64",
+ "bytemuck",
+ "ctr",
+ "dashmap",
+ "inferno-macros",
+ "inferno-nbt",
+ "inferno-util",
+ "jsonwebtoken",
+ "p384",
+ "parking_lot 0.12.1",
+ "rand",
+ "serde",
+ "serde_json",
+ "serde_repr",
+ "sha2",
+ "uuid 1.6.1",
+]
+
+[[package]]
+name = "inferno-raknet"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "async-recursion",
+ "dashmap",
+ "inferno-proto",
+ "inferno-util",
+ "parking_lot 0.12.1",
+ "tokio",
+ "tokio-util",
+ "tracing",
+]
+
+[[package]]
+name = "inferno-repl"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "fred",
+ "inferno-proto",
+ "inferno-util",
+ "tokio",
+ "tracing",
+]
+
+[[package]]
+name = "inferno-util"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "base64",
+ "cipher",
+ "dashmap",
+ "jsonwebtoken",
+ "lazy_static",
+ "num-traits",
+ "parking_lot 0.12.1",
+ "paste",
+ "serde",
+ "serde_json",
+ "snap",
+ "tokio",
+ "uuid 1.6.1",
+]
+
+[[package]]
 name = "inout"
 version = "0.1.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1395,141 +1530,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "193898f59edcf43c26227dcd4c8427f00d99d61e95dcde58dabd49fa291d470e"
 dependencies = [
  "prost",
-]
-
-[[package]]
-name = "pyro"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "async-recursion",
- "clap",
- "console-subscriber",
- "dashmap",
- "flate2",
- "lazy_static",
- "legion",
- "nohash-hasher",
- "parking_lot 0.12.1",
- "pyro-level",
- "pyro-macros",
- "pyro-nbt",
- "pyro-proto",
- "pyro-raknet",
- "pyro-repl",
- "pyro-util",
- "rand",
- "serde",
- "serde_json",
- "tokio",
- "tokio-util",
- "tracing",
- "tracing-subscriber",
-]
-
-[[package]]
-name = "pyro-level"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "bytemuck",
- "cmake",
- "pyro-nbt",
- "pyro-proto",
- "pyro-util",
- "serde",
- "tokio-util",
- "tracing",
-]
-
-[[package]]
-name = "pyro-macros"
-version = "0.1.0"
-dependencies = [
- "proc-macro2",
- "quote",
- "syn 2.0.48",
-]
-
-[[package]]
-name = "pyro-nbt"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "paste",
- "pyro-util",
- "serde",
-]
-
-[[package]]
-name = "pyro-proto"
-version = "0.1.0"
-dependencies = [
- "aes",
- "anyhow",
- "base64",
- "bytemuck",
- "ctr",
- "dashmap",
- "jsonwebtoken",
- "p384",
- "parking_lot 0.12.1",
- "pyro-macros",
- "pyro-nbt",
- "pyro-util",
- "rand",
- "serde",
- "serde_json",
- "serde_repr",
- "sha2",
- "uuid 1.6.1",
-]
-
-[[package]]
-name = "pyro-raknet"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "async-recursion",
- "dashmap",
- "parking_lot 0.12.1",
- "pyro-proto",
- "pyro-util",
- "tokio",
- "tokio-util",
- "tracing",
-]
-
-[[package]]
-name = "pyro-repl"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "fred",
- "pyro-proto",
- "pyro-util",
- "tokio",
- "tracing",
-]
-
-[[package]]
-name = "pyro-util"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "base64",
- "cipher",
- "dashmap",
- "jsonwebtoken",
- "lazy_static",
- "num-traits",
- "parking_lot 0.12.1",
- "paste",
- "serde",
- "serde_json",
- "snap",
- "tokio",
- "uuid 1.6.1",
 ]
 
 [[package]]

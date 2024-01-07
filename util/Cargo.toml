@@ -1,9 +1,9 @@
 [package]
-name = "pyro-util"
+name = "inferno-util"
 version = "0.1.0"
 edition = "2021"
 authors = ["Ruben Adema"]
-repository = "https://github.com/teampathfinders/pyro"
+repository = "https://github.com/teampathfinders/inferno"
 license = "Apache-2.0"
 rust-version = "1.65.0"
 

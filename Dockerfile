@@ -1,8 +1,8 @@
 # Build the project
 FROM rust:1.75 as build
 
-WORKDIR /usr/src/pyro
-RUN mkdir -p /usr/src/pyro
+WORKDIR /usr/src/inferno
+RUN mkdir -p /usr/src/inferno
 RUN apt-get update && apt-get install cmake -y
 
 COPY . .
@@ -12,9 +12,9 @@ RUN cargo install --path ./core
 # Execution does not require build tools
 FROM debian:bookworm-slim as exec
 
-WORKDIR /var/lib/pyro
-COPY test-level /var/lib/pyro/test-level
-COPY --from=build /usr/local/cargo/bin/pyro /usr/local/bin/pyro
+WORKDIR /var/lib/inferno
+COPY test-level /var/lib/inferno/test-level
+COPY --from=build /usr/local/cargo/bin/inferno /usr/local/bin/inferno
 
-CMD pyro
+CMD inferno
 

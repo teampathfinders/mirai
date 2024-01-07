@@ -1,11 +1,11 @@
 [package]
-name = "pyro-raknet"
+name = "inferno-raknet"
 version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-util = { package = "pyro-util", path = "../util" }
-proto = { package = "pyro-proto", path = "../protocol" }
+util = { package = "inferno-util", path = "../util" }
+proto = { package = "inferno-proto", path = "../protocol" }
 
 tracing = "0.1.40"
 tokio = { version = "1.35.1", features = ["sync"] }
