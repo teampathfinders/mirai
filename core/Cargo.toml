@@ -12,6 +12,9 @@ rust-version = "1.68.0"
 name = "pyro"
 path = "src/lib.rs"
 
+[features]
+tokio-console = ["console-subscriber"]
+
 [dependencies]
 nbt = { package = "pyro-nbt", path = "../nbt" }
 util = { package = "pyro-util", path = "../util" }
@@ -20,6 +23,8 @@ proto = { package = "pyro-proto", path = "../protocol" }
 replicator = { package = "pyro-repl", path = "../replication" }
 raknet = { package = "pyro-raknet", path = "../raknet" }
 macros = { package = "pyro-macros", path = "../macros" }
+
+console-subscriber = { version = "0.2.0", optional = true, features = ["parking_lot"] }
 
 tokio = { version = "1.32.0", features = ["net", "rt-multi-thread", "macros", "time", "sync", "signal"] }
 tokio-util = "0.7.8"

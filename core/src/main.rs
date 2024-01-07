@@ -3,6 +3,7 @@ use std::str::FromStr;
 use std::sync::atomic::{AtomicU16, Ordering};
 
 use tokio::runtime;
+use tracing_subscriber::{Layer, EnvFilter};
 use tracing_subscriber::filter::LevelFilter;
 use pyro::data::{BLOCK_STATE_DATA, CREATIVE_ITEMS_DATA};
 
@@ -39,7 +40,7 @@ fn start_server() -> ExitCode {
 
 /// Initialises logging with tokio-console.
 #[cfg(feature = "tokio-console")]
-fn init_logging() {
+fn init_logging() -> anyhow::Result<()> {
     use std::time::Duration;
     use tracing_subscriber::layer::SubscriberExt;
     use tracing_subscriber::util::SubscriberInitExt;
@@ -49,11 +50,19 @@ fn init_logging() {
         .recording_path("console_trace.log")
         .spawn();
 
-    let fmt = tracing_subscriber::fmt::layer().with_target(false);
+    let fmt = tracing_subscriber::fmt::layer()
+        .with_target(false)
+        .with_thread_names(true)
+        .with_filter(EnvFilter::from_env("LOG_LEVEL"));
 
-    tracing_subscriber::registry().with(console_layer).with(fmt).init();
+    tracing_subscriber::registry()
+        .with(console_layer)
+        .with(fmt)
+        .init();
 
     tracing::info!("Tokio console enabled");
+
+    Ok(())
 }
 
 /// Initialises logging without tokio-console.
