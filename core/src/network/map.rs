@@ -150,6 +150,30 @@ impl UserMap {
             None,
         )?);
 
+        // Cancel all tokens.
+        self.connected_map
+            .iter()
+            .for_each(|user| user.value().state.raknet.active.cancel());
+
+        Ok(())
+    }
+
+    pub async fn shutdown(&self) -> anyhow::Result<()> {
+        self.kick_all("Server closed")?;
+        while !self.connected_map.is_empty() {
+            let user = self.connected_map.iter().next().unwrap();
+
+            tracing::info!("Waiting");
+            let handle = user.value().state.handle.write().take().unwrap();
+            let _ = handle.await;
+
+            let address = user.key().clone();
+            drop(user);
+
+            self.connected_map.remove(&address);
+        }
+
+        tracing::info!("All clients disconnected");
         Ok(())
     }
 

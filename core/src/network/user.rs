@@ -41,7 +41,7 @@ pub struct BedrockUser {
     pub player: OnceLock<PlayerData>,
 
     pub broadcast: broadcast::Sender<BroadcastPacket>,
-    pub handle: OnceLock<JoinHandle<()>>
+    pub handle: RwLock<Option<JoinHandle<()>>>
 }
 
 impl BedrockUser {
@@ -66,22 +66,21 @@ impl BedrockUser {
             player: OnceLock::new(),
             
             broadcast,
-            handle: OnceLock::new()
+            handle: RwLock::new(None)
         });
 
         let clone = user.clone();
-        tokio::spawn(async move {
+        let handle = tokio::spawn(async move {
             clone.start_job(receiver).await;
         });
 
+        *user.handle.write() = Some(handle);
         user
     }
 
     async fn start_job(&self, mut receiver: mpsc::Receiver<MutableBuffer>) {
-        tracing::debug!("Bedrock layer receiver created");
-
         let mut broadcast = self.broadcast.subscribe();
-        while !self.raknet.active.is_cancelled() {
+        loop {
             tokio::select! {
                 packet = receiver.recv() => {            
                     if let Some(packet) = packet {
@@ -103,8 +102,6 @@ impl BedrockUser {
             };
 
         }
-
-        tracing::debug!("Bedrock layer receiver exited");
     }
 
     pub fn handle_broadcast(&self, packet: BroadcastPacket) -> anyhow::Result<()> {
@@ -400,225 +397,3 @@ impl PlayerData {
         self.command_permission_level
     }
 }
-
-// /// Sessions directly correspond to clients connected to the server.
-// ///
-// /// Anything that has to do with specific clients must be communicated with their associated sessions.
-// /// The server does not interact with clients directly, everything is done through these sessions.
-// pub struct User {
-//     /// Identity data such as XUID and display name.
-//     pub identity: OnceCell<IdentityData>,
-//     /// Extra user data, such as device OS and language.
-//     pub user_data: OnceCell<UserData>,
-//     /// Used to encrypt and decrypt raknet.
-//     pub encryptor: OnceCell<Encryptor>,
-//     /// Whether the client supports the chunk cache.
-//     pub cache_support: OnceCell<bool>,
-//     /// Whether the client has fully been initialised.
-//     /// This is set to true after receiving the [`SetLocalPlayerAsInitialized`](crate::network::SetLocalPlayerAsInitialized) packet
-//     pub initialized: AtomicBool,
-//     /// Manages entire world.
-//     pub level: Arc<LevelManager>,
-//     /// Sends raknet into the broadcasting channel.
-//     pub broadcast: broadcast::Sender<BroadcastPacket>,
-//     /// Indicates whether this session is active.
-//     pub active: CancellationToken,
-//     /// Current tick of this session, this is increased every [`TICK_INTERVAL`](crate::level::TICK_INTERVAL).
-//     pub current_tick: AtomicU64,
-//     /// Minecraft-specific data.
-//     pub player: RwLock<PlayerData>,
-//     /// Raknet-specific data.
-//     pub raknet: RaknetData,
-//     pub replicator: Arc<Replicator>
-// }
-
-// impl User {
-//     /// Creates a new session.
-//     pub fn new(
-//         broadcast: broadcast::Sender<BroadcastPacket>,
-//         receiver: mpsc::Receiver<MutableBuffer>,
-//         level_manager: Arc<LevelManager>,
-//         replicator: Arc<Replicator>,
-//         ipv4_socket: Arc<UdpSocket>,
-//         address: SocketAddr,
-//         mtu: u16,
-//         guid: u64,
-//     ) -> Arc<Self> {
-//         let session = Arc::new(Self {
-//             identity: OnceCell::new(),
-//             user_data: OnceCell::new(),
-//             encryptor: OnceCell::new(),
-//             cache_support: OnceCell::new(),
-//             initialized: AtomicBool::new(false),
-//             player: RwLock::new(PlayerData {
-//                 is_inventory_open: false,
-//                 position: Vector::from([0.0, 0.0, 0.0]),
-//                 rotation: Vector::from([0.0; 3]),
-//                 runtime_id: RUNTIME_ID_COUNTER.fetch_add(1, Ordering::SeqCst),
-//                 game_mode: GameMode::Creative,
-//                 permission_level: PermissionLevel::Member,
-//                 command_permission_level: CommandPermissionLevel::Normal,
-//                 skin: None,
-//                 viewer: ChunkViewer::new(level_manager.clone())
-//             }),
-//             raknet: RaknetData {
-//                 udp_socket: ipv4_socket,
-//                 mtu,
-//                 guid,
-//                 last_update: RwLock::new(Instant::now()),
-//                 batch_sequence_number: Default::default(),
-//                 sequence_index: Default::default(),
-//                 ack_index: Default::default(),
-//                 compound_id: Default::default(),
-//                 client_batch_number: Default::default(),
-//                 compound_collector: Default::default(),
-//                 order_channels: Default::default(),
-//                 send_queue: Default::default(),
-//                 confirmed_packets: Mutex::new(Vec::new()),
-//                 compression_enabled: AtomicBool::new(false),
-//                 address,
-//                 recovery_queue: Default::default(),
-//             },
-//             broadcast,
-//             level: level_manager,
-//             replicator,
-//             active: CancellationToken::new(),
-//             current_tick: AtomicU64::new(0),
-//         });
-
-//         // Start processing jobs.
-//         // These jobs run in separate tasks, therefore the session has to be cloned.
-//         session.clone().start_tick_job();
-//         session.clone().start_packet_job(receiver);
-//         session
-//     }
-
-//     #[inline]
-//     pub fn is_initialized(&self) -> bool {
-//         self.initialized.load(Ordering::SeqCst)
-//     }
-
-//     #[inline]
-//     pub fn get_identity_data(&self) -> anyhow::Result<&IdentityData> {
-//         self.identity.get().ok_or_else(|| {
-//             error!(NotInitialized, "Identity data has not been initialised yet")
-//         })
-//     }
-
-//     #[inline]
-//     pub fn get_user_data(&self) -> anyhow::Result<&UserData> {
-//         self.user_data.get().ok_or_else(|| {
-//             error!(NotInitialized, "User data has not been initialised yet")
-//         })
-//     }
-
-//     #[inline]
-//     pub fn get_gamemode(&self) -> GameMode {
-//         self.player.read().game_mode
-//     }
-
-//     #[inline]
-//     pub fn get_position(&self) -> Vector<f32, 3> {
-//         self.player.read().position.clone()
-//     }
-
-//     #[inline]
-//     pub fn get_rotation(&self) -> Vector<f32, 3> {
-//         self.player.read().rotation.clone()
-//     }
-
-//     #[inline]
-//     pub fn get_permission_level(&self) -> PermissionLevel {
-//         self.player.read().permission_level
-//     }
-
-//     #[inline]
-//     pub fn get_command_permission_level(&self) -> CommandPermissionLevel {
-//         self.player.read().command_permission_level
-//     }
-
-//     #[inline]
-//     pub fn get_runtime_id(&self) -> u64 {
-//         self.player.read().runtime_id
-//     }
-
-//     /// Retrieves the identity of the client.
-//     #[inline]
-//     pub fn get_uuid(&self) -> anyhow::Result<&Uuid> {
-//         let identity = self.identity.get().ok_or_else(|| {
-//             anyhow!(
-//                 "Identity ID data has not been initialised yet"
-//             )
-//         })?;
-//         Ok(&identity.uuid)
-//     }
-
-//     /// Retrieves the XUID of the client.
-//     #[inline]
-//     pub fn get_xuid(&self) -> anyhow::Result<u64> {
-//         let identity = self.identity.get().ok_or_else(|| {
-//             anyhow!("XUID data has not been initialised yet")
-//         })?;
-//         Ok(identity.xuid)
-//     }
-
-//     /// Retrieves the display name of the client.
-//     #[inline]
-//     pub fn get_display_name(&self) -> anyhow::Result<&str> {
-//         let identity = self.identity.get().ok_or_else(|| {
-//             anyhow!(
-//                 "Display name data has not been initialised yet"
-//             )
-//         })?;
-//         Ok(&identity.display_name)
-//     }
-
-//     #[inline]
-//     pub fn get_encryptor(&self) -> anyhow::Result<&Encryptor> {
-//         self.encryptor.get().ok_or_else(|| {
-//             anyhow!("Encryption has not been initialised yet")
-//         })
-//     }
-
-//     #[inline]
-//     pub fn get_device_os(&self) -> anyhow::Result<DeviceOS> {
-//         let data = self.user_data.get().ok_or_else(|| {
-//             anyhow!(
-//                 "Device OS data has not been initialised yet"
-//             )
-//         })?;
-//         Ok(data.build_platform)
-//     }
-
-//     /// Returns the randomly generated GUID given by the client itself.
-//     #[inline]
-//     pub const fn get_guid(&self) -> u64 {
-//         self.raknet.guid
-//     }
-
-//     /// Kicks the session from the server, displaying the given menu.
-//     pub fn kick<S: AsRef<str>>(&self, message: S) -> anyhow::Result<()> {
-//         let disconnect_packet = Disconnect {
-//             message: message.as_ref(),
-//             hide_message: false,
-//         };
-//         self.send(disconnect_packet)?;
-//         // self.flag_for_close();
-//         // FIXME: Client sends disconnect and acknowledgement packet after closing.
-
-//         Ok(())
-//     }
-
-//     /// Returns whether the session is currently active.
-//     ///
-//     /// If this returns false, any remaining associated processes should be stopped as soon as possible.
-//     #[inline]
-//     pub fn is_active(&self) -> bool {
-//         !self.active.is_cancelled()
-//     }
-
-//     #[inline]
-//     pub async fn cancelled(&self) {
-//         self.active.cancelled().await;
-//     }
-// }

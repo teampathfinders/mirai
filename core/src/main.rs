@@ -24,7 +24,7 @@ fn start_server() -> ExitCode {
         .enable_time()
         .thread_name_fn(|| {
             static ATOMIC_THREAD_COUNTER: AtomicU16 = AtomicU16::new(0);
-            format!("async-thread-{}", ATOMIC_THREAD_COUNTER.fetch_add(1, Ordering::Relaxed))
+            format!("thread-{}", ATOMIC_THREAD_COUNTER.fetch_add(1, Ordering::Relaxed))
         })
         .build()
         .expect("Failed to build runtime");
@@ -65,7 +65,11 @@ fn init_logging() -> anyhow::Result<()> {
             .unwrap_or(String::from("info")),
     )?;
 
-    tracing_subscriber::fmt().with_target(false).with_max_level(max_level).init();
+    tracing_subscriber::fmt()
+        .with_max_level(max_level)
+        .with_target(false)
+        .with_thread_names(true)
+        .init();
 
     Ok(())
 }

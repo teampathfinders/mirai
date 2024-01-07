@@ -275,12 +275,8 @@ impl ServerInstance {
 
         tracing::info!("Shutting down server. This can take several seconds...");
 
-        // ...then shut down all services.
-        if let Err(e) = user_map.kick_all("Server closed") {
-            tracing::error!("Failed to kick remaining sessions: {e}");
-        }
-
         token.cancel();
+        user_map.shutdown().await?;
 
         drop(user_map);
         // drop(level_manager);
@@ -437,6 +433,8 @@ impl ServerInstance {
                 }
             }
         }
+
+        tracing::debug!("UDP receiver exited");
     }
 
     /// Generates a new metadata string using the given description and new player count.

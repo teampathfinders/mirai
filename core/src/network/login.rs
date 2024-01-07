@@ -9,7 +9,6 @@ use util::MutableBuffer;
 use util::{bail, BlockPosition, Deserialize, Vector};
 
 use crate::config::SERVER_CONFIG;
-use crate::data::{CREATIVE_ITEMS_DATA, RUNTIME_ID_DATA};
 use crate::network::PlayerData;
 
 use super::BedrockUser;
@@ -276,13 +275,15 @@ impl BedrockUser {
 
         let (encryptor, jwt) = Encryptor::new(&request.identity.public_key)?;
 
-        tracing::debug!("Identity verified as {}, initiating encryption...", request.identity.name);
+        tracing::debug!("Identity verified as {}", request.identity.name);
 
         self.identity.set(request.identity).unwrap();
         self.client_info.set(request.client_info).unwrap();
 
         // Flush raknet before enabling encryption
         self.raknet.flush().await?;
+
+        tracing::debug!("Initiating encryption");
 
         self.send(ServerToClientHandshake { jwt: &jwt })?;
         if self.encryptor.set(encryptor).is_err() {
