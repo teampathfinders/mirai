@@ -12,7 +12,7 @@ The recommended way to run Inferno is inside a Docker container. This prevents t
 ### Manual setup
 In case you don't want to use the Docker image and instead want to set up the server manually you will first need to set up a [Redis instance](https://redis.io/docs/install/). This Redis instance will by default be running on port 6379. If you are using a different port make sure to set the `REDIS_PORT` environment variable before starting the server. Additionally, the `REDIS_HOST` variable can be used for instances on a different machine. 
 
-The minimum supported Rust version required to compile the project is 1.72. Additionally, the `inferno-level` crate also requires at least CMake 3.13+ and a compiler capable of compiling C++11 code. This is used to build [LevelDB](https://github.com/teampathfinders/leveldb-mcpe) from source.  
+The minimum supported Rust version required to compile the project is 1.72. Additionally, the `inferno-level` crate also requires at least CMake 3.13+ and a compiler capable of compiling C++11 code. This is used to build [LevelDB](https://github.com/teampathfinders/leveldb) from source.  
   
 Minimum requirements:
 - Rust 1.72
