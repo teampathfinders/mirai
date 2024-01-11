@@ -2,7 +2,7 @@ use proto::raknet::{ConnectedPing, ConnectedPong, ConnectionRequest, ConnectionR
 use util::{Deserialize, Serialize};
 use util::MutableBuffer;
 
-use crate::{RaknetUser, Reliability, SendPriority, PacketConfig};
+use crate::{RaknetUser, Reliability, SendPriority, SendConfig};
 
 impl RaknetUser {
     /// Handles a [`ConnectionRequest`] packet.
@@ -41,7 +41,7 @@ impl RaknetUser {
 
         self.send_raw_buffer_with_config(
             packet,
-            PacketConfig {
+            SendConfig {
                 reliability: Reliability::Unreliable,
                 priority: SendPriority::Low,
             },

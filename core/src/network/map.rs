@@ -103,8 +103,6 @@ impl UserMap {
             state_clone.active.cancelled().await;
             connected_map.remove(&state_clone.address);
             connecting_map.remove(&state_clone.address);
-
-            tracing::debug!("Stopped tracking inactive session");
         });
 
         self.connecting_map.insert(address, ChannelUser {
@@ -163,7 +161,6 @@ impl UserMap {
         while !self.connected_map.is_empty() {
             let user = self.connected_map.iter().next().unwrap();
 
-            tracing::info!("Waiting");
             let handle = user.value().state.handle.write().take().unwrap();
             let _ = handle.await;
 

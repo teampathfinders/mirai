@@ -25,7 +25,7 @@ fn start_server() -> ExitCode {
         .enable_time()
         .thread_name_fn(|| {
             static ATOMIC_THREAD_COUNTER: AtomicU16 = AtomicU16::new(0);
-            format!("thread-{}", ATOMIC_THREAD_COUNTER.fetch_add(1, Ordering::Relaxed))
+            format!("[{}]", ATOMIC_THREAD_COUNTER.fetch_add(1, Ordering::Relaxed))
         })
         .build()
         .expect("Failed to build runtime");

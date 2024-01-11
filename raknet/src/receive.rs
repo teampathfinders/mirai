@@ -6,6 +6,7 @@ use async_recursion::async_recursion;
 use proto::bedrock::{Animate, CacheStatus, ChunkRadiusRequest, ClientToServerHandshake, CommandRequest, CompressionAlgorithm, CONNECTED_PACKET_ID, ConnectedPacket, ContainerClose, FormResponse, Header, Interact, Login, MovePlayer, PlayerAction, RequestAbility, RequestNetworkSettings, ResourcePackClientResponse, SetLocalPlayerAsInitialized, SettingsCommand, TextMessage, TickSync, UpdateSkin, ViolationWarning};
 use proto::raknet::{Ack, ConnectedPing, ConnectionRequest, DisconnectNotification, Nak, NewIncomingConnection};
 
+use tokio::sync::mpsc::error::SendTimeoutError;
 use util::{BinaryRead, MutableBuffer};
 
 use crate::{RaknetUser, FrameBatch, Frame, BroadcastPacket};
@@ -119,7 +120,13 @@ impl RaknetUser {
         match packet_id {
             // CONNECTED_PACKET_ID => self.handle_encrypted_frame(packet).await?,
             CONNECTED_PACKET_ID => {
-                self.output.send_timeout(packet, RAKNET_OUTPUT_TIMEOUT).await?
+                if let Err(err) = self.output.send_timeout(packet, RAKNET_OUTPUT_TIMEOUT).await {
+                    if matches!(err, SendTimeoutError::Closed(_)) {
+                        // Output channel has been closed.
+                        let _ = self.disconnect().await;
+                        tracing::error!("RakNet layer output channel closed, disconnecting client");
+                    }   
+                }
             },
             DisconnectNotification::ID => self.handle_disconnect(),
             ConnectionRequest::ID => self.handle_connection_request(packet)?,
