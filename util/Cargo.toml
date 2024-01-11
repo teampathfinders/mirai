@@ -9,7 +9,7 @@ rust-version = "1.65.0"
 
 [dependencies]
 anyhow = { version = "1.0.79", features = ["backtrace"] }
-base64 = "0.21.6"
+base64 = "0.21.7"
 cipher = "0.4.4"
 dashmap = "5.4.0"
 jsonwebtoken = "9.2.0"
