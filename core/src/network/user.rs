@@ -9,7 +9,7 @@ use anyhow::Context;
 use flate2::Compression;
 use flate2::write::DeflateEncoder;
 use parking_lot::RwLock;
-use raknet::{PacketConfig, DEFAULT_SEND_CONFIG, RaknetUser, BroadcastPacket};
+use raknet::{SendConfig, DEFAULT_SEND_CONFIG, RaknetUser, BroadcastPacket};
 use tokio::sync::{mpsc, broadcast};
 use proto::bedrock::{CommandPermissionLevel, Disconnect, GameMode, PermissionLevel, Skin, ConnectedPacket, CONNECTED_PACKET_ID, CompressionAlgorithm, Packet, Header, RequestNetworkSettings, Login, ClientToServerHandshake, CacheStatus, ResourcePackClientResponse, ViolationWarning, ChunkRadiusRequest, Interact, TextMessage, SetLocalPlayerAsInitialized, MovePlayer, PlayerAction, RequestAbility, Animate, CommandRequest, SettingsCommand, ContainerClose, FormResponse, TickSync, UpdateSkin};
 use proto::crypto::{Encryptor, BedrockIdentity, BedrockClientInfo};
@@ -100,8 +100,9 @@ impl BedrockUser {
                 },
                 _ = self.raknet.active.cancelled() => break
             };
-
         }
+
+        tracing::debug!("User cleaned up");
     }
 
     pub fn handle_broadcast(&self, packet: BroadcastPacket) -> anyhow::Result<()> {
@@ -119,6 +120,8 @@ impl BedrockUser {
         };
         self.send(disconnect_packet)?;
         self.raknet.active.cancel();
+
+        tracing::info!("{} kicked: {message}", self.name());
 
         Ok(())
     }
@@ -155,7 +158,7 @@ impl BedrockUser {
     }
 
     /// Sends a game packet with custom reliability and priority
-    pub fn send_serialized<B>(&self, packet: B, config: PacketConfig) -> anyhow::Result<()>
+    pub fn send_serialized<B>(&self, packet: B, config: SendConfig) -> anyhow::Result<()>
         where
             B: AsRef<[u8]>
     {

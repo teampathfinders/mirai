@@ -10,7 +10,7 @@ use util::Serialize;
 use crate::{SendPriority, RaknetUser, Reliability, Frame, FrameBatch};
 
 /// Specifies the reliability and priority of a packet.
-pub struct PacketConfig {
+pub struct SendConfig {
     /// In case encryption is enabled, this reliability must always be reliable ordered.
     pub reliability: Reliability,
     /// Priority specifies if this packet has sending priority over other raknet.
@@ -18,7 +18,7 @@ pub struct PacketConfig {
 }
 
 /// A default packet config that can be used for all raknet.
-pub const DEFAULT_SEND_CONFIG: PacketConfig = PacketConfig {
+pub const DEFAULT_SEND_CONFIG: SendConfig = SendConfig {
     reliability: Reliability::ReliableOrdered,
     priority: SendPriority::Medium,
 };
@@ -37,7 +37,7 @@ impl RaknetUser {
     pub fn send_raw_buffer_with_config<B>(
         &self,
         buffer: B,
-        config: PacketConfig,
+        config: SendConfig,
     ) where B: Into<MutableBuffer> {
         let buffer = buffer.into();
         self.send.insert_raw(

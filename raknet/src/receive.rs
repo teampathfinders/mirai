@@ -7,6 +7,8 @@ use proto::bedrock::CONNECTED_PACKET_ID;
 use proto::raknet::{Ack, ConnectedPing, ConnectionRequest, DisconnectNotification, Nak, NewIncomingConnection};
 use util::MutableBuffer;
 
+use tokio::sync::mpsc::error::SendTimeoutError;
+
 use crate::{RaknetUser, FrameBatch, Frame};
 
 const RAKNET_OUTPUT_TIMEOUT: Duration = Duration::from_millis(10);
@@ -118,7 +120,13 @@ impl RaknetUser {
         match packet_id {
             // CONNECTED_PACKET_ID => self.handle_encrypted_frame(packet).await?,
             CONNECTED_PACKET_ID => {
-                self.output.send_timeout(packet, RAKNET_OUTPUT_TIMEOUT).await?
+                if let Err(err) = self.output.send_timeout(packet, RAKNET_OUTPUT_TIMEOUT).await {
+                    if matches!(err, SendTimeoutError::Closed(_)) {
+                        // Output channel has been closed.
+                        let _ = self.disconnect().await;
+                        tracing::error!("RakNet layer output channel closed, disconnecting client");
+                    }   
+                }
             },
             DisconnectNotification::ID => self.active.cancel(),
             ConnectionRequest::ID => self.handle_connection_request(packet)?,

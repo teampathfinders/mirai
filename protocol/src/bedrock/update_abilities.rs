@@ -156,9 +156,7 @@ impl<'a> Deserialize<'a> for AbilityData {
 }
 
 #[derive(Debug)]
-pub struct UpdateAbilities {
-    pub data: AbilityData
-}
+pub struct UpdateAbilities(pub AbilityData);
 
 impl ConnectedPacket for UpdateAbilities {
     const ID: u32 = 0xbb;
@@ -167,6 +165,6 @@ impl ConnectedPacket for UpdateAbilities {
 impl Serialize for UpdateAbilities {
     #[inline]
     fn serialize(&self, buffer: &mut MutableBuffer) -> anyhow::Result<()> {
-        self.data.serialize(buffer)
+        self.0.serialize(buffer)
     }
 }
