@@ -1,11 +1,9 @@
-use std::io::Write;
 use std::sync::atomic::Ordering;
 
 use async_recursion::async_recursion;
-use proto::bedrock::{ConnectedPacket};
 use proto::raknet::{Ack, AckRecord};
 
-use util::{MutableBuffer};
+use util::MutableBuffer;
 
 use util::Serialize;
 

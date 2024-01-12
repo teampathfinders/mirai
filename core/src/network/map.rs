@@ -1,7 +1,7 @@
 use std::net::SocketAddr;
 
 use std::sync::{Arc, OnceLock};
-use std::time::{Duration};
+use std::time::Duration;
 
 use anyhow::Context;
 use dashmap::DashMap;
@@ -13,7 +13,7 @@ use proto::bedrock::{ConnectedPacket, Disconnect};
 use replicator::Replicator;
 
 
-use util::{Serialize};
+use util::Serialize;
 use util::MutableBuffer;
 
 use crate::config::SERVER_CONFIG;
@@ -23,7 +23,6 @@ use super::{ForwardablePacket, BedrockUser};
 
 const BROADCAST_CHANNEL_CAPACITY: usize = 5;
 const FORWARD_TIMEOUT: Duration = Duration::from_millis(10);
-const GARBAGE_COLLECT_INTERVAL: Duration = Duration::from_secs(1);
 
 pub struct ChannelUser<T> {
     channel: mpsc::Sender<MutableBuffer>,

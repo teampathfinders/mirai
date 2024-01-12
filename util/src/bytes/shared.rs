@@ -241,7 +241,7 @@ mod test {
 
                     let mut buffer = MutableBuffer::new();
                     for v in VALUES {
-                        buffer.[<write_ $ty _le>](v);
+                        buffer.[<write_ $ty _le>](v).unwrap();
                     }
 
                     let mut ss = buffer.snapshot();
@@ -256,7 +256,7 @@ mod test {
 
                     let mut buffer = MutableBuffer::new();
                     for v in VALUES {
-                        buffer.[<write_ $ty _be>](v);
+                        buffer.[<write_ $ty _be>](v).unwrap();
                     }
 
                     let mut ss = buffer.snapshot();

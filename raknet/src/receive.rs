@@ -3,10 +3,9 @@ use std::sync::atomic::Ordering;
 use std::time::{Instant, Duration};
 
 use async_recursion::async_recursion;
-use proto::bedrock::{CONNECTED_PACKET_ID, ConnectedPacket};
+use proto::bedrock::CONNECTED_PACKET_ID;
 use proto::raknet::{Ack, ConnectedPing, ConnectionRequest, DisconnectNotification, Nak, NewIncomingConnection};
-
-use util::{MutableBuffer};
+use util::MutableBuffer;
 
 use crate::{RaknetUser, FrameBatch, Frame};
 
