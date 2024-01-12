@@ -2,10 +2,10 @@ use std::io::Write;
 use std::sync::atomic::Ordering;
 
 use async_recursion::async_recursion;
-use proto::bedrock::{CompressionAlgorithm, CONNECTED_PACKET_ID, ConnectedPacket, Packet};
+use proto::bedrock::{ConnectedPacket};
 use proto::raknet::{Ack, AckRecord};
 
-use util::{BinaryWrite, MutableBuffer};
+use util::{MutableBuffer};
 
 use util::Serialize;
 

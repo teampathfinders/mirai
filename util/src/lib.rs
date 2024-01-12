@@ -4,7 +4,7 @@ mod macros;
 mod error;
 mod u24;
 
-use std::sync::atomic::{AtomicBool, Ordering};
+
 
 pub use error::*;
 

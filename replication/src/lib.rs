@@ -2,7 +2,7 @@ use anyhow::Context;
 use fred::{
     clients::RedisClient,
     interfaces::{ClientLike, HashesInterface, PubsubInterface, StreamsInterface},
-    types::{RedisConfig, RespVersion, Server, ServerConfig, XCap},
+    types::{RedisConfig, RespVersion, Server, ServerConfig},
 };
 use proto::bedrock::{MovePlayer, TextData, TextMessage};
 use util::{size_of_string, BinaryWrite, MutableBuffer};

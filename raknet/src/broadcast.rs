@@ -1,5 +1,5 @@
-use std::{num::NonZeroU64, net::SocketAddr};
-use anyhow::anyhow;
+use std::{net::SocketAddr};
+
 use proto::bedrock::{ConnectedPacket, Packet};
 
 use util::{ArcBuffer, Serialize};

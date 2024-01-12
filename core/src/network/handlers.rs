@@ -2,7 +2,7 @@
 
 use proto::bedrock::{Animate, CommandOutput, CommandOutputMessage, CommandOutputType, CommandRequest, FormResponse, ParsedCommand, RequestAbility, SettingsCommand, TextData, TextMessage, TickSync, UpdateSkin};
 
-use util::{Deserialize, TryExpect};
+use util::{Deserialize};
 use util::MutableBuffer;
 
 use super::BedrockUser;
@@ -29,7 +29,7 @@ impl BedrockUser {
     pub async fn handle_text_message(&self, packet: MutableBuffer) -> anyhow::Result<()> {
         let request = TextMessage::deserialize(packet.snapshot())?;
         if let TextData::Chat {
-            source, ..
+             ..
         } = request.data {
             // Check that the source is equal to the player name to prevent spoofing.
             #[cfg(not(debug_assertions))] // Allow modifications for development purposes.

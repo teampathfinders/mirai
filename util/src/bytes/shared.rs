@@ -228,9 +228,9 @@ impl<'a> Read for SharedBuffer<'a> {
 mod test {
     use paste::paste;
 
-    use crate::bytes::SharedBuffer;
+    
     use crate::bytes::{BinaryRead, BinaryWrite, MutableBuffer};
-    use crate::u24::u24;
+    
 
     macro_rules! define_test_fns {
         ($($ty: ident),+) => {

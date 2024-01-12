@@ -1,4 +1,4 @@
-use std::{net::SocketAddr, sync::{Arc, atomic::{AtomicBool, AtomicU16, AtomicU32, AtomicU64}}, time::Instant, mem::MaybeUninit};
+use std::{net::SocketAddr, sync::{Arc, atomic::{AtomicU16, AtomicU32, AtomicU64}}, time::Instant, mem::MaybeUninit};
 
 use parking_lot::{Mutex, RwLock};
 use tokio::{net::UdpSocket, sync::{broadcast, mpsc}};

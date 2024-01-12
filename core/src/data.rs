@@ -113,7 +113,7 @@ impl CreativeItemsMap {
                 continue
             };
 
-            let stack = if let Some(properties) = &item.block_properties {
+            let stack = if let Some(_properties) = &item.block_properties {
                 ItemStack {
                     runtime_id,
                     meta: item.meta as u32,
