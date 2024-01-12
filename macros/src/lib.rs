@@ -1,3 +1,7 @@
+//! Provides custom macros for the Inferno server.
+
+#![forbid(missing_docs)]
+
 use proc_macro::TokenStream;
 use proc_macro2::Span;
 use quote::{format_ident, quote, quote_spanned};
