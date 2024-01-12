@@ -16,7 +16,7 @@ use util::{Deserialize, Serialize};
 
 use crate::config::SERVER_CONFIG;
 use crate::level::Level;
-use crate::network::{UserMap, ForwardablePacket};
+use crate::network::{ForwardablePacket, UserMap};
 use proto::bedrock::{
     Command, CommandDataType, CommandEnum, CommandOverload, CommandParameter, CommandPermissionLevel, BOOLEAN_GAME_RULES, CLIENT_VERSION_STRING,
     INTEGER_GAME_RULES, MOBEFFECT_NAMES, NETWORK_VERSION,
@@ -348,7 +348,7 @@ impl ServerInstance {
             address: packet.addr,
             guid: request.client_guid,
             mtu: request.mtu,
-            socket: udp_socket
+            socket: udp_socket,
         });
 
         Ok(packet)

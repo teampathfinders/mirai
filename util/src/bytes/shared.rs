@@ -228,9 +228,9 @@ impl<'a> Read for SharedBuffer<'a> {
 mod test {
     use paste::paste;
 
-    use crate::bytes::SharedBuffer;
+    
     use crate::bytes::{BinaryRead, BinaryWrite, MutableBuffer};
-    use crate::u24::u24;
+    
 
     macro_rules! define_test_fns {
         ($($ty: ident),+) => {
@@ -241,7 +241,7 @@ mod test {
 
                     let mut buffer = MutableBuffer::new();
                     for v in VALUES {
-                        buffer.[<write_ $ty _le>](v);
+                        buffer.[<write_ $ty _le>](v).unwrap();
                     }
 
                     let mut ss = buffer.snapshot();
@@ -256,7 +256,7 @@ mod test {
 
                     let mut buffer = MutableBuffer::new();
                     for v in VALUES {
-                        buffer.[<write_ $ty _be>](v);
+                        buffer.[<write_ $ty _be>](v).unwrap();
                     }
 
                     let mut ss = buffer.snapshot();

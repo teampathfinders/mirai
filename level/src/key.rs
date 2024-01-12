@@ -1,13 +1,21 @@
 use proto::types::Dimension;
 use util::{BinaryRead, BinaryWrite, Vector};
 
+/// The `AutonomousEntities` database key.
 pub const AUTONOMOUS_ENTITIES: &[u8] = "AutonomousEntities".as_bytes();
+/// The `BiomeData` database key.
 pub const BIOME_DATA: &[u8] = "BiomeData".as_bytes();
+/// The `LevelChunkMetaDataDictionary` database key.
 pub const CHUNK_METADATA: &[u8] = "LevelChunkMetaDataDictionary".as_bytes();
+/// The `Overworld` database key.
 pub const OVERWORLD: &[u8] = "Overworld".as_bytes();
+/// The `mobevents` database key.
 pub const MOB_EVENTS: &[u8] = "mobevents".as_bytes();
+/// The `scoreboard` database key.
 pub const SCOREBOARD: &[u8] = "scoreboard".as_bytes();
+/// The `schedulerWT` database key.
 pub const SCHEDULER: &[u8] = "schedulerWT".as_bytes();
+/// The `~local_player` database key.
 pub const LOCAL_PLAYER: &[u8] = "~local_player".as_bytes();
 
 /// Database key prefixes.
@@ -20,11 +28,15 @@ pub enum KeyType {
     Biome3d = 0x2b,
     /// Version of the specified chunk.
     ChunkVersion = 0x2c,
+    /// Heightmap containing the highest blocks in the given subchunk.
     HeightMap = 0x2d,
     /// Sub chunk data.
     SubChunk {
+        /// Vertical position of the subchunk.
+        /// This index can also be negative, indicating subchunks that are below 0.
         index: i8,
     } = 0x2f,
+    /// The old terrain format.
     LegacyTerrain = 0x30,
     /// A block entity.
     BlockEntity = 0x31,

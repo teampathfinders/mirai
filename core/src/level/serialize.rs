@@ -17,7 +17,7 @@ pub fn serialize_biomes(buffer: &mut MutableBuffer, biomes: &Biomes) -> anyhow::
         match fragment {
             BiomeEncoding::Paletted(paletted) => {
                 let indices = paletted.indices();
-                let max_index = paletted.max_index();
+                let max_index = paletted.palette().len() - 1;
 
                 level::serialize_packed_array(buffer, indices, max_index, true)?;
                 serialize_biome_palette(buffer, paletted.palette())?;

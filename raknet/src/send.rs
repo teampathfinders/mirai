@@ -1,11 +1,9 @@
-use std::io::Write;
 use std::sync::atomic::Ordering;
 
 use async_recursion::async_recursion;
-use proto::bedrock::{CompressionAlgorithm, CONNECTED_PACKET_ID, ConnectedPacket, Packet};
 use proto::raknet::{Ack, AckRecord};
 
-use util::{BinaryWrite, MutableBuffer};
+use util::MutableBuffer;
 
 use util::Serialize;
 
@@ -81,6 +79,7 @@ impl RaknetUser {
         Ok(())
     }
 
+    /// Flushes both the frames and acknowledgements.
     pub async fn flush_all(&self) -> anyhow::Result<()> {
         if let Some(frames) = self.send.flush(SendPriority::High) {
             self.send_raw_frames(frames).await?;
@@ -98,6 +97,7 @@ impl RaknetUser {
         self.flush_acknowledgements().await
     }
 
+    /// Flushes all of the pending acknowledgements.
     pub async fn flush_acknowledgements(&self) -> anyhow::Result<()> {
         let mut confirmed = {
             let mut lock = self.acknowledged.lock();

@@ -1,7 +1,6 @@
 use anyhow::anyhow;
-use std::path::Path;
+
 use std::ptr::NonNull;
-use std::sync::atomic::{AtomicBool, Ordering};
 use std::{
     ffi::{c_void, CStr, CString},
     marker::PhantomData,
@@ -232,6 +231,11 @@ impl Database {
         }
     }
 
+    /// Inserts a new value into the database.
+    ///
+    /// # Arguments
+    /// * `key` - Key to store the value at.
+    /// * `value` - Value to store at the specified key.
     pub fn insert<V>(&self, key: DataKey, value: V) -> anyhow::Result<()>
     where
         V: AsRef<[u8]>,
@@ -241,8 +245,8 @@ impl Database {
 
         let value = value.as_ref();
 
-        /// SAFETY: This is safe because the data and lengths come from properly allocated vecs.
-        /// Additionally, the insert method does not keep references to the data after the function has been called.
+        // SAFETY: This is safe because the data and lengths come from properly allocated vecs.
+        // Additionally, the insert method does not keep references to the data after the function has been called.
         unsafe {
             let result = ffi::level_insert(
                 self.ptr.as_ptr(),
@@ -260,12 +264,13 @@ impl Database {
         }
     }
 
+    /// Removes the given key from the database.
     pub fn remove(&self, key: DataKey) -> anyhow::Result<()> {
         let mut raw_key = Vec::with_capacity(key.serialized_size());
         key.serialize(&mut raw_key)?;
 
-        /// SAFETY: This is safe because the data and lengths come from properly allocated vecs.
-        /// Additionally, the remove method does not keep references to the data after the function has been called.
+        // SAFETY: This is safe because the data and lengths come from properly allocated vecs.
+        // Additionally, the remove method does not keep references to the data after the function has been called.
         unsafe {
             let result = ffi::level_remove(self.ptr.as_ptr(), raw_key.as_ptr() as *mut c_char, raw_key.len() as c_int);
 

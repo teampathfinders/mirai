@@ -6,7 +6,7 @@ use std::ops::{Index, IndexMut};
 
 use serde::{Deserialize, Serialize};
 
-use util::{bail, Vector};
+use util::Vector;
 use util::{BinaryRead, BinaryWrite, MutableBuffer};
 
 use crate::PackedArrayReturn;
@@ -140,17 +140,17 @@ impl SubLayer {
 
     // FIXME: Using this method will modify every block with the same index
     // instead of only the block at the specified position.
-    pub fn get_mut(&mut self, pos: Vector<u8, 3>) -> Option<&mut PaletteEntry> {
-        if pos.x > 16 || pos.y > 16 || pos.z > 16 {
-            return None;
-        }
+    // pub fn get_mut(&mut self, pos: Vector<u8, 3>) -> Option<&mut PaletteEntry> {
+    //     if pos.x > 16 || pos.y > 16 || pos.z > 16 {
+    //         return None;
+    //     }
 
-        let offset = to_offset(pos);
-        debug_assert!(offset < 4096);
+    //     let offset = to_offset(pos);
+    //     debug_assert!(offset < 4096);
 
-        let index = self.indices[offset] as usize;
-        Some(&mut self.palette[index])
-    }
+    //     let index = self.indices[offset] as usize;
+    //     Some(&mut self.palette[index])
+    // }
 
     /// Returns a reference to the block palette.
     pub fn palette(&self) -> &[PaletteEntry] {
@@ -172,6 +172,7 @@ impl SubLayer {
         &mut self.indices
     }
 
+    /// Takes ownership of the layer and returns the indices.
     pub fn take_indices(self) -> Box<[u16; 4096]> {
         self.indices
     }
@@ -186,7 +187,7 @@ impl SubLayer {
         let indices = match crate::deserialize_packed_array(&mut reader)? {
             PackedArrayReturn::Data(data) => data,
             PackedArrayReturn::Empty => anyhow::bail!("Sub layer packed array index size cannot be 0"),
-            PackedArrayReturn::ReferBack => anyhow::bail!("Sub layer packed array does not support biome referral"),
+            PackedArrayReturn::Inherit => anyhow::bail!("Sub layer packed array does not support biome referral"),
         };
 
         let len = reader.read_u32_le()? as usize;
@@ -209,7 +210,7 @@ impl SubLayer {
         let indices = match crate::deserialize_packed_array(&mut reader)? {
             PackedArrayReturn::Data(data) => data,
             PackedArrayReturn::Empty => anyhow::bail!("Sub layer packed array index size cannot be 0"),
-            PackedArrayReturn::ReferBack => anyhow::bail!("Sub layer packed array does not support biome referral"),
+            PackedArrayReturn::Inherit => anyhow::bail!("Sub layer packed array does not support biome referral"),
         };
 
         todo!();
@@ -344,11 +345,7 @@ impl SubChunk {
         self.index
     }
 
-    /// The amount of layers that this subchunk contains
-    pub fn layer_len(&self) -> u8 {
-        self.layers.len() as u8
-    }
-
+    /// The layers (storage records) contained in this subchunk.
     pub fn layers(&self) -> &[SubLayer] {
         &self.layers
     }
@@ -363,6 +360,8 @@ impl SubChunk {
         self.layers.get_mut(index)
     }
 
+    /// Takes ownership of the subchunk and returns an owned list of its layers.
+    #[inline]
     pub fn take_layers(self) -> Vec<SubLayer> {
         self.layers
     }

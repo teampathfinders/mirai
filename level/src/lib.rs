@@ -1,4 +1,6 @@
-#![allow(unused)]
+//! An interface that can interact with the Minecraft Bedrock world format.
+
+#![forbid(missing_docs)]
 #![deny(clippy::undocumented_unsafe_blocks)]
 
 #[cfg(target_endian = "big")]
@@ -11,13 +13,24 @@ const fn ceil_div(lhs: u32, rhs: u32) -> u32 {
     (lhs + rhs - 1) / rhs
 }
 
+/// Return value from packed array deserialisation.
 #[derive(Debug, PartialEq, Eq)]
 pub enum PackedArrayReturn {
+    /// The packed array was empty.
     Empty,
-    ReferBack,
+    /// This array inherits from the previously processed array.
+    Inherit,
+    /// New data for the array.
     Data(Box<[u16; 4096]>),
 }
 
+/// Serializes a packed array into binary format.
+///
+/// # Arguments
+/// * `writer` - Write to serialize into.
+/// * `array` - Array to serialize into packed form.
+/// * `max_index` - Amount of unique elements of the array.
+/// * `is_network` - Serialize into network format.
 pub fn serialize_packed_array<W>(writer: &mut W, array: &[u16; 4096], max_index: usize, is_network: bool) -> anyhow::Result<()>
 where
     W: BinaryWrite,
@@ -62,6 +75,13 @@ where
     Ok(())
 }
 
+/// Deserializes a packed array into an array that can be used by other code.
+///
+/// # Arguments
+/// * `reader` - Reader to deserialize from.
+///
+/// # Returns
+/// See [`PackedArrayReturn`].
 pub fn deserialize_packed_array<'a, R>(reader: &mut R) -> anyhow::Result<PackedArrayReturn>
 where
     R: BinaryRead<'a>,
@@ -70,7 +90,7 @@ where
     if index_size == 0 {
         return Ok(PackedArrayReturn::Empty);
     } else if index_size == 0x7f {
-        return Ok(PackedArrayReturn::ReferBack);
+        return Ok(PackedArrayReturn::Inherit);
     } else if ![1, 2, 3, 4, 5, 6, 8, 16].contains(&index_size) {
         anyhow::bail!(format!("Invalid index size: {index_size}"));
     }
@@ -104,12 +124,15 @@ where
 mod test;
 
 mod biome;
-pub mod database;
 mod ffi;
 mod key;
-pub mod provider;
 mod settings;
 mod subchunk;
+
+/// Direct access to the LevelDB database.
+pub mod database;
+/// Implements serialization and deserialization for important types.
+pub mod provider;
 
 pub use biome::*;
 pub use key::*;

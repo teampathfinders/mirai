@@ -18,19 +18,16 @@ pub struct PalettedBiome {
 }
 
 impl PalettedBiome {
+    /// A list of indices in this palette.
     #[inline]
     pub fn indices(&self) -> &[u16; 4096] {
         &self.indices
     }
 
+    /// Palette used by this biome.
     #[inline]
     pub fn palette(&self) -> &[u32] {
         &self.palette
-    }
-
-    #[inline]
-    pub fn max_index(&self) -> usize {
-        self.palette.len() - 1
     }
 }
 
@@ -57,11 +54,13 @@ pub struct Biomes {
 }
 
 impl Biomes {
+    /// Heightmap of this biome.
     #[inline]
     pub fn heightmap(&self) -> &[[u16; 16]; 16] {
         &self.heightmap
     }
 
+    /// Fragments of this biome.
     #[inline]
     pub fn fragments(&self) -> &[BiomeEncoding] {
         &self.fragments

@@ -1,47 +1,68 @@
+//! Provides custom macros for the Inferno server.
+
+#![forbid(missing_docs)]
+
 use proc_macro::TokenStream;
 use proc_macro2::Span;
 use quote::{format_ident, quote, quote_spanned};
-use syn::{Ident, DeriveInput, spanned::Spanned, Data, Fields};
+use syn::{spanned::Spanned, Data, DeriveInput, Fields, Ident};
 
 /// Generates a new type prefixed with `Atomic` that is the same as the affected
 /// enum but provides atomic load and store operations.
 #[proc_macro_attribute]
 pub fn atomic_enum(_attrs: TokenStream, item: TokenStream) -> TokenStream {
     let mut input = syn::parse_macro_input!(item as DeriveInput);
-    let DeriveInput {
-        attrs, vis, ident, data,
-        ..
-    } = &mut input;
+    let DeriveInput { attrs, vis, ident, data, .. } = &mut input;
 
     let mut repr = Ident::new("u32", Span::call_site());
-    
+
     attrs.retain_mut(|attr| {
         if attr.meta.path().is_ident("repr") {
             let _ = attr.parse_nested_meta(|meta| {
-                if meta.path.is_ident("u8") { repr = Ident::new("u8", Span::call_site()); }
-                if meta.path.is_ident("u16") { repr = Ident::new("u16", Span::call_site()); }
-                if meta.path.is_ident("u32") { repr = Ident::new("u32", Span::call_site()); }
-                if meta.path.is_ident("u64") { repr = Ident::new("u64", Span::call_site()); }
+                if meta.path.is_ident("u8") {
+                    repr = Ident::new("u8", Span::call_site());
+                }
+                if meta.path.is_ident("u16") {
+                    repr = Ident::new("u16", Span::call_site());
+                }
+                if meta.path.is_ident("u32") {
+                    repr = Ident::new("u32", Span::call_site());
+                }
+                if meta.path.is_ident("u64") {
+                    repr = Ident::new("u64", Span::call_site());
+                }
 
-                if meta.path.is_ident("i8") { repr = Ident::new("i8", Span::call_site()); }
-                if meta.path.is_ident("i16") { repr = Ident::new("i16", Span::call_site()); }
-                if meta.path.is_ident("i32") { repr = Ident::new("i32", Span::call_site()); }
-                if meta.path.is_ident("i64") { repr = Ident::new("i64", Span::call_site()); }
+                if meta.path.is_ident("i8") {
+                    repr = Ident::new("i8", Span::call_site());
+                }
+                if meta.path.is_ident("i16") {
+                    repr = Ident::new("i16", Span::call_site());
+                }
+                if meta.path.is_ident("i32") {
+                    repr = Ident::new("i32", Span::call_site());
+                }
+                if meta.path.is_ident("i64") {
+                    repr = Ident::new("i64", Span::call_site());
+                }
 
-                if meta.path.is_ident("usize") { repr = Ident::new("usize", Span::call_site()); }
-                if meta.path.is_ident("isize") { repr = Ident::new("isize", Span::call_site()); }
+                if meta.path.is_ident("usize") {
+                    repr = Ident::new("usize", Span::call_site());
+                }
+                if meta.path.is_ident("isize") {
+                    repr = Ident::new("isize", Span::call_site());
+                }
 
                 Ok(())
             });
 
-            false 
+            false
         } else {
-            true 
+            true
         }
     });
 
     let atomic_ident = format_ident!("Atomic{ident}");
-    
+
     let repr_string = {
         let repr_string = repr.to_string();
         let mut chars = repr_string.chars();
@@ -58,13 +79,13 @@ pub fn atomic_enum(_attrs: TokenStream, item: TokenStream) -> TokenStream {
             if variant.fields != Fields::Unit {
                 return TokenStream::from(quote_spanned! {
                     variant.span() => compile_error!("atomic_enum can only be applied to fieldless enums");
-                })        
+                });
             }
         }
     } else {
         return TokenStream::from(quote_spanned! {
             input.span() => compile_error!("atomic_enum can only be applied to enums");
-        })
+        });
     }
 
     let variants = &enum_data.variants;
@@ -76,7 +97,7 @@ pub fn atomic_enum(_attrs: TokenStream, item: TokenStream) -> TokenStream {
         #vis enum #ident {
             #variants
         }
-        
+
         #[doc = #doc_comment]
         #vis struct #atomic_ident(::std::sync::atomic::#atomic_inner);
 

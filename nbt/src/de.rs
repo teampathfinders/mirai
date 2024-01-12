@@ -123,7 +123,7 @@ where
 ///  struct Data {
 ///     value: String
 ///  }
-/// 
+///
 /// # let data = Data {
 /// #   value: String::from("Hello, World!")
 /// # };
@@ -163,7 +163,7 @@ where
 ///  struct Data {
 ///     value: String
 ///  }
-/// 
+///
 /// # let data = Data {
 /// #   value: String::from("Hello, World!")
 /// # };
@@ -203,7 +203,7 @@ where
 ///  struct Data {
 ///     value: String
 ///  }
-/// 
+///
 /// # let data = Data {
 /// #   value: String::from("Hello, World!")
 /// # };

@@ -1,15 +1,15 @@
-use std::io::Read;
+
 use std::sync::atomic::Ordering;
 use std::time::{Instant, Duration};
 
 use async_recursion::async_recursion;
-use proto::bedrock::{Animate, CacheStatus, ChunkRadiusRequest, ClientToServerHandshake, CommandRequest, CompressionAlgorithm, CONNECTED_PACKET_ID, ConnectedPacket, ContainerClose, FormResponse, Header, Interact, Login, MovePlayer, PlayerAction, RequestAbility, RequestNetworkSettings, ResourcePackClientResponse, SetLocalPlayerAsInitialized, SettingsCommand, TextMessage, TickSync, UpdateSkin, ViolationWarning};
+use proto::bedrock::CONNECTED_PACKET_ID;
 use proto::raknet::{Ack, ConnectedPing, ConnectionRequest, DisconnectNotification, Nak, NewIncomingConnection};
+use util::MutableBuffer;
 
 use tokio::sync::mpsc::error::SendTimeoutError;
-use util::{BinaryRead, MutableBuffer};
 
-use crate::{RaknetUser, FrameBatch, Frame, BroadcastPacket};
+use crate::{RaknetUser, FrameBatch, Frame};
 
 const RAKNET_OUTPUT_TIMEOUT: Duration = Duration::from_millis(10);
 
@@ -128,7 +128,7 @@ impl RaknetUser {
                     }   
                 }
             },
-            DisconnectNotification::ID => self.handle_disconnect(),
+            DisconnectNotification::ID => self.active.cancel(),
             ConnectionRequest::ID => self.handle_connection_request(packet)?,
             NewIncomingConnection::ID => {
                 self.handle_new_incoming_connection(packet)?

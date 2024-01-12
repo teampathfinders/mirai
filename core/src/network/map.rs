@@ -1,19 +1,19 @@
 use std::net::SocketAddr;
-use std::sync::atomic::{AtomicU64, AtomicU32};
-use std::sync::{Arc, Weak, OnceLock};
-use std::time::{Duration, Instant};
+
+use std::sync::{Arc, OnceLock};
+use std::time::Duration;
 
 use anyhow::Context;
 use dashmap::DashMap;
-use parking_lot::{RwLock, Mutex};
+
 use raknet::{RaknetUser, BroadcastPacket, UserCreateInfo};
-use tokio::net::UdpSocket;
-use tokio::sync::{broadcast, mpsc, OnceCell};
-use proto::bedrock::{ConnectedPacket, Disconnect, DISCONNECTED_TIMEOUT};
+
+use tokio::sync::{broadcast, mpsc};
+use proto::bedrock::{ConnectedPacket, Disconnect};
 use replicator::Replicator;
 
-use tokio_util::sync::CancellationToken;
-use util::{Serialize};
+
+use util::Serialize;
 use util::MutableBuffer;
 
 use crate::config::SERVER_CONFIG;
@@ -23,7 +23,6 @@ use super::{ForwardablePacket, BedrockUser};
 
 const BROADCAST_CHANNEL_CAPACITY: usize = 5;
 const FORWARD_TIMEOUT: Duration = Duration::from_millis(10);
-const GARBAGE_COLLECT_INTERVAL: Duration = Duration::from_secs(1);
 
 pub struct ChannelUser<T> {
     channel: mpsc::Sender<MutableBuffer>,
@@ -126,7 +125,7 @@ impl UserMap {
         Ok(())
     }
 
-    pub fn broadcast<T: ConnectedPacket + Serialize>(&self, packet: T) -> anyhow::Result<()> {
+    pub fn broadcast<T: ConnectedPacket + Serialize>(&self, _packet: T) -> anyhow::Result<()> {
         todo!()
     }
 
