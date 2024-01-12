@@ -1,13 +1,5 @@
-
-
-
-
-
-
-
 use util::MutableBuffer;
-use util::{Serialize};
-
+use util::Serialize;
 
 use proto::bedrock::Header;
 

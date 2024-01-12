@@ -2,8 +2,8 @@ use lazy_static::lazy_static;
 use level::PaletteEntry;
 use nohash_hasher::BuildNoHashHasher;
 use proto::bedrock::ItemStack;
-use std::collections::HashMap;
 use serde::Deserialize;
+use std::collections::HashMap;
 use tokio_util::bytes::Buf;
 
 lazy_static! {
@@ -90,12 +90,12 @@ pub struct CreativeItemsEntry {
     /// This field only exists if the given item has NBT data. This can be a command block or chest with data for example.
     pub nbt: Option<HashMap<String, nbt::Value>>,
     /// This field only exists if the given item is a block.
-    pub block_properties: Option<HashMap<String, nbt::Value>>
+    pub block_properties: Option<HashMap<String, nbt::Value>>,
 }
 
 #[derive(Debug)]
 pub struct CreativeItemsMap {
-    pub item_stacks: Vec<ItemStack>
+    pub item_stacks: Vec<ItemStack>,
 }
 
 impl CreativeItemsMap {
@@ -110,7 +110,7 @@ impl CreativeItemsMap {
             let runtime_id = if let Some(rid) = RUNTIME_ID_DATA.get(&item.name) {
                 rid
             } else {
-                continue
+                continue;
             };
 
             let stack = if let Some(_properties) = &item.block_properties {
@@ -119,7 +119,7 @@ impl CreativeItemsMap {
                     meta: item.meta as u32,
                     count: 64,
                     can_break: vec![],
-                    placeable_on: vec![]
+                    placeable_on: vec![],
                 }
             } else {
                 ItemStack {
@@ -127,7 +127,7 @@ impl CreativeItemsMap {
                     meta: item.meta as u32,
                     count: 1,
                     can_break: vec![],
-                    placeable_on: vec![]
+                    placeable_on: vec![],
                 }
             };
 

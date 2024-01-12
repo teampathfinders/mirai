@@ -14,12 +14,12 @@ fn read_write_option() {
     #[derive(Serialize, Deserialize, Debug, PartialEq)]
     struct Optional {
         optional: Option<i32>,
-        required: String
+        required: String,
     }
 
     let some = Optional {
         optional: None,
-        required: "This is Some".to_owned()
+        required: "This is Some".to_owned(),
     };
 
     let some_ser = to_be_bytes(&some).unwrap();
@@ -30,7 +30,7 @@ fn read_write_option() {
 
     let _none = Optional {
         optional: None,
-        required: "This is None".to_owned()
+        required: "This is None".to_owned(),
     };
 }
 

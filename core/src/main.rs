@@ -6,7 +6,6 @@ use tokio::runtime;
 
 use tracing_subscriber::filter::LevelFilter;
 
-
 use inferno::instance::ServerInstance;
 
 fn main() -> ExitCode {
@@ -55,10 +54,7 @@ fn init_logging() -> anyhow::Result<()> {
         .with_thread_names(true)
         .with_filter(EnvFilter::from_env("LOG_LEVEL"));
 
-    tracing_subscriber::registry()
-        .with(console_layer)
-        .with(fmt)
-        .init();
+    tracing_subscriber::registry().with(console_layer).with(fmt).init();
 
     tracing::info!("Tokio console enabled");
 

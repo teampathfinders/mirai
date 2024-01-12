@@ -4,8 +4,6 @@ mod macros;
 mod error;
 mod u24;
 
-
-
 pub use error::*;
 
 glob_export!(bytes);

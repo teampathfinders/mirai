@@ -79,9 +79,15 @@ impl Replicator {
             buf.write_u64_le(msg.xuid)?;
             buf.write_str(source)?;
             buf.write_str(message)?;
-            
+
             self.client
-                .xadd("user:text", false, None, "*", vec![("xuid", msg.xuid.to_string().as_str()), ("name", source), ("body", message)])
+                .xadd(
+                    "user:text",
+                    false,
+                    None,
+                    "*",
+                    vec![("xuid", msg.xuid.to_string().as_str()), ("name", source), ("body", message)],
+                )
                 .await
                 .context("Unable to add to user text stream")
 
