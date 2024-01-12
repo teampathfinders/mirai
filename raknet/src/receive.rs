@@ -120,7 +120,7 @@ impl RaknetUser {
             CONNECTED_PACKET_ID => {
                 self.output.send_timeout(packet, RAKNET_OUTPUT_TIMEOUT).await?
             },
-            DisconnectNotification::ID => self.handle_disconnect(),
+            DisconnectNotification::ID => self.active.cancel(),
             ConnectionRequest::ID => self.handle_connection_request(packet)?,
             NewIncomingConnection::ID => {
                 self.handle_new_incoming_connection(packet)?

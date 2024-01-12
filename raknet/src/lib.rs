@@ -1,5 +1,7 @@
 //! Rust implementation of the RakNet protocol.
 
+#![forbid(missing_docs)]
+
 use util::glob_export;
 
 glob_export!(ack);

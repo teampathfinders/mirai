@@ -21,7 +21,8 @@ const INTERNAL_TICK_INTERVAL: Duration = Duration::from_millis(1000 / 20);
 const SESSION_TIMEOUT: Duration = Duration::from_secs(5);
 
 impl RaknetUser {
-    pub fn start_tick_job(self: Arc<Self>) {
+    /// Starts the ticker task which takes care of packet submission and general user management.
+    pub fn ticker_task(self: Arc<Self>) {
         tokio::spawn(async move {
             let mut interval = tokio::time::interval(INTERNAL_TICK_INTERVAL);
 
@@ -55,7 +56,8 @@ impl RaknetUser {
         });
     }
 
-    pub fn start_packet_job(
+    /// Starts the receiver task which processes incoming packets.
+    pub fn receiver_task(
         self: Arc<Self>,
         mut receiver: mpsc::Receiver<MutableBuffer>,
     ) {

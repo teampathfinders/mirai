@@ -10,54 +10,68 @@ use crate::{Compounds, SendQueues, Recovery, BroadcastPacket, OrderChannel};
 const ORDER_CHANNEL_COUNT: usize = 5;
 const OUTPUT_CHANNEL_SIZE: usize = 5;
 
+/// Information required to create a new RakNet user.
 pub struct UserCreateInfo {
+    /// IP address of the client.
     pub address: SocketAddr,
+    /// Maximum transfer unit of the client.
     pub mtu: u16,
+    /// RakNet guid of the client. This is provided by the client and is therefore not
+    /// a secure way to identity clients.
     pub guid: u64,
+    /// UDP socket that is connected to the client.
     pub socket: Arc<UdpSocket>
 }
 
 /// The Raknet layer of the user. This handles the entire Raknet protocol for the client.
 pub struct RaknetUser {
-    // Networking
+    /// IP address of the user.
     pub address: SocketAddr,
+    /// Socket used for communication with this user.
     pub socket: Arc<UdpSocket>,
-
-    // Inter-session communication
+    /// Channel that can perform inter-user packet broadcasting.
     pub broadcast: broadcast::Sender<BroadcastPacket>,
-
-    // Raknet data
+    /// Whether the user is still active.
+    /// Cancelling this token means that all pending packets will be flushed and the server will process no more
+    /// packets coming from this user.
     pub active: CancellationToken,
+    /// Maximum transfer unit. This is maximum size of a single packet. If a packet exceeds this size
+    /// it will split into multiple fragments.
     pub mtu: u16,
     /// Keeps track of when the last update was received from the client.
     /// This enables disconnecting users that have lost connection to the server.
     pub last_update: RwLock<Instant>,
+    /// Increased for every round of packets processed.
     pub tick: AtomicU64,
     /// This client's current batch number. It is increased for every packet batch sent.
     pub batch_number: AtomicU32,
-
+    /// Packets pending submission to the client.
     pub send: SendQueues,
-
+    /// Pending acknowledgements.
     /// Wrapped in a mutex since reading this will also clear it.
     pub acknowledged: Mutex<Vec<u32>>,
+    /// Current acknowledgement index.
+    /// This is increased for every reliable packet sent.
     pub acknowledge_index: AtomicU32,
-
+    /// Current compound index. This index uniquely identifies a compound of fragments.
     pub compound_index: AtomicU16,
+    /// Collection of incomplete compounds. These compounds will slowly be filled up and
+    /// will be processed when all fragments have been received.
     pub compounds: Compounds,
-
+    /// Stores packets for recovery in case of packet loss.
     pub recovery: Recovery,
-
+    /// Current sequence index, this is increased for every sequenced packet sent.
     pub sequence_index: AtomicU32,
+    /// Multiple channels that ensure packets are received in the right order.
     pub order: [OrderChannel; ORDER_CHANNEL_COUNT],
-
+    /// Channel used to submit packets that have been fully processed by the RakNet layer.
+    /// These packets go on to be processed further by protocols running on top of RakNet
+    /// such as the Minecraft Bedrock protocol.
     pub output: mpsc::Sender<MutableBuffer>
 }
 
 impl RaknetUser {
-    pub fn handle_disconnect(&self) {
-        self.active.cancel();
-    }
-
+    /// Creates a new RakNet user with the specified info.
     pub fn new(
         info: UserCreateInfo, 
         broadcast: broadcast::Sender<BroadcastPacket>,
@@ -100,8 +114,8 @@ impl RaknetUser {
             output: output_tx,
         });
 
-        state.clone().start_packet_job(forward_rx);
-        state.clone().start_tick_job();
+        state.clone().receiver_task(forward_rx);
+        state.clone().ticker_task();
 
         (state, output_rx)
     }

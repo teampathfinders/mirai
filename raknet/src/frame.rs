@@ -39,11 +39,13 @@ impl FrameBatch {
         })
     }
 
+    /// Whether the batch is empty.
     #[inline]
     pub fn is_empty(&self) -> bool {
         self.frames.is_empty()
     }
 
+    /// Deserializes a batch of frames from a buffer.
     pub fn deserialize(mut buffer: SharedBuffer) -> anyhow::Result<Self> {
         let id = buffer.read_u8()?;
         debug_assert_ne!(id & 0x80, 0);
@@ -59,6 +61,7 @@ impl FrameBatch {
         Ok(Self { sequence_number: batch_number.into(), frames })
     }
 
+    /// Serializes a batch of frames to a buffer.
     pub fn serialize(&self, buffer: &mut MutableBuffer) -> anyhow::Result<()> {
         buffer.write_u8(CONNECTED_PEER_BIT_FLAG)?;
         buffer.write_u24_le(self.sequence_number.try_into()?)?;
@@ -78,8 +81,9 @@ impl FrameBatch {
 pub struct Frame {
     /// Reliability of this packet.
     pub reliability: Reliability,
-
+    /// Reliability index.
     pub reliable_index: u32,
+    /// Sequence index.
     pub sequence_index: u32,
     /// Whether the frame is fragmented/compounded
     pub is_compound: bool,
