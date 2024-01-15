@@ -10,4 +10,4 @@ util = { package = "inferno-util", path = "../util" }
 anyhow = "1.0.79"
 tokio = { version = "1.35.1", features = ["macros", "rt"] }
 tracing = "0.1.40"
-fred = "7.1.1"
+fred = "7.1.2"
