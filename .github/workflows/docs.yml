@@ -1,4 +1,4 @@
-name: Continuous Deployment / Deploy Documentation to GitHub Pages
+name: CD / Docs
 
 on:
   push:
@@ -17,19 +17,24 @@ concurrency:
 
 env:
   CARGO_TERM_COLOR: always
+  RUSTFLAGS: "--cfg skip_leveldb"
 
 jobs:
   build:
+    name: Generate docs
     runs-on: ubuntu-latest
     
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
+
+    - name: Install Rust
+      run: rustup toolchain install 1.72.0 --profile minimal
     
-    - name: Dependency cache
-      uses: Swatinem/rust-cache@v2.2.1
+    - name: Run sccache-cache
+      uses: mozilla-actions/sccache-action@v0.0.3
     
     - name: Generate documentation
-      run: RUSTFLAGS='--cfg skip_leveldb' cargo doc --no-deps
+      run: cargo doc --no-deps
       
     - name: Add root index
       run: |
@@ -37,7 +42,7 @@ jobs:
         touch index.html
         echo "<meta http-equiv=\"refresh\" content=\"0; url=https://teampathfinders.github.io/inferno/inferno/index.html\">" > index.html
       
-    - name: Artifact upload
+    - name: Upload build artifact
       uses: actions/upload-pages-artifact@v1
       with:
         path: target/doc

@@ -1,4 +1,4 @@
-name: Continuous Integration / Build and Test
+name: CI / Tests
 
 on:
   push:
@@ -7,13 +7,17 @@ on:
     branches: [ "master" ]
 
 env:
+  RUST_BACKTRACE: full
   CARGO_TERM_COLOR: always
+  SCCACHE_GHA_ENABLED: true
+  RUSTC_WRAPPER: "sccache"
 
 concurrency:
   group: ci-${{ github.ref }}
 
 jobs:
-  build:
+  run-tests:
+    name: Test
     strategy:
       matrix:
         os: [ubuntu-latest, windows-latest]
@@ -21,17 +25,15 @@ jobs:
     runs-on: ${{ matrix.os }}
   
     steps:
-    - run: rustup toolchain install 1.72.0 --profile minimal
+    - name: Install Rust
+      run: rustup toolchain install 1.72.0 --profile minimal
     
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
       with:
         submodules: recursive
         
-    - name: Dependency cache
-      uses: Swatinem/rust-cache@v2.2.1
-
-    - name: Build
-      run: cargo +1.72.0 build
+    - name: Run sccache-cache
+      uses: mozilla-actions/sccache-action@v0.0.3
       
-    - name: Test
-      run: cargo +1.72.0 test -- --test-threads 1
+    - name: Run tests
+      run: cargo +1.72.0 test
