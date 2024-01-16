@@ -2,6 +2,8 @@ use serde::ser::SerializeStruct;
 
 use crate::forms::FormElement;
 
+use super::Form;
+
 /// A forms with a custom body.
 /// Unlike the other forms types, this forms can make use of all the custom UI elements.
 #[derive(Debug)]
@@ -12,7 +14,9 @@ pub struct CustomForm<'a> {
     pub content: &'a [FormElement<'a>],
 }
 
-impl<'a> serde::Serialize for CustomForm<'a> {
+impl Form for CustomForm<'_> {}
+
+impl serde::Serialize for CustomForm<'_> {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: serde::Serializer,
