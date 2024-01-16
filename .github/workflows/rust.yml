@@ -1,4 +1,4 @@
-name: Continuous Integration / Build and Test
+name: CI / Tests
 
 on:
   push:
