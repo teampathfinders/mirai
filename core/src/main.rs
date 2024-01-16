@@ -43,10 +43,11 @@ fn init_logging() -> anyhow::Result<()> {
     use std::time::Duration;
     use tracing_subscriber::layer::SubscriberExt;
     use tracing_subscriber::util::SubscriberInitExt;
+    use tracing_subscriber::{EnvFilter, Layer};
 
     let console_layer = console_subscriber::Builder::default()
         .retention(Duration::from_secs(1))
-        .recording_path("console_trace.log")
+        .recording_path("logs/async.log")
         .spawn();
 
     let fmt = tracing_subscriber::fmt::layer()
@@ -60,6 +61,7 @@ fn init_logging() -> anyhow::Result<()> {
 
     Ok(())
 }
+
 
 /// Initialises logging without tokio-console.
 #[cfg(not(feature = "tokio-console"))]
