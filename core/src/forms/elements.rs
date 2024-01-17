@@ -1,12 +1,24 @@
 use serde::ser::SerializeStruct;
+use tracing_subscriber::fmt::init;
 
 use super::Submittable;
 
 /// A plain piece of text.
-#[derive(Debug)]
+#[derive(Debug, Default)]
 pub struct FormLabel {
     /// Text to display.
-    pub(crate) label: String,
+    pub(super) label: String,
+}
+
+impl FormLabel {
+    /// Creates a new empty label.
+    pub fn new() -> Self { Self::default() }
+
+    /// Sets the body of this label.
+    pub fn label(mut self, label: impl Into<String>) -> Self {
+        self.label = label.into();
+        self
+    }
 }
 
 impl Submittable for FormLabel {}
@@ -30,14 +42,37 @@ impl serde::Serialize for FormLabel {
 }
 
 /// A text input field.
-#[derive(Debug)]
+#[derive(Debug, Default)]
 pub struct FormInput {
     /// Label to display above the field.
-    pub label: String,
+    pub(super) label: String,
     /// Placeholder to display inside the field when it is empty.
-    pub placeholder: String,
+    pub(super) placeholder: String,
     /// Initial state of the field.
-    pub initial: String,
+    pub(super) default: String,
+}
+
+impl FormInput {
+    /// Creates a new input.
+    pub fn new() -> Self { <Self as Default>::default() }
+
+    /// Sets the label.
+    pub fn label(mut self, label: impl Into<String>) -> Self {
+        self.label = label.into();
+        self
+    }
+
+    /// Sets the placeholder.
+    pub fn placeholder(mut self, placeholder: impl Into<String>) -> Self {
+        self.placeholder = placeholder.into();
+        self
+    }
+
+    /// Sets the default state.
+    pub fn default(mut self, default: impl Into<String>) -> Self {
+        self.default = default.into();
+        self
+    }
 }
 
 impl Submittable for FormInput {}
@@ -57,18 +92,35 @@ impl serde::Serialize for FormInput {
         map.serialize_field("type", "input")?;
         map.serialize_field("text", &self.label)?;
         map.serialize_field("placeholder", &self.placeholder)?;
-        map.serialize_field("default", &self.initial)?;
+        map.serialize_field("default", &self.default)?;
         map.end()
     }
 }
 
 /// A simple boolean toggle that switches between true and false.
-#[derive(Debug)]
+#[derive(Debug, Default)]
 pub struct FormToggle {
     /// Label to display next to the toggle.
-    pub(crate) label: String,
+    pub(super) label: String,
     /// Initial state of the toggle.
-    pub(crate) initial: bool,
+    pub(super) default: bool,
+}
+
+impl FormToggle {
+    /// Creates a new toggle.
+    pub fn new() -> Self { <Self as Default>::default() }
+
+    /// Sets the label.
+    pub fn label(mut self, label: impl Into<String>) -> Self {
+        self.label = label.into();
+        self
+    }
+
+    /// Sets the default state.
+    pub fn default(mut self, default: impl Into<bool>) -> Self {
+        self.default = default.into();
+        self
+    }
 }
 
 impl Submittable for FormToggle {}
@@ -87,24 +139,59 @@ impl serde::Serialize for FormToggle {
         let mut map = serializer.serialize_struct("toggle", 3)?;
         map.serialize_field("type", "toggle")?;
         map.serialize_field("text", &self.label)?;
-        map.serialize_field("default", &self.initial)?;
+        map.serialize_field("default", &self.default)?;
         map.end()
     }
 }
 
 /// A slider that picks numerical values.
-#[derive(Debug)]
+#[derive(Debug, Default)]
 pub struct FormSlider {
     /// Label to display above the slider.
-    pub(crate) label: String,
+    pub(super) label: String,
     /// Minimum value of the slider.
-    pub(crate) min: f64,
+    pub(super) min: f64,
     /// Maximum value of the slider.
-    pub(crate) max: f64,
+    pub(super) max: f64,
     /// Minimum step of the slider.
-    pub(crate) step: f64,
+    pub(super) step: f64,
     /// Initial state of the slider.
-    pub(crate) initial: f64,
+    pub(super) default: f64,
+}
+
+impl FormSlider {
+    /// Creates a new slider.
+    pub fn new() -> Self { <Self as Default>::default() }
+
+    /// Sets the label.
+    pub fn label(mut self, label: impl Into<String>) -> Self {
+        self.label = label.into();
+        self
+    }
+
+    /// Sets the minimum value.
+    pub fn min(mut self, min: impl Into<f64>) -> Self {
+        self.min = min.into();
+        self
+    }
+
+    /// Sets the maximum value.
+    pub fn max(mut self, max: impl Into<f64>) -> Self {
+        self.max = max.into();
+        self
+    }
+
+    /// Sets the step between values.
+    pub fn step(mut self, step: impl Into<f64>) -> Self {
+        self.step = step.into();
+        self
+    }
+
+    /// Sets the default state.
+    pub fn default(mut self, default: impl Into<f64>) -> Self {
+        self.default = default.into();
+        self
+    }
 }
 
 impl Submittable for FormSlider {}
@@ -126,21 +213,44 @@ impl serde::Serialize for FormSlider {
         map.serialize_field("min", &self.min)?;
         map.serialize_field("max", &self.max)?;
         map.serialize_field("step", &self.step)?;
-        map.serialize_field("default", &self.initial)?;
+        map.serialize_field("default", &self.default)?;
         map.end()
     }
 }
 
 /// A dropdown list of selectable options.
-#[derive(Debug)]
+#[derive(Debug, Default)]
 pub struct FormDropdown {
     /// Label to display above the menu.
-    pub(crate) label: String,
+    pub(super) label: String,
     /// List of options that can be selected.
     /// The dropdown is of type radio and users can therefore only select a single option.
-    pub(crate) options: Vec<String>,
+    pub(super) options: Vec<String>,
     /// Initial state of the dropdown.
-    pub(crate) initial: i32,
+    pub(super) default: u32,
+}
+
+impl FormDropdown {
+    /// Creates a new dropdown.
+    pub fn new() -> Self { <Self as Default>::default() }
+
+    /// Sets the label.
+    pub fn label(mut self, label: impl Into<String>) -> Self {
+        self.label = label.into();
+        self
+    }
+
+    /// Adds an option.
+    pub fn option(mut self, option: impl Into<String>) -> Self {
+        self.options.push(option.into());
+        self
+    }
+
+    /// Sets the default state.
+    pub fn default(mut self, default: impl Into<u32>) -> Self {
+        self.default = default.into();
+        self
+    }
 }
 
 impl Submittable for FormDropdown {}
@@ -159,22 +269,45 @@ impl serde::Serialize for FormDropdown {
         let mut map = serializer.serialize_struct("dropdown", 4)?;
         map.serialize_field("type", "dropdown")?;
         map.serialize_field("text", &self.label)?;
-        map.serialize_field("default", &self.initial)?;
+        map.serialize_field("default", &self.default)?;
         map.serialize_field("options", &self.options)?;
         map.end()
     }
 }
 
 /// Similar to a dropdown, but in slider forms.
-#[derive(Debug)]
+#[derive(Debug, Default)]
 pub struct FormStepSlider {
     /// Label to display above the slider.
-    pub(crate) label: String,
+    pub(super) label: String,
     /// A list of available options.
     /// The user can pick between these options using the slider.
-    pub(crate) steps: Vec<String>,
+    pub(super) steps: Vec<String>,
     /// Initial state of the step slider.
-    pub(crate) initial: i32,
+    pub(super) default: u32,
+}
+
+impl FormStepSlider {
+    /// Creates a new step slider.
+    pub fn new() -> Self { <Self as Default>::default() }
+
+    /// Sets the label.
+    pub fn label(mut self, label: impl Into<String>) -> Self {
+        self.label = label.into();
+        self
+    }
+
+    /// Adds a step.
+    pub fn option(mut self, step: impl Into<String>) -> Self {
+        self.steps.push(step.into());
+        self
+    }
+    
+    /// Sets the default state
+    pub fn default(mut self, default: impl Into<u32>) -> Self {
+        self.default = default.into();
+        self
+    }
 }
 
 impl Submittable for FormStepSlider {}
@@ -193,7 +326,7 @@ impl serde::Serialize for FormStepSlider {
         let mut map = serializer.serialize_struct("step_slider", 4)?;
         map.serialize_field("type", "step_slider")?;
         map.serialize_field("text", &self.label)?;
-        map.serialize_field("default", &self.initial)?;
+        map.serialize_field("default", &self.default)?;
         map.serialize_field("steps", &self.steps)?;
         map.end()
     }
