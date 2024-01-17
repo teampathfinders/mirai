@@ -1,4 +1,4 @@
-use std::sync::atomic::{AtomicU32, Ordering};
+use std::{sync::atomic::{AtomicU32, Ordering}, ops::Index, collections::HashMap};
 
 use anyhow::anyhow;
 use dashmap::DashMap;
@@ -7,11 +7,29 @@ use tokio::sync::oneshot;
 
 use crate::network::BedrockUser;
 
-use super::Form;
+use super::{Form, Submittable, FormDescriptor};
+
+pub enum FormResponseBodyElement {
+    Test
+}
+
+impl FormResponseBodyElement {
+    pub fn cast<'a, T: Submittable>(self) -> Option<T> {
+        todo!()
+    }
+}
 
 #[derive(Debug)]
 pub struct FormResponseBody {
 
+}
+
+impl Index<&str> for FormResponseBody {
+    type Output = FormResponseBodyElement;
+
+    fn index(&self, key: &str) -> &Self::Output {
+        &FormResponseBodyElement::Test
+    }
 }
 
 #[derive(Debug)]
@@ -43,7 +61,7 @@ impl FormResponse {
 #[derive(Debug)]
 pub struct FormSubscriber {
     next_id: AtomicU32,   
-    subscribed: DashMap<u32, oneshot::Sender<FormResponse>>
+    subscribed: DashMap<u32, (oneshot::Sender<FormResponse>, FormDescriptor)>
 }
 
 impl FormSubscriber {
@@ -55,7 +73,7 @@ impl FormSubscriber {
     }
 
     /// Submits a form to the user and returns a receiver that will receive the response.
-    pub fn subscribe<F: Form>(&self, user: &BedrockUser, form: &F) -> anyhow::Result<oneshot::Receiver<FormResponse>> {
+    pub fn subscribe<F: Form>(&self, user: &BedrockUser, form: F) -> anyhow::Result<oneshot::Receiver<FormResponse>> {
         let data = serde_json::to_string(&form)?;
         let id = self.next_id.fetch_add(1, Ordering::Relaxed);
 
@@ -64,15 +82,20 @@ impl FormSubscriber {
         user.send(FormRequest { data: &data, id })?;
 
         let (sender, receiver) = oneshot::channel();
-        self.subscribed.insert(id, sender);
+        self.subscribed.insert(id, (sender, form.into_descriptor()));
         
         Ok(receiver)
     }
 
     pub fn handle_response(&self, response: FormResponseData) -> anyhow::Result<()> {
-        let (_id, sender) = self.subscribed
+        let (_id, (sender, desc)) = self.subscribed
             .remove(&response.id)
             .ok_or_else(|| anyhow!("Unregistered form response received. Please use the FormSubscriber interface instead of sending form requests directly"))?;
+
+        if let Some(reason) = response.cancel_reason {
+            let _ = sender.send(FormResponse::Cancelled(reason));
+            return Ok(())
+        }
 
         todo!();
         // let _  = sender.send(FormResponseData {

@@ -4,89 +4,89 @@ use super::Submittable;
 
 /// A plain piece of text.
 #[derive(Debug)]
-pub struct FormLabel<'a> {
+pub struct FormLabel {
     /// Text to display.
-    pub(crate) label: &'a str,
+    pub(crate) label: String
 }
 
-impl<'a> Submittable<'a> for FormLabel<'a> {}
+impl Submittable for FormLabel {}
 
-impl<'a> Into<FormElement<'a>> for FormLabel<'a> {
-    fn into(self) -> FormElement<'a> {
+impl Into<FormElement> for FormLabel {
+    fn into(self) -> FormElement {
         FormElement::Label(self)
     }
 }
 
-impl<'a> serde::Serialize for FormLabel<'a> {
+impl serde::Serialize for FormLabel {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: serde::Serializer,
     {
         let mut map = serializer.serialize_struct("label", 2)?;
         map.serialize_field("type", "label")?;
-        map.serialize_field("text", self.label)?;
+        map.serialize_field("text", &self.label)?;
         map.end()
     }
 }
 
 /// A text input field.
 #[derive(Debug)]
-pub struct FormInput<'a> {
+pub struct FormInput {
     /// Label to display above the field.
-    pub label: &'a str,
+    pub label: String,
     /// Placeholder to display inside the field when it is empty.
-    pub placeholder: &'a str,
+    pub placeholder: String,
     /// Initial state of the field.
-    pub initial: &'a str,
+    pub initial: String,
 }
 
-impl<'a> Submittable<'a> for FormInput<'a> {}
+impl Submittable for FormInput {}
 
-impl<'a> Into<FormElement<'a>> for FormInput<'a> {
-    fn into(self) -> FormElement<'a> {
+impl Into<FormElement> for FormInput {
+    fn into(self) -> FormElement {
         FormElement::Input(self)
     }
 }
 
-impl<'a> serde::Serialize for FormInput<'a> {
+impl serde::Serialize for FormInput {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: serde::Serializer,
     {
         let mut map = serializer.serialize_struct("input", 4)?;
         map.serialize_field("type", "input")?;
-        map.serialize_field("text", self.label)?;
-        map.serialize_field("placeholder", self.placeholder)?;
-        map.serialize_field("default", self.initial)?;
+        map.serialize_field("text", &self.label)?;
+        map.serialize_field("placeholder", &self.placeholder)?;
+        map.serialize_field("default", &self.initial)?;
         map.end()
     }
 }
 
 /// A simple boolean toggle that switches between true and false.
 #[derive(Debug)]
-pub struct FormToggle<'a> {
+pub struct FormToggle {
     /// Label to display next to the toggle.
-    pub(crate) label: &'a str,
+    pub(crate) label: String,
     /// Initial state of the toggle.
     pub(crate) initial: bool,
 }
 
-impl<'a> Submittable<'a> for FormToggle<'a> {}
+impl Submittable for FormToggle {}
 
-impl<'a> Into<FormElement<'a>> for FormToggle<'a> {
-    fn into(self) -> FormElement<'a> {
+impl Into<FormElement> for FormToggle {
+    fn into(self) -> FormElement {
         FormElement::Toggle(self)
     }
 }
 
-impl<'a> serde::Serialize for FormToggle<'a> {
+impl serde::Serialize for FormToggle {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: serde::Serializer,
     {
         let mut map = serializer.serialize_struct("toggle", 3)?;
         map.serialize_field("type", "toggle")?;
-        map.serialize_field("text", self.label)?;
+        map.serialize_field("text", &self.label)?;
         map.serialize_field("default", &self.initial)?;
         map.end()
     }
@@ -94,9 +94,9 @@ impl<'a> serde::Serialize for FormToggle<'a> {
 
 /// A slider that picks numerical values.
 #[derive(Debug)]
-pub struct FormSlider<'a> {
+pub struct FormSlider {
     /// Label to display above the slider.
-    pub(crate) label: &'a str,
+    pub(crate) label: String,
     /// Minimum value of the slider.
     pub(crate) min: f64,
     /// Maximum value of the slider.
@@ -107,22 +107,22 @@ pub struct FormSlider<'a> {
     pub(crate) initial: f64,
 }
 
-impl<'a> Submittable<'a> for FormSlider<'a> {}
+impl Submittable for FormSlider {}
 
-impl<'a> Into<FormElement<'a>> for FormSlider<'a> {
-    fn into(self) -> FormElement<'a> {
+impl Into<FormElement> for FormSlider {
+    fn into(self) -> FormElement {
         FormElement::Slider(self)
     }
 }
 
-impl<'a> serde::Serialize for FormSlider<'a> {
+impl serde::Serialize for FormSlider {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: serde::Serializer,
     {
         let mut map = serializer.serialize_struct("slider", 6)?;
         map.serialize_field("type", "slider")?;
-        map.serialize_field("text", self.label)?;
+        map.serialize_field("text", &self.label)?;
         map.serialize_field("min", &self.min)?;
         map.serialize_field("max", &self.max)?;
         map.serialize_field("step", &self.step)?;
@@ -133,100 +133,100 @@ impl<'a> serde::Serialize for FormSlider<'a> {
 
 /// A dropdown list of selectable options.
 #[derive(Debug)]
-pub struct FormDropdown<'a> {
+pub struct FormDropdown {
     /// Label to display above the menu.
-    pub(crate) label: &'a str,
+    pub(crate) label: String,
     /// List of options that can be selected.
     /// The dropdown is of type radio and users can therefore only select a single option.
-    pub(crate) options: &'a [&'a str],
+    pub(crate) options: Vec<String>,
     /// Initial state of the dropdown.
     pub(crate) initial: i32,
 }
 
-impl<'a> Submittable<'a> for FormDropdown<'a> {}
+impl Submittable for FormDropdown {}
 
-impl<'a> Into<FormElement<'a>> for FormDropdown<'a> {
-    fn into(self) -> FormElement<'a> {
+impl Into<FormElement> for FormDropdown {
+    fn into(self) -> FormElement {
         FormElement::Dropdown(self)
     }
 }
 
-impl<'a> serde::Serialize for FormDropdown<'a> {
+impl serde::Serialize for FormDropdown {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: serde::Serializer,
     {
         let mut map = serializer.serialize_struct("dropdown", 4)?;
         map.serialize_field("type", "dropdown")?;
-        map.serialize_field("text", self.label)?;
+        map.serialize_field("text", &self.label)?;
         map.serialize_field("default", &self.initial)?;
-        map.serialize_field("options", self.options)?;
+        map.serialize_field("options", &self.options)?;
         map.end()
     }
 }
 
 /// Similar to a dropdown, but in slider forms.
 #[derive(Debug)]
-pub struct FormStepSlider<'a> {
+pub struct FormStepSlider {
     /// Label to display above the slider.
-    pub(crate) label: &'a str,
+    pub(crate) label: String,
     /// A list of available options.
     /// The user can pick between these options using the slider.
-    pub(crate) steps: &'a [&'a str],
+    pub(crate) steps: Vec<String>,
     /// Initial state of the step slider.
     pub(crate) initial: i32,
 }
 
-impl<'a> Submittable<'a> for FormStepSlider<'a> {}
+impl Submittable for FormStepSlider {}
 
-impl<'a> Into<FormElement<'a>> for FormStepSlider<'a> {
-    fn into(self) -> FormElement<'a> {
+impl Into<FormElement> for FormStepSlider {
+    fn into(self) -> FormElement {
         FormElement::StepSlider(self)
     }
 }
 
-impl<'a> serde::Serialize for FormStepSlider<'a> {
+impl serde::Serialize for FormStepSlider {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: serde::Serializer,
     {
         let mut map = serializer.serialize_struct("step_slider", 4)?;
         map.serialize_field("type", "step_slider")?;
-        map.serialize_field("text", self.label)?;
+        map.serialize_field("text", &self.label)?;
         map.serialize_field("default", &self.initial)?;
-        map.serialize_field("steps", self.steps)?;
+        map.serialize_field("steps", &self.steps)?;
         map.end()
     }
 }
 
 /// An image displayed next to a button.
-#[derive(Debug, Copy, Clone)]
-pub enum FormButtonImage<'a> {
+#[derive(Debug, Clone)]
+pub enum FormButtonImage {
     /// A URL pointing to an online image.
-    Url(&'a str),
+    Url(String),
     /// A path pointing to an image in an applied resource pack.
-    Path(&'a str),
+    Path(String),
 }
 
 /// A simple button with optional image.
 #[derive(Debug)]
-pub struct FormButton<'a> {
+pub struct FormButton {
     /// Text displayed on the button.
-    pub(crate) label: &'a str,
+    pub(crate) label: String,
     /// An optional image shown to the left of the button.
     /// This button can either be a local file from a resource pack or a URL.
-    pub(crate) image: Option<FormButtonImage<'a>>,
+    pub(crate) image: Option<FormButtonImage>,
 }
 
-impl<'a> Submittable<'a> for FormButton<'a> {}
+impl Submittable for FormButton {}
 
-impl<'a> Into<FormElement<'a>> for FormButton<'a> {
-    fn into(self) -> FormElement<'a> {
+impl Into<FormElement> for FormButton {
+    fn into(self) -> FormElement {
         FormElement::Button(self)
     }
 }
 
-impl<'a> serde::Serialize for FormButton<'a> {
+impl serde::Serialize for FormButton {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: serde::Serializer,
@@ -243,14 +243,14 @@ impl<'a> serde::Serialize for FormButton<'a> {
                 S1: serde::Serializer,
             {
                 let mut map = serializer.serialize_struct("image", 2)?;
-                map.serialize_field("type", self.img_type)?;
-                map.serialize_field("data", self.data)?;
+                map.serialize_field("type", &self.img_type)?;
+                map.serialize_field("data", &self.data)?;
                 map.end()
             }
         }
 
         let mut map = serializer.serialize_struct("button", 1)?;
-        if let Some(image) = self.image {
+        if let Some(image) = &self.image {
             let (img_type, data) = match image {
                 FormButtonImage::Path(p) => ("path", p),
                 FormButtonImage::Url(u) => ("url", u),
@@ -259,31 +259,32 @@ impl<'a> serde::Serialize for FormButton<'a> {
             let data = ImageData { img_type, data };
             map.serialize_field("image", &data)?;
         }
-        map.serialize_field("text", self.label)?;
+
+        map.serialize_field("text", &self.label)?;
         map.end()
     }
 }
 
 /// Abstraction over a forms element.
 #[derive(Debug)]
-pub enum FormElement<'a> {
+pub enum FormElement {
     /// See [`FormLabel`].
-    Label(FormLabel<'a>),
+    Label(FormLabel),
     /// See [`FormInput`].
-    Input(FormInput<'a>),
+    Input(FormInput),
     /// See [`FormToggle`].
-    Toggle(FormToggle<'a>),
+    Toggle(FormToggle),
     /// See [`FormDropdown`].
-    Dropdown(FormDropdown<'a>),
+    Dropdown(FormDropdown),
     /// See [`FormSlider`].
-    Slider(FormSlider<'a>),
+    Slider(FormSlider),
     /// See [`FormStepSlider`].
-    StepSlider(FormStepSlider<'a>),
+    StepSlider(FormStepSlider),
     /// See [`FormButton`].
-    Button(FormButton<'a>),
+    Button(FormButton),
 }
 
-impl<'a> serde::Serialize for FormElement<'a> {
+impl serde::Serialize for FormElement {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: serde::Serializer,

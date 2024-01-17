@@ -12,10 +12,14 @@ pub struct MenuForm<'a> {
     /// Content of the forms. This is the text shown above the buttons.
     pub content: &'a str,
     /// List of buttons that are available.
-    pub buttons: &'a [FormButton<'a>],
+    pub buttons: &'a [FormButton],
 }
 
-impl Form for MenuForm<'_> {}
+impl Form for MenuForm<'_> {
+    fn into_descriptor(self) -> super::FormDescriptor {
+        todo!()
+    }
+}
 
 impl serde::Serialize for MenuForm<'_> {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>

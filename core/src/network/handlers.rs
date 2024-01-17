@@ -8,7 +8,7 @@ use proto::bedrock::{Animate, CommandOutput, CommandOutputMessage, CommandOutput
 use util::{Deserialize};
 use util::MutableBuffer;
 
-use crate::forms::{CustomForm, FormElement, FormLabel, FormButton, FormInput};
+use crate::forms::{CustomForm, FormElement, FormLabel, FormButton, FormInput, FormButtonImage, FormToggle};
 
 use super::BedrockUser;
 
@@ -53,9 +53,10 @@ impl BedrockUser {
                 
                 let form = CustomForm::new()
                     .title("Custom form")
-                    .with(FormLabel { label: "Hello World!" });
+                    .with("label", FormLabel { label: String::from("Hello World!") })
+                    .with("toggle", FormToggle { initial: false, label: String::from("true?") });
 
-                let res = clone.form_subscriber.subscribe(&clone, &form).unwrap().await;
+                let res = clone.form_subscriber.subscribe(&clone, form).unwrap().await;
                 tracing::debug!("{res:?}");
 
                 // let label = format!("You sent: {message}");
