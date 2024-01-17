@@ -2,14 +2,14 @@
 
 mod custom;
 mod elements;
+mod form;
 mod menu;
 mod modal;
 mod subscriber;
-mod form;
 
-pub use subscriber::*;
-pub use form::*;
 pub use custom::*;
 pub use elements::*;
+pub use form::*;
 pub use menu::*;
 pub use modal::*;
+pub use subscriber::*;

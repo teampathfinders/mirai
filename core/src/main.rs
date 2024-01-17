@@ -62,7 +62,6 @@ fn init_logging() -> anyhow::Result<()> {
     Ok(())
 }
 
-
 /// Initialises logging without tokio-console.
 #[cfg(not(feature = "tokio-console"))]
 fn init_logging() -> anyhow::Result<()> {

@@ -6,7 +6,7 @@ use super::Submittable;
 #[derive(Debug)]
 pub struct FormLabel {
     /// Text to display.
-    pub(crate) label: String
+    pub(crate) label: String,
 }
 
 impl Submittable for FormLabel {}
@@ -218,13 +218,13 @@ pub struct FormButton {
     pub(crate) image: Option<FormButtonImage>,
 }
 
-impl Submittable for FormButton {}
+// impl Submittable for FormButton {}
 
-impl Into<FormElement> for FormButton {
-    fn into(self) -> FormElement {
-        FormElement::Button(self)
-    }
-}
+// impl Into<FormElement> for FormButton {
+//     fn into(self) -> FormElement {
+//         FormElement::Button(self)
+//     }
+// }
 
 impl serde::Serialize for FormButton {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>

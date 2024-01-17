@@ -8,7 +8,7 @@ use proto::bedrock::{Animate, CommandOutput, CommandOutputMessage, CommandOutput
 use util::{Deserialize};
 use util::MutableBuffer;
 
-use crate::forms::{CustomForm, FormElement, FormLabel, FormButton, FormInput, FormButtonImage, FormToggle};
+use crate::forms::{CustomForm, FormElement, FormLabel, FormButton, FormInput, FormButtonImage, FormToggle, FormDropdown, FormSlider, FormStepSlider};
 
 use super::BedrockUser;
 
@@ -54,7 +54,17 @@ impl BedrockUser {
                 let form = CustomForm::new()
                     .title("Custom form")
                     .with("label", FormLabel { label: String::from("Hello World!") })
-                    .with("toggle", FormToggle { initial: false, label: String::from("true?") });
+                    .with("input", FormInput { initial: String::from("initial"), label: format!("You said: \"{message}\""), placeholder: String::new() })
+                    .with("toggle", FormToggle { initial: false, label: String::from("true?") })
+                    .with("dropdown", FormDropdown {
+                        initial: 0, label: String::from("dropdown"), options: vec![String::from("1"), String::from("2")]
+                    })
+                    .with("slider", FormSlider {
+                        initial: 0.0, label: String::from("slider"), max: 1.0, min: -1.0, step: 0.5
+                    })
+                    .with("step_slider", FormStepSlider {
+                        initial: 0, label: String::from("step_slider"), steps: vec![String::from("1"), String::from("2")]
+                    });
 
                 let res = clone.form_subscriber.subscribe(&clone, form).unwrap().await;
                 tracing::debug!("{res:?}");

@@ -20,10 +20,7 @@ pub struct CustomForm<'a> {
 
 impl<'a> CustomForm<'a> {
     pub fn new() -> Self {
-        Self {
-            title: "Form",
-            content: HashMap::new()
-        }
+        Self { title: "Form", content: HashMap::new() }
     }
 
     pub fn title(mut self, title: impl Into<&'a str>) -> Self {
