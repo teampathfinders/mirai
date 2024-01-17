@@ -16,4 +16,4 @@ glob_export!(reliability);
 glob_export!(send_queue);
 glob_export!(send);
 glob_export!(user);
-glob_export!(tick);
+glob_export!(worker);

@@ -13,6 +13,7 @@ use proto::bedrock::{ConnectedPacket, Disconnect};
 use replicator::Replicator;
 
 
+use tokio::task::JoinSet;
 use util::Serialize;
 use util::MutableBuffer;
 
@@ -68,7 +69,7 @@ impl UserMap {
     pub fn insert(&self, info: UserCreateInfo) {
         let (tx, rx) = mpsc::channel(BROADCAST_CHANNEL_CAPACITY);
 
-        let address = info.address.clone();
+        let address = info.address;
         let (state, state_rx) = 
             RaknetUser::new(info, self.broadcast.clone(), rx);
         
@@ -139,13 +140,13 @@ impl UserMap {
     pub fn kick_all(&self, message: &str) -> anyhow::Result<()> {
         // Ignore result because it can only fail if there are no receivers remaining.
         // In that case this shouldn't do anything anyways.
-        let _ = self.broadcast.send(BroadcastPacket::new(
+        self.broadcast.send(BroadcastPacket::new(
             Disconnect {
                 hide_message: false,
                 message,
             },
             None,
-        )?);
+        )?)?;
 
         // Cancel all tokens.
         self.connected_map
@@ -156,19 +157,18 @@ impl UserMap {
     }
 
     pub async fn shutdown(&self) -> anyhow::Result<()> {
-        self.kick_all("Server closed")?;
-        while !self.connected_map.is_empty() {
-            let user = self.connected_map.iter().next().unwrap();
+        self.kick_all("disconnect.kicked")?;
 
-            let handle = user.value().state.handle.write().take().unwrap();
-            let _ = handle.await;
+        let mut join_set = JoinSet::new();
+        self.connected_map.retain(|_k, v| {
+            let handle = v.state.handle.write().take().unwrap();
+            join_set.spawn(handle);
 
-            let address = user.key().clone();
-            drop(user);
+            false
+        });
 
-            self.connected_map.remove(&address);
-        }
-
+        while join_set.join_next().await.is_some() {}
+        
         tracing::info!("All clients disconnected");
         Ok(())
     }

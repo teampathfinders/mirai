@@ -81,7 +81,9 @@ impl BedrockUser {
 
     async fn start_job(self: &Arc<Self>, mut receiver: mpsc::Receiver<MutableBuffer>) {
         let mut broadcast = self.broadcast.subscribe();
-        loop {
+
+        let mut should_run = true;
+        while should_run {
             tokio::select! {
                 packet = receiver.recv() => {            
                     if let Some(packet) = packet {
@@ -99,7 +101,8 @@ impl BedrockUser {
                         }
                     }
                 },
-                _ = self.raknet.active.cancelled() => break
+                // Use `should_run` variable to trigger one final processing run when shutting down.
+                _ = self.raknet.active.cancelled() => should_run = false
             };
         }
 
