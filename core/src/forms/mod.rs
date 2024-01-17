@@ -7,6 +7,7 @@ mod modal;
 mod subscriber;
 mod form;
 
+pub use subscriber::*;
 pub use form::*;
 pub use custom::*;
 pub use elements::*;

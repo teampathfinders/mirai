@@ -4,14 +4,35 @@ use crate::forms::FormElement;
 
 use super::Form;
 
+pub trait Submittable<'a>: Into<FormElement<'a>> {}
+
 /// A forms with a custom body.
 /// Unlike the other forms types, this forms can make use of all the custom UI elements.
 #[derive(Debug)]
 pub struct CustomForm<'a> {
     /// Title displayed at the top of the window.
-    pub title: &'a str,
+    pub(super) title: &'a str,
     /// List of custom elements.
-    pub content: &'a [FormElement<'a>],
+    pub(super) content: Vec<FormElement<'a>>,
+}
+
+impl<'a> CustomForm<'a> {
+    pub fn new() -> Self {
+        Self {
+            title: "Form",
+            content: Vec::new()
+        }
+    }
+
+    pub fn title(mut self, title: impl Into<&'a str>) -> Self {
+        self.title = title.into();
+        self
+    }
+
+    pub fn with(mut self, submittable: impl Submittable<'a>) -> Self {
+        self.content.push(submittable.into());
+        self
+    }
 }
 
 impl Form for CustomForm<'_> {}
@@ -24,7 +45,7 @@ impl serde::Serialize for CustomForm<'_> {
         let mut map = serializer.serialize_struct("custom_form", 3)?;
         map.serialize_field("type", "custom_form")?;
         map.serialize_field("title", self.title)?;
-        map.serialize_field("content", self.content)?;
+        map.serialize_field("content", &self.content)?;
         map.end()
     }
 }

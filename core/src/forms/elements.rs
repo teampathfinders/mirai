@@ -1,10 +1,20 @@
 use serde::ser::SerializeStruct;
 
+use super::Submittable;
+
 /// A plain piece of text.
 #[derive(Debug)]
 pub struct FormLabel<'a> {
     /// Text to display.
     pub(crate) label: &'a str,
+}
+
+impl<'a> Submittable<'a> for FormLabel<'a> {}
+
+impl<'a> Into<FormElement<'a>> for FormLabel<'a> {
+    fn into(self) -> FormElement<'a> {
+        FormElement::Label(self)
+    }
 }
 
 impl<'a> serde::Serialize for FormLabel<'a> {
@@ -30,6 +40,14 @@ pub struct FormInput<'a> {
     pub initial: &'a str,
 }
 
+impl<'a> Submittable<'a> for FormInput<'a> {}
+
+impl<'a> Into<FormElement<'a>> for FormInput<'a> {
+    fn into(self) -> FormElement<'a> {
+        FormElement::Input(self)
+    }
+}
+
 impl<'a> serde::Serialize for FormInput<'a> {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
@@ -51,6 +69,14 @@ pub struct FormToggle<'a> {
     pub(crate) label: &'a str,
     /// Initial state of the toggle.
     pub(crate) initial: bool,
+}
+
+impl<'a> Submittable<'a> for FormToggle<'a> {}
+
+impl<'a> Into<FormElement<'a>> for FormToggle<'a> {
+    fn into(self) -> FormElement<'a> {
+        FormElement::Toggle(self)
+    }
 }
 
 impl<'a> serde::Serialize for FormToggle<'a> {
@@ -81,6 +107,14 @@ pub struct FormSlider<'a> {
     pub(crate) initial: f64,
 }
 
+impl<'a> Submittable<'a> for FormSlider<'a> {}
+
+impl<'a> Into<FormElement<'a>> for FormSlider<'a> {
+    fn into(self) -> FormElement<'a> {
+        FormElement::Slider(self)
+    }
+}
+
 impl<'a> serde::Serialize for FormSlider<'a> {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
@@ -109,6 +143,14 @@ pub struct FormDropdown<'a> {
     pub(crate) initial: i32,
 }
 
+impl<'a> Submittable<'a> for FormDropdown<'a> {}
+
+impl<'a> Into<FormElement<'a>> for FormDropdown<'a> {
+    fn into(self) -> FormElement<'a> {
+        FormElement::Dropdown(self)
+    }
+}
+
 impl<'a> serde::Serialize for FormDropdown<'a> {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
@@ -133,6 +175,14 @@ pub struct FormStepSlider<'a> {
     pub(crate) steps: &'a [&'a str],
     /// Initial state of the step slider.
     pub(crate) initial: i32,
+}
+
+impl<'a> Submittable<'a> for FormStepSlider<'a> {}
+
+impl<'a> Into<FormElement<'a>> for FormStepSlider<'a> {
+    fn into(self) -> FormElement<'a> {
+        FormElement::StepSlider(self)
+    }
 }
 
 impl<'a> serde::Serialize for FormStepSlider<'a> {
@@ -166,6 +216,14 @@ pub struct FormButton<'a> {
     /// An optional image shown to the left of the button.
     /// This button can either be a local file from a resource pack or a URL.
     pub(crate) image: Option<FormButtonImage<'a>>,
+}
+
+impl<'a> Submittable<'a> for FormButton<'a> {}
+
+impl<'a> Into<FormElement<'a>> for FormButton<'a> {
+    fn into(self) -> FormElement<'a> {
+        FormElement::Button(self)
+    }
 }
 
 impl<'a> serde::Serialize for FormButton<'a> {

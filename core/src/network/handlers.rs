@@ -1,9 +1,14 @@
 
 
-use proto::bedrock::{Animate, CommandOutput, CommandOutputMessage, CommandOutputType, CommandRequest, FormResponse, ParsedCommand, RequestAbility, SettingsCommand, TextData, TextMessage, TickSync, UpdateSkin};
+use std::sync::Arc;
+use std::time::Duration;
+
+use proto::bedrock::{Animate, CommandOutput, CommandOutputMessage, CommandOutputType, CommandRequest, FormResponseData, ParsedCommand, RequestAbility, SettingsCommand, TextData, TextMessage, TickSync, UpdateSkin};
 
 use util::{Deserialize};
 use util::MutableBuffer;
+
+use crate::forms::{CustomForm, FormElement, FormLabel, FormButton, FormInput};
 
 use super::BedrockUser;
 
@@ -26,10 +31,10 @@ impl BedrockUser {
         // self.send(response)
     }
 
-    pub async fn handle_text_message(&self, packet: MutableBuffer) -> anyhow::Result<()> {
+    pub async fn handle_text_message(self: &Arc<Self>, packet: MutableBuffer) -> anyhow::Result<()> {
         let request = TextMessage::deserialize(packet.snapshot())?;
         if let TextData::Chat {
-             ..
+            message, ..
         } = request.data {
             // Check that the source is equal to the player name to prevent spoofing.
             #[cfg(not(debug_assertions))] // Allow modifications for development purposes.
@@ -40,6 +45,39 @@ impl BedrockUser {
                     actual, source
                 );
             }
+            
+            let clone = Arc::clone(self);
+            let message = message.to_owned();
+            tokio::spawn(async move {
+                tokio::time::sleep(Duration::from_secs(1)).await;
+                
+                let form = CustomForm::new()
+                    .title("Custom form")
+                    .with(FormLabel { label: "Hello World!" });
+
+                let res = clone.form_subscriber.subscribe(&clone, &form).unwrap().await;
+                tracing::debug!("{res:?}");
+
+                // let label = format!("You sent: {message}");
+                // let echo = format!("Echo: \"{message}\"");
+                // let responder = clone.form_subscriber.subscribe(&clone, &CustomForm {
+                //     title: "Chat message event", content: &[
+                //         FormElement::Label(FormLabel {
+                //             label: &label
+                //         }),
+                //         FormElement::Input(FormInput {
+                //             label: "Response text",
+                //             initial: &echo,
+                //             placeholder: "Say something..."
+                //         })
+                //     ]
+                // }).unwrap();
+
+                // tokio::spawn(async move {
+                //     let data = responder.await.unwrap();
+                //     tracing::debug!("{data:?}");
+                // });
+            });
 
             // Send chat message to replication layer
             self.replicator.text_msg(&request).await?;
@@ -76,10 +114,8 @@ impl BedrockUser {
     }
 
     pub fn handle_form_response(&self, packet: MutableBuffer) -> anyhow::Result<()> {
-        let response = FormResponse::deserialize(packet.snapshot())?;
-        dbg!(response);
-
-        Ok(())
+        let response = FormResponseData::deserialize(packet.snapshot())?;
+        self.form_subscriber.handle_response(response)
     }
 
     pub fn handle_command_request(&self, packet: MutableBuffer) -> anyhow::Result<()> {
