@@ -1,6 +1,6 @@
 use std::{
     collections::HashMap,
-    ops::Index,
+    ops::{Index, IndexMut},
     sync::atomic::{AtomicU32, Ordering},
 };
 
@@ -22,6 +22,7 @@ pub enum FormBodyValue {
 }
 
 impl FormBodyValue {
+    /// Cast to a boolean, returning `None` if it was not actually a boolean.
     pub fn as_bool(&self) -> Option<bool> {
         match self {
             Self::Bool(b) => Some(*b),
@@ -29,9 +30,26 @@ impl FormBodyValue {
         }
     }
 
-    pub fn as_string(&self) -> Option<&str> {
+    /// Cast to a string, returning `None` if it was not actually a string.
+    pub fn as_str(&self) -> Option<&str> {
         match self {
             Self::Text(s) => Some(s),
+            _ => None,
+        }
+    }
+
+    /// Cast to an integer, returning `None` if it was not actually an integer.
+    pub fn as_index(&self) -> Option<u64> {
+        match self {
+            Self::Index(i) => Some(*i),
+            _ => None,
+        }
+    }
+
+    /// Cast to a float, returning `None` if it was not actually a float.
+    pub fn as_float(&self) -> Option<f64> {
+        match self {
+            Self::Float(f) => Some(*f),
             _ => None,
         }
     }
@@ -40,6 +58,30 @@ impl FormBodyValue {
 #[derive(Debug, Default)]
 pub struct FormBody {
     pub body: HashMap<String, FormBodyValue>,
+}
+
+impl FormBody {
+    pub fn get(&self, index: impl AsRef<str>) -> Option<&FormBodyValue> {
+        self.body.get(index.as_ref())
+    }
+
+    pub fn get_mut(&mut self, index: impl AsRef<str>) -> Option<&mut FormBodyValue> {
+        self.body.get_mut(index.as_ref())
+    }
+}
+
+impl<S: AsRef<str>> Index<S> for FormBody {
+    type Output = FormBodyValue;
+
+    fn index(&self, index: S) -> &Self::Output {
+        self.get(index).unwrap()
+    }
+}
+
+impl<S: AsRef<str>> IndexMut<S> for FormBody {
+    fn index_mut(&mut self, index: S) -> &mut Self::Output {
+        self.get_mut(index).unwrap()
+    }
 }
 
 /// A type of response to a form.

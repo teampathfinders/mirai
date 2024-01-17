@@ -12,7 +12,9 @@ pub struct FormLabel {
 
 impl FormLabel {
     /// Creates a new empty label.
-    pub fn new() -> Self { Self::default() }
+    pub fn new() -> Self {
+        Self::default()
+    }
 
     /// Sets the body of this label.
     pub fn label(mut self, label: impl Into<String>) -> Self {
@@ -54,7 +56,9 @@ pub struct FormInput {
 
 impl FormInput {
     /// Creates a new input.
-    pub fn new() -> Self { <Self as Default>::default() }
+    pub fn new() -> Self {
+        <Self as Default>::default()
+    }
 
     /// Sets the label.
     pub fn label(mut self, label: impl Into<String>) -> Self {
@@ -108,7 +112,9 @@ pub struct FormToggle {
 
 impl FormToggle {
     /// Creates a new toggle.
-    pub fn new() -> Self { <Self as Default>::default() }
+    pub fn new() -> Self {
+        <Self as Default>::default()
+    }
 
     /// Sets the label.
     pub fn label(mut self, label: impl Into<String>) -> Self {
@@ -161,7 +167,9 @@ pub struct FormSlider {
 
 impl FormSlider {
     /// Creates a new slider.
-    pub fn new() -> Self { <Self as Default>::default() }
+    pub fn new() -> Self {
+        <Self as Default>::default()
+    }
 
     /// Sets the label.
     pub fn label(mut self, label: impl Into<String>) -> Self {
@@ -232,7 +240,9 @@ pub struct FormDropdown {
 
 impl FormDropdown {
     /// Creates a new dropdown.
-    pub fn new() -> Self { <Self as Default>::default() }
+    pub fn new() -> Self {
+        <Self as Default>::default()
+    }
 
     /// Sets the label.
     pub fn label(mut self, label: impl Into<String>) -> Self {
@@ -289,7 +299,9 @@ pub struct FormStepSlider {
 
 impl FormStepSlider {
     /// Creates a new step slider.
-    pub fn new() -> Self { <Self as Default>::default() }
+    pub fn new() -> Self {
+        <Self as Default>::default()
+    }
 
     /// Sets the label.
     pub fn label(mut self, label: impl Into<String>) -> Self {
@@ -302,7 +314,7 @@ impl FormStepSlider {
         self.steps.push(step.into());
         self
     }
-    
+
     /// Sets the default state
     pub fn default(mut self, default: impl Into<u32>) -> Self {
         self.default = default.into();

@@ -8,7 +8,7 @@ use proto::bedrock::{Animate, CommandOutput, CommandOutputMessage, CommandOutput
 use util::{Deserialize};
 use util::MutableBuffer;
 
-use crate::forms::{CustomForm, FormElement, FormLabel, FormButton, FormInput, FormButtonImage, FormToggle, FormDropdown, FormSlider, FormStepSlider};
+use crate::forms::{CustomForm, FormElement, FormLabel, FormButton, FormInput, FormButtonImage, FormToggle, FormDropdown, FormSlider, FormStepSlider, FormResponse};
 
 use super::BedrockUser;
 
@@ -60,28 +60,21 @@ impl BedrockUser {
                     .with("slider", FormSlider::new().label("Slider").min(0.0).max(1.0).step(0.1))
                     .with("step_slider", FormStepSlider::new().label("Step slider").option("1").option("2"));
 
-                let res = clone.form_subscriber.subscribe(&clone, form).unwrap().await;
-                tracing::debug!("{res:?}");
+                let res = clone.form_subscriber
+                    .subscribe(&clone, form)
+                    .unwrap()
+                    .await
+                    .unwrap();
+                
+                match res {
+                    FormResponse::Cancelled(_) => tracing::info!("Form was cancelled"),
+                    FormResponse::Response(res) => {
+                        let input = res["input"].as_str().unwrap();
+                        tracing::debug!("Player responded with: {input}");
 
-                // let label = format!("You sent: {message}");
-                // let echo = format!("Echo: \"{message}\"");
-                // let responder = clone.form_subscriber.subscribe(&clone, &CustomForm {
-                //     title: "Chat message event", content: &[
-                //         FormElement::Label(FormLabel {
-                //             label: &label
-                //         }),
-                //         FormElement::Input(FormInput {
-                //             label: "Response text",
-                //             initial: &echo,
-                //             placeholder: "Say something..."
-                //         })
-                //     ]
-                // }).unwrap();
-
-                // tokio::spawn(async move {
-                //     let data = responder.await.unwrap();
-                //     tracing::debug!("{data:?}");
-                // });
+                        tracing::info!("{res:?}");
+                    }
+                }
             });
 
             // Send chat message to replication layer
