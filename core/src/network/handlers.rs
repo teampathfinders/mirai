@@ -50,29 +50,20 @@ impl BedrockUser {
             let message = message.to_owned();
             tokio::spawn(async move {
                 tokio::time::sleep(Duration::from_secs(1)).await;
-                
-                let form = CustomForm::new()
-                    .title("Custom Form")
-                    .with("label", FormLabel::new().label("Label"))
-                    .with("input", FormInput::new().label(format!("You said {message}")).placeholder("Placeholder"))
-                    .with("toggle", FormToggle::new().label("Toggle"))
-                    .with("dropdown", FormDropdown::new().label("Dropdown").option("1").option("2"))
-                    .with("slider", FormSlider::new().label("Slider").min(0.0).max(1.0).step(0.1))
-                    .with("step_slider", FormStepSlider::new().label("Step slider").option("1").option("2"));
 
-                let res = clone.form_subscriber
-                    .subscribe(&clone, form)
-                    .unwrap()
-                    .await
-                    .unwrap();
-                
-                match res {
-                    FormResponse::Cancelled(_) => tracing::info!("Form was cancelled"),
-                    FormResponse::Response(res) => {
-                        let input = res["input"].as_str().unwrap();
-                        tracing::debug!("Player responded with: {input}");
+                let sub = clone.form_subscriber.subscribe(
+                    &clone, 
+                    CustomForm::new()
+                        .title("Response form")
+                        .with("label", FormLabel::new().label(format!("Give your response to: \"{message}\"")))
+                        .with("input", FormInput::new().label("Your response:").default("Echo!").placeholder("Response..."))
+                ).unwrap();
 
-                        tracing::info!("{res:?}");
+                match sub.await.unwrap() {
+                    FormResponse::Cancelled(reason) => tracing::info!("Form was cancelled: {reason:?}"),
+                    FormResponse::Response(response) => {
+                        let input = response["input"].as_str().unwrap();
+                        tracing::info!("Player responded with: {input}");
                     }
                 }
             });
