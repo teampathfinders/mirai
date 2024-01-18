@@ -53,7 +53,7 @@ impl BedrockUser {
         match request.action {
             PlayerActionType::StartFlying => self.action_start_flying(request),
             PlayerActionType::StopFlying => self.action_stop_flying(request),
-            _ => unimplemented!("Other player action")
+            _ => Ok(())
         }
     }
 

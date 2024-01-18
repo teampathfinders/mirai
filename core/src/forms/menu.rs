@@ -2,6 +2,8 @@ use serde::ser::SerializeStruct;
 
 use crate::forms::FormButton;
 
+use super::Form;
+
 /// A forms is similar to a modal but it has an arbitrary amount of buttons.
 #[derive(Debug)]
 pub struct MenuForm<'a> {
@@ -10,10 +12,16 @@ pub struct MenuForm<'a> {
     /// Content of the forms. This is the text shown above the buttons.
     pub content: &'a str,
     /// List of buttons that are available.
-    pub buttons: &'a [FormButton<'a>],
+    pub buttons: &'a [FormButton],
 }
 
-impl<'a> serde::Serialize for MenuForm<'a> {
+impl Form for MenuForm<'_> {
+    fn into_descriptor(self) -> super::FormDescriptor {
+        todo!()
+    }
+}
+
+impl serde::Serialize for MenuForm<'_> {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: serde::Serializer,

@@ -11,7 +11,7 @@ use flate2::write::DeflateEncoder;
 use parking_lot::RwLock;
 use raknet::{SendConfig, DEFAULT_SEND_CONFIG, RaknetUser, BroadcastPacket};
 use tokio::sync::{mpsc, broadcast};
-use proto::bedrock::{CommandPermissionLevel, Disconnect, GameMode, PermissionLevel, Skin, ConnectedPacket, CONNECTED_PACKET_ID, CompressionAlgorithm, Packet, Header, RequestNetworkSettings, Login, ClientToServerHandshake, CacheStatus, ResourcePackClientResponse, ViolationWarning, ChunkRadiusRequest, Interact, TextMessage, SetLocalPlayerAsInitialized, MovePlayer, PlayerAction, RequestAbility, Animate, CommandRequest, SettingsCommand, ContainerClose, FormResponse, TickSync, UpdateSkin};
+use proto::bedrock::{CommandPermissionLevel, Disconnect, GameMode, PermissionLevel, Skin, ConnectedPacket, CONNECTED_PACKET_ID, CompressionAlgorithm, Packet, Header, RequestNetworkSettings, Login, ClientToServerHandshake, CacheStatus, ResourcePackClientResponse, ViolationWarning, ChunkRadiusRequest, Interact, TextMessage, SetLocalPlayerAsInitialized, MovePlayer, PlayerAction, RequestAbility, Animate, CommandRequest, SettingsCommand, ContainerClose, FormResponseData, TickSync, UpdateSkin};
 use proto::crypto::{Encryptor, BedrockIdentity, BedrockClientInfo};
 use proto::uuid::Uuid;
 use replicator::Replicator;
@@ -21,9 +21,8 @@ use util::{Vector, AtomicFlag, Serialize, BinaryRead, BinaryWrite};
 use util::MutableBuffer;
 
 use crate::config::SERVER_CONFIG;
+use crate::forms::FormSubscriber;
 use crate::level::{ChunkViewer, Level};
-
-static RUNTIME_ID_COUNTER: AtomicU64 = AtomicU64::new(0);
 
 pub struct BedrockUser {
     pub encryptor: OnceLock<Encryptor>,
@@ -39,6 +38,7 @@ pub struct BedrockUser {
     pub level: Arc<Level>,
     pub raknet: Arc<RaknetUser>,
     pub player: OnceLock<PlayerData>,
+    pub form_subscriber: FormSubscriber,
 
     pub broadcast: broadcast::Sender<BroadcastPacket>,
     pub handle: RwLock<Option<JoinHandle<()>>>
@@ -64,6 +64,7 @@ impl BedrockUser {
             level,
             raknet,
             player: OnceLock::new(),
+            form_subscriber: FormSubscriber::new(),
             
             broadcast,
             handle: RwLock::new(None)
@@ -78,9 +79,11 @@ impl BedrockUser {
         user
     }
 
-    async fn start_job(&self, mut receiver: mpsc::Receiver<MutableBuffer>) {
+    async fn start_job(self: &Arc<Self>, mut receiver: mpsc::Receiver<MutableBuffer>) {
         let mut broadcast = self.broadcast.subscribe();
-        loop {
+
+        let mut should_run = true;
+        while should_run {
             tokio::select! {
                 packet = receiver.recv() => {            
                     if let Some(packet) = packet {
@@ -98,7 +101,8 @@ impl BedrockUser {
                         }
                     }
                 },
-                _ = self.raknet.active.cancelled() => break
+                // Use `should_run` variable to trigger one final processing run when shutting down.
+                _ = self.raknet.active.cancelled() => should_run = false
             };
         }
 
@@ -208,7 +212,7 @@ impl BedrockUser {
         Ok(())
     }
   
-    async fn handle_encrypted_frame(&self, mut packet: MutableBuffer) -> anyhow::Result<()> {
+    async fn handle_encrypted_frame(self: &Arc<Self>, mut packet: MutableBuffer) -> anyhow::Result<()> {
         debug_assert_eq!(packet[0], 0xfe);
 
         // Remove 0xfe packet ID.
@@ -248,7 +252,7 @@ impl BedrockUser {
     }
 
     async fn handle_frame_body(
-        &self,
+        self: &Arc<Self>,
         mut packet: MutableBuffer,
     ) -> anyhow::Result<()> {
         let mut snapshot = packet.snapshot();
@@ -297,7 +301,7 @@ impl BedrockUser {
             UpdateSkin::ID => self.handle_skin_update(packet),
             SettingsCommand::ID => self.handle_settings_command(packet),
             ContainerClose::ID => self.process_container_close(packet),
-            FormResponse::ID => self.handle_form_response(packet),
+            FormResponseData::ID => self.handle_form_response(packet),
             TickSync::ID => self.handle_tick_sync(packet),
             id => anyhow::bail!("Invalid game packet: {id:#04x}"),
         }

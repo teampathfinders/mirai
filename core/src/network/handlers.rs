@@ -1,9 +1,14 @@
 
 
-use proto::bedrock::{Animate, CommandOutput, CommandOutputMessage, CommandOutputType, CommandRequest, FormResponse, ParsedCommand, RequestAbility, SettingsCommand, TextData, TextMessage, TickSync, UpdateSkin};
+use std::sync::Arc;
+use std::time::Duration;
+
+use proto::bedrock::{Animate, CommandOutput, CommandOutputMessage, CommandOutputType, CommandRequest, FormResponseData, ParsedCommand, RequestAbility, SettingsCommand, TextData, TextMessage, TickSync, UpdateSkin};
 
 use util::{Deserialize};
 use util::MutableBuffer;
+
+use crate::forms::{CustomForm, FormElement, FormLabel, FormButton, FormInput, FormButtonImage, FormToggle, FormDropdown, FormSlider, FormStepSlider, FormResponse};
 
 use super::BedrockUser;
 
@@ -26,10 +31,10 @@ impl BedrockUser {
         // self.send(response)
     }
 
-    pub async fn handle_text_message(&self, packet: MutableBuffer) -> anyhow::Result<()> {
+    pub async fn handle_text_message(self: &Arc<Self>, packet: MutableBuffer) -> anyhow::Result<()> {
         let request = TextMessage::deserialize(packet.snapshot())?;
         if let TextData::Chat {
-             ..
+            message, ..
         } = request.data {
             // Check that the source is equal to the player name to prevent spoofing.
             #[cfg(not(debug_assertions))] // Allow modifications for development purposes.
@@ -40,6 +45,28 @@ impl BedrockUser {
                     actual, source
                 );
             }
+            
+            let clone = Arc::clone(self);
+            let message = message.to_owned();
+            tokio::spawn(async move {
+                tokio::time::sleep(Duration::from_secs(1)).await;
+
+                let sub = clone.form_subscriber.subscribe(
+                    &clone, 
+                    CustomForm::new()
+                        .title("Response form")
+                        .with("label", FormLabel::new().label(format!("Give your response to: \"{message}\"")))
+                        .with("input", FormInput::new().label("Your response:").default("Echo!").placeholder("Response..."))
+                ).unwrap();
+
+                match sub.await.unwrap() {
+                    FormResponse::Cancelled(reason) => tracing::info!("Form was cancelled: {reason:?}"),
+                    FormResponse::Response(response) => {
+                        let input = response["input"].as_str().unwrap();
+                        tracing::info!("Player responded with: {input}");
+                    }
+                }
+            });
 
             // Send chat message to replication layer
             self.replicator.text_msg(&request).await?;
@@ -76,10 +103,8 @@ impl BedrockUser {
     }
 
     pub fn handle_form_response(&self, packet: MutableBuffer) -> anyhow::Result<()> {
-        let response = FormResponse::deserialize(packet.snapshot())?;
-        dbg!(response);
-
-        Ok(())
+        let response = FormResponseData::deserialize(packet.snapshot())?;
+        self.form_subscriber.handle_response(response)
     }
 
     pub fn handle_command_request(&self, packet: MutableBuffer) -> anyhow::Result<()> {

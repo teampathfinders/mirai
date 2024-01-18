@@ -1,5 +1,7 @@
 use serde::ser::SerializeStruct;
 
+use super::{Form, FormDescriptor};
+
 /// A modal is a forms that only has a body and two buttons.
 /// Unlike [`CustomForm`](crate::forms::CustomForm)
 /// [`FormButton`](crate::forms::FormButton)s, these buttons cannot have images next to them.
@@ -13,6 +15,12 @@ pub struct Modal<'a> {
     pub button1: &'a str,
     /// Text body of the second button.
     pub button2: &'a str,
+}
+
+impl Form for Modal<'_> {
+    fn into_descriptor(self) -> FormDescriptor {
+        todo!()
+    }
 }
 
 impl<'a> serde::Serialize for Modal<'a> {

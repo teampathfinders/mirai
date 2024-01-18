@@ -115,9 +115,8 @@ impl RaknetUser {
             output: output_tx,
         });
 
-        state.clone().receiver_task(forward_rx);
-        state.clone().ticker_task();
-
+        tokio::spawn(state.clone().async_worker(forward_rx));
+    
         (state, output_rx)
     }
 
