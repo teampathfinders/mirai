@@ -10,7 +10,7 @@ nbt = { package = "inferno-nbt", path = "../nbt" }
 
 anyhow = "1.0.79"
 bytemuck = "1.14.0"
-uuid = { version = "1.4.0", features = ["serde"], default-features = false }
+uuid = { version = "1.7.0", features = ["serde"], default-features = false }
 serde_repr = "0.1.18"
 serde_json = "1.0.111"
 jsonwebtoken = "9.2.0"
