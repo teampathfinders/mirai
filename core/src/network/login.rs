@@ -168,9 +168,9 @@ impl BedrockUser {
             level_name: "World name",
             template_content_identity: "",
             movement_settings: PlayerMovementSettings {
-                movement_type: PlayerMovementType::ClientAuthoritative,
+                movement_type: PlayerMovementType::ServerAuthoritative,
                 rewind_history_size: 0,
-                server_authoritative_breaking: false,
+                server_authoritative_breaking: true,
             },
             time: 0,
             enchantment_seed: 0,
@@ -181,14 +181,14 @@ impl BedrockUser {
             block_properties: &[],
             item_properties: &[],
             property_data: PropertyData {},
-            server_authoritative_inventory: false,
+            server_authoritative_inventory: true,
             game_version: "1.20.50",
             // property_data: nbt::Value::Compound(HashMap::new()),
             server_block_state_checksum: 0,
             world_template_id: 0,
             client_side_generation: false,
             hashed_block_ids: false,
-            server_authoritative_sounds: false
+            server_authoritative_sounds: true
         };
         self.send(start_game)?;
 

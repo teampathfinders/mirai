@@ -5,6 +5,7 @@ use util::glob_export;
 glob_export!(login);
 glob_export!(cache);
 glob_export!(command);
+glob_export!(input);
 glob_export!(level);
 glob_export!(settings);
 
