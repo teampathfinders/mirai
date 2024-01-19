@@ -1,5 +1,4 @@
 use std::process::ExitCode;
-use std::str::FromStr;
 use std::sync::atomic::{AtomicU16, Ordering};
 
 use tokio::runtime;
