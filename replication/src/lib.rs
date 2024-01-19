@@ -46,8 +46,7 @@ impl Replicator {
             None,
             None,
         );
-        let _ = client.connect();
-        client.wait_for_connect().await?;
+        client.connect().await??;
 
         tracing::debug!("Replication layer created");
 

@@ -1,5 +1,5 @@
 #![allow(rustdoc::private_intra_doc_links)]
-#![doc(issue_tracker_base_url = "https://github.com/rust-lang/rust/issues/")]
+#![allow(dead_code)]
 
 pub mod config;
 pub mod data;
