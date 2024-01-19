@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use super::{FormElement, FormResponse};
+use super::{FormElement};
 
 pub trait Form: serde::Serialize {
     #[doc(hidden)]

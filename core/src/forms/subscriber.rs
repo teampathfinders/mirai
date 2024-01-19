@@ -11,7 +11,7 @@ use tokio::sync::oneshot;
 
 use crate::{forms::FormElement, network::BedrockUser};
 
-use super::{Form, FormDescriptor, Submittable};
+use super::{Form, FormDescriptor};
 
 #[derive(Debug)]
 pub enum FormBodyValue {

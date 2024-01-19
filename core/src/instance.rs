@@ -427,10 +427,8 @@ impl ServerInstance {
                         }
                     }
                 });
-            } else {
-                if let Err(e) = user_manager.forward(packet).await {
-                    tracing::error!("{e:#}");
-                }
+            } else if let Err(e) = user_manager.forward(packet).await {
+                tracing::error!("{e:#}");
             }
         }
 

@@ -1,6 +1,6 @@
 use std::sync::atomic::Ordering;
 
-use proto::bedrock::{ABILITY_FLYING, ABILITY_MAYFLY, ABILITY_MUTED, AbilityData, AbilityLayer, AbilityType, ContainerClose, ContainerOpen, ContainerType, GameMode, Interact, InteractAction, INVENTORY_WINDOW_ID, MovementMode, MovePlayer, PlayerAction, PlayerActionType, UpdateAbilities, ABILITY_FLAG_END};
+use proto::bedrock::{ABILITY_FLYING, AbilityData, AbilityLayer, AbilityType, ContainerClose, ContainerOpen, ContainerType, GameMode, Interact, InteractAction, INVENTORY_WINDOW_ID, MovePlayer, PlayerAction, PlayerActionType, UpdateAbilities, ABILITY_FLAG_END};
 use util::{MutableBuffer, Deserialize};
 
 use super::BedrockUser;
@@ -8,14 +8,12 @@ use super::BedrockUser;
 impl BedrockUser {
     pub fn process_interaction(&self, packet: MutableBuffer) -> anyhow::Result<()> {
         let request = Interact::deserialize(packet.snapshot())?;
-        if request.action == InteractAction::OpenInventory {
-            if !self.player().is_inventory_open.fetch_or(true, Ordering::Relaxed) {
-                self.send(ContainerOpen {
-                    window_id: INVENTORY_WINDOW_ID,
-                    container_type: ContainerType::Inventory,
-                    ..Default::default()
-                })?;
-            }
+        if request.action == InteractAction::OpenInventory && !self.player().is_inventory_open.fetch_or(true, Ordering::Relaxed) {
+            self.send(ContainerOpen {
+                window_id: INVENTORY_WINDOW_ID,
+                container_type: ContainerType::Inventory,
+                ..Default::default()
+            })?;
         }
 
         Ok(())
@@ -37,7 +35,7 @@ impl BedrockUser {
     }
 
     pub async fn process_move_player(&self, packet: MutableBuffer) -> anyhow::Result<()> {
-        let mut request = MovePlayer::deserialize(packet.snapshot())?;
+        let _request = MovePlayer::deserialize(packet.snapshot())?;
 
         Ok(())
         // self.replicator.move_player(self.xuid(), &request).await?;
@@ -61,7 +59,7 @@ impl BedrockUser {
     // ======================================================================================
 
     #[inline]
-    fn action_start_flying(&self, action: PlayerAction) -> anyhow::Result<()> {
+    fn action_start_flying(&self, _action: PlayerAction) -> anyhow::Result<()> {
         // Only allow flying if the player is in the correct gamemode.
         let gamemode = self.player().gamemode();
         if gamemode == GameMode::Creative || gamemode == GameMode::Spectator {
@@ -87,7 +85,7 @@ impl BedrockUser {
     }
 
     #[inline]
-    fn action_stop_flying(&self, action: PlayerAction) -> anyhow::Result<()> {
+    fn action_stop_flying(&self, _action: PlayerAction) -> anyhow::Result<()> {
         self.send(UpdateAbilities(
             AbilityData {
                 command_permission_level: self.player().command_permission_level,
