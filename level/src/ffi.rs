@@ -1,6 +1,7 @@
 use std::ffi::{c_char, c_int, c_void};
 
 /// Status of the LevelDB operation result.
+#[allow(dead_code)] // These enum variants are used by C++ through FFI but not in Rust code.
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 #[repr(u8)]
 pub enum LoadStatus {
@@ -16,8 +17,11 @@ pub enum LoadStatus {
 #[derive(Debug)]
 #[repr(C)]
 pub struct LevelResult {
+    /// The status of the result.
     pub status: LoadStatus,
+    /// Size in bytes of the `data` field.
     pub size: c_int,
+    /// Data such as an error or a response.
     pub data: *mut c_void,
 }
 

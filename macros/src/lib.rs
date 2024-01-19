@@ -89,7 +89,7 @@ pub fn atomic_enum(_attrs: TokenStream, item: TokenStream) -> TokenStream {
     }
 
     let variants = &enum_data.variants;
-    let doc_comment = format!("Atomic version of {}", ident.to_string());
+    let doc_comment = format!("Atomic version of {ident}");
 
     TokenStream::from(quote! {
         #[repr(#repr)]

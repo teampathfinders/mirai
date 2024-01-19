@@ -97,10 +97,7 @@ impl FormResponse {
     /// Whether the form was cancelled.
     #[inline]
     pub fn is_cancelled(&self) -> bool {
-        match self {
-            Self::Cancelled(_) => true,
-            _ => false,
-        }
+        matches!(self, Self::Cancelled(_))
     }
 
     /// Returns the reason the form was cancelled.
@@ -237,4 +234,8 @@ impl FormSubscriber {
         let _ = sender.send(FormResponse::Response(out));
         Ok(())
     }
+}
+
+impl Default for FormSubscriber {
+    fn default() -> Self { Self::new() }
 }
