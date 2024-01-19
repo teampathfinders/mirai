@@ -1,5 +1,6 @@
 //! An interface that can interact with the Minecraft Bedrock world format.
 
+#![allow(dead_code)]
 #![forbid(missing_docs)]
 #![deny(clippy::undocumented_unsafe_blocks)]
 

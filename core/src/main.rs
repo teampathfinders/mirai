@@ -1,5 +1,4 @@
 use std::process::ExitCode;
-use std::str::FromStr;
 use std::sync::atomic::{AtomicU16, Ordering};
 
 use tokio::runtime;
@@ -65,6 +64,8 @@ fn init_logging() -> anyhow::Result<()> {
 /// Initialises logging without tokio-console.
 #[cfg(not(feature = "tokio-console"))]
 fn init_logging() -> anyhow::Result<()> {
+    use std::str::FromStr;
+
     let max_level = LevelFilter::from_str(
         &std::env::vars()
             .find_map(|(k, v)| if k == "LOG_LEVEL" { Some(v) } else { None })

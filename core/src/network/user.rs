@@ -2,7 +2,7 @@ use std::io::{Read, Write};
 
 use std::sync::{Arc, OnceLock};
 use std::sync::atomic::{
-    AtomicBool, AtomicU64, Ordering, AtomicU32,
+    AtomicBool, Ordering, AtomicU32,
 };
 
 use anyhow::Context;

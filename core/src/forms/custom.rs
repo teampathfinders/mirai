@@ -18,6 +18,12 @@ pub struct CustomForm<'a> {
     pub(super) content: HashMap<String, FormElement>,
 }
 
+impl<'a> Default for CustomForm<'a> {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl<'a> CustomForm<'a> {
     pub fn new() -> Self {
         Self { title: "Form", content: HashMap::new() }

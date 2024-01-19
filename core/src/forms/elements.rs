@@ -1,5 +1,4 @@
 use serde::ser::SerializeStruct;
-use tracing_subscriber::fmt::init;
 
 use super::Submittable;
 
@@ -25,9 +24,9 @@ impl FormLabel {
 
 impl Submittable for FormLabel {}
 
-impl Into<FormElement> for FormLabel {
-    fn into(self) -> FormElement {
-        FormElement::Label(self)
+impl From<FormLabel> for FormElement {
+    fn from(v: FormLabel) -> Self {
+        FormElement::Label(v)
     }
 }
 
@@ -81,9 +80,9 @@ impl FormInput {
 
 impl Submittable for FormInput {}
 
-impl Into<FormElement> for FormInput {
-    fn into(self) -> FormElement {
-        FormElement::Input(self)
+impl From<FormInput> for FormElement {
+    fn from(v: FormInput) -> Self {
+        FormElement::Input(v)
     }
 }
 
@@ -131,9 +130,9 @@ impl FormToggle {
 
 impl Submittable for FormToggle {}
 
-impl Into<FormElement> for FormToggle {
-    fn into(self) -> FormElement {
-        FormElement::Toggle(self)
+impl From<FormToggle> for FormElement {
+    fn from(v: FormToggle) -> Self {
+        FormElement::Toggle(v)
     }
 }
 
@@ -204,9 +203,9 @@ impl FormSlider {
 
 impl Submittable for FormSlider {}
 
-impl Into<FormElement> for FormSlider {
-    fn into(self) -> FormElement {
-        FormElement::Slider(self)
+impl From<FormSlider> for FormElement {
+    fn from(v: FormSlider) -> Self {
+        FormElement::Slider(v)
     }
 }
 
@@ -265,9 +264,9 @@ impl FormDropdown {
 
 impl Submittable for FormDropdown {}
 
-impl Into<FormElement> for FormDropdown {
-    fn into(self) -> FormElement {
-        FormElement::Dropdown(self)
+impl From<FormDropdown> for FormElement {
+    fn from(v: FormDropdown) -> Self {
+        Self::Dropdown(v)
     }
 }
 
@@ -324,9 +323,9 @@ impl FormStepSlider {
 
 impl Submittable for FormStepSlider {}
 
-impl Into<FormElement> for FormStepSlider {
-    fn into(self) -> FormElement {
-        FormElement::StepSlider(self)
+impl From<FormStepSlider> for FormElement {
+    fn from(v: FormStepSlider) -> Self {
+        FormElement::StepSlider(v)
     }
 }
 
@@ -370,6 +369,12 @@ pub struct FormButton {
 //         FormElement::Button(self)
 //     }
 // }
+
+impl From<FormButton> for FormElement {
+    fn from(v: FormButton) -> Self {
+        Self::Button(v)
+    }
+}
 
 impl serde::Serialize for FormButton {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>

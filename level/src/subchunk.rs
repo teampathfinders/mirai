@@ -207,7 +207,7 @@ impl SubLayer {
     where
         R: BinaryRead<'a> + Copy + 'a,
     {
-        let indices = match crate::deserialize_packed_array(&mut reader)? {
+        let _indices = match crate::deserialize_packed_array(&mut reader)? {
             PackedArrayReturn::Data(data) => data,
             PackedArrayReturn::Empty => anyhow::bail!("Sub layer packed array index size cannot be 0"),
             PackedArrayReturn::Inherit => anyhow::bail!("Sub layer packed array does not support biome referral"),
@@ -240,7 +240,7 @@ impl SubLayer {
             writer.write_var_i32(self.palette.len() as i32)?;
         }
 
-        for entry in &self.palette {
+        for _entry in &self.palette {
 
             // https://github.com/df-mc/dragonfly/blob/master/server/world/chunk/paletted_storage.go#L35
             // Requires new palette storage that only stores runtime IDs.

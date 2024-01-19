@@ -1,11 +1,10 @@
-use std::{collections::HashMap, sync::Mutex};
-use util::{Deserialize, MutableBuffer, Serialize, Vector};
+use std::{sync::Mutex};
+
 
 use crate::{
-    biome::Biomes, database::Database, provider::Provider, settings::LevelSettings, DataKey, KeyType, PaletteEntry, SubChunk, SubChunkVersion,
-    SubLayer, BIOME_DATA, LOCAL_PLAYER, MOB_EVENTS, OVERWORLD, SCHEDULER, SCOREBOARD,
+    provider::Provider,
 };
-use proto::types::Dimension;
+
 
 // digp [x] [z] [?dimension]
 // contains two int32
@@ -20,7 +19,7 @@ static LOCK: Mutex<()> = Mutex::new(());
 fn level_settings() {
     let _lock = LOCK.lock().unwrap();
     let provider = unsafe { Provider::open("../test-level").unwrap() };
-    let settings = provider.get_settings().unwrap();
+    let _settings = provider.get_settings().unwrap();
 }
 //
 // #[test]
