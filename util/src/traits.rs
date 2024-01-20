@@ -1,4 +1,4 @@
-use crate::{bytes::{MutableBuffer, SharedBuffer}, BinaryRead};
+use crate::{bytes::MutableBuffer, BinaryRead};
 use std::fmt::Debug;
 
 /// Trait that describes an object that can be serialised from raw bytes.

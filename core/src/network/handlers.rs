@@ -5,7 +5,7 @@ use std::time::Duration;
 
 use proto::bedrock::{Animate, CommandOutput, CommandOutputMessage, CommandOutputType, CommandRequest, FormResponseData, ParsedCommand, RequestAbility, SettingsCommand, TextData, TextMessage, TickSync, UpdateSkin};
 
-use util::{Deserialize};
+use util::Deserialize;
 use util::MutableBuffer;
 
 use crate::forms::{CustomForm, FormLabel, FormInput, FormResponse};

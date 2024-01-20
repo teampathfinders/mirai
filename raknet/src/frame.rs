@@ -1,6 +1,6 @@
 use std::io::Write;
 
-use util::{BinaryRead, BinaryWrite, MutableBuffer, SharedBuffer, Deserialize, Serialize};
+use util::{BinaryRead, BinaryWrite, MutableBuffer, Deserialize, Serialize};
 
 use crate::Reliability;
 

@@ -1,4 +1,4 @@
-use util::{MutableBuffer, SharedBuffer, Deserialize, BinaryRead, Serialize};
+use util::{MutableBuffer, Deserialize, BinaryRead, Serialize};
 
 use proto::raknet::{Ack, Nak};
 
