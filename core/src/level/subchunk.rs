@@ -31,8 +31,6 @@ impl From<SubLayer> for NetSubLayer {
     fn from(value: SubLayer) -> Self {
         let palette = value.palette().iter().flat_map(|entry| BLOCK_STATE_DATA.get(entry)).collect::<Vec<u32>>();
 
-        println!("Palette: {palette:?}");
-
         Self { palette, indices: value.take_indices() }
     }
 }

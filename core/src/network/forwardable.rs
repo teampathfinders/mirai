@@ -1,11 +1,10 @@
 use std::net::SocketAddr;
 
 use raknet::CONNECTED_PEER_BIT_FLAG;
-use util::MutableBuffer;
 
 /// An unprocessed packet.
 pub struct ForwardablePacket {
-    pub buf: MutableBuffer,
+    pub buf: Vec<u8>,
     pub addr: SocketAddr,
 }
 

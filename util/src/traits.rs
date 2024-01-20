@@ -56,3 +56,13 @@ impl<T> TryExpect for Option<T> {
         }
     }
 }
+
+pub trait ReserveTo {
+    fn reserve_to(&mut self, capacity: usize);
+}
+
+impl ReserveTo for Vec<u8> {
+    fn reserve_to(&mut self, capacity: usize) {
+        self.reserve(capacity - self.len());
+    }
+}

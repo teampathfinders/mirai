@@ -1,4 +1,4 @@
-use util::{BinaryWrite, MutableBuffer, size_of_varint, VarString};
+use util::{BinaryWrite, size_of_varint, VarString};
 use util::Result;
 use util::Serialize;
 

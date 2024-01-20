@@ -1,7 +1,7 @@
 use std::io::Write;
 
 use util::{Result, Vector};
-use util::{BinaryWrite, MutableBuffer};
+use util::{BinaryWrite};
 use util::Serialize;
 
 use crate::bedrock::ConnectedPacket;
@@ -31,7 +31,7 @@ pub struct LevelChunk {
     /// This should be set to None if the client does not support the blob cache.
     pub blob_hashes: Option<Vec<u64>>,
     /// Raw chunk data.
-    pub raw_payload: MutableBuffer,
+    pub raw_payload: Vec<u8>,
 }
 
 impl ConnectedPacket for LevelChunk {

@@ -1,7 +1,6 @@
 use std::io::Write;
 
 use dashmap::DashMap;
-use util::MutableBuffer;
 
 use crate::Frame;
 
@@ -59,7 +58,7 @@ impl Compounds {
             let fragments = &mut kv.1;
 
             // Merge all fragments
-            let mut merged = MutableBuffer::with_capacity(
+            let mut merged = Vec::with_capacity(
                 fragments
                     .iter()
                     .fold(0, |acc, f| acc + f.as_ref().unwrap().body.len())

@@ -1,6 +1,6 @@
 use crate::types::Dimension;
 use util::{Result, Vector};
-use util::{BinaryWrite, MutableBuffer};
+use util::{BinaryWrite};
 use util::Serialize;
 
 use crate::bedrock::ConnectedPacket;

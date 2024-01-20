@@ -92,7 +92,7 @@ where
 ///
 /// On success, the deserialised object and amount of bytes read from the buffer are returned.
 #[inline]
-fn from_bytes<'a, F, R, T>(reader: R) -> anyhow::Result<(T, usize)>
+fn from_bytes<'a, F, R, T>(mut reader: R) -> anyhow::Result<(T, usize)>
 where
     R: BinaryRead<'a> + 'a,
     T: Deserialize<'a>,
@@ -117,7 +117,7 @@ where
 ///
 /// ```rust
 /// # use inferno_nbt as nbt;
-/// # use util::MutableBuffer;
+/// # ;
 /// # fn main() {
 ///  #[derive(serde::Serialize, serde::Deserialize, Debug)]
 ///  struct Data {
@@ -157,7 +157,7 @@ where
 ///
 /// ```rust
 /// # use inferno_nbt as nbt;
-/// # use util::MutableBuffer;
+/// # ;
 /// # fn main() {
 ///  #[derive(serde::Serialize, serde::Deserialize, Debug)]
 ///  struct Data {
@@ -197,7 +197,7 @@ where
 ///
 /// ```rust
 /// # use inferno_nbt as nbt;
-/// # use util::MutableBuffer;
+/// # ;
 /// # fn main() {
 ///  #[derive(serde::Serialize, serde::Deserialize, Debug)]
 ///  struct Data {
@@ -413,6 +413,8 @@ where
     where
         V: Visitor<'de>,
     {
+        todo!("deserialize_bytes");
+
         is_ty!(ByteArray, self.next_ty);
 
         let len = match F::AS_ENUM {

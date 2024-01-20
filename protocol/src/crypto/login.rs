@@ -4,7 +4,7 @@ use jsonwebtoken::{Algorithm, DecodingKey, Validation};
 use p384::pkcs8::spki;
 use uuid::Uuid;
 
-use util::{BinaryRead, SharedBuffer};
+use util::{BinaryRead};
 use util::{bail, error, Result};
 
 use crate::bedrock::Skin;

@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use util::{BinaryWrite, MutableBuffer};
+use util::BinaryWrite;
 use util::Result;
 use util::Serialize;
 

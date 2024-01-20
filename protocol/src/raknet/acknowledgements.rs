@@ -1,6 +1,6 @@
 use std::ops::Range;
 
-use util::{BinaryRead, BinaryWrite, MutableBuffer, SharedBuffer};
+use util::{BinaryRead, BinaryWrite};
 use util::iassert;
 use util::Result;
 use util::{Deserialize, Serialize};
@@ -121,6 +121,8 @@ impl Serialize for Nak {
 
 impl<'a> Deserialize<'a> for Nak {
     fn deserialize_from<R: BinaryRead<'a>>(reader: &mut R) -> anyhow::Result<Self> {
+        iassert!(reader.read_u8()? == Self::ID);
+
         let records = deserialize_records(reader)?;
 
         Ok(Self { records })

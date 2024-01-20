@@ -1,4 +1,4 @@
-use std::{sync::atomic::{Ordering, AtomicBool}};
+use std::sync::atomic::{Ordering, AtomicBool};
 
 /// An atomic flag that cannot be set to false once it has been set to true.
 #[derive(Debug)]

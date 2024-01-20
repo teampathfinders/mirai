@@ -41,20 +41,17 @@ macro_rules! declare_primitive_fns {
 }
 
 /// Adds binary reading capabilities to a reader.
-pub trait BinaryRead<'a> {
+pub trait BinaryRead<'a>: AsRef<[u8]> {
     declare_primitive_fns!(u16, i16, u24, u32, i32, u64, i64, u128, i128, f32, f64);
 
     /// Consumes `n` bytes.
     fn advance(&mut self, n: usize) -> anyhow::Result<()>;
 
     /// Returns the amount of bytes remaining in the reader.
-    fn remaining(&self) -> usize;
-
-    /// Whether the reader has unread bytes.
-    fn has_remaining(&self) -> bool { self.remaining() != 0 }
+    fn remaining(&mut self) -> usize;
 
     /// Whether the end of the reader has been reached.
-    fn eof(&self) -> bool {
+    fn eof(&mut self) -> bool {
         self.remaining() == 0
     }
 
@@ -229,6 +226,115 @@ pub trait BinaryRead<'a> {
     }
 }
 
+impl<'a> BinaryRead<'a> for &'a [u8] {
+    fn advance(&mut self, n: usize) -> anyhow::Result<()> {
+        if self.len() < n {
+            bail!(UnexpectedEof, "cannot advance past {n} bytes, remaining: {}", self.len())
+        }
+
+        let (_, b) = self.split_at(n);
+        *self = b;
+
+        Ok(())
+    }
+
+    #[inline]
+    fn remaining(&mut self) -> usize {
+        self.len()
+    }
+
+    /// Takes a specified amount of bytes from the buffer.
+    ///
+    /// If the amount of bytes to take from the buffer is known at compile-time,
+    /// [`take_const`](BinaryRead::take_const) can be used instead.
+    ///
+    /// # Errors
+    /// Returns [`UnexpectedEof`](crate::ErrorKind::UnexpectedEof) if the read exceeds the buffer length.
+    #[inline]
+    fn take_n(&mut self, n: usize) -> anyhow::Result<&'a [u8]> {
+        if self.len() < n {
+            crate::bail!(UnexpectedEof, "expected {n} remaining bytes, got {}", self.len())
+        } else {
+            let (a, b) = self.split_at(n);
+            // *self = SharedBuffer::from(b);
+            *self = b;
+            Ok(a)
+        }
+    }
+
+    /// Takes a specified amount of bytes from the buffer.
+    ///
+    /// This method is generic over the amount of bytes to take.
+    /// In case the amount is known at compile time, this function can be used to
+    /// take a sized array from the buffer.
+    ///
+    /// See [`take_n`](BinaryRead::take_n) for a runtime-sized alternative.
+    ///
+    /// # Errors
+    /// Returns [`UnexpectedEof`](crate::ErrorKind::UnexpectedEof) if the read exceeds the buffer length.
+    #[inline]
+    fn take_const<const N: usize>(&mut self) -> anyhow::Result<[u8; N]> {
+        if self.len() < N {
+            bail!(UnexpectedEof, "expected {N} remaining bytes, got {}", self.len())
+        } else {
+            let (a, b) = self.split_at(N);
+            // *self = SharedBuffer::from(b);
+            *self = b;
+            // SAFETY: We can unwrap because the array is guaranteed to be the required size.
+            unsafe { Ok(a.try_into().unwrap_unchecked()) }
+        }
+    }
+
+    /// Takes a specified amount of bytes from the buffer without advancing the cursor.
+    ///
+    /// If the amount of bytes to take from the buffer is known at compile-time,
+    /// [`peek_const`](BinaryRead::peek_const) can be used instead.
+    ///
+    /// # Errors
+    /// Returns [`UnexpectedEof`](crate::ErrorKind::UnexpectedEof) if the read exceeds the buffer length.
+    #[inline]
+    fn peek(&self, n: usize) -> anyhow::Result<&[u8]> {
+        if self.len() < n {
+            bail!(UnexpectedEof, "expected {n} remaining bytes, got {}", self.len())
+        } else {
+            Ok(&self[..n])
+        }
+    }
+
+    /// Takes a specified amount of bytes from the buffer.
+    ///
+    /// This method is generic over the amount of bytes to take.
+    /// In case the amount is known at compile time, this function can be used to
+    /// take a sized array from the buffer.
+    ///
+    /// See [`peek`](BinaryRead::peek) for a runtime-sized alternative.
+    ///
+    /// # Errors
+    /// Returns [`UnexpectedEof`](crate::ErrorKind::UnexpectedEof) if the read exceeds the buffer length.
+    #[inline]
+    fn peek_const<const N: usize>(&self) -> anyhow::Result<[u8; N]> {
+        if self.len() < N {
+            bail!(UnexpectedEof, "expected {N} remaining bytes, got {}", self.len())
+        } else {
+            let dst = &self[..N];
+            // SAFETY: dst is guaranteed to be of length N
+            // due to the slicing above which already implements bounds checks.
+            unsafe { Ok(dst.try_into().unwrap_unchecked()) }
+        }
+    }
+
+    fn read_slice<T: Deserialize<'a>>(&mut self) -> anyhow::Result<Vec<T>> {
+        let len = self.read_var_u32()?;
+        let mut vec = Vec::with_capacity(len as usize);
+
+        for _ in 0..len {
+            vec.push(T::deserialize_from(self)?);
+        }
+
+        Ok(vec)
+    }
+}
+
 // impl<'a, R: BinaryRead<'a>> BinaryRead<'a> for &'a mut R {
 //     #[inline]
 //     fn advance(&mut self, n: usize) -> anyhow::Result<()> {
@@ -258,5 +364,9 @@ pub trait BinaryRead<'a> {
 //     #[inline]
 //     fn peek_const<const N: usize>(&self) -> anyhow::Result<[u8; N]> {
 //         (**self).peek_const()
+//     }
+
+//     fn read_slice<T: Deserialize<'a>>(&mut self) -> anyhow::Result<Vec<T>> {
+//         (**self).read_slice()
 //     }
 // }

@@ -1,6 +1,6 @@
 use std::io::Write;
 use util::Serialize;
-use util::{BinaryWrite, MutableBuffer, VarInt};
+use util::{BinaryWrite, VarInt};
 use util::Result;
 
 use crate::bedrock::ConnectedPacket;
@@ -36,7 +36,7 @@ impl ItemStack {
         writer.write_var_u32(self.meta)?;
         writer.write_var_i32(self.runtime_id)?;
 
-        let mut extra_writer = MutableBuffer::new();
+        let mut extra_writer = Vec::new();
 
         extra_writer.write_u16_le(0)?;
 
@@ -55,7 +55,7 @@ impl ItemStack {
         // }
 
         writer.write_var_u32(extra_writer.len() as u32)?;
-        writer.write_all(&extra_writer.snapshot())?;
+        writer.write_all(&extra_writer.as_ref())?;
 
         Ok(())
     }

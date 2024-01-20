@@ -1,5 +1,5 @@
 use util::{BlockPosition, Result, Vector};
-use util::{BinaryWrite, MutableBuffer, size_of_varint};
+use util::{BinaryWrite, size_of_varint};
 use util::Serialize;
 
 use crate::bedrock::ConnectedPacket;

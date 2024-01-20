@@ -1,6 +1,6 @@
 use util::{bail, Error, Result};
 use util::{Deserialize, Serialize};
-use util::{BinaryRead, BinaryWrite, MutableBuffer, SharedBuffer, VarInt, VarString};
+use util::{BinaryRead, BinaryWrite, VarInt, VarString};
 
 use crate::bedrock::ConnectedPacket;
 

@@ -5,7 +5,7 @@ use fred::{
     types::{RedisConfig, RespVersion, Server, ServerConfig},
 };
 use proto::bedrock::{MovePlayer, TextData, TextMessage};
-use util::{size_of_string, BinaryWrite, MutableBuffer};
+use util::{size_of_string, BinaryWrite};
 
 #[cfg(test)]
 mod test;
@@ -46,7 +46,7 @@ impl Replicator {
             None,
             None,
         );
-      
+
         client.connect();
         client.wait_for_connect().await?;
 
@@ -63,20 +63,22 @@ impl Replicator {
     }
 
     pub async fn move_player(&self, xuid: u64, data: &MovePlayer) -> anyhow::Result<()> {
-        let mut buf = MutableBuffer::with_capacity(6 * 4 + 8);
-        buf.write_vecf(&data.translation)?;
-        buf.write_vecf(&data.rotation)?;
-        buf.write_u64_le(xuid)?;
+        todo!()
 
-        self.client
-            .publish("user:transform", buf.as_ref())
-            .await
-            .context("Unable to update player position")
+        // let mut buf = Vec::with_capacity(6 * 4 + 8);
+        // buf.write_vecf(&data.translation)?;
+        // buf.write_vecf(&data.rotation)?;
+        // buf.write_u64_le(xuid)?;
+
+        // self.client
+        //     .publish("user:transform", buf.as_ref())
+        //     .await
+        //     .context("Unable to update player position")
     }
 
     pub async fn text_msg(&self, msg: &TextMessage<'_>) -> anyhow::Result<()> {
         if let TextData::Chat { message, source } = msg.data {
-            let mut buf = MutableBuffer::with_capacity(8 + size_of_string(message) + size_of_string(source));
+            let mut buf = Vec::with_capacity(8 + size_of_string(message) + size_of_string(source));
             buf.write_u64_le(msg.xuid)?;
             buf.write_str(source)?;
             buf.write_str(message)?;

@@ -1,6 +1,6 @@
 use serde_repr::Deserialize_repr;
 
-use util::{BinaryRead, SharedBuffer};
+use util::{BinaryRead};
 use util::Deserialize;
 use util::Result;
 

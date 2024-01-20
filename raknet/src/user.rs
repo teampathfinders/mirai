@@ -4,7 +4,6 @@ use parking_lot::{Mutex, RwLock};
 use proto::raknet::DisconnectNotification;
 use tokio::{net::UdpSocket, sync::{broadcast, mpsc}};
 use tokio_util::sync::CancellationToken;
-use util::MutableBuffer;
 
 use crate::{Compounds, SendQueues, Recovery, BroadcastPacket, OrderChannel, SendConfig, Reliability, SendPriority};
 
@@ -68,7 +67,7 @@ pub struct RaknetUser {
     /// Channel used to submit packets that have been fully processed by the RakNet layer.
     /// These packets go on to be processed further by protocols running on top of RakNet
     /// such as the Minecraft Bedrock protocol.
-    pub output: mpsc::Sender<MutableBuffer>
+    pub output: mpsc::Sender<Vec<u8>>
 }
 
 impl RaknetUser {
@@ -76,8 +75,8 @@ impl RaknetUser {
     pub fn new(
         info: UserCreateInfo, 
         broadcast: broadcast::Sender<BroadcastPacket>,
-        forward_rx: mpsc::Receiver<MutableBuffer>
-    ) -> (Arc<Self>, mpsc::Receiver<MutableBuffer>) {
+        forward_rx: mpsc::Receiver<Vec<u8>>
+    ) -> (Arc<Self>, mpsc::Receiver<Vec<u8>>) {
         let mut order_channels: [MaybeUninit<OrderChannel>; ORDER_CHANNEL_COUNT] = unsafe {
             MaybeUninit::uninit().assume_init()
         };

@@ -1,7 +1,7 @@
 use uuid::Uuid;
 
 use util::{Result, Serialize, Vector};
-use util::{BinaryWrite, MutableBuffer};
+use util::{BinaryWrite};
 
 use crate::bedrock::{AbilityData, DeviceOS, PermissionLevel};
 use crate::bedrock::{ConnectedPacket, GameMode};

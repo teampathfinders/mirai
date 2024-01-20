@@ -4,7 +4,7 @@ use crate::level::subchunk::NetSubChunk;
 use proto::bedrock::{SubChunkEntry, SubChunkResult};
 use std::sync::atomic::{AtomicI32, Ordering};
 use std::sync::Arc;
-use util::{MutableBuffer, Vector};
+use util::Vector;
 
 pub struct ChunkViewer {
     radius: AtomicI32,
@@ -37,14 +37,14 @@ impl ChunkViewer {
 
             if let Some(subchunk) = self.level.get_subchunk(coords)? {
                 let subchunk = NetSubChunk::from(subchunk);
-                let mut payload = MutableBuffer::new();
+                let mut payload = Vec::new();
 
                 subchunk.serialize_in(&mut payload)?;
 
                 entries.push(SubChunkEntry {
                     offset: offset.clone(),
                     result: SubChunkResult::Success,
-                    payload: payload.into_inner(),
+                    payload,
                     ..Default::default()
                 });
             } else {

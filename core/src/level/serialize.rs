@@ -35,6 +35,6 @@ pub fn serialize_biomes<W: BinaryWrite>(writer: &mut W, biomes: &Biomes) -> anyh
 
 //
 // #[inline]
-// pub fn encode_biome(biome: &Biome, buffer: &mut MutableBuffer) -> anyhow::Result<()> {
+// pub fn encode_biome(biome: &Biome, buffer: &mut Vec<u8>) -> anyhow::Result<()> {
 //     Ok(())
 // }

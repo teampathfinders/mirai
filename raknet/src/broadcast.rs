@@ -1,8 +1,8 @@
-use std::{net::SocketAddr};
+use std::{net::SocketAddr, sync::Arc};
 
 use proto::bedrock::{ConnectedPacket, Packet};
 
-use util::{ArcBuffer, Serialize};
+use util::Serialize;
 
 use crate::RaknetUser;
 
@@ -27,7 +27,7 @@ pub struct BroadcastPacket {
     ///
     /// This must be an already serialized packet (use the [`Serialize`] trait)
     /// *without* a header.
-    pub content: ArcBuffer,
+    pub content: Arc<Vec<u8>>,
 }
 
 impl BroadcastPacket {
@@ -40,7 +40,7 @@ impl BroadcastPacket {
 
         Ok(Self {
             sender,
-            content: ArcBuffer::from(packet.serialize()?),
+            content: Arc::from(packet.serialize()?),
         })
     }
 }

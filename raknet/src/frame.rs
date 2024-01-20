@@ -1,4 +1,4 @@
-use util::{BinaryRead, BinaryWrite, MutableBuffer, Deserialize, Serialize};
+use util::{BinaryRead, BinaryWrite, Deserialize, Serialize};
 
 use crate::Reliability;
 
@@ -65,7 +65,7 @@ impl<'a> Deserialize<'a> for FrameBatch {
         let batch_number = reader.read_u24_le()?;
         let mut frames = Vec::new();
 
-        while reader.has_remaining() {
+        while !reader.eof() {
             frames.push(Frame::deserialize_from(reader)?);
         }
         debug_assert_eq!(reader.remaining(), 0);
@@ -98,12 +98,12 @@ pub struct Frame {
     /// Channel to perform ordering in
     pub order_channel: u8,
     /// Raw bytes of the body.
-    pub body: MutableBuffer,
+    pub body: Vec<u8>,
 }
 
 impl Frame {
     /// Creates a new frame.
-    pub fn new(reliability: Reliability, body: MutableBuffer) -> Self {
+    pub fn new(reliability: Reliability, body: Vec<u8>) -> Self {
         Self { reliability, body, ..Default::default() }
     }
 }
@@ -145,7 +145,6 @@ impl Serialize for Frame {
 }
 
 impl<'a> Deserialize<'a> for Frame {
-    /// Decodes the frame.
     fn deserialize_from<R: BinaryRead<'a>>(reader: &mut R) -> anyhow::Result<Self> {
         let flags = reader.read_u8()?;
 
@@ -179,7 +178,7 @@ impl<'a> Deserialize<'a> for Frame {
             compound_index = reader.read_u32_be()?;
         }
 
-        let body = MutableBuffer::from(reader.take_n(length as usize)?.to_vec());
+        let body = reader.take_n(length as usize)?.to_vec();
         let frame = Self {
             reliability,
             reliable_index,

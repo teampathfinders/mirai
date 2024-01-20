@@ -1,7 +1,7 @@
 use uuid::Uuid;
 
 use util::{Result, Serialize};
-use util::{BinaryWrite, MutableBuffer, size_of_varint};
+use util::{BinaryWrite, size_of_varint};
 
 use crate::bedrock::ConnectedPacket;
 use crate::bedrock::DeviceOS;

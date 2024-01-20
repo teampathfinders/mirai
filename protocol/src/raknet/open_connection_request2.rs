@@ -1,4 +1,4 @@
-use util::{BinaryRead, SharedBuffer};
+use util::{BinaryRead};
 use util::iassert;
 use util::Deserialize;
 use util::Result;

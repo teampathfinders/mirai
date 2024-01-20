@@ -51,10 +51,10 @@ fn level_settings() {
 //         if *key.last().unwrap() == KeyType::Biome3d.discriminant() {
 //             let biome = Biomes::deserialize(&*kv.value()).unwrap();
 //
-//             let mut ser = MutableBuffer::new();
+//             let mut ser = Vec::new();
 //             biome.serialize(&mut ser).unwrap();
 //
-//             let biome2 = Biomes::deserialize(ser.snapshot().as_ref()).unwrap();
+//             let biome2 = Biomes::deserialize(ser.as_ref().as_ref()).unwrap();
 //
 //             assert_eq!(biome, biome2);
 //         }
@@ -143,8 +143,8 @@ fn level_settings() {
 //     };
 //
 //     let ser = nbt::to_le_bytes(&entry).unwrap();
-//     let de: PaletteEntry = nbt::from_le_bytes(*ser.snapshot()).unwrap().0;
-//     let _de_value: nbt::Value = nbt::from_le_bytes(*ser.snapshot()).unwrap().0;
+//     let de: PaletteEntry = nbt::from_le_bytes(*ser.as_ref()).unwrap().0;
+//     let _de_value: nbt::Value = nbt::from_le_bytes(*ser.as_ref()).unwrap().0;
 //
 //     assert_eq!(entry, de);
 // }

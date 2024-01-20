@@ -1,8 +1,6 @@
 use crate::glob_export;
 
-glob_export!(mutable);
 glob_export!(read);
-glob_export!(shared);
 glob_export!(varint);
 glob_export!(write);
 

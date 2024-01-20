@@ -1,6 +1,6 @@
 use std::io::Write;
 
-use util::{Vector, Serialize, {MutableBuffer, BinaryWrite}};
+use util::{Vector, Serialize, BinaryWrite};
 
 use crate::bedrock::ConnectedPacket;
 use crate::types::Dimension;

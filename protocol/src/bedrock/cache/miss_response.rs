@@ -1,5 +1,5 @@
 use util::{Result, Serialize};
-use util::{BinaryWrite, MutableBuffer};
+use util::BinaryWrite;
 
 use crate::bedrock::ConnectedPacket;
 use crate::bedrock::CacheBlob;

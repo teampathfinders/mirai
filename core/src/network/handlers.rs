@@ -3,24 +3,23 @@
 use std::sync::Arc;
 use std::time::Duration;
 
-use proto::bedrock::{Animate, CommandOutput, CommandOutputMessage, CommandOutputType, CommandRequest, FormResponseData, ParsedCommand, RequestAbility, SettingsCommand, TextData, TextMessage, TickSync, UpdateSkin};
+use proto::bedrock::{Animate, CommandOutput, CommandOutputMessage, CommandOutputType, CommandRequest, FormResponseData, ParsedCommand, RequestAbility, SettingsCommand, TextData, TextMessage, TickSync, UpdateSkin, PlayerAuthInput};
 
 use util::Deserialize;
-use util::MutableBuffer;
 
 use crate::forms::{CustomForm, FormLabel, FormInput, FormResponse};
 
 use super::BedrockUser;
 
 impl BedrockUser {
-    pub fn handle_settings_command(&self, packet: MutableBuffer) -> anyhow::Result<()> {
+    pub fn handle_settings_command(&self, packet: Vec<u8>) -> anyhow::Result<()> {
         let request = SettingsCommand::deserialize(packet.as_ref())?;
         dbg!(request);
 
         Ok(())
     }
 
-    pub fn handle_tick_sync(&self, packet: MutableBuffer) -> anyhow::Result<()> {
+    pub fn handle_tick_sync(&self, packet: Vec<u8>) -> anyhow::Result<()> {
         let _request = TickSync::deserialize(packet.as_ref())?;
         // TODO: Implement tick synchronisation
         Ok(())
@@ -31,7 +30,7 @@ impl BedrockUser {
         // self.send(response)
     }
 
-    pub async fn handle_text_message(self: &Arc<Self>, packet: MutableBuffer) -> anyhow::Result<()> {
+    pub async fn handle_text_message(self: &Arc<Self>, packet: Vec<u8>) -> anyhow::Result<()> {
         let request = TextMessage::deserialize(packet.as_ref())?;
         if let TextData::Chat {
             message, ..
@@ -82,32 +81,41 @@ impl BedrockUser {
 
     }
 
-    pub fn handle_skin_update(&self, packet: MutableBuffer) -> anyhow::Result<()> {
+    pub fn handle_auth_input(&self, packet: Vec<u8>) -> anyhow::Result<()> {
+        let input = PlayerAuthInput::deserialize(packet.as_ref())?;
+        tracing::debug!("{input:?}");
+
+        todo!();
+
+        Ok(())
+    }
+
+    pub fn handle_skin_update(&self, packet: Vec<u8>) -> anyhow::Result<()> {
         let request = UpdateSkin::deserialize(packet.as_ref())?;
         dbg!(&request);
         self.broadcast(request)
     }
 
-    pub fn handle_ability_request(&self, packet: MutableBuffer) -> anyhow::Result<()> {
+    pub fn handle_ability_request(&self, packet: Vec<u8>) -> anyhow::Result<()> {
         let request = RequestAbility::deserialize(packet.as_ref())?;
         dbg!(request);
 
         Ok(())
     }
 
-    pub fn handle_animation(&self, packet: MutableBuffer) -> anyhow::Result<()> {
+    pub fn handle_animation(&self, packet: Vec<u8>) -> anyhow::Result<()> {
         let request = Animate::deserialize(packet.as_ref())?;
         dbg!(request);
 
         Ok(())
     }
 
-    pub fn handle_form_response(&self, packet: MutableBuffer) -> anyhow::Result<()> {
+    pub fn handle_form_response(&self, packet: Vec<u8>) -> anyhow::Result<()> {
         let response = FormResponseData::deserialize(packet.as_ref())?;
         self.form_subscriber.handle_response(response)
     }
 
-    pub fn handle_command_request(&self, packet: MutableBuffer) -> anyhow::Result<()> {
+    pub fn handle_command_request(&self, packet: Vec<u8>) -> anyhow::Result<()> {
         let request = CommandRequest::deserialize(packet.as_ref())?;
 
         let command_list = self.level.get_commands();

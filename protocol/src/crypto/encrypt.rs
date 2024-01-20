@@ -16,7 +16,7 @@ use rand::rngs::OsRng;
 use rand::Rng;
 use sha2::{Digest, Sha256};
 
-use util::{MutableBuffer, BinaryWrite};
+use util::{BinaryWrite, BinaryRead};
 use util::{bail, Result};
 
 type Aes256CtrBE = ctr::Ctr64BE<aes::Aes256>;
@@ -140,15 +140,15 @@ impl Encryptor {
     ///
     /// If the checksum does not match, a [`BadPacket`](util::ErrorKind::Malformed) error is returned.
     /// The client must be disconnected if this fails, because the data has probably been tampered with.
-    pub fn decrypt(&self, buffer: &mut MutableBuffer) -> anyhow::Result<()> {
-        if buffer.len() < 9 {
-            bail!(Malformed, "Encrypted buffer must be at least 9 bytes, received {}", buffer.len());
+    pub fn decrypt(&self, reader: &mut Vec<u8>) -> anyhow::Result<()> {
+        if reader.len() < 9 {
+            bail!(Malformed, "Encrypted buffer must be at least 9 bytes, received {}", reader.len());
         }
 
-        self.cipher_decrypt.lock().apply_keystream(buffer.as_mut_slice());
+        self.cipher_decrypt.lock().apply_keystream(reader.as_mut());
         let counter = self.receive_counter.fetch_add(1, Ordering::SeqCst);
 
-        let slice = buffer.as_slice();
+        let slice = reader.as_slice();
         let checksum = &slice[slice.len() - 8..];
         let computed_checksum = self.compute_checksum(&slice[..slice.len() - 8], counter);
 
@@ -157,7 +157,7 @@ impl Encryptor {
         }
 
         // Remove checksum from data.
-        buffer.truncate(buffer.len() - 8);
+        reader.truncate(reader.len() - 8);
 
         Ok(())
     }

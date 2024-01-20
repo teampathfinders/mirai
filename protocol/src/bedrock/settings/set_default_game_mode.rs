@@ -1,5 +1,5 @@
 use util::{Deserialize, Result, Serialize};
-use util::{BinaryRead, BinaryWrite, MutableBuffer, SharedBuffer, size_of_varint};
+use util::{BinaryRead, BinaryWrite, size_of_varint};
 
 use crate::bedrock::ConnectedPacket;
 use crate::bedrock::GameMode;

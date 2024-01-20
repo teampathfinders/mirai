@@ -4,7 +4,7 @@ use crate::types::Dimension;
 use util::{Serialize, Vector};
 use util::Result;
 use util::BlockPosition;
-use util::{BinaryWrite, MutableBuffer, VarInt, VarString, BinaryRead};
+use util::{BinaryWrite, VarInt, VarString, BinaryRead};
 
 use crate::bedrock::{CLIENT_VERSION_STRING, ConnectedPacket, Difficulty, GameMode, GameRule};
 use crate::bedrock::ExperimentData;
@@ -146,17 +146,17 @@ impl BlockEntry {
 
 impl Serialize for BlockEntry {
     fn serialize_into<W: BinaryWrite>(&self, writer: &mut W) -> anyhow::Result<()> {
-        {
-            let mut buf2 = MutableBuffer::new();
-            buf2.write_str(&self.name)?;
-            nbt::to_var_bytes_in(&mut buf2, &self.properties)?;
+        // {
+        //     let mut buf2 = Vec::new();
+        //     buf2.write_str(&self.name)?;
+        //     nbt::to_var_bytes_in(&mut buf2, &self.properties)?;
 
-            let mut ss = buf2.snapshot();
-            let name = ss.read_str()?;
-            let (properties, _): (nbt::Value, usize) = nbt::from_var_bytes(*ss)?;
+        //     let mut ss: &mut &mut [u8] = &mut buf2.as_mut();
+        //     let name = ss.read_str()?;
+        //     let (properties, _): (nbt::Value, usize) = nbt::from_var_bytes(*ss)?;
 
-            dbg!(name, properties);
-        }
+        //     dbg!(name, properties);
+        // }
 
         writer.write_str(&self.name)?;
         nbt::to_var_bytes_in(writer, &self.properties)

@@ -1,7 +1,7 @@
 use std::io::Write;
 
 use util::BinaryWrite;
-use util::MutableBuffer;
+
 use util::Result;
 use util::Serialize;
 
