@@ -51,13 +51,13 @@ impl ConnectedPacket for Animate {
     const ID: u32 = 0x2c;
 }
 
-impl Deserialize<'_> for Animate {
-    fn deserialize(mut buffer: SharedBuffer) -> anyhow::Result<Self> {
-        let action_type = AnimateAction::try_from(buffer.read_var_i32()?)?;
-        let runtime_id = buffer.read_var_u64()?;
+impl<'a> Deserialize<'a> for Animate {
+    fn deserialize_from<R: BinaryRead<'a>>(reader: &mut R) -> anyhow::Result<Self> {
+        let action_type = AnimateAction::try_from(reader.read_var_i32()?)?;
+        let runtime_id = reader.read_var_u64()?;
 
         let rowing_time = if action_type.is_rowing() {
-            buffer.read_f32_be()?
+            reader.read_f32_be()?
         } else {
             0.0
         };

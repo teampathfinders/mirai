@@ -94,13 +94,13 @@ impl Serialize for AbilityLayer {
     }
 }
 
-impl AbilityLayer {
-    pub fn deserialize(buffer: &mut SharedBuffer) -> anyhow::Result<AbilityLayer> {
-        let ability_type = AbilityType::try_from(buffer.read_u16_le()?)?;
-        let abilities = buffer.read_u32_le()?;
-        let values = buffer.read_u32_le()?;
-        let fly_speed = buffer.read_f32_le()?;
-        let walk_speed = buffer.read_f32_le()?;
+impl<'a> Deserialize<'a> for AbilityLayer {
+    fn deserialize_from<R: BinaryRead<'a>>(reader: &mut R) -> anyhow::Result<AbilityLayer> {
+        let ability_type = AbilityType::try_from(reader.read_u16_le()?)?;
+        let abilities = reader.read_u32_le()?;
+        let values = reader.read_u32_le()?;
+        let fly_speed = reader.read_f32_le()?;
+        let walk_speed = reader.read_f32_le()?;
 
         Ok(AbilityLayer {
             ability_type, abilities, values, fly_speed, walk_speed
@@ -137,16 +137,16 @@ impl Serialize for AbilityData {
 }
 
 impl<'a> Deserialize<'a> for AbilityData {
-    fn deserialize(mut buffer: SharedBuffer<'a>) -> anyhow::Result<Self> {
-        let unique_id = buffer.read_u64_le()?;
-        let permission_level = PermissionLevel::try_from(buffer.read_u8()?)?;
-        let command_permission_level = CommandPermissionLevel::try_from(buffer.read_u8()?)?;
+    fn deserialize_from<R: BinaryRead<'a>>(reader: &mut R) -> anyhow::Result<Self> {
+        let unique_id = reader.read_u64_le()?;
+        let permission_level = PermissionLevel::try_from(reader.read_u8()?)?;
+        let command_permission_level = CommandPermissionLevel::try_from(reader.read_u8()?)?;
 
-        let layer_count = buffer.read_u8()?;
+        let layer_count = reader.read_u8()?;
         // let mut layers = Vec::with_capacity(layers_len as usize);
 
         let layers = (0..layer_count)
-            .map(|_| AbilityLayer::deserialize(&mut buffer))
+            .map(|_| AbilityLayer::deserialize_from(reader))
             .collect::<anyhow::Result<Vec<_>>>()?;
 
         Ok(Self {

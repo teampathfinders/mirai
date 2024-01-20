@@ -2,7 +2,7 @@ use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr};
 
 use paste::paste;
 
-use crate::{BlockPosition};
+use crate::{BlockPosition, Deserialize};
 use crate::{u24::u24, Vector};
 
 /// Implements the read functions for integer primitives.
@@ -50,6 +50,9 @@ pub trait BinaryRead<'a> {
     /// Returns the amount of bytes remaining in the reader.
     fn remaining(&self) -> usize;
 
+    /// Whether the reader has unread bytes.
+    fn has_remaining(&self) -> bool { self.remaining() != 0 }
+
     /// Whether the end of the reader has been reached.
     fn eof(&self) -> bool {
         self.remaining() == 0
@@ -57,14 +60,20 @@ pub trait BinaryRead<'a> {
 
     /// Takes `n` bytes out of the reader.
     fn take_n(&mut self, n: usize) -> anyhow::Result<&'a [u8]>;
+
     /// Takes `N` bytes out of the reader.
     /// This can be used to get sized arrays if the size is known at compile time.
     fn take_const<const N: usize>(&mut self) -> anyhow::Result<[u8; N]>;
+
     /// Takes `n` bytes out of the reader without advancing the cursor.
     fn peek(&self, n: usize) -> anyhow::Result<&[u8]>;
+
     /// Takes `N` bytes out of the reader without advancing the cursor.
     /// /// This can be used to get sized arrays if the size is known at compile time.
     fn peek_const<const N: usize>(&self) -> anyhow::Result<[u8; N]>;
+
+    /// Reads a varuint32-prefixed slice of type `T`.
+    fn read_slice<T: Deserialize<'a>>(&mut self) -> anyhow::Result<Vec<T>>;
 
     /// Reads a [`bool`] from the reader.
     #[inline]
@@ -220,34 +229,34 @@ pub trait BinaryRead<'a> {
     }
 }
 
-impl<'a, R: BinaryRead<'a>> BinaryRead<'a> for &'a mut R {
-    #[inline]
-    fn advance(&mut self, n: usize) -> anyhow::Result<()> {
-        (*self).advance(n)
-    }
+// impl<'a, R: BinaryRead<'a>> BinaryRead<'a> for &'a mut R {
+//     #[inline]
+//     fn advance(&mut self, n: usize) -> anyhow::Result<()> {
+//         (*self).advance(n)
+//     }
 
-    #[inline]
-    fn remaining(&self) -> usize {
-        (**self).remaining()
-    }
+//     #[inline]
+//     fn remaining(&self) -> usize {
+//         (**self).remaining()
+//     }
 
-    #[inline]
-    fn take_n(&mut self, n: usize) -> anyhow::Result<&'a [u8]> {
-        (*self).take_n(n)
-    }
+//     #[inline]
+//     fn take_n(&mut self, n: usize) -> anyhow::Result<&'a [u8]> {
+//         (*self).take_n(n)
+//     }
 
-    #[inline]
-    fn take_const<const N: usize>(&mut self) -> anyhow::Result<[u8; N]> {
-        (*self).take_const()
-    }
+//     #[inline]
+//     fn take_const<const N: usize>(&mut self) -> anyhow::Result<[u8; N]> {
+//         (*self).take_const()
+//     }
 
-    #[inline]
-    fn peek(&self, n: usize) -> anyhow::Result<&[u8]> {
-        (**self).peek(n)
-    }
+//     #[inline]
+//     fn peek(&self, n: usize) -> anyhow::Result<&[u8]> {
+//         (**self).peek(n)
+//     }
 
-    #[inline]
-    fn peek_const<const N: usize>(&self) -> anyhow::Result<[u8; N]> {
-        (**self).peek_const()
-    }
-}
+//     #[inline]
+//     fn peek_const<const N: usize>(&self) -> anyhow::Result<[u8; N]> {
+//         (**self).peek_const()
+//     }
+// }

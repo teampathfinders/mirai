@@ -7,7 +7,8 @@ use super::BedrockUser;
 
 impl BedrockUser {
     pub fn process_interaction(&self, packet: MutableBuffer) -> anyhow::Result<()> {
-        let request = Interact::deserialize(packet.snapshot())?;
+        let request = Interact::deserialize(packet.as_ref())?;
+      
         if request.action == InteractAction::OpenInventory && !self.player().is_inventory_open.fetch_or(true, Ordering::Relaxed) {
             self.send(ContainerOpen {
                 window_id: INVENTORY_WINDOW_ID,
@@ -20,7 +21,7 @@ impl BedrockUser {
     }
 
     pub fn process_container_close(&self, packet: MutableBuffer) -> anyhow::Result<()> {
-        let request = ContainerClose::deserialize(packet.snapshot())?;
+        let request = ContainerClose::deserialize(packet.as_ref())?;
         if request.window_id == INVENTORY_WINDOW_ID {
             self.player().is_inventory_open.store(false, Ordering::Relaxed);
 
@@ -35,7 +36,7 @@ impl BedrockUser {
     }
 
     pub async fn process_move_player(&self, packet: MutableBuffer) -> anyhow::Result<()> {
-        let _request = MovePlayer::deserialize(packet.snapshot())?;
+        let _request = MovePlayer::deserialize(packet.as_ref())?;
 
         Ok(())
         // self.replicator.move_player(self.xuid(), &request).await?;
@@ -46,7 +47,7 @@ impl BedrockUser {
     }
 
     pub fn process_player_action(&self, packet: MutableBuffer) -> anyhow::Result<()> {
-        let request = PlayerAction::deserialize(packet.snapshot())?;
+        let request = PlayerAction::deserialize(packet.as_ref())?;
         
         match request.action {
             PlayerActionType::StartFlying => self.action_start_flying(request),

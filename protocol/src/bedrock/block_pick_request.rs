@@ -18,11 +18,11 @@ impl ConnectedPacket for BlockPickRequest {
     const ID: u32 = 0x22;
 }
 
-impl Deserialize<'_> for BlockPickRequest {
-    fn deserialize(mut buffer: SharedBuffer) -> anyhow::Result<Self> {
-        let position = buffer.read_veci()?;
-        let with_nbt = buffer.read_bool()?;
-        let hotbar_slot = buffer.read_u8()?;
+impl<'a> Deserialize<'a> for BlockPickRequest {
+    fn deserialize_from<R: BinaryRead<'a>>(reader: &mut R) -> anyhow::Result<Self> {
+        let position = reader.read_veci()?;
+        let with_nbt = reader.read_bool()?;
+        let hotbar_slot = reader.read_u8()?;
 
         Ok(Self {
             position,

@@ -41,14 +41,14 @@ impl ConnectedPacket for Interact {
     const ID: u32 = 0x21;
 }
 
-impl Deserialize<'_> for Interact {
-    fn deserialize(mut buffer: SharedBuffer) -> anyhow::Result<Self> {
-        let action = InteractAction::try_from(buffer.read_u8()?)?;
-        let target_runtime_id = buffer.read_var_u64()?;
+impl<'a> Deserialize<'a> for Interact {
+    fn deserialize_from<R: BinaryRead<'a>>(reader: &mut R) -> anyhow::Result<Self> {
+        let action = InteractAction::try_from(reader.read_u8()?)?;
+        let target_runtime_id = reader.read_var_u64()?;
 
         let position = match action {
             InteractAction::MouseOverEntity | InteractAction::LeaveVehicle => {
-                buffer.read_vecf()?
+                reader.read_vecf()?
             }
             _ => Vector::from([0.0, 0.0, 0.0]),
         };

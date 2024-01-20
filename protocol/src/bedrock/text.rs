@@ -174,82 +174,82 @@ impl<'a> Serialize for TextMessage<'a> {
 }
 
 impl<'a> Deserialize<'a> for TextMessage<'a> {
-    fn deserialize(mut buffer: SharedBuffer<'a>) -> anyhow::Result<Self> {
-        let message_type = buffer.read_u8()?;
-        let needs_translation = buffer.read_bool()?;
+    fn deserialize_from<R: BinaryRead<'a>>(reader: &mut R) -> anyhow::Result<Self> {
+        let message_type = reader.read_u8()?;
+        let needs_translation = reader.read_bool()?;
 
         let data = match message_type {
             0 => TextData::Raw {
-                message: buffer.read_str()?
+                message: reader.read_str()?
             },
             1 => TextData::Chat {
-                source: buffer.read_str()?,
-                message: buffer.read_str()?
+                source: reader.read_str()?,
+                message: reader.read_str()?
             },
             2 => TextData::Translation {
-                message: buffer.read_str()?,
+                message: reader.read_str()?,
                 parameters: {
-                    let count = buffer.read_var_u32()?;
+                    let count = reader.read_var_u32()?;
                     let mut params = Vec::with_capacity(count as usize);
                     for _ in 0..count {
-                        params.push(buffer.read_str()?);
+                        params.push(reader.read_str()?);
                     }
 
                     params
                 }
             },
             3 => TextData::Popup {
-                message: buffer.read_str()?,
+                message: reader.read_str()?,
                 parameters: {
-                    let count = buffer.read_var_u32()?;
+                    let count = reader.read_var_u32()?;
                     let mut params = Vec::with_capacity(count as usize);
                     for _ in 0..count {
-                        params.push(buffer.read_str()?);
+                        params.push(reader.read_str()?);
                     }
 
                     params
                 }
             },
             4 => TextData::JukeboxPopup {
-                message: buffer.read_str()?,
+                message: reader.read_str()?,
                 parameters: {
-                    let count = buffer.read_var_u32()?;
+                    let count = reader.read_var_u32()?;
                     let mut params = Vec::with_capacity(count as usize);
                     for _ in 0..count {
-                        params.push(buffer.read_str()?);
+                        params.push(reader.read_str()?);
                     }
 
                     params
                 }
             },
             5 => TextData::Tip {
-                message: buffer.read_str()?
+                message: reader.read_str()?
             },
             6 => TextData::System {
-                message: buffer.read_str()?
+                message: reader.read_str()?
             },
             7 => TextData::Whisper {
-                source: buffer.read_str()?,
-                message: buffer.read_str()?
+                source: reader.read_str()?,
+                message: reader.read_str()?
             },
             8 => TextData::Announcement {
-                source: buffer.read_str()?,
-                message: buffer.read_str()?
+                source: reader.read_str()?,
+                message: reader.read_str()?
             },
             9 => TextData::ObjectWhisper {
-                message: buffer.read_str()?
+                message: reader.read_str()?
             },
             10 => TextData::Object {
-                message: buffer.read_str()?
+                message: reader.read_str()?
             },
             11 => TextData::ObjectAnnouncement {
-                message: buffer.read_str()?
+                message: reader.read_str()?
             },
             _ => anyhow::bail!("Invalid message type")
         };
 
-        let xuid = buffer.read_str()?.parse()?;
-        let platform_chat_id = buffer.read_str()?;
+        let xuid = reader.read_str()?.parse()?;
+        let platform_chat_id = reader.read_str()?;
 
         Ok(Self {
             data,

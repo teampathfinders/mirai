@@ -1,4 +1,4 @@
-use util::{MutableBuffer, SharedBuffer, Deserialize};
+use util::{MutableBuffer, Deserialize, BinaryRead, Serialize};
 
 use proto::raknet::{Ack, Nak};
 
@@ -8,8 +8,8 @@ impl RaknetUser {
     /// Processes an acknowledgement received from the client.
     ///
     /// This function unregisters the specified packet IDs from the recovery queue.
-    pub fn handle_ack(&self, packet: SharedBuffer<'_>) -> anyhow::Result<()> {
-        let ack = Ack::deserialize(packet)?;
+    pub fn handle_ack<'a, R: BinaryRead<'a>>(&self, reader: R) -> anyhow::Result<()> {
+        let ack = Ack::deserialize(reader)?;
         self.recovery.acknowledge(&ack.records);
 
         Ok(())
@@ -19,8 +19,8 @@ impl RaknetUser {
     ///
     /// This function makes sure the packet is retrieved from the recovery queue and sent to the
     /// client again.
-    pub async fn handle_nack(&self, packet: SharedBuffer<'_>) -> anyhow::Result<()> {
-        let nack = Nak::deserialize(packet)?;
+    pub async fn handle_nack<'a, R: BinaryRead<'a>>(&self, reader: R) -> anyhow::Result<()> {
+        let nack = Nak::deserialize(reader)?;
         let frame_batches = self.recovery.recover(&nack.records);
 
         let mut serialized = MutableBuffer::new();

@@ -137,13 +137,15 @@ impl PersonaPiece {
         buffer.write_bool(self.default)?;
         buffer.write_str(&self.product_id)
     }
+}
 
-    fn deserialize(buffer: &mut SharedBuffer) -> anyhow::Result<Self> {
-        let piece_id = buffer.read_str()?.to_owned();
-        let piece_type = PersonaPieceType::try_from(buffer.read_str()?)?;
-        let pack_id = buffer.read_str()?.to_owned();
-        let default = buffer.read_bool()?;
-        let product_id = buffer.read_str()?.to_owned();
+impl<'a> util::Deserialize<'a> for PersonaPiece {
+    fn deserialize_from<R: BinaryRead<'a>>(reader: &mut R) -> anyhow::Result<Self> {
+        let piece_id = reader.read_str()?.to_owned();
+        let piece_type = PersonaPieceType::try_from(reader.read_str()?)?;
+        let pack_id = reader.read_str()?.to_owned();
+        let default = reader.read_bool()?;
+        let product_id = reader.read_str()?.to_owned();
 
         Ok(Self {
             piece_id,
@@ -177,11 +179,13 @@ impl PersonaPieceTint {
 
         Ok(())
     }
+}
 
-    fn deserialize(buffer: &mut SharedBuffer) -> anyhow::Result<Self> {
-        let piece_type = PersonaPieceType::try_from(buffer.read_str()?)?;
+impl<'a> util::Deserialize<'a> for PersonaPieceTint {
+    fn deserialize_from<R: BinaryRead<'a>>(reader: &mut R) -> anyhow::Result<Self> {
+        let piece_type = PersonaPieceType::try_from(reader.read_str()?)?;
 
-        let color_count = buffer.read_u32_le()?;
+        let color_count = reader.read_u32_le()?;
         if color_count > 4 {
             bail!(Malformed, "Persona piece tint cannot have more than 4 colours, received {color_count}");
         }
@@ -189,7 +193,7 @@ impl PersonaPieceTint {
         // Not sure why Rust can't infer this type...
         let mut colors: [String; 4] = Default::default();
         for i in 0..color_count {
-            colors[i as usize] = buffer.read_str()?.to_owned();
+            colors[i as usize] = reader.read_str()?.to_owned();
         }
 
         Ok(Self {
@@ -279,16 +283,18 @@ impl SkinAnimation {
         buffer.write_f32_le(self.frame_count)?;
         buffer.write_u32_le(self.expression_type as u32)
     }
+}
 
-    pub fn deserialize(buffer: &mut SharedBuffer) -> anyhow::Result<Self> {
-        let image_width = buffer.read_u32_le()?;
-        let image_height = buffer.read_u32_le()?;
-        let image_size = buffer.read_var_u32()?;
-        let image_data = MutableBuffer::from(buffer.take_n(image_size as usize)?.to_vec());
+impl<'a> util::Deserialize<'a> for SkinAnimation {
+    fn deserialize_from<R: BinaryRead<'a>>(reader: &mut R) -> anyhow::Result<Self> {
+        let image_width = reader.read_u32_le()?;
+        let image_height = reader.read_u32_le()?;
+        let image_size = reader.read_var_u32()?;
+        let image_data = MutableBuffer::from(reader.take_n(image_size as usize)?.to_vec());
 
-        let animation_type = SkinAnimationType::try_from(buffer.read_u32_le()?)?;
-        let frame_count = buffer.read_f32_le()?;
-        let expression_type = SkinExpressionType::try_from(buffer.read_u32_le()?)?;
+        let animation_type = SkinAnimationType::try_from(reader.read_u32_le()?)?;
+        let frame_count = reader.read_f32_le()?;
+        let expression_type = SkinExpressionType::try_from(reader.read_u32_le()?)?;
 
         Ok(Self {
             image_width,
@@ -488,52 +494,54 @@ impl Skin {
         buffer.write_bool(self.cape_on_classic_skin)?;
         buffer.write_bool(self.is_primary_user)
     }
+}
 
-    pub fn deserialize(buffer: &mut SharedBuffer) -> anyhow::Result<Self> {
-        let skin_id = buffer.read_str()?.to_owned();
-        let playfab_id = buffer.read_str()?.to_owned();
-        let resource_patch = buffer.read_str()?.to_owned();
+impl<'a> util::Deserialize<'a> for Skin {
+    fn deserialize_from<R: BinaryRead<'a>>(reader: &mut R) -> anyhow::Result<Self> {
+        let skin_id = reader.read_str()?.to_owned();
+        let playfab_id = reader.read_str()?.to_owned();
+        let resource_patch = reader.read_str()?.to_owned();
 
-        let image_width = buffer.read_u32_le()?;
-        let image_height = buffer.read_u32_le()?;
-        let image_size = buffer.read_var_u32()?;
-        let image_data = MutableBuffer::from(buffer.take_n(image_size as usize)?.to_vec());
+        let image_width = reader.read_u32_le()?;
+        let image_height = reader.read_u32_le()?;
+        let image_size = reader.read_var_u32()?;
+        let image_data = MutableBuffer::from(reader.take_n(image_size as usize)?.to_vec());
 
-        let animation_count = buffer.read_u32_le()?;
+        let animation_count = reader.read_u32_le()?;
         let mut animations = Vec::with_capacity(animation_count as usize);
         for _ in 0..animation_count {
-            animations.push(SkinAnimation::deserialize(buffer)?);
+            animations.push(SkinAnimation::deserialize_from(reader)?);
         }
 
-        let cape_image_width = buffer.read_u32_le()?;
-        let cape_image_height = buffer.read_u32_le()?;
-        let cape_image_size = buffer.read_var_u32()?;
-        let cape_image_data = MutableBuffer::from(buffer.take_n(cape_image_size as usize)?.to_vec());
+        let cape_image_width = reader.read_u32_le()?;
+        let cape_image_height = reader.read_u32_le()?;
+        let cape_image_size = reader.read_var_u32()?;
+        let cape_image_data = MutableBuffer::from(reader.take_n(cape_image_size as usize)?.to_vec());
 
-        let geometry = buffer.read_str()?.to_owned();
-        let geometry_engine_version = buffer.read_str()?.to_owned();
-        let animation_data = buffer.read_str()?.to_owned();
-        let cape_id = buffer.read_str()?.to_owned();
-        let full_id = buffer.read_str()?.to_owned();
-        let arm_size = ArmSize::try_from(buffer.read_str()?)?;
-        let color = buffer.read_str()?.to_owned();
+        let geometry = reader.read_str()?.to_owned();
+        let geometry_engine_version = reader.read_str()?.to_owned();
+        let animation_data = reader.read_str()?.to_owned();
+        let cape_id = reader.read_str()?.to_owned();
+        let full_id = reader.read_str()?.to_owned();
+        let arm_size = ArmSize::try_from(reader.read_str()?)?;
+        let color = reader.read_str()?.to_owned();
 
-        let persona_piece_count = buffer.read_u32_le()?;
+        let persona_piece_count = reader.read_u32_le()?;
         let mut persona_pieces = Vec::with_capacity(persona_piece_count as usize);
         for _ in 0..persona_piece_count {
-            persona_pieces.push(PersonaPiece::deserialize(buffer)?);
+            persona_pieces.push(PersonaPiece::deserialize_from(reader)?);
         }
 
-        let persona_tint_count = buffer.read_u32_le()?;
+        let persona_tint_count = reader.read_u32_le()?;
         let mut persona_piece_tints = Vec::with_capacity(persona_tint_count as usize);
         for _ in 0..persona_piece_count {
-            persona_piece_tints.push(PersonaPieceTint::deserialize(buffer)?);
+            persona_piece_tints.push(PersonaPieceTint::deserialize_from(reader)?);
         }
 
-        let is_premium = buffer.read_bool()?;
-        let is_persona = buffer.read_bool()?;
-        let cape_on_classic_skin = buffer.read_bool()?;
-        let is_primary_user = buffer.read_bool()?;
+        let is_premium = reader.read_bool()?;
+        let is_persona = reader.read_bool()?;
+        let cape_on_classic_skin = reader.read_bool()?;
+        let is_primary_user = reader.read_bool()?;
 
         Ok(Self {
             skin_id,

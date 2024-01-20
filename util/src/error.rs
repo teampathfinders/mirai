@@ -4,7 +4,7 @@ use std::fmt;
 /// Verifies that the given expression evaluates to true,
 /// or returns an error
 #[macro_export]
-macro_rules! pyassert {
+macro_rules! iassert {
     ($expression: expr, $message: expr) => {
         if ($expression) == false {
             $crate::bail!(AssertionFailed, "{} | {}", $expression, $message);
@@ -12,7 +12,7 @@ macro_rules! pyassert {
     };
 
     ($expression: expr) => {
-        pyassert!($expression, format!("Assertion failed: {}", stringify!($expression)));
+        iassert!($expression, format!("Assertion failed: {}", stringify!($expression)));
     };
 }
 

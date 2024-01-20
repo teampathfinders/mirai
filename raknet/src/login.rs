@@ -7,7 +7,7 @@ use crate::{RaknetUser, Reliability, SendPriority, SendConfig};
 impl RaknetUser {
     /// Handles a [`ConnectionRequest`] packet.
     pub fn handle_connection_request(&self, mut packet: MutableBuffer) -> anyhow::Result<()> {
-        let request = ConnectionRequest::deserialize(packet.snapshot())?;
+        let request = ConnectionRequest::deserialize(packet.as_ref())?;
         let reply = ConnectionRequestAccepted {
             client_address: self.address,
             request_time: request.time,
@@ -23,13 +23,13 @@ impl RaknetUser {
 
     /// Handles a [`NewIncomingConnection`] packet.
     pub fn handle_new_incoming_connection(&self, packet: MutableBuffer) -> anyhow::Result<()> {
-        let _request = NewIncomingConnection::deserialize(packet.snapshot())?;
+        let _request = NewIncomingConnection::deserialize(packet.as_ref())?;
         Ok(())
     }
 
     /// Handles an [`ConnectedPing`] packet.
     pub fn handle_connected_ping(&self, mut packet: MutableBuffer) -> anyhow::Result<()> {
-        let ping = ConnectedPing::deserialize(packet.snapshot())?;
+        let ping = ConnectedPing::deserialize(packet.as_ref())?;
         let pong = ConnectedPong {
             ping_time: ping.time,
             pong_time: ping.time,

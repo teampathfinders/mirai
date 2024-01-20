@@ -23,10 +23,10 @@ impl ConnectedPacket for TickSync {
     }
 }
 
-impl Deserialize<'_> for TickSync {
-    fn deserialize(mut buffer: SharedBuffer) -> anyhow::Result<Self> {
-        let request = buffer.read_u64_le()?;
-        let response = buffer.read_u64_le()?;
+impl<'a> Deserialize<'a> for TickSync {
+    fn deserialize_from<R: BinaryRead<'a>>(reader: &mut R) -> anyhow::Result<Self> {
+        let request = reader.read_u64_le()?;
+        let response = reader.read_u64_le()?;
 
         Ok(Self { request_tick: request, response_tick: response })
     }

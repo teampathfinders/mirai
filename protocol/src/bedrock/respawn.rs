@@ -47,11 +47,11 @@ impl Serialize for Respawn {
     }
 }
 
-impl Deserialize<'_> for Respawn {
-    fn deserialize(mut buffer: SharedBuffer) -> anyhow::Result<Self> {
-        let position = buffer.read_vecf()?;
-        let state = RespawnState::try_from(buffer.read_u8()?)?;
-        let runtime_id = buffer.read_var_u64()?;
+impl<'a> Deserialize<'a> for Respawn {
+    fn deserialize_from<R: BinaryRead<'a>>(reader: &mut R) -> anyhow::Result<Self> {
+        let position = reader.read_vecf()?;
+        let state = RespawnState::try_from(reader.read_u8()?)?;
+        let runtime_id = reader.read_var_u64()?;
 
         Ok(Self { position, state, runtime_id })
     }

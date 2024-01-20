@@ -1,6 +1,6 @@
 use uuid::Uuid;
 
-use util::{Deserialize, Result, Serialize};
+use util::{Deserialize, Result, Serialize, BinaryRead};
 use util::{BinaryWrite, MutableBuffer, SharedBuffer};
 
 use crate::bedrock::{ConnectedPacket, Skin};
@@ -30,7 +30,7 @@ impl<'a> Serialize for UpdateSkin<'a> {
 }
 
 impl<'a> Deserialize<'a> for UpdateSkin<'a> {
-    fn deserialize(_buffer: SharedBuffer) -> anyhow::Result<Self> {
+    fn deserialize_from<R: BinaryRead<'a>>(_reader: &mut R) -> anyhow::Result<Self> {
         // let uuid = Uuid::from_u128(buffer.get_u128_le());
         // let skin = Skin::deserialize(&mut buffer)?;
 

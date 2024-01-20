@@ -20,9 +20,9 @@ impl ConnectedPacket for ContainerClose {
 }
 
 impl<'a> Deserialize<'a> for ContainerClose {
-    fn deserialize(mut buffer: SharedBuffer<'a>) -> anyhow::Result<Self> {
-        let window_id = buffer.read_u8()?;
-        let server_initiated = buffer.read_bool()?;
+    fn deserialize_from<R: BinaryRead<'a>>(reader: &mut R) -> anyhow::Result<Self> {
+        let window_id = reader.read_u8()?;
+        let server_initiated = reader.read_bool()?;
 
         Ok(Self {
             window_id, server_initiated

@@ -4,6 +4,7 @@ use std::ops::{Deref, DerefMut, Index};
 use std::sync::Arc;
 use std::{cmp, fmt, io};
 
+use crate::Deserialize;
 use crate::bytes::{BinaryRead, MutableBuffer};
 
 #[derive(Debug, Clone)]
@@ -42,7 +43,6 @@ impl Deref for ArcBuffer {
 /// Buffer that can be used to read binary data.
 ///
 /// See [`MutableBuffer`] for an owned and writable buffer.
-#[derive(Copy, Clone)]
 pub struct SharedBuffer<'a>(&'a [u8]);
 
 impl<'a> SharedBuffer<'a> {
@@ -57,6 +57,13 @@ impl<'a> SharedBuffer<'a> {
     pub fn truncate(&mut self, n: usize) {
         let (a, _) = self.0.split_at(n);
         *self = SharedBuffer::from(a);
+    }
+}
+
+impl<'a> Clone for SharedBuffer<'a> {
+    /// Cloning a `SharedBuffer` is very cheap (it is simply returning a copy of the pointer to the buffer).
+    fn clone(&self) -> Self {
+        Self(self.0)
     }
 }
 
@@ -155,6 +162,17 @@ impl<'a> BinaryRead<'a> for &'a [u8] {
             // due to the slicing above which already implements bounds checks.
             unsafe { Ok(dst.try_into().unwrap_unchecked()) }
         }
+    }
+
+    fn read_slice<T: Deserialize<'a>>(&mut self) -> anyhow::Result<Vec<T>> {
+        let len = self.read_var_u32()?;
+        let mut vec = Vec::with_capacity(len as usize);
+
+        for _ in 0..len {
+            vec.push(T::deserialize_from(self)?);
+        }
+
+        Ok(vec)
     }
 }
 

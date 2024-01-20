@@ -6,7 +6,7 @@ use util::Result;
 
 use crate::bedrock::ConnectedPacket;
 use crate::crypto::{
-    BedrockIdentity, parse_identity_data, parse_user_data, BedrockClientInfo,
+    BedrockIdentity, BedrockClientInfo, self,
 };
 use crate::bedrock::Skin;
 
@@ -60,14 +60,13 @@ impl ConnectedPacket for Login {
     const ID: u32 = 0x01;
 }
 
-impl Deserialize<'_> for Login {
-    fn deserialize(mut buffer: SharedBuffer) -> anyhow::Result<Self> {
-        let _version = buffer.read_u32_be()?; // Skip protocol version, use the one in RequestNetworkSettings instead.
-        buffer.read_var_u32()?;
+impl<'a> Deserialize<'a> for Login {
+    fn deserialize_from<R: BinaryRead<'a>>(reader: &mut R) -> anyhow::Result<Self> {
+        let _version = reader.read_u32_be()?; // Skip protocol version, use the one in RequestNetworkSettings instead.
+        reader.read_var_u32()?;
 
-        let identity_data = parse_identity_data(&mut buffer)?;
-        let data =
-            parse_user_data(&mut buffer, &identity_data.public_key)?;
+        let identity_data = crypto::parse_identity_data(reader)?;
+        let data = crypto::parse_user_data(reader, &identity_data.public_key)?;
 
         Ok(Self {
             identity: BedrockIdentity {

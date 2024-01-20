@@ -19,14 +19,14 @@ impl BedrockUser {
     pub fn handle_cache_status(&self, packet: MutableBuffer) -> anyhow::Result<()> {
         self.expected.store(ResourcePackClientResponse::ID, Ordering::SeqCst);
 
-        let request = CacheStatus::deserialize(packet.snapshot())?;
+        let request = CacheStatus::deserialize(packet.as_ref())?;
         self.supports_cache.store(request.supports_cache, Ordering::Relaxed);
 
         Ok(())
     }
 
     pub fn handle_violation_warning(&self, packet: MutableBuffer) -> anyhow::Result<()> {
-        let request = ViolationWarning::deserialize(packet.snapshot())?;
+        let request = ViolationWarning::deserialize(packet.as_ref())?;
         tracing::error!("Received violation warning: {request:?}");
 
         self.kick("Violation warning")?;
@@ -39,7 +39,7 @@ impl BedrockUser {
     /// All connected sessions are notified of the new player
     /// and the new player gets a list of all current players.
     pub fn handle_local_initialized(&self, packet: MutableBuffer) -> anyhow::Result<()> {
-        let _request = SetLocalPlayerAsInitialized::deserialize(packet.snapshot())?;
+        let _request = SetLocalPlayerAsInitialized::deserialize(packet.as_ref())?;
         self.expected.store(u32::MAX, Ordering::SeqCst);
 
         // Add player to other's player lists
@@ -91,7 +91,7 @@ impl BedrockUser {
 
     /// Handles a [`ChunkRadiusRequest`] packet by returning the maximum allowed render distance.
     pub fn handle_chunk_radius_request(&self, packet: MutableBuffer) -> anyhow::Result<()> {
-        let request = ChunkRadiusRequest::deserialize(packet.snapshot())?;
+        let request = ChunkRadiusRequest::deserialize(packet.as_ref())?;
         let allowed_radius = std::cmp::min(
             SERVER_CONFIG.read().allowed_render_distance, request.radius
         );
@@ -112,7 +112,7 @@ impl BedrockUser {
     pub fn handle_resource_client_response(&self, packet: MutableBuffer) -> anyhow::Result<()> {
         self.expected.store(u32::MAX, Ordering::SeqCst);
 
-        let _request = ResourcePackClientResponse::deserialize(packet.snapshot())?;
+        let _request = ResourcePackClientResponse::deserialize(packet.as_ref())?;
 
         // TODO: Implement resource packs.
 
@@ -168,9 +168,9 @@ impl BedrockUser {
             level_name: "World name",
             template_content_identity: "",
             movement_settings: PlayerMovementSettings {
-                movement_type: PlayerMovementType::ClientAuthoritative,
+                movement_type: PlayerMovementType::ServerAuthoritative,
                 rewind_history_size: 0,
-                server_authoritative_breaking: false,
+                server_authoritative_breaking: true,
             },
             time: 0,
             enchantment_seed: 0,
@@ -181,14 +181,14 @@ impl BedrockUser {
             block_properties: &[],
             item_properties: &[],
             property_data: PropertyData {},
-            server_authoritative_inventory: false,
+            server_authoritative_inventory: true,
             game_version: "1.20.50",
             // property_data: nbt::Value::Compound(HashMap::new()),
             server_block_state_checksum: 0,
             world_template_id: 0,
             client_side_generation: false,
             hashed_block_ids: false,
-            server_authoritative_sounds: false
+            server_authoritative_sounds: true
         };
         self.send(start_game)?;
 
@@ -230,7 +230,7 @@ impl BedrockUser {
     pub fn handle_client_to_server_handshake(&self, packet: MutableBuffer) -> anyhow::Result<()> {
         self.expected.store(CacheStatus::ID, Ordering::SeqCst);
 
-        ClientToServerHandshake::deserialize(packet.snapshot())?;
+        ClientToServerHandshake::deserialize(packet.as_ref())?;
 
         let response = PlayStatus { status: Status::LoginSuccess };
         self.send(response)?;
@@ -262,7 +262,7 @@ impl BedrockUser {
     pub async fn handle_login(&self, packet: MutableBuffer) -> anyhow::Result<()> {
         self.expected.store(ClientToServerHandshake::ID, Ordering::SeqCst);
 
-        let request = Login::deserialize(packet.snapshot());
+        let request = Login::deserialize(packet.as_ref());
         let request = match request {
             Ok(r) => r,
             Err(e) => {
@@ -304,7 +304,7 @@ impl BedrockUser {
     pub fn handle_network_settings_request(&self, packet: MutableBuffer) -> anyhow::Result<()> {
         self.expected.store(Login::ID, Ordering::SeqCst);
 
-        let request = RequestNetworkSettings::deserialize(packet.snapshot())?;
+        let request = RequestNetworkSettings::deserialize(packet.as_ref())?;
         if request.protocol_version != NETWORK_VERSION {
             if request.protocol_version > NETWORK_VERSION {
                 let response = PlayStatus { status: Status::FailedServer };

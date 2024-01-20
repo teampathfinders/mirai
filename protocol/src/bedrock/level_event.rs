@@ -257,11 +257,11 @@ impl Serialize for LevelEvent {
     }
 }
 
-impl Deserialize<'_> for LevelEvent {
-    fn deserialize(mut buffer: SharedBuffer) -> anyhow::Result<Self> {
-        let event_type = LevelEventType::try_from(buffer.read_var_i32()?)?;
-        let position = buffer.read_vecf()?;
-        let event_data = buffer.read_var_i32()?;
+impl<'a> Deserialize<'a> for LevelEvent {
+    fn deserialize_from<R: BinaryRead<'a>>(reader: &mut R) -> anyhow::Result<Self> {
+        let event_type = LevelEventType::try_from(reader.read_var_i32()?)?;
+        let position = reader.read_vecf()?;
+        let event_data = reader.read_var_i32()?;
 
         Ok(Self {
             event_type,

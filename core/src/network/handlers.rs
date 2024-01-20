@@ -5,7 +5,7 @@ use std::time::Duration;
 
 use proto::bedrock::{Animate, CommandOutput, CommandOutputMessage, CommandOutputType, CommandRequest, FormResponseData, ParsedCommand, RequestAbility, SettingsCommand, TextData, TextMessage, TickSync, UpdateSkin};
 
-use util::{Deserialize};
+use util::Deserialize;
 use util::MutableBuffer;
 
 use crate::forms::{CustomForm, FormLabel, FormInput, FormResponse};
@@ -14,14 +14,14 @@ use super::BedrockUser;
 
 impl BedrockUser {
     pub fn handle_settings_command(&self, packet: MutableBuffer) -> anyhow::Result<()> {
-        let request = SettingsCommand::deserialize(packet.snapshot())?;
+        let request = SettingsCommand::deserialize(packet.as_ref())?;
         dbg!(request);
 
         Ok(())
     }
 
     pub fn handle_tick_sync(&self, packet: MutableBuffer) -> anyhow::Result<()> {
-        let _request = TickSync::deserialize(packet.snapshot())?;
+        let _request = TickSync::deserialize(packet.as_ref())?;
         // TODO: Implement tick synchronisation
         Ok(())
         // let response = TickSync {
@@ -32,7 +32,7 @@ impl BedrockUser {
     }
 
     pub async fn handle_text_message(self: &Arc<Self>, packet: MutableBuffer) -> anyhow::Result<()> {
-        let request = TextMessage::deserialize(packet.snapshot())?;
+        let request = TextMessage::deserialize(packet.as_ref())?;
         if let TextData::Chat {
             message, ..
         } = request.data {
@@ -83,32 +83,32 @@ impl BedrockUser {
     }
 
     pub fn handle_skin_update(&self, packet: MutableBuffer) -> anyhow::Result<()> {
-        let request = UpdateSkin::deserialize(packet.snapshot())?;
+        let request = UpdateSkin::deserialize(packet.as_ref())?;
         dbg!(&request);
         self.broadcast(request)
     }
 
     pub fn handle_ability_request(&self, packet: MutableBuffer) -> anyhow::Result<()> {
-        let request = RequestAbility::deserialize(packet.snapshot())?;
+        let request = RequestAbility::deserialize(packet.as_ref())?;
         dbg!(request);
 
         Ok(())
     }
 
     pub fn handle_animation(&self, packet: MutableBuffer) -> anyhow::Result<()> {
-        let request = Animate::deserialize(packet.snapshot())?;
+        let request = Animate::deserialize(packet.as_ref())?;
         dbg!(request);
 
         Ok(())
     }
 
     pub fn handle_form_response(&self, packet: MutableBuffer) -> anyhow::Result<()> {
-        let response = FormResponseData::deserialize(packet.snapshot())?;
+        let response = FormResponseData::deserialize(packet.as_ref())?;
         self.form_subscriber.handle_response(response)
     }
 
     pub fn handle_command_request(&self, packet: MutableBuffer) -> anyhow::Result<()> {
-        let request = CommandRequest::deserialize(packet.snapshot())?;
+        let request = CommandRequest::deserialize(packet.as_ref())?;
 
         let command_list = self.level.get_commands();
         let result = ParsedCommand::parse(command_list, request.command);

@@ -14,14 +14,14 @@ impl ConnectedPacket for SubChunkRequest {
 }
 
 impl<'a> Deserialize<'a> for SubChunkRequest {
-    fn deserialize(mut buffer: SharedBuffer<'a>) -> anyhow::Result<Self> {
-        let dimension = Dimension::try_from(buffer.read_var_u32()?)?;
-        let position = buffer.read_veci()?;
+    fn deserialize_from<R: BinaryRead<'a>>(reader: &mut R) -> anyhow::Result<Self> {
+        let dimension = Dimension::try_from(reader.read_var_u32()?)?;
+        let position = reader.read_veci()?;
 
-        let count = buffer.read_u32_le()?;
+        let count = reader.read_u32_le()?;
         let mut offsets = Vec::with_capacity(count as usize);
         for _ in 0..count {
-            offsets.push(buffer.read_vecb()?);
+            offsets.push(reader.read_vecb()?);
         }
 
         Ok(Self {
