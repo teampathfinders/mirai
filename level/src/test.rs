@@ -1,10 +1,6 @@
-use std::{sync::Mutex};
+use std::sync::Mutex;
 
-
-use crate::{
-    provider::Provider,
-};
-
+use crate::provider::Provider;
 
 // digp [x] [z] [?dimension]
 // contains two int32

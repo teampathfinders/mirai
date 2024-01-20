@@ -1,4 +1,4 @@
-use crate::bytes::{MutableBuffer, SharedBuffer};
+use crate::{bytes::{MutableBuffer, SharedBuffer}, BinaryRead};
 use std::fmt::Debug;
 
 /// Trait that describes an object that can be serialised from raw bytes.
@@ -8,11 +8,17 @@ pub trait Serialize {
 }
 
 /// Trait that describes an object that can be deserialised from raw bytes.
-pub trait Deserialize<'a> {
+pub trait Deserialize<'a>: Sized {
     /// Deserializes the given buffer, returning the object.
-    fn deserialize(buffer: SharedBuffer<'a>) -> anyhow::Result<Self>
-    where
-        Self: Sized;
+    fn deserialize<R: BinaryRead<'a>>(reader: R) -> anyhow::Result<Self>;
+    // fn deserialize(buffer: SharedBuffer<'a>) -> anyhow::Result<Self>;
+
+
+    /// Deserializes the given buffer, returning the object.
+    /// While [`deserialize`](Self::deserialize) consumes the buffer, this function
+    /// modifies the original buffer allowing you to continue where this function left off.
+    fn deserialize_from<R: BinaryRead<'a>>(reader: &mut R) -> anyhow::Result<Self>;
+    // fn deserialize_from(buffer: &mut SharedBuffer<'a>) -> anyhow::Result<Self>;
 }
 
 /// Adds the [`try_expect`](TryExpect::try_expect) function to an object.

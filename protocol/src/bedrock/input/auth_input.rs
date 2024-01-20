@@ -1,3 +1,5 @@
+use std::ops::Deref;
+
 use macros::variant_count;
 use util::{Deserialize, SharedBuffer, BinaryRead, Vector, BlockPosition};
 use crate::bedrock::{ConnectedPacket, PlayerActionType, PlayerAction};
@@ -38,7 +40,7 @@ pub enum InputDataFlag {
     StartJumping = 1 << 30,
     StartGliding = 1 << 31,
     StopGliding = 1 << 32,
-    PerformItemInteraction = 1 << 33,
+    PerformItemTransaction = 1 << 33,
     PerformBlockActions = 1 << 34,
     PerformItemStackRequest = 1 << 35,
     HandledTeleport = 1 << 36,
@@ -49,6 +51,14 @@ pub enum InputDataFlag {
     StartFlying = 1 << 41,
     StopFlying = 1 << 42,
     AcknowledgeServerData = 1 << 43
+}
+
+impl Deref for InputDataFlag {
+    type Target = u64;
+
+    fn deref(&self) -> &Self::Target {
+        &self as &u64
+    }
 }
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
@@ -79,10 +89,102 @@ impl TryFrom<u32> for PlayMode {
     }
 }
 
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+#[repr(u32)]
+pub enum InventoryActionSource {
+    Container = 0,
+    World = 2,
+    Creative = 3,
+    Todo = 99999
+}
+
+impl TryFrom<u32> for InventoryActionSource {
+    type Error = anyhow::Error;
+
+    fn try_from(v: u32) -> anyhow::Result<Self> {
+        Ok(match v {
+            0 => Self::Container,
+            2 => Self::World,
+            3 => Self::Creative,
+            99999 => Self::Todo,
+            _ => anyhow::bail!("Invalid inventory action source")
+        })
+    }
+}
+
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+#[repr(i32)]
+pub enum WindowId {
+    Inventory = 0,
+    OffHand = 119,
+    Armour = 120,
+    Ui = 124
+}
+
+impl TryFrom<i32> for WindowId {
+    type Error = anyhow::Error;
+
+    fn try_from(v: i32) -> anyhow::Result<Self> {
+        Ok(match v {
+            0 => Self::Inventory,
+            119 => Self::OffHand,
+            120 => Self::Armour,
+            124 => Self::Ui,
+            _ => anyhow::bail!("Invalid window ID")
+        })
+    }
+}
+
 #[derive(Debug)]
-pub struct TransactionData {
+pub struct InventoryAction {
+    pub source_type: InventoryActionSource,
+    pub window: Option<WindowId>,
+    pub source_flags: u32,
+    pub inventory_slot: u32
+}
+
+impl InventoryAction {
+    pub fn deserialize(buffer: &mut SharedBuffer) -> anyhow::Result<Self> {
+        let source_type = InventoryActionSource::try_from(buffer.read_u32_le()?)?;
+        
+        let mut window = None;
+        let mut source_flags = 0;
+
+        if source_type == InventoryActionSource::Container || source_type == InventoryActionSource::Todo {
+            window = Some(WindowId::try_from(buffer.read_i32_le()?)?);
+        } else if source_type == InventoryActionSource::World {
+            source_flags = buffer.read_var_u32()?;
+        }
+
+        let inventory_slot = buffer.read_var_u32()?;
+
+        // https://github.com/Sandertv/gophertunnel/blob/36e5147307884b745b7d28d546c07ab03d4afb36/minecraft/protocol/inventory.go#L52
+        todo!("Item instance reading");
+    }
+}
+
+#[derive(Debug)]
+pub struct LegacySetItemSlot<'a> {
+    pub container: u8,
+    pub slots: &'a [u8]
+}
+
+impl<'a> LegacySetItemSlot<'a> {
+    pub fn deserialize(buffer: &mut SharedBuffer<'a>) -> anyhow::Result<Self> {
+        let container = buffer.read_u8()?;
+        let slot_count = buffer.read_var_u32()?;
+        let slots = buffer.take_n(slot_count as usize)?;
+
+        Ok(Self {
+            container, slots
+        })
+    }
+}
+
+#[derive(Debug)]
+pub struct TransactionData<'a> {
     pub legacy_request_id: i32,
-    pub legacy_slots: Vec<LegacyItemSlot>,
+    pub legacy_slots: Vec<LegacySetItemSlot<'a>>,
     pub actions: Vec<InventoryAction>,
     pub action_type: PlayerActionType,
     pub block_position: BlockPosition,
@@ -91,6 +193,31 @@ pub struct TransactionData {
     pub position: Vector<f32, 3>,
     pub clicked_position: Vector<f32, 3>,
     pub block_runtime_id: u32
+}
+
+impl<'a> TransactionData<'a> {
+    pub fn deserialize(buffer: &mut SharedBuffer<'a>) -> anyhow::Result<Self> {
+        let legacy_request_id = buffer.read_var_i32()?;
+        let mut legacy_slots = Vec::new();
+
+        if legacy_request_id < -1 && (legacy_request_id & 1) == 0 {
+            let slot_count = buffer.read_var_u32()?;
+            legacy_slots.reserve(slot_count as usize);
+
+            for _ in 0..slot_count {
+                legacy_slots.push(LegacySetItemSlot::deserialize(buffer)?);
+            }
+        }
+
+        let action_count = buffer.read_var_u32()?;
+        let mut actions = Vec::with_capacity(action_count as usize);
+
+        for _ in 0..action_count {
+            actions.push(InventoryAction::deserialize(buffer)?);
+        }
+
+        todo!()
+    }
 }
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
@@ -117,7 +244,7 @@ impl TryFrom<i32> for FilterCause {
     type Error = anyhow::Error;
 
     fn try_from(v: i32) -> anyhow::Result<Self> {
-        if v <= Self::variant_count() {
+        if v <= Self::variant_count() as i32 {
             Ok(unsafe { std::mem::transmute::<i32, Self>(v) })
         } else {
             anyhow::bail!("Filter cause variant out of range ({v} >= {})", Self::variant_count())
@@ -127,6 +254,7 @@ impl TryFrom<i32> for FilterCause {
 
 #[derive(Debug)]
 pub enum ItemDescriptor<'a> {
+    Invalid,
     Default {
         network_id: i16,
         meta: i16
@@ -147,10 +275,61 @@ pub enum ItemDescriptor<'a> {
     }
 }
 
+impl<'a> ItemDescriptor<'a> {
+    pub fn deserialize(buffer: &mut SharedBuffer<'a>) -> anyhow::Result<Self> {
+        let kind = buffer.read_u8()?;
+        let desc = match kind {
+            0 => Self::Invalid,
+            1 => {
+                let network_id = buffer.read_i16_le()?;
+                let meta = if network_id == 0 { 0 } else { buffer.read_i16_le()? };
+
+                Self::Default { network_id, meta }
+            },
+            2 => {
+                Self::MoLang {
+                    expression: buffer.read_str()?,
+                    version: buffer.read_u8()?
+                }
+            },
+            3 => {
+                Self::ItemTag {
+                    tag: buffer.read_str()?
+                }
+            },
+            4 => {
+                Self::Deferred {
+                    name: buffer.read_str()?,
+                    meta: buffer.read_i16_le()?
+                }
+            },
+            5 => {
+                Self::ComplexAlias {
+                    name: buffer.read_str()?
+                }
+            }
+            _ => anyhow::bail!("Item descriptor kind out of range")
+        };
+
+        Ok(desc)
+    }
+}
+
 #[derive(Debug)]
 pub struct ItemDescriptorCount<'a> {
     pub descriptor: ItemDescriptor<'a>,
     pub count: i32
+}
+
+impl<'a> ItemDescriptorCount<'a> {
+    pub fn deserialize(buffer: &mut SharedBuffer<'a>) -> anyhow::Result<Self> {
+        let descriptor = ItemDescriptor::deserialize(buffer)?;
+        let count = buffer.read_var_i32()?;
+
+        Ok(Self {
+            descriptor, count
+        })
+    }
 }
 
 #[derive(Debug)]
@@ -158,6 +337,18 @@ pub struct StackRequestSlotInfo {
     pub container_id: u8,
     pub slot: u8,
     pub stack_network_id: i32
+}
+
+impl StackRequestSlotInfo {
+    pub fn deserialize(buffer: &mut SharedBuffer) -> anyhow::Result<Self> {
+        let container_id = buffer.read_u8()?;
+        let slot = buffer.read_u8()?;
+        let stack_network_id = buffer.read_var_i32()?;
+
+        Ok(Self {
+            container_id, slot, stack_network_id
+        })
+    }
 }
 
 #[derive(Debug)]
@@ -269,7 +460,7 @@ impl<'a> StackRequestAction<'a> {
 #[derive(Debug)]
 pub struct StackRequest<'a> {
     pub request_id: i32,
-    pub actions: Vec<StackRequestAction>,
+    pub actions: Vec<StackRequestAction<'a>>,
     pub filters: Vec<&'a str>,
     pub filter_cause: FilterCause
 }
@@ -310,16 +501,16 @@ pub struct PlayerAuthInput<'a> {
 
     pub input_data: u64,
     pub input_mode: u32,
-    pub play_mode: u32,
+    pub play_mode: PlayMode,
     pub interaction_model: i32,
     pub gaze_direction: Vector<f32, 3>,
 
     pub tick: u64,
     pub delta: Vector<f32, 3>,
 
-    pub item_transaction: TransactionData,
-    pub item_stack: StackRequest<'a>,
-    pub block_actions: Vec<PlayerAction>
+    pub item_transaction: Option<TransactionData<'a>>,
+    pub item_stack: Option<StackRequest<'a>>,
+    pub block_actions: Option<Vec<PlayerAction>>
 }
 
 impl ConnectedPacket for PlayerAuthInput<'_> {
@@ -347,17 +538,23 @@ impl<'a> Deserialize<'a> for PlayerAuthInput<'a> {
         let tick = buffer.read_var_u64()?;
         let delta = buffer.read_vecf()?;
 
-        if input_data & InputDataFlag::PerformItemInteraction != 0 {
-            todo!();
-        }
+        let item_transaction = if input_data & InputDataFlag::PerformItemTransaction as u64 != 0 {
+            Some(TransactionData::deserialize(&mut buffer)?)
+        } else {
+            None
+        };
 
-        if input_data & InputDataFlag::PerformItemStackRequest != 0 {
-            todo!();
-        }
+        let item_stack = if input_data & InputDataFlag::PerformItemStackRequest as u64 != 0 {
+            Some(todo!())
+        } else {
+            None
+        };
 
-        if input_data & InputDataFlag::PerformBlockActions != 0 {
-
-        }
+        let block_actions = if input_data & InputDataFlag::PerformBlockActions as u64 != 0 {
+            Some(todo!())
+        } else {
+            None
+        };
 
         let analogue_moved = buffer.read_vecf()?;
         
