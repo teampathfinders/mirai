@@ -237,7 +237,5 @@ impl FormSubscriber {
 }
 
 impl Default for FormSubscriber {
-    fn default() -> Self {
-        Self::new()
-    }
+    fn default() -> Self { Self::new() }
 }

@@ -13,7 +13,6 @@ mod variant_count;
 pub fn atomic_enum(_attrs: TokenStream, item: TokenStream) -> TokenStream {
     atomic_enum::inner(item)
 }
-
 /// Creates a `variant_count` method that returns the amount of variants that the enum has.
 /// This is a temporary hack until the `std::mem::variant_count` function is stabilized.
 #[proc_macro_attribute]

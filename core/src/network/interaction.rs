@@ -8,6 +8,7 @@ use super::BedrockUser;
 impl BedrockUser {
     pub fn process_interaction(&self, packet: MutableBuffer) -> anyhow::Result<()> {
         let request = Interact::deserialize(packet.as_ref())?;
+      
         if request.action == InteractAction::OpenInventory && !self.player().is_inventory_open.fetch_or(true, Ordering::Relaxed) {
             self.send(ContainerOpen {
                 window_id: INVENTORY_WINDOW_ID,
