@@ -17,8 +17,8 @@ impl<'a> ConnectedPacket for FormRequest<'a> {
 }
 
 impl<'a> Serialize for FormRequest<'a> {
-    fn serialize(&self, buffer: &mut MutableBuffer) -> anyhow::Result<()> {
-        buffer.write_var_u32(self.id)?;
-        buffer.write_str(self.data)
+    fn serialize_into<W: BinaryWrite>(&self, writer: &mut W) -> anyhow::Result<()> {
+        writer.write_var_u32(self.id)?;
+        writer.write_str(self.data)
     }
 }

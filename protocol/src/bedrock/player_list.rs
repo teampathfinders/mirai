@@ -40,24 +40,24 @@ impl<'a> ConnectedPacket for PlayerListAdd<'a> {
 }
 
 impl<'a> Serialize for PlayerListAdd<'a> {
-    fn serialize(&self, buffer: &mut MutableBuffer) -> anyhow::Result<()> {
-        buffer.write_u8(0)?; // Add player.
-        buffer.write_var_u32(self.entries.len() as u32)?;
+    fn serialize_into<W: BinaryWrite>(&self, writer: &mut W) -> anyhow::Result<()> {
+        writer.write_u8(0)?; // Add player.
+        writer.write_var_u32(self.entries.len() as u32)?;
         for entry in self.entries {
-            buffer.write_uuid_le(&entry.uuid)?;
+            writer.write_uuid_le(&entry.uuid)?;
 
-            buffer.write_var_i64(entry.entity_id)?;
-            buffer.write_str(entry.username)?;
-            buffer.write_str(&entry.xuid.to_string())?;
-            buffer.write_str("")?; // Platform chat ID.
-            buffer.write_i32_le(entry.device_os as i32)?;
-            entry.skin.serialize(buffer)?;
-            buffer.write_bool(false)?; // Player is not a teacher.
-            buffer.write_bool(entry.host)?;
+            writer.write_var_i64(entry.entity_id)?;
+            writer.write_str(entry.username)?;
+            writer.write_str(&entry.xuid.to_string())?;
+            writer.write_str("")?; // Platform chat ID.
+            writer.write_i32_le(entry.device_os as i32)?;
+            entry.skin.serialize_into(writer)?;
+            writer.write_bool(false)?; // Player is not a teacher.
+            writer.write_bool(entry.host)?;
         }
 
         for entry in self.entries {
-            buffer.write_bool(entry.skin.is_trusted)?;
+            writer.write_bool(entry.skin.is_trusted)?;
         }
 
         Ok(())
@@ -79,11 +79,11 @@ impl<'a> ConnectedPacket for PlayerListRemove<'a> {
 }
 
 impl<'a> Serialize for PlayerListRemove<'a> {
-    fn serialize(&self, buffer: &mut MutableBuffer) -> anyhow::Result<()> {
-        buffer.write_u8(1)?; // Remove player.
-        buffer.write_var_u32(self.entries.len() as u32)?;
+    fn serialize_into<W: BinaryWrite>(&self, writer: &mut W) -> anyhow::Result<()> {
+        writer.write_u8(1)?; // Remove player.
+        writer.write_var_u32(self.entries.len() as u32)?;
         for entry in self.entries {
-            buffer.write_uuid_le(entry)?;
+            writer.write_uuid_le(entry)?;
         }
 
         Ok(())

@@ -27,8 +27,8 @@ impl<'a> ConnectedPacket for Transfer<'a> {
 }
 
 impl<'a> Serialize for Transfer<'a> {
-    fn serialize(&self, buffer: &mut MutableBuffer) -> anyhow::Result<()> {
-        buffer.write_str(self.addr)?;
-        buffer.write_u16_le(self.port)
+    fn serialize_into<W: BinaryWrite>(&self, writer: &mut W) -> anyhow::Result<()> {
+        writer.write_str(self.addr)?;
+        writer.write_u16_le(self.port)
     }
 }

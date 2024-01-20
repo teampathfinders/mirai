@@ -13,9 +13,9 @@ pub struct CacheBlob<'a> {
 }
 
 impl<'a> CacheBlob<'a> {
-    pub fn serialize(&self, buffer: &mut MutableBuffer) -> anyhow::Result<()> {
-        buffer.write_u64_le(self.hash)?;
-        buffer.write_all(&self.payload)?;
+    pub fn serialize_into<W: BinaryWrite>(&self, writer: &mut W) -> anyhow::Result<()> {
+        writer.write_u64_le(self.hash)?;
+        writer.write_all(&self.payload)?;
 
         Ok(())
     }

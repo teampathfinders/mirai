@@ -29,7 +29,7 @@ macro_rules! declare_primitive_fns {
     }
 }
 
-pub trait BinaryWrite: Write {
+pub trait BinaryWrite: Write + AsRef<[u8]> + AsMut<[u8]> {
     declare_primitive_fns!(u16, i16, u24, u32, i32, u64, i64, u128, i128, f32, f64);
 
     #[inline]
@@ -162,4 +162,4 @@ pub trait BinaryWrite: Write {
     }
 }
 
-impl<W: Write> BinaryWrite for W {}
+impl<W: Write + AsRef<[u8]> + AsMut<[u8]>> BinaryWrite for W {}

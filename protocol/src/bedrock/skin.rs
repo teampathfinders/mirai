@@ -130,12 +130,12 @@ pub struct PersonaPiece {
 }
 
 impl PersonaPiece {
-    fn serialize(&self, buffer: &mut MutableBuffer) -> anyhow::Result<()> {
-        buffer.write_str(&self.piece_id)?;
-        buffer.write_str(self.piece_type.name())?;
-        buffer.write_str(&self.pack_id)?;
-        buffer.write_bool(self.default)?;
-        buffer.write_str(&self.product_id)
+    fn serialize_into<W: BinaryWrite>(&self, writer: &mut W) -> anyhow::Result<()> {
+        writer.write_str(&self.piece_id)?;
+        writer.write_str(self.piece_type.name())?;
+        writer.write_str(&self.pack_id)?;
+        writer.write_bool(self.default)?;
+        writer.write_str(&self.product_id)
     }
 }
 
@@ -169,12 +169,12 @@ pub struct PersonaPieceTint {
 }
 
 impl PersonaPieceTint {
-    fn serialize(&self, buffer: &mut MutableBuffer) -> anyhow::Result<()> {
-        buffer.write_str(self.piece_type.name())?;
+    fn serialize_into<W: BinaryWrite>(&self, writer: &mut W) -> anyhow::Result<()> {
+        writer.write_str(self.piece_type.name())?;
 
-        buffer.write_u32_le(self.colors.len() as u32)?;
+        writer.write_u32_le(self.colors.len() as u32)?;
         for color in &self.colors {
-            buffer.write_str(color)?;
+            writer.write_str(color)?;
         }
 
         Ok(())
@@ -272,16 +272,16 @@ pub struct SkinAnimation {
 }
 
 impl SkinAnimation {
-    pub fn serialize(&self, buffer: &mut MutableBuffer) -> anyhow::Result<()> {
-        buffer.write_u32_le(self.image_width)?;
-        buffer.write_u32_le(self.image_height)?;
+    pub fn serialize_into<W: BinaryWrite>(&self, writer: &mut W) -> anyhow::Result<()> {
+        writer.write_u32_le(self.image_width)?;
+        writer.write_u32_le(self.image_height)?;
 
-        buffer.write_var_u32(self.image_data.len() as u32)?;
-        buffer.write_all(&self.image_data)?;
+        writer.write_var_u32(self.image_data.len() as u32)?;
+        writer.write_all(&self.image_data)?;
 
-        buffer.write_u32_le(self.animation_type as u32)?;
-        buffer.write_f32_le(self.frame_count)?;
-        buffer.write_u32_le(self.expression_type as u32)
+        writer.write_u32_le(self.animation_type as u32)?;
+        writer.write_f32_le(self.frame_count)?;
+        writer.write_u32_le(self.expression_type as u32)
     }
 }
 
@@ -450,49 +450,49 @@ impl Skin {
         Ok(())
     }
 
-    pub fn serialize(&self, buffer: &mut MutableBuffer) -> anyhow::Result<()> {
-        buffer.write_str(&self.skin_id)?;
-        buffer.write_str(&self.playfab_id)?;
-        buffer.write_str(&self.resource_patch)?;
+    pub fn serialize_into<W: BinaryWrite>(&self, writer: &mut W) -> anyhow::Result<()> {
+        writer.write_str(&self.skin_id)?;
+        writer.write_str(&self.playfab_id)?;
+        writer.write_str(&self.resource_patch)?;
 
-        buffer.write_u32_le(self.image_width)?;
-        buffer.write_u32_le(self.image_height)?;
-        buffer.write_var_u32(self.image_data.len() as u32)?;
-        buffer.write_all(self.image_data.as_ref())?;
+        writer.write_u32_le(self.image_width)?;
+        writer.write_u32_le(self.image_height)?;
+        writer.write_var_u32(self.image_data.len() as u32)?;
+        writer.write_all(self.image_data.as_ref())?;
 
-        buffer.write_u32_le(self.animations.len() as u32)?;
+        writer.write_u32_le(self.animations.len() as u32)?;
         for animation in &self.animations {
-            animation.serialize(buffer)?;
+            animation.serialize_into(writer)?;
         }
 
-        buffer.write_u32_le(self.cape_image_width)?;
-        buffer.write_u32_le(self.cape_image_height)?;
-        buffer.write_var_u32(self.cape_image_data.len() as u32)?;
-        buffer.write_all(self.cape_image_data.as_ref())?;
+        writer.write_u32_le(self.cape_image_width)?;
+        writer.write_u32_le(self.cape_image_height)?;
+        writer.write_var_u32(self.cape_image_data.len() as u32)?;
+        writer.write_all(self.cape_image_data.as_ref())?;
 
-        buffer.write_str(&self.geometry)?;
-        buffer.write_str(&self.geometry_engine_version)?;
-        buffer.write_str(&self.animation_data)?;
+        writer.write_str(&self.geometry)?;
+        writer.write_str(&self.geometry_engine_version)?;
+        writer.write_str(&self.animation_data)?;
 
-        buffer.write_str(&self.cape_id)?;
-        buffer.write_str(&self.full_id)?;
-        buffer.write_str(self.arm_size.name())?;
-        buffer.write_str(&self.color)?;
+        writer.write_str(&self.cape_id)?;
+        writer.write_str(&self.full_id)?;
+        writer.write_str(self.arm_size.name())?;
+        writer.write_str(&self.color)?;
 
-        buffer.write_u32_le(self.persona_pieces.len() as u32)?;
+        writer.write_u32_le(self.persona_pieces.len() as u32)?;
         for piece in &self.persona_pieces {
-            piece.serialize(buffer)?;
+            piece.serialize_into(writer)?;
         }
 
-        buffer.write_u32_le(self.persona_piece_tints.len() as u32)?;
+        writer.write_u32_le(self.persona_piece_tints.len() as u32)?;
         for tint in &self.persona_piece_tints {
-            tint.serialize(buffer)?;
+            tint.serialize_into(writer)?;
         }
 
-        buffer.write_bool(self.is_premium)?;
-        buffer.write_bool(self.is_persona)?;
-        buffer.write_bool(self.cape_on_classic_skin)?;
-        buffer.write_bool(self.is_primary_user)
+        writer.write_bool(self.is_premium)?;
+        writer.write_bool(self.is_persona)?;
+        writer.write_bool(self.cape_on_classic_skin)?;
+        writer.write_bool(self.is_primary_user)
     }
 }
 

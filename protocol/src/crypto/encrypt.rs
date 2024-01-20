@@ -16,7 +16,7 @@ use rand::rngs::OsRng;
 use rand::Rng;
 use sha2::{Digest, Sha256};
 
-use util::MutableBuffer;
+use util::{MutableBuffer, BinaryWrite};
 use util::{bail, Result};
 
 type Aes256CtrBE = ctr::Ctr64BE<aes::Aes256>;
@@ -163,13 +163,13 @@ impl Encryptor {
     }
 
     /// Encrypts a packet and appends the computed checksum.
-    pub fn encrypt(&self, buffer: &mut MutableBuffer) -> anyhow::Result<()> {
+    pub fn encrypt<W: BinaryWrite>(&self, writer: &mut W) -> anyhow::Result<()> {
         let counter = self.send_counter.fetch_add(1, Ordering::SeqCst);
         // Exclude 0xfe header from checksum calculations.
-        let checksum = self.compute_checksum(&buffer.as_ref()[1..], counter);
-        buffer.write_all(&checksum)?;
+        let checksum = self.compute_checksum(&writer.as_ref()[1..], counter);
+        writer.write_all(&checksum)?;
 
-        self.cipher_encrypt.lock().apply_keystream(&mut buffer.as_mut_slice()[1..]);
+        self.cipher_encrypt.lock().apply_keystream(&mut writer.as_mut()[1..]);
 
         Ok(())
     }

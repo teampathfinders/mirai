@@ -135,16 +135,16 @@ impl<'a> ConnectedPacket for TextMessage<'a> {
 }
 
 impl<'a> Serialize for TextMessage<'a> {
-    fn serialize(&self, buffer: &mut MutableBuffer) -> anyhow::Result<()> {
-        buffer.write_u8(self.data.discriminant())?;
-        buffer.write_bool(self.needs_translation)?;
+    fn serialize_into<W: BinaryWrite>(&self, writer: &mut W) -> anyhow::Result<()> {
+        writer.write_u8(self.data.discriminant())?;
+        writer.write_bool(self.needs_translation)?;
 
         match &self.data {
             TextData::Chat { source, message } |
             TextData::Whisper { source, message } |
             TextData::Announcement { source, message } => {
-                buffer.write_str(source)?;
-                buffer.write_str(message)?;
+                writer.write_str(source)?;
+                writer.write_str(message)?;
             },
             TextData::Raw { message } |
             TextData::Tip { message } |
@@ -152,22 +152,22 @@ impl<'a> Serialize for TextMessage<'a> {
             TextData::Object { message } |
             TextData::ObjectWhisper { message } |
             TextData::ObjectAnnouncement { message } => {
-                buffer.write_str(message)?;
+                writer.write_str(message)?;
             },
             TextData::Translation { message, parameters } |
             TextData::Popup { message, parameters } |
             TextData::JukeboxPopup { message, parameters } => {
-                buffer.write_str(message)?;
-                buffer.write_var_u32(parameters.len() as u32)?;
+                writer.write_str(message)?;
+                writer.write_var_u32(parameters.len() as u32)?;
 
                 for param in parameters {
-                    buffer.write_str(param)?;
+                    writer.write_str(param)?;
                 }
             }
         }
 
-        buffer.write_str(&self.xuid.to_string())?;
-        buffer.write_str(self.platform_chat_id)?;
+        writer.write_str(&self.xuid.to_string())?;
+        writer.write_str(self.platform_chat_id)?;
 
         Ok(())
     }

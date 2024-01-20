@@ -29,10 +29,10 @@ impl ConnectedPacket for ContainerOpen {
 }
 
 impl Serialize for ContainerOpen {
-    fn serialize(&self, buffer: &mut MutableBuffer) -> anyhow::Result<()> {
-        buffer.write_u8(self.window_id)?;
-        buffer.write_u8(self.container_type as u8)?;
-        buffer.write_block_pos(&self.position)?;
-        buffer.write_var_i64(self.container_entity_unique_id)
+    fn serialize_into<W: BinaryWrite>(&self, writer: &mut W) -> anyhow::Result<()> {
+        writer.write_u8(self.window_id)?;
+        writer.write_u8(self.container_type as u8)?;
+        writer.write_block_pos(&self.position)?;
+        writer.write_var_i64(self.container_entity_unique_id)
     }
 }

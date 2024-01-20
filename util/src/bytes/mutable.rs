@@ -101,6 +101,12 @@ impl AsRef<[u8]> for MutableBuffer {
     }
 }
 
+impl AsMut<[u8]> for MutableBuffer {
+    fn as_mut(&mut self) -> &mut [u8] {
+        self.data.as_mut()
+    }
+}
+
 impl From<Vec<u8>> for MutableBuffer {
     #[inline]
     fn from(data: Vec<u8>) -> Self {

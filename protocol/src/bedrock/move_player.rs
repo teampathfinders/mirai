@@ -80,20 +80,20 @@ impl ConnectedPacket for MovePlayer {
 }
 
 impl Serialize for MovePlayer {
-    fn serialize(&self, buffer: &mut MutableBuffer) -> anyhow::Result<()> {
-        buffer.write_var_u64(self.runtime_id)?;
-        buffer.write_vecf(&self.translation)?;
-        buffer.write_vecf(&self.rotation)?;
-        buffer.write_u8(self.mode as u8)?;
-        buffer.write_bool(self.on_ground)?;
-        buffer.write_var_u64(self.ridden_runtime_id)?;
+    fn serialize_into<W: BinaryWrite>(&self, writer: &mut W) -> anyhow::Result<()> {
+        writer.write_var_u64(self.runtime_id)?;
+        writer.write_vecf(&self.translation)?;
+        writer.write_vecf(&self.rotation)?;
+        writer.write_u8(self.mode as u8)?;
+        writer.write_bool(self.on_ground)?;
+        writer.write_var_u64(self.ridden_runtime_id)?;
 
         if self.mode == MovementMode::Teleport {
-            buffer.write_i32_be(self.teleport_cause as i32)?;
-            buffer.write_i32_be(self.teleport_source_type)?;
+            writer.write_i32_be(self.teleport_cause as i32)?;
+            writer.write_i32_be(self.teleport_source_type)?;
         }
 
-        buffer.write_var_u64(self.tick)
+        writer.write_var_u64(self.tick)
     }
 }
 

@@ -19,7 +19,7 @@ fn header() {
     };
 
     let mut buffer = MutableBuffer::new();
-    header.serialize(&mut buffer).unwrap();
+    header.serialize_into(&mut buffer).unwrap();
 
     assert_eq!(Header::deserialize(buffer.as_ref()).unwrap(), header);
 }

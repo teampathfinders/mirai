@@ -38,13 +38,13 @@ impl ConnectedPacket for ClientBoundDebugRenderer<'_> {
 }
 
 impl Serialize for ClientBoundDebugRenderer<'_> {
-    fn serialize(&self, buffer: &mut MutableBuffer) -> anyhow::Result<()> {
-        buffer.write_i32_le(self.action as i32)?;
+    fn serialize_into<W: BinaryWrite>(&self, writer: &mut W) -> anyhow::Result<()> {
+        writer.write_i32_le(self.action as i32)?;
         if self.action == DebugRendererAction::AddCube {
-            buffer.write_str(self.text)?;
-            buffer.write_vecf(&self.position)?;
-            buffer.write_vecf(&self.color)?;
-            buffer.write_i64_le(self.duration)?;
+            writer.write_str(self.text)?;
+            writer.write_vecf(&self.position)?;
+            writer.write_vecf(&self.color)?;
+            writer.write_i64_le(self.duration)?;
         }
 
         Ok(())

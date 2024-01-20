@@ -26,12 +26,12 @@ impl ConnectedPacket for DeathInfo<'_> {
 }
 
 impl Serialize for DeathInfo<'_> {
-    fn serialize(&self, buffer: &mut MutableBuffer) -> anyhow::Result<()> {
-        buffer.write_str(self.cause)?;
+    fn serialize_into<W: BinaryWrite>(&self, writer: &mut W) -> anyhow::Result<()> {
+        writer.write_str(self.cause)?;
 
-        buffer.write_var_u32(self.messages.len() as u32)?;
+        writer.write_var_u32(self.messages.len() as u32)?;
         for message in self.messages {
-            buffer.write_str(message)?;
+            writer.write_str(message)?;
         }
 
         Ok(())

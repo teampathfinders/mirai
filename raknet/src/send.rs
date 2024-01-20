@@ -133,7 +133,7 @@ impl RaknetUser {
 
         let ack = Ack { records };
         let mut serialized = MutableBuffer::with_capacity(ack.serialized_size());
-        ack.serialize(&mut serialized)?;
+        ack.serialize_into(&mut serialized)?;
 
         self
             .socket
@@ -200,11 +200,11 @@ impl RaknetUser {
                 has_reliable_packet = true;
             }
 
-            if batch.estimate_size() + frame_size <= self.mtu as usize {
+            if batch.size_hint().unwrap() + frame_size <= self.mtu as usize {
                 batch.frames.push(frame);
             } else if !batch.is_empty() {
                 serialized.clear();
-                batch.serialize(&mut serialized)?;
+                batch.serialize_into(&mut serialized)?;
 
                 // TODO: Add IPv6 support
                 self.socket
@@ -228,7 +228,7 @@ impl RaknetUser {
         // Send remaining raknet not sent by loop
         if !batch.is_empty() {
             serialized.clear();
-            batch.serialize(&mut serialized)?;
+            batch.serialize_into(&mut serialized)?;
 
             if has_reliable_packet {
                 self.recovery.insert(batch);

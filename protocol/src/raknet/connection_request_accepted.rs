@@ -23,17 +23,17 @@ impl ConnectionRequestAccepted {
 }
 
 impl Serialize for ConnectionRequestAccepted {
-    fn serialize(&self, buffer: &mut MutableBuffer) -> anyhow::Result<()> {
-        buffer.write_u8(Self::ID)?;
-        buffer.write_addr(&self.client_address)?;
-        buffer.write_u16_be(0)?; // System index
+    fn serialize_into<W: BinaryWrite>(&self, writer: &mut W) -> anyhow::Result<()> {
+        writer.write_u8(Self::ID)?;
+        writer.write_addr(&self.client_address)?;
+        writer.write_u16_be(0)?; // System index
 
         let null_addr = SocketAddr::V4(SocketAddrV4::new(Ipv4Addr::new(0, 0, 0, 0), 19132));
         for _ in 0..20 {
             // 20 internal IDs
-            buffer.write_addr(&null_addr)?;
+            writer.write_addr(&null_addr)?;
         }
-        buffer.write_i64_be(self.request_time)?;
-        buffer.write_i64_be(self.request_time) // Response time
+        writer.write_i64_be(self.request_time)?;
+        writer.write_i64_be(self.request_time) // Response time
     }
 }

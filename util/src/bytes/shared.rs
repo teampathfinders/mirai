@@ -292,12 +292,12 @@ mod test {
     fn read_write_u8() {
         const VALUES: [u8; 4] = [u8::MAX, u8::MIN, u8::MAX - 42, u8::MIN + 42];
 
-        let mut buffer = MutableBuffer::new();
+        let mut writer = MutableBuffer::new();
         for v in VALUES {
-            buffer.write_u8(v).unwrap();
+            writer.write_u8(v).unwrap();
         }
 
-        let mut ss = buffer.snapshot();
+        let mut ss = writer.snapshot();
         for v in VALUES {
             assert_eq!(v, ss.read_u8().unwrap());
         }
@@ -307,12 +307,12 @@ mod test {
     fn read_write_i8() {
         const VALUES: [i8; 4] = [i8::MAX, i8::MIN, i8::MAX - 42, i8::MIN + 42];
 
-        let mut buffer = MutableBuffer::new();
+        let mut writer = MutableBuffer::new();
         for v in VALUES {
-            buffer.write_i8(v).unwrap();
+            writer.write_i8(v).unwrap();
         }
 
-        let mut ss = buffer.snapshot();
+        let mut ss = writer.snapshot();
         for v in VALUES {
             assert_eq!(v, ss.read_i8().unwrap());
         }
@@ -322,12 +322,12 @@ mod test {
     fn read_write_f32_le() {
         const VALUES: [f32; 4] = [f32::MAX, f32::MIN, f32::MAX - 42.0, f32::MIN + 42.0];
 
-        let mut buffer = MutableBuffer::new();
+        let mut writer = MutableBuffer::new();
         for v in VALUES {
-            buffer.write_f32_le(v).unwrap();
+            writer.write_f32_le(v).unwrap();
         }
 
-        let mut ss = buffer.snapshot();
+        let mut ss = writer.snapshot();
         for v in VALUES {
             assert_eq!(v, ss.read_f32_le().unwrap());
         }
@@ -337,12 +337,12 @@ mod test {
     fn read_write_f32_be() {
         const VALUES: [f32; 4] = [f32::MAX, f32::MIN, f32::MAX - 42.0, f32::MIN + 42.0];
 
-        let mut buffer = MutableBuffer::new();
+        let mut writer = MutableBuffer::new();
         for v in VALUES {
-            buffer.write_f32_be(v).unwrap();
+            writer.write_f32_be(v).unwrap();
         }
 
-        let mut ss = buffer.snapshot();
+        let mut ss = writer.snapshot();
         for v in VALUES {
             assert_eq!(v, ss.read_f32_be().unwrap());
         }
@@ -352,12 +352,12 @@ mod test {
     fn read_write_f64_le() {
         const VALUES: [f64; 4] = [f64::MAX, f64::MIN, f64::MAX - 42.0, f64::MIN + 42.0];
 
-        let mut buffer = MutableBuffer::new();
+        let mut writer = MutableBuffer::new();
         for v in VALUES {
-            buffer.write_f64_le(v).unwrap();
+            writer.write_f64_le(v).unwrap();
         }
 
-        let mut ss = buffer.snapshot();
+        let mut ss = writer.snapshot();
         for v in VALUES {
             assert_eq!(v, ss.read_f64_le().unwrap());
         }
@@ -367,12 +367,12 @@ mod test {
     fn read_write_f64_be() {
         const VALUES: [f64; 4] = [f64::MAX, f64::MIN, f64::MAX - 42.0, f64::MIN + 42.0];
 
-        let mut buffer = MutableBuffer::new();
+        let mut writer = MutableBuffer::new();
         for v in VALUES {
-            buffer.write_f64_be(v).unwrap();
+            writer.write_f64_be(v).unwrap();
         }
 
-        let mut ss = buffer.snapshot();
+        let mut ss = writer.snapshot();
         for v in VALUES {
             assert_eq!(v, ss.read_f64_be().unwrap());
         }
@@ -380,10 +380,10 @@ mod test {
 
     #[test]
     fn read_write_str() {
-        let mut buffer = MutableBuffer::new();
-        buffer.write_str("Hello, World!").unwrap();
+        let mut writer = MutableBuffer::new();
+        writer.write_str("Hello, World!").unwrap();
 
-        let mut ss = buffer.snapshot();
+        let mut ss = writer.snapshot();
         assert_eq!(ss.read_str().unwrap(), "Hello, World!");
     }
 }

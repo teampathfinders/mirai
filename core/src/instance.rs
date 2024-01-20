@@ -293,7 +293,7 @@ impl ServerInstance {
         let pong = UnconnectedPong { time: ping.time, server_guid, metadata };
 
         let mut serialized = MutableBuffer::with_capacity(pong.serialized_size());
-        pong.serialize(&mut serialized)?;
+        pong.serialize_into(&mut serialized)?;
 
         let packet = ForwardablePacket { buf: serialized, addr: packet.addr };
 
@@ -311,13 +311,13 @@ impl ServerInstance {
 
             packet.buf.clear();
             packet.buf.reserve_to(reply.serialized_size());
-            reply.serialize(&mut packet.buf)?;
+            reply.serialize_into(&mut packet.buf)?;
         } else {
             let reply = OpenConnectionReply1 { mtu: request.mtu, server_guid };
 
             packet.buf.clear();
             packet.buf.reserve_to(reply.serialized_size());
-            reply.serialize(&mut packet.buf)?;
+            reply.serialize_into(&mut packet.buf)?;
         }
 
         Ok(packet)
@@ -342,7 +342,7 @@ impl ServerInstance {
 
         packet.buf.clear();
         packet.buf.reserve_to(reply.serialized_size());
-        reply.serialize(&mut packet.buf)?;
+        reply.serialize_into(&mut packet.buf)?;
 
         user_manager.insert(UserCreateInfo {
             address: packet.addr,

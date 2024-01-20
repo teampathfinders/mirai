@@ -85,12 +85,12 @@ pub struct AbilityLayer {
 }
 
 impl Serialize for AbilityLayer {
-    fn serialize(&self, buffer: &mut MutableBuffer) -> anyhow::Result<()> {
-        buffer.write_u16_le(self.ability_type as u16)?;
-        buffer.write_u32_le(self.abilities)?;
-        buffer.write_u32_le(self.values)?;
-        buffer.write_f32_le(self.fly_speed)?;
-        buffer.write_f32_le(self.walk_speed)
+    fn serialize_into<W: BinaryWrite>(&self, writer: &mut W) -> anyhow::Result<()> {
+        writer.write_u16_le(self.ability_type as u16)?;
+        writer.write_u32_le(self.abilities)?;
+        writer.write_u32_le(self.values)?;
+        writer.write_f32_le(self.fly_speed)?;
+        writer.write_f32_le(self.walk_speed)
     }
 }
 
@@ -122,14 +122,14 @@ pub struct AbilityData {
 }
 
 impl Serialize for AbilityData {
-    fn serialize(&self, buffer: &mut MutableBuffer) -> anyhow::Result<()> {
-        buffer.write_u64_le(self.unique_id)?; // For some reason this isn't a varint64.
-        buffer.write_u8(self.permission_level as u8)?;
-        buffer.write_u8(self.command_permission_level as u8)?;
+    fn serialize_into<W: BinaryWrite>(&self, writer: &mut W) -> anyhow::Result<()> {
+        writer.write_u64_le(self.unique_id)?; // For some reason this isn't a varint64.
+        writer.write_u8(self.permission_level as u8)?;
+        writer.write_u8(self.command_permission_level as u8)?;
 
-        buffer.write_u8(self.layers.len() as u8)?;
+        writer.write_u8(self.layers.len() as u8)?;
         for layer in &self.layers {
-            layer.serialize(buffer)?;
+            layer.serialize_into(writer)?;
         }
 
         Ok(())
@@ -163,8 +163,7 @@ impl ConnectedPacket for UpdateAbilities {
 }
 
 impl Serialize for UpdateAbilities {
-    #[inline]
-    fn serialize(&self, buffer: &mut MutableBuffer) -> anyhow::Result<()> {
-        self.0.serialize(buffer)
+    fn serialize_into<W: BinaryWrite>(&self, writer: &mut W) -> anyhow::Result<()> {
+        self.0.serialize_into(writer)
     }
 }

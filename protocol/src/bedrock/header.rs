@@ -25,12 +25,12 @@ impl Header {
 
 impl Serialize for Header {
     /// Encodes the header.
-    fn serialize(&self, buffer: &mut MutableBuffer) -> anyhow::Result<()> {
+    fn serialize_into<W: BinaryWrite>(&self, writer: &mut W) -> anyhow::Result<()> {
         let value = self.id
             | ((self.sender_subclient as u32) << 10)
             | ((self.target_subclient as u32) << 12);
 
-        buffer.write_var_u32(value)
+        writer.write_var_u32(value)
     }
 }
 

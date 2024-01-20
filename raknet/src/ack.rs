@@ -25,7 +25,7 @@ impl RaknetUser {
 
         let mut serialized = MutableBuffer::new();
         for frame_batch in frame_batches {
-            frame_batch.serialize(&mut serialized)?;
+            frame_batch.serialize_into(&mut serialized)?;
 
             self
                 .socket

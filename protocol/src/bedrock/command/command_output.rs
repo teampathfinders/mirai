@@ -45,29 +45,29 @@ impl ConnectedPacket for CommandOutput<'_> {
 }
 
 impl Serialize for CommandOutput<'_> {
-    fn serialize(&self, buffer: &mut MutableBuffer) -> anyhow::Result<()> {
-        buffer.write_var_u32(self.origin as u32)?;
-        buffer.write_uuid_le(&Uuid::nil())?;
-        buffer.write_str(self.request_id)?;
+    fn serialize_into<W: BinaryWrite>(&self, writer: &mut W) -> anyhow::Result<()> {
+        writer.write_var_u32(self.origin as u32)?;
+        writer.write_uuid_le(&Uuid::nil())?;
+        writer.write_str(self.request_id)?;
 
         match self.origin {
             CommandOriginType::Test | CommandOriginType::DevConsole => {
-                buffer.write_var_i64(0)?;
+                writer.write_var_i64(0)?;
             }
             _ => ()
         }
 
-        buffer.write_u8(self.output_type as u8)?;
-        buffer.write_var_u32(self.success_count)?;
+        writer.write_u8(self.output_type as u8)?;
+        writer.write_var_u32(self.success_count)?;
 
-        buffer.write_var_u32(self.output.len() as u32)?;
+        writer.write_var_u32(self.output.len() as u32)?;
         for output in self.output {
-            buffer.write_bool(output.is_success)?;
-            buffer.write_str(output.message)?;
+            writer.write_bool(output.is_success)?;
+            writer.write_str(output.message)?;
 
-            buffer.write_var_u32(output.parameters.len() as u32)?;
+            writer.write_var_u32(output.parameters.len() as u32)?;
             for param in output.parameters {
-                buffer.write_str(param)?;
+                writer.write_str(param)?;
             }
         }
 
