@@ -46,6 +46,7 @@ impl Replicator {
             None,
             None,
         );
+      
         client.connect();
         client.wait_for_connect().await?;
 
