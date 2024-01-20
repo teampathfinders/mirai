@@ -1,3 +1,4 @@
+use util::BinaryRead;
 use util::SharedBuffer;
 use util::Deserialize;
 use util::Result;
@@ -16,8 +17,8 @@ impl ConnectedPacket for ClientToServerHandshake {
     const ID: u32 = 0x04;
 }
 
-impl Deserialize<'_> for ClientToServerHandshake {
-    fn deserialize(_buffer: SharedBuffer) -> anyhow::Result<Self> {
+impl<'a> Deserialize<'a> for ClientToServerHandshake {
+    fn deserialize_from<R: BinaryRead<'a>>(_reader: &mut R) -> anyhow::Result<Self> {
         Ok(Self)
     }
 }

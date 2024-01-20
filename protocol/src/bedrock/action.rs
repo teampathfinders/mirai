@@ -72,12 +72,12 @@ impl ConnectedPacket for PlayerAction {
 }
 
 impl<'a> Deserialize<'a> for PlayerAction {
-    fn deserialize(mut buffer: SharedBuffer<'a>) -> anyhow::Result<Self> {
-        let runtime_id = buffer.read_var_u64()?;
-        let action = PlayerActionType::try_from(buffer.read_var_i32()?)?;
-        let position = buffer.read_block_pos()?;
-        let result_position = buffer.read_block_pos()?;
-        let face = buffer.read_var_u32()?;
+    fn deserialize_from<R: BinaryRead<'a>>(reader: &mut R) -> anyhow::Result<Self> {
+        let runtime_id = reader.read_var_u64()?;
+        let action = PlayerActionType::try_from(reader.read_var_i32()?)?;
+        let position = reader.read_block_pos()?;
+        let result_position = reader.read_block_pos()?;
+        let face = reader.read_var_u32()?;
 
         Ok(PlayerAction {
             runtime_id, action, position, result_position, face

@@ -1,5 +1,5 @@
 use util::SharedBuffer;
-use util::pyassert;
+use util::iassert;
 use util::{BinaryRead, Deserialize};
 
 /// Sent by the client when the users joins the server.
@@ -21,14 +21,11 @@ impl OpenConnectionRequest1 {
     pub const ID: u8 = 0x05;
 }
 
-impl Deserialize<'_> for OpenConnectionRequest1 {
-    fn deserialize(mut buffer: SharedBuffer) -> anyhow::Result<Self> {
-        let mtu = buffer.len() as u16 + 28;
-
-        pyassert!(buffer.read_u8()? == Self::ID);
-
-        buffer.advance(16); // Skip magic
-        let protocol_version = buffer.read_u8()?;
+impl<'a> Deserialize<'a> for OpenConnectionRequest1 {
+    fn deserialize_from<R: BinaryRead<'a>>(reader: &mut R) -> anyhow::Result<Self> {
+        let mtu = reader.remaining() as u16 + 28;
+        reader.advance(16); // Skip magic
+        let protocol_version = reader.read_u8()?;
 
         Ok(Self { protocol_version, mtu })
     }

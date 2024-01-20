@@ -1,6 +1,6 @@
 use util::{BinaryRead, SharedBuffer};
 use util::Deserialize;
-use util::pyassert;
+use util::iassert;
 use util::Result;
 
 /// Sent by the client or server to ping the other side.
@@ -16,11 +16,11 @@ impl ConnectedPing {
     pub const ID: u8 = 0x00;
 }
 
-impl Deserialize<'_> for ConnectedPing {
-    fn deserialize(mut buffer: SharedBuffer) -> anyhow::Result<Self> {
-        pyassert!(buffer.read_u8()? == Self::ID);
+impl<'a> Deserialize<'a> for ConnectedPing {
+    fn deserialize_from<R: BinaryRead<'a>>(reader: &mut R) -> anyhow::Result<Self> {
+        iassert!(reader.read_u8()? == Self::ID);
 
-        let time = buffer.read_i64_be()?;
+        let time = reader.read_i64_be()?;
 
         Ok(Self { time })
     }

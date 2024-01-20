@@ -37,8 +37,8 @@ impl Serialize for SimpleEvent {
     }
 }
 
-impl Deserialize<'_> for SimpleEvent {
-    fn deserialize(mut buffer: SharedBuffer) -> anyhow::Result<Self> {
-        Self::try_from(buffer.read_i16_le()?)
+impl<'a> Deserialize<'a> for SimpleEvent {
+    fn deserialize_from<R: BinaryRead<'a>>(reader: &mut R) -> anyhow::Result<Self> {
+        Self::try_from(reader.read_i16_le()?)
     }
 }

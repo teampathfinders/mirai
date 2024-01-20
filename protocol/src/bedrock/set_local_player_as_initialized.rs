@@ -15,8 +15,8 @@ impl ConnectedPacket for SetLocalPlayerAsInitialized {
     const ID: u32 = 0x71;
 }
 
-impl Deserialize<'_> for SetLocalPlayerAsInitialized {
-    fn deserialize(mut buffer: SharedBuffer) -> anyhow::Result<Self> {
-        Ok(Self { runtime_id: buffer.read_var_u64()? })
+impl<'a> Deserialize<'a> for SetLocalPlayerAsInitialized {
+    fn deserialize_from<R: BinaryRead<'a>>(reader: &mut R) -> anyhow::Result<Self> {
+        Ok(Self { runtime_id: reader.read_var_u64()? })
     }
 }

@@ -34,18 +34,18 @@ impl<'a> ConnectedPacket for FormResponseData<'a> {
 }
 
 impl<'a> Deserialize<'a> for FormResponseData<'a> {
-    fn deserialize(mut buffer: SharedBuffer<'a>) -> anyhow::Result<FormResponseData<'a>> {
-        let id = buffer.read_var_u32()?;
-        let has_data = buffer.read_bool()?;
+    fn deserialize_from<R: BinaryRead<'a>>(reader: &mut R) -> anyhow::Result<FormResponseData<'a>> {
+        let id = reader.read_var_u32()?;
+        let has_data = reader.read_bool()?;
         let response_data = if has_data {
-            Some(buffer.read_str()?)
+            Some(reader.read_str()?)
         } else {
             None
         };
 
-        let has_reason = buffer.read_bool()?;
+        let has_reason = reader.read_bool()?;
         let cancel_reason = if has_reason {
-            Some(buffer.read_u8()?)
+            Some(reader.read_u8()?)
         } else {
             None
         };

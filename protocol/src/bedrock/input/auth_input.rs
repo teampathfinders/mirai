@@ -143,20 +143,20 @@ pub struct InventoryAction {
     pub inventory_slot: u32
 }
 
-impl InventoryAction {
-    pub fn deserialize(buffer: &mut SharedBuffer) -> anyhow::Result<Self> {
-        let source_type = InventoryActionSource::try_from(buffer.read_u32_le()?)?;
+impl<'a> Deserialize<'a> for InventoryAction {
+    fn deserialize_from<R: BinaryRead<'a>>(reader: &mut R) -> anyhow::Result<Self> {
+        let source_type = InventoryActionSource::try_from(reader.read_u32_le()?)?;
         
         let mut window = None;
         let mut source_flags = 0;
 
         if source_type == InventoryActionSource::Container || source_type == InventoryActionSource::Todo {
-            window = Some(WindowId::try_from(buffer.read_i32_le()?)?);
+            window = Some(WindowId::try_from(reader.read_i32_le()?)?);
         } else if source_type == InventoryActionSource::World {
-            source_flags = buffer.read_var_u32()?;
+            source_flags = reader.read_var_u32()?;
         }
 
-        let inventory_slot = buffer.read_var_u32()?;
+        let inventory_slot = reader.read_var_u32()?;
 
         // https://github.com/Sandertv/gophertunnel/blob/36e5147307884b745b7d28d546c07ab03d4afb36/minecraft/protocol/inventory.go#L52
         todo!("Item instance reading");
@@ -169,11 +169,11 @@ pub struct LegacySetItemSlot<'a> {
     pub slots: &'a [u8]
 }
 
-impl<'a> LegacySetItemSlot<'a> {
-    pub fn deserialize(buffer: &mut SharedBuffer<'a>) -> anyhow::Result<Self> {
-        let container = buffer.read_u8()?;
-        let slot_count = buffer.read_var_u32()?;
-        let slots = buffer.take_n(slot_count as usize)?;
+impl<'a> Deserialize<'a> for LegacySetItemSlot<'a> {
+    fn deserialize_from<R: BinaryRead<'a>>(reader: &mut R) -> anyhow::Result<Self> {
+        let container = reader.read_u8()?;
+        let slot_count = reader.read_var_u32()?;
+        let slots = reader.take_n(slot_count as usize)?;
 
         Ok(Self {
             container, slots
@@ -195,25 +195,25 @@ pub struct TransactionData<'a> {
     pub block_runtime_id: u32
 }
 
-impl<'a> TransactionData<'a> {
-    pub fn deserialize(buffer: &mut SharedBuffer<'a>) -> anyhow::Result<Self> {
-        let legacy_request_id = buffer.read_var_i32()?;
+impl<'a> Deserialize<'a> for TransactionData<'a> {
+    fn deserialize_from<R: BinaryRead<'a>>(reader: &mut R) -> anyhow::Result<Self> {
+        let legacy_request_id = reader.read_var_i32()?;
         let mut legacy_slots = Vec::new();
 
         if legacy_request_id < -1 && (legacy_request_id & 1) == 0 {
-            let slot_count = buffer.read_var_u32()?;
+            let slot_count = reader.read_var_u32()?;
             legacy_slots.reserve(slot_count as usize);
 
             for _ in 0..slot_count {
-                legacy_slots.push(LegacySetItemSlot::deserialize(buffer)?);
+                legacy_slots.push(LegacySetItemSlot::deserialize_from(reader)?);
             }
         }
 
-        let action_count = buffer.read_var_u32()?;
+        let action_count = reader.read_var_u32()?;
         let mut actions = Vec::with_capacity(action_count as usize);
 
         for _ in 0..action_count {
-            actions.push(InventoryAction::deserialize(buffer)?);
+            actions.push(InventoryAction::deserialize_from(reader)?);
         }
 
         todo!()
@@ -275,37 +275,37 @@ pub enum ItemDescriptor<'a> {
     }
 }
 
-impl<'a> ItemDescriptor<'a> {
-    pub fn deserialize(buffer: &mut SharedBuffer<'a>) -> anyhow::Result<Self> {
-        let kind = buffer.read_u8()?;
+impl<'a> Deserialize<'a> for ItemDescriptor<'a> {
+    fn deserialize_from<R: BinaryRead<'a>>(reader: &mut R) -> anyhow::Result<Self> {
+        let kind = reader.read_u8()?;
         let desc = match kind {
             0 => Self::Invalid,
             1 => {
-                let network_id = buffer.read_i16_le()?;
-                let meta = if network_id == 0 { 0 } else { buffer.read_i16_le()? };
+                let network_id = reader.read_i16_le()?;
+                let meta = if network_id == 0 { 0 } else { reader.read_i16_le()? };
 
                 Self::Default { network_id, meta }
             },
             2 => {
                 Self::MoLang {
-                    expression: buffer.read_str()?,
-                    version: buffer.read_u8()?
+                    expression: reader.read_str()?,
+                    version: reader.read_u8()?
                 }
             },
             3 => {
                 Self::ItemTag {
-                    tag: buffer.read_str()?
+                    tag: reader.read_str()?
                 }
             },
             4 => {
                 Self::Deferred {
-                    name: buffer.read_str()?,
-                    meta: buffer.read_i16_le()?
+                    name: reader.read_str()?,
+                    meta: reader.read_i16_le()?
                 }
             },
             5 => {
                 Self::ComplexAlias {
-                    name: buffer.read_str()?
+                    name: reader.read_str()?
                 }
             }
             _ => anyhow::bail!("Item descriptor kind out of range")
@@ -321,10 +321,10 @@ pub struct ItemDescriptorCount<'a> {
     pub count: i32
 }
 
-impl<'a> ItemDescriptorCount<'a> {
-    pub fn deserialize(buffer: &mut SharedBuffer<'a>) -> anyhow::Result<Self> {
-        let descriptor = ItemDescriptor::deserialize(buffer)?;
-        let count = buffer.read_var_i32()?;
+impl<'a> Deserialize<'a> for ItemDescriptorCount<'a> {
+    fn deserialize_from<R: BinaryRead<'a>>(reader: &mut R) -> anyhow::Result<Self> {
+        let descriptor = ItemDescriptor::deserialize_from(reader)?;
+        let count = reader.read_var_i32()?;
 
         Ok(Self {
             descriptor, count
@@ -339,11 +339,11 @@ pub struct StackRequestSlotInfo {
     pub stack_network_id: i32
 }
 
-impl StackRequestSlotInfo {
-    pub fn deserialize(buffer: &mut SharedBuffer) -> anyhow::Result<Self> {
-        let container_id = buffer.read_u8()?;
-        let slot = buffer.read_u8()?;
-        let stack_network_id = buffer.read_var_i32()?;
+impl<'a> Deserialize<'a> for StackRequestSlotInfo {
+    fn deserialize_from<R: BinaryRead<'a>>(reader: &mut R) -> anyhow::Result<Self> {
+        let container_id = reader.read_u8()?;
+        let slot = reader.read_u8()?;
+        let stack_network_id = reader.read_var_i32()?;
 
         Ok(Self {
             container_id, slot, stack_network_id
@@ -451,8 +451,8 @@ pub enum StackRequestAction<'a> {
     }
 }   
 
-impl<'a> StackRequestAction<'a> {
-    pub fn deserialize(buffer: &mut SharedBuffer<'a>) -> anyhow::Result<Self> {
+impl<'a> Deserialize<'a> for StackRequestAction<'a> {
+    fn deserialize_from<R: BinaryRead<'a>>(reader: &mut R) -> anyhow::Result<Self> {
         todo!()
     }
 }
@@ -465,23 +465,23 @@ pub struct StackRequest<'a> {
     pub filter_cause: FilterCause
 }
 
-impl<'a> StackRequest<'a> {
-    pub fn deserialize(buffer: &mut SharedBuffer<'a>) -> anyhow::Result<Self> {
-        let request_id = buffer.read_var_i32()?;
+impl<'a> Deserialize<'a> for StackRequest<'a> {
+    fn deserialize_from<R: BinaryRead<'a>>(reader: &mut R) -> anyhow::Result<Self> {
+        let request_id = reader.read_var_i32()?;
 
-        let actions_count = buffer.read_var_u32()?;
+        let actions_count = reader.read_var_u32()?;
         let mut actions = Vec::with_capacity(actions_count as usize);
         for _ in 0..actions_count {
-            actions.push(StackRequestAction::deserialize(buffer)?);
+            actions.push(StackRequestAction::deserialize_from(reader)?);
         }
 
-        let mut filter_count = buffer.read_var_u32()?;
+        let mut filter_count = reader.read_var_u32()?;
         let mut filters = Vec::with_capacity(filter_count as usize);
         for _ in 0..filter_count {
-            filters.push(buffer.read_str()?);
+            filters.push(reader.read_str()?);
         }
 
-        let filter_cause = FilterCause::try_from(buffer.read_i32_le()?)?;
+        let filter_cause = FilterCause::try_from(reader.read_i32_le()?)?;
 
         Ok(Self {
             request_id, actions, filters, filter_cause
@@ -518,28 +518,28 @@ impl ConnectedPacket for PlayerAuthInput<'_> {
 }
 
 impl<'a> Deserialize<'a> for PlayerAuthInput<'a> {
-    fn deserialize(mut buffer: SharedBuffer<'a>) -> anyhow::Result<Self> {
-        let pitch = buffer.read_f32_le()?;
-        let yaw = buffer.read_f32_le()?;
-        let position = buffer.read_vecf()?;
-        let moved = buffer.read_vecf()?;
-        let head_yaw = buffer.read_f32_le()?;
-        let input_data = buffer.read_var_u64()?;
-        let input_mode = buffer.read_var_u32()?;
-        let play_mode = PlayMode::try_from(buffer.read_var_u32()?)?;
-        let interaction_model = buffer.read_var_i32()?;
+    fn deserialize_from<R: BinaryRead<'a>>(reader: &mut R) -> anyhow::Result<Self> {
+        let pitch = reader.read_f32_le()?;
+        let yaw = reader.read_f32_le()?;
+        let position = reader.read_vecf()?;
+        let moved = reader.read_vecf()?;
+        let head_yaw = reader.read_f32_le()?;
+        let input_data = reader.read_var_u64()?;
+        let input_mode = reader.read_var_u32()?;
+        let play_mode = PlayMode::try_from(reader.read_var_u32()?)?;
+        let interaction_model = reader.read_var_i32()?;
 
         let gaze_direction = if play_mode == PlayMode::VirtualReality {
-            buffer.read_vecf()?
+            reader.read_vecf()?
         } else {
             Vector::from([0.0, 0.0, 0.0])
         };
 
-        let tick = buffer.read_var_u64()?;
-        let delta = buffer.read_vecf()?;
+        let tick = reader.read_var_u64()?;
+        let delta = reader.read_vecf()?;
 
         let item_transaction = if input_data & InputDataFlag::PerformItemTransaction as u64 != 0 {
-            Some(TransactionData::deserialize(&mut buffer)?)
+            Some(TransactionData::deserialize_from(reader)?)
         } else {
             None
         };
@@ -556,7 +556,7 @@ impl<'a> Deserialize<'a> for PlayerAuthInput<'a> {
             None
         };
 
-        let analogue_moved = buffer.read_vecf()?;
+        let analogue_moved = reader.read_vecf()?;
         
         Ok(Self {
             pitch, yaw, head_yaw, position, moved, analogue_moved, input_data, input_mode, play_mode,

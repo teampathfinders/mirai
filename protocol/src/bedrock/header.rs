@@ -1,4 +1,4 @@
-use util::{Result, Serialize};
+use util::{Result, Serialize, Deserialize};
 use util::{BinaryRead, BinaryWrite, MutableBuffer, SharedBuffer, size_of_varint};
 
 /// Game raknet are prefixed with a length and a header.
@@ -34,10 +34,10 @@ impl Serialize for Header {
     }
 }
 
-impl Header {
+impl<'a> Deserialize<'a> for Header {
     /// Decodes the header.
-    pub fn deserialize(buffer: &mut SharedBuffer) -> anyhow::Result<Self> {
-        let value = buffer.read_var_u32()?;
+    fn deserialize_from<R: BinaryRead<'a>>(reader: &mut R) -> anyhow::Result<Self> {
+        let value = reader.read_var_u32()?;
 
         let id = value & 0x3ff;
         let sender_subclient = ((value >> 10) & 0x3) as u8;

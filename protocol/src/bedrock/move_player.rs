@@ -97,25 +97,25 @@ impl Serialize for MovePlayer {
     }
 }
 
-impl Deserialize<'_> for MovePlayer {
-    fn deserialize(mut buffer: SharedBuffer) -> anyhow::Result<Self> {
-        let runtime_id = buffer.read_var_u64()?;
-        let position = buffer.read_vecf()?;
-        let rotation = buffer.read_vecf()?;
-        let mode = MovementMode::try_from(buffer.read_u8()?)?;
-        let on_ground = buffer.read_bool()?;
-        let ridden_runtime_id = buffer.read_var_u64()?;
+impl<'a> Deserialize<'a> for MovePlayer {
+    fn deserialize_from<R: BinaryRead<'a>>(reader: &mut R) -> anyhow::Result<Self> {
+        let runtime_id = reader.read_var_u64()?;
+        let position = reader.read_vecf()?;
+        let rotation = reader.read_vecf()?;
+        let mode = MovementMode::try_from(reader.read_u8()?)?;
+        let on_ground = reader.read_bool()?;
+        let ridden_runtime_id = reader.read_var_u64()?;
 
         let (teleport_cause, teleport_source_type) = if mode == MovementMode::Teleport {
-            let cause = TeleportCause::try_from(buffer.read_i32_be()?)?;
-            let source_type = buffer.read_i32_be()?;
+            let cause = TeleportCause::try_from(reader.read_i32_be()?)?;
+            let source_type = reader.read_i32_be()?;
 
             (cause, source_type)
         } else {
             (TeleportCause::Unknown, 0)
         };
 
-        let tick = buffer.read_var_u64()?;
+        let tick = reader.read_var_u64()?;
 
         Ok(Self {
             runtime_id,

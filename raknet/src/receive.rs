@@ -5,7 +5,7 @@ use std::time::{Instant, Duration};
 use async_recursion::async_recursion;
 use proto::bedrock::CONNECTED_PACKET_ID;
 use proto::raknet::{Ack, ConnectedPing, ConnectionRequest, DisconnectNotification, Nak, NewIncomingConnection};
-use util::MutableBuffer;
+use util::{MutableBuffer, Deserialize};
 
 use tokio::sync::mpsc::error::SendTimeoutError;
 
@@ -27,8 +27,8 @@ impl RaknetUser {
 
         let pk_id = *packet.first().unwrap();
         match pk_id {
-            Ack::ID => self.handle_ack(packet.snapshot())?,
-            Nak::ID => self.handle_nack(packet.snapshot()).await?,
+            Ack::ID => self.handle_ack(packet.as_ref())?,
+            Nak::ID => self.handle_nack(packet.as_ref()).await?,
             _ => self.handle_frame_batch(packet).await?,
         }
 
@@ -55,7 +55,7 @@ impl RaknetUser {
     /// * Discarding old sequenced frames
     /// * Acknowledging reliable raknet
     async fn handle_frame_batch(&self, packet: MutableBuffer) -> anyhow::Result<()> {
-        let batch = FrameBatch::deserialize(packet.snapshot())?;
+        let batch = FrameBatch::deserialize(packet.as_ref())?;
         self
             .batch_number
             .fetch_max(batch.sequence_number, Ordering::SeqCst);

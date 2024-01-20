@@ -1,3 +1,4 @@
+use util::Deserialize;
 use util::MutableBuffer;
 use util::Serialize;
 
@@ -20,5 +21,5 @@ fn header() {
     let mut buffer = MutableBuffer::new();
     header.serialize(&mut buffer).unwrap();
 
-    assert_eq!(Header::deserialize(&mut buffer.snapshot()).unwrap(), header);
+    assert_eq!(Header::deserialize(buffer.as_ref()).unwrap(), header);
 }

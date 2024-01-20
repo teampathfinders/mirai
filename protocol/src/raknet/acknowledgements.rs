@@ -1,7 +1,7 @@
 use std::ops::Range;
 
 use util::{BinaryRead, BinaryWrite, MutableBuffer, SharedBuffer};
-use util::pyassert;
+use util::iassert;
 use util::Result;
 use util::{Deserialize, Serialize};
 
@@ -35,16 +35,16 @@ fn encode_records(buffer: &mut MutableBuffer, records: &[AckRecord]) -> anyhow::
 }
 
 /// Decodes a list of acknowledgement records.
-fn decode_records(mut buffer: SharedBuffer) -> anyhow::Result<Vec<AckRecord>> {
-    let record_count = buffer.read_u16_be()?;
+fn decode_records<'a, R: BinaryRead<'a>>(reader: &mut R) -> anyhow::Result<Vec<AckRecord>> {
+    let record_count = reader.read_u16_be()?;
     let mut records = Vec::with_capacity(record_count as usize);
 
     for _ in 0..record_count {
-        let is_range = buffer.read_u8()? == 0;
+        let is_range = reader.read_u8()? == 0;
         if is_range {
-            records.push(AckRecord::Range(buffer.read_u24_le()?.into()..buffer.read_u24_le()?.into()));
+            records.push(AckRecord::Range(reader.read_u24_le()?.into()..reader.read_u24_le()?.into()));
         } else {
-            records.push(AckRecord::Single(buffer.read_u24_le()?.into()));
+            records.push(AckRecord::Single(reader.read_u24_le()?.into()));
         }
     }
 
@@ -80,11 +80,11 @@ impl Serialize for Ack {
     }
 }
 
-impl Deserialize<'_> for Ack {
-    fn deserialize(mut buffer: SharedBuffer) -> anyhow::Result<Self> {
-        pyassert!(buffer.read_u8()? == Self::ID);
+impl<'a> Deserialize<'a> for Ack {
+    fn deserialize_from<R: BinaryRead<'a>>(reader: &mut R) -> anyhow::Result<Self> {
+        iassert!(reader.read_u8()? == Self::ID);
 
-        let records = decode_records(buffer)?;
+        let records = decode_records(reader)?;
 
         Ok(Self { records })
     }
@@ -119,11 +119,11 @@ impl Serialize for Nak {
     }
 }
 
-impl Deserialize<'_> for Nak {
-    fn deserialize(mut buffer: SharedBuffer) -> anyhow::Result<Self> {
-        pyassert!(buffer.read_u8()? == Self::ID);
+impl<'a> Deserialize<'a> for Nak {
+    fn deserialize_from<R: BinaryRead<'a>>(reader: &mut R) -> anyhow::Result<Self> {
+        iassert!(reader.read_u8()? == Self::ID);
 
-        let records = decode_records(buffer)?;
+        let records = decode_records(reader)?;
 
         Ok(Self { records })
     }

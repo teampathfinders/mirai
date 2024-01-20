@@ -48,10 +48,10 @@ impl Serialize for CreditsUpdate {
     }
 }
 
-impl Deserialize<'_> for CreditsUpdate {
-    fn deserialize(mut buffer: SharedBuffer) -> anyhow::Result<Self> {
-        let runtime_id = buffer.read_var_u64()?;
-        let status = CreditsStatus::try_from(buffer.read_var_i32()?)?;
+impl<'a> Deserialize<'a> for CreditsUpdate {
+    fn deserialize_from<R: BinaryRead<'a>>(reader: &mut R) -> anyhow::Result<Self> {
+        let runtime_id = reader.read_var_u64()?;
+        let status = CreditsStatus::try_from(reader.read_var_i32()?)?;
 
         Ok(Self { runtime_id, status })
     }

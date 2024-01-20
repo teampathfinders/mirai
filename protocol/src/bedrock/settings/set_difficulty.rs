@@ -50,9 +50,9 @@ impl Serialize for SetDifficulty {
     }
 }
 
-impl Deserialize<'_> for SetDifficulty {
-    fn deserialize(mut buffer: SharedBuffer) -> anyhow::Result<Self> {
-        let difficulty = Difficulty::try_from(buffer.read_var_i32()?)?;
+impl<'a> Deserialize<'a> for SetDifficulty {
+    fn deserialize_from<R: BinaryRead<'a>>(reader: &mut R) -> anyhow::Result<Self> {
+        let difficulty = Difficulty::try_from(reader.read_var_i32()?)?;
 
         Ok(Self { difficulty })
     }
