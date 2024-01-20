@@ -289,7 +289,7 @@ impl ServerInstance {
     /// Generates a response to the [`UnconnectedPing`] packet with [`UnconnectedPong`].
     #[inline]
     fn process_unconnected_ping(packet: ForwardablePacket, server_guid: u64, metadata: &str) -> anyhow::Result<ForwardablePacket> {
-        let ping = UnconnectedPing::deserialize(packet.buf.snapshot())?;
+        let ping = UnconnectedPing::deserialize(packet.buf.as_ref())?;
         let pong = UnconnectedPong { time: ping.time, server_guid, metadata };
 
         let mut serialized = MutableBuffer::with_capacity(pong.serialized_size());
@@ -303,7 +303,7 @@ impl ServerInstance {
     /// Generates a response to the [`OpenConnectionRequest1`] packet with [`OpenConnectionReply1`].
     #[inline]
     fn process_open_connection_request1(mut packet: ForwardablePacket, server_guid: u64) -> anyhow::Result<ForwardablePacket> {
-        let request = OpenConnectionRequest1::deserialize(packet.buf.snapshot())?;
+        let request = OpenConnectionRequest1::deserialize(packet.buf.as_ref())?;
 
         packet.buf.clear();
         if request.protocol_version != RAKNET_VERSION {
@@ -333,7 +333,7 @@ impl ServerInstance {
         user_manager: Arc<UserMap>,
         server_guid: u64,
     ) -> anyhow::Result<ForwardablePacket> {
-        let request = OpenConnectionRequest2::deserialize(packet.buf.snapshot())?;
+        let request = OpenConnectionRequest2::deserialize(packet.buf.as_ref())?;
         let reply = OpenConnectionReply2 {
             server_guid,
             mtu: request.mtu,

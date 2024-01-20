@@ -17,7 +17,7 @@ use proto::uuid::Uuid;
 use replicator::Replicator;
 
 use tokio::task::JoinHandle;
-use util::{Vector, AtomicFlag, Serialize, BinaryRead, BinaryWrite};
+use util::{Vector, AtomicFlag, Serialize, BinaryRead, BinaryWrite, Deserialize};
 use util::MutableBuffer;
 
 use crate::config::SERVER_CONFIG;
@@ -255,11 +255,11 @@ impl BedrockUser {
         self: &Arc<Self>,
         mut packet: MutableBuffer,
     ) -> anyhow::Result<()> {
-        let mut snapshot = packet.snapshot();
+        let mut snapshot = packet.as_ref();
         let start_len = snapshot.len();
         let _length = snapshot.read_var_u32()?;
 
-        let header = Header::deserialize(&mut snapshot)?;
+        let header = Header::deserialize_from(&mut snapshot)?;
 
         // Advance past the header.
         packet.advance_cursor(start_len - snapshot.len());
