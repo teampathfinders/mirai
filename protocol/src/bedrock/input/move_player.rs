@@ -54,7 +54,9 @@ impl TryFrom<i32> for TeleportCause {
 pub struct MovePlayer {
     pub runtime_id: u64,
     pub translation: Vector<f32, 3>,
-    pub rotation: Vector<f32, 3>,
+    pub pitch: f32,
+    pub yaw: f32,
+    pub head_yaw: f32,
     pub mode: MovementMode,
     pub on_ground: bool,
     pub ridden_runtime_id: u64,
@@ -83,7 +85,9 @@ impl Serialize for MovePlayer {
     fn serialize_into<W: BinaryWrite>(&self, writer: &mut W) -> anyhow::Result<()> {
         writer.write_var_u64(self.runtime_id)?;
         writer.write_vecf(&self.translation)?;
-        writer.write_vecf(&self.rotation)?;
+        writer.write_f32_le(self.pitch)?;
+        writer.write_f32_le(self.yaw)?;
+        writer.write_f32_le(self.head_yaw)?;
         writer.write_u8(self.mode as u8)?;
         writer.write_bool(self.on_ground)?;
         writer.write_var_u64(self.ridden_runtime_id)?;
@@ -101,7 +105,9 @@ impl<'a> Deserialize<'a> for MovePlayer {
     fn deserialize_from<R: BinaryRead<'a>>(reader: &mut R) -> anyhow::Result<Self> {
         let runtime_id = reader.read_var_u64()?;
         let position = reader.read_vecf()?;
-        let rotation = reader.read_vecf()?;
+        let pitch = reader.read_f32_le()?;
+        let yaw = reader.read_f32_le()?;
+        let head_yaw = reader.read_f32_le()?;
         let mode = MovementMode::try_from(reader.read_u8()?)?;
         let on_ground = reader.read_bool()?;
         let ridden_runtime_id = reader.read_var_u64()?;
@@ -120,7 +126,7 @@ impl<'a> Deserialize<'a> for MovePlayer {
         Ok(Self {
             runtime_id,
             translation: position,
-            rotation,
+            yaw, pitch, head_yaw,
             mode,
             on_ground,
             ridden_runtime_id,

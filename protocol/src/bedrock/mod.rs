@@ -33,7 +33,6 @@ glob_export!(header);
 glob_export!(interact);
 glob_export!(level_event);
 glob_export!(mob_effect);
-glob_export!(move_player);
 glob_export!(network_chunk_publisher_update);
 glob_export!(packet);
 glob_export!(play_sound);

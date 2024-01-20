@@ -3,7 +3,7 @@
 use std::sync::Arc;
 use std::time::Duration;
 
-use proto::bedrock::{Animate, CommandOutput, CommandOutputMessage, CommandOutputType, CommandRequest, FormResponseData, ParsedCommand, RequestAbility, SettingsCommand, TextData, TextMessage, TickSync, UpdateSkin, PlayerAuthInput};
+use proto::bedrock::{Animate, CommandOutput, CommandOutputMessage, CommandOutputType, CommandRequest, FormResponseData, ParsedCommand, RequestAbility, SettingsCommand, TextData, TextMessage, TickSync, UpdateSkin, PlayerAuthInput, MovePlayer, MovementMode, TeleportCause};
 
 use util::Deserialize;
 
@@ -83,11 +83,21 @@ impl BedrockUser {
 
     pub fn handle_auth_input(&self, packet: Vec<u8>) -> anyhow::Result<()> {
         let input = PlayerAuthInput::deserialize(packet.as_ref())?;
-        tracing::debug!("{input:?}");
 
-        todo!();
-
-        Ok(())
+        let move_player = MovePlayer {
+            runtime_id: 1,
+            mode: MovementMode::Normal,
+            translation: input.position,
+            pitch: input.pitch,
+            yaw: input.yaw,
+            head_yaw: input.head_yaw,
+            on_ground: false,
+            ridden_runtime_id: 0,
+            teleport_cause: TeleportCause::Unknown,
+            teleport_source_type: 0,
+            tick: input.tick  
+        };
+        self.send(move_player)
     }
 
     pub fn handle_skin_update(&self, packet: Vec<u8>) -> anyhow::Result<()> {
