@@ -1,10 +1,11 @@
 use std::{net::SocketAddr, sync::{Arc, atomic::{AtomicU16, AtomicU32, AtomicU64}}, time::Instant, mem::MaybeUninit};
 
 use parking_lot::{Mutex, RwLock};
+use proto::raknet::DisconnectNotification;
 use tokio::{net::UdpSocket, sync::{broadcast, mpsc}};
 use tokio_util::sync::CancellationToken;
 
-use crate::{Compounds, SendQueues, Recovery, BroadcastPacket, OrderChannel};
+use crate::{Compounds, SendQueues, Recovery, BroadcastPacket, OrderChannel, SendConfig, Reliability, SendPriority};
 
 const ORDER_CHANNEL_COUNT: usize = 5;
 const OUTPUT_CHANNEL_SIZE: usize = 5;
@@ -135,18 +136,15 @@ impl RaknetUser {
         if let Some(job_handle) = job_handle {
             job_handle.await?;
         }
-        tracing::debug!("RakNet job exited");
 
         Ok(())
     }
 
     /// Sends a RakNet disconnect packet to the client.
-    pub fn disconnect(&self) -> anyhow::Result<()> {
-        // self.send_raw_buffer_with_config(vec![DisconnectNotification::ID], SendConfig {
-        //     reliability: Reliability::Reliable,
-        //     priority: SendPriority::High
-        // });
-
-        Ok(())
+    pub fn disconnect(&self) {
+        self.send_raw_buffer_with_config(vec![DisconnectNotification::ID], SendConfig {
+            reliability: Reliability::Reliable,
+            priority: SendPriority::High
+        });
     }
 }

@@ -30,9 +30,11 @@ pub struct BedrockUser {
 
     /// Next packet that the server is expecting to receive.
     pub expected: AtomicU32,
+    /// Whether compression has been configured.
     pub compressed: AtomicFlag,
+    /// Whether the client supports the blob cache.
     pub supports_cache: AtomicBool,
-
+    /// Replication layer.
     pub replicator: Arc<Replicator>,
     pub level: Arc<Level>,
     pub raknet: Arc<RaknetUser>,
@@ -88,7 +90,6 @@ impl BedrockUser {
         if let Some(job_handle) = job_handle {
             job_handle.await?;
         }
-        tracing::debug!("Bedrock job exited");
 
         self.raknet.clone().await_shutdown().await
     }
@@ -120,7 +121,7 @@ impl BedrockUser {
             };
         }
 
-        tracing::debug!("User cleaned up");
+        tracing::debug!("Bedrock job exited");
     }
 
     pub fn handle_broadcast(&self, packet: BroadcastPacket) -> anyhow::Result<()> {

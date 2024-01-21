@@ -44,7 +44,7 @@ impl RaknetUser {
             should_run = !self.active.is_cancelled();
         }
 
-        tracing::debug!("RakNet client destroyed");
+        tracing::debug!("RakNet job exited");
     }
 
     /// Performs tasks not related to packet processing

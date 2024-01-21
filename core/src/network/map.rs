@@ -157,9 +157,7 @@ impl UserMap {
         let mut join_set = JoinSet::new();
 
         self.connecting_map.retain(|_, user| {
-            if let Err(err) = user.state.disconnect() {
-                tracing::error!("Failed to trigger in-progress client disconnect | {err:#}");
-            }
+            user.state.disconnect();
 
             let clone = user.state.clone();
             let handle = join_set
@@ -175,10 +173,6 @@ impl UserMap {
         });
 
         self.connected_map.retain(|_, user| {
-            if let Err(err) = user.state.raknet.disconnect() {
-                tracing::error!("Failed to trigger connected client disconnect | {err:#}");
-            }
-
             let clone = user.state.clone();
             let handle = join_set
                 .build_task()
