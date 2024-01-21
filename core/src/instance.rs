@@ -42,24 +42,6 @@ async fn signal_listener(token: CancellationToken) -> anyhow::Result<()> {
         _ = tokio::signal::ctrl_c() => ()
     }
 
-    // #[cfg(windows)]
-    // tokio::select! {
-    //     _ = token.cancelled() => (),
-    //     _ = tokio::signal::ctrl_c() => ()
-    // }
-
-    // #[cfg(unix)]
-    // {
-    //     use tokio::signal::unix::{signal, SignalKind};
-
-    //     let mut sig = signal(SignalKind::terminate())?;
-    //     tokio::select! {
-    //         _ = token.cancelled() => (),
-    //         _ = tokio::signal::ctrl_c() => (),
-    //         _ = sig.recv() => ()
-    //     }
-    // }
-
     Ok(())
 }
 

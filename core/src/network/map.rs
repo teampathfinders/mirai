@@ -125,8 +125,17 @@ impl UserMap {
         Ok(())
     }
 
-    pub fn broadcast<T: ConnectedPacket + Serialize>(&self, _packet: T) -> anyhow::Result<()> {
-        todo!()
+    /// Broadcasts the given packet to every client connected to the server.
+    pub fn broadcast<T: ConnectedPacket + Serialize>(&self, packet: T) -> anyhow::Result<()> {
+        // Broadcasting while there are no receivers will cause an error.
+        if self.broadcast.receiver_count() != 0 {
+            self.broadcast.send(BroadcastPacket {
+                content: Arc::new(packet.serialize()?),
+                sender: None
+            })?;
+        }
+
+        Ok(())
     }
 
     /// Sends a [`Disconnect`] packet to every connected user.
@@ -139,13 +148,14 @@ impl UserMap {
     pub fn kick_all(&self, message: &str) -> anyhow::Result<()> {
         // Ignore result because it can only fail if there are no receivers remaining.
         // In that case this shouldn't do anything anyways.
-        self.broadcast.send(BroadcastPacket::new(
+        self.broadcast(
             Disconnect {
                 hide_message: false,
-                message,
-            },
-            None,
-        )?)?;
+                message
+            }
+        )?;
+
+        tracing::debug!("Broadcasted to all channels");
 
         // Cancel all tokens.
         self.connected_map
