@@ -67,7 +67,6 @@ where
 
         let _ = de.deserialize_raw_str()?;
 
-
         Ok(de)
     }
 

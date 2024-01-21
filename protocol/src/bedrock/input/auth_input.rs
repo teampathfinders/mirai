@@ -91,6 +91,49 @@ impl TryFrom<u32> for PlayMode {
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 #[repr(u32)]
+#[variant_count]
+pub enum InputMode {
+    Mouse = 1,
+    Touch,
+    Gamepad,
+    MotionController
+}
+
+impl TryFrom<u32> for InputMode {
+    type Error = anyhow::Error;
+
+    fn try_from(v: u32) -> anyhow::Result<Self> {
+        if v >= 1 && v <= Self::variant_count() as u32 {
+            Ok(unsafe { std::mem::transmute::<u32, Self>(v) })
+        } else {
+            anyhow::bail!("Input mode out of range")
+        }
+    }
+}
+
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+#[repr(i32)]
+#[variant_count]
+pub enum InteractionModel {
+    Touch,
+    Crosshair,
+    Classic
+}
+
+impl TryFrom<i32> for InteractionModel {
+    type Error = anyhow::Error;
+
+    fn try_from(v: i32) -> anyhow::Result<Self> {
+        if v <= Self::variant_count() as i32 {
+            Ok(unsafe { std::mem::transmute::<i32, Self>(v) })
+        } else {
+            anyhow::bail!("Interaction model out of range")
+        }
+    }
+}
+
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+#[repr(u32)]
 pub enum InventoryActionSource {
     Container = 0,
     World = 2,
@@ -489,6 +532,70 @@ impl<'a> Deserialize<'a> for StackRequest<'a> {
     }
 }
 
+macro_rules! impl_getters {
+    ($($flag: ident),*) => {
+        $(
+            paste::paste! {
+                #[inline]
+                #[doc = concat!("Checks whether the `", stringify!($flag) , "` flag is set")]
+                pub fn [< $flag:snake >](&self) -> bool { self.0 & InputDataFlag::$flag as u64 != 0 }
+            }
+        )*
+    }
+}
+
+#[derive(Debug)]
+pub struct InputData(pub u64);
+
+impl InputData {
+    impl_getters!(
+        Ascend,
+        Descend,
+        NorthJump,
+        JumpDown,
+        SprintDown,
+        ChangeHeight,
+        Jumping,
+        AutoJumpingInWater,
+        Sneaking,
+        SneakDown,
+        Up ,
+        Down ,
+        Left ,
+        Right ,
+        UpLeft ,
+        UpRight ,
+        WantUp ,
+        WantDown ,
+        WantUpSlow ,
+        Sprinting ,
+        AscendBlock ,
+        DescendBlock ,
+        SneakToggleDown ,
+        PersistSneak ,
+        StartSprinting ,
+        StopSprinting ,
+        StartSneaking ,
+        StopSneaking ,
+        StartSwimming ,
+        StopSwimming ,
+        StartJumping ,
+        StartGliding ,
+        StopGliding ,
+        PerformItemTransaction ,
+        PerformBlockActions ,
+        PerformItemStackRequest ,
+        HandledTeleport ,
+        Emoting ,
+        MissedSwing ,
+        StartCrawling ,
+        StopCrawling ,
+        StartFlying ,
+        AcknowledgeServerData,
+        StopFlying
+    );
+}
+
 #[derive(Debug)]
 pub struct PlayerAuthInput<'a> {
     pub pitch: f32,
@@ -499,10 +606,10 @@ pub struct PlayerAuthInput<'a> {
     pub moved: Vector<f32, 2>,
     pub analogue_moved: Vector<f32, 2>,
 
-    pub input_data: u64,
-    pub input_mode: u32,
+    pub input_data: InputData,
+    pub input_mode: InputMode,
     pub play_mode: PlayMode,
-    pub interaction_model: i32,
+    pub interaction_model: InteractionModel,
     pub gaze_direction: Vector<f32, 3>,
 
     pub tick: u64,
@@ -524,10 +631,10 @@ impl<'a> Deserialize<'a> for PlayerAuthInput<'a> {
         let position = reader.read_vecf()?;
         let moved = reader.read_vecf()?;
         let head_yaw = reader.read_f32_le()?;
-        let input_data = reader.read_var_u64()?;
-        let input_mode = reader.read_var_u32()?;
+        let input_data = InputData(reader.read_var_u64()?);
+        let input_mode = InputMode::try_from(reader.read_var_u32()?)?;
         let play_mode = PlayMode::try_from(reader.read_var_u32()?)?;
-        let interaction_model = reader.read_var_i32()?;
+        let interaction_model = InteractionModel::try_from(reader.read_var_i32()?)?;
 
         let gaze_direction = if play_mode == PlayMode::VirtualReality {
             reader.read_vecf()?
@@ -538,19 +645,19 @@ impl<'a> Deserialize<'a> for PlayerAuthInput<'a> {
         let tick = reader.read_var_u64()?;
         let delta = reader.read_vecf()?;
 
-        let item_transaction = if input_data & InputDataFlag::PerformItemTransaction as u64 != 0 {
+        let item_transaction = if input_data.perform_item_transaction() {
             Some(TransactionData::deserialize_from(reader)?)
         } else {
             None
         };
 
-        let item_stack = if input_data & InputDataFlag::PerformItemStackRequest as u64 != 0 {
+        let item_stack = if input_data.perform_item_stack_request() {
             Some(todo!())
         } else {
             None
         };
 
-        let block_actions = if input_data & InputDataFlag::PerformBlockActions as u64 != 0 {
+        let block_actions = if input_data.perform_block_actions() {
             Some(todo!())
         } else {
             None

@@ -11,7 +11,7 @@ use tokio::net::UdpSocket;
 use tokio::sync::oneshot::Receiver;
 use tokio_util::sync::CancellationToken;
 
-use util::{Deserialize, Serialize, ReserveTo};
+use util::{Deserialize, ReserveTo, Serialize};
 
 use crate::config::SERVER_CONFIG;
 use crate::level::Level;

@@ -3,9 +3,9 @@
 use std::sync::Arc;
 use std::time::Duration;
 
-use proto::bedrock::{Animate, CommandOutput, CommandOutputMessage, CommandOutputType, CommandRequest, FormResponseData, ParsedCommand, RequestAbility, SettingsCommand, TextData, TextMessage, TickSync, UpdateSkin, PlayerAuthInput, MovePlayer, MovementMode, TeleportCause};
+use proto::bedrock::{Animate, CommandOutput, CommandOutputMessage, CommandOutputType, CommandRequest, FormResponseData, ParsedCommand, RequestAbility, SettingsCommand, TextData, TextMessage, TickSync, UpdateSkin, PlayerAuthInput, MovePlayer, MovementMode, TeleportCause, ClientBoundDebugRenderer, DebugRendererAction};
 
-use util::Deserialize;
+use util::{Deserialize, Vector};
 
 use crate::forms::{CustomForm, FormLabel, FormInput, FormResponse};
 
@@ -45,6 +45,15 @@ impl BedrockUser {
                 );
             }
             
+            let dbg = ClientBoundDebugRenderer {
+                action: DebugRendererAction::AddCube,
+                color: Vector::from([1.0; 4]),
+                duration: 5000,
+                position: Vector::from([1.0, 58.0, 1.0]),
+                text: "Hello, World!"
+            };
+            self.send(dbg)?;
+
             let clone = Arc::clone(self);
             let message = message.to_owned();
             tokio::spawn(async move {
@@ -63,6 +72,15 @@ impl BedrockUser {
                     FormResponse::Response(response) => {
                         let input = response["input"].as_str().unwrap();
                         tracing::info!("Player responded with: {input}");
+
+                        clone.send(TextMessage {
+                            data: TextData::Tip {
+                                message: &format!("You said {input}!")
+                            },
+                            needs_translation: false,
+                            xuid: 0,
+                            platform_chat_id: ""
+                        }).unwrap();
                     }
                 }
             });
@@ -83,21 +101,25 @@ impl BedrockUser {
 
     pub fn handle_auth_input(&self, packet: Vec<u8>) -> anyhow::Result<()> {
         let input = PlayerAuthInput::deserialize(packet.as_ref())?;
+        if input.input_data.0 != 0 {
+            tracing::debug!("{:?}", input.input_data);
+        }
 
-        let move_player = MovePlayer {
-            runtime_id: 1,
-            mode: MovementMode::Normal,
-            translation: input.position,
-            pitch: input.pitch,
-            yaw: input.yaw,
-            head_yaw: input.head_yaw,
-            on_ground: false,
-            ridden_runtime_id: 0,
-            teleport_cause: TeleportCause::Unknown,
-            teleport_source_type: 0,
-            tick: input.tick  
-        };
-        self.send(move_player)
+        Ok(())
+        // let move_player = MovePlayer {
+        //     runtime_id: 1,
+        //     mode: MovementMode::Normal,
+        //     translation: input.position,
+        //     pitch: input.pitch,
+        //     yaw: input.yaw,
+        //     head_yaw: input.head_yaw,
+        //     on_ground: false,
+        //     ridden_runtime_id: 0,
+        //     teleport_cause: TeleportCause::Unknown,
+        //     teleport_source_type: 0,
+        //     tick: input.tick  
+        // };
+        // self.send(move_player)
     }
 
     pub fn handle_skin_update(&self, packet: Vec<u8>) -> anyhow::Result<()> {
