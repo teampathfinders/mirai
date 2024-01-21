@@ -1,7 +1,6 @@
 use std::collections::HashMap;
 
 use serde::{Deserialize, Serialize};
-use util::BinaryWrite;
 
 use crate::ser::to_be_bytes;
 use crate::{from_be_bytes, from_le_bytes, from_var_bytes, to_le_bytes, to_var_bytes, Value};
@@ -108,7 +107,7 @@ fn read_write_bigtest() {
         #[serde(rename = "longTest")]
         long_test: i64,
         #[serde(rename = "listTest (compound)")]
-        compound_list_test: (ListCompound, ListCompound),
+        compound_list_test: [ListCompound; 2],
         #[serde(rename = "byteArrayTest (the first 1000 values of (n*n*255+n*7)%100, starting with n=0 (0, 62, 34, 16, 8, ...))")]
         byte_array_test: Vec<i8>,
         #[serde(rename = "shortTest")]

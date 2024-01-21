@@ -67,6 +67,7 @@ where
 
         let _ = de.deserialize_raw_str()?;
 
+
         Ok(de)
     }
 
@@ -80,7 +81,8 @@ where
 
         let data = self.input.take_n(len as usize)?;
         let str = std::str::from_utf8(data)?;
-        dbg!(str);
+
+        // dbg!(str);
 
         Ok(str)
     }
@@ -398,18 +400,16 @@ where
     where
         V: Visitor<'de>,
     {
-        // is_ty!(ByteArray, self.next_ty);
+        is_ty!(ByteArray, self.next_ty);
 
-        // let len = match F::AS_ENUM {
-        //     Variant::BigEndian => self.input.read_i32_be()? as u32,
-        //     Variant::LittleEndian => self.input.read_i32_le()? as u32,
-        //     Variant::Variable => self.input.read_var_u32()?,
-        // };
+        let len = match F::AS_ENUM {
+            Variant::BigEndian => self.input.read_i32_be()? as u32,
+            Variant::LittleEndian => self.input.read_i32_le()? as u32,
+            Variant::Variable => self.input.read_var_u32()?,
+        };
 
-        // let buf = self.input.take_n(len as usize)?;
-        // visitor.visit_bytes(buf)
-
-        bail!(Unsupported, "Deserializing borrowed byte arrays is not supported")
+        let buf = self.input.take_n(len as usize)?;
+        visitor.visit_bytes(buf)
     }
 
     fn deserialize_byte_buf<V>(self, visitor: V) -> Result<V::Value, NbtError>
