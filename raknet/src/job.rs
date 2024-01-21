@@ -19,7 +19,7 @@ const SESSION_TIMEOUT: Duration = Duration::from_secs(5);
 
 impl RaknetUser {
     /// Starts the ticker task which takes care of packet submission and general user management.
-    pub async fn async_worker(
+    pub async fn async_job(
         self: Arc<Self>, mut receiver: mpsc::Receiver<Vec<u8>>
     ) {
         let mut interval = tokio::time::interval(INTERNAL_TICK_INTERVAL);
@@ -55,6 +55,7 @@ impl RaknetUser {
         if Instant::now().duration_since(*self.last_update.read())
             > SESSION_TIMEOUT
         {
+            tracing::warn!("Client unresponsive, disconnecting them...");
             self.active.cancel();
         }
 

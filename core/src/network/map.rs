@@ -129,63 +129,89 @@ impl UserMap {
     pub fn broadcast<T: ConnectedPacket + Serialize>(&self, packet: T) -> anyhow::Result<()> {
         // Broadcasting while there are no receivers will cause an error.
         if self.broadcast.receiver_count() != 0 {
-            self.broadcast.send(BroadcastPacket {
-                content: Arc::new(packet.serialize()?),
-                sender: None
-            })?;
+            self.broadcast.send(BroadcastPacket::new(packet, None)?)?;
         }
 
         Ok(())
     }
 
-    /// Sends a [`Disconnect`] packet to every connected user.
+    /// Sends a [`Disconnect`] packet to every connected user and waits for all users
+    /// to acknowledge they have been disconnected.
     /// 
-    /// This does not wait for the users to actually be disconnected.
+    /// In case a user does not respond, there is a 2 second timeout.
     ///
     /// # Errors
     /// 
     /// This function returns an error when the [`Disconnect`] packet fails to serialize.
-    pub fn kick_all(&self, message: &str) -> anyhow::Result<()> {
+    pub async fn shutdown(&self) -> anyhow::Result<()> {
         // Ignore result because it can only fail if there are no receivers remaining.
         // In that case this shouldn't do anything anyways.
         self.broadcast(
             Disconnect {
                 hide_message: false,
-                message
+                message: "it works"
             }
         )?;
 
-        tracing::debug!("Broadcasted to all channels");
-
-        // Cancel all tokens.
-        self.connected_map
-            .iter()
-            .for_each(|user| user.value().state.raknet.active.cancel());
-
-        Ok(())
-    }
-
-    pub async fn shutdown(&self) -> anyhow::Result<()> {
-        self.kick_all("disconnect.kicked")?;
-
         let mut join_set = JoinSet::new();
-        self.connected_map.retain(|_k, v| {
-            let handle = v.state.handle.write().take().unwrap();
-            join_set.spawn(handle);
+
+        self.connecting_map.retain(|_, user| {
+            if let Err(err) = user.state.disconnect() {
+                tracing::error!("Failed to trigger in-progress client disconnect | {err:#}");
+            }
+
+            let clone = user.state.clone();
+            let handle = join_set
+                .build_task()
+                .name("In-progress client shutdown listener")
+                .spawn(clone.await_shutdown());
+
+            if let Err(err) = handle {
+                tracing::error!("Failed to spawn in-progress client shutdown listener | {err:#}");
+            }
+
+            false
+        });
+
+        self.connected_map.retain(|_, user| {
+            if let Err(err) = user.state.raknet.disconnect() {
+                tracing::error!("Failed to trigger connected client disconnect | {err:#}");
+            }
+
+            let clone = user.state.clone();
+            let handle = join_set
+                .build_task()
+                .name("Connected client shutdown listener")
+                .spawn(clone.await_shutdown());
+
+            // user.state.send(Disconnect {
+            //     hide_message: false,
+            //     message: "it works"
+            // }).unwrap();
+
+            if let Err(err) = handle {
+                tracing::error!("Failed to spawn connected client shutdown listener | {err:#}");
+            }
 
             false
         });
 
         while join_set.join_next().await.is_some() {}
-        
-        tracing::info!("All clients disconnected");
+
         Ok(())
     }
 
-    pub fn count(&self) -> usize {
+    /// How many clients are currently in the process of logging in.
+    pub fn connecting_count(&self) -> usize {
+        self.connecting_map.len()
+    }
+
+    /// How many users are fully connected to the server.
+    pub fn connected_count(&self) -> usize {
         self.connected_map.len()
     }
 
+    /// Maximum amount of concurrently connected users.
     pub fn max_count(&self) -> usize {
         SERVER_CONFIG.read().max_players
     }

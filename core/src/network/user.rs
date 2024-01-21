@@ -40,7 +40,7 @@ pub struct BedrockUser {
     pub form_subscriber: FormSubscriber,
 
     pub broadcast: broadcast::Sender<BroadcastPacket>,
-    pub handle: RwLock<Option<JoinHandle<()>>>
+    pub job_handle: RwLock<Option<JoinHandle<()>>>
 }
 
 impl BedrockUser {
@@ -66,19 +66,34 @@ impl BedrockUser {
             form_subscriber: FormSubscriber::new(),
             
             broadcast,
-            handle: RwLock::new(None)
+            job_handle: RwLock::new(None)
         });
 
         let clone = user.clone();
         let handle = tokio::spawn(async move {
-            clone.start_job(receiver).await;
+            clone.recv_job(receiver).await;
         });
 
-        *user.handle.write() = Some(handle);
+        *user.job_handle.write() = Some(handle);
         user
     }
 
-    async fn start_job(self: &Arc<Self>, mut receiver: mpsc::Receiver<Vec<u8>>) {
+    /// Waits for the client to fully disconnect and the server to finish processing.
+    pub async fn await_shutdown(self: Arc<Self>) -> anyhow::Result<()> {
+        let job_handle = {
+            let mut lock = self.job_handle.write();
+            lock.take()
+        };
+
+        if let Some(job_handle) = job_handle {
+            job_handle.await?;
+        }
+        tracing::debug!("Bedrock job exited");
+
+        self.raknet.clone().await_shutdown().await
+    }
+
+    async fn recv_job(self: &Arc<Self>, mut receiver: mpsc::Receiver<Vec<u8>>) {
         let mut broadcast = self.broadcast.subscribe();
 
         let mut should_run = true;

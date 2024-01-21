@@ -1,11 +1,10 @@
 use std::{net::SocketAddr, sync::{Arc, atomic::{AtomicU16, AtomicU32, AtomicU64}}, time::Instant, mem::MaybeUninit};
 
 use parking_lot::{Mutex, RwLock};
-use proto::raknet::DisconnectNotification;
 use tokio::{net::UdpSocket, sync::{broadcast, mpsc}};
 use tokio_util::sync::CancellationToken;
 
-use crate::{Compounds, SendQueues, Recovery, BroadcastPacket, OrderChannel, SendConfig, Reliability, SendPriority};
+use crate::{Compounds, SendQueues, Recovery, BroadcastPacket, OrderChannel};
 
 const ORDER_CHANNEL_COUNT: usize = 5;
 const OUTPUT_CHANNEL_SIZE: usize = 5;
@@ -67,7 +66,9 @@ pub struct RaknetUser {
     /// Channel used to submit packets that have been fully processed by the RakNet layer.
     /// These packets go on to be processed further by protocols running on top of RakNet
     /// such as the Minecraft Bedrock protocol.
-    pub output: mpsc::Sender<Vec<u8>>
+    pub output: mpsc::Sender<Vec<u8>>,
+    /// Handle to the processing job of this RakNet client.
+    pub job_handle: RwLock<Option<tokio::task::JoinHandle<()>>>
 }
 
 impl RaknetUser {
@@ -112,21 +113,39 @@ impl RaknetUser {
             sequence_index: AtomicU32::new(0),
             order: order_channels,
             output: output_tx,
+            job_handle: RwLock::new(None)
         });
 
-        tokio::spawn(state.clone().async_worker(forward_rx));
+        let handle = tokio::spawn(state.clone().async_job(forward_rx));
+        *state.job_handle.write() = Some(handle);
     
         (state, output_rx)
     }
 
-    /// Immediately disconnects the client from the server.
-    pub async fn disconnect(&self) -> anyhow::Result<()> {
-        self.send_raw_buffer_with_config(vec![DisconnectNotification::ID], SendConfig {
-            reliability: Reliability::Reliable,
-            priority: SendPriority::High
-        });
+    /// Waits for the job to finish processing.
+    pub async fn await_shutdown(self: Arc<Self>) -> anyhow::Result<()> {
         self.flush_all().await?;
         self.active.cancel();
+
+        let job_handle = {
+            let mut lock = self.job_handle.write();
+            lock.take()
+        };
+
+        if let Some(job_handle) = job_handle {
+            job_handle.await?;
+        }
+        tracing::debug!("RakNet job exited");
+
+        Ok(())
+    }
+
+    /// Sends a RakNet disconnect packet to the client.
+    pub fn disconnect(&self) -> anyhow::Result<()> {
+        // self.send_raw_buffer_with_config(vec![DisconnectNotification::ID], SendConfig {
+        //     reliability: Reliability::Reliable,
+        //     priority: SendPriority::High
+        // });
 
         Ok(())
     }
