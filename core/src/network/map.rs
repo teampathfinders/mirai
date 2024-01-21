@@ -9,7 +9,7 @@ use dashmap::DashMap;
 use raknet::{RaknetUser, BroadcastPacket, UserCreateInfo};
 
 use tokio::sync::{broadcast, mpsc};
-use proto::bedrock::{ConnectedPacket, Disconnect};
+use proto::bedrock::{ConnectedPacket, Disconnect, DisconnectReason};
 use replicator::Replicator;
 
 
@@ -148,8 +148,9 @@ impl UserMap {
         // In that case this shouldn't do anything anyways.
         self.broadcast(
             Disconnect {
+                reason: DisconnectReason::Shutdown,
                 hide_message: false,
-                message: "it works"
+                message: "disconnect.disconnected"
             }
         )?;
 

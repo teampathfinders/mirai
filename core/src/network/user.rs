@@ -11,7 +11,7 @@ use flate2::write::DeflateEncoder;
 use parking_lot::RwLock;
 use raknet::{SendConfig, DEFAULT_SEND_CONFIG, RaknetUser, BroadcastPacket};
 use tokio::sync::{mpsc, broadcast};
-use proto::bedrock::{CommandPermissionLevel, Disconnect, GameMode, PermissionLevel, Skin, ConnectedPacket, CONNECTED_PACKET_ID, CompressionAlgorithm, Packet, Header, RequestNetworkSettings, Login, ClientToServerHandshake, CacheStatus, ResourcePackClientResponse, ViolationWarning, ChunkRadiusRequest, Interact, TextMessage, SetLocalPlayerAsInitialized, MovePlayer, PlayerAction, RequestAbility, Animate, CommandRequest, SettingsCommand, ContainerClose, FormResponseData, TickSync, UpdateSkin, PlayerAuthInput};
+use proto::bedrock::{CommandPermissionLevel, Disconnect, GameMode, PermissionLevel, Skin, ConnectedPacket, CONNECTED_PACKET_ID, CompressionAlgorithm, Packet, Header, RequestNetworkSettings, Login, ClientToServerHandshake, CacheStatus, ResourcePackClientResponse, ViolationWarning, ChunkRadiusRequest, Interact, TextMessage, SetLocalPlayerAsInitialized, MovePlayer, PlayerAction, RequestAbility, Animate, CommandRequest, SettingsCommand, ContainerClose, FormResponseData, TickSync, UpdateSkin, PlayerAuthInput, DisconnectReason};
 use proto::crypto::{Encryptor, BedrockIdentity, BedrockClientInfo};
 use proto::uuid::Uuid;
 use replicator::Replicator;
@@ -132,9 +132,17 @@ impl BedrockUser {
         Ok(())
     }
 
+    /// Kicks a player from the server and display the specified message to them.
+    #[inline]
     pub fn kick(&self, message: &str) -> anyhow::Result<()> {
+        self.kick_with_reason(message, DisconnectReason::Kicked)
+    }
+
+    /// Kicks a player from the server and displays the specified message to them.
+    /// This also adds a reason to the kick, which is used for telemetry purposes.
+    pub fn kick_with_reason(&self, message: &str, reason: DisconnectReason) -> anyhow::Result<()> {
         let disconnect_packet = Disconnect {
-            message, hide_message: false
+            reason, message, hide_message: false
         };
         self.send(disconnect_packet)?;
         self.raknet.active.cancel();
