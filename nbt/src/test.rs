@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 
 use serde::{Deserialize, Serialize};
+use util::BinaryWrite;
 
 use crate::ser::to_be_bytes;
 use crate::{from_be_bytes, from_le_bytes, from_var_bytes, to_le_bytes, to_var_bytes, Value};
@@ -48,13 +49,13 @@ fn read_write_all() {
         (
             "list".to_owned(),
             Value::List(vec![
-                Value::Compound(HashMap::from([("name".to_owned(), Value::String("Compound #1".to_owned()))])),
-                Value::Compound(HashMap::from([("name".to_owned(), Value::String("Compound #2".to_owned()))])),
+                Value::Compound(HashMap::from([("name".to_owned(), Value::String("Compound 1".to_owned()))])),
+                Value::Compound(HashMap::from([("name".to_owned(), Value::String("Compound 2".to_owned()))])),
             ]),
         ),
         (
             "compound".to_owned(),
-            Value::Compound(HashMap::from([("name".to_owned(), Value::String("Compound #3".to_owned()))])),
+            Value::Compound(HashMap::from([("name".to_owned(), Value::String("Compound 3".to_owned()))])),
         ),
     ]));
 

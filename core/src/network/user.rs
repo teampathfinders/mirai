@@ -17,7 +17,7 @@ use proto::uuid::Uuid;
 use replicator::Replicator;
 
 use tokio::task::JoinHandle;
-use util::{Vector, AtomicFlag, Serialize, Deserialize, BinaryWrite, BinaryRead, NonCopy};
+use util::{Vector, AtomicFlag, Serialize, Deserialize, BinaryWrite, BinaryRead};
 
 use crate::config::SERVER_CONFIG;
 use crate::forms::FormSubscriber;

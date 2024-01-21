@@ -52,7 +52,6 @@ where
     F: VariantImpl + 'de,
 {
     /// Creates a new deserialiser.
-    #[inline]
     pub fn new(mut input: R) -> anyhow::Result<Self> {
         let next_ty = FieldType::try_from(input.read_u8()?)?;
         if next_ty != FieldType::Compound && next_ty != FieldType::List {
@@ -67,11 +66,11 @@ where
         };
 
         let _ = de.deserialize_raw_str()?;
+
         Ok(de)
     }
 
     /// Deserialise a raw UTF-8 string.
-    #[inline]
     fn deserialize_raw_str(&mut self) -> anyhow::Result<&str> {
         let len = match F::AS_ENUM {
             Variant::BigEndian => self.input.read_u16_be()? as u32,
@@ -81,8 +80,7 @@ where
 
         let data = self.input.take_n(len as usize)?;
         let str = std::str::from_utf8(data)?;
-
-        // dbg!(str);
+        dbg!(str);
 
         Ok(str)
     }
@@ -117,7 +115,6 @@ where
 ///
 /// ```rust
 /// # use inferno_nbt as nbt;
-/// # ;
 /// # fn main() {
 ///  #[derive(serde::Serialize, serde::Deserialize, Debug)]
 ///  struct Data {
@@ -127,9 +124,8 @@ where
 /// # let data = Data {
 /// #   value: String::from("Hello, World!")
 /// # };
-/// # let buffer = nbt::to_le_bytes(&data).unwrap();
-/// # let owned_buffer = buffer.into_inner();
-/// # let buffer = owned_buffer.as_slice();
+/// # let obuffer = nbt::to_le_bytes(&data).unwrap();
+/// # let buffer: &[u8] = obuffer.as_ref();
 ///
 ///  let result = nbt::from_le_bytes(buffer).unwrap();
 ///  let data: Data = result.0;
@@ -157,7 +153,6 @@ where
 ///
 /// ```rust
 /// # use inferno_nbt as nbt;
-/// # ;
 /// # fn main() {
 ///  #[derive(serde::Serialize, serde::Deserialize, Debug)]
 ///  struct Data {
@@ -167,8 +162,7 @@ where
 /// # let data = Data {
 /// #   value: String::from("Hello, World!")
 /// # };
-/// # let buffer = nbt::to_be_bytes(&data).unwrap();
-/// # let owned_buffer = buffer.into_inner();
+/// # let owned_buffer = nbt::to_be_bytes(&data).unwrap();
 /// # let buffer = owned_buffer.as_slice();
 ///
 ///  let result = nbt::from_be_bytes(buffer).unwrap();
@@ -197,7 +191,6 @@ where
 ///
 /// ```rust
 /// # use inferno_nbt as nbt;
-/// # ;
 /// # fn main() {
 ///  #[derive(serde::Serialize, serde::Deserialize, Debug)]
 ///  struct Data {
@@ -207,8 +200,7 @@ where
 /// # let data = Data {
 /// #   value: String::from("Hello, World!")
 /// # };
-/// # let buffer = nbt::to_var_bytes(&data).unwrap();
-/// # let owned_buffer = buffer.into_inner();
+/// # let owned_buffer = nbt::to_var_bytes(&data).unwrap();
 /// # let buffer = owned_buffer.as_slice();
 ///
 ///  let result = nbt::from_var_bytes(buffer).unwrap();
@@ -402,10 +394,21 @@ where
         visitor.visit_string(string)
     }
 
-    fn deserialize_bytes<V>(self, _visitor: V) -> Result<V::Value, NbtError>
+    fn deserialize_bytes<V>(self, visitor: V) -> Result<V::Value, NbtError>
     where
         V: Visitor<'de>,
     {
+        // is_ty!(ByteArray, self.next_ty);
+
+        // let len = match F::AS_ENUM {
+        //     Variant::BigEndian => self.input.read_i32_be()? as u32,
+        //     Variant::LittleEndian => self.input.read_i32_le()? as u32,
+        //     Variant::Variable => self.input.read_var_u32()?,
+        // };
+
+        // let buf = self.input.take_n(len as usize)?;
+        // visitor.visit_bytes(buf)
+
         bail!(Unsupported, "Deserializing borrowed byte arrays is not supported")
     }
 
@@ -413,8 +416,6 @@ where
     where
         V: Visitor<'de>,
     {
-        todo!("deserialize_bytes");
-
         is_ty!(ByteArray, self.next_ty);
 
         let len = match F::AS_ENUM {
