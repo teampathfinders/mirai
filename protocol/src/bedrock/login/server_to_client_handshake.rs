@@ -1,4 +1,4 @@
-use util::{BinaryWrite, MutableBuffer, VarString};
+use util::{BinaryWrite, VarString};
 use util::Result;
 use util::Serialize;
 
@@ -22,7 +22,7 @@ impl<'a> ConnectedPacket for ServerToClientHandshake<'a> {
 }
 
 impl<'a> Serialize for ServerToClientHandshake<'a> {
-    fn serialize(&self, buffer: &mut MutableBuffer) -> anyhow::Result<()> {
-        buffer.write_str(self.jwt)
+    fn serialize_into<W: BinaryWrite>(&self, writer: &mut W) -> anyhow::Result<()> {
+        writer.write_str(self.jwt)
     }
 }

@@ -1,5 +1,5 @@
 use util::{Result, Serialize};
-use util::{BinaryWrite, MutableBuffer, size_of_varint};
+use util::{BinaryWrite, size_of_varint};
 
 use crate::bedrock::ConnectedPacket;
 
@@ -47,20 +47,20 @@ impl ConnectedPacket for SetScoreboardIdentity {
 }
 
 impl Serialize for SetScoreboardIdentity {
-    fn serialize(&self, buffer: &mut MutableBuffer) -> anyhow::Result<()> {
-        buffer.write_u8(self.action as u8)?;
+    fn serialize_into<W: BinaryWrite>(&self, writer: &mut W) -> anyhow::Result<()> {
+        writer.write_u8(self.action as u8)?;
         match self.action {
             ScoreboardIdentityAction::Add => {
-                buffer.write_var_u32(self.entries.len() as u32)?;
+                writer.write_var_u32(self.entries.len() as u32)?;
                 for entry in &self.entries {
-                    buffer.write_var_i64(entry.entry_id)?;
-                    buffer.write_var_i64(entry.entity_unique_id)?;
+                    writer.write_var_i64(entry.entry_id)?;
+                    writer.write_var_i64(entry.entity_unique_id)?;
                 }
             }
             ScoreboardIdentityAction::Clear => {
-                buffer.write_var_u32(self.entries.len() as u32)?;
+                writer.write_var_u32(self.entries.len() as u32)?;
                 for entry in &self.entries {
-                    buffer.write_var_i64(entry.entry_id)?;
+                    writer.write_var_i64(entry.entry_id)?;
                 }
             }
         }

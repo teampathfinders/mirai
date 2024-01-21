@@ -1,6 +1,6 @@
 
 use proto::bedrock::{GameRule, ParsedCommand};
-use util::{TryExpect};
+use util::TryExpect;
 use crate::level::Level;
 
 pub const DEFAULT_EFFECT_DURATION: i32 = 30;

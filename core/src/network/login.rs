@@ -5,7 +5,6 @@ use proto::bedrock::{AvailableCommands, BiomeDefinitionList, BroadcastIntent, Ca
 use proto::crypto::Encryptor;
 use proto::types::Dimension;
 
-use util::MutableBuffer;
 use util::{BlockPosition, Deserialize, Vector};
 
 use crate::config::SERVER_CONFIG;
@@ -16,7 +15,7 @@ use super::BedrockUser;
 impl BedrockUser {
     /// Handles a [`CacheStatus`] packet.
     /// This stores the result in the [`Session::cache_support`] field.
-    pub fn handle_cache_status(&self, packet: MutableBuffer) -> anyhow::Result<()> {
+    pub fn handle_cache_status(&self, packet: Vec<u8>) -> anyhow::Result<()> {
         self.expected.store(ResourcePackClientResponse::ID, Ordering::SeqCst);
 
         let request = CacheStatus::deserialize(packet.as_ref())?;
@@ -25,7 +24,7 @@ impl BedrockUser {
         Ok(())
     }
 
-    pub fn handle_violation_warning(&self, packet: MutableBuffer) -> anyhow::Result<()> {
+    pub fn handle_violation_warning(&self, packet: Vec<u8>) -> anyhow::Result<()> {
         let request = ViolationWarning::deserialize(packet.as_ref())?;
         tracing::error!("Received violation warning: {request:?}");
 
@@ -38,7 +37,7 @@ impl BedrockUser {
     ///
     /// All connected sessions are notified of the new player
     /// and the new player gets a list of all current players.
-    pub fn handle_local_initialized(&self, packet: MutableBuffer) -> anyhow::Result<()> {
+    pub fn handle_local_initialized(&self, packet: Vec<u8>) -> anyhow::Result<()> {
         let _request = SetLocalPlayerAsInitialized::deserialize(packet.as_ref())?;
         self.expected.store(u32::MAX, Ordering::SeqCst);
 
@@ -90,7 +89,7 @@ impl BedrockUser {
     }
 
     /// Handles a [`ChunkRadiusRequest`] packet by returning the maximum allowed render distance.
-    pub fn handle_chunk_radius_request(&self, packet: MutableBuffer) -> anyhow::Result<()> {
+    pub fn handle_chunk_radius_request(&self, packet: Vec<u8>) -> anyhow::Result<()> {
         let request = ChunkRadiusRequest::deserialize(packet.as_ref())?;
         let allowed_radius = std::cmp::min(
             SERVER_CONFIG.read().allowed_render_distance, request.radius
@@ -109,7 +108,7 @@ impl BedrockUser {
         Ok(())
     }
 
-    pub fn handle_resource_client_response(&self, packet: MutableBuffer) -> anyhow::Result<()> {
+    pub fn handle_resource_client_response(&self, packet: Vec<u8>) -> anyhow::Result<()> {
         self.expected.store(u32::MAX, Ordering::SeqCst);
 
         let _request = ResourcePackClientResponse::deserialize(packet.as_ref())?;
@@ -227,7 +226,7 @@ impl BedrockUser {
         Ok(())
     }
 
-    pub fn handle_client_to_server_handshake(&self, packet: MutableBuffer) -> anyhow::Result<()> {
+    pub fn handle_client_to_server_handshake(&self, packet: Vec<u8>) -> anyhow::Result<()> {
         self.expected.store(CacheStatus::ID, Ordering::SeqCst);
 
         ClientToServerHandshake::deserialize(packet.as_ref())?;
@@ -259,7 +258,7 @@ impl BedrockUser {
     }
 
     /// Handles a [`Login`] packet.
-    pub async fn handle_login(&self, packet: MutableBuffer) -> anyhow::Result<()> {
+    pub async fn handle_login(&self, packet: Vec<u8>) -> anyhow::Result<()> {
         self.expected.store(ClientToServerHandshake::ID, Ordering::SeqCst);
 
         let request = Login::deserialize(packet.as_ref());
@@ -301,7 +300,7 @@ impl BedrockUser {
     }
 
     /// Handles a [`RequestNetworkSettings`] packet.
-    pub fn handle_network_settings_request(&self, packet: MutableBuffer) -> anyhow::Result<()> {
+    pub fn handle_network_settings_request(&self, packet: Vec<u8>) -> anyhow::Result<()> {
         self.expected.store(Login::ID, Ordering::SeqCst);
 
         let request = RequestNetworkSettings::deserialize(packet.as_ref())?;

@@ -5,7 +5,7 @@ use std::time::{Instant, Duration};
 use async_recursion::async_recursion;
 use proto::bedrock::CONNECTED_PACKET_ID;
 use proto::raknet::{Ack, ConnectedPing, ConnectionRequest, DisconnectNotification, Nak, NewIncomingConnection};
-use util::{MutableBuffer, Deserialize};
+use util::Deserialize;
 
 use tokio::sync::mpsc::error::SendTimeoutError;
 
@@ -18,7 +18,7 @@ impl RaknetUser {
     ///
     /// If a packet is an ACK or NACK type, it will be responded to accordingly (using [`Session::process_ack`] and [`Session::process_nak`]).
     /// Frame batches are processed by [`Session::process_frame_batch`].
-    pub async fn handle_raw_packet(&self, packet: MutableBuffer) -> anyhow::Result<bool> {
+    pub async fn handle_raw_packet(&self, packet: Vec<u8>) -> anyhow::Result<bool> {
         *self.last_update.write() = Instant::now();
 
         if packet.is_empty() {
@@ -35,18 +35,6 @@ impl RaknetUser {
         Ok(true)
     }
 
-    // /// Processes a broadcasted packet sent by another client connected to the server.
-    // pub fn handle_broadcast(&self, packet: BroadcastPacket) -> anyhow::Result<()> {
-    //     if let Some(sender) = packet.sender {
-    //         if sender == self.address {
-    //             // Source is self, do not send.
-    //             return Ok(());
-    //         }
-    //     }
-
-    //     self.send_serialized(packet.content, DEFAULT_SEND_CONFIG)
-    // }
-
     /// Processes a batch of frames.
     ///
     /// This performs the actions required by the Raknet reliability layer, such as
@@ -54,7 +42,7 @@ impl RaknetUser {
     /// * Inserting raknet into the compound collector
     /// * Discarding old sequenced frames
     /// * Acknowledging reliable raknet
-    async fn handle_frame_batch(&self, packet: MutableBuffer) -> anyhow::Result<()> {
+    async fn handle_frame_batch(&self, packet: Vec<u8>) -> anyhow::Result<()> {
         let batch = FrameBatch::deserialize(packet.as_ref())?;
         self
             .batch_number
@@ -115,7 +103,7 @@ impl RaknetUser {
     }
 
     /// Processes an unencapsulated game packet.
-    async fn handle_frame_body(&self, packet: MutableBuffer) -> anyhow::Result<()> {
+    async fn handle_frame_body(&self, packet: Vec<u8>) -> anyhow::Result<()> {
         let packet_id = *packet.first().expect("Game packet buffer was empty");
         match packet_id {
             // CONNECTED_PACKET_ID => self.handle_encrypted_frame(packet).await?,

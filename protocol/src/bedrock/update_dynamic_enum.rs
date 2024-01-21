@@ -1,4 +1,4 @@
-use util::{BinaryWrite, MutableBuffer, size_of_varint};
+use util::{BinaryWrite, size_of_varint};
 use util::Result;
 use util::Serialize;
 
@@ -36,12 +36,12 @@ impl ConnectedPacket for UpdateDynamicEnum<'_> {
 }
 
 impl Serialize for UpdateDynamicEnum<'_> {
-    fn serialize(&self, buffer: &mut MutableBuffer) -> anyhow::Result<()> {
-        buffer.write_str(self.enum_id)?;
-        buffer.write_var_u32(self.options.len() as u32)?;
+    fn serialize_into<W: BinaryWrite>(&self, writer: &mut W) -> anyhow::Result<()> {
+        writer.write_str(self.enum_id)?;
+        writer.write_var_u32(self.options.len() as u32)?;
         for option in self.options {
-            buffer.write_str(option)?;
+            writer.write_str(option)?;
         }
-        buffer.write_u8(self.action as u8)
+        writer.write_u8(self.action as u8)
     }
 }

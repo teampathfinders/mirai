@@ -1,4 +1,3 @@
-use util::SharedBuffer;
 use util::iassert;
 use util::{BinaryRead, Deserialize};
 
@@ -23,6 +22,8 @@ impl OpenConnectionRequest1 {
 
 impl<'a> Deserialize<'a> for OpenConnectionRequest1 {
     fn deserialize_from<R: BinaryRead<'a>>(reader: &mut R) -> anyhow::Result<Self> {
+        iassert!(reader.read_u8()? == Self::ID);
+
         let mtu = reader.remaining() as u16 + 28;
         reader.advance(16); // Skip magic
         let protocol_version = reader.read_u8()?;

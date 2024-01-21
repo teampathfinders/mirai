@@ -1,5 +1,5 @@
 use util::{Result, Serialize};
-use util::{BinaryWrite, MutableBuffer, size_of_varint};
+use util::{BinaryWrite, size_of_varint};
 
 use crate::bedrock::ConnectedPacket;
 
@@ -19,7 +19,7 @@ impl<'a> ConnectedPacket for ConnectAutomationClient<'a> {
 }
 
 impl<'a> Serialize for ConnectAutomationClient<'a> {
-    fn serialize(&self, buffer: &mut MutableBuffer) -> anyhow::Result<()> {
-        buffer.write_str(self.server_uri)
+    fn serialize_into<W: BinaryWrite>(&self, writer: &mut W) -> anyhow::Result<()> {
+        writer.write_str(self.server_uri)
     }
 }

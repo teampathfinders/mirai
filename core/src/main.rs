@@ -76,6 +76,8 @@ fn init_logging() -> anyhow::Result<()> {
         .with_max_level(max_level)
         .with_target(false)
         .with_thread_names(true)
+        .with_file(true)
+        .pretty()
         .init();
 
     Ok(())

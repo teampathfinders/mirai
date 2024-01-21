@@ -1,4 +1,3 @@
-use util::SharedBuffer;
 use util::iassert;
 use util::{BinaryRead, Deserialize};
 

@@ -1,5 +1,5 @@
 use util::{Result, Serialize};
-use util::{BinaryWrite, MutableBuffer};
+use util::{BinaryWrite};
 
 use crate::bedrock::ConnectedPacket;
 
@@ -55,67 +55,67 @@ impl ConnectedPacket for BossEvent<'_> {
 }
 
 impl Serialize for BossEvent<'_> {
-    fn serialize(&self, buffer: &mut MutableBuffer) -> anyhow::Result<()> {
-        buffer.write_var_i64(self.boss_unique_id)?;
+    fn serialize_into<W: BinaryWrite>(&self, writer: &mut W) -> anyhow::Result<()> {
+        writer.write_var_i64(self.boss_unique_id)?;
         match self.event {
             BossEventType::Show {
                 bar_title, color
             } => {
-                buffer.write_var_u32(0)?; // Event type.
+                writer.write_var_u32(0)?; // Event type.
 
-                buffer.write_str(bar_title)?;
-                buffer.write_f32_le(0.0)?; // HealthPercentage is unused.
-                buffer.write_i16_le(0)?; // ScreenDarkening is unused.
-                buffer.write_var_u32(color as u32)?;
-                buffer.write_var_u32(0)?; // Overlay is unused.
+                writer.write_str(bar_title)?;
+                writer.write_f32_le(0.0)?; // HealthPercentage is unused.
+                writer.write_i16_le(0)?; // ScreenDarkening is unused.
+                writer.write_var_u32(color as u32)?;
+                writer.write_var_u32(0)?; // Overlay is unused.
             }
             BossEventType::RegisterPlayer {
                 player_unique_id
             } => {
-                buffer.write_var_u32(1)?; // Event type.
-                buffer.write_var_i64(player_unique_id)?;
+                writer.write_var_u32(1)?; // Event type.
+                writer.write_var_i64(player_unique_id)?;
             }
             BossEventType::Hide => {
-                buffer.write_var_u32(2)?; // Event type.
+                writer.write_var_u32(2)?; // Event type.
             }
             BossEventType::UnregisterPlayer {
                 player_unique_id
             } => {
-                buffer.write_var_u32(3)?; // Event type.
-                buffer.write_var_i64(player_unique_id)?;
+                writer.write_var_u32(3)?; // Event type.
+                writer.write_var_i64(player_unique_id)?;
             }
             BossEventType::HealthPercentage {
                 health_percentage
             } => {
-                buffer.write_var_u32(4)?; // Event type.
-                buffer.write_f32_le(health_percentage)?;
+                writer.write_var_u32(4)?; // Event type.
+                writer.write_f32_le(health_percentage)?;
             }
             BossEventType::Title {
                 bar_title
             } => {
-                buffer.write_var_u32(5)?; // Event type.
-                buffer.write_str(bar_title)?;
+                writer.write_var_u32(5)?; // Event type.
+                writer.write_str(bar_title)?;
             }
             BossEventType::AppearanceProperties {
                 color
             } => {
-                buffer.write_var_u32(6)?; // Event type.
-                buffer.write_i16_le(0)?; // ScreenDarkening is unused.
-                buffer.write_var_u32(color as u32)?;
-                buffer.write_var_u32(0)?; // Overlay is unused.
+                writer.write_var_u32(6)?; // Event type.
+                writer.write_i16_le(0)?; // ScreenDarkening is unused.
+                writer.write_var_u32(color as u32)?;
+                writer.write_var_u32(0)?; // Overlay is unused.
             }
             BossEventType::Texture {
                 color
             } => {
-                buffer.write_var_u32(7)?; // Event type.
-                buffer.write_var_u32(color as u32)?;
-                buffer.write_var_u32(0)?;
+                writer.write_var_u32(7)?; // Event type.
+                writer.write_var_u32(color as u32)?;
+                writer.write_var_u32(0)?;
             }
             BossEventType::Request {
                 player_unique_id
             } => {
-                buffer.write_var_u32(8)?; // Event type.
-                buffer.write_var_i64(player_unique_id)?;
+                writer.write_var_u32(8)?; // Event type.
+                writer.write_var_i64(player_unique_id)?;
             }
         }
 

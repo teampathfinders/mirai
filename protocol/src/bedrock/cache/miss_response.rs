@@ -1,5 +1,5 @@
 use util::{Result, Serialize};
-use util::{BinaryWrite, MutableBuffer};
+use util::BinaryWrite;
 
 use crate::bedrock::ConnectedPacket;
 use crate::bedrock::CacheBlob;
@@ -18,10 +18,10 @@ impl ConnectedPacket for CacheMissResponse<'_> {
 }
 
 impl Serialize for CacheMissResponse<'_> {
-    fn serialize(&self, buffer: &mut MutableBuffer) -> anyhow::Result<()> {
-        buffer.write_var_u32(self.blobs.len() as u32)?;
+    fn serialize_into<W: BinaryWrite>(&self, writer: &mut W) -> anyhow::Result<()> {
+        writer.write_var_u32(self.blobs.len() as u32)?;
         for blob in self.blobs {
-            blob.serialize(buffer)?;
+            blob.serialize_into(writer)?;
         }
 
         Ok(())

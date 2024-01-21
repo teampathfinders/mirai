@@ -1,6 +1,6 @@
 use util::{bail, Error, Result};
 use util::{Deserialize, Serialize};
-use util::{BinaryRead, BinaryWrite, MutableBuffer, SharedBuffer, size_of_varint};
+use util::{BinaryRead, BinaryWrite, size_of_varint};
 
 use crate::bedrock::ConnectedPacket;
 
@@ -45,8 +45,8 @@ impl ConnectedPacket for SetDifficulty {
 }
 
 impl Serialize for SetDifficulty {
-    fn serialize(&self, buffer: &mut MutableBuffer) -> anyhow::Result<()> {
-        buffer.write_var_i32(self.difficulty as i32)
+    fn serialize_into<W: BinaryWrite>(&self, writer: &mut W) -> anyhow::Result<()> {
+        writer.write_var_i32(self.difficulty as i32)
     }
 }
 

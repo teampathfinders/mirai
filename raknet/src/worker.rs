@@ -5,9 +5,6 @@ use std::{
 
 use tokio::sync::mpsc;
 
-
-use util::MutableBuffer;
-
 use crate::RaknetUser;
 
 /// Tick interval of the internal session tick.
@@ -23,7 +20,7 @@ const SESSION_TIMEOUT: Duration = Duration::from_secs(5);
 impl RaknetUser {
     /// Starts the ticker task which takes care of packet submission and general user management.
     pub async fn async_worker(
-        self: Arc<Self>, mut receiver: mpsc::Receiver<MutableBuffer>
+        self: Arc<Self>, mut receiver: mpsc::Receiver<Vec<u8>>
     ) {
         let mut interval = tokio::time::interval(INTERNAL_TICK_INTERVAL);
 
@@ -47,7 +44,7 @@ impl RaknetUser {
             should_run = !self.active.is_cancelled();
         }
 
-        tracing::debug!("Raknet worker closed");
+        tracing::debug!("RakNet client destroyed");
     }
 
     /// Performs tasks not related to packet processing

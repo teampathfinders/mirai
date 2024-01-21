@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 
 use serde::{Deserialize, Serialize};
+use util::BinaryWrite;
 
 use crate::ser::to_be_bytes;
 use crate::{from_be_bytes, from_le_bytes, from_var_bytes, to_le_bytes, to_var_bytes, Value};
@@ -25,7 +26,7 @@ fn read_write_option() {
     let some_ser = to_be_bytes(&some).unwrap();
     dbg!(&some_ser);
 
-    let some_de: Value = from_be_bytes(*some_ser.snapshot()).unwrap().0;
+    let some_de: Value = from_be_bytes(some_ser.as_ref()).unwrap().0;
     dbg!(some_de);
 
     let _none = Optional {
@@ -48,13 +49,13 @@ fn read_write_all() {
         (
             "list".to_owned(),
             Value::List(vec![
-                Value::Compound(HashMap::from([("name".to_owned(), Value::String("Compound #1".to_owned()))])),
-                Value::Compound(HashMap::from([("name".to_owned(), Value::String("Compound #2".to_owned()))])),
+                Value::Compound(HashMap::from([("name".to_owned(), Value::String("Compound 1".to_owned()))])),
+                Value::Compound(HashMap::from([("name".to_owned(), Value::String("Compound 2".to_owned()))])),
             ]),
         ),
         (
             "compound".to_owned(),
-            Value::Compound(HashMap::from([("name".to_owned(), Value::String("Compound #3".to_owned()))])),
+            Value::Compound(HashMap::from([("name".to_owned(), Value::String("Compound 3".to_owned()))])),
         ),
     ]));
 
@@ -62,9 +63,9 @@ fn read_write_all() {
     let ser_le = to_le_bytes(&value).unwrap();
     let ser_be = to_be_bytes(&value).unwrap();
 
-    from_var_bytes::<Value, _>(*ser.snapshot()).unwrap();
-    from_le_bytes::<Value, _>(*ser_le.snapshot()).unwrap();
-    from_be_bytes::<Value, _>(*ser_be.snapshot()).unwrap();
+    from_var_bytes::<Value, _>(ser.as_ref()).unwrap();
+    from_le_bytes::<Value, _>(ser_le.as_ref()).unwrap();
+    from_be_bytes::<Value, _>(ser_be.as_ref()).unwrap();
 }
 
 #[test]
@@ -121,7 +122,7 @@ fn read_write_bigtest() {
 
     let value: Value = from_be_bytes(BIG_TEST_NBT).unwrap().0;
     let value_encoded = to_be_bytes(&value).unwrap();
-    let value_decoded: Value = from_be_bytes(*value_encoded.snapshot()).unwrap().0;
+    let value_decoded: Value = from_be_bytes(value_encoded.as_ref()).unwrap().0;
     assert_eq!(value, value_decoded);
 }
 
@@ -139,7 +140,7 @@ fn read_write_hello_world() {
 
     let value: Value = from_be_bytes(HELLO_WORLD_NBT).unwrap().0;
     let value_encoded = to_be_bytes(&value).unwrap();
-    let value_decoded: Value = from_be_bytes(*value_encoded.snapshot()).unwrap().0;
+    let value_decoded: Value = from_be_bytes(value_encoded.as_ref()).unwrap().0;
     assert_eq!(value, value_decoded);
 }
 
@@ -164,9 +165,9 @@ fn read_write_player() {
 
     let decoded: Player = from_be_bytes(PLAYER_NAN_VALUE_NBT).unwrap().0;
     let encoded = to_be_bytes(&decoded).unwrap();
-    let decoded2: Player = from_be_bytes(*encoded.snapshot()).unwrap().0;
+    let decoded2: Player = from_be_bytes(encoded.as_ref()).unwrap().0;
 
     let _value: Value = from_be_bytes(PLAYER_NAN_VALUE_NBT).unwrap().0;
     let value_encoded = to_be_bytes(&decoded2).unwrap();
-    let _value_decoded: Value = from_be_bytes(*value_encoded.snapshot()).unwrap().0;
+    let _value_decoded: Value = from_be_bytes(value_encoded.as_ref()).unwrap().0;
 }

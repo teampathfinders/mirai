@@ -1,7 +1,7 @@
 use uuid::Uuid;
 
 use util::{Result, Serialize, Vector};
-use util::{BinaryWrite, MutableBuffer};
+use util::{BinaryWrite};
 
 use crate::bedrock::{AbilityData, DeviceOS, PermissionLevel};
 use crate::bedrock::{ConnectedPacket, GameMode};
@@ -34,13 +34,13 @@ pub struct EntityLink {
     pub is_rider_initiated: bool,
 }
 
-impl EntityLink {
-    pub fn encode(&self, buffer: &mut MutableBuffer) -> anyhow::Result<()> {
-        buffer.write_var_i64(self.ridden_entity_id)?;
-        buffer.write_var_i64(self.rider_entity_id)?;
-        buffer.write_u8(self.link_type as u8)?;
-        buffer.write_bool(self.is_immediate)?;
-        buffer.write_bool(self.is_rider_initiated)
+impl Serialize for EntityLink {
+    fn serialize_into<W: BinaryWrite>(&self, writer: &mut W) -> anyhow::Result<()> {
+        writer.write_var_i64(self.ridden_entity_id)?;
+        writer.write_var_i64(self.rider_entity_id)?;
+        writer.write_u8(self.link_type as u8)?;
+        writer.write_bool(self.is_immediate)?;
+        writer.write_bool(self.is_rider_initiated)
     }
 }
 
@@ -83,28 +83,28 @@ impl ConnectedPacket for AddPlayer<'_> {
 }
 
 impl Serialize for AddPlayer<'_> {
-    fn serialize(&self, buffer: &mut MutableBuffer) -> anyhow::Result<()> {
-        buffer.write_uuid_le(&self.uuid)?;
-        buffer.write_str(self.username)?;
-        buffer.write_var_u64(self.runtime_id)?;
-        buffer.write_str("")?; // Platform chat ID
-        buffer.write_vecf(&self.position)?;
-        buffer.write_vecf(&self.velocity)?;
-        buffer.write_vecf(&self.rotation)?;
+    fn serialize_into<W: BinaryWrite>(&self, writer: &mut W) -> anyhow::Result<()> {
+        writer.write_uuid_le(&self.uuid)?;
+        writer.write_str(self.username)?;
+        writer.write_var_u64(self.runtime_id)?;
+        writer.write_str("")?; // Platform chat ID
+        writer.write_vecf(&self.position)?;
+        writer.write_vecf(&self.velocity)?;
+        writer.write_vecf(&self.rotation)?;
         // self.held_item.serialize(buffer)?;
-        buffer.write_var_i32(self.game_mode as i32)?;
+        writer.write_var_i32(self.game_mode as i32)?;
         // buffer.put_metadata(&self.metadata);
-        buffer.write_var_u32(0)?; // TODO: Entity metadata.
-        buffer.write_var_u32(0)?; // Entity properties are unused.
-        buffer.write_var_u32(0)?; // Entity properties are unused.
-        self.ability_data.serialize(buffer)?;
+        writer.write_var_u32(0)?; // TODO: Entity metadata.
+        writer.write_var_u32(0)?; // Entity properties are unused.
+        writer.write_var_u32(0)?; // Entity properties are unused.
+        self.ability_data.serialize_into(writer)?;
 
-        buffer.write_var_u32(self.links.len() as u32)?;
+        writer.write_var_u32(self.links.len() as u32)?;
         for link in self.links {
-            link.encode(buffer)?;
+            link.serialize_into(writer)?;
         }
 
-        buffer.write_str(self.device_id)?;
-        buffer.write_i32_le(self.device_os as i32)
+        writer.write_str(self.device_id)?;
+        writer.write_i32_le(self.device_os as i32)
     }
 }

@@ -1,5 +1,5 @@
 use util::{Result, Serialize, Deserialize};
-use util::{BinaryRead, BinaryWrite, MutableBuffer, SharedBuffer, size_of_varint};
+use util::{BinaryRead, BinaryWrite, size_of_varint};
 
 /// Game raknet are prefixed with a length and a header.
 /// The header contains the packet ID and target/subclient IDs in case of split screen multiplayer.
@@ -25,12 +25,12 @@ impl Header {
 
 impl Serialize for Header {
     /// Encodes the header.
-    fn serialize(&self, buffer: &mut MutableBuffer) -> anyhow::Result<()> {
+    fn serialize_into<W: BinaryWrite>(&self, writer: &mut W) -> anyhow::Result<()> {
         let value = self.id
             | ((self.sender_subclient as u32) << 10)
             | ((self.target_subclient as u32) << 12);
 
-        buffer.write_var_u32(value)
+        writer.write_var_u32(value)
     }
 }
 

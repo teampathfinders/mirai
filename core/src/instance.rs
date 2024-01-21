@@ -11,8 +11,7 @@ use tokio::net::UdpSocket;
 use tokio::sync::oneshot::Receiver;
 use tokio_util::sync::CancellationToken;
 
-use util::MutableBuffer;
-use util::{Deserialize, Serialize};
+use util::{Deserialize, Serialize, ReserveTo};
 
 use crate::config::SERVER_CONFIG;
 use crate::level::Level;
@@ -288,14 +287,18 @@ impl ServerInstance {
 
     /// Generates a response to the [`UnconnectedPing`] packet with [`UnconnectedPong`].
     #[inline]
-    fn process_unconnected_ping(packet: ForwardablePacket, server_guid: u64, metadata: &str) -> anyhow::Result<ForwardablePacket> {
+    fn process_unconnected_ping(mut packet: ForwardablePacket, server_guid: u64, metadata: &str) -> anyhow::Result<ForwardablePacket> {
         let ping = UnconnectedPing::deserialize(packet.buf.as_ref())?;
         let pong = UnconnectedPong { time: ping.time, server_guid, metadata };
 
-        let mut serialized = MutableBuffer::with_capacity(pong.serialized_size());
-        pong.serialize(&mut serialized)?;
+        #[cfg(trace_raknet)]
+        tracing::debug!("{ping:?}");
 
-        let packet = ForwardablePacket { buf: serialized, addr: packet.addr };
+        packet.buf.clear();
+        packet.buf.reserve_to(pong.serialized_size());
+        pong.serialize_into(&mut packet.buf)?;
+
+        let packet = ForwardablePacket { buf: packet.buf, addr: packet.addr };
 
         Ok(packet)
     }
@@ -305,19 +308,24 @@ impl ServerInstance {
     fn process_open_connection_request1(mut packet: ForwardablePacket, server_guid: u64) -> anyhow::Result<ForwardablePacket> {
         let request = OpenConnectionRequest1::deserialize(packet.buf.as_ref())?;
 
+        #[cfg(trace_raknet)]
+        tracing::debug!("{request:?}");
+
         packet.buf.clear();
         if request.protocol_version != RAKNET_VERSION {
+            dbg!("fail");
+
             let reply = IncompatibleProtocol { server_guid };
 
             packet.buf.clear();
             packet.buf.reserve_to(reply.serialized_size());
-            reply.serialize(&mut packet.buf)?;
+            reply.serialize_into(&mut packet.buf)?;
         } else {
             let reply = OpenConnectionReply1 { mtu: request.mtu, server_guid };
 
             packet.buf.clear();
             packet.buf.reserve_to(reply.serialized_size());
-            reply.serialize(&mut packet.buf)?;
+            reply.serialize_into(&mut packet.buf)?;
         }
 
         Ok(packet)
@@ -340,9 +348,12 @@ impl ServerInstance {
             client_address: packet.addr,
         };
 
+        #[cfg(trace_raknet)]
+        tracing::debug!("{request:?}");
+
         packet.buf.clear();
         packet.buf.reserve_to(reply.serialized_size());
-        reply.serialize(&mut packet.buf)?;
+        reply.serialize_into(&mut packet.buf)?;
 
         user_manager.insert(UserCreateInfo {
             address: packet.addr,
@@ -386,7 +397,7 @@ impl ServerInstance {
             };
 
             let packet = ForwardablePacket {
-                buf: MutableBuffer::from(recv_buf[..n].to_vec()),
+                buf: recv_buf[..n].to_vec(),
                 addr: address,
             };
 

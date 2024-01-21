@@ -1,6 +1,6 @@
 use std::io::Write;
 use util::Serialize;
-use util::{BinaryWrite, MutableBuffer, VarInt};
+use util::{BinaryWrite, VarInt};
 use util::Result;
 
 use crate::bedrock::ConnectedPacket;
@@ -26,36 +26,36 @@ impl ItemStack {
         30
     }
 
-    pub fn serialize(&self, network_id: u32, buffer: &mut MutableBuffer) -> anyhow::Result<()> {
+    pub fn serialize<W: BinaryWrite>(&self, network_id: u32, writer: &mut W) -> anyhow::Result<()> {
         if network_id == 0 {
             // Item is air, nothing left to do.
             return Ok(())
         }
 
-        buffer.write_u16_le(self.count)?;
-        buffer.write_var_u32(self.meta)?;
-        buffer.write_var_i32(self.runtime_id)?;
+        writer.write_u16_le(self.count)?;
+        writer.write_var_u32(self.meta)?;
+        writer.write_var_i32(self.runtime_id)?;
 
-        let mut extra_buffer = MutableBuffer::new();
+        let mut extra_writer = Vec::new();
 
-        extra_buffer.write_u16_le(0)?;
+        extra_writer.write_u16_le(0)?;
 
-        extra_buffer.write_u32_le(self.placeable_on.len() as u32)?;
+        extra_writer.write_u32_le(self.placeable_on.len() as u32)?;
         for block in &self.placeable_on {
-            extra_buffer.write_str(block)?;
+            extra_writer.write_str(block)?;
         }
 
-        extra_buffer.write_u32_le(self.can_break.len() as u32)?;
+        extra_writer.write_u32_le(self.can_break.len() as u32)?;
         for block in &self.can_break {
-            extra_buffer.write_str(block)?;
+            extra_writer.write_str(block)?;
         }
 
         // if self.network_id == ITEM_ID_SHIELD {
         //     todo!();
         // }
 
-        buffer.write_var_u32(extra_buffer.len() as u32)?;
-        buffer.write_all(&extra_buffer.snapshot())?;
+        writer.write_var_u32(extra_writer.len() as u32)?;
+        writer.write_all(&extra_writer.as_ref())?;
 
         Ok(())
     }
@@ -76,11 +76,11 @@ impl ConnectedPacket for CreativeContent<'_> {
 }
 
 impl Serialize for CreativeContent<'_> {
-    fn serialize(&self, buffer: &mut MutableBuffer) -> anyhow::Result<()> {
-        buffer.write_var_u32(self.items.len() as u32)?;
+    fn serialize_into<W: BinaryWrite>(&self, writer: &mut W) -> anyhow::Result<()> {
+        writer.write_var_u32(self.items.len() as u32)?;
         for (i, item) in self.items.iter().enumerate() {
-            buffer.write_var_u32(i as u32 + 1)?;
-            item.serialize(i as u32 + 1, buffer)?;
+            writer.write_var_u32(i as u32 + 1)?;
+            item.serialize(i as u32 + 1, writer)?;
         }
 
         Ok(())

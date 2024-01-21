@@ -1,10 +1,27 @@
-use crate::{bytes::MutableBuffer, BinaryRead};
+use crate::{BinaryRead, BinaryWrite};
 use std::fmt::Debug;
 
 /// Trait that describes an object that can be serialised from raw bytes.
 pub trait Serialize {
+    /// Estimates the required buffer size to serialize this object.
+    /// 
+    /// This allows the writer to efficiently allocate enough memory before writing,
+    /// preventing reallocations.
+    /// By default this function returns `None` which disables the hint.
+    fn size_hint(&self) -> Option<usize> { None }
+
     /// Serializes the object into binary format.
-    fn serialize(&self, buffer: &mut MutableBuffer) -> anyhow::Result<()>;
+    fn serialize(&self) -> anyhow::Result<Vec<u8>> {
+        let cap = self.size_hint().unwrap_or(0);
+        let mut writer = Vec::with_capacity(cap);
+
+        self.serialize_into(&mut writer)?;
+
+        Ok(writer)
+    }
+
+    /// Serializes the object into binary format into a given writer.
+    fn serialize_into<W: BinaryWrite>(&self, writer: &mut W) -> anyhow::Result<()>;
 }
 
 /// Trait that describes an object that can be deserialised from raw bytes.
@@ -37,5 +54,15 @@ impl<T> TryExpect for Option<T> {
             Some(s) => Ok(s),
             None => anyhow::bail!(format!("{error:?}")),
         }
+    }
+}
+
+pub trait ReserveTo {
+    fn reserve_to(&mut self, capacity: usize);
+}
+
+impl ReserveTo for Vec<u8> {
+    fn reserve_to(&mut self, capacity: usize) {
+        self.reserve(capacity - self.len());
     }
 }

@@ -1,5 +1,5 @@
 use util::{BlockPosition, Result, Vector};
-use util::{BinaryWrite, MutableBuffer, size_of_varint};
+use util::{BinaryWrite, size_of_varint};
 use util::Serialize;
 
 use crate::bedrock::ConnectedPacket;
@@ -22,11 +22,11 @@ impl ConnectedPacket for NetworkChunkPublisherUpdate {
 }
 
 impl Serialize for NetworkChunkPublisherUpdate {
-    fn serialize(&self, buffer: &mut MutableBuffer) -> anyhow::Result<()> {
-        buffer.write_veci(&self.position)?;
-        buffer.write_var_u32(self.radius)?;
+    fn serialize_into<W: BinaryWrite>(&self, writer: &mut W) -> anyhow::Result<()> {
+        writer.write_veci(&self.position)?;
+        writer.write_var_u32(self.radius)?;
 
         // No saved chunks.
-        buffer.write_u32_be(0)
+        writer.write_u32_be(0)
     }
 }

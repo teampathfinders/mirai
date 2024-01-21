@@ -1,5 +1,5 @@
 use util::{Result, Serialize, Deserialize};
-use util::{BinaryWrite, MutableBuffer, SharedBuffer, BinaryRead};
+use util::{BinaryWrite, BinaryRead};
 
 use crate::bedrock::ConnectedPacket;
 
@@ -31,8 +31,8 @@ impl<'a> Deserialize<'a> for ContainerClose {
 }
 
 impl Serialize for ContainerClose {
-    fn serialize(&self, buffer: &mut MutableBuffer) -> anyhow::Result<()> {
-        buffer.write_u8(self.window_id)?;
-        buffer.write_bool(self.server_initiated)
+    fn serialize_into<W: BinaryWrite>(&self, writer: &mut W) -> anyhow::Result<()> {
+        writer.write_u8(self.window_id)?;
+        writer.write_bool(self.server_initiated)
     }
 }

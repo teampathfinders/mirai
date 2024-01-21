@@ -1,5 +1,5 @@
 use util::{Deserialize, Serialize};
-use util::{BinaryRead, BinaryWrite, MutableBuffer, SharedBuffer};
+use util::{BinaryRead, BinaryWrite};
 use util::Result;
 
 use crate::bedrock::ConnectedPacket;
@@ -33,8 +33,8 @@ impl<'a> Deserialize<'a> for TickSync {
 }
 
 impl Serialize for TickSync {
-    fn serialize(&self, buffer: &mut MutableBuffer) -> anyhow::Result<()> {
-        buffer.write_u64_le(self.request_tick)?;
-        buffer.write_u64_le(self.response_tick)
+    fn serialize_into<W: BinaryWrite>(&self, writer: &mut W) -> anyhow::Result<()> {
+        writer.write_u64_le(self.request_tick)?;
+        writer.write_u64_le(self.response_tick)
     }
 }

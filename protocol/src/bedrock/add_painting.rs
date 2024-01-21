@@ -1,5 +1,5 @@
 use util::{Result, Vector};
-use util::{BinaryWrite, MutableBuffer, size_of_varint};
+use util::{BinaryWrite, size_of_varint};
 use util::Serialize;
 
 use crate::bedrock::ConnectedPacket;
@@ -39,11 +39,11 @@ impl ConnectedPacket for AddPainting<'_> {
 }
 
 impl Serialize for AddPainting<'_> {
-    fn serialize(&self, buffer: &mut MutableBuffer) -> anyhow::Result<()> {
-        buffer.write_var_i64(self.runtime_id as i64)?; // Unique entity ID.
-        buffer.write_var_u64(self.runtime_id)?;
-        buffer.write_vecf(&self.position)?;
-        buffer.write_var_i32(self.direction as i32)?;
-        buffer.write_str(self.name)
+    fn serialize_into<W: BinaryWrite>(&self, writer: &mut W) -> anyhow::Result<()> {
+        writer.write_var_i64(self.runtime_id as i64)?; // Unique entity ID.
+        writer.write_var_u64(self.runtime_id)?;
+        writer.write_vecf(&self.position)?;
+        writer.write_var_i32(self.direction as i32)?;
+        writer.write_str(self.name)
     }
 }

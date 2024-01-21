@@ -11,14 +11,13 @@ use flate2::write::DeflateEncoder;
 use parking_lot::RwLock;
 use raknet::{SendConfig, DEFAULT_SEND_CONFIG, RaknetUser, BroadcastPacket};
 use tokio::sync::{mpsc, broadcast};
-use proto::bedrock::{CommandPermissionLevel, Disconnect, GameMode, PermissionLevel, Skin, ConnectedPacket, CONNECTED_PACKET_ID, CompressionAlgorithm, Packet, Header, RequestNetworkSettings, Login, ClientToServerHandshake, CacheStatus, ResourcePackClientResponse, ViolationWarning, ChunkRadiusRequest, Interact, TextMessage, SetLocalPlayerAsInitialized, MovePlayer, PlayerAction, RequestAbility, Animate, CommandRequest, SettingsCommand, ContainerClose, FormResponseData, TickSync, UpdateSkin};
+use proto::bedrock::{CommandPermissionLevel, Disconnect, GameMode, PermissionLevel, Skin, ConnectedPacket, CONNECTED_PACKET_ID, CompressionAlgorithm, Packet, Header, RequestNetworkSettings, Login, ClientToServerHandshake, CacheStatus, ResourcePackClientResponse, ViolationWarning, ChunkRadiusRequest, Interact, TextMessage, SetLocalPlayerAsInitialized, MovePlayer, PlayerAction, RequestAbility, Animate, CommandRequest, SettingsCommand, ContainerClose, FormResponseData, TickSync, UpdateSkin, PlayerAuthInput};
 use proto::crypto::{Encryptor, BedrockIdentity, BedrockClientInfo};
 use proto::uuid::Uuid;
 use replicator::Replicator;
 
 use tokio::task::JoinHandle;
-use util::{Vector, AtomicFlag, Serialize, BinaryRead, BinaryWrite, Deserialize};
-use util::MutableBuffer;
+use util::{Vector, AtomicFlag, Serialize, Deserialize, BinaryWrite, BinaryRead};
 
 use crate::config::SERVER_CONFIG;
 use crate::forms::FormSubscriber;
@@ -49,7 +48,7 @@ impl BedrockUser {
         raknet: Arc<RaknetUser>,
         level: Arc<Level>,
         replicator: Arc<Replicator>,
-        receiver: mpsc::Receiver<MutableBuffer>,
+        receiver: mpsc::Receiver<Vec<u8>>,
         broadcast: broadcast::Sender<BroadcastPacket>
     ) -> Arc<Self> {
         let user = Arc::new(Self {
@@ -79,7 +78,7 @@ impl BedrockUser {
         user
     }
 
-    async fn start_job(self: &Arc<Self>, mut receiver: mpsc::Receiver<MutableBuffer>) {
+    async fn start_job(self: &Arc<Self>, mut receiver: mpsc::Receiver<Vec<u8>>) {
         let mut broadcast = self.broadcast.subscribe();
 
         let mut should_run = true;
@@ -112,7 +111,7 @@ impl BedrockUser {
     pub fn handle_broadcast(&self, packet: BroadcastPacket) -> anyhow::Result<()> {
         let should_send = packet.sender.map(|sender| sender != self.raknet.address).unwrap_or(true);
         if should_send {
-            self.send_serialized(packet.content, DEFAULT_SEND_CONFIG)?;
+            self.send_serialized(packet.content.as_ref(), DEFAULT_SEND_CONFIG)?;
         }
 
         Ok(())
@@ -186,20 +185,20 @@ impl BedrockUser {
                         );
 
                         writer.write_all(packet.as_ref())?;
-                        out = MutableBuffer::from(writer.finish()?)
+                        out = writer.finish()?;
                     }
                 }
             } else {
                 // Also reserve capacity for checksum even if encryption is disabled,
                 // preventing allocations.
-                out = MutableBuffer::with_capacity(1 + packet.as_ref().len() + 8);
+                out = Vec::with_capacity(1 + packet.as_ref().len() + 8);
                 out.write_u8(CONNECTED_PACKET_ID)?;
                 out.write_all(packet.as_ref())?;
             }
         } else {
             // Also reserve capacity for checksum even if encryption is disabled,
             // preventing allocations.
-            out = MutableBuffer::with_capacity(1 + packet.as_ref().len() + 8);
+            out = Vec::with_capacity(1 + packet.as_ref().len() + 8);
             out.write_u8(CONNECTED_PACKET_ID)?;
             out.write_all(packet.as_ref())?;
         };
@@ -212,11 +211,9 @@ impl BedrockUser {
         Ok(())
     }
   
-    async fn handle_encrypted_frame(self: &Arc<Self>, mut packet: MutableBuffer) -> anyhow::Result<()> {
+    async fn handle_encrypted_frame(self: &Arc<Self>, mut packet: Vec<u8>) -> anyhow::Result<()> {
         debug_assert_eq!(packet[0], 0xfe);
-
-        // Remove 0xfe packet ID.
-        packet.advance_cursor(1);
+        packet.remove(0);
 
         if let Some(encryptor) = self.encryptor.get() {
             encryptor.decrypt(&mut packet).context("Failed to decrypt packet")?;
@@ -242,8 +239,7 @@ impl BedrockUser {
                     let mut decompressed = Vec::new();
                     reader.read_to_end(&mut decompressed)?;
 
-                    let buffer = MutableBuffer::from(decompressed);
-                    self.handle_frame_body(buffer).await
+                    self.handle_frame_body(decompressed).await
                 }
             }
         } else {
@@ -251,18 +247,13 @@ impl BedrockUser {
         }
     }
 
-    async fn handle_frame_body(
-        self: &Arc<Self>,
-        mut packet: MutableBuffer,
-    ) -> anyhow::Result<()> {
-        let mut snapshot = packet.as_ref();
-        let start_len = snapshot.len();
-        let _length = snapshot.read_var_u32()?;
+    async fn handle_frame_body(self: &Arc<Self>, mut packet: Vec<u8>) -> anyhow::Result<()> {
+        let start_len = packet.len();
+        let mut reader: &[u8] = packet.as_ref();
+        let _length = reader.read_var_u32()?;
+        let header = Header::deserialize_from(&mut reader)?;
 
-        let header = Header::deserialize_from(&mut snapshot)?;
-
-        // Advance past the header.
-        packet.advance_cursor(start_len - snapshot.len());
+        packet.drain(0..(start_len - reader.remaining()));
 
         let expected = self.expected();
         if expected != u32::MAX && header.id != expected {
@@ -275,6 +266,7 @@ impl BedrockUser {
         }
 
         match header.id {
+            PlayerAuthInput::ID => self.handle_auth_input(packet),
             RequestNetworkSettings::ID => {
                 self.handle_network_settings_request(packet)
             }

@@ -1,4 +1,4 @@
-use util::{BinaryWrite, MutableBuffer, size_of_varint};
+use util::{BinaryWrite, size_of_varint};
 use util::Result;
 use util::Serialize;
 
@@ -23,8 +23,8 @@ impl ConnectedPacket for ToastRequest<'_> {
 }
 
 impl Serialize for ToastRequest<'_> {
-    fn serialize(&self, buffer: &mut MutableBuffer) -> anyhow::Result<()> {
-        buffer.write_str(self.title)?;
-        buffer.write_str(self.message)
+    fn serialize_into<W: BinaryWrite>(&self, writer: &mut W) -> anyhow::Result<()> {
+        writer.write_str(self.title)?;
+        writer.write_str(self.message)
     }
 }

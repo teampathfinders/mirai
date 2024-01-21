@@ -1,5 +1,5 @@
 use util::{Result, Vector};
-use util::{BinaryWrite, MutableBuffer, size_of_varint};
+use util::{BinaryWrite, size_of_varint};
 use util::Serialize;
 
 use crate::bedrock::ConnectedPacket;
@@ -19,8 +19,8 @@ impl ConnectedPacket for SpawnExperienceOrb {
 }
 
 impl Serialize for SpawnExperienceOrb {
-    fn serialize(&self, buffer: &mut MutableBuffer) -> anyhow::Result<()> {
-        buffer.write_vecf(&self.position)?;
-        buffer.write_var_u32(self.amount)
+    fn serialize_into<W: BinaryWrite>(&self, writer: &mut W) -> anyhow::Result<()> {
+        writer.write_vecf(&self.position)?;
+        writer.write_var_u32(self.amount)
     }
 }

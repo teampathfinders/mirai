@@ -1,4 +1,4 @@
-use util::{BinaryWrite, MutableBuffer, size_of_varint};
+use util::{BinaryWrite, size_of_varint};
 use util::Result;
 use util::Serialize;
 
@@ -20,7 +20,7 @@ impl<'a> ConnectedPacket for ShowProfile<'a> {
 }
 
 impl<'a> Serialize for ShowProfile<'a> {
-    fn serialize(&self, buffer: &mut MutableBuffer) -> anyhow::Result<()> {
-        buffer.write_str(self.xuid)
+    fn serialize_into<W: BinaryWrite>(&self, writer: &mut W) -> anyhow::Result<()> {
+        writer.write_str(self.xuid)
     }
 }

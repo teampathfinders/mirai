@@ -1,5 +1,5 @@
 use util::{bail, Deserialize, Error, Result, Serialize, Vector};
-use util::{BinaryRead, BinaryWrite, MutableBuffer, SharedBuffer, size_of_varint};
+use util::{BinaryRead, BinaryWrite, size_of_varint};
 
 use crate::bedrock::ConnectedPacket;
 
@@ -250,10 +250,10 @@ impl ConnectedPacket for LevelEvent {
 }
 
 impl Serialize for LevelEvent {
-    fn serialize(&self, buffer: &mut MutableBuffer) -> anyhow::Result<()> {
-        buffer.write_var_i32(self.event_type as i32)?;
-        buffer.write_vecf(&self.position)?;
-        buffer.write_var_i32(self.event_data)
+    fn serialize_into<W: BinaryWrite>(&self, writer: &mut W) -> anyhow::Result<()> {
+        writer.write_var_i32(self.event_type as i32)?;
+        writer.write_vecf(&self.position)?;
+        writer.write_var_i32(self.event_data)
     }
 }
 

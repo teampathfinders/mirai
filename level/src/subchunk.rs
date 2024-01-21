@@ -7,7 +7,7 @@ use std::ops::{Index, IndexMut};
 use serde::{Deserialize, Serialize};
 
 use util::Vector;
-use util::{BinaryRead, BinaryWrite, MutableBuffer};
+use util::{BinaryRead, BinaryWrite};
 
 use crate::PackedArrayReturn;
 
@@ -395,8 +395,8 @@ impl SubChunk {
     }
 
     /// Serialises the sub chunk into a new buffer and returns the buffer.
-    pub fn serialize_disk(&self) -> anyhow::Result<MutableBuffer> {
-        let mut buffer = MutableBuffer::new();
+    pub fn serialize_disk(&self) -> anyhow::Result<Vec<u8>> {
+        let mut buffer = Vec::new();
         self.serialize_disk_in(&mut buffer)?;
         Ok(buffer)
     }

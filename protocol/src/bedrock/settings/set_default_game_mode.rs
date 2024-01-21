@@ -1,5 +1,5 @@
 use util::{Deserialize, Result, Serialize};
-use util::{BinaryRead, BinaryWrite, MutableBuffer, SharedBuffer, size_of_varint};
+use util::{BinaryRead, BinaryWrite, size_of_varint};
 
 use crate::bedrock::ConnectedPacket;
 use crate::bedrock::GameMode;
@@ -28,7 +28,7 @@ impl<'a> Deserialize<'a> for SetDefaultGameMode {
 }
 
 impl Serialize for SetDefaultGameMode {
-    fn serialize(&self, buffer: &mut MutableBuffer) -> anyhow::Result<()> {
-        buffer.write_var_i32(self.game_mode as i32)
+    fn serialize_into<W: BinaryWrite>(&self, writer: &mut W) -> anyhow::Result<()> {
+        writer.write_var_i32(self.game_mode as i32)
     }
 }

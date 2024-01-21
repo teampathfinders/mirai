@@ -1,4 +1,4 @@
-use util::{BinaryWrite, MutableBuffer};
+use util::{BinaryWrite};
 use util::Result;
 use util::Serialize;
 
@@ -39,10 +39,10 @@ impl ConnectedPacket for CameraShake {
 }
 
 impl Serialize for CameraShake {
-    fn serialize(&self, buffer: &mut MutableBuffer) -> anyhow::Result<()> {
-        buffer.write_f32_le(self.intensity)?;
-        buffer.write_f32_le(self.duration)?;
-        buffer.write_u8(self.shake_type as u8)?;
-        buffer.write_u8(self.action as u8)
+    fn serialize_into<W: BinaryWrite>(&self, writer: &mut W) -> anyhow::Result<()> {
+        writer.write_f32_le(self.intensity)?;
+        writer.write_f32_le(self.duration)?;
+        writer.write_u8(self.shake_type as u8)?;
+        writer.write_u8(self.action as u8)
     }
 }

@@ -1,4 +1,4 @@
-use util::{BinaryWrite, MutableBuffer, size_of_varint};
+use util::{BinaryWrite, size_of_varint};
 use util::Result;
 use util::Serialize;
 
@@ -113,12 +113,12 @@ impl ConnectedPacket for MobEffectUpdate {
 }
 
 impl Serialize for MobEffectUpdate {
-    fn serialize(&self, buffer: &mut MutableBuffer) -> anyhow::Result<()> {
-        buffer.write_var_u64(self.runtime_id)?;
-        buffer.write_u8(self.action as u8)?;
-        buffer.write_var_i32(self.effect_kind as i32)?;
-        buffer.write_var_i32(self.amplifier)?;
-        buffer.write_bool(self.particles)?;
-        buffer.write_var_i32(self.duration)
+    fn serialize_into<W: BinaryWrite>(&self, writer: &mut W) -> anyhow::Result<()> {
+        writer.write_var_u64(self.runtime_id)?;
+        writer.write_u8(self.action as u8)?;
+        writer.write_var_i32(self.effect_kind as i32)?;
+        writer.write_var_i32(self.amplifier)?;
+        writer.write_bool(self.particles)?;
+        writer.write_var_i32(self.duration)
     }
 }

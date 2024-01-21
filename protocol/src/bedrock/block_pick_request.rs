@@ -1,5 +1,5 @@
 use util::{Deserialize, Result, Vector};
-use util::{BinaryRead, SharedBuffer};
+use util::{BinaryRead};
 
 use crate::bedrock::ConnectedPacket;
 

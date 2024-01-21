@@ -1,5 +1,4 @@
 use util::Deserialize;
-use util::MutableBuffer;
 use util::Serialize;
 
 use proto::bedrock::Header;
@@ -18,8 +17,8 @@ fn header() {
         target_subclient: 2,
     };
 
-    let mut buffer = MutableBuffer::new();
-    header.serialize(&mut buffer).unwrap();
+    let mut buffer = Vec::new();
+    header.serialize_into(&mut buffer).unwrap();
 
     assert_eq!(Header::deserialize(buffer.as_ref()).unwrap(), header);
 }

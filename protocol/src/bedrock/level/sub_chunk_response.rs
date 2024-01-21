@@ -1,6 +1,6 @@
 use std::io::Write;
 
-use util::{Vector, Serialize, {MutableBuffer, BinaryWrite}};
+use util::{Vector, Serialize, BinaryWrite};
 
 use crate::bedrock::ConnectedPacket;
 use crate::types::Dimension;
@@ -39,19 +39,19 @@ pub struct SubChunkEntry {
 
 impl SubChunkEntry {
     #[inline]
-    fn serialize_cached(&self, buffer: &mut MutableBuffer) -> anyhow::Result<()> {
+    fn serialize_cached<W: BinaryWrite>(&self, writer: &mut W) -> anyhow::Result<()> {
         todo!();
     }
     
     #[inline]
-    fn serialize(&self, buffer: &mut MutableBuffer) -> anyhow::Result<()> {
-        buffer.write_vecb(&self.offset)?;
-        buffer.write_u8(self.result as u8)?;
-        buffer.write_var_u32(self.payload.len() as u32)?;
-        buffer.write_all(&self.payload)?;
-        buffer.write_u8(self.heightmap_type as u8)?;
+    fn serialize_into<W: BinaryWrite>(&self, writer: &mut W) -> anyhow::Result<()> {
+        writer.write_vecb(&self.offset)?;
+        writer.write_u8(self.result as u8)?;
+        writer.write_var_u32(self.payload.len() as u32)?;
+        writer.write_all(&self.payload)?;
+        writer.write_u8(self.heightmap_type as u8)?;
         if self.heightmap_type == HeightmapType::WithData {
-            buffer.write_all(bytemuck::cast_slice(&*self.heightmap))?;
+            writer.write_all(bytemuck::cast_slice(&*self.heightmap))?;
         }
         Ok(())
     }
@@ -70,19 +70,19 @@ impl ConnectedPacket for SubChunkResponse {
 }
 
 impl Serialize for SubChunkResponse {
-    fn serialize(&self, buffer: &mut MutableBuffer) -> anyhow::Result<()> {
-        buffer.write_bool(self.cache_enabled)?;
-        buffer.write_var_i32(self.dimension as i32)?;
-        buffer.write_veci(&self.position)?;
+    fn serialize_into<W: BinaryWrite>(&self, writer: &mut W) -> anyhow::Result<()> {
+        writer.write_bool(self.cache_enabled)?;
+        writer.write_var_i32(self.dimension as i32)?;
+        writer.write_veci(&self.position)?;
 
-        buffer.write_u32_le(self.entries.len() as u32)?;
+        writer.write_u32_le(self.entries.len() as u32)?;
         if self.cache_enabled {
             for entry in &self.entries {
-                entry.serialize_cached(buffer)?;
+                entry.serialize_cached(writer)?;
             }   
         } else {
             for entry in &self.entries {
-                entry.serialize(buffer)?;
+                entry.serialize_into(writer)?;
             }
         }
         

@@ -3,8 +3,6 @@ use std::sync::atomic::Ordering;
 use async_recursion::async_recursion;
 use proto::raknet::{Ack, AckRecord};
 
-use util::MutableBuffer;
-
 use util::Serialize;
 
 use crate::{SendPriority, RaknetUser, Reliability, Frame, FrameBatch};
@@ -28,7 +26,7 @@ impl RaknetUser {
     /// (reliable ordered and medium priority).
     pub fn send_raw_buffer<B>(&self, buffer: B)
         where
-            B: Into<MutableBuffer>
+            B: Into<Vec<u8>>
     {
         self.send_raw_buffer_with_config(buffer, DEFAULT_SEND_CONFIG);
     }
@@ -38,7 +36,7 @@ impl RaknetUser {
         &self,
         buffer: B,
         config: SendConfig,
-    ) where B: Into<MutableBuffer> {
+    ) where B: Into<Vec<u8>> {
         let buffer = buffer.into();
         self.send.insert_raw(
             config.priority,
@@ -132,8 +130,8 @@ impl RaknetUser {
         }
 
         let ack = Ack { records };
-        let mut serialized = MutableBuffer::with_capacity(ack.serialized_size());
-        ack.serialize(&mut serialized)?;
+        let mut serialized = Vec::with_capacity(ack.serialized_size());
+        ack.serialize_into(&mut serialized)?;
 
         self
             .socket
@@ -145,7 +143,7 @@ impl RaknetUser {
 
     #[async_recursion]
     async fn send_raw_frames(&self, mut frames: Vec<Frame>) -> anyhow::Result<()> {
-        let mut serialized = MutableBuffer::new();
+        let mut serialized = Vec::new();
 
         // Process fragments first to prevent sequence number duplication.
         let mut index = 0;
@@ -200,11 +198,11 @@ impl RaknetUser {
                 has_reliable_packet = true;
             }
 
-            if batch.estimate_size() + frame_size <= self.mtu as usize {
+            if batch.size_hint().unwrap() + frame_size <= self.mtu as usize {
                 batch.frames.push(frame);
             } else if !batch.is_empty() {
                 serialized.clear();
-                batch.serialize(&mut serialized)?;
+                batch.serialize_into(&mut serialized)?;
 
                 // TODO: Add IPv6 support
                 self.socket
@@ -228,7 +226,7 @@ impl RaknetUser {
         // Send remaining raknet not sent by loop
         if !batch.is_empty() {
             serialized.clear();
-            batch.serialize(&mut serialized)?;
+            batch.serialize_into(&mut serialized)?;
 
             if has_reliable_packet {
                 self.recovery.insert(batch);
@@ -273,7 +271,7 @@ impl RaknetUser {
                 compound_index: i as u32,
                 compound_size: compound_size as u32,
                 compound_id,
-                body: MutableBuffer::from(chunk.to_vec()),
+                body: chunk.to_owned(),
                 ..Default::default()
             };
 

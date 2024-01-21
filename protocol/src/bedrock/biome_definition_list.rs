@@ -1,6 +1,7 @@
 use std::io::Write;
 
-use util::MutableBuffer;
+use util::BinaryWrite;
+
 use util::Result;
 use util::Serialize;
 
@@ -21,8 +22,8 @@ impl ConnectedPacket for BiomeDefinitionList {
 }
 
 impl Serialize for BiomeDefinitionList {
-    fn serialize(&self, buffer: &mut MutableBuffer) -> anyhow::Result<()> {
-        buffer.write_all(DEFINITIONS)?;
+    fn serialize_into<W: BinaryWrite>(&self, writer: &mut W) -> anyhow::Result<()> {
+        writer.write_all(DEFINITIONS)?;
 
         Ok(())
     }

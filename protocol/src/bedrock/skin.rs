@@ -6,7 +6,7 @@ use serde_repr::Deserialize_repr;
 use util::{
     bail, Error, Result,
 };
-use util::{BinaryRead, BinaryWrite, MutableBuffer, SharedBuffer};
+use util::{BinaryRead, BinaryWrite};
 
 /// Size of arms of a skin.
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Deserialize)]
@@ -130,12 +130,12 @@ pub struct PersonaPiece {
 }
 
 impl PersonaPiece {
-    fn serialize(&self, buffer: &mut MutableBuffer) -> anyhow::Result<()> {
-        buffer.write_str(&self.piece_id)?;
-        buffer.write_str(self.piece_type.name())?;
-        buffer.write_str(&self.pack_id)?;
-        buffer.write_bool(self.default)?;
-        buffer.write_str(&self.product_id)
+    fn serialize_into<W: BinaryWrite>(&self, writer: &mut W) -> anyhow::Result<()> {
+        writer.write_str(&self.piece_id)?;
+        writer.write_str(self.piece_type.name())?;
+        writer.write_str(&self.pack_id)?;
+        writer.write_bool(self.default)?;
+        writer.write_str(&self.product_id)
     }
 }
 
@@ -169,12 +169,12 @@ pub struct PersonaPieceTint {
 }
 
 impl PersonaPieceTint {
-    fn serialize(&self, buffer: &mut MutableBuffer) -> anyhow::Result<()> {
-        buffer.write_str(self.piece_type.name())?;
+    fn serialize_into<W: BinaryWrite>(&self, writer: &mut W) -> anyhow::Result<()> {
+        writer.write_str(self.piece_type.name())?;
 
-        buffer.write_u32_le(self.colors.len() as u32)?;
+        writer.write_u32_le(self.colors.len() as u32)?;
         for color in &self.colors {
-            buffer.write_str(color)?;
+            writer.write_str(color)?;
         }
 
         Ok(())
@@ -258,7 +258,7 @@ pub struct SkinAnimation {
     pub image_height: u32,
     /// Image data.
     #[serde(rename = "Image", with = "base64")]
-    pub image_data: MutableBuffer,
+    pub image_data: Vec<u8>,
     /// Animation type.
     #[serde(rename = "Type")]
     pub animation_type: SkinAnimationType,
@@ -272,16 +272,16 @@ pub struct SkinAnimation {
 }
 
 impl SkinAnimation {
-    pub fn serialize(&self, buffer: &mut MutableBuffer) -> anyhow::Result<()> {
-        buffer.write_u32_le(self.image_width)?;
-        buffer.write_u32_le(self.image_height)?;
+    pub fn serialize_into<W: BinaryWrite>(&self, writer: &mut W) -> anyhow::Result<()> {
+        writer.write_u32_le(self.image_width)?;
+        writer.write_u32_le(self.image_height)?;
 
-        buffer.write_var_u32(self.image_data.len() as u32)?;
-        buffer.write_all(&self.image_data)?;
+        writer.write_var_u32(self.image_data.len() as u32)?;
+        writer.write_all(&self.image_data)?;
 
-        buffer.write_u32_le(self.animation_type as u32)?;
-        buffer.write_f32_le(self.frame_count)?;
-        buffer.write_u32_le(self.expression_type as u32)
+        writer.write_u32_le(self.animation_type as u32)?;
+        writer.write_f32_le(self.frame_count)?;
+        writer.write_u32_le(self.expression_type as u32)
     }
 }
 
@@ -290,7 +290,7 @@ impl<'a> util::Deserialize<'a> for SkinAnimation {
         let image_width = reader.read_u32_le()?;
         let image_height = reader.read_u32_le()?;
         let image_size = reader.read_var_u32()?;
-        let image_data = MutableBuffer::from(reader.take_n(image_size as usize)?.to_vec());
+        let image_data = reader.take_n(image_size as usize)?.to_vec();
 
         let animation_type = SkinAnimationType::try_from(reader.read_u32_le()?)?;
         let frame_count = reader.read_f32_le()?;
@@ -328,7 +328,7 @@ pub struct Skin {
     pub image_height: u32,
     /// Skin image data.
     #[serde(rename = "SkinData", with = "base64")]
-    pub image_data: MutableBuffer,
+    pub image_data: Vec<u8>,
     /// Animations that the skin possesses.
     #[serde(rename = "AnimatedImageData")]
     pub animations: Vec<SkinAnimation>,
@@ -340,7 +340,7 @@ pub struct Skin {
     pub cape_image_height: u32,
     /// Cape image data
     #[serde(rename = "CapeData", with = "base64")]
-    pub cape_image_data: MutableBuffer,
+    pub cape_image_data: Vec<u8>,
     /// JSON containing information like bones.
     #[serde(rename = "SkinGeometryData", with = "base64_string")]
     pub geometry: String,
@@ -388,15 +388,13 @@ mod base64 {
     use base64::Engine;
     use serde::{Deserialize, Deserializer};
 
-    use util::MutableBuffer;
-
     const ENGINE: base64::engine::GeneralPurpose = base64::engine::general_purpose::STANDARD;
 
-    pub fn deserialize<'de, D: Deserializer<'de>>(d: D) -> anyhow::Result<MutableBuffer, D::Error> {
+    pub fn deserialize<'de, D: Deserializer<'de>>(d: D) -> anyhow::Result<Vec<u8>, D::Error> {
         let base64 = String::deserialize(d)?;
 
         let bytes = ENGINE.decode(base64).map_err(serde::de::Error::custom)?;
-        Ok(MutableBuffer::from(bytes))
+        Ok(Vec::from(bytes))
     }
 }
 
@@ -450,49 +448,49 @@ impl Skin {
         Ok(())
     }
 
-    pub fn serialize(&self, buffer: &mut MutableBuffer) -> anyhow::Result<()> {
-        buffer.write_str(&self.skin_id)?;
-        buffer.write_str(&self.playfab_id)?;
-        buffer.write_str(&self.resource_patch)?;
+    pub fn serialize_into<W: BinaryWrite>(&self, writer: &mut W) -> anyhow::Result<()> {
+        writer.write_str(&self.skin_id)?;
+        writer.write_str(&self.playfab_id)?;
+        writer.write_str(&self.resource_patch)?;
 
-        buffer.write_u32_le(self.image_width)?;
-        buffer.write_u32_le(self.image_height)?;
-        buffer.write_var_u32(self.image_data.len() as u32)?;
-        buffer.write_all(self.image_data.as_ref())?;
+        writer.write_u32_le(self.image_width)?;
+        writer.write_u32_le(self.image_height)?;
+        writer.write_var_u32(self.image_data.len() as u32)?;
+        writer.write_all(self.image_data.as_ref())?;
 
-        buffer.write_u32_le(self.animations.len() as u32)?;
+        writer.write_u32_le(self.animations.len() as u32)?;
         for animation in &self.animations {
-            animation.serialize(buffer)?;
+            animation.serialize_into(writer)?;
         }
 
-        buffer.write_u32_le(self.cape_image_width)?;
-        buffer.write_u32_le(self.cape_image_height)?;
-        buffer.write_var_u32(self.cape_image_data.len() as u32)?;
-        buffer.write_all(self.cape_image_data.as_ref())?;
+        writer.write_u32_le(self.cape_image_width)?;
+        writer.write_u32_le(self.cape_image_height)?;
+        writer.write_var_u32(self.cape_image_data.len() as u32)?;
+        writer.write_all(self.cape_image_data.as_ref())?;
 
-        buffer.write_str(&self.geometry)?;
-        buffer.write_str(&self.geometry_engine_version)?;
-        buffer.write_str(&self.animation_data)?;
+        writer.write_str(&self.geometry)?;
+        writer.write_str(&self.geometry_engine_version)?;
+        writer.write_str(&self.animation_data)?;
 
-        buffer.write_str(&self.cape_id)?;
-        buffer.write_str(&self.full_id)?;
-        buffer.write_str(self.arm_size.name())?;
-        buffer.write_str(&self.color)?;
+        writer.write_str(&self.cape_id)?;
+        writer.write_str(&self.full_id)?;
+        writer.write_str(self.arm_size.name())?;
+        writer.write_str(&self.color)?;
 
-        buffer.write_u32_le(self.persona_pieces.len() as u32)?;
+        writer.write_u32_le(self.persona_pieces.len() as u32)?;
         for piece in &self.persona_pieces {
-            piece.serialize(buffer)?;
+            piece.serialize_into(writer)?;
         }
 
-        buffer.write_u32_le(self.persona_piece_tints.len() as u32)?;
+        writer.write_u32_le(self.persona_piece_tints.len() as u32)?;
         for tint in &self.persona_piece_tints {
-            tint.serialize(buffer)?;
+            tint.serialize_into(writer)?;
         }
 
-        buffer.write_bool(self.is_premium)?;
-        buffer.write_bool(self.is_persona)?;
-        buffer.write_bool(self.cape_on_classic_skin)?;
-        buffer.write_bool(self.is_primary_user)
+        writer.write_bool(self.is_premium)?;
+        writer.write_bool(self.is_persona)?;
+        writer.write_bool(self.cape_on_classic_skin)?;
+        writer.write_bool(self.is_primary_user)
     }
 }
 
@@ -505,7 +503,7 @@ impl<'a> util::Deserialize<'a> for Skin {
         let image_width = reader.read_u32_le()?;
         let image_height = reader.read_u32_le()?;
         let image_size = reader.read_var_u32()?;
-        let image_data = MutableBuffer::from(reader.take_n(image_size as usize)?.to_vec());
+        let image_data = reader.take_n(image_size as usize)?.to_vec();
 
         let animation_count = reader.read_u32_le()?;
         let mut animations = Vec::with_capacity(animation_count as usize);
@@ -516,7 +514,7 @@ impl<'a> util::Deserialize<'a> for Skin {
         let cape_image_width = reader.read_u32_le()?;
         let cape_image_height = reader.read_u32_le()?;
         let cape_image_size = reader.read_var_u32()?;
-        let cape_image_data = MutableBuffer::from(reader.take_n(cape_image_size as usize)?.to_vec());
+        let cape_image_data = reader.take_n(cape_image_size as usize)?.to_vec();
 
         let geometry = reader.read_str()?.to_owned();
         let geometry_engine_version = reader.read_str()?.to_owned();

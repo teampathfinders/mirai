@@ -15,7 +15,6 @@ use replicator::Replicator;
 
 use tokio::task::JoinSet;
 use util::Serialize;
-use util::MutableBuffer;
 
 use crate::config::SERVER_CONFIG;
 use crate::level::Level;
@@ -26,13 +25,13 @@ const BROADCAST_CHANNEL_CAPACITY: usize = 5;
 const FORWARD_TIMEOUT: Duration = Duration::from_millis(10);
 
 pub struct ChannelUser<T> {
-    channel: mpsc::Sender<MutableBuffer>,
+    channel: mpsc::Sender<Vec<u8>>,
     state: Arc<T>
 }
 
 impl<T> ChannelUser<T> {
     #[inline]
-    pub async fn forward(&self, packet: MutableBuffer) -> anyhow::Result<()> {
+    pub async fn forward(&self, packet: Vec<u8>) -> anyhow::Result<()> {
         self.channel.send_timeout(packet, FORWARD_TIMEOUT).await.context("Server-side client timed out")?;
         Ok(())
     }
@@ -305,7 +304,7 @@ impl UserMap {
 
 //     #[inline]
 //     async fn garbage_collector(
-//         list: Arc<DashMap<SocketAddr, (mpsc::Sender<MutableBuffer>, Arc<Session>)>>,
+//         list: Arc<DashMap<SocketAddr, (mpsc::Sender<Vec<u8>>, Arc<Session>)>>,
 //     ) -> ! {
 //         let mut interval = tokio::time::interval(GARBAGE_COLLECT_INTERVAL);
 //         loop {

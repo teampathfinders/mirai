@@ -17,7 +17,6 @@ use crate::network::UserMap;
 use proto::bedrock::{Command, GameRule, GameRulesChanged, LevelChunk, SubChunkRequestMode};
 
 use crate::level::serialize::serialize_biomes;
-use util::MutableBuffer;
 
 /// Interval between standard Minecraft ticks.
 pub const TICK_INTERVAL: Duration = Duration::from_millis(1000 / 20);
@@ -156,7 +155,7 @@ impl Level {
 
         let count = sub_chunks.iter().filter(|o| o.is_some()).count();
 
-        let mut raw_payload = MutableBuffer::new();
+        let mut raw_payload = Vec::new();
         serialize_biomes(&mut raw_payload, &biomes)?;
 
         let packet = LevelChunk {

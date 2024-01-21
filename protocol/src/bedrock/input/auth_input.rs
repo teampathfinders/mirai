@@ -1,7 +1,7 @@
 use std::ops::Deref;
 
 use macros::variant_count;
-use util::{Deserialize, SharedBuffer, BinaryRead, Vector, BlockPosition};
+use util::{Deserialize, BinaryRead, Vector, BlockPosition};
 use crate::bedrock::{ConnectedPacket, PlayerActionType, PlayerAction};
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]

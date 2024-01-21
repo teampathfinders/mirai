@@ -1,5 +1,5 @@
 use util::{bail, Deserialize, Error, Result, Serialize};
-use util::{BinaryRead, BinaryWrite, MutableBuffer, SharedBuffer};
+use util::{BinaryRead, BinaryWrite};
 
 use crate::bedrock::ConnectedPacket;
 
@@ -32,8 +32,8 @@ impl ConnectedPacket for SimpleEvent {
 }
 
 impl Serialize for SimpleEvent {
-    fn serialize(&self, buffer: &mut MutableBuffer) -> anyhow::Result<()> {
-        buffer.write_i16_le(*self as i16)
+    fn serialize_into<W: BinaryWrite>(&self, writer: &mut W) -> anyhow::Result<()> {
+        writer.write_i16_le(*self as i16)
     }
 }
 

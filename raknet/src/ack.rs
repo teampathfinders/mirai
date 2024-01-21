@@ -1,4 +1,4 @@
-use util::{MutableBuffer, Deserialize, BinaryRead, Serialize};
+use util::{Deserialize, BinaryRead, Serialize};
 
 use proto::raknet::{Ack, Nak};
 
@@ -10,6 +10,10 @@ impl RaknetUser {
     /// This function unregisters the specified packet IDs from the recovery queue.
     pub fn handle_ack<'a, R: BinaryRead<'a>>(&self, reader: R) -> anyhow::Result<()> {
         let ack = Ack::deserialize(reader)?;
+
+        #[cfg(trace_raknet)]
+        tracing::debug!("{ack:?}");
+
         self.recovery.acknowledge(&ack.records);
 
         Ok(())
@@ -23,9 +27,9 @@ impl RaknetUser {
         let nack = Nak::deserialize(reader)?;
         let frame_batches = self.recovery.recover(&nack.records);
 
-        let mut serialized = MutableBuffer::new();
+        let mut serialized = Vec::new();
         for frame_batch in frame_batches {
-            frame_batch.serialize(&mut serialized)?;
+            frame_batch.serialize_into(&mut serialized)?;
 
             self
                 .socket

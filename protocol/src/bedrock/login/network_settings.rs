@@ -1,4 +1,4 @@
-use util::{BinaryWrite, MutableBuffer};
+use util::{BinaryWrite};
 use util::Result;
 use util::Serialize;
 
@@ -58,11 +58,11 @@ impl ConnectedPacket for NetworkSettings {
 }
 
 impl Serialize for NetworkSettings {
-    fn serialize(&self, buffer: &mut MutableBuffer) -> anyhow::Result<()> {
-        buffer.write_u16_be(self.compression_threshold)?;
-        buffer.write_u16_be(self.compression_algorithm as u16)?;
-        buffer.write_bool(self.client_throttle.enabled)?;
-        buffer.write_u8(self.client_throttle.threshold)?;
-        buffer.write_f32_be(self.client_throttle.scalar)
+    fn serialize_into<W: BinaryWrite>(&self, writer: &mut W) -> anyhow::Result<()> {
+        writer.write_u16_be(self.compression_threshold)?;
+        writer.write_u16_be(self.compression_algorithm as u16)?;
+        writer.write_bool(self.client_throttle.enabled)?;
+        writer.write_u8(self.client_throttle.threshold)?;
+        writer.write_f32_be(self.client_throttle.scalar)
     }
 }

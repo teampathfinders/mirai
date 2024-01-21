@@ -1,6 +1,6 @@
 use std::io::Write;
 
-use util::{BinaryWrite, MutableBuffer};
+use util::{BinaryWrite};
 use util::Result;
 use util::Serialize;
 
@@ -40,22 +40,22 @@ impl<T: ConnectedPacket + Serialize> Packet<T> {
         self.header.serialized_size() + self.content.serialized_size()
     }
 
-    pub fn serialize(&self) -> anyhow::Result<MutableBuffer> {
+    pub fn serialize(&self) -> anyhow::Result<Vec<u8>> {
         let expected_size = self.header.serialized_size() + self.content.serialized_size();
         let capacity = 5 + expected_size;
 
         // FIXME: Properly calculate packet size to reduce this to one allocation.
-        let mut buffer = MutableBuffer::with_capacity(capacity);
+        let mut writer = Vec::with_capacity(capacity);
 
-        let mut rest = MutableBuffer::with_capacity(expected_size);
-        self.header.serialize(&mut rest)?;
-        self.content.serialize(&mut rest)?;
+        let mut rest = Vec::with_capacity(expected_size);
+        self.header.serialize_into(&mut rest)?;
+        self.content.serialize_into(&mut rest)?;
 
         // debug_assert_eq!(rest.len(), expected_size, "While serializing {:x}", self.header.id);
 
-        buffer.write_var_u32(rest.len() as u32)?;
-        buffer.write_all(&rest)?;
+        writer.write_var_u32(rest.len() as u32)?;
+        writer.write_all(&rest)?;
 
-        Ok(buffer)
+        Ok(writer)
     }
 }
