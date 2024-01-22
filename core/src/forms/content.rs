@@ -4,12 +4,12 @@ use super::Submittable;
 
 /// A plain piece of text.
 #[derive(Debug, Default)]
-pub struct FormLabel {
+pub struct Label {
     /// Text to display.
     pub(super) label: String,
 }
 
-impl FormLabel {
+impl Label {
     /// Creates a new empty label.
     pub fn new() -> Self {
         Self::default()
@@ -22,15 +22,15 @@ impl FormLabel {
     }
 }
 
-impl Submittable for FormLabel {}
+impl Submittable for Label {}
 
-impl From<FormLabel> for FormElement {
-    fn from(v: FormLabel) -> Self {
-        FormElement::Label(v)
+impl From<Label> for Content {
+    fn from(v: Label) -> Self {
+        Content::Label(v)
     }
 }
 
-impl serde::Serialize for FormLabel {
+impl serde::Serialize for Label {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: serde::Serializer,
@@ -44,7 +44,7 @@ impl serde::Serialize for FormLabel {
 
 /// A text input field.
 #[derive(Debug, Default)]
-pub struct FormInput {
+pub struct Input {
     /// Label to display above the field.
     pub(super) label: String,
     /// Placeholder to display inside the field when it is empty.
@@ -53,7 +53,7 @@ pub struct FormInput {
     pub(super) default: String,
 }
 
-impl FormInput {
+impl Input {
     /// Creates a new input.
     pub fn new() -> Self {
         <Self as Default>::default()
@@ -78,15 +78,15 @@ impl FormInput {
     }
 }
 
-impl Submittable for FormInput {}
+impl Submittable for Input {}
 
-impl From<FormInput> for FormElement {
-    fn from(v: FormInput) -> Self {
-        FormElement::Input(v)
+impl From<Input> for Content {
+    fn from(v: Input) -> Self {
+        Content::Input(v)
     }
 }
 
-impl serde::Serialize for FormInput {
+impl serde::Serialize for Input {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: serde::Serializer,
@@ -102,14 +102,14 @@ impl serde::Serialize for FormInput {
 
 /// A simple boolean toggle that switches between true and false.
 #[derive(Debug, Default)]
-pub struct FormToggle {
+pub struct Toggle {
     /// Label to display next to the toggle.
     pub(super) label: String,
     /// Initial state of the toggle.
     pub(super) default: bool,
 }
 
-impl FormToggle {
+impl Toggle {
     /// Creates a new toggle.
     pub fn new() -> Self {
         <Self as Default>::default()
@@ -128,15 +128,15 @@ impl FormToggle {
     }
 }
 
-impl Submittable for FormToggle {}
+impl Submittable for Toggle {}
 
-impl From<FormToggle> for FormElement {
-    fn from(v: FormToggle) -> Self {
-        FormElement::Toggle(v)
+impl From<Toggle> for Content {
+    fn from(v: Toggle) -> Self {
+        Content::Toggle(v)
     }
 }
 
-impl serde::Serialize for FormToggle {
+impl serde::Serialize for Toggle {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: serde::Serializer,
@@ -151,7 +151,7 @@ impl serde::Serialize for FormToggle {
 
 /// A slider that picks numerical values.
 #[derive(Debug, Default)]
-pub struct FormSlider {
+pub struct Slider {
     /// Label to display above the slider.
     pub(super) label: String,
     /// Minimum value of the slider.
@@ -164,7 +164,7 @@ pub struct FormSlider {
     pub(super) default: f64,
 }
 
-impl FormSlider {
+impl Slider {
     /// Creates a new slider.
     pub fn new() -> Self {
         <Self as Default>::default()
@@ -201,15 +201,15 @@ impl FormSlider {
     }
 }
 
-impl Submittable for FormSlider {}
+impl Submittable for Slider {}
 
-impl From<FormSlider> for FormElement {
-    fn from(v: FormSlider) -> Self {
-        FormElement::Slider(v)
+impl From<Slider> for Content {
+    fn from(v: Slider) -> Self {
+        Content::Slider(v)
     }
 }
 
-impl serde::Serialize for FormSlider {
+impl serde::Serialize for Slider {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: serde::Serializer,
@@ -227,7 +227,7 @@ impl serde::Serialize for FormSlider {
 
 /// A dropdown list of selectable options.
 #[derive(Debug, Default)]
-pub struct FormDropdown {
+pub struct Dropdown {
     /// Label to display above the menu.
     pub(super) label: String,
     /// List of options that can be selected.
@@ -237,7 +237,7 @@ pub struct FormDropdown {
     pub(super) default: u32,
 }
 
-impl FormDropdown {
+impl Dropdown {
     /// Creates a new dropdown.
     pub fn new() -> Self {
         <Self as Default>::default()
@@ -262,15 +262,15 @@ impl FormDropdown {
     }
 }
 
-impl Submittable for FormDropdown {}
+impl Submittable for Dropdown {}
 
-impl From<FormDropdown> for FormElement {
-    fn from(v: FormDropdown) -> Self {
+impl From<Dropdown> for Content {
+    fn from(v: Dropdown) -> Self {
         Self::Dropdown(v)
     }
 }
 
-impl serde::Serialize for FormDropdown {
+impl serde::Serialize for Dropdown {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: serde::Serializer,
@@ -286,7 +286,7 @@ impl serde::Serialize for FormDropdown {
 
 /// Similar to a dropdown, but in slider forms.
 #[derive(Debug, Default)]
-pub struct FormStepSlider {
+pub struct StepSlider {
     /// Label to display above the slider.
     pub(super) label: String,
     /// A list of available options.
@@ -296,7 +296,7 @@ pub struct FormStepSlider {
     pub(super) default: u32,
 }
 
-impl FormStepSlider {
+impl StepSlider {
     /// Creates a new step slider.
     pub fn new() -> Self {
         <Self as Default>::default()
@@ -321,15 +321,15 @@ impl FormStepSlider {
     }
 }
 
-impl Submittable for FormStepSlider {}
+impl Submittable for StepSlider {}
 
-impl From<FormStepSlider> for FormElement {
-    fn from(v: FormStepSlider) -> Self {
-        FormElement::StepSlider(v)
+impl From<StepSlider> for Content {
+    fn from(v: StepSlider) -> Self {
+        Content::StepSlider(v)
     }
 }
 
-impl serde::Serialize for FormStepSlider {
+impl serde::Serialize for StepSlider {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: serde::Serializer,
@@ -345,7 +345,7 @@ impl serde::Serialize for FormStepSlider {
 
 /// An image displayed next to a button.
 #[derive(Debug, Clone)]
-pub(crate) enum FormButtonImage {
+pub(crate) enum ButtonImage {
     /// A URL pointing to an online image.
     Url(String),
     /// A path pointing to an image in an applied resource pack.
@@ -354,22 +354,22 @@ pub(crate) enum FormButtonImage {
 
 /// A simple button with optional image.
 #[derive(Debug)]
-pub struct FormButton {
+pub struct Button {
     /// Text displayed on the button.
     pub(crate) body: String,
     /// An optional image shown to the left of the button.
     /// This button can either be a local file from a resource pack or a URL.
-    pub(crate) image: Option<FormButtonImage>,
+    pub(crate) image: Option<ButtonImage>,
 }
 
-impl FormButton {
+impl Button {
     /// Creates a new button.
     pub fn new() -> Self {
         Self::default()
     }
 
     /// Sets the content of the button.
-    /// 
+    ///
     /// Default: "Button".
     pub fn body(mut self, body: impl Into<String>) -> Self {
         self.body = body.into();
@@ -377,38 +377,29 @@ impl FormButton {
     }
 
     /// Sets the image URL. This can point to an online resource.
-    /// 
+    ///
     /// Default: None
     pub fn image_url(mut self, url: impl Into<String>) -> Self {
-        self.image = Some(FormButtonImage::Url(url.into()));
+        self.image = Some(ButtonImage::Url(url.into()));
         self
     }
 
     /// Sets the image path. This should point to an image from a resource pack.
-    /// 
+    ///
     /// Default: None
     pub fn image_path(mut self, path: impl Into<String>) -> Self {
-        self.image = Some(FormButtonImage::Path(path.into()));
+        self.image = Some(ButtonImage::Path(path.into()));
         self
     }
 }
 
-impl From<FormButton> for FormElement {
-    fn from(v: FormButton) -> Self {
-        Self::Button(v)
-    }
-}
-
-impl Default for FormButton {
+impl Default for Button {
     fn default() -> Self {
-        Self {
-            body: "Button".to_owned(),
-            image: None
-        }
+        Self { body: "Button".to_owned(), image: None }
     }
 }
 
-impl serde::Serialize for FormButton {
+impl serde::Serialize for Button {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: serde::Serializer,
@@ -434,8 +425,8 @@ impl serde::Serialize for FormButton {
         let mut map = serializer.serialize_struct("button", 1)?;
         if let Some(image) = &self.image {
             let (img_type, data) = match image {
-                FormButtonImage::Path(p) => ("path", p),
-                FormButtonImage::Url(u) => ("url", u),
+                ButtonImage::Path(p) => ("path", p),
+                ButtonImage::Url(u) => ("url", u),
             };
 
             let data = ImageData { img_type, data };
@@ -449,30 +440,30 @@ impl serde::Serialize for FormButton {
 
 /// Abstraction over a forms element.
 #[derive(Debug)]
-pub enum FormElement {
-    /// See [`FormLabel`].
-    Label(FormLabel),
-    /// See [`FormInput`].
-    Input(FormInput),
-    /// See [`FormToggle`].
-    Toggle(FormToggle),
-    /// See [`FormDropdown`].
-    Dropdown(FormDropdown),
-    /// See [`FormSlider`].
-    Slider(FormSlider),
-    /// See [`FormStepSlider`].
-    StepSlider(FormStepSlider),
-    /// See [`FormButton`].
-    Button(FormButton),
+pub enum Content {
+    /// See [`Label`].
+    Label(Label),
+    /// See [`Input`].
+    Input(Input),
+    /// See [`Toggle`].
+    Toggle(Toggle),
+    /// See [`Dropdown`].
+    Dropdown(Dropdown),
+    /// See [`Slider`].
+    Slider(Slider),
+    /// See [`StepSlider`].
+    StepSlider(StepSlider),
+    // /// See [`Button`].
+    // Button(Button),
 }
 
-impl serde::Serialize for FormElement {
+impl serde::Serialize for Content {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: serde::Serializer,
     {
         match self {
-            Self::Button(b) => b.serialize(serializer),
+            // Self::Button(b) => b.serialize(serializer),
             Self::Dropdown(d) => d.serialize(serializer),
             Self::Input(i) => i.serialize(serializer),
             Self::Label(l) => l.serialize(serializer),

@@ -1,23 +1,22 @@
 use serde::ser::SerializeStruct;
 
-use super::{FormDescriptor, SubmittableForm};
+use super::{FormDesc, SubmittableForm};
 
 /// A modal is a forms that only has a body and two buttons.
-/// Unlike [`CustomForm`](crate::forms::CustomForm)
-/// [`FormButton`](crate::forms::FormButton)s, these buttons cannot have images next to them.
+/// Unlike [`CustomForm`](crate::forms::CustomForm)'s buttons, these buttons cannot have images next to them.
 #[derive(Debug)]
-pub struct ModalForm<'a> {
+pub struct Modal<'a> {
     /// Title displayed at the top of the window.
     title: &'a str,
     /// Text displayed in the modal.
     body: &'a str,
     /// Text body of the first button.
-    first: &'a str,
+    confirm: &'a str,
     /// Text body of the second button.
-    second: &'a str,
+    cancel: &'a str,
 }
 
-impl<'a> ModalForm<'a> {
+impl<'a> Modal<'a> {
     /// Creates a new default modal.
     pub fn new() -> Self {
         Self::default()
@@ -26,54 +25,54 @@ impl<'a> ModalForm<'a> {
     /// Sets the title of the modal.
     ///
     /// Default: "Modal".
-    pub fn title(mut self, title: &'a str) -> Self {
-        self.title = title;
+    pub fn title(mut self, title: impl Into<&'a str>) -> Self {
+        self.title = title.into();
         self
     }
 
     /// Sets the body of the modal.
     ///
     /// Default: ""
-    pub fn body(mut self, body: &'a str) -> Self {
-        self.body = body;
+    pub fn body(mut self, body: impl Into<&'a str>) -> Self {
+        self.body = body.into();
         self
     }
 
-    /// Sets the text of the first button of the modal.
+    /// Sets the text of the confirm button of the modal.
     ///
     /// Default: "Confirm".
-    pub fn first(mut self, first: &'a str) -> Self {
-        self.first = first;
+    pub fn confirm(mut self, confirm: impl Into<&'a str>) -> Self {
+        self.confirm = confirm.into();
         self
     }
 
-    /// Sets the text of the second button of the modal.
+    /// Sets the text of the cancel button of the modal.
     ///
     /// Default: "Cancel".
-    pub fn second(mut self, second: &'a str) -> Self {
-        self.second = second;
+    pub fn cancel(mut self, cancel: impl Into<&'a str>) -> Self {
+        self.cancel = cancel.into();
         self
     }
 }
 
-impl Default for ModalForm<'_> {
+impl Default for Modal<'_> {
     fn default() -> Self {
         Self {
             title: "Modal",
             body: "",
-            first: "Confirm",
-            second: "Cancel",
+            confirm: "Confirm",
+            cancel: "Cancel",
         }
     }
 }
 
-impl SubmittableForm for ModalForm<'_> {
-    fn into_descriptor(self) -> FormDescriptor {
-        FormDescriptor::Modal
+impl SubmittableForm for Modal<'_> {
+    fn into_desc(self) -> FormDesc {
+        FormDesc::Modal
     }
 }
 
-impl<'a> serde::Serialize for ModalForm<'a> {
+impl<'a> serde::Serialize for Modal<'a> {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: serde::Serializer,
@@ -82,8 +81,8 @@ impl<'a> serde::Serialize for ModalForm<'a> {
         map.serialize_field("type", "modal")?;
         map.serialize_field("title", self.title)?;
         map.serialize_field("content", self.body)?;
-        map.serialize_field("button1", self.first)?;
-        map.serialize_field("button2", self.second)?;
+        map.serialize_field("button1", self.confirm)?;
+        map.serialize_field("button2", self.cancel)?;
         map.end()
     }
 }
