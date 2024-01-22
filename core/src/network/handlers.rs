@@ -7,8 +7,6 @@ use proto::bedrock::{Animate, CommandOutput, CommandOutputMessage, CommandOutput
 
 use util::{Deserialize, Vector};
 
-use crate::forms::{CustomForm, FormLabel, FormInput, FormResponse, MenuForm};
-
 use super::BedrockUser;
 
 impl BedrockUser {
@@ -44,46 +42,6 @@ impl BedrockUser {
                     actual, source
                 );
             }
-            
-            let dbg = ClientBoundDebugRenderer {
-                action: DebugRendererAction::AddCube,
-                color: Vector::from([1.0; 4]),
-                duration: 5000,
-                position: Vector::from([1.0, 58.0, 1.0]),
-                text: "Hello, World!"
-            };
-            self.send(dbg)?;
-
-            let clone = Arc::clone(self);
-            let message = message.to_owned();
-            tokio::spawn(async move {
-                tokio::time::sleep(Duration::from_secs(1)).await;
-
-                let sub = clone.form_subscriber.subscribe(
-                    &clone, 
-                    CustomForm::new()
-                        .title("Response form")
-                        .with("label", FormLabel::new().label(format!("Give your response to: \"{message}\"")))
-                        .with("input", FormInput::new().label("Your response:").default("Echo!").placeholder("Response..."))
-                ).unwrap();
-
-                match sub.await.unwrap() {
-                    FormResponse::Cancelled(reason) => tracing::info!("Form was cancelled: {reason:?}"),
-                    FormResponse::Response(response) => {
-                        let input = response["input"].as_str().unwrap();
-                        tracing::info!("Player responded with: {input}");
-
-                        clone.send(TextMessage {
-                            data: TextData::Tip {
-                                message: &format!("You said {input}!")
-                            },
-                            needs_translation: false,
-                            xuid: 0,
-                            platform_chat_id: ""
-                        }).unwrap();
-                    }
-                }
-            });
 
             // Send chat message to replication layer
             self.replicator.text_msg(&request).await?;
