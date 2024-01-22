@@ -2,7 +2,7 @@ use serde::ser::SerializeStruct;
 
 use crate::forms::FormButton;
 
-use super::{Form, FormDescriptor};
+use super::{FormDescriptor, SubmittableForm};
 
 /// A forms is similar to a modal but it has an arbitrary amount of buttons.
 #[derive(Debug)]
@@ -21,7 +21,7 @@ impl<'a> MenuForm<'a> {
     }
 
     /// Sets the title of the form.
-    /// 
+    ///
     /// Default: "Menu"
     pub fn title(mut self, title: &'a str) -> Self {
         self.title = title;
@@ -47,12 +47,12 @@ impl Default for MenuForm<'_> {
         Self {
             title: "Menu",
             body: "",
-            buttons: Vec::new()
+            buttons: Vec::new(),
         }
     }
 }
 
-impl Form for MenuForm<'_> {
+impl SubmittableForm for MenuForm<'_> {
     fn into_descriptor(self) -> FormDescriptor {
         todo!()
     }

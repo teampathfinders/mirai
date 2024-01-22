@@ -105,9 +105,6 @@ impl RaknetUser {
     /// Processes an unencapsulated game packet.
     async fn handle_frame_body(&self, packet: Vec<u8>) -> anyhow::Result<()> {
         let packet_id = *packet.first().expect("Game packet buffer was empty");
-        if packet_id == 0x15 {
-            tracing::error!("Disconnected");
-        }
 
         match packet_id {
             // CONNECTED_PACKET_ID => self.handle_encrypted_frame(packet).await?,

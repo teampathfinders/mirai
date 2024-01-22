@@ -9,10 +9,14 @@ use dashmap::DashMap;
 use proto::bedrock::{FormCancelReason, FormRequest, FormResponseData};
 use tokio::sync::oneshot;
 
-use crate::{forms::FormElement, network::BedrockUser};
+use crate::{
+    forms::{FormElement, FormVariant},
+    network::BedrockUser,
+};
 
-use super::{Form, FormDescriptor};
+use super::{FormDescriptor, SubmittableForm};
 
+/// A value that can be found in a custom form response.
 #[derive(Debug)]
 pub enum FormBodyValue {
     Bool(bool),
@@ -22,45 +26,109 @@ pub enum FormBodyValue {
 }
 
 impl FormBodyValue {
-    /// Cast to a boolean, returning `None` if it was not actually a boolean.
-    pub fn as_bool(&self) -> Option<bool> {
+    /// Cast to a boolean.
+    pub fn as_bool(&self) -> anyhow::Result<bool> {
         match self {
-            Self::Bool(b) => Some(*b),
-            _ => None,
+            Self::Bool(b) => Ok(*b),
+            _ => anyhow::bail!("Element response was not a bool"),
         }
     }
 
-    /// Cast to a string, returning `None` if it was not actually a string.
-    pub fn as_str(&self) -> Option<&str> {
+    /// Cast to a string.
+    pub fn as_str(&self) -> anyhow::Result<&str> {
         match self {
-            Self::Text(s) => Some(s),
-            _ => None,
+            Self::Text(s) => Ok(s),
+            _ => anyhow::bail!("Element response was not a string"),
         }
     }
 
-    /// Cast to an integer, returning `None` if it was not actually an integer.
-    pub fn as_index(&self) -> Option<u64> {
+    /// Cast to an integer.
+    pub fn as_index(&self) -> anyhow::Result<u64> {
         match self {
-            Self::Index(i) => Some(*i),
-            _ => None,
+            Self::Index(i) => Ok(*i),
+            _ => anyhow::bail!("Element response was not an index"),
         }
     }
 
-    /// Cast to a float, returning `None` if it was not actually a float.
-    pub fn as_float(&self) -> Option<f64> {
+    /// Cast to a float.
+    pub fn as_float(&self) -> anyhow::Result<f64> {
         match self {
-            Self::Float(f) => Some(*f),
-            _ => None,
+            Self::Float(f) => Ok(*f),
+            _ => anyhow::bail!("Element response was not a float"),
         }
     }
 }
 
-#[derive(Debug, Default)]
-pub struct FormBody {
-    pub body: HashMap<String, FormBodyValue>,
+#[derive(Debug)]
+pub enum FormBody {
+    Modal(ModalFormBody),
+    Menu(MenuFormBody),
+    Custom(CustomFormBody),
 }
 
 impl FormBody {
+    /// Casts this to a custom response.
+    pub fn as_custom(&self) -> anyhow::Result<&CustomFormBody> {
+        if let Self::Custom(body) = self {
+            Ok(body)
+        } else {
+            anyhow::bail!("Form body did not come from a custom form")
+        }
+    }
+
+    /// Casts this to a menu response.
+    pub fn as_menu(&self) -> anyhow::Result<&MenuFormBody> {
+        if let Self::Menu(body) = self {
+            Ok(body)
+        } else {
+            anyhow::bail!("Form body did not come from a custom form")
+        }
+    }
+
+    /// Casts this to a modal response.
+    pub fn as_modal(&self) -> anyhow::Result<&ModalFormBody> {
+        if let Self::Modal(body) = self {
+            Ok(body)
+        } else {
+            anyhow::bail!("Form body did not come from a custom form")
+        }
+    }
+
+    /// Whether this is a custom response.
+    pub fn is_custom(&self) -> bool {
+        matches!(self, Self::Custom(_))
+    }
+
+    /// Whether this is a menu response.
+    pub fn is_menu(&self) -> bool {
+        matches!(self, Self::Menu(_))
+    }
+
+    /// Whether this is a modal response.
+    pub fn is_modal(&self) -> bool {
+        matches!(self, Self::Modal(_))
+    }
+}
+
+/// Response body of a [`ModalForm`].
+#[derive(Debug)]
+pub struct ModalFormBody {
+    /// Whether the first button was pressed.
+    pub confirmed: bool,
+}
+
+/// Response body of a [`MenuForm`].
+#[derive(Debug)]
+pub struct MenuFormBody {}
+
+/// Response body of a [`CustomForm`].
+#[derive(Debug, Default)]
+pub struct CustomFormBody {
+    /// Form body
+    body: HashMap<String, FormBodyValue>,
+}
+
+impl CustomFormBody {
     pub fn get(&self, index: impl AsRef<str>) -> Option<&FormBodyValue> {
         self.body.get(index.as_ref())
     }
@@ -70,7 +138,7 @@ impl FormBody {
     }
 }
 
-impl<S: AsRef<str>> Index<S> for FormBody {
+impl<S: AsRef<str>> Index<S> for CustomFormBody {
     type Output = FormBodyValue;
 
     fn index(&self, index: S) -> &Self::Output {
@@ -78,7 +146,7 @@ impl<S: AsRef<str>> Index<S> for FormBody {
     }
 }
 
-impl<S: AsRef<str>> IndexMut<S> for FormBody {
+impl<S: AsRef<str>> IndexMut<S> for CustomFormBody {
     fn index_mut(&mut self, index: S) -> &mut Self::Output {
         self.get_mut(index).unwrap()
     }
@@ -100,27 +168,27 @@ impl FormResponse {
         matches!(self, Self::Cancelled(_))
     }
 
-    /// Returns the reason the form was cancelled.
+    /// Casts to a [`FormCancelReason`].
     ///
-    /// This function returns `None` if the form was not cancelled.
+    /// Returns an error if the form was not cancelled.
     #[inline]
-    pub fn cancel_reason(&self) -> Option<FormCancelReason> {
+    pub fn as_cancelled(&self) -> anyhow::Result<FormCancelReason> {
         if let Self::Cancelled(reason) = self {
-            Some(*reason)
+            Ok(*reason)
         } else {
-            None
+            anyhow::bail!("Form response was not cancelled")
         }
     }
 
-    /// Returns the response of the form.
+    /// Casts to a [`FormBody`].
     ///
-    /// This function returns `None` if the form did not receive a response.
+    /// Returns an error if the form was cancelled.
     #[inline]
-    pub fn response(&self) -> Option<&FormBody> {
+    pub fn as_response(&self) -> anyhow::Result<&FormBody> {
         if let Self::Response(response) = self {
-            Some(response)
+            Ok(response)
         } else {
-            None
+            anyhow::bail!("Form response was cancelled")
         }
     }
 }
@@ -141,11 +209,10 @@ impl FormSubscriber {
     }
 
     /// Submits a form to the user and returns a receiver that will receive the response.
-    pub fn subscribe<F: Form>(&self, user: &BedrockUser, form: F) -> anyhow::Result<oneshot::Receiver<FormResponse>> {
+    pub fn subscribe<F: SubmittableForm>(&self, user: &BedrockUser, form: F) -> anyhow::Result<oneshot::Receiver<FormResponse>> {
         let data = serde_json::to_string(&form)?;
         let id = self.next_id.fetch_add(1, Ordering::Relaxed);
 
-        dbg!(id);
         user.send(FormRequest { data: &data, id })?;
 
         let (sender, receiver) = oneshot::channel();
@@ -164,14 +231,34 @@ impl FormSubscriber {
             return Ok(());
         }
 
+        tracing::info!("{response:?}");
+
         let body = response.response_data.ok_or_else(|| anyhow!("Form response body was empty"))?;
+        match desc.variant {
+            FormVariant::Custom => self.handle_custom(desc, sender, body),
+            FormVariant::Modal => self.handle_modal(desc, sender, body),
+            FormVariant::Menu => self.handle_menu(desc, sender, body),
+        }
+    }
 
-        let responses: serde_json::Value = serde_json::from_str(body).context("Unable to parse form response")?;
+    fn handle_menu(&self, desc: FormDescriptor, sender: oneshot::Sender<FormResponse>, body: &str) -> anyhow::Result<()> {
+        Ok(())
+    }
 
-        let responses = responses.as_array().ok_or_else(|| anyhow!("Expected array response body"))?;
+    fn handle_modal(&self, desc: FormDescriptor, sender: oneshot::Sender<FormResponse>, body: &str) -> anyhow::Result<()> {
+        let confirmed: bool = serde_json::from_str(body).context("Unable to parse modal response")?;
 
-        let mut out = FormBody::default();
-        let zip = std::iter::zip(desc, responses);
+        // If this returns an error, then the receiver was dropped which can be ignored.
+        let _ = sender.send(FormResponse::Response(FormBody::Modal(ModalFormBody { confirmed })));
+
+        Ok(())
+    }
+
+    fn handle_custom(&self, desc: FormDescriptor, sender: oneshot::Sender<FormResponse>, body: &str) -> anyhow::Result<()> {
+        let responses: Vec<serde_json::Value> = serde_json::from_str(body).context("Unable to parse custom form response")?;
+
+        let mut out = CustomFormBody::default();
+        let zip = std::iter::zip(desc.content, responses);
         for ((key, desc), res) in zip {
             match desc {
                 FormElement::Label(_) => {
@@ -231,7 +318,9 @@ impl FormSubscriber {
             }
         }
 
-        let _ = sender.send(FormResponse::Response(out));
+        // If this returns an error, then the receiver was dropped which can be ignored.
+        let _ = sender.send(FormResponse::Response(FormBody::Custom(out)));
+
         Ok(())
     }
 }
