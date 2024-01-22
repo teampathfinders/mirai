@@ -5,7 +5,7 @@ use super::{FormDesc, SubmittableForm};
 /// A modal is a forms that only has a body and two buttons.
 /// Unlike [`CustomForm`](crate::forms::CustomForm)'s buttons, these buttons cannot have images next to them.
 #[derive(Debug)]
-pub struct ModalForm<'a> {
+pub struct Modal<'a> {
     /// Title displayed at the top of the window.
     title: &'a str,
     /// Text displayed in the modal.
@@ -72,7 +72,7 @@ impl SubmittableForm for Modal<'_> {
     }
 }
 
-impl<'a> serde::Serialize for ModalForm<'a> {
+impl<'a> serde::Serialize for Modal<'a> {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: serde::Serializer,
