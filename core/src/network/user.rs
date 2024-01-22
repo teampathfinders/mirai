@@ -20,7 +20,7 @@ use tokio::task::JoinHandle;
 use util::{Vector, AtomicFlag, Serialize, Deserialize, BinaryWrite, BinaryRead};
 
 use crate::config::SERVER_CONFIG;
-use crate::forms::Subscriber;
+use crate::forms::{Subscriber, SubmittableForm, self};
 use crate::level::{ChunkViewer, Level};
 
 pub struct BedrockUser {
@@ -39,7 +39,7 @@ pub struct BedrockUser {
     pub level: Arc<Level>,
     pub raknet: Arc<RaknetUser>,
     pub player: OnceLock<PlayerData>,
-    pub form_subscriber: Subscriber,
+    pub forms: Subscriber,
 
     pub broadcast: broadcast::Sender<BroadcastPacket>,
     pub job_handle: RwLock<Option<JoinHandle<()>>>
@@ -65,7 +65,7 @@ impl BedrockUser {
             level,
             raknet,
             player: OnceLock::new(),
-            form_subscriber: Subscriber::new(),
+            forms: Subscriber::new(),
             
             broadcast,
             job_handle: RwLock::new(None)
@@ -131,6 +131,17 @@ impl BedrockUser {
         }
 
         Ok(())
+    }
+
+    /// Sends a form to the client and asynchronously waits for a response.
+    /// 
+    /// In case it is more convenient to use a channel receiver instead, use the [`subscribe`](Subscriber::subscribe)
+    /// method on the `forms` field of the user.
+    pub async fn send_form(&self, form: impl SubmittableForm) -> anyhow::Result<forms::Response> {
+        let recv = self.forms.subscribe(self, form)?;
+        let resp = recv.await?;
+
+        Ok(resp)
     }
 
     /// Kicks a player from the server and display the specified message to them.

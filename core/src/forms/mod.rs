@@ -22,6 +22,7 @@ mod custom;
 mod form;
 mod menu;
 mod modal;
+
 pub mod response;
 
 pub use content::*;
@@ -30,4 +31,4 @@ pub use form::*;
 pub use menu::*;
 pub use modal::*;
 
-pub use response::Subscriber;
+pub use response::{Subscriber, Response};
