@@ -1,8 +1,6 @@
-use std::collections::HashMap;
-
 use serde::ser::SerializeStruct;
 
-use super::{FormDescriptor, FormElement, FormLabel, FormVariant, SubmittableForm};
+use super::{FormDescriptor, SubmittableForm};
 
 /// A modal is a forms that only has a body and two buttons.
 /// Unlike [`CustomForm`](crate::forms::CustomForm)
@@ -71,12 +69,7 @@ impl Default for ModalForm<'_> {
 
 impl SubmittableForm for ModalForm<'_> {
     fn into_descriptor(self) -> FormDescriptor {
-        let content = HashMap::from([
-            ("first".to_owned(), FormElement::Label(FormLabel { label: String::new() })),
-            ("second".to_owned(), FormElement::Label(FormLabel { label: String::new() })),
-        ]);
-
-        FormDescriptor { variant: FormVariant::Modal, content }
+        FormDescriptor::Modal
     }
 }
 

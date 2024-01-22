@@ -54,7 +54,7 @@ impl Default for MenuForm<'_> {
 
 impl SubmittableForm for MenuForm<'_> {
     fn into_descriptor(self) -> FormDescriptor {
-        todo!()
+        FormDescriptor::Menu
     }
 }
 
@@ -63,8 +63,8 @@ impl serde::Serialize for MenuForm<'_> {
     where
         S: serde::Serializer,
     {
-        let mut map = serializer.serialize_struct("forms", 4)?;
-        map.serialize_field("type", "forms")?;
+        let mut map = serializer.serialize_struct("form", 4)?;
+        map.serialize_field("type", "form")?;
         map.serialize_field("title", self.title)?;
         map.serialize_field("content", self.body)?;
         map.serialize_field("buttons", &self.buttons)?;

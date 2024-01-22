@@ -4,7 +4,7 @@ use serde::ser::SerializeStruct;
 
 use crate::forms::FormElement;
 
-use super::{FormDescriptor, FormVariant, SubmittableForm};
+use super::{FormDescriptor, SubmittableForm};
 
 pub trait Submittable: Into<FormElement> {}
 
@@ -42,10 +42,7 @@ impl<'a> CustomForm<'a> {
 
 impl<'a> SubmittableForm for CustomForm<'a> {
     fn into_descriptor(self) -> FormDescriptor {
-        FormDescriptor {
-            variant: FormVariant::Custom,
-            content: self.content,
-        }
+        FormDescriptor::Custom(self.content)
     }
 }
 

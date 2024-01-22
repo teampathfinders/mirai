@@ -10,7 +10,7 @@ use proto::bedrock::{FormCancelReason, FormRequest, FormResponseData};
 use tokio::sync::oneshot;
 
 use crate::{
-    forms::{FormElement, FormVariant},
+    forms::FormElement,
     network::BedrockUser,
 };
 
@@ -114,12 +114,26 @@ impl FormBody {
 #[derive(Debug)]
 pub struct ModalFormBody {
     /// Whether the first button was pressed.
-    pub confirmed: bool,
+    confirmed: bool,
+}
+
+impl ModalFormBody {
+    /// Whether the confirm button was pressed.
+    pub fn confirmed(&self) -> bool { self.confirmed }
 }
 
 /// Response body of a [`MenuForm`].
 #[derive(Debug)]
-pub struct MenuFormBody {}
+pub struct MenuFormBody {
+    /// Which button was pressed.
+    pressed: usize
+}
+
+impl MenuFormBody {
+    /// Which button was pressed. This corresponds to the nth button added to the form.
+    /// Index starts at 0.
+    pub fn pressed(&self) -> usize { self.pressed }
+}
 
 /// Response body of a [`CustomForm`].
 #[derive(Debug, Default)]
@@ -221,7 +235,8 @@ impl FormSubscriber {
         Ok(receiver)
     }
 
-    pub fn handle_response(&self, response: FormResponseData) -> anyhow::Result<()> {
+    /// Handles a form response.
+    pub(crate) fn handle_response(&self, response: FormResponseData) -> anyhow::Result<()> {
         let (_id, (sender, desc)) = self.subscribed.remove(&response.id).ok_or_else(|| {
             anyhow!("Unregistered form response received. Please use the FormSubscriber interface instead of sending form requests directly")
         })?;
@@ -231,21 +246,26 @@ impl FormSubscriber {
             return Ok(());
         }
 
-        tracing::info!("{response:?}");
-
         let body = response.response_data.ok_or_else(|| anyhow!("Form response body was empty"))?;
-        match desc.variant {
-            FormVariant::Custom => self.handle_custom(desc, sender, body),
-            FormVariant::Modal => self.handle_modal(desc, sender, body),
-            FormVariant::Menu => self.handle_menu(desc, sender, body),
+        match desc {
+            FormDescriptor::Custom(desc) => self.handle_custom(desc, sender, body),
+            FormDescriptor::Modal => self.handle_modal(sender, body),
+            FormDescriptor::Menu => self.handle_menu(sender, body),
         }
     }
 
-    fn handle_menu(&self, desc: FormDescriptor, sender: oneshot::Sender<FormResponse>, body: &str) -> anyhow::Result<()> {
+    /// Handles a menu response.
+    fn handle_menu(&self, sender: oneshot::Sender<FormResponse>, body: &str) -> anyhow::Result<()> {
+        let pressed: usize = serde_json::from_str(body).context("Unable to parse menu response")?;
+
+        // If this returns an error, then the receiver was dropped which can be ignored.
+        let _ = sender.send(FormResponse::Response(FormBody::Menu(MenuFormBody { pressed })));
+
         Ok(())
     }
 
-    fn handle_modal(&self, desc: FormDescriptor, sender: oneshot::Sender<FormResponse>, body: &str) -> anyhow::Result<()> {
+    /// Handles a modal response.
+    fn handle_modal(&self, sender: oneshot::Sender<FormResponse>, body: &str) -> anyhow::Result<()> {
         let confirmed: bool = serde_json::from_str(body).context("Unable to parse modal response")?;
 
         // If this returns an error, then the receiver was dropped which can be ignored.
@@ -254,11 +274,12 @@ impl FormSubscriber {
         Ok(())
     }
 
-    fn handle_custom(&self, desc: FormDescriptor, sender: oneshot::Sender<FormResponse>, body: &str) -> anyhow::Result<()> {
+    /// Handles a custom response.
+    fn handle_custom(&self, desc: HashMap<String, FormElement>, sender: oneshot::Sender<FormResponse>, body: &str) -> anyhow::Result<()> {
         let responses: Vec<serde_json::Value> = serde_json::from_str(body).context("Unable to parse custom form response")?;
 
         let mut out = CustomFormBody::default();
-        let zip = std::iter::zip(desc.content, responses);
+        let zip = std::iter::zip(desc, responses);
         for ((key, desc), res) in zip {
             match desc {
                 FormElement::Label(_) => {

@@ -13,16 +13,11 @@ mod private {
 }
 
 #[derive(Debug)]
-pub enum FormVariant {
+#[doc(hidden)]
+pub enum FormDescriptor {
+    Custom(HashMap<String, FormElement>),
     Modal,
-    Menu,
-    Custom,
-}
-
-#[derive(Debug)]
-pub struct FormDescriptor {
-    pub(super) variant: FormVariant,
-    pub(super) content: HashMap<String, FormElement>,
+    Menu
 }
 
 pub trait SubmittableForm: private::Sealed {

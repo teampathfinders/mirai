@@ -345,7 +345,7 @@ impl serde::Serialize for FormStepSlider {
 
 /// An image displayed next to a button.
 #[derive(Debug, Clone)]
-pub enum FormButtonImage {
+pub(crate) enum FormButtonImage {
     /// A URL pointing to an online image.
     Url(String),
     /// A path pointing to an image in an applied resource pack.
@@ -356,23 +356,55 @@ pub enum FormButtonImage {
 #[derive(Debug)]
 pub struct FormButton {
     /// Text displayed on the button.
-    pub(crate) label: String,
+    pub(crate) body: String,
     /// An optional image shown to the left of the button.
     /// This button can either be a local file from a resource pack or a URL.
     pub(crate) image: Option<FormButtonImage>,
 }
 
-// impl Submittable for FormButton {}
+impl FormButton {
+    /// Creates a new button.
+    pub fn new() -> Self {
+        Self::default()
+    }
 
-// impl Into<FormElement> for FormButton {
-//     fn into(self) -> FormElement {
-//         FormElement::Button(self)
-//     }
-// }
+    /// Sets the content of the button.
+    /// 
+    /// Default: "Button".
+    pub fn body(mut self, body: impl Into<String>) -> Self {
+        self.body = body.into();
+        self
+    }
+
+    /// Sets the image URL. This can point to an online resource.
+    /// 
+    /// Default: None
+    pub fn image_url(mut self, url: impl Into<String>) -> Self {
+        self.image = Some(FormButtonImage::Url(url.into()));
+        self
+    }
+
+    /// Sets the image path. This should point to an image from a resource pack.
+    /// 
+    /// Default: None
+    pub fn image_path(mut self, path: impl Into<String>) -> Self {
+        self.image = Some(FormButtonImage::Path(path.into()));
+        self
+    }
+}
 
 impl From<FormButton> for FormElement {
     fn from(v: FormButton) -> Self {
         Self::Button(v)
+    }
+}
+
+impl Default for FormButton {
+    fn default() -> Self {
+        Self {
+            body: "Button".to_owned(),
+            image: None
+        }
     }
 }
 
@@ -410,7 +442,7 @@ impl serde::Serialize for FormButton {
             map.serialize_field("image", &data)?;
         }
 
-        map.serialize_field("text", &self.label)?;
+        map.serialize_field("text", &self.body)?;
         map.end()
     }
 }
