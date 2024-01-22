@@ -20,7 +20,7 @@ use tokio::task::JoinHandle;
 use util::{Vector, AtomicFlag, Serialize, Deserialize, BinaryWrite, BinaryRead};
 
 use crate::config::SERVER_CONFIG;
-use crate::forms::FormSubscriber;
+use crate::forms::Subscriber;
 use crate::level::{ChunkViewer, Level};
 
 pub struct BedrockUser {
@@ -39,7 +39,7 @@ pub struct BedrockUser {
     pub level: Arc<Level>,
     pub raknet: Arc<RaknetUser>,
     pub player: OnceLock<PlayerData>,
-    pub form_subscriber: FormSubscriber,
+    pub form_subscriber: Subscriber,
 
     pub broadcast: broadcast::Sender<BroadcastPacket>,
     pub job_handle: RwLock<Option<JoinHandle<()>>>
@@ -65,7 +65,7 @@ impl BedrockUser {
             level,
             raknet,
             player: OnceLock::new(),
-            form_subscriber: FormSubscriber::new(),
+            form_subscriber: Subscriber::new(),
             
             broadcast,
             job_handle: RwLock::new(None)

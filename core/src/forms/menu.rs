@@ -1,21 +1,22 @@
 use serde::ser::SerializeStruct;
 
-use crate::forms::FormButton;
+use crate::forms::Button;
 
-use super::{FormDescriptor, SubmittableForm};
+use super::{FormDesc, SubmittableForm};
 
 /// A forms is similar to a modal but it has an arbitrary amount of buttons.
 #[derive(Debug)]
-pub struct MenuForm<'a> {
+pub struct Menu<'a> {
     /// Title of the forms. This is displayed at the top of the window.
     title: &'a str,
     /// Content of the form. This is the text shown above the buttons.
     body: &'a str,
     /// List of buttons that are available.
-    buttons: Vec<FormButton>,
+    buttons: Vec<Button>,
 }
 
-impl<'a> MenuForm<'a> {
+impl<'a> Menu<'a> {
+    /// Creates a new, empty menu.
     pub fn new() -> Self {
         Self::default()
     }
@@ -23,26 +24,26 @@ impl<'a> MenuForm<'a> {
     /// Sets the title of the form.
     ///
     /// Default: "Menu"
-    pub fn title(mut self, title: &'a str) -> Self {
-        self.title = title;
+    pub fn title(mut self, title: impl Into<&'a str>) -> Self {
+        self.title = title.into();
         self
     }
 
     /// Sets the body of the form.
     /// Default: ""
-    pub fn body(mut self, body: &'a str) -> Self {
-        self.body = body;
+    pub fn body(mut self, body: impl Into<&'a str>) -> Self {
+        self.body = body.into();
         self
     }
 
     /// Adds a button to the menu.
-    pub fn button(mut self, button: FormButton) -> Self {
+    pub fn button(mut self, button: Button) -> Self {
         self.buttons.push(button);
         self
     }
 }
 
-impl Default for MenuForm<'_> {
+impl Default for Menu<'_> {
     fn default() -> Self {
         Self {
             title: "Menu",
@@ -52,13 +53,13 @@ impl Default for MenuForm<'_> {
     }
 }
 
-impl SubmittableForm for MenuForm<'_> {
-    fn into_descriptor(self) -> FormDescriptor {
-        FormDescriptor::Menu
+impl SubmittableForm for Menu<'_> {
+    fn into_desc(self) -> FormDesc {
+        FormDesc::Menu
     }
 }
 
-impl serde::Serialize for MenuForm<'_> {
+impl serde::Serialize for Menu<'_> {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: serde::Serializer,
