@@ -9,4 +9,4 @@ util = { package = "inferno-util", path = "../util" }
 
 anyhow = "1.0.79"
 tracing = "0.1.40"
-fred = "7.1.2"
+fred = "8.0.0"
