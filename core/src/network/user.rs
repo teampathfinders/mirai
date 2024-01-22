@@ -11,7 +11,7 @@ use flate2::write::DeflateEncoder;
 use parking_lot::RwLock;
 use raknet::{SendConfig, DEFAULT_SEND_CONFIG, RaknetUser, BroadcastPacket};
 use tokio::sync::{mpsc, broadcast};
-use proto::bedrock::{CommandPermissionLevel, Disconnect, GameMode, PermissionLevel, Skin, ConnectedPacket, CONNECTED_PACKET_ID, CompressionAlgorithm, Packet, Header, RequestNetworkSettings, Login, ClientToServerHandshake, CacheStatus, ResourcePackClientResponse, ViolationWarning, ChunkRadiusRequest, Interact, TextMessage, SetLocalPlayerAsInitialized, MovePlayer, PlayerAction, RequestAbility, Animate, CommandRequest, SettingsCommand, ContainerClose, FormResponseData, TickSync, UpdateSkin, PlayerAuthInput};
+use proto::bedrock::{CommandPermissionLevel, Disconnect, GameMode, PermissionLevel, Skin, ConnectedPacket, CONNECTED_PACKET_ID, CompressionAlgorithm, Packet, Header, RequestNetworkSettings, Login, ClientToServerHandshake, CacheStatus, ResourcePackClientResponse, ViolationWarning, ChunkRadiusRequest, Interact, TextMessage, SetLocalPlayerAsInitialized, MovePlayer, PlayerAction, RequestAbility, Animate, CommandRequest, SettingsCommand, ContainerClose, FormResponseData, TickSync, UpdateSkin, PlayerAuthInput, DisconnectReason};
 use proto::crypto::{Encryptor, BedrockIdentity, BedrockClientInfo};
 use proto::uuid::Uuid;
 use replicator::Replicator;
@@ -30,9 +30,11 @@ pub struct BedrockUser {
 
     /// Next packet that the server is expecting to receive.
     pub expected: AtomicU32,
+    /// Whether compression has been configured.
     pub compressed: AtomicFlag,
+    /// Whether the client supports the blob cache.
     pub supports_cache: AtomicBool,
-
+    /// Replication layer.
     pub replicator: Arc<Replicator>,
     pub level: Arc<Level>,
     pub raknet: Arc<RaknetUser>,
@@ -40,7 +42,7 @@ pub struct BedrockUser {
     pub form_subscriber: FormSubscriber,
 
     pub broadcast: broadcast::Sender<BroadcastPacket>,
-    pub handle: RwLock<Option<JoinHandle<()>>>
+    pub job_handle: RwLock<Option<JoinHandle<()>>>
 }
 
 impl BedrockUser {
@@ -66,19 +68,33 @@ impl BedrockUser {
             form_subscriber: FormSubscriber::new(),
             
             broadcast,
-            handle: RwLock::new(None)
+            job_handle: RwLock::new(None)
         });
 
         let clone = user.clone();
         let handle = tokio::spawn(async move {
-            clone.start_job(receiver).await;
+            clone.recv_job(receiver).await;
         });
 
-        *user.handle.write() = Some(handle);
+        *user.job_handle.write() = Some(handle);
         user
     }
 
-    async fn start_job(self: &Arc<Self>, mut receiver: mpsc::Receiver<Vec<u8>>) {
+    /// Waits for the client to fully disconnect and the server to finish processing.
+    pub async fn await_shutdown(self: Arc<Self>) -> anyhow::Result<()> {
+        let job_handle = {
+            let mut lock = self.job_handle.write();
+            lock.take()
+        };
+
+        if let Some(job_handle) = job_handle {
+            job_handle.await?;
+        }
+
+        self.raknet.clone().await_shutdown().await
+    }
+
+    async fn recv_job(self: &Arc<Self>, mut receiver: mpsc::Receiver<Vec<u8>>) {
         let mut broadcast = self.broadcast.subscribe();
 
         let mut should_run = true;
@@ -105,7 +121,7 @@ impl BedrockUser {
             };
         }
 
-        tracing::debug!("User cleaned up");
+        tracing::debug!("Bedrock job exited");
     }
 
     pub fn handle_broadcast(&self, packet: BroadcastPacket) -> anyhow::Result<()> {
@@ -117,9 +133,17 @@ impl BedrockUser {
         Ok(())
     }
 
+    /// Kicks a player from the server and display the specified message to them.
+    #[inline]
     pub fn kick(&self, message: &str) -> anyhow::Result<()> {
+        self.kick_with_reason(message, DisconnectReason::Kicked)
+    }
+
+    /// Kicks a player from the server and displays the specified message to them.
+    /// This also adds a reason to the kick, which is used for telemetry purposes.
+    pub fn kick_with_reason(&self, message: &str, reason: DisconnectReason) -> anyhow::Result<()> {
         let disconnect_packet = Disconnect {
-            message, hide_message: false
+            reason, message, hide_message: false
         };
         self.send(disconnect_packet)?;
         self.raknet.active.cancel();

@@ -105,18 +105,28 @@ impl RaknetUser {
     /// Processes an unencapsulated game packet.
     async fn handle_frame_body(&self, packet: Vec<u8>) -> anyhow::Result<()> {
         let packet_id = *packet.first().expect("Game packet buffer was empty");
+        if packet_id == 0x15 {
+            tracing::error!("Disconnected");
+        }
+
         match packet_id {
             // CONNECTED_PACKET_ID => self.handle_encrypted_frame(packet).await?,
             CONNECTED_PACKET_ID => {
                 if let Err(err) = self.output.send_timeout(packet, RAKNET_OUTPUT_TIMEOUT).await {
                     if matches!(err, SendTimeoutError::Closed(_)) {
-                        // Output channel has been closed.
-                        let _ = self.disconnect().await;
-                        tracing::error!("RakNet layer output channel closed, disconnecting client");
-                    }   
+                        // Output channel has been closed
+                        tracing::error!("RakNet layer output channel closed, disconnecting them...");
+                    } else {
+                        // Forward timeout
+                        tracing::error!("Client seems to be hanging server side, disconnecting them...")
+                    }
+                    let _ = self.disconnect();
                 }
             },
-            DisconnectNotification::ID => self.active.cancel(),
+            DisconnectNotification::ID => {
+                tracing::debug!("Received disconnect notification");
+                self.active.cancel()
+            }
             ConnectionRequest::ID => self.handle_connection_request(packet)?,
             NewIncomingConnection::ID => {
                 self.handle_new_incoming_connection(packet)?

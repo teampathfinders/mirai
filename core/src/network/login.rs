@@ -167,7 +167,7 @@ impl BedrockUser {
             level_name: "World name",
             template_content_identity: "",
             movement_settings: PlayerMovementSettings {
-                movement_type: PlayerMovementType::ServerAuthoritative,
+                movement_type: PlayerMovementType::ClientAuthoritative,
                 rewind_history_size: 0,
                 server_authoritative_breaking: true,
             },

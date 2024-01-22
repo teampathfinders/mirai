@@ -11,7 +11,7 @@ use tokio::net::UdpSocket;
 use tokio::sync::oneshot::Receiver;
 use tokio_util::sync::CancellationToken;
 
-use util::{Deserialize, Serialize, ReserveTo};
+use util::{Deserialize, ReserveTo, Serialize};
 
 use crate::config::SERVER_CONFIG;
 use crate::level::Level;
@@ -41,24 +41,6 @@ async fn signal_listener(token: CancellationToken) -> anyhow::Result<()> {
         _ = token.cancelled() => (),
         _ = tokio::signal::ctrl_c() => ()
     }
-
-    // #[cfg(windows)]
-    // tokio::select! {
-    //     _ = token.cancelled() => (),
-    //     _ = tokio::signal::ctrl_c() => ()
-    // }
-
-    // #[cfg(unix)]
-    // {
-    //     use tokio::signal::unix::{signal, SignalKind};
-
-    //     let mut sig = signal(SignalKind::terminate())?;
-    //     tokio::select! {
-    //         _ = token.cancelled() => (),
-    //         _ = tokio::signal::ctrl_c() => (),
-    //         _ = sig.recv() => ()
-    //     }
-    // }
 
     Ok(())
 }
@@ -272,10 +254,10 @@ impl ServerInstance {
         // Wait for a shutdown signal...
         signal_listener(token.clone()).await?;
 
-        tracing::info!("Shutting down server. This can take several seconds...");
+        tracing::info!("Shutting down server...");
 
-        token.cancel();
         user_map.shutdown().await?;
+        token.cancel();
 
         drop(user_map);
         // drop(level_manager);
@@ -313,8 +295,6 @@ impl ServerInstance {
 
         packet.buf.clear();
         if request.protocol_version != RAKNET_VERSION {
-            dbg!("fail");
-
             let reply = IncompatibleProtocol { server_guid };
 
             packet.buf.clear();
@@ -333,7 +313,7 @@ impl ServerInstance {
 
     /// Responds to the [`OpenConnectionRequest2`] packet with [`OpenConnectionReply2`].
     /// This is also when a session is created for the client.
-    /// From this point, all raknet are encoded in a [`Frame`](crate::raknet::Frame).
+    /// From this point, all packets are encoded in a [`Frame`](crate::raknet::Frame).
     #[inline]
     fn process_open_connection_request2(
         mut packet: ForwardablePacket,
@@ -373,7 +353,7 @@ impl ServerInstance {
         let metadata = Self::refresh_metadata(
             &String::from_utf8_lossy(&[0xee, 0x84, 0x88, 0x20]),
             server_guid,
-            user_manager.count(),
+            user_manager.connected_count(),
             user_manager.max_count(),
         );
 
@@ -443,7 +423,7 @@ impl ServerInstance {
             }
         }
 
-        tracing::debug!("UDP receiver exited");
+        tracing::debug!("Receiver exited");
     }
 
     /// Generates a new metadata string using the given description and new player count.
