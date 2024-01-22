@@ -260,6 +260,7 @@ impl Subscriber {
         }
 
         let body = response.response_data.ok_or_else(|| anyhow!("Form response body was empty"))?;
+
         match desc {
             FormDesc::Custom(desc) => self.handle_custom(desc, sender, body),
             FormDesc::Modal => self.handle_modal(sender, body),

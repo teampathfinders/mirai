@@ -101,7 +101,7 @@ impl BedrockUser {
 
     pub fn handle_form_response(&self, packet: Vec<u8>) -> anyhow::Result<()> {
         let response = FormResponseData::deserialize(packet.as_ref())?;
-        self.form_subscriber.handle_response(response)
+        self.forms.handle_response(response)
     }
 
     pub fn handle_command_request(&self, packet: Vec<u8>) -> anyhow::Result<()> {

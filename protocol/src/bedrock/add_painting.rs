@@ -6,6 +6,7 @@ use crate::bedrock::ConnectedPacket;
 
 /// Directions a painting can face.
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
+#[repr(i32)]
 pub enum PaintingDirection {
     South,
     West,
@@ -22,7 +23,7 @@ pub struct AddPainting<'a> {
     pub position: Vector<f32, 3>,
     /// Direction the painting is facing in.
     pub direction: PaintingDirection,
-    /// Painting [`name`](https://minecraft.fandom.com/wiki/Painting#Data_values).
+    /// Painting [`name`](https://minecraft.wiki/w/Painting#Canvases).
     pub name: &'a str,
 }
 
