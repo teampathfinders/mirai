@@ -117,7 +117,7 @@ impl RaknetUser {
                         // Forward timeout
                         tracing::error!("Client seems to be hanging server side, disconnecting them...")
                     }
-                    let _ = self.disconnect();
+                    self.disconnect();
                 }
             },
             DisconnectNotification::ID => {

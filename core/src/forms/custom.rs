@@ -7,7 +7,7 @@ use crate::forms::Content;
 use super::{FormDesc, SubmittableForm};
 
 mod private {
-    use crate::forms::{Button, Dropdown, Input, Label, Slider, StepSlider, Toggle};
+    use crate::forms::{Dropdown, Input, Label, Slider, StepSlider, Toggle};
 
     use super::Content;
 

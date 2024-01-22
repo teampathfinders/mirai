@@ -1,11 +1,10 @@
 
 
 use std::sync::Arc;
-use std::time::Duration;
 
-use proto::bedrock::{Animate, CommandOutput, CommandOutputMessage, CommandOutputType, CommandRequest, FormResponseData, ParsedCommand, RequestAbility, SettingsCommand, TextData, TextMessage, TickSync, UpdateSkin, PlayerAuthInput, MovePlayer, MovementMode, TeleportCause, ClientBoundDebugRenderer, DebugRendererAction};
+use proto::bedrock::{Animate, CommandOutput, CommandOutputMessage, CommandOutputType, CommandRequest, FormResponseData, ParsedCommand, RequestAbility, SettingsCommand, TextData, TextMessage, TickSync, UpdateSkin, PlayerAuthInput};
 
-use util::{Deserialize, Vector};
+use util::Deserialize;
 
 use super::BedrockUser;
 
@@ -31,7 +30,7 @@ impl BedrockUser {
     pub async fn handle_text_message(self: &Arc<Self>, packet: Vec<u8>) -> anyhow::Result<()> {
         let request = TextMessage::deserialize(packet.as_ref())?;
         if let TextData::Chat {
-            message, ..
+            ..
         } = request.data {
             // Check that the source is equal to the player name to prevent spoofing.
             #[cfg(not(debug_assertions))] // Allow modifications for development purposes.

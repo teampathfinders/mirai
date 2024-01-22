@@ -348,7 +348,6 @@ impl Subscriber {
 
                     out.body.insert(key, BodyValue::Index(res));
                 }
-                _ => anyhow::bail!("Invalid form element descriptor"),
             }
         }
 

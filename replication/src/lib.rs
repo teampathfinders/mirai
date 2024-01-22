@@ -1,7 +1,7 @@
 use anyhow::Context;
 use fred::{
     clients::RedisClient,
-    interfaces::{ClientLike, HashesInterface, PubsubInterface, StreamsInterface},
+    interfaces::{ClientLike, HashesInterface, StreamsInterface},
     types::{RedisConfig, RespVersion, Server, ServerConfig},
 };
 use proto::bedrock::{MovePlayer, TextData, TextMessage};
@@ -62,7 +62,7 @@ impl Replicator {
             .context("Unable to cache player XUID")
     }
 
-    pub async fn move_player(&self, xuid: u64, data: &MovePlayer) -> anyhow::Result<()> {
+    pub async fn move_player(&self, _xuid: u64, _data: &MovePlayer) -> anyhow::Result<()> {
         todo!()
 
         // let mut buf = Vec::with_capacity(6 * 4 + 8);
