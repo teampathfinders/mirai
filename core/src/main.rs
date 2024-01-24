@@ -1,23 +1,47 @@
-use std::process::ExitCode;
 use std::sync::atomic::{AtomicU16, Ordering};
 
+use anyhow::Context;
 use tokio::runtime;
 
 use tracing_subscriber::filter::LevelFilter;
 
 use inferno::instance::ServerInstance;
 
-fn main() -> ExitCode {
-    if let Err(e) = init_logging() {
-        init_error_log();
-        tracing::error!("Failed to initialise tracing: {e}");
+#[cfg(unix)]
+fn main() -> anyhow::Result<()> {
+    use pyroscope::PyroscopeAgent;
+    use pyroscope_pprofrs::{PprofConfig, pprof_backend};
 
-        return ExitCode::FAILURE;
+    let pprof_config = PprofConfig::new().sample_rate(100);
+    let backend_impl = pprof_backend(pprof_config);
+
+    let agent = PyroscopeAgent::builder("http://localhost:4040", "inferno")
+        .backend(backend_impl)
+        .tags(vec![("TagA", "ValueA")])
+        .build()?;
+
+    let agent = agent.start().unwrap();
+    if let Err(err) = init_logging().context("Unable to initialise logging") {
+        agent.shutdown();
+        return Err(err);
     }
+    tracing::debug!("Telemetry enabled");
+
+    let code = start_server();
+    let agent = agent.stop()?;
+    agent.shutdown();
+    code
+}
+
+#[cfg(not(unix))]
+fn main() -> anyhow::Result<()> {
+    init_logging().context("Unable to initialise logging")?;
+    tracing::debug!("Telemetry disabled");
+
     start_server()
 }
 
-fn start_server() -> ExitCode {
+fn start_server() -> anyhow::Result<()> {
     let runtime = runtime::Builder::new_multi_thread()
         .enable_io()
         .enable_time()
@@ -28,12 +52,7 @@ fn start_server() -> ExitCode {
         .build()
         .expect("Failed to build runtime");
 
-    if let Err(error) = runtime.block_on(ServerInstance::run()) {
-        tracing::error!("Exited due to fatal error: {error:?}");
-        ExitCode::FAILURE
-    } else {
-        ExitCode::SUCCESS
-    }
+    runtime.block_on(ServerInstance::run())
 }
 
 /// Initialises logging with tokio-console.
@@ -81,8 +100,4 @@ fn init_logging() -> anyhow::Result<()> {
         .init();
 
     Ok(())
-}
-
-fn init_error_log() {
-    tracing_subscriber::fmt().with_target(false).with_max_level(LevelFilter::ERROR).init();
 }

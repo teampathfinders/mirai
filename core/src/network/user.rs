@@ -24,25 +24,25 @@ use crate::forms::{Subscriber, SubmittableForm, self};
 use crate::level::{ChunkViewer, Level};
 
 pub struct BedrockUser {
-    pub encryptor: OnceLock<Encryptor>,
-    pub identity: OnceLock<BedrockIdentity>,
-    pub client_info: OnceLock<BedrockClientInfo>,
+    pub(super) encryptor: OnceLock<Encryptor>,
+    pub(super) identity: OnceLock<BedrockIdentity>,
+    pub(super) client_info: OnceLock<BedrockClientInfo>,
 
     /// Next packet that the server is expecting to receive.
-    pub expected: AtomicU32,
+    pub(crate) expected: AtomicU32,
     /// Whether compression has been configured.
-    pub compressed: AtomicFlag,
+    pub(crate) compressed: AtomicFlag,
     /// Whether the client supports the blob cache.
-    pub supports_cache: AtomicBool,
+    pub(crate) supports_cache: AtomicBool,
     /// Replication layer.
-    pub replicator: Arc<Replicator>,
-    pub level: Arc<Level>,
-    pub raknet: Arc<RaknetUser>,
-    pub player: OnceLock<PlayerData>,
-    pub forms: Subscriber,
+    pub(crate) replicator: Arc<Replicator>,
+    pub(crate) level: Arc<Level>,
+    pub(crate) raknet: Arc<RaknetUser>,
+    pub(crate) player: OnceLock<PlayerData>,
+    pub(crate) forms: Subscriber,
 
-    pub broadcast: broadcast::Sender<BroadcastPacket>,
-    pub job_handle: RwLock<Option<JoinHandle<()>>>
+    pub(crate) broadcast: broadcast::Sender<BroadcastPacket>,
+    pub(crate) job_handle: RwLock<Option<JoinHandle<()>>>
 }
 
 impl BedrockUser {
@@ -274,15 +274,15 @@ impl BedrockUser {
                     let mut decompressed = Vec::new();
                     reader.read_to_end(&mut decompressed)?;
 
-                    self.handle_frame_body(decompressed).await
+                    self.clone().handle_frame_body(decompressed).await
                 }
             }
         } else {
-            self.handle_frame_body(packet).await
+            self.clone().handle_frame_body(packet).await
         }
     }
 
-    async fn handle_frame_body(self: &Arc<Self>, mut packet: Vec<u8>) -> anyhow::Result<()> {
+    async fn handle_frame_body(self: Arc<Self>, mut packet: Vec<u8>) -> anyhow::Result<()> {
         let start_len = packet.len();
         let mut reader: &[u8] = packet.as_ref();
         let _length = reader.read_var_u32()?;
@@ -297,41 +297,54 @@ impl BedrockUser {
                 "Client sent unexpected packet while logging in (expected {:#04x}, got {:#04x})",
                 expected, header.id
             );
-            return self.kick("Unexpected packet")
+            
+            if self.kick("Unexpected packet").is_err() {
+                // If kicking doesn't work, simply destroy the session.
+                self.raknet.active.cancel();
+            }
         }
 
-        match header.id {
-            PlayerAuthInput::ID => self.handle_auth_input(packet),
-            RequestNetworkSettings::ID => {
-                self.handle_network_settings_request(packet)
+        tokio::spawn(async move {
+            match header.id {
+                PlayerAuthInput::ID => self.handle_auth_input(packet),
+                RequestNetworkSettings::ID => {
+                    self.handle_network_settings_request(packet)
+                }
+                Login::ID => self.handle_login(packet).await,
+                ClientToServerHandshake::ID => {
+                    self.handle_client_to_server_handshake(packet)
+                }
+                CacheStatus::ID => self.handle_cache_status(packet),
+                ResourcePackClientResponse::ID => {
+                    self.handle_resource_client_response(packet)
+                }
+                ViolationWarning::ID => self.handle_violation_warning(packet),
+                ChunkRadiusRequest::ID => self.handle_chunk_radius_request(packet),
+                Interact::ID => self.process_interaction(packet),
+                TextMessage::ID => self.handle_text_message(packet).await,
+                SetLocalPlayerAsInitialized::ID => {
+                    self.handle_local_initialized(packet)
+                }
+                MovePlayer::ID => self.process_move_player(packet).await,
+                PlayerAction::ID => self.process_player_action(packet),
+                RequestAbility::ID => self.handle_ability_request(packet),
+                Animate::ID => self.handle_animation(packet),
+                CommandRequest::ID => self.handle_command_request(packet),
+                UpdateSkin::ID => self.handle_skin_update(packet),
+                SettingsCommand::ID => self.handle_settings_command(packet),
+                ContainerClose::ID => self.process_container_close(packet),
+                FormResponseData::ID => self.handle_form_response(packet),
+                TickSync::ID => self.handle_tick_sync(packet),
+                id => anyhow::bail!("Invalid game packet: {id:#04x}"),
             }
-            Login::ID => self.handle_login(packet).await,
-            ClientToServerHandshake::ID => {
-                self.handle_client_to_server_handshake(packet)
-            }
-            CacheStatus::ID => self.handle_cache_status(packet),
-            ResourcePackClientResponse::ID => {
-                self.handle_resource_client_response(packet)
-            }
-            ViolationWarning::ID => self.handle_violation_warning(packet),
-            ChunkRadiusRequest::ID => self.handle_chunk_radius_request(packet),
-            Interact::ID => self.process_interaction(packet),
-            TextMessage::ID => self.handle_text_message(packet).await,
-            SetLocalPlayerAsInitialized::ID => {
-                self.handle_local_initialized(packet)
-            }
-            MovePlayer::ID => self.process_move_player(packet).await,
-            PlayerAction::ID => self.process_player_action(packet),
-            RequestAbility::ID => self.handle_ability_request(packet),
-            Animate::ID => self.handle_animation(packet),
-            CommandRequest::ID => self.handle_command_request(packet),
-            UpdateSkin::ID => self.handle_skin_update(packet),
-            SettingsCommand::ID => self.handle_settings_command(packet),
-            ContainerClose::ID => self.process_container_close(packet),
-            FormResponseData::ID => self.handle_form_response(packet),
-            TickSync::ID => self.handle_tick_sync(packet),
-            id => anyhow::bail!("Invalid game packet: {id:#04x}"),
-        }
+        });
+
+        Ok(())
+    }
+
+    /// Returns the forms handler.
+    pub fn forms(&self) -> &Subscriber {
+        &self.forms
     }
 
     /// This function panics if the identity was not set.
