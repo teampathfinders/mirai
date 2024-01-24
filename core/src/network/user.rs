@@ -24,25 +24,25 @@ use crate::forms::{Subscriber, SubmittableForm, self};
 use crate::level::{ChunkViewer, Level};
 
 pub struct BedrockUser {
-    pub encryptor: OnceLock<Encryptor>,
-    pub identity: OnceLock<BedrockIdentity>,
-    pub client_info: OnceLock<BedrockClientInfo>,
+    pub(super) encryptor: OnceLock<Encryptor>,
+    pub(super) identity: OnceLock<BedrockIdentity>,
+    pub(super) client_info: OnceLock<BedrockClientInfo>,
 
     /// Next packet that the server is expecting to receive.
-    pub expected: AtomicU32,
+    pub(crate) expected: AtomicU32,
     /// Whether compression has been configured.
-    pub compressed: AtomicFlag,
+    pub(crate) compressed: AtomicFlag,
     /// Whether the client supports the blob cache.
-    pub supports_cache: AtomicBool,
+    pub(crate) supports_cache: AtomicBool,
     /// Replication layer.
-    pub replicator: Arc<Replicator>,
-    pub level: Arc<Level>,
-    pub raknet: Arc<RaknetUser>,
-    pub player: OnceLock<PlayerData>,
-    pub forms: Subscriber,
+    pub(crate) replicator: Arc<Replicator>,
+    pub(crate) level: Arc<Level>,
+    pub(crate) raknet: Arc<RaknetUser>,
+    pub(crate) player: OnceLock<PlayerData>,
+    pub(crate) forms: Subscriber,
 
-    pub broadcast: broadcast::Sender<BroadcastPacket>,
-    pub job_handle: RwLock<Option<JoinHandle<()>>>
+    pub(crate) broadcast: broadcast::Sender<BroadcastPacket>,
+    pub(crate) job_handle: RwLock<Option<JoinHandle<()>>>
 }
 
 impl BedrockUser {
@@ -332,6 +332,11 @@ impl BedrockUser {
             TickSync::ID => self.handle_tick_sync(packet),
             id => anyhow::bail!("Invalid game packet: {id:#04x}"),
         }
+    }
+
+    /// Returns the forms handler.
+    pub fn forms(&self) -> &Subscriber {
+        &self.forms
     }
 
     /// This function panics if the identity was not set.

@@ -30,15 +30,14 @@ impl BedrockUser {
     pub async fn handle_text_message(self: &Arc<Self>, packet: Vec<u8>) -> anyhow::Result<()> {
         let request = TextMessage::deserialize(packet.as_ref())?;
         if let TextData::Chat {
-            ..
+            source, ..
         } = request.data {
             // Check that the source is equal to the player name to prevent spoofing.
-            #[cfg(not(debug_assertions))] // Allow modifications for development purposes.
-            if self.name != source {
+            if self.name() != source {
                 self.kick("Illegal packet modifications detected")?;
                 anyhow::bail!(
                     "Client attempted to spoof chat username. (actual: `{}`, spoofed: `{}`)",
-                    actual, source
+                    self.name(), source
                 );
             }
 
