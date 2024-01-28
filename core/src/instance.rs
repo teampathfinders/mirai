@@ -110,11 +110,48 @@ impl Default for DbConfig<'static> {
     }
 }
 
+/// Configuration for client options.
+pub struct ClientConfig {
+    /// Whether the client should throttle other players.
+    /// 
+    /// Default: false.
+    pub throttling_enabled: bool,
+    /// When the player count exceeds this threshold, the client
+    /// will start throttling other players.
+    /// 
+    /// Default: 0.
+    pub throttling_threshold: u8,
+    /// Amount of players that will be ticked when the client is
+    /// actively throttling.
+    /// 
+    /// Default: 0.0.
+    pub throttling_scalar: f32,
+    /// Maximum server-allow render distance.
+    /// 
+    /// If the client requests a larger render distance, the server 
+    /// will cap it to this maximum.
+    /// 
+    /// Default: 12.
+    pub render_distance: u32
+}
+
+impl Default for ClientConfig {
+    fn default() -> ClientConfig {
+        ClientConfig {
+            throttling_enabled: false,
+            throttling_threshold: 0,
+            throttling_scalar: 0.0,
+            render_distance: 12
+        }
+    }
+}
+
 /// Builder used to configure a new server instance.
 pub struct InstanceBuilder<'a> {
     name: String,
     net_config: NetConfig,
     db_config: DbConfig<'a>,
+    client_config: ClientConfig
 }
 
 impl<'a> InstanceBuilder<'a> {
@@ -153,8 +190,23 @@ impl<'a> InstanceBuilder<'a> {
         self
     }
 
+    /// Set the client config.
+    /// 
+    /// Default: See [`ClientConfig`].
+    #[inline]
+    pub fn client_config(mut self, config: ClientConfig) -> InstanceBuilder<'a> {
+        self.client_config = config;
+        self
+    }
+
     /// Produces an [`Instance`] with the configured options, consuming the builder.
     pub async fn build(self) -> anyhow::Result<Instance> {
+        let ipv4_socket = UdpSocket::bind(self.net_config.ipv4_addr).await?;
+        let ipv6_socket = match self.net_config.ipv6_addr {
+            Some(addr) => Some(UdpSocket::bind(addr).await?),
+            None => None
+        };
+
         todo!()
     }
 }
@@ -165,6 +217,7 @@ impl Default for InstanceBuilder<'static> {
             name: String::from("Server"),
             net_config: NetConfig::default(),
             db_config: DbConfig::default(),
+            client_config: ClientConfig::default()
         }
     }
 }
