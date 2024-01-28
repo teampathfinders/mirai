@@ -1,16 +1,74 @@
-use lazy_static::lazy_static;
 use level::PaletteEntry;
 use nohash_hasher::BuildNoHashHasher;
 use proto::bedrock::ItemStack;
 use serde::Deserialize;
-use std::collections::HashMap;
+use std::{
+    cell::UnsafeCell,
+    collections::HashMap,
+    mem::{ManuallyDrop, MaybeUninit},
+    ops::Deref,
+};
 use tokio_util::bytes::Buf;
+use util::AtomicFlag;
 
-lazy_static! {
-    pub static ref RUNTIME_ID_DATA: RuntimeIdMap = RuntimeIdMap::new().unwrap();
-    pub static ref BLOCK_STATE_DATA: BlockStateMap = BlockStateMap::new().unwrap();
-    pub static ref CREATIVE_ITEMS_DATA: CreativeItemsMap = CreativeItemsMap::new().unwrap();
-}
+// pub static RUNTIME_ID_DATA: LazyResult<RuntimeIdMap> = LazyResult::new(RuntimeIdMap::new);
+// pub static BLOCK_STATE_DATA: LazyResult<BlockStateMap> = LazyResult::new(BlockStateMap::new);
+// pub static CREATIVE_ITEMS_DATA: LazyResult<CreativeItemsMap> = LazyResult::new(CreativeItemsMap::new);
+
+// union Data<T, F> {
+//     value: ManuallyDrop<T>,
+//     init: ManuallyDrop<F>
+// }
+
+// pub struct LazyResult<T, F = fn() -> anyhow::Result<T>> {
+//     flag: AtomicFlag,
+//     data: UnsafeCell<Data<T, F>>
+// }
+
+// impl<T, F: FnOnce() -> anyhow::Result<T>> LazyResult<T, F> {
+//     #[inline]
+//     pub const fn new(f: F) -> LazyResult<T, F> {
+//         LazyResult { flag: AtomicFlag::new(), data: UnsafeCell::new(Data { init: ManuallyDrop::new(f) }) }
+//     }
+
+//     #[inline]
+//     pub fn force(&self) -> &T {
+//         if !self.flag.get() {
+//             let data = unsafe { &mut *self.data.get() };
+//             let value: anyhow::Result<T> = unsafe { (data.init.deref())() };
+
+//             if
+
+//             unsafe { ManuallyDrop::drop(&mut data.init) };
+//             data.value = ManuallyDrop::new(value);
+
+//             self.flag.set();
+//         }
+
+//         unsafe { &*(*self.data.get()).value }
+//     }
+// }
+
+// impl<T, F: FnOnce() -> anyhow::Result<T>> Deref for LazyResult<T, F> {
+//     type Target = T;
+
+//     fn deref(&self) -> &T {
+//         self.force()
+//     }
+// }
+
+// impl<T, F> Drop for LazyResult<T, F> {
+//     fn drop(&mut self) {
+//         let data = unsafe { &mut *self.data.get() };
+//         if self.flag.get() {
+//             unsafe { ManuallyDrop::drop(&mut data.value) }
+//         } else {
+//             unsafe { ManuallyDrop::drop(&mut data.init) }
+//         }
+//     }
+// }
+
+// unsafe impl<T: Send + Sync, F: Send> Sync for LazyResult<T, F> {}
 
 #[derive(Debug)]
 pub struct RuntimeIdMap {
@@ -107,31 +165,32 @@ impl CreativeItemsMap {
 
         let mut item_stacks = Vec::with_capacity(items.len());
         for item in &items[..10] {
-            let runtime_id = if let Some(rid) = RUNTIME_ID_DATA.get(&item.name) {
-                rid
-            } else {
-                continue;
-            };
+            todo!();
+            // let runtime_id = if let Some(rid) = RUNTIME_ID_DATA.get(&item.name) {
+            //     rid
+            // } else {
+            //     continue;
+            // };
 
-            let stack = if let Some(_properties) = &item.block_properties {
-                ItemStack {
-                    runtime_id,
-                    meta: item.meta as u32,
-                    count: 64,
-                    can_break: vec![],
-                    placeable_on: vec![],
-                }
-            } else {
-                ItemStack {
-                    runtime_id,
-                    meta: item.meta as u32,
-                    count: 1,
-                    can_break: vec![],
-                    placeable_on: vec![],
-                }
-            };
+            // let stack = if let Some(_properties) = &item.block_properties {
+            //     ItemStack {
+            //         runtime_id,
+            //         meta: item.meta as u32,
+            //         count: 64,
+            //         can_break: vec![],
+            //         placeable_on: vec![],
+            //     }
+            // } else {
+            //     ItemStack {
+            //         runtime_id,
+            //         meta: item.meta as u32,
+            //         count: 1,
+            //         can_break: vec![],
+            //         placeable_on: vec![],
+            //     }
+            // };
 
-            item_stacks.push(stack);
+            // item_stacks.push(stack);
         }
 
         Ok(Self { item_stacks })

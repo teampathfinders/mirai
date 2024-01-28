@@ -11,7 +11,7 @@ use dashmap::DashMap;
 use proto::bedrock::{CancelReason, FormRequest, FormResponseData};
 use tokio::sync::oneshot;
 
-use crate::{forms::Content, network::BedrockUser};
+use crate::{forms::Content, net::BedrockUser};
 
 use super::{FormDesc, SubmittableForm};
 

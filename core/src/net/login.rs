@@ -8,7 +8,7 @@ use proto::types::Dimension;
 use util::{BlockPosition, Deserialize, Vector};
 
 use crate::config::SERVER_CONFIG;
-use crate::network::PlayerData;
+use crate::net::PlayerData;
 
 use super::BedrockUser;
 

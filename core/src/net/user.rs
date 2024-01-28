@@ -213,7 +213,7 @@ impl BedrockUser {
                     CompressionAlgorithm::Snappy => {
                         unimplemented!("Snappy compression");
                     }
-                    CompressionAlgorithm::Deflate => {
+                    CompressionAlgorithm::Flate => {
                         let mut writer = DeflateEncoder::new(
                             vec![CONNECTED_PACKET_ID],
                             Compression::best(),
@@ -267,7 +267,7 @@ impl BedrockUser {
                 CompressionAlgorithm::Snappy => {
                     unimplemented!("Snappy decompression");
                 }
-                CompressionAlgorithm::Deflate => {
+                CompressionAlgorithm::Flate => {
                     let mut reader =
                         flate2::read::DeflateDecoder::new(packet.as_slice());
 

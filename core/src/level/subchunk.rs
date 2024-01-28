@@ -1,4 +1,4 @@
-use crate::data::BLOCK_STATE_DATA;
+// use crate::data::BLOCK_STATE_DATA;
 use level::{SubChunk, SubChunkVersion, SubLayer};
 use util::BinaryWrite;
 
@@ -29,9 +29,10 @@ impl NetSubLayer {
 
 impl From<SubLayer> for NetSubLayer {
     fn from(value: SubLayer) -> Self {
-        let palette = value.palette().iter().flat_map(|entry| BLOCK_STATE_DATA.get(entry)).collect::<Vec<u32>>();
+        todo!()
+        // let palette = value.palette().iter().flat_map(|entry| BLOCK_STATE_DATA.get(entry)).collect::<Vec<u32>>();
 
-        Self { palette, indices: value.take_indices() }
+        // Self { palette, indices: value.take_indices() }
     }
 }
 

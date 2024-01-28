@@ -2,7 +2,6 @@
 
 use std::time::Duration;
 
-use lazy_static::lazy_static;
 use parking_lot::RwLock;
 use proto::bedrock::{ClientThrottleSettings, CompressionAlgorithm};
 
@@ -34,22 +33,20 @@ pub struct ServerConfig {
     pub level_path: &'static str,
 }
 
-lazy_static! {
-    /// Current server configuration
-    pub static ref SERVER_CONFIG: RwLock<ServerConfig> = RwLock::new(ServerConfig {
-        ipv4_port: 19132,
-        ipv6_port: 19133,
-        max_players: 1000,
-        compression_algorithm: CompressionAlgorithm::Deflate,
-        compression_threshold: 1, // Compress all raknet
-        client_throttle: ClientThrottleSettings { // Disable client throttling
-            enabled: false,
-            threshold: 0,
-            scalar: 0.0
-        },
-        server_name: "Pathfinders",
-        allowed_render_distance: 16,
-        autosave_interval: Duration::from_secs(60),
-        level_path: "test-level"
-    });
-}
+pub static SERVER_CONFIG: RwLock<ServerConfig> = RwLock::new(ServerConfig {
+    ipv4_port: 19132,
+    ipv6_port: 19133,
+    max_players: 1000,
+    compression_algorithm: CompressionAlgorithm::Flate,
+    compression_threshold: 1, // Compress all raknet
+    client_throttle: ClientThrottleSettings {
+        // Disable client throttling
+        enabled: false,
+        threshold: 0,
+        scalar: 0.0,
+    },
+    server_name: "Pathfinders",
+    allowed_render_distance: 16,
+    autosave_interval: Duration::from_secs(60),
+    level_path: "test-level",
+});

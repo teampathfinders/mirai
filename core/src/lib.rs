@@ -6,7 +6,7 @@ pub mod data;
 pub mod forms;
 pub mod instance;
 pub mod level;
-pub mod network;
+pub mod net;
 
 #[cfg(test)]
 mod test;
