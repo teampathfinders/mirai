@@ -15,25 +15,7 @@ pub struct Replicator {
 }
 
 impl Replicator {
-    pub async fn new() -> anyhow::Result<Self> {
-        let host = std::env::vars().find_map(|(k, v)| if k == "REDIS_HOST" { Some(v) } else { None });
-
-        let host = if let Some(host) = host {
-            host
-        } else {
-            tracing::debug!("No REDIS_HOST environment variable found, using default host 127.0.0.1");
-            String::from("127.0.0.1")
-        };
-
-        let port = std::env::vars().find_map(|(k, v)| if k == "REDIS_PORT" { Some(v) } else { None });
-
-        let port: u16 = if let Some(port) = port {
-            port.parse().context("Failed to parse REDIS_PORT argument")?
-        } else {
-            tracing::debug!("No REDIS_PORT environment variable found, using default port 6379");
-            6379
-        };
-
+    pub async fn new(host: &str, port: u16) -> anyhow::Result<Self> {
         let client = RedisClient::new(
             RedisConfig {
                 version: RespVersion::RESP3,

@@ -34,12 +34,14 @@ impl BedrockUser {
         } = request.data {
             // Check that the source is equal to the player name to prevent spoofing.
             if self.name() != source {
-                self.kick("Illegal packet modifications detected")?;
+                self.kick("Illegal packet modifications detected").await?;
                 anyhow::bail!(
                     "Client attempted to spoof chat username. (actual: `{}`, spoofed: `{}`)",
                     self.name(), source
                 );
             }
+
+            self.kick("test").await?;
 
             // Send chat message to replication layer
             self.replicator.text_msg(&request).await?;

@@ -201,13 +201,28 @@ impl<'a> InstanceBuilder<'a> {
 
     /// Produces an [`Instance`] with the configured options, consuming the builder.
     pub async fn build(self) -> anyhow::Result<Instance> {
-        let ipv4_socket = UdpSocket::bind(self.net_config.ipv4_addr).await?;
+        let ipv4_socket = UdpSocket::bind(self.net_config.ipv4_addr).await.context("Unable to create IPv4 UDP socket")?;
         let ipv6_socket = match self.net_config.ipv6_addr {
-            Some(addr) => Some(UdpSocket::bind(addr).await?),
+            Some(addr) => Some(UdpSocket::bind(addr).await.context("Unable to create IPv6 UDP socket")?),
             None => None
         };
 
-        todo!()
+        let ipv4_socket = Arc::new(ipv4_socket);
+        let ipv6_socket = ipv6_socket.map(Arc::new);
+
+        let replicator = Replicator::new(
+            self.db_config.host, self.db_config.port
+        ).await.context("Unable to create replicator")?;
+
+        let replicator = Arc::new(replicator);
+        
+        let user_map = Arc::new(UserMap::new(replicator));
+
+        let instance = Instance {
+            ipv4_socket, ipv6_socket, user_map, token: CancellationToken::new()
+        };
+
+        Ok(instance)
     }
 }
 
@@ -231,17 +246,58 @@ impl Default for InstanceBuilder<'static> {
 pub struct Instance {
     /// IPv4 UDP socket
     ipv4_socket: Arc<UdpSocket>,
+    /// IPv6 UDP socket.
+    ipv6_socket: Option<Arc<UdpSocket>>,
     /// Service that manages all player sessions.
     user_map: Arc<UserMap>,
-    /// Manages the level.
-    level_manager: Arc<Level>,
-    /// Channel that the LevelManager sends a message to when it has fully shutdown.
-    /// This is to make sure that the world has been saved and safely shut down before shutting down the server.
-    level_notifier: Receiver<()>,
+    /// Token that can signal other services to stop running.
+    token: CancellationToken
 }
 
 impl Instance {
     pub async fn run(self) -> anyhow::Result<()> {
+
+        // FIXME: The level module will get a refactor and this will be changed
+        let level = Level::new(self.user_map.clone(), self.token.clone())?;
+        self.user_map.set_level(level);
+
+        let recv_job4 = {
+            let socket = self.ipv4_socket.clone();
+            let user_map = self.user_map.clone();
+            let token = self.token.clone();
+            
+            let handle = tokio::spawn(Instance::net_recv_job(token, socket, user_map));
+            tracing::info!("IPv4 listener ready");
+            
+            handle
+        };
+
+        let recv_job6 = match self.ipv6_socket {
+            Some(socket) => {
+                let user_map = self.user_map.clone();
+                let token = self.token.clone();
+
+                let handle = tokio::spawn(Instance::net_recv_job(token, socket, user_map));
+                tracing::info!("IPv6 listener ready");
+
+                Some(handle)
+            },
+            None => {
+                tracing::info!("IPv6 functionality disabled");
+                None
+            }
+        };
+
+        signal_listener(self.token.clone()).await?;
+
+        _ = self.user_map.shutdown().await;
+        self.token.cancel();
+
+        _ = recv_job4.await;
+        if let Some(job) = recv_job6 {
+            _ = job.await;
+        }
+
         Ok(())
     }
 
@@ -524,7 +580,7 @@ impl Instance {
     }
 
     /// Receives raknet from IPv4 clients and adds them to the receive queue
-    async fn udp_recv_job(token: CancellationToken, udp_socket: Arc<UdpSocket>, user_manager: Arc<UserMap>) {
+    async fn net_recv_job(token: CancellationToken, udp_socket: Arc<UdpSocket>, user_manager: Arc<UserMap>) {
         let server_guid = rand::random();
 
         // TODO: Customizable server description.
@@ -601,7 +657,7 @@ impl Instance {
             }
         }
 
-        tracing::debug!("Receiver exited");
+        tracing::info!("Network receiver closed");
     }
 
     /// Generates a new metadata string using the given description and new player count.

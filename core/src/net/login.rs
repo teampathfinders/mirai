@@ -24,12 +24,11 @@ impl BedrockUser {
         Ok(())
     }
 
-    pub fn handle_violation_warning(&self, packet: Vec<u8>) -> anyhow::Result<()> {
+    pub async fn handle_violation_warning(&self, packet: Vec<u8>) -> anyhow::Result<()> {
         let request = ViolationWarning::deserialize(packet.as_ref())?;
         tracing::error!("Received violation warning: {request:?}");
 
-        self.kick("Violation warning")?;
-        Ok(())
+        self.kick("Violation warning").await
     }
 
     /// Handles a [`SetLocalPlayerAsInitialized`] packet.
@@ -212,16 +211,16 @@ impl BedrockUser {
             radius: self.player().viewer.get_radius() as u32
         })?;
 
-        let subchunks = self.player().viewer.recenter(
-            Vector::from([0, 0]), &(0..5).map(|y| Vector::from([0, y, 0])).collect::<Vec<_>>()
-        )?;
-        let response = SubChunkResponse {
-            entries: subchunks,
-            position: Vector::from([0, 0, 0]),
-            dimension: Dimension::Overworld,
-            cache_enabled: false
-        };
-        self.send(response)?;
+        // let subchunks = self.player().viewer.recenter(
+        //     Vector::from([0, 0]), &(0..5).map(|y| Vector::from([0, y, 0])).collect::<Vec<_>>()
+        // )?;
+        // let response = SubChunkResponse {
+        //     entries: subchunks,
+        //     position: Vector::from([0, 0, 0]),
+        //     dimension: Dimension::Overworld,
+        //     cache_enabled: false
+        // };
+        // self.send(response)?;
 
         Ok(())
     }
@@ -265,7 +264,7 @@ impl BedrockUser {
         let request = match request {
             Ok(r) => r,
             Err(e) => {
-                self.kick(DISCONNECTED_LOGIN_FAILED)?;
+                self.kick(DISCONNECTED_LOGIN_FAILED).await?;
                 return Err(e);
             }
         };
@@ -289,7 +288,7 @@ impl BedrockUser {
             // Client sent a second login packet?
             // Something is wrong, disconnect the client.
             tracing::error!("Client sent a second login packet.");
-            self.kick("Invalid packet")?;
+            self.kick("Invalid packet").await?;
         }
 
         if self.player.set(PlayerData::new(request.skin, self.level.clone())).is_err() {
