@@ -34,7 +34,7 @@ dashmap = "5.4.0"
 parking_lot = "0.12.1"
 lazy_static = "1.4.0"
 flate2 = "1.0.26"
-serde = { version = "1.0.164", default-features = false }
+serde = { version = "1.0.196", default-features = false }
 serde_json = { version = "1.0.111", features = ["preserve_order"] }
 anyhow = { version = "1.0.76", features = ["backtrace"] }
 legion = "0.4.0"
