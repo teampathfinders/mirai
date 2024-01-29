@@ -16,7 +16,7 @@ jsonwebtoken = "9.2.0"
 num-traits = "0.2.15"
 paste = "1.0.12"
 serde = "1.0.196"
-serde_json = "1.0.111"
+serde_json = "1.0.113"
 snap = "1.1.1"
 tokio = { version = "1.32.0", features = ["sync"] }
 uuid = "1.7.0"
