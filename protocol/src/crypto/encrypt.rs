@@ -1,4 +1,4 @@
-use std::fmt::{Debug, Formatter};
+use std::fmt::{self, Debug, Formatter};
 use std::io::Write;
 use std::sync::atomic::{AtomicU64, Ordering};
 
@@ -16,7 +16,7 @@ use rand::rngs::OsRng;
 use rand::Rng;
 use sha2::{Digest, Sha256};
 
-use util::{BinaryWrite, BinaryRead};
+use util::{BinaryRead, BinaryWrite, ExposeSecret, Secret};
 use util::{bail, Result};
 
 type Aes256CtrBE = ctr::Ctr64BE<aes::Aes256>;
@@ -37,17 +37,16 @@ pub struct Encryptor {
     /// Cipher used to encrypt raknet.
     cipher_encrypt: Mutex<Aes256CtrBE>,
     /// Increased by one for every packet sent by the server.
-    send_counter: AtomicU64,
+    send_counter: Secret<AtomicU64>,
     /// Increased by one for every packet received from the client.
-    receive_counter: AtomicU64,
+    receive_counter: Secret<AtomicU64>,
     /// Shared secret.
-    secret: [u8; 32],
+    secret: Secret<[u8; 32]>,
 }
 
-impl Debug for Encryptor {
-    /// Allow usage in debug derived structs, but prevent logging the secret.
-    fn fmt(&self, fmt: &mut Formatter<'_>) -> std::fmt::Result {
-        fmt.write_str("Encryptor(*secret hidden*)")
+impl fmt::Debug for Encryptor {
+    fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
+        write!(fmt, "Encryptor([secret])")
     }
 }
 
@@ -115,19 +114,19 @@ impl Encryptor {
         hasher.update(salt);
         hasher.update(shared_secret.raw_secret_bytes().as_slice());
 
-        let mut secret = [0u8; 32];
-        secret.copy_from_slice(&hasher.finalize()[..32]);
+        let mut secret = Secret::new([0u8; 32]);
+        secret.expose_mut().copy_from_slice(&hasher.finalize()[..32]);
 
         // Initialisation vector is composed of the first 12 bytes of the secret and 0x0000000002
         let mut iv = [0u8; 16];
-        iv[..12].copy_from_slice(&secret[..12]);
+        iv[..12].copy_from_slice(&(secret.expose())[..12]);
         iv[12..].copy_from_slice(&[0x00, 0x00, 0x00, 0x02]);
 
-        let cipher = Aes256CtrBE::new(&secret.into(), &iv.into());
+        let cipher = Aes256CtrBE::new(secret.expose().into(), &iv.into());
         Ok((
             Self {
-                send_counter: AtomicU64::new(0),
-                receive_counter: AtomicU64::new(0),
+                send_counter: Secret::new(AtomicU64::new(0)),
+                receive_counter: Secret::new(AtomicU64::new(0)),
                 cipher_decrypt: Mutex::new(cipher.clone()),
                 cipher_encrypt: Mutex::new(cipher),
                 secret,
@@ -146,7 +145,7 @@ impl Encryptor {
         }
 
         self.cipher_decrypt.lock().apply_keystream(reader.as_mut());
-        let counter = self.receive_counter.fetch_add(1, Ordering::SeqCst);
+        let counter = self.receive_counter.expose().fetch_add(1, Ordering::SeqCst);
 
         let slice = reader.as_slice();
         let checksum = &slice[slice.len() - 8..];
@@ -164,7 +163,7 @@ impl Encryptor {
 
     /// Encrypts a packet and appends the computed checksum.
     pub fn encrypt<W: BinaryWrite>(&self, writer: &mut W) -> anyhow::Result<()> {
-        let counter = self.send_counter.fetch_add(1, Ordering::SeqCst);
+        let counter = self.send_counter.expose().fetch_add(1, Ordering::SeqCst);
         // Exclude 0xfe header from checksum calculations.
         let checksum = self.compute_checksum(&writer.as_ref()[1..], counter);
         writer.write_all(&checksum)?;
@@ -182,7 +181,7 @@ impl Encryptor {
         let mut hasher = Sha256::new();
         hasher.update(counter.to_le_bytes());
         hasher.update(data);
-        hasher.update(self.secret);
+        hasher.update(self.secret.expose());
 
         // Minecraft uses only the first 8 bytes of the hash.
         let mut checksum = [0u8; 8];

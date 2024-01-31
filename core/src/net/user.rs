@@ -153,13 +153,22 @@ impl BedrockUser {
 
     /// Kicks a player from the server and displays the specified message to them.
     /// This also adds a reason to the kick, which is used for telemetry purposes.
+    #[tracing::instrument(
+        level = "info", 
+        skip(self, message, reason)
+        fields(
+            username = %self.name(),
+            reason = %message,
+            telemetry_reason = ?reason            
+        )
+    )]
     pub async fn kick_with_reason(&self, message: &str, reason: DisconnectReason) -> anyhow::Result<()> {
         let disconnect_packet = Disconnect {
             reason, message, hide_message: false
         };
         self.send(disconnect_packet)?;
         
-        tracing::info!("{} kicked: {message}", self.name());
+        tracing::info!("Player kicked");
 
         self.raknet.await_shutdown().await
     }
@@ -245,7 +254,7 @@ impl BedrockUser {
         self.raknet.send_raw_buffer_with_config(out, config);
         Ok(())
     }
-  
+
     async fn handle_encrypted_frame(self: &Arc<Self>, mut packet: Vec<u8>) -> anyhow::Result<()> {
         debug_assert_eq!(packet[0], 0xfe);
         packet.remove(0);
