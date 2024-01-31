@@ -81,17 +81,18 @@ impl BedrockUser {
     }
 
     /// Waits for the client to fully disconnect and the server to finish processing.
-    pub async fn await_shutdown(self: Arc<Self>) -> anyhow::Result<()> {
+    pub async fn await_shutdown(&self) -> anyhow::Result<()> {
         let job_handle = {
             let mut lock = self.job_handle.write();
             lock.take()
         };
 
+        self.raknet.active.cancel();
         if let Some(job_handle) = job_handle {
             job_handle.await?;
         }
 
-        self.raknet.clone().await_shutdown().await
+        self.raknet.await_shutdown().await
     }
 
     async fn recv_job(self: &Arc<Self>, mut receiver: mpsc::Receiver<Vec<u8>>) {
@@ -146,22 +147,21 @@ impl BedrockUser {
 
     /// Kicks a player from the server and display the specified message to them.
     #[inline]
-    pub fn kick(&self, message: &str) -> anyhow::Result<()> {
-        self.kick_with_reason(message, DisconnectReason::Kicked)
+    pub async fn kick(&self, message: &str) -> anyhow::Result<()> {
+        self.kick_with_reason(message, DisconnectReason::Kicked).await
     }
 
     /// Kicks a player from the server and displays the specified message to them.
     /// This also adds a reason to the kick, which is used for telemetry purposes.
-    pub fn kick_with_reason(&self, message: &str, reason: DisconnectReason) -> anyhow::Result<()> {
+    pub async fn kick_with_reason(&self, message: &str, reason: DisconnectReason) -> anyhow::Result<()> {
         let disconnect_packet = Disconnect {
             reason, message, hide_message: false
         };
         self.send(disconnect_packet)?;
-        self.raknet.active.cancel();
-
+        
         tracing::info!("{} kicked: {message}", self.name());
 
-        Ok(())
+        self.raknet.await_shutdown().await
     }
 
     /// Sends a packet to all initialised sessions including self.
@@ -213,7 +213,7 @@ impl BedrockUser {
                     CompressionAlgorithm::Snappy => {
                         unimplemented!("Snappy compression");
                     }
-                    CompressionAlgorithm::Deflate => {
+                    CompressionAlgorithm::Flate => {
                         let mut writer = DeflateEncoder::new(
                             vec![CONNECTED_PACKET_ID],
                             Compression::best(),
@@ -267,7 +267,7 @@ impl BedrockUser {
                 CompressionAlgorithm::Snappy => {
                     unimplemented!("Snappy decompression");
                 }
-                CompressionAlgorithm::Deflate => {
+                CompressionAlgorithm::Flate => {
                     let mut reader =
                         flate2::read::DeflateDecoder::new(packet.as_slice());
 
@@ -298,10 +298,7 @@ impl BedrockUser {
                 expected, header.id
             );
             
-            if self.kick("Unexpected packet").is_err() {
-                // If kicking doesn't work, simply destroy the session.
-                self.raknet.active.cancel();
-            }
+            self.kick("Unexpected packet").await?;
         }
 
         tokio::spawn(async move {
@@ -318,7 +315,7 @@ impl BedrockUser {
                 ResourcePackClientResponse::ID => {
                     self.handle_resource_client_response(packet)
                 }
-                ViolationWarning::ID => self.handle_violation_warning(packet),
+                ViolationWarning::ID => self.handle_violation_warning(packet).await,
                 ChunkRadiusRequest::ID => self.handle_chunk_radius_request(packet),
                 Interact::ID => self.process_interaction(packet),
                 TextMessage::ID => self.handle_text_message(packet).await,

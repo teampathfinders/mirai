@@ -5,12 +5,12 @@ use tokio::runtime;
 
 use tracing_subscriber::filter::LevelFilter;
 
-use inferno::instance::ServerInstance;
+use inferno::instance::{DbConfig, Instance, InstanceBuilder, NetConfig};
 
 #[cfg(unix)]
 fn main() -> anyhow::Result<()> {
     use pyroscope::PyroscopeAgent;
-    use pyroscope_pprofrs::{PprofConfig, pprof_backend};
+    use pyroscope_pprofrs::{pprof_backend, PprofConfig};
 
     let pprof_config = PprofConfig::new().sample_rate(100);
     let backend_impl = pprof_backend(pprof_config);
@@ -46,13 +46,43 @@ fn start_server() -> anyhow::Result<()> {
         .enable_io()
         .enable_time()
         .thread_name_fn(|| {
-            static ATOMIC_THREAD_COUNTER: AtomicU16 = AtomicU16::new(0);
-            format!("[{}]", ATOMIC_THREAD_COUNTER.fetch_add(1, Ordering::Relaxed))
+            static THREAD_COUNTER: AtomicU16 = AtomicU16::new(1);
+            format!("[{}]", THREAD_COUNTER.fetch_add(1, Ordering::Relaxed))
         })
         .build()
         .expect("Failed to build runtime");
 
-    runtime.block_on(ServerInstance::run())
+    let host = std::env::vars().find_map(|(k, v)| if k == "REDIS_HOST" { Some(v) } else { None });
+
+    let host = if let Some(host) = host {
+        host
+    } else {
+        tracing::debug!("No REDIS_HOST environment variable found, using default host 127.0.0.1");
+        String::from("127.0.0.1")
+    };
+
+    let port = std::env::vars().find_map(|(k, v)| if k == "REDIS_PORT" { Some(v) } else { None });
+
+    let port: u16 = if let Some(port) = port {
+        port.parse().context("Failed to parse REDIS_PORT argument")?
+    } else {
+        tracing::debug!("No REDIS_PORT environment variable found, using default port 6379");
+        6379
+    };
+
+    let builder = InstanceBuilder::new()
+        .net_config(NetConfig {
+            max_connections: 10,
+            ..Default::default()
+        })
+        .db_config(DbConfig {
+            host: &host, port
+        });
+
+    runtime.block_on(async move {
+        let instance = builder.build().await?;
+        instance.run().await
+    })
 }
 
 /// Initialises logging with tokio-console.

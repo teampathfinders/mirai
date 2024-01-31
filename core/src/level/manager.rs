@@ -13,7 +13,7 @@ use proto::types::Dimension;
 use util::Vector;
 
 use crate::config::SERVER_CONFIG;
-use crate::network::UserMap;
+use crate::net::UserMap;
 use proto::bedrock::{Command, GameRule, GameRulesChanged, LevelChunk, SubChunkRequestMode};
 
 use crate::level::serialize::serialize_biomes;

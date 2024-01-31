@@ -163,7 +163,9 @@ impl UserMap {
             let handle = join_set
                 .build_task()
                 .name("In-progress client shutdown listener")
-                .spawn(clone.await_shutdown());
+                .spawn(async move {
+                    clone.await_shutdown().await
+                });
 
             if let Err(err) = handle {
                 tracing::error!("Failed to spawn in-progress client shutdown listener | {err:#}");
@@ -177,7 +179,9 @@ impl UserMap {
             let handle = join_set
                 .build_task()
                 .name("Connected client shutdown listener")
-                .spawn(clone.await_shutdown());
+                .spawn(async move {
+                    clone.await_shutdown().await
+                });
 
             // user.state.send(Disconnect {
             //     hide_message: false,

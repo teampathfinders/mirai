@@ -31,4 +31,4 @@ pub use form::*;
 pub use menu::*;
 pub use modal::*;
 
-pub use response::{Subscriber, Response};
+pub use response::{Response, Subscriber};

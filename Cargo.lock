@@ -1097,7 +1097,6 @@ dependencies = [
  "inferno-raknet",
  "inferno-repl",
  "inferno-util",
- "lazy_static",
  "legion",
  "nohash-hasher",
  "parking_lot 0.12.1",

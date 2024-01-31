@@ -12,7 +12,7 @@ use crate::bedrock::ConnectedPacket;
 #[repr(u8)]
 pub enum CompressionAlgorithm {
     /// The Deflate/Zlib compression algorithm.
-    Deflate,
+    Flate,
     /// The Snappy compression algorithm.
     /// Available since Minecraft 1.19.30.
     /// 

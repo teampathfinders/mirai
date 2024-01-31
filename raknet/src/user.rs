@@ -124,7 +124,7 @@ impl RaknetUser {
     }
 
     /// Waits for the job to finish processing.
-    pub async fn await_shutdown(self: Arc<Self>) -> anyhow::Result<()> {
+    pub async fn await_shutdown(&self) -> anyhow::Result<()> {
         self.flush_all().await?;
         self.active.cancel();
 
