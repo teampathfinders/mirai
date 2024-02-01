@@ -9,6 +9,7 @@ use util::Deserialize;
 use super::BedrockUser;
 
 impl BedrockUser {
+    /// Handles a [`SettingsCommand`] packet used to adjust a world setting.
     pub fn handle_settings_command(&self, packet: Vec<u8>) -> anyhow::Result<()> {
         let request = SettingsCommand::deserialize(packet.as_ref())?;
         dbg!(request);
@@ -16,6 +17,7 @@ impl BedrockUser {
         Ok(())
     }
 
+    /// Handles a [`TickSync`] packet used to synchronise ticks between the client and server.
     pub fn handle_tick_sync(&self, packet: Vec<u8>) -> anyhow::Result<()> {
         let _request = TickSync::deserialize(packet.as_ref())?;
         // TODO: Implement tick synchronisation
@@ -27,6 +29,7 @@ impl BedrockUser {
         // self.send(response)
     }
 
+    /// Handles a [`TextMessage`] packet sent when a client wants to send a chat message.
     pub async fn handle_text_message(self: &Arc<Self>, packet: Vec<u8>) -> anyhow::Result<()> {
         let request = TextMessage::deserialize(packet.as_ref())?;
         if let TextData::Chat {
@@ -57,6 +60,8 @@ impl BedrockUser {
 
     }
 
+    /// Handles a [`PlayerAuthInput`] packet. These are sent every tick and are used
+    /// for server authoritative player movement.
     pub fn handle_auth_input(&self, packet: Vec<u8>) -> anyhow::Result<()> {
         let input = PlayerAuthInput::deserialize(packet.as_ref())?;
         if input.input_data.0 != 0 {
@@ -80,12 +85,14 @@ impl BedrockUser {
         // self.send(move_player)
     }
 
+    /// Handles an [`UpdateSkin`] packet.
     pub fn handle_skin_update(&self, packet: Vec<u8>) -> anyhow::Result<()> {
         let request = UpdateSkin::deserialize(packet.as_ref())?;
         dbg!(&request);
         self.broadcast(request)
     }
 
+    /// Handles an [`AbilityRequest`] packet.
     pub fn handle_ability_request(&self, packet: Vec<u8>) -> anyhow::Result<()> {
         let request = RequestAbility::deserialize(packet.as_ref())?;
         dbg!(request);
@@ -93,6 +100,7 @@ impl BedrockUser {
         Ok(())
     }
 
+    /// Handles an [`Animation`] packet.
     pub fn handle_animation(&self, packet: Vec<u8>) -> anyhow::Result<()> {
         let request = Animate::deserialize(packet.as_ref())?;
         dbg!(request);
@@ -100,11 +108,14 @@ impl BedrockUser {
         Ok(())
     }
 
+    /// Handles a [`FormResponseData`] packet. This packet is forwarded to the forms [`Subscriber`](crate::forms::response::Subscriber)
+    /// which will properly handle the response.
     pub fn handle_form_response(&self, packet: Vec<u8>) -> anyhow::Result<()> {
         let response = FormResponseData::deserialize(packet.as_ref())?;
         self.forms.handle_response(response)
     }
 
+    /// Handles a [`CommandRequest`] packet.
     pub fn handle_command_request(&self, packet: Vec<u8>) -> anyhow::Result<()> {
         let request = CommandRequest::deserialize(packet.as_ref())?;
 

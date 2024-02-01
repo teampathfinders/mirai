@@ -24,6 +24,7 @@ impl<T> DerefMut for NonCopy<T> {
     }
 }
 
+/// Overwrites the memory of a type when it is dropped.
 pub trait Zeroize {
     fn zeroize(&mut self);
 }

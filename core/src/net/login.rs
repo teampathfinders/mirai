@@ -24,6 +24,7 @@ impl BedrockUser {
         Ok(())
     }
 
+    /// Handles a packet violation warning.
     pub async fn handle_violation_warning(&self, packet: Vec<u8>) -> anyhow::Result<()> {
         let request = ViolationWarning::deserialize(packet.as_ref())?;
         tracing::error!("Received violation warning: {request:?}");
@@ -90,6 +91,8 @@ impl BedrockUser {
     /// Handles a [`ChunkRadiusRequest`] packet by returning the maximum allowed render distance.
     pub fn handle_chunk_radius_request(&self, packet: Vec<u8>) -> anyhow::Result<()> {
         let request = ChunkRadiusRequest::deserialize(packet.as_ref())?;
+
+        // FIXME: Use render distance configured with builder instead of SERVER_CONFIG global.
         let allowed_radius = std::cmp::min(
             SERVER_CONFIG.read().allowed_render_distance, request.radius
         );
@@ -225,6 +228,8 @@ impl BedrockUser {
         Ok(())
     }
 
+    /// Handles a [`ClientToServerHandshake packet`]. After receiving this packet, the server will now
+    /// use encryption when communicating with this client.
     pub fn handle_client_to_server_handshake(&self, packet: Vec<u8>) -> anyhow::Result<()> {
         self.expected.store(CacheStatus::ID, Ordering::SeqCst);
 

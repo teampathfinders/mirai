@@ -1,3 +1,4 @@
+use std::future::Future;
 use std::io::{Read, Write};
 
 use std::sync::{Arc, OnceLock};
@@ -23,6 +24,7 @@ use crate::config::SERVER_CONFIG;
 use crate::forms::{Subscriber, SubmittableForm, self};
 use crate::level::{ChunkViewer, Level};
 
+/// Represents a user connected to the server.
 pub struct BedrockUser {
     pub(super) encryptor: OnceLock<Encryptor>,
     pub(super) identity: OnceLock<BedrockIdentity>,
@@ -46,6 +48,7 @@ pub struct BedrockUser {
 }
 
 impl BedrockUser {
+    /// Creates a new user.
     pub fn new(
         raknet: Arc<RaknetUser>,
         level: Arc<Level>,
@@ -95,6 +98,7 @@ impl BedrockUser {
         self.raknet.await_shutdown().await
     }
 
+    /// The worker that processes incoming packets.
     async fn recv_job(self: &Arc<Self>, mut receiver: mpsc::Receiver<Vec<u8>>) {
         let mut broadcast = self.broadcast.subscribe();
 
@@ -125,7 +129,8 @@ impl BedrockUser {
         tracing::debug!("Bedrock job exited");
     }
 
-    pub fn handle_broadcast(&self, packet: BroadcastPacket) -> anyhow::Result<()> {
+    /// Handles a packet broadcasted by another user.
+    fn handle_broadcast(&self, packet: BroadcastPacket) -> anyhow::Result<()> {
         let should_send = packet.sender.map(|sender| sender != self.raknet.address).unwrap_or(true);
         if should_send {
             self.send_serialized(packet.content.as_ref(), DEFAULT_SEND_CONFIG)?;
@@ -145,10 +150,11 @@ impl BedrockUser {
         Ok(resp)
     }
 
-    /// Kicks a player from the server and display the specified message to them.
+    /// Kicks a player from the server and displays the specified message to them.
     #[inline]
-    pub async fn kick(&self, message: &str) -> anyhow::Result<()> {
-        self.kick_with_reason(message, DisconnectReason::Kicked).await
+    pub fn kick<'a>(&'a self, message: &'a str) -> impl Future<Output = anyhow::Result<()>> + 'a {
+        // This function returns a future object directly to reduce code bloat from async.
+        self.kick_with_reason(message, DisconnectReason::Kicked)
     }
 
     /// Kicks a player from the server and displays the specified message to them.
@@ -187,12 +193,6 @@ impl BedrockUser {
         packet: P,
     ) -> anyhow::Result<()> {
         self.raknet.broadcast_others(packet)
-    }
-
-    pub fn handle_disconnect(&self) {
-        self.raknet.active.cancel();
-
-        todo!("Disconnect");
     }
 
     /// Sends a game packet with default settings
@@ -255,8 +255,18 @@ impl BedrockUser {
         Ok(())
     }
 
+    /// Handles a received encrypted frame.
+    /// 
+    /// This is the first function that is called when a packet is received from the RakNet processing layer.
+    /// It first decrypts the packet if encryption has been enabled and then optionally decompresses it.
+    /// 
+    /// After processing, this function sends the processed packet to [`handle_frame_body`](Self::handle_frame_body)
+    /// function,
     async fn handle_encrypted_frame(self: &Arc<Self>, mut packet: Vec<u8>) -> anyhow::Result<()> {
-        debug_assert_eq!(packet[0], 0xfe);
+        if packet[0] != 0xfe {
+            anyhow::bail!("First byte in a Bedrock proto packet should be 0xfe");
+        }
+
         packet.remove(0);
 
         if let Some(encryptor) = self.encryptor.get() {
@@ -283,15 +293,18 @@ impl BedrockUser {
                     let mut decompressed = Vec::new();
                     reader.read_to_end(&mut decompressed)?;
 
-                    self.clone().handle_frame_body(decompressed).await
+                    self.handle_frame_body(decompressed).await
                 }
             }
         } else {
-            self.clone().handle_frame_body(packet).await
+            self.handle_frame_body(packet).await
         }
     }
 
-    async fn handle_frame_body(self: Arc<Self>, mut packet: Vec<u8>) -> anyhow::Result<()> {
+    /// Handles the body of a frame.
+    /// 
+    /// This function does the actual processing of the content of the frame and responds to it.
+    async fn handle_frame_body(self: &Arc<Self>, mut packet: Vec<u8>) -> anyhow::Result<()> {
         let start_len = packet.len();
         let mut reader: &[u8] = packet.as_ref();
         let _length = reader.read_var_u32()?;
@@ -310,37 +323,38 @@ impl BedrockUser {
             self.kick("Unexpected packet").await?;
         }
 
+        let this = self.clone();
         tokio::spawn(async move {
             match header.id {
-                PlayerAuthInput::ID => self.handle_auth_input(packet),
+                PlayerAuthInput::ID => this.handle_auth_input(packet),
                 RequestNetworkSettings::ID => {
-                    self.handle_network_settings_request(packet)
+                    this.handle_network_settings_request(packet)
                 }
-                Login::ID => self.handle_login(packet).await,
+                Login::ID => this.handle_login(packet).await,
                 ClientToServerHandshake::ID => {
-                    self.handle_client_to_server_handshake(packet)
+                    this.handle_client_to_server_handshake(packet)
                 }
-                CacheStatus::ID => self.handle_cache_status(packet),
+                CacheStatus::ID => this.handle_cache_status(packet),
                 ResourcePackClientResponse::ID => {
-                    self.handle_resource_client_response(packet)
+                    this.handle_resource_client_response(packet)
                 }
-                ViolationWarning::ID => self.handle_violation_warning(packet).await,
-                ChunkRadiusRequest::ID => self.handle_chunk_radius_request(packet),
-                Interact::ID => self.process_interaction(packet),
-                TextMessage::ID => self.handle_text_message(packet).await,
+                ViolationWarning::ID => this.handle_violation_warning(packet).await,
+                ChunkRadiusRequest::ID => this.handle_chunk_radius_request(packet),
+                Interact::ID => this.handle_interaction(packet),
+                TextMessage::ID => this.handle_text_message(packet).await,
                 SetLocalPlayerAsInitialized::ID => {
-                    self.handle_local_initialized(packet)
+                    this.handle_local_initialized(packet)
                 }
-                MovePlayer::ID => self.process_move_player(packet).await,
-                PlayerAction::ID => self.process_player_action(packet),
-                RequestAbility::ID => self.handle_ability_request(packet),
-                Animate::ID => self.handle_animation(packet),
-                CommandRequest::ID => self.handle_command_request(packet),
-                UpdateSkin::ID => self.handle_skin_update(packet),
-                SettingsCommand::ID => self.handle_settings_command(packet),
-                ContainerClose::ID => self.process_container_close(packet),
-                FormResponseData::ID => self.handle_form_response(packet),
-                TickSync::ID => self.handle_tick_sync(packet),
+                MovePlayer::ID => this.handle_move_player(packet).await,
+                PlayerAction::ID => this.handle_player_action(packet),
+                RequestAbility::ID => this.handle_ability_request(packet),
+                Animate::ID => this.handle_animation(packet),
+                CommandRequest::ID => this.handle_command_request(packet),
+                UpdateSkin::ID => this.handle_skin_update(packet),
+                SettingsCommand::ID => this.handle_settings_command(packet),
+                ContainerClose::ID => this.handle_container_close(packet),
+                FormResponseData::ID => this.handle_form_response(packet),
+                TickSync::ID => this.handle_tick_sync(packet),
                 id => anyhow::bail!("Invalid game packet: {id:#04x}"),
             }
         });
@@ -396,6 +410,9 @@ impl BedrockUser {
     }
 }
 
+/// Contains data that is mostly related to the player in the vanilla game.
+/// 
+/// Unlike [`BedrockUser`], most of this data is not related to the Bedrock protocol itself.
 pub struct PlayerData {
     /// Whether the player's inventory is currently open.
     pub is_inventory_open: AtomicBool,
@@ -420,6 +437,7 @@ pub struct PlayerData {
 }
 
 impl PlayerData {
+    /// Creates a new player data struct.
     pub fn new(skin: Skin, level: Arc<Level>) -> Self {
         Self {
             is_inventory_open: AtomicBool::new(false),
@@ -434,18 +452,22 @@ impl PlayerData {
         }
     }
 
+    /// The gamemode the player is currently in.
     pub fn gamemode(&self) -> GameMode {
         self.game_mode
     }
 
+    /// The runtime ID of the player.
     pub fn runtime_id(&self) -> u64 {
         self.runtime_id
     }
 
+    /// The permission level of the player.
     pub fn permission_level(&self) -> PermissionLevel {
         self.permission_level
     }
 
+    /// The command permission level of the player.
     pub fn command_permission_level(&self) -> CommandPermissionLevel {
         self.command_permission_level
     }

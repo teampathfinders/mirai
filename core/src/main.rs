@@ -5,35 +5,8 @@ use tokio::runtime;
 
 use tracing_subscriber::filter::LevelFilter;
 
-use inferno::instance::{DbConfig, Instance, InstanceBuilder, NetConfig};
+use inferno::instance::{DbConfig, InstanceBuilder, NetConfig};
 
-#[cfg(unix)]
-fn main() -> anyhow::Result<()> {
-    use pyroscope::PyroscopeAgent;
-    use pyroscope_pprofrs::{pprof_backend, PprofConfig};
-
-    let pprof_config = PprofConfig::new().sample_rate(100);
-    let backend_impl = pprof_backend(pprof_config);
-
-    let agent = PyroscopeAgent::builder("http://localhost:4040", "inferno")
-        .backend(backend_impl)
-        .tags(vec![("TagA", "ValueA")])
-        .build()?;
-
-    let agent = agent.start().unwrap();
-    if let Err(err) = init_logging().context("Unable to initialise logging") {
-        agent.shutdown();
-        return Err(err);
-    }
-    tracing::debug!("Telemetry enabled");
-
-    let code = start_server();
-    let agent = agent.stop()?;
-    agent.shutdown();
-    code
-}
-
-#[cfg(not(unix))]
 fn main() -> anyhow::Result<()> {
     init_logging().context("Unable to initialise logging")?;
     tracing::debug!("Telemetry disabled");
