@@ -1,5 +1,5 @@
 //! Network functionality of the server.
-//! 
+//!
 //! This module implements the Bedrock protocol on top of the RakNet protocol that is implemented
 //! in the `inferno-raknet` crate.
 

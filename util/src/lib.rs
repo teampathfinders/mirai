@@ -4,7 +4,11 @@ mod macros;
 mod error;
 mod u24;
 
-use std::{fmt, ops::{Deref, DerefMut}, sync::atomic::{AtomicU64, Ordering}};
+use std::{
+    fmt,
+    ops::{Deref, DerefMut},
+    sync::atomic::{AtomicU64, Ordering},
+};
 
 pub use error::*;
 
@@ -64,25 +68,25 @@ impl Zeroize for AtomicU64 {
 /// Allows access to a value inside of a [`Secret`].
 pub trait ExposeSecret<T> {
     /// Exposes the value inside of the secret.
-    /// 
+    ///
     /// Warning: This means the value inside of the secret will be unprotected while
     /// it is exposed. The value is a secret for a reason, so be careful with what you do with it.
     fn expose(&self) -> &T;
 
     /// Exposes the value inside of the secret.
-    /// 
+    ///
     /// Warning: This means the value inside of the secret will be unprotected while
     /// it is exposed. The value is a secret for a reason, so be careful with what you do with it.
     fn expose_mut(&mut self) -> &mut T;
 }
 
 /// Overrides display and debug implementations to prevent accidental leakage of secure values
-/// in logs. 
-/// 
+/// in logs.
+///
 /// This also overwrites the value on drop to make sure it does not last in memory.
 /// Zeroizing is done on a best-effort basis.
 pub struct Secret<T: Zeroize> {
-    value: T
+    value: T,
 }
 
 impl<T: Zeroize> ExposeSecret<T> for Secret<T> {

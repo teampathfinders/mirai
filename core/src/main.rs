@@ -48,9 +48,7 @@ fn start_server() -> anyhow::Result<()> {
             max_connections: 10,
             ..Default::default()
         })
-        .db_config(DbConfig {
-            host: &host, port
-        });
+        .db_config(DbConfig { host: &host, port });
 
     runtime.block_on(async move {
         let instance = builder.build().await?;

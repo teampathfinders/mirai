@@ -7,6 +7,7 @@ pub mod forms;
 pub mod instance;
 pub mod level;
 pub mod net;
+pub mod commands;
 
 #[cfg(test)]
 mod test;

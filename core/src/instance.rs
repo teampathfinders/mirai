@@ -13,6 +13,7 @@ use tokio_util::sync::CancellationToken;
 
 use util::{Deserialize, ReserveTo, Serialize};
 
+use crate::commands::CommandService;
 use crate::config::SERVER_CONFIG;
 use crate::level::Level;
 use crate::net::{ForwardablePacket, UserMap};
@@ -113,26 +114,26 @@ impl Default for DbConfig<'static> {
 /// Configuration for client options.
 pub struct ClientConfig {
     /// Whether the client should throttle other players.
-    /// 
+    ///
     /// Default: false.
     pub throttling_enabled: bool,
     /// When the player count exceeds this threshold, the client
     /// will start throttling other players.
-    /// 
+    ///
     /// Default: 0.
     pub throttling_threshold: u8,
     /// Amount of players that will be ticked when the client is
     /// actively throttling.
-    /// 
+    ///
     /// Default: 0.0.
     pub throttling_scalar: f32,
     /// Maximum server-allow render distance.
-    /// 
-    /// If the client requests a larger render distance, the server 
+    ///
+    /// If the client requests a larger render distance, the server
     /// will cap it to this maximum.
-    /// 
+    ///
     /// Default: 12.
-    pub render_distance: u32
+    pub render_distance: u32,
 }
 
 impl Default for ClientConfig {
@@ -141,7 +142,7 @@ impl Default for ClientConfig {
             throttling_enabled: false,
             throttling_threshold: 0,
             throttling_scalar: 0.0,
-            render_distance: 12
+            render_distance: 12,
         }
     }
 }
@@ -151,7 +152,7 @@ pub struct InstanceBuilder<'a> {
     name: String,
     net_config: NetConfig,
     db_config: DbConfig<'a>,
-    client_config: ClientConfig
+    client_config: ClientConfig,
 }
 
 impl<'a> InstanceBuilder<'a> {
@@ -191,7 +192,7 @@ impl<'a> InstanceBuilder<'a> {
     }
 
     /// Set the client config.
-    /// 
+    ///
     /// Default: See [`ClientConfig`].
     #[inline]
     pub fn client_config(mut self, config: ClientConfig) -> InstanceBuilder<'a> {
@@ -201,25 +202,32 @@ impl<'a> InstanceBuilder<'a> {
 
     /// Produces an [`Instance`] with the configured options, consuming the builder.
     pub async fn build(self) -> anyhow::Result<Instance> {
-        let ipv4_socket = UdpSocket::bind(self.net_config.ipv4_addr).await.context("Unable to create IPv4 UDP socket")?;
+        let ipv4_socket = UdpSocket::bind(self.net_config.ipv4_addr)
+            .await
+            .context("Unable to create IPv4 UDP socket")?;
         let ipv6_socket = match self.net_config.ipv6_addr {
             Some(addr) => Some(UdpSocket::bind(addr).await.context("Unable to create IPv6 UDP socket")?),
-            None => None
+            None => None,
         };
 
         let ipv4_socket = Arc::new(ipv4_socket);
         let ipv6_socket = ipv6_socket.map(Arc::new);
 
-        let replicator = Replicator::new(
-            self.db_config.host, self.db_config.port
-        ).await.context("Unable to create replicator")?;
+        let replicator = Replicator::new(self.db_config.host, self.db_config.port)
+            .await
+            .context("Unable to create replicator")?;
 
         let replicator = Arc::new(replicator);
-        
+
         let user_map = Arc::new(UserMap::new(replicator));
 
         let instance = Instance {
-            ipv4_socket, ipv6_socket, user_map, token: CancellationToken::new()
+            ipv4_socket,
+            ipv6_socket,
+            user_map,
+            token: CancellationToken::new(),
+            command_registry: CommandService::new(),
+            level: Level::new()
         };
 
         Ok(instance)
@@ -232,7 +240,7 @@ impl Default for InstanceBuilder<'static> {
             name: String::from("Server"),
             net_config: NetConfig::default(),
             db_config: DbConfig::default(),
-            client_config: ClientConfig::default()
+            client_config: ClientConfig::default(),
         }
     }
 }
@@ -251,24 +259,27 @@ pub struct Instance {
     /// Service that manages all player sessions.
     user_map: Arc<UserMap>,
     /// Token that can signal other services to stop running.
-    token: CancellationToken
+    token: CancellationToken,
+    /// Keeps track of all available commands.
+    command_registry: CommandService,
+    /// Keeps track of world state.
+    level: Level
 }
 
 impl Instance {
     pub async fn run(self) -> anyhow::Result<()> {
-
         // FIXME: The level module will get a refactor and this will be changed
-        let level = Level::new(self.user_map.clone(), self.token.clone())?;
-        self.user_map.set_level(level);
+        // let level = Level::new(self.user_map.clone(), self.token.clone())?;
+        // self.user_map.set_level(level);
 
         let recv_job4 = {
             let socket = self.ipv4_socket.clone();
             let user_map = self.user_map.clone();
             let token = self.token.clone();
-            
+
             let handle = tokio::spawn(Instance::net_recv_job(token, socket, user_map));
             tracing::info!("IPv4 listener ready");
-            
+
             handle
         };
 
@@ -281,7 +292,7 @@ impl Instance {
                 tracing::info!("IPv6 listener ready");
 
                 Some(handle)
-            },
+            }
             None => {
                 tracing::info!("IPv6 functionality disabled");
                 None
