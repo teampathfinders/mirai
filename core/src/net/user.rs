@@ -20,6 +20,7 @@ use replicator::Replicator;
 use tokio::task::JoinHandle;
 use util::{Vector, AtomicFlag, Serialize, Deserialize, BinaryWrite, BinaryRead};
 
+use crate::commands::{self, Service};
 use crate::config::SERVER_CONFIG;
 use crate::forms::{Subscriber, SubmittableForm, self};
 use crate::level::{ChunkViewer, Level};
@@ -41,7 +42,9 @@ pub struct BedrockUser {
     pub(crate) level: Arc<Level>,
     pub(crate) raknet: Arc<RaknetUser>,
     pub(crate) player: OnceLock<PlayerData>,
-    pub(crate) forms: Subscriber,
+
+    pub(crate) forms: forms::Subscriber,
+    pub(crate) commands: Arc<commands::Service>,
 
     pub(crate) broadcast: broadcast::Sender<BroadcastPacket>,
     pub(crate) job_handle: RwLock<Option<JoinHandle<()>>>
@@ -54,6 +57,7 @@ impl BedrockUser {
         level: Arc<Level>,
         replicator: Arc<Replicator>,
         receiver: mpsc::Receiver<Vec<u8>>,
+        commands: Arc<Service>,
         broadcast: broadcast::Sender<BroadcastPacket>
     ) -> Arc<Self> {
         let user = Arc::new(Self {
@@ -68,7 +72,9 @@ impl BedrockUser {
             level,
             raknet,
             player: OnceLock::new(),
+
             forms: Subscriber::new(),
+            commands,
             
             broadcast,
             job_handle: RwLock::new(None)

@@ -13,7 +13,7 @@ use tokio_util::sync::CancellationToken;
 
 use util::{Deserialize, ReserveTo, Serialize};
 
-use crate::commands::CommandService;
+use crate::commands::Service;
 use crate::config::SERVER_CONFIG;
 use crate::level::Level;
 use crate::net::{ForwardablePacket, UserMap};
@@ -226,7 +226,7 @@ impl<'a> InstanceBuilder<'a> {
             ipv6_socket,
             user_map,
             token: CancellationToken::new(),
-            command_registry: CommandService::new(),
+            command_registry: Service::new(),
             level: Level::new()
         };
 
@@ -261,7 +261,7 @@ pub struct Instance {
     /// Token that can signal other services to stop running.
     token: CancellationToken,
     /// Keeps track of all available commands.
-    command_registry: CommandService,
+    command_registry: Service,
     /// Keeps track of world state.
     level: Level
 }

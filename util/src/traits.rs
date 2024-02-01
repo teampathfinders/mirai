@@ -1,5 +1,5 @@
 use crate::{BinaryRead, BinaryWrite};
-use std::fmt::Debug;
+use std::{fmt::Debug, future::Future};
 
 /// Trait that describes an object that can be serialised from raw bytes.
 pub trait Serialize {
@@ -66,3 +66,15 @@ impl ReserveTo for Vec<u8> {
         self.reserve(capacity - self.len());
     }
 }
+
+/// Implemented by types that do not shut down instantly and can be joined.
+pub trait Joinable {
+    /// Asynchronously waits for the service to shut down completely.
+    /// 
+    /// ## Errors
+    /// Usually this method can only be called once on an object.
+    /// It is up to the caller to ensure that this is upheld.
+    /// 
+    /// If the type does not support multiple joins, an error will be returned.
+    fn join(&self) -> impl Future<Output = anyhow::Result<()>>;
+}   
