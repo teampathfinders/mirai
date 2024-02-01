@@ -105,7 +105,7 @@ impl BedrockUser {
             anyhow::bail!("Render distance must be greater than 0");
         }
 
-        self.player().viewer.set_radius(allowed_radius);
+        // self.player().viewer.set_radius(allowed_radius);
 
         Ok(())
     }
@@ -143,7 +143,9 @@ impl BedrockUser {
             platform_broadcast_intent: BroadcastIntent::Public,
             enable_commands: true,
             texture_packs_required: true,
-            game_rules: &self.level.get_game_rules(),
+            // FIXME: Reimplement with new level interface.
+            // game_rules: &self.level.get_game_rules(),
+            game_rules: &[],
             experiments: &[],
             experiments_previously_enabled: false,
             bonus_chest_enabled: false,
@@ -202,17 +204,17 @@ impl BedrockUser {
         let biome_definition_list = BiomeDefinitionList;
         self.send(biome_definition_list)?;
 
-        let commands = self.level.get_commands().iter().map(|kv| kv.value().clone()).collect::<Vec<_>>();
-        let available_commands = AvailableCommands { commands: commands.as_slice() };
-        self.send(available_commands)?;
+        // let commands = self.level.get_commands().iter().map(|kv| kv.value().clone()).collect::<Vec<_>>();
+        // let available_commands = AvailableCommands { commands: commands.as_slice() };
+        // self.send(available_commands)?;
 
         let play_status = PlayStatus { status: Status::PlayerSpawn };
         self.send(play_status)?;
 
-        self.send(NetworkChunkPublisherUpdate {
-            position: Vector::from([0, 0, 0]),
-            radius: self.player().viewer.get_radius() as u32
-        })?;
+        // self.send(NetworkChunkPublisherUpdate {
+        //     position: Vector::from([0, 0, 0]),
+        //     radius: self.player().viewer.get_radius() as u32
+        // })?;
 
         // let subchunks = self.player().viewer.recenter(
         //     Vector::from([0, 0]), &(0..5).map(|y| Vector::from([0, y, 0])).collect::<Vec<_>>()
@@ -296,7 +298,7 @@ impl BedrockUser {
             self.kick("Invalid packet").await?;
         }
 
-        if self.player.set(PlayerData::new(request.skin, self.level.clone())).is_err() {
+        if self.player.set(PlayerData::new(request.skin)).is_err() {
             anyhow::bail!("Player data was already set");
         };
 

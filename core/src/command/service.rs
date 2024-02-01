@@ -9,6 +9,7 @@ use util::Joinable;
 
 const SERVICE_TIMEOUT: Duration = Duration::from_millis(10);
 
+#[derive(Debug)]
 pub struct ServiceResponse {
     
 }
@@ -22,7 +23,7 @@ pub struct ServiceEndpoint {
 }
 
 impl ServiceEndpoint {
-    pub async fn send(&self, _request: CommandRequest<'_>) -> anyhow::Result<oneshot::Receiver<ServiceResponse>> {
+    pub async fn request(&self, _request: CommandRequest<'_>) -> anyhow::Result<oneshot::Receiver<ServiceResponse>> {
         let (sender, receiver) = oneshot::channel();
         let request = ServiceRequest { callback: sender };
 
@@ -34,14 +35,18 @@ impl ServiceEndpoint {
 
 pub struct Service {
     token: CancellationToken,
-    handle: RwLock<Option<JoinHandle<()>>>
+    handle: RwLock<Option<JoinHandle<()>>>,
+
+    /// Simply stored here so it can be used for endpoints.
+    sender: mpsc::Sender<ServiceRequest>
 }
 
 impl Service {
+    /// Creates a new command service.
     pub fn new(token: CancellationToken) -> Arc<Service> {
         let (sender, receiver) = mpsc::channel(10);
         let service = Arc::new(Service {
-            token, handle: RwLock::new(None)
+            token, handle: RwLock::new(None), sender: sender.clone()
         });
 
         let clone = service.clone();
@@ -53,15 +58,24 @@ impl Service {
         service
     }
 
+    /// Creates a new [`ServiceEndpoint`].
+    pub fn create_endpoint(&self) -> ServiceEndpoint {
+        ServiceEndpoint { sender: self.sender.clone() }
+    }
+
+    /// Runs the service execution job.
     async fn execution_job(self: Arc<Service>, mut receiver: mpsc::Receiver<ServiceRequest>) {
         loop {
             tokio::select! {
                 _ = self.token.cancelled() => {
                     // Stop accepting requests.
                     receiver.close();
+                    break
                 }   
             }
         }
+
+        tracing::info!("Command service closed");
     }
 }
 

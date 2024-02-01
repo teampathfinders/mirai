@@ -11,11 +11,10 @@ use tokio::net::UdpSocket;
 use tokio::sync::oneshot::Receiver;
 use tokio_util::sync::CancellationToken;
 
-use util::{Deserialize, ReserveTo, Serialize};
+use util::{Deserialize, Joinable, ReserveTo, Serialize};
 
-use crate::commands::Service;
+use crate::command::{self, Service};
 use crate::config::SERVER_CONFIG;
-use crate::level::Level;
 use crate::net::{ForwardablePacket, UserMap};
 use proto::bedrock::{
     Command, CommandDataType, CommandEnum, CommandOverload, CommandParameter, CommandPermissionLevel, CompressionAlgorithm, BOOLEAN_GAME_RULES,
@@ -219,15 +218,16 @@ impl<'a> InstanceBuilder<'a> {
 
         let replicator = Arc::new(replicator);
 
-        let user_map = Arc::new(UserMap::new(replicator));
+        let token = CancellationToken::new();
+        let command_service = command::Service::new(token.clone());
+        let user_map = Arc::new(UserMap::new(replicator, command_service.clone()));
 
         let instance = Instance {
             ipv4_socket,
             ipv6_socket,
             user_map,
-            token: CancellationToken::new(),
-            command_registry: Service::new(),
-            level: Level::new()
+            token: token.clone(),
+            command_service,
         };
 
         Ok(instance)
@@ -261,9 +261,7 @@ pub struct Instance {
     /// Token that can signal other services to stop running.
     token: CancellationToken,
     /// Keeps track of all available commands.
-    command_registry: Service,
-    /// Keeps track of world state.
-    level: Level
+    command_service: Arc<command::Service>,
 }
 
 impl Instance {
@@ -301,13 +299,26 @@ impl Instance {
 
         signal_listener(self.token.clone()).await?;
 
-        _ = self.user_map.shutdown().await;
+        // Error is logged by user map.
+        // The user map requires manual shutdown to make sure it shuts down before all other services.
+        _ = self.user_map.join().await;
+
+        // Keep all services running until all clients have been disconnected.
+        // Only then start shutting down services.
         self.token.cancel();
 
-        _ = recv_job4.await;
-        if let Some(job) = recv_job6 {
-            _ = job.await;
+        if let Err(err) = recv_job4.await {
+            tracing::error!("Error occurred while awaiting IPv4 receiver shutdown: {err:#?}");
         }
+
+        if let Some(job) = recv_job6 {
+            if let Err(err) = job.await {
+                tracing::error!("Error occurred while awaiting IPv6 receiver shutdown: {err:#?}");
+            }
+        }
+
+        // Error is logged by command service.
+        _ = self.command_service.join().await;
 
         Ok(())
     }

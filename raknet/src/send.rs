@@ -79,6 +79,8 @@ impl RaknetUser {
 
     /// Flushes both the frames and acknowledgements.
     pub async fn flush_all(&self) -> anyhow::Result<()> {
+        tracing::info!("flush all");
+
         if let Some(frames) = self.send.flush(SendPriority::High) {
             self.send_raw_frames(frames).await?;
         }

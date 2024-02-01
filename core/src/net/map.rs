@@ -14,10 +14,10 @@ use replicator::Replicator;
 
 
 use tokio::task::JoinSet;
-use util::Serialize;
+use util::{Joinable, Serialize};
 
+use crate::command;
 use crate::config::SERVER_CONFIG;
-use crate::level::Level;
 
 use super::{ForwardablePacket, BedrockUser};
 
@@ -41,33 +41,33 @@ impl<T> UserMapEntry<T> {
 
 pub struct UserMap {
     replicator: Arc<Replicator>,
-    level: OnceLock<Arc<Level>>,
-
+    
     connecting_map: Arc<DashMap<SocketAddr, UserMapEntry<RaknetUser>>>,
     connected_map: Arc<DashMap<SocketAddr, UserMapEntry<BedrockUser>>>,
     /// Channel that sends a packet to all connected sessions.
-    broadcast: broadcast::Sender<BroadcastPacket>
+    broadcast: broadcast::Sender<BroadcastPacket>,
+    commands: Arc<command::Service>
 }
 
 impl UserMap {
     /// Creates a new user map.
-    pub fn new(replicator: Arc<Replicator>) -> Self {
+    pub fn new(replicator: Arc<Replicator>, commands: Arc<command::Service>) -> Self {
         let connecting_map = Arc::new(DashMap::new());
         let connected_map = Arc::new(DashMap::new());
 
         let (broadcast, _) = broadcast::channel(BROADCAST_CHANNEL_CAPACITY);
 
         Self {
-            replicator, connecting_map, connected_map, broadcast, level: OnceLock::new()
+            replicator, connecting_map, connected_map, broadcast, commands
         }
     }   
 
     /// Sets the level instance that the user map should use.
-    pub fn set_level(&self, level: Arc<Level>) {
-        if self.level.set(level).is_err() {
-            tracing::error!("Level reference was already set");
-        }
-    }
+    // pub fn set_level(&self, level: Arc<Level>) {
+    //     if self.level.set(level).is_err() {
+    //         tracing::error!("Level reference was already set");
+    //     }
+    // }
 
     /// Inserts a user into the map.
     pub fn insert(&self, info: UserCreateInfo) {
@@ -79,9 +79,9 @@ impl UserMap {
         
         let connecting_map = self.connecting_map.clone();
         let connected_map = self.connected_map.clone();
-        let level = self.level.get().unwrap().clone();
         let replicator = self.replicator.clone();
         let broadcast = self.broadcast.clone();
+        let endpoint = self.commands.create_endpoint();
 
         // Callback to move the client from the connecting map to the connected map.
         // This is done when the Raknet layer attempts to send a message to the Bedrock layer
@@ -90,7 +90,7 @@ impl UserMap {
             if let Some((_, raknet_user)) = connecting_map.remove(&address) {
                 let bedrock_user = UserMapEntry {
                     channel: raknet_user.channel, state: BedrockUser::new(
-                        raknet_user.state, level, replicator, state_rx, broadcast
+                        raknet_user.state, replicator, state_rx, endpoint, broadcast
                     )
                 };
 
@@ -141,48 +141,6 @@ impl UserMap {
         Ok(())
     }
 
-    /// Sends a [`Disconnect`] packet to every connected user and waits for all users
-    /// to acknowledge they have been disconnected.
-    /// 
-    /// In case a user does not respond, there is a 2 second timeout.
-    ///
-    /// # Errors
-    /// 
-    /// This function returns an error when the [`Disconnect`] packet fails to serialize.
-    pub async fn shutdown(&self) -> anyhow::Result<()> {
-        // Ignore result because it can only fail if there are no receivers remaining.
-        // In that case this shouldn't do anything anyways.
-        self.broadcast(
-            Disconnect {
-                reason: DisconnectReason::Shutdown,
-                hide_message: false,
-                message: "disconnect.disconnected"
-            }
-        )?;
-
-        let mut join_set = JoinSet::new();
-
-        self.connecting_map.retain(|_, user| {
-            user.state.disconnect();
-
-            let clone = user.state.clone();
-            let handle = join_set.spawn(async move { clone.await_shutdown().await });
-
-            false
-        });
-
-        self.connected_map.retain(|_, user| {
-            let clone = user.state.clone();
-            let handle = join_set.spawn(async move { clone.await_shutdown().await });
-
-            false
-        });
-
-        while join_set.join_next().await.is_some() {}
-
-        Ok(())
-    }
-
     /// How many clients are currently in the process of logging in.
     pub fn connecting_count(&self) -> usize {
         self.connecting_map.len()
@@ -196,5 +154,53 @@ impl UserMap {
     /// Maximum amount of concurrently connected users.
     pub fn max_count(&self) -> usize {
         SERVER_CONFIG.read().max_players
+    }
+}
+
+impl Joinable for UserMap {
+    /// Sends a [`Disconnect`] packet to every connected user and waits for all users
+    /// to acknowledge they have been disconnected.
+    /// 
+    /// In case a user does not respond, there is a 2 second timeout.
+    ///
+    /// # Errors
+    /// 
+    /// This function returns an error when the [`Disconnect`] packet fails to serialize.
+    async fn join(&self) -> anyhow::Result<()> {
+        tracing::info!("Disconnecting all clients");
+
+        // Ignore result because it can only fail if there are no receivers remaining.
+        // In that case this shouldn't do anything anyways.
+        self.broadcast(
+            Disconnect {
+                reason: DisconnectReason::Shutdown,
+                hide_message: false,
+                message: "disconnect.disconnected"
+            }
+        )?;
+
+        let mut join_set = JoinSet::new();
+        self.connecting_map.retain(|_, user| {
+            user.state.disconnect();
+
+            let clone = user.state.clone();
+            join_set.spawn(async move { clone.join().await });
+
+            false
+        });
+
+        self.connected_map.retain(|_, user| {
+            let clone = user.state.clone();
+            join_set.spawn(async move { clone.join().await });
+
+            false
+        });
+
+        // Await all shutdown listeners.
+        while join_set.join_next().await.is_some() {}
+
+        tracing::info!("All clients succesfully disconnected");
+
+        Ok(())
     }
 }

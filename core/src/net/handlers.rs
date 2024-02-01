@@ -116,9 +116,14 @@ impl BedrockUser {
     }
 
     /// Handles a [`CommandRequest`] packet.
-    pub fn handle_command_request(&self, packet: Vec<u8>) -> anyhow::Result<()> {
+    pub async fn handle_command_request(&self, packet: Vec<u8>) -> anyhow::Result<()> {
         let request = CommandRequest::deserialize(packet.as_ref())?;
-        self.commands.execute(request)
+        let callback = self.commands.request(request).await?;
+
+        // let response = callback.await?;
+        // dbg!(response);
+
+        Ok(())
 
     //     let command_list = self.level.get_commands();
     //     let result = ParsedCommand::parse(command_list, request.command);

@@ -18,12 +18,11 @@ use proto::uuid::Uuid;
 use replicator::Replicator;
 
 use tokio::task::JoinHandle;
-use util::{Vector, AtomicFlag, Serialize, Deserialize, BinaryWrite, BinaryRead};
+use util::{AtomicFlag, BinaryRead, BinaryWrite, Deserialize, Joinable, Serialize, Vector};
 
-use crate::commands::{self, Service};
+use crate::command::{self, Service};
 use crate::config::SERVER_CONFIG;
 use crate::forms::{Subscriber, SubmittableForm, self};
-use crate::level::{ChunkViewer, Level};
 
 /// Represents a user connected to the server.
 pub struct BedrockUser {
@@ -39,12 +38,11 @@ pub struct BedrockUser {
     pub(crate) supports_cache: AtomicBool,
     /// Replication layer.
     pub(crate) replicator: Arc<Replicator>,
-    pub(crate) level: Arc<Level>,
     pub(crate) raknet: Arc<RaknetUser>,
     pub(crate) player: OnceLock<PlayerData>,
 
     pub(crate) forms: forms::Subscriber,
-    pub(crate) commands: Arc<commands::Service>,
+    pub(crate) commands: command::ServiceEndpoint,
 
     pub(crate) broadcast: broadcast::Sender<BroadcastPacket>,
     pub(crate) job_handle: RwLock<Option<JoinHandle<()>>>
@@ -54,10 +52,9 @@ impl BedrockUser {
     /// Creates a new user.
     pub fn new(
         raknet: Arc<RaknetUser>,
-        level: Arc<Level>,
         replicator: Arc<Replicator>,
         receiver: mpsc::Receiver<Vec<u8>>,
-        commands: Arc<Service>,
+        commands: command::ServiceEndpoint,
         broadcast: broadcast::Sender<BroadcastPacket>
     ) -> Arc<Self> {
         let user = Arc::new(Self {
@@ -69,7 +66,6 @@ impl BedrockUser {
             supports_cache: AtomicBool::new(false),
             
             replicator,
-            level,
             raknet,
             player: OnceLock::new(),
 
@@ -87,21 +83,6 @@ impl BedrockUser {
 
         *user.job_handle.write() = Some(handle);
         user
-    }
-
-    /// Waits for the client to fully disconnect and the server to finish processing.
-    pub async fn await_shutdown(&self) -> anyhow::Result<()> {
-        let job_handle = {
-            let mut lock = self.job_handle.write();
-            lock.take()
-        };
-
-        self.raknet.active.cancel();
-        if let Some(job_handle) = job_handle {
-            job_handle.await?;
-        }
-
-        self.raknet.await_shutdown().await
     }
 
     /// The worker that processes incoming packets.
@@ -166,7 +147,7 @@ impl BedrockUser {
     /// Kicks a player from the server and displays the specified message to them.
     /// This also adds a reason to the kick, which is used for telemetry purposes.
     #[tracing::instrument(
-        level = "info", 
+        name = "BedrockUser::kick_with_reason",
         skip(self, message, reason)
         fields(
             username = %self.name(),
@@ -179,10 +160,10 @@ impl BedrockUser {
             reason, message, hide_message: false
         };
         self.send(disconnect_packet)?;
-        
+
         tracing::info!("Player kicked");
 
-        self.raknet.await_shutdown().await
+        self.raknet.join().await
     }
 
     /// Sends a packet to all initialised sessions including self.
@@ -326,7 +307,7 @@ impl BedrockUser {
                 expected, header.id
             );
             
-            self.kick("Unexpected packet").await?;
+            self.kick_with_reason("Unexpected packet", DisconnectReason::UnexpectedPacket).await?;
         }
 
         let this = self.clone();
@@ -355,7 +336,7 @@ impl BedrockUser {
                 PlayerAction::ID => this.handle_player_action(packet),
                 RequestAbility::ID => this.handle_ability_request(packet),
                 Animate::ID => this.handle_animation(packet),
-                CommandRequest::ID => this.handle_command_request(packet),
+                CommandRequest::ID => this.handle_command_request(packet).await,
                 UpdateSkin::ID => this.handle_skin_update(packet),
                 SettingsCommand::ID => this.handle_settings_command(packet),
                 ContainerClose::ID => this.handle_container_close(packet),
@@ -416,6 +397,38 @@ impl BedrockUser {
     }
 }
 
+impl Joinable for BedrockUser {
+    #[tracing::instrument(
+        skip(self),
+        name = "BedrockUser::join",
+        fields(
+            username = %self.name()
+        )
+    )]
+    async fn join(&self) -> anyhow::Result<()> {
+        let handle = self.job_handle.write().take();
+        match handle {
+            Some(handle) => {
+                // Error logged by RakNet join method.
+                _ = self.raknet.join().await;
+
+                match handle.await {
+                    Ok(_) => Ok(()),
+                    Err(err) => {
+                        tracing::error!("Error occurred while awaiting Bedrock user service shutdown: {err:#?}");
+                        Ok(())
+                    }
+                }
+            },  
+            None => {
+                tracing::error!("This user service has already been joined");
+                anyhow::bail!("User service already joined");
+            }
+        }
+        
+    }
+}
+
 /// Contains data that is mostly related to the player in the vanilla game.
 /// 
 /// Unlike [`BedrockUser`], most of this data is not related to the Bedrock protocol itself.
@@ -438,13 +451,11 @@ pub struct PlayerData {
     pub skin: RwLock<Skin>,
     /// Runtime ID.
     pub runtime_id: u64,
-    /// Helper type that loads the chunks around the player.
-    pub viewer: ChunkViewer,
 }
 
 impl PlayerData {
     /// Creates a new player data struct.
-    pub fn new(skin: Skin, level: Arc<Level>) -> Self {
+    pub fn new(skin: Skin) -> Self {
         Self {
             is_inventory_open: AtomicBool::new(false),
             position: Vector::from([0.0, 50.0, 0.0]),
@@ -453,8 +464,7 @@ impl PlayerData {
             permission_level: PermissionLevel::Operator,
             command_permission_level: CommandPermissionLevel::Owner,
             skin: RwLock::new(skin),
-            runtime_id: 1,
-            viewer: ChunkViewer::new(level)
+            runtime_id: 1
         }
     }
 

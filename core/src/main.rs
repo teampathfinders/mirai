@@ -20,7 +20,7 @@ fn start_server() -> anyhow::Result<()> {
         .enable_time()
         .thread_name_fn(|| {
             static THREAD_COUNTER: AtomicU16 = AtomicU16::new(1);
-            format!("[{}]", THREAD_COUNTER.fetch_add(1, Ordering::Relaxed))
+            format!("[worker {}]", THREAD_COUNTER.fetch_add(1, Ordering::Relaxed))
         })
         .build()
         .expect("Failed to build runtime");
