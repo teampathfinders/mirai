@@ -85,7 +85,25 @@ impl BedrockUser {
         user
     }
 
+<<<<<<< HEAD
     /// The worker that processes incoming packets.
+=======
+    /// Waits for the client to fully disconnect and the server to finish processing.
+    pub async fn await_shutdown(&self) -> anyhow::Result<()> {
+        let job_handle = {
+            let mut lock = self.job_handle.write();
+            lock.take()
+        };
+
+        self.raknet.active.cancel();
+        if let Some(job_handle) = job_handle {
+            job_handle.await?;
+        }
+
+        self.raknet.await_shutdown().await
+    }
+
+>>>>>>> master
     async fn recv_job(self: &Arc<Self>, mut receiver: mpsc::Receiver<Vec<u8>>) {
         let mut broadcast = self.broadcast.subscribe();
 
@@ -139,13 +157,19 @@ impl BedrockUser {
 
     /// Kicks a player from the server and displays the specified message to them.
     #[inline]
+<<<<<<< HEAD
     pub fn kick<'a>(&'a self, message: &'a str) -> impl Future<Output = anyhow::Result<()>> + 'a {
         // This function returns a future object directly to reduce code bloat from async.
         self.kick_with_reason(message, DisconnectReason::Kicked)
+=======
+    pub async fn kick(&self, message: &str) -> anyhow::Result<()> {
+        self.kick_with_reason(message, DisconnectReason::Kicked).await
+>>>>>>> master
     }
 
     /// Kicks a player from the server and displays the specified message to them.
     /// This also adds a reason to the kick, which is used for telemetry purposes.
+<<<<<<< HEAD
     #[tracing::instrument(
         name = "BedrockUser::kick_with_reason",
         skip(self, message, reason)
@@ -155,15 +179,24 @@ impl BedrockUser {
             telemetry_reason = ?reason            
         )
     )]
+=======
+>>>>>>> master
     pub async fn kick_with_reason(&self, message: &str, reason: DisconnectReason) -> anyhow::Result<()> {
         let disconnect_packet = Disconnect {
             reason, message, hide_message: false
         };
         self.send(disconnect_packet)?;
+<<<<<<< HEAD
 
         tracing::info!("Player kicked");
 
         self.raknet.join().await
+=======
+        
+        tracing::info!("{} kicked: {message}", self.name());
+
+        self.raknet.await_shutdown().await
+>>>>>>> master
     }
 
     /// Sends a packet to all initialised sessions including self.
@@ -307,7 +340,11 @@ impl BedrockUser {
                 expected, header.id
             );
             
+<<<<<<< HEAD
             self.kick_with_reason("Unexpected packet", DisconnectReason::UnexpectedPacket).await?;
+=======
+            self.kick("Unexpected packet").await?;
+>>>>>>> master
         }
 
         let this = self.clone();
@@ -325,10 +362,17 @@ impl BedrockUser {
                 ResourcePackClientResponse::ID => {
                     this.handle_resource_client_response(packet)
                 }
+<<<<<<< HEAD
                 ViolationWarning::ID => this.handle_violation_warning(packet).await,
                 ChunkRadiusRequest::ID => this.handle_chunk_radius_request(packet),
                 Interact::ID => this.handle_interaction(packet),
                 TextMessage::ID => this.handle_text_message(packet).await,
+=======
+                ViolationWarning::ID => self.handle_violation_warning(packet).await,
+                ChunkRadiusRequest::ID => self.handle_chunk_radius_request(packet),
+                Interact::ID => self.process_interaction(packet),
+                TextMessage::ID => self.handle_text_message(packet).await,
+>>>>>>> master
                 SetLocalPlayerAsInitialized::ID => {
                     this.handle_local_initialized(packet)
                 }
