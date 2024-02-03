@@ -21,7 +21,7 @@ impl<'a> CacheBlob<'a> {
     }
 
     #[inline]
-    pub fn len(&self) -> usize {
+    pub const fn len(&self) -> usize {
         8 + self.payload.len()
     }
 }

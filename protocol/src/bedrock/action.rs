@@ -1,9 +1,11 @@
+use macros::variant_count;
 use util::{BinaryRead};
 use util::{BlockPosition, Deserialize};
 use crate::bedrock::ConnectedPacket;
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 #[repr(i32)]
+#[variant_count]
 pub enum PlayerActionType {
     StartBreak,
     AbortBreak,
@@ -48,7 +50,10 @@ impl TryFrom<i32> for PlayerActionType {
     type Error = anyhow::Error;
 
     fn try_from(value: i32) -> anyhow::Result<PlayerActionType> {
-        if value <= 36 {
+        if value <= PlayerActionType::variant_count() as i32 {
+            // SAFETY: This is safe because the discriminant is in range and
+            // the representations are the same. Additionally, none of the enum members
+            // have a manually assigned value (this is ensured by the `variant_count` macro).
             Ok(unsafe {
                 std::mem::transmute::<i32, PlayerActionType>(value)
             })

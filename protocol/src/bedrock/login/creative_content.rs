@@ -22,7 +22,7 @@ pub struct ItemStack {
 }
 
 impl ItemStack {
-    pub fn serialized_size(&self) -> usize {
+    pub const fn serialized_size(&self) -> usize {
         30
     }
 

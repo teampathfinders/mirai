@@ -1,5 +1,4 @@
 use util::{BinaryWrite, VarString};
-use util::Result;
 use util::Serialize;
 
 use crate::bedrock::ConnectedPacket;
@@ -15,13 +14,13 @@ pub struct ServerToClientHandshake<'a> {
 
 impl<'a> ConnectedPacket for ServerToClientHandshake<'a> {
     const ID: u32 = 0x03;
-
-    fn serialized_size(&self) -> usize {
-        self.jwt.var_len()
-    }
 }
 
 impl<'a> Serialize for ServerToClientHandshake<'a> {
+    fn size_hint(&self) -> Option<usize> {
+        Some(self.jwt.var_len())
+    }
+
     fn serialize_into<W: BinaryWrite>(&self, writer: &mut W) -> anyhow::Result<()> {
         writer.write_str(self.jwt)
     }

@@ -128,12 +128,12 @@ impl ConnectedPacket for Disconnect<'_> {
 impl Serialize for Disconnect<'_> {
     fn serialize_into<W: BinaryWrite>(&self, writer: &mut W) -> anyhow::Result<()> {
         if self.message.is_empty() {
-            /// An empty message will cause Minecraft to just ignore the disconnect packet and will
-            /// cause all kinds of problems.
+            // An empty message will cause Minecraft to just ignore the disconnect packet and will
+            // cause all kinds of problems.
             anyhow::bail!("Disconnect message cannot be empty");
         }
 
-        writer.write_var_i32(self.reason as i32); // Reason unknown
+        writer.write_var_i32(self.reason as i32)?; // Reason unknown
         writer.write_bool(self.hide_message)?;
         writer.write_str(self.message)
     }

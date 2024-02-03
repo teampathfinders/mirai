@@ -25,7 +25,7 @@ impl<'a> Deserialize<'a> for OpenConnectionRequest1 {
         iassert!(reader.read_u8()? == Self::ID);
 
         let mtu = reader.remaining() as u16 + 28;
-        reader.advance(16); // Skip magic
+        reader.advance(16)?; // Skip magic
         let protocol_version = reader.read_u8()?;
 
         Ok(Self { protocol_version, mtu })

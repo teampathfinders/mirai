@@ -1,7 +1,10 @@
+use macros::variant_count;
+
 /// A permission level within the command system.
 /// Commands use permission levels separate from the standard permission levels.
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 #[repr(u8)]
+#[variant_count]
 pub enum CommandPermissionLevel {
     Normal,
     GameDirectors,
@@ -14,8 +17,11 @@ pub enum CommandPermissionLevel {
 impl TryFrom<u8> for CommandPermissionLevel {
     type Error = anyhow::Error;
 
-    fn try_from(value: u8) -> anyhow::Result<Self> {
-        if value <= 5 {
+    fn try_from(value: u8) -> anyhow::Result<CommandPermissionLevel> {
+        if value <= CommandPermissionLevel::variant_count() as u8 {
+            // SAFETY: This is safe because the discriminant is in range and
+            // the representations are the same. Additionally, none of the enum members
+            // have a manually assigned value (this is ensured by the `variant_count` macro).
             Ok(unsafe {
                 std::mem::transmute::<u8, CommandPermissionLevel>(value)
             })

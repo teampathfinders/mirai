@@ -327,7 +327,7 @@ impl Instance {
         tracing::debug!("{ping:?}");
 
         packet.buf.clear();
-        packet.buf.reserve_to(pong.serialized_size());
+        packet.buf.reserve_to(pong.size_hint());
         pong.serialize_into(&mut packet.buf)?;
 
         let packet = ForwardablePacket { buf: packet.buf, addr: packet.addr };
@@ -348,13 +348,13 @@ impl Instance {
             let reply = IncompatibleProtocol { server_guid };
 
             packet.buf.clear();
-            packet.buf.reserve_to(reply.serialized_size());
+            packet.buf.reserve_to(reply.size_hint());
             reply.serialize_into(&mut packet.buf)?;
         } else {
             let reply = OpenConnectionReply1 { mtu: request.mtu, server_guid };
 
             packet.buf.clear();
-            packet.buf.reserve_to(reply.serialized_size());
+            packet.buf.reserve_to(reply.size_hint());
             reply.serialize_into(&mut packet.buf)?;
         }
 
@@ -382,7 +382,7 @@ impl Instance {
         tracing::debug!("{request:?}");
 
         packet.buf.clear();
-        packet.buf.reserve_to(reply.serialized_size());
+        packet.buf.reserve_to(reply.size_hint());
         reply.serialize_into(&mut packet.buf)?;
 
         user_manager.insert(UserCreateInfo {

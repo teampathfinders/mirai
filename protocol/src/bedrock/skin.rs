@@ -20,8 +20,10 @@ pub enum ArmSize {
 }
 
 impl ArmSize {
+    /// Returns the string name of this arm size.
     #[inline]
-    const fn name(&self) -> &'static str {
+    const fn name(self) -> &'static str {
+        // Passed by value because it is faster than using a reference.
         match self {
             Self::Slim => "slim",
             Self::Wide => "wide",
@@ -69,8 +71,10 @@ pub enum PersonaPieceType {
 }
 
 impl PersonaPieceType {
+    /// Returns a string name of this piece type.
     #[inline]
-    const fn name(&self) -> &'static str {
+    const fn name(self) -> &'static str {
+        // Passed by value because it is faster than using a reference.
         match self {
             Self::Skeleton => "persona_skeleton",
             Self::Body => "persona_body",
@@ -394,7 +398,7 @@ mod base64 {
         let base64 = String::deserialize(d)?;
 
         let bytes = ENGINE.decode(base64).map_err(serde::de::Error::custom)?;
-        Ok(Vec::from(bytes))
+        Ok(bytes)
     }
 }
 

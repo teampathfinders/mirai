@@ -76,9 +76,7 @@ impl Encryptor {
         // Generate a random private key for the session.
         let private_key: SigningKey = SigningKey::random(&mut OsRng);
         // Convert the key to the PKCS#8 DER format used by Minecraft.
-        let private_key_der = if let Ok(pkcs) = private_key.to_pkcs8_der() {
-            pkcs
-        } else {
+        let Ok(private_key_der) = private_key.to_pkcs8_der() else {
             tracing::warn!("Unable to convert session private key to PKCS#8 DER format");
             anyhow::bail!("Unable to convert session private key to PKCS#8 DER format")
         };

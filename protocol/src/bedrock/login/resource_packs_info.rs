@@ -138,7 +138,7 @@ impl<'a> Serialize for ResourcePacksInfo<'a> {
         }
 
         // No CDN entries
-        writer.write_var_u32(0);
+        writer.write_var_u32(0)?;
 
         Ok(())
     }

@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 
 use crate::types::Dimension;
+use macros::variant_count;
 use util::{Serialize, Vector};
 use util::Result;
 use util::BlockPosition;
@@ -32,6 +33,7 @@ impl WorldGenerator {
 /// The permission level of the client.
 #[derive(Debug, Copy, Clone)]
 #[repr(u8)]
+#[variant_count]
 pub enum PermissionLevel {
     /// A visitor is a player that has most permissions removed.
     Visitor,
@@ -46,8 +48,11 @@ pub enum PermissionLevel {
 impl TryFrom<u8> for PermissionLevel {
     type Error = anyhow::Error;
 
-    fn try_from(value: u8) -> anyhow::Result<Self> {
-        if value <= 3 {
+    fn try_from(value: u8) -> anyhow::Result<PermissionLevel> {
+        if value <= PermissionLevel::variant_count() as u8 {
+            // SAFETY: This is safe because the discriminant is in range and
+            // the representations are the same. Additionally, none of the enum members
+            // have a manually assigned value (this is ensured by the `variant_count` macro).
             Ok(unsafe {
                 std::mem::transmute::<u8, PermissionLevel>(value)
             })
@@ -138,7 +143,7 @@ pub struct BlockEntry {
 }
 
 impl BlockEntry {
-    pub fn serialized_size(&self) -> usize {
+    pub const fn serialized_size(&self) -> usize {
         1
         // self.name.var_len() //+ self.properties.serialized_net_size("")
     }

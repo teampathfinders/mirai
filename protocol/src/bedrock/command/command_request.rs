@@ -76,7 +76,7 @@ impl<'a> Deserialize<'a> for CommandRequest<'a> {
     fn deserialize_from<R: BinaryRead<'a>>(reader: &mut R) -> anyhow::Result<Self> {
         let command = reader.read_str()?;
         let origin = CommandOriginType::try_from(reader.read_var_u32()?)?;
-        reader.advance(16);
+        reader.advance(16)?;
         let request_id = reader.read_str()?;
 
         Ok(Self { command, origin, request_id })

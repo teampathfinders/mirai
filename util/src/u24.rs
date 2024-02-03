@@ -63,11 +63,12 @@ impl u24 {
     /// Converts a `u32` to a `u24`.
     ///
     /// # Panic
+    /// 
     /// This function panics if the value does not fit in 24 bits.
     /// If this is not desired, use the [`TryFrom`] implementation instead.
     #[inline]
     pub(crate) const fn from_u32(v: u32) -> Self {
-        debug_assert!(v <= Self::MAX_U32);
+        assert!(v <= Self::MAX_U32, "Value out of range for `u24`");
 
         let b = v.to_ne_bytes();
         Self([b[0], b[1], b[2]])

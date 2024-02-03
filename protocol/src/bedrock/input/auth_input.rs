@@ -102,9 +102,12 @@ pub enum InputMode {
 impl TryFrom<u32> for InputMode {
     type Error = anyhow::Error;
 
-    fn try_from(v: u32) -> anyhow::Result<Self> {
-        if v >= 1 && v <= Self::variant_count() as u32 {
-            Ok(unsafe { std::mem::transmute::<u32, Self>(v) })
+    fn try_from(v: u32) -> anyhow::Result<InputMode> {
+        if v >= 1 && v <= InputMode::variant_count() as u32 {
+            // SAFETY: This is safe because the discriminant is in range and
+            // the representations are the same. Additionally, none of the enum members
+            // have a manually assigned value (this is ensured by the `variant_count` macro).
+            Ok(unsafe { std::mem::transmute::<u32, InputMode>(v) })
         } else {
             anyhow::bail!("Input mode out of range")
         }
@@ -123,9 +126,12 @@ pub enum InteractionModel {
 impl TryFrom<i32> for InteractionModel {
     type Error = anyhow::Error;
 
-    fn try_from(v: i32) -> anyhow::Result<Self> {
-        if v <= Self::variant_count() as i32 {
-            Ok(unsafe { std::mem::transmute::<i32, Self>(v) })
+    fn try_from(v: i32) -> anyhow::Result<InteractionModel> {
+        if v <= InteractionModel::variant_count() as i32 {
+            // SAFETY: This is safe because the discriminant is in range and
+            // the representations are the same. Additionally, none of the enum members
+            // have a manually assigned value (this is ensured by the `variant_count` macro).
+            Ok(unsafe { std::mem::transmute::<i32, InteractionModel>(v) })
         } else {
             anyhow::bail!("Interaction model out of range")
         }
@@ -187,6 +193,7 @@ pub struct InventoryAction {
 }
 
 impl<'a> Deserialize<'a> for InventoryAction {
+    #[allow(clippy::collection_is_never_read)]
     fn deserialize_from<R: BinaryRead<'a>>(reader: &mut R) -> anyhow::Result<Self> {
         let source_type = InventoryActionSource::try_from(reader.read_u32_le()?)?;
         
@@ -239,6 +246,7 @@ pub struct TransactionData<'a> {
 }
 
 impl<'a> Deserialize<'a> for TransactionData<'a> {
+    #[allow(clippy::collection_is_never_read)]
     fn deserialize_from<R: BinaryRead<'a>>(reader: &mut R) -> anyhow::Result<Self> {
         let legacy_request_id = reader.read_var_i32()?;
         let mut legacy_slots = Vec::new();
@@ -286,9 +294,12 @@ pub enum FilterCause {
 impl TryFrom<i32> for FilterCause {
     type Error = anyhow::Error;
 
-    fn try_from(v: i32) -> anyhow::Result<Self> {
-        if v <= Self::variant_count() as i32 {
-            Ok(unsafe { std::mem::transmute::<i32, Self>(v) })
+    fn try_from(v: i32) -> anyhow::Result<FilterCause> {
+        if v <= FilterCause::variant_count() as i32 {
+            // SAFETY: This is safe because the discriminant is in range and
+            // the representations are the same. Additionally, none of the enum members
+            // have a manually assigned value (this is ensured by the `variant_count` macro).
+            Ok(unsafe { std::mem::transmute::<i32, FilterCause>(v) })
         } else {
             anyhow::bail!("Filter cause variant out of range ({v} >= {})", Self::variant_count())
         }
@@ -538,7 +549,7 @@ macro_rules! impl_getters {
             paste::paste! {
                 #[inline]
                 #[doc = concat!("Checks whether the `", stringify!($flag) , "` flag is set")]
-                pub fn [< $flag:snake >](&self) -> bool { self.0 & InputDataFlag::$flag as u64 != 0 }
+                pub const fn [< $flag:snake >](&self) -> bool { self.0 & InputDataFlag::$flag as u64 != 0 }
             }
         )*
     }
@@ -645,24 +656,9 @@ impl<'a> Deserialize<'a> for PlayerAuthInput<'a> {
         let tick = reader.read_var_u64()?;
         let delta = reader.read_vecf()?;
 
-        let item_transaction = if input_data.perform_item_transaction() {
-            Some(TransactionData::deserialize_from(reader)?)
-        } else {
-            None
-        };
-
-        let item_stack = if input_data.perform_item_stack_request() {
-            Some(todo!())
-        } else {
-            None
-        };
-
-        let block_actions = if input_data.perform_block_actions() {
-            Some(todo!())
-        } else {
-            None
-        };
-
+        let item_transaction = input_data.perform_item_transaction().then(|| TransactionData::deserialize_from(reader)).transpose()?;
+        let item_stack = input_data.perform_item_stack_request().then(|| todo!());
+        let block_actions = input_data.perform_block_actions().then(|| todo!());
         let analogue_moved = reader.read_vecf()?;
         
         Ok(Self {

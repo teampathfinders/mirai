@@ -110,14 +110,11 @@ fn parse_initial_token(token: &str) -> anyhow::Result<String> {
         }
     };
 
-    let base64 = if let Some(x5u) = header.x5u {
-        x5u
-    } else {
+    let Some(base64_x5u) = header.x5u else {
         tracing::error!("Missing X.509 certificate in initial JWT");
         anyhow::bail!("Missing X.509 certificate in initial JWT");
     };
-
-    let bytes = BASE64_ENGINE.decode(base64)?;
+    let bytes = BASE64_ENGINE.decode(base64_x5u)?;
 
     // Public key that can be used to verify the token.
     let public_key = match spki::SubjectPublicKeyInfoRef::try_from(bytes.as_ref()) {

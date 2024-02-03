@@ -17,7 +17,7 @@ impl ConnectionRequestAccepted {
     /// Unique ID of this packet.
     pub const ID: u8 = 0x10;
 
-    pub fn serialized_size(&self) -> usize {
+    pub const fn size_hint(&self) -> usize {
         1 + IPV6_MEM_SIZE + 2 + 10 * IPV4_MEM_SIZE + 8 + 8
     }
 }

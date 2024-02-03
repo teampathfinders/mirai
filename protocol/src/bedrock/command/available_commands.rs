@@ -29,6 +29,8 @@ impl ConnectedPacket for AvailableCommands<'_> {
 }
 
 impl Serialize for AvailableCommands<'_> {
+    #[allow(clippy::cognitive_complexity)] // Yeah this packet is a bit of a pain.
+    #[allow(clippy::too_many_lines)]
     fn serialize_into<W: BinaryWrite>(&self, writer: &mut W) -> anyhow::Result<()> {
         let mut value_indices = HashMap::new();
         let mut values = Vec::new();
@@ -127,7 +129,7 @@ impl Serialize for AvailableCommands<'_> {
             writer.write_str(value)?;
         }
 
-        writer.write_var_u32(0); // No subcommand values
+        writer.write_var_u32(0)?; // No subcommand values
 
         writer.write_var_u32(suffixes.len() as u32)?;
         for suffix in suffixes {
@@ -151,7 +153,7 @@ impl Serialize for AvailableCommands<'_> {
             }
         }
 
-        writer.write_var_u32(0); // No subcommand data
+        writer.write_var_u32(0)?; // No subcommand data
         writer.write_var_u32(self.commands.len() as u32)?;
         for command in self.commands {
             let alias = if !command.aliases.is_empty() {
@@ -166,7 +168,7 @@ impl Serialize for AvailableCommands<'_> {
             writer.write_u8(command.permission_level as u8)?;
             writer.write_i32_le(alias)?;
 
-            writer.write_var_u32(0); // No subcommands
+            writer.write_var_u32(0)?; // No subcommands
             writer.write_var_u32(command.overloads.len() as u32)?;
             for overload in &command.overloads {
                 writer.write_bool(false)?; // No chaining

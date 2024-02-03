@@ -120,7 +120,7 @@ impl fmt::Display for GameRule {
 }
 
 impl GameRule {
-    pub fn is_bool(&self) -> bool {
+    pub const fn is_bool(&self) -> bool {
         match self {
             Self::CommandBlocksEnabled(_)
             | Self::CommandBlockOutput(_)

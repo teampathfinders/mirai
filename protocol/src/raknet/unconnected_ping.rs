@@ -28,7 +28,7 @@ impl<'a> Deserialize<'a> for UnconnectedPing {
         iassert!(reader.read_u8()? == Self::ID);
 
         let time = reader.read_u64_be()?;
-        reader.advance(16); // Skip offline message data
+        reader.advance(16)?; // Skip offline message data
         let client_guid = reader.read_u64_be()?;
 
         Ok(Self { time, client_guid })

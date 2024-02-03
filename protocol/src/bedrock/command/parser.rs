@@ -73,7 +73,7 @@ impl ParsedArgument {
     }
 
     /// Converts the argument to a float if it is a float type.
-    pub fn as_float(&self) -> Option<f32> {
+    pub const fn as_float(&self) -> Option<f32> {
         match self {
             Self::Float(f) => Some(*f),
             _ => None
@@ -81,7 +81,7 @@ impl ParsedArgument {
     }
 
     /// Converts the argument to a target if it is a target type.
-    pub fn as_target(&self) -> Option<&CommandTarget> {
+    pub const fn as_target(&self) -> Option<&CommandTarget> {
         match self {
             Self::Target(t) => Some(t),
             _ => None
@@ -89,7 +89,7 @@ impl ParsedArgument {
     }
 
     /// Converts the argument to an integer if it is an integer type.
-    pub fn as_int(&self) -> Option<i32> {
+    pub const fn as_int(&self) -> Option<i32> {
         match self {
             Self::Int(i) => Some(*i),
             _ => None
@@ -130,25 +130,26 @@ impl ParsedCommand {
 
             for overload in &command.overloads {
                 let parse_result = parse_overload(overload, parts.clone());
-                if let Ok(parsed) = parse_result {
-                    return Ok(Self {
-                        name,
-                        parameters: parsed,
-                    });
-                } else {
-                    let err = parse_result.unwrap_err();
-
-                    // Only log the overload that was most "successful". (i.e. most arguments parsed correctly)
-                    match furthest_param.cmp(&(err.1 as i32)) {
-                        Ordering::Less => {
-                            latest_error = err.0;
-                            furthest_param = err.1 as i32
+                match parse_result {
+                    Ok(parsed) => {
+                        return Ok(Self {
+                            name,
+                            parameters: parsed,
+                        });
+                    },
+                    Err((msg, index)) => {
+                        // Only log the overload that was most "successful". (i.e. most arguments parsed correctly)
+                        match furthest_param.cmp(&(index as i32)) {
+                            Ordering::Less => {
+                                latest_error = msg;
+                                furthest_param = index as i32
+                            }
+                            // If two overloads are equally successful, use the newest one only.
+                            Ordering::Equal => {
+                                latest_error = msg;
+                            }
+                            Ordering::Greater => ()
                         }
-                        // If two overloads are equally successful, use the newest one only.
-                        Ordering::Equal => {
-                            latest_error = err.0;
-                        }
-                        Ordering::Greater => ()
                     }
                 }
             }
@@ -166,12 +167,12 @@ fn parse_overload(overload: &CommandOverload, mut parts: Split<char>)
 {
     let mut parsed = HashMap::new();
     for (i, parameter) in overload.parameters.iter().enumerate() {
-        let part = if let Some(part) = parts.next() {
-            part
-        } else if parameter.optional {
-            return Ok(parsed);
-        } else {
-            return Err((format!("Expected {} arguments, got {}", overload.parameters.len(), i), i));
+        let Some(part) = parts.next() else {
+            if parameter.optional {
+                return Ok(parsed);
+            } else {
+                return Err((format!("Expected {} arguments, got {}", overload.parameters.len(), i), i));
+            }
         };
 
         // Verify that the argument matches one of the predefined options.

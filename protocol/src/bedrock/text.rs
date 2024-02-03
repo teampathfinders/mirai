@@ -85,7 +85,7 @@ pub enum TextData<'a> {
 impl<'a> TextData<'a> {
     /// Returns the enum discriminant of `self`.
     #[inline]
-    pub fn discriminant(&self) -> u8 {
+    pub const fn discriminant(&self) -> u8 {
         // SAFETY: This is safe due to the `repr(u8)` attribute on the enum.
         // This means the enum is prefixed with a u8 tag.
         unsafe { *(self as *const Self as *const u8) }

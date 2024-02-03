@@ -22,7 +22,7 @@ impl IncompatibleProtocol {
     /// Unique idrentifier of this packet.
     pub const ID: u8 = 0x19;
 
-    pub fn serialized_size(&self) -> usize {
+    pub const fn size_hint(&self) -> usize {
         1 + 1 + 16 + 8
     }
 }

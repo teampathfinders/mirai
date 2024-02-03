@@ -118,6 +118,7 @@ pub enum LevelEventType {
 impl TryFrom<i32> for LevelEventType {
     type Error = anyhow::Error;
 
+    #[allow(clippy::too_many_lines)] // Splitting this will be a little difficult...
     fn try_from(value: i32) -> anyhow::Result<Self> {
         Ok(match value {
             1000 => Self::SoundClick,
