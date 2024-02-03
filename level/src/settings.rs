@@ -24,14 +24,14 @@ pub struct Abilities {
     pub walk_speed: f32,
 }
 
-#[derive(serde::Deserialize, Debug, PartialEq)]
+#[derive(serde::Deserialize, Debug, PartialEq, Eq)]
 #[serde(deny_unknown_fields)]
 pub struct Experiments {
     pub experiments_ever_used: bool,
     pub saved_with_toggled_experiments: bool,
 }
 
-#[derive(serde::Deserialize, Debug, PartialEq)]
+#[derive(serde::Deserialize, Debug, PartialEq, Eq)]
 #[serde(deny_unknown_fields)]
 pub struct Policies {
     // Not sure what is supposed to be in here

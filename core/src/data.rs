@@ -93,9 +93,9 @@ pub struct BlockStateMap {
 
 impl BlockStateMap {
     /// Creates a new block state map.
-    /// 
+    ///
     /// # Panics
-    /// 
+    ///
     /// This function panics if the deserialized state count is not equal to the expected count.
     pub fn new() -> anyhow::Result<Self> {
         tracing::debug!("Generating block state data...");

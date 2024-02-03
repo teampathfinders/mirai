@@ -20,7 +20,7 @@ pub struct PalettedBiome {
 impl PalettedBiome {
     /// A list of indices in this palette.
     #[inline]
-    pub fn indices(&self) -> &[u16; 4096] {
+    pub const fn indices(&self) -> &[u16; 4096] {
         &self.indices
     }
 
@@ -56,7 +56,7 @@ pub struct Biomes {
 impl Biomes {
     /// Heightmap of this biome.
     #[inline]
-    pub fn heightmap(&self) -> &[[u16; 16]; 16] {
+    pub const fn heightmap(&self) -> &[[u16; 16]; 16] {
         &self.heightmap
     }
 

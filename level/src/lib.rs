@@ -2,7 +2,6 @@
 
 #![deny(
     missing_docs,
-
     clippy::expect_used,
     clippy::get_unwrap,
     clippy::if_then_some_else_none,

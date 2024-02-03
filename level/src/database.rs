@@ -13,21 +13,21 @@ use crate::{ffi, DataKey};
 
 /// Wraps a LevelDB buffer, ensuring the buffer is deallocated after use.
 #[derive(Debug)]
-pub struct Guard<'a>(&'a [u8]);
+pub struct Guard<'a>(&'a mut [u8]);
 
 impl<'a> Guard<'a> {
     /// Creates a `Guard` from the given slice.
-    /// 
+    ///
     /// This is not implemented as a `From` trait so that `Guard` can only be constructed
     /// inside of this crate.
     ///
     /// # Safety
-    /// 
+    ///
     /// A `Guard` must only be created from a slice that was allocated by
     /// `LevelDb` or `Keys`.
     /// The caller must also ensure that the slice is not referenced anywhere else in the program.
     #[inline]
-    pub(crate) unsafe fn from_slice(slice: &'a [u8]) -> Self {
+    pub(crate) unsafe fn from_slice(slice: &'a mut [u8]) -> Self {
         Guard(slice)
     }
 }
@@ -54,7 +54,7 @@ impl<'a> Drop for Guard<'a> {
         // SAFETY: The slice in self should have been allocated by the database.
         // It is safe to delete because the pointer is unique and guaranteed to exist.
         unsafe {
-            ffi::level_deallocate_array(self.0.as_ptr() as *mut i8);
+            ffi::level_deallocate_array(self.0.as_mut_ptr() as *mut i8);
         }
     }
 }
@@ -68,28 +68,32 @@ pub struct KvRef<'a> {
 
 impl<'a> KvRef<'a> {
     /// The key associated with this pair.
+    #[allow(clippy::missing_panics_doc)] // Panic should never happen.
     pub fn key(&self) -> Guard {
         // SAFETY: A Ref should only exist while the iterator is valid.
         // This invariant is upheld by the lifetime 'a.
         unsafe {
             // `level_iter_key` does not fail.
             let result = ffi::level_iter_key(self.iter.as_ptr());
-            assert!(!result.data.is_null()); // Something is very wrong if this null...
+            assert!(!result.data.is_null(), "Iterator key pointer was null"); // Something is very wrong if this null...
 
-            Guard::from_slice(std::slice::from_raw_parts(result.data as *const u8, result.size as usize))
+            let slice = std::slice::from_raw_parts_mut(result.data as *mut u8, result.size as usize);
+            Guard::from_slice(slice)
         }
     }
 
     /// The data associated with this pair.
+    #[allow(clippy::missing_panics_doc)] // Panic should never happen.
     pub fn value(&self) -> Guard {
         // SAFETY: A Ref should only exist while the iterator is valid.
         // This invariant is upheld by the lifetime 'a.
         unsafe {
             // `level_iter_value` does not fail.
             let result = ffi::level_iter_value(self.iter.as_ptr());
-            assert!(!result.data.is_null()); // Something is very wrong if this null...
+            assert!(!result.data.is_null(), "Iterator value pointer was null"); // Something is very wrong if this null...
 
-            Guard::from_slice(std::slice::from_raw_parts(result.data as *const u8, result.size as usize))
+            let slice = std::slice::from_raw_parts_mut(result.data as *mut u8, result.size as usize);
+            Guard::from_slice(slice)
         }
     }
 }
@@ -106,18 +110,19 @@ pub struct Keys<'a> {
 
 impl<'a> Keys<'a> {
     /// Creates a new iterator for the given database.
-    pub fn new(db: &'a Database) -> anyhow::Result<Keys<'a>> {
+    #[allow(clippy::missing_panics_doc)] // Panic should never happen.
+    pub fn new(db: &'a Database) -> Keys<'a> {
         // SAFETY: level_iter is guaranteed to not return an error.
         // The iterator position has also been initialized by FFI and is not in an invalid state.
         let result = unsafe { ffi::level_iter(db.ptr.as_ptr()) };
-        assert!(!result.data.is_null()); // Something is very wrong if this null...
+        assert!(!result.data.is_null(), "Iterator pointer was null"); // Something is very wrong if this null...
 
-        Ok(Keys {
+        Keys {
             index: 0,
             // SAFETY: level_iter is guaranteed to not return an error.
             iter: unsafe { NonNull::new_unchecked(result.data) },
             _marker: PhantomData,
-        })
+        }
     }
 }
 
@@ -201,7 +206,7 @@ impl Database {
 
     /// Creates a new [`Keys`] iterator.
     #[inline]
-    pub fn iter(&self) -> anyhow::Result<Keys> {
+    pub fn iter(&self) -> Keys {
         Keys::new(self)
     }
 
@@ -224,7 +229,7 @@ impl Database {
 
                 // SAFETY: result.data is guaranteed by the caller to be a valid pointer.
                 // result.size is also guaranteed to be the size of the actual array.
-                let data = std::slice::from_raw_parts(result.data as *const u8, result.size as usize);
+                let data = std::slice::from_raw_parts_mut(result.data as *mut u8, result.size as usize);
 
                 // SAFETY: The data passed into the Guard has been allocated in the leveldb FFI code.
                 // It is therefore also required to deallocate the data there, which is what Guard

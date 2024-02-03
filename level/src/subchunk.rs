@@ -47,11 +47,12 @@ mod block_version {
         D: Deserializer<'de>,
     {
         let word = Option::<i32>::deserialize(de)?;
-        Ok(word.map(|w| w.to_be_bytes()))
+        Ok(word.map(i32::to_be_bytes))
     }
 
     /// Serializes a block version.
     #[inline]
+    #[allow(clippy::trivially_copy_pass_by_ref)] // Serde requirement.
     pub fn serialize<S>(v: &Option<[u8; 4]>, ser: S) -> anyhow::Result<S::Ok, S::Error>
     where
         S: Serializer,
@@ -65,7 +66,7 @@ mod block_version {
 }
 
 /// Definition of block in the sub chunk block palette.
-#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
 #[serde(rename = "")]
 pub struct PaletteEntry {
     /// Name of the block.
@@ -106,7 +107,7 @@ impl PaletteEntry {
 /// This is prefixed with a 32-bit little endian integer specifying the size of the palette.
 /// The rest of the palette then consists of `n` concatenated NBT compounds.
 #[doc(alias = "storage record")]
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Eq)]
 pub struct SubLayer {
     /// List of indices into the palette.
     ///
@@ -132,7 +133,7 @@ impl SubLayer {
         }
 
         let offset = to_offset(pos);
-        debug_assert!(offset < 4096);
+        debug_assert!(offset < 4096, "Array offset out of range");
 
         let index = self.indices[offset] as usize;
         Some(&self.palette[index])
@@ -163,7 +164,7 @@ impl SubLayer {
     }
 
     /// Returns a reference to the block indices.
-    pub fn indices(&self) -> &[u16; 4096] {
+    pub const fn indices(&self) -> &[u16; 4096] {
         &self.indices
     }
 
@@ -315,7 +316,7 @@ pub fn from_offset(offset: usize) -> Vector<u8, 3> {
 /// A Minecraft sub chunk.
 ///
 /// Every world contains
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Eq)]
 pub struct SubChunk {
     /// Version of the sub chunk.
     ///
@@ -336,12 +337,12 @@ pub struct SubChunk {
 impl SubChunk {
     /// Version of this subchunk.
     /// See [`SubChunkVersion`] for more information.
-    pub fn version(&self) -> SubChunkVersion {
+    pub const fn version(&self) -> SubChunkVersion {
         self.version
     }
 
     /// Vertical index of this subchunk
-    pub fn index(&self) -> i8 {
+    pub const fn index(&self) -> i8 {
         self.index
     }
 

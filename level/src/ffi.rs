@@ -17,8 +17,8 @@ pub enum LoadStatus {
 #[repr(C)]
 pub struct SizedData {
     pub size: c_int,
-    pub data: *mut c_void
-}   
+    pub data: *mut c_void,
+}
 
 /// Result returned by fallible LevelDB operations.
 #[derive(Debug)]

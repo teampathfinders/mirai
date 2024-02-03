@@ -2,21 +2,21 @@ use proto::types::Dimension;
 use util::{BinaryRead, BinaryWrite, Vector};
 
 /// The `AutonomousEntities` database key.
-pub const AUTONOMOUS_ENTITIES: &[u8] = "AutonomousEntities".as_bytes();
+pub const AUTONOMOUS_ENTITIES: &[u8] = b"AutonomousEntities";
 /// The `BiomeData` database key.
-pub const BIOME_DATA: &[u8] = "BiomeData".as_bytes();
+pub const BIOME_DATA: &[u8] = b"BiomeData";
 /// The `LevelChunkMetaDataDictionary` database key.
-pub const CHUNK_METADATA: &[u8] = "LevelChunkMetaDataDictionary".as_bytes();
+pub const CHUNK_METADATA: &[u8] = b"LevelChunkMetaDataDictionary";
 /// The `Overworld` database key.
-pub const OVERWORLD: &[u8] = "Overworld".as_bytes();
+pub const OVERWORLD: &[u8] = b"Overworld";
 /// The `mobevents` database key.
-pub const MOB_EVENTS: &[u8] = "mobevents".as_bytes();
+pub const MOB_EVENTS: &[u8] = b"mobevents";
 /// The `scoreboard` database key.
-pub const SCOREBOARD: &[u8] = "scoreboard".as_bytes();
+pub const SCOREBOARD: &[u8] = b"scoreboard";
 /// The `schedulerWT` database key.
-pub const SCHEDULER: &[u8] = "schedulerWT".as_bytes();
+pub const SCHEDULER: &[u8] = b"schedulerWT";
 /// The `~local_player` database key.
-pub const LOCAL_PLAYER: &[u8] = "~local_player".as_bytes();
+pub const LOCAL_PLAYER: &[u8] = b"~local_player";
 
 /// Database key prefixes.
 ///

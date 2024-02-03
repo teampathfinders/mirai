@@ -46,11 +46,7 @@ impl Provider {
     /// # Errors
     ///
     /// This method returns an error if the content does not match what is specified in the header.
-    #[tracing::instrument(
-        skip_all,
-        name = "Provider::settings",
-
-    )]
+    #[tracing::instrument(skip_all, name = "Provider::settings")]
     pub fn settings(&self) -> anyhow::Result<LevelSettings> {
         let raw = std::fs::read(self.path.join("level.dat"))?;
 
