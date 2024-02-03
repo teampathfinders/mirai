@@ -253,7 +253,7 @@ where
 {
     /// Creates a new and empty serialiser.
     #[inline]
-    pub fn new(w: W) -> Serializer<W, M> {
+    pub const fn new(w: W) -> Serializer<W, M> {
         Serializer {
             writer: w,
             is_initial: true,
@@ -379,10 +379,7 @@ where
         Err(anyhow::anyhow!("Serializing None is not supported").into())
     }
 
-    fn serialize_some<T: ?Sized>(self, value: &T) -> Result<(), NbtError>
-    where
-        T: Serialize,
-    {
+    fn serialize_some<T: Serialize + ?Sized>(self, value: &T) -> Result<(), NbtError> {
         value.serialize(self)
     }
 
@@ -398,23 +395,17 @@ where
         Err(anyhow::anyhow!("Serializing unit variants is not supported").into())
     }
 
-    fn serialize_newtype_struct<T: ?Sized>(self, _name: &'static str, _value: &T) -> Result<(), NbtError>
-    where
-        T: Serialize,
-    {
+    fn serialize_newtype_struct<T: Serialize + ?Sized>(self, _name: &'static str, _value: &T) -> Result<(), NbtError> {
         Err(anyhow::anyhow!("Serializing newtype structs is not supported").into())
     }
 
-    fn serialize_newtype_variant<T: ?Sized>(
+    fn serialize_newtype_variant<T: Serialize + ?Sized>(
         self,
         _name: &'static str,
         _variant_index: u32,
         _variant: &'static str,
         _value: &T,
-    ) -> Result<(), NbtError>
-    where
-        T: Serialize,
-    {
+    ) -> Result<(), NbtError> {
         Err(anyhow::anyhow!("Serializing newtype variants is not supported").into())
     }
 
@@ -718,10 +709,7 @@ where
         Ok(true) // Skip field
     }
 
-    fn serialize_some<T: ?Sized>(self, value: &T) -> Result<Self::Ok, Self::Error>
-    where
-        T: Serialize,
-    {
+    fn serialize_some<T: Serialize + ?Sized>(self, value: &T) -> Result<Self::Ok, Self::Error> {
         value.serialize(self)?;
         Ok(false)
     }
@@ -738,23 +726,17 @@ where
         Err(anyhow::anyhow!("Serializing unit variants is not supported").into())
     }
 
-    fn serialize_newtype_struct<T: ?Sized>(self, _name: &'static str, _value: &T) -> Result<Self::Ok, Self::Error>
-    where
-        T: Serialize,
-    {
+    fn serialize_newtype_struct<T: Serialize + ?Sized>(self, _name: &'static str, _value: &T) -> Result<Self::Ok, Self::Error> {
         Err(anyhow::anyhow!("Serializing newtype structs is not supported").into())
     }
 
-    fn serialize_newtype_variant<T: ?Sized>(
+    fn serialize_newtype_variant<T: Serialize + ?Sized>(
         self,
         _name: &'static str,
         _variant_index: u32,
         _variant: &'static str,
         _value: &T,
-    ) -> Result<Self::Ok, Self::Error>
-    where
-        T: Serialize,
-    {
+    ) -> Result<Self::Ok, Self::Error> {
         Err(anyhow::anyhow!("Serializing newtype variants is not supported").into())
     }
 

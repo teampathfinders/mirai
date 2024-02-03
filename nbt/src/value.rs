@@ -34,7 +34,7 @@ impl Value {
     /// For any [`Value`] on which `is_i8` returns true, `as_i8` is guaranteed to return
     /// a value.
     #[inline]
-    pub fn is_i8(&self) -> bool {
+    pub const fn is_i8(&self) -> bool {
         matches!(self, Value::Byte(_))
     }
 
@@ -43,7 +43,7 @@ impl Value {
     /// For any [`Value`] on which `is_i16` returns true, `as_i16` is guaranteed to return
     /// a value.
     #[inline]
-    pub fn is_i16(&self) -> bool {
+    pub const fn is_i16(&self) -> bool {
         matches!(self, Value::Short(_))
     }
 
@@ -52,7 +52,7 @@ impl Value {
     /// For any [`Value`] on which `is_i32` returns true, `as_i32` is guaranteed to return
     /// a value.
     #[inline]
-    pub fn is_i32(&self) -> bool {
+    pub const fn is_i32(&self) -> bool {
         matches!(self, Value::Int(_))
     }
 
@@ -61,7 +61,7 @@ impl Value {
     /// For any [`Value`] on which `is_i64` returns true, `as_i64` is guaranteed to return
     /// a value.
     #[inline]
-    pub fn is_i64(&self) -> bool {
+    pub const fn is_i64(&self) -> bool {
         matches!(self, Value::Long(_))
     }
 
@@ -70,7 +70,7 @@ impl Value {
     /// For any [`Value`] on which `is_f32` returns true, `as_f32` is guaranteed to return
     /// a value.
     #[inline]
-    pub fn is_f32(&self) -> bool {
+    pub const fn is_f32(&self) -> bool {
         matches!(self, Value::Float(_))
     }
 
@@ -79,7 +79,7 @@ impl Value {
     /// For any [`Value`] on which `is_f64` returns true, `as_f64` is guaranteed to return
     /// a value.
     #[inline]
-    pub fn is_f64(&self) -> bool {
+    pub const fn is_f64(&self) -> bool {
         matches!(self, Value::Double(_))
     }
 
@@ -88,7 +88,7 @@ impl Value {
     /// For any [`Value`] on which `is_u8_array` returns true, `as_u8_array` is guaranteed to return
     /// a value.
     #[inline]
-    pub fn is_u8_array(&self) -> bool {
+    pub const fn is_u8_array(&self) -> bool {
         matches!(self, Value::ByteArray(_))
     }
 
@@ -97,7 +97,7 @@ impl Value {
     /// For any [`Value`] on which `is_string` returns true, `as_string` is guaranteed to return
     /// a value.
     #[inline]
-    pub fn is_string(&self) -> bool {
+    pub const fn is_string(&self) -> bool {
         matches!(self, Value::String(_))
     }
 
@@ -106,7 +106,7 @@ impl Value {
     /// For any [`Value`] on which `is_list` returns true, `as_list` is guaranteed to return
     /// a value.
     #[inline]
-    pub fn is_list(&self) -> bool {
+    pub const fn is_list(&self) -> bool {
         matches!(self, Value::List(_))
     }
 
@@ -115,7 +115,7 @@ impl Value {
     /// For any [`Value`] on which `is_compound` returns true, `as_compound` is guaranteed to return
     /// a value.
     #[inline]
-    pub fn is_compound(&self) -> bool {
+    pub const fn is_compound(&self) -> bool {
         matches!(self, Value::Compound(_))
     }
 
@@ -124,7 +124,7 @@ impl Value {
     /// For any [`Value`] on which `is_i32_array` returns true, `as_i32_array` is guaranteed to return
     /// a value.
     #[inline]
-    pub fn is_i32_array(&self) -> bool {
+    pub const fn is_i32_array(&self) -> bool {
         matches!(self, Value::IntArray(_))
     }
 
@@ -133,13 +133,13 @@ impl Value {
     /// For any [`Value`] on which `is_i64_array` returns true, `as_i64_array` is guaranteed to return
     /// a value.
     #[inline]
-    pub fn is_i64_array(&self) -> bool {
+    pub const fn is_i64_array(&self) -> bool {
         matches!(self, Value::LongArray(_))
     }
 
     /// If this [`Value`] is a byte, represent it as `i8`. Returns None otherwise.
     #[inline]
-    pub fn as_i8(&self) -> Option<i8> {
+    pub const fn as_i8(&self) -> Option<i8> {
         match self {
             Value::Byte(v) => Some(*v),
             _ => None,
@@ -148,7 +148,7 @@ impl Value {
 
     /// If this [`Value`] is a short, represent it as `i16`. Returns None otherwise.
     #[inline]
-    pub fn as_i16(&self) -> Option<i16> {
+    pub const fn as_i16(&self) -> Option<i16> {
         match self {
             Value::Short(v) => Some(*v),
             _ => None,
@@ -157,7 +157,7 @@ impl Value {
 
     /// If this [`Value`] is an integer, represent it as `i32`. Returns None otherwise.
     #[inline]
-    pub fn as_i32(&self) -> Option<i32> {
+    pub const fn as_i32(&self) -> Option<i32> {
         match self {
             Value::Int(v) => Some(*v),
             _ => None,
@@ -166,7 +166,7 @@ impl Value {
 
     /// If this [`Value`] is a long, represent it as `i64`. Returns None otherwise.
     #[inline]
-    pub fn as_i64(&self) -> Option<i64> {
+    pub const fn as_i64(&self) -> Option<i64> {
         match self {
             Value::Long(v) => Some(*v),
             _ => None,
@@ -175,7 +175,7 @@ impl Value {
 
     /// If this [`Value`] is a float, represent it as `f32`. Returns None otherwise.
     #[inline]
-    pub fn as_f32(&self) -> Option<f32> {
+    pub const fn as_f32(&self) -> Option<f32> {
         match self {
             Value::Float(v) => Some(*v),
             _ => None,
@@ -184,7 +184,7 @@ impl Value {
 
     /// If this [`Value`] is a double, represent it as `f64`. Returns None otherwise.
     #[inline]
-    pub fn as_f64(&self) -> Option<f64> {
+    pub const fn as_f64(&self) -> Option<f64> {
         match self {
             Value::Double(v) => Some(*v),
             _ => None,
@@ -220,7 +220,7 @@ impl Value {
 
     /// If this [`Value`] is a compound/map, returns the map. Returns None otherwise.
     #[inline]
-    pub fn as_compound(&self) -> Option<&HashMap<String, Value>> {
+    pub const fn as_compound(&self) -> Option<&HashMap<String, Value>> {
         match self {
             Value::Compound(v) => Some(v),
             _ => None,
@@ -557,131 +557,6 @@ impl<'de> Deserialize<'de> for Value {
     where
         D: Deserializer<'de>,
     {
-        struct ValueVisitor;
-
-        impl<'de> Visitor<'de> for ValueVisitor {
-            type Value = Value;
-
-            #[inline]
-            fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
-                formatter.write_str("any valid NBT value")
-            }
-
-            #[inline]
-            fn visit_bool<E>(self, v: bool) -> anyhow::Result<Self::Value, E>
-            where
-                E: de::Error,
-            {
-                Ok(Value::Byte(v as i8))
-            }
-
-            #[inline]
-            fn visit_i8<E>(self, v: i8) -> anyhow::Result<Self::Value, E>
-            where
-                E: de::Error,
-            {
-                Ok(Value::Byte(v))
-            }
-
-            #[inline]
-            fn visit_i16<E>(self, v: i16) -> anyhow::Result<Self::Value, E>
-            where
-                E: de::Error,
-            {
-                Ok(Value::Short(v))
-            }
-
-            #[inline]
-            fn visit_i32<E>(self, v: i32) -> anyhow::Result<Self::Value, E>
-            where
-                E: de::Error,
-            {
-                Ok(Value::Int(v))
-            }
-
-            #[inline]
-            fn visit_i64<E>(self, v: i64) -> anyhow::Result<Self::Value, E>
-            where
-                E: de::Error,
-            {
-                Ok(Value::Long(v))
-            }
-
-            #[inline]
-            fn visit_f32<E>(self, v: f32) -> anyhow::Result<Self::Value, E>
-            where
-                E: de::Error,
-            {
-                Ok(Value::Float(v))
-            }
-
-            #[inline]
-            fn visit_f64<E>(self, v: f64) -> anyhow::Result<Self::Value, E>
-            where
-                E: de::Error,
-            {
-                Ok(Value::Double(v))
-            }
-
-            #[inline]
-            fn visit_str<E>(self, v: &str) -> anyhow::Result<Self::Value, E>
-            where
-                E: de::Error,
-            {
-                Ok(Value::String(v.to_owned()))
-            }
-
-            #[inline]
-            fn visit_string<E>(self, v: String) -> anyhow::Result<Self::Value, E>
-            where
-                E: de::Error,
-            {
-                Ok(Value::String(v))
-            }
-
-            #[inline]
-            fn visit_byte_buf<E>(self, v: Vec<u8>) -> anyhow::Result<Self::Value, E>
-            where
-                E: de::Error,
-            {
-                Ok(Value::ByteArray(v))
-            }
-
-            #[inline]
-            fn visit_seq<A>(self, mut seq: A) -> anyhow::Result<Self::Value, A::Error>
-            where
-                A: SeqAccess<'de>,
-            {
-                let mut out = Vec::new();
-                if let Some(hint) = seq.size_hint() {
-                    out.reserve(hint);
-                }
-
-                while let Some(element) = seq.next_element()? {
-                    out.push(element);
-                }
-
-                Ok(Value::List(out))
-            }
-
-            #[inline]
-            fn visit_map<A>(self, mut map: A) -> anyhow::Result<Self::Value, A::Error>
-            where
-                A: MapAccess<'de>,
-            {
-                let mut out: HashMap<String, Value> = HashMap::new();
-                if let Some(hint) = map.size_hint() {
-                    out.reserve(hint);
-                }
-
-                while let Some((key, value)) = map.next_entry()? {
-                    out.insert(key, value);
-                }
-
-                Ok(Value::Compound(out))
-            }
-        }
-
         deserializer.deserialize_any(ValueVisitor)
     }
 }
@@ -724,5 +599,130 @@ impl Serialize for Value {
             Value::IntArray(seq) => serialize_seq(ser, seq),
             Value::LongArray(seq) => serialize_seq(ser, seq),
         }
+    }
+}
+
+struct ValueVisitor;
+
+impl<'de> Visitor<'de> for ValueVisitor {
+    type Value = Value;
+
+    #[inline]
+    fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+        formatter.write_str("any valid NBT value")
+    }
+
+    #[inline]
+    fn visit_bool<E>(self, v: bool) -> anyhow::Result<Self::Value, E>
+    where
+        E: de::Error,
+    {
+        Ok(Value::Byte(v as i8))
+    }
+
+    #[inline]
+    fn visit_i8<E>(self, v: i8) -> anyhow::Result<Self::Value, E>
+    where
+        E: de::Error,
+    {
+        Ok(Value::Byte(v))
+    }
+
+    #[inline]
+    fn visit_i16<E>(self, v: i16) -> anyhow::Result<Self::Value, E>
+    where
+        E: de::Error,
+    {
+        Ok(Value::Short(v))
+    }
+
+    #[inline]
+    fn visit_i32<E>(self, v: i32) -> anyhow::Result<Self::Value, E>
+    where
+        E: de::Error,
+    {
+        Ok(Value::Int(v))
+    }
+
+    #[inline]
+    fn visit_i64<E>(self, v: i64) -> anyhow::Result<Self::Value, E>
+    where
+        E: de::Error,
+    {
+        Ok(Value::Long(v))
+    }
+
+    #[inline]
+    fn visit_f32<E>(self, v: f32) -> anyhow::Result<Self::Value, E>
+    where
+        E: de::Error,
+    {
+        Ok(Value::Float(v))
+    }
+
+    #[inline]
+    fn visit_f64<E>(self, v: f64) -> anyhow::Result<Self::Value, E>
+    where
+        E: de::Error,
+    {
+        Ok(Value::Double(v))
+    }
+
+    #[inline]
+    fn visit_str<E>(self, v: &str) -> anyhow::Result<Self::Value, E>
+    where
+        E: de::Error,
+    {
+        Ok(Value::String(v.to_owned()))
+    }
+
+    #[inline]
+    fn visit_string<E>(self, v: String) -> anyhow::Result<Self::Value, E>
+    where
+        E: de::Error,
+    {
+        Ok(Value::String(v))
+    }
+
+    #[inline]
+    fn visit_byte_buf<E>(self, v: Vec<u8>) -> anyhow::Result<Self::Value, E>
+    where
+        E: de::Error,
+    {
+        Ok(Value::ByteArray(v))
+    }
+
+    #[inline]
+    fn visit_seq<A>(self, mut seq: A) -> anyhow::Result<Self::Value, A::Error>
+    where
+        A: SeqAccess<'de>,
+    {
+        let mut out = Vec::new();
+        if let Some(hint) = seq.size_hint() {
+            out.reserve(hint);
+        }
+
+        while let Some(element) = seq.next_element()? {
+            out.push(element);
+        }
+
+        Ok(Value::List(out))
+    }
+
+    #[inline]
+    fn visit_map<A>(self, mut map: A) -> anyhow::Result<Self::Value, A::Error>
+    where
+        A: MapAccess<'de>,
+    {
+        let mut out: HashMap<String, Value> = HashMap::new();
+        if let Some(hint) = map.size_hint() {
+            out.reserve(hint);
+        }
+
+        while let Some((key, value)) = map.next_entry()? {
+            out.insert(key, value);
+        }
+
+        Ok(Value::Compound(out))
     }
 }
