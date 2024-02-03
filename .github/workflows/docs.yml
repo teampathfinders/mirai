@@ -34,7 +34,7 @@ jobs:
       uses: mozilla-actions/sccache-action@v0.0.3
     
     - name: Generate documentation
-      run: cargo doc --no-deps
+      run: cargo +1.75.0 doc --no-deps
       
     - name: Add root index
       run: |
