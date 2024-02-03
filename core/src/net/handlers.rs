@@ -2,7 +2,7 @@
 
 use std::sync::Arc;
 
-use proto::bedrock::{Animate, CommandOutput, CommandOutputMessage, CommandOutputType, CommandRequest, FormResponseData, ParsedCommand, RequestAbility, SettingsCommand, TextData, TextMessage, TickSync, UpdateSkin, PlayerAuthInput};
+use proto::bedrock::{Animate, CommandRequest, FormResponseData, RequestAbility, SettingsCommand, TextData, TextMessage, TickSync, UpdateSkin, PlayerAuthInput};
 
 use util::Deserialize;
 
@@ -118,7 +118,7 @@ impl BedrockUser {
     /// Handles a [`CommandRequest`] packet.
     pub async fn handle_command_request(&self, packet: Vec<u8>) -> anyhow::Result<()> {
         let request = CommandRequest::deserialize(packet.as_ref())?;
-        let callback = self.commands.request(request).await?;
+        let _callback = self.commands.request(request).await?;
 
         // let response = callback.await?;
         // dbg!(response);

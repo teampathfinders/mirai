@@ -3,22 +3,22 @@
 use anyhow::Context;
 use raknet::UserCreateInfo;
 
-use std::net::{Ipv4Addr, Ipv6Addr, SocketAddr, SocketAddrV4, SocketAddrV6};
+use std::net::{Ipv4Addr, Ipv6Addr, SocketAddrV4, SocketAddrV6};
 use std::sync::Arc;
 use std::time::Duration;
 
 use tokio::net::UdpSocket;
-use tokio::sync::oneshot::Receiver;
+
 use tokio_util::sync::CancellationToken;
 
 use util::{Deserialize, Joinable, ReserveTo, Serialize};
 
-use crate::command::{self, Service};
+use crate::command::{self};
 use crate::config::SERVER_CONFIG;
 use crate::net::{ForwardablePacket, UserMap};
 use proto::bedrock::{
-    Command, CommandDataType, CommandEnum, CommandOverload, CommandParameter, CommandPermissionLevel, CompressionAlgorithm, BOOLEAN_GAME_RULES,
-    CLIENT_VERSION_STRING, INTEGER_GAME_RULES, MOBEFFECT_NAMES, NETWORK_VERSION,
+    CompressionAlgorithm,
+    CLIENT_VERSION_STRING, NETWORK_VERSION,
 };
 use proto::raknet::{
     IncompatibleProtocol, OpenConnectionReply1, OpenConnectionReply2, OpenConnectionRequest1, OpenConnectionRequest2, UnconnectedPing,

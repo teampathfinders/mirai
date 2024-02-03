@@ -20,7 +20,7 @@ use replicator::Replicator;
 use tokio::task::JoinHandle;
 use util::{AtomicFlag, BinaryRead, BinaryWrite, Deserialize, Joinable, Serialize, Vector};
 
-use crate::command::{self, Service};
+use crate::command::{self};
 use crate::config::SERVER_CONFIG;
 use crate::forms::{Subscriber, SubmittableForm, self};
 
