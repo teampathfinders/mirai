@@ -2,14 +2,8 @@ use level::PaletteEntry;
 use nohash_hasher::BuildNoHashHasher;
 use proto::bedrock::ItemStack;
 use serde::Deserialize;
-use std::{
-    cell::UnsafeCell,
-    collections::HashMap,
-    mem::{ManuallyDrop, MaybeUninit},
-    ops::Deref,
-};
+use std::collections::HashMap;
 use tokio_util::bytes::Buf;
-use util::AtomicFlag;
 
 // pub static RUNTIME_ID_DATA: LazyResult<RuntimeIdMap> = LazyResult::new(RuntimeIdMap::new);
 // pub static BLOCK_STATE_DATA: LazyResult<BlockStateMap> = LazyResult::new(BlockStateMap::new);
@@ -163,8 +157,8 @@ impl CreativeItemsMap {
         const BYTES: &[u8] = include_bytes!("../include/creative_items.nbt");
         let items: Vec<CreativeItemsEntry> = nbt::from_var_bytes(BYTES)?.0;
 
-        let mut item_stacks = Vec::with_capacity(items.len());
-        for item in &items[..10] {
+        let item_stacks = Vec::with_capacity(items.len());
+        for _item in &items[..10] {
             todo!();
             // let runtime_id = if let Some(rid) = RUNTIME_ID_DATA.get(&item.name) {
             //     rid

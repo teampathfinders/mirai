@@ -28,7 +28,7 @@ impl NetSubLayer {
 }
 
 impl From<SubLayer> for NetSubLayer {
-    fn from(value: SubLayer) -> Self {
+    fn from(_value: SubLayer) -> Self {
         todo!()
         // let palette = value.palette().iter().flat_map(|entry| BLOCK_STATE_DATA.get(entry)).collect::<Vec<u32>>();
 

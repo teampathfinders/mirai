@@ -1,4 +1,4 @@
-use std::fmt::{Debug, Formatter};
+use std::fmt::{self, Debug, Formatter};
 use std::io::Write;
 use std::sync::atomic::{AtomicU64, Ordering};
 
@@ -16,7 +16,7 @@ use rand::rngs::OsRng;
 use rand::Rng;
 use sha2::{Digest, Sha256};
 
-use util::{BinaryWrite, BinaryRead};
+use util::{BinaryRead, BinaryWrite, ExposeSecret, Secret};
 use util::{bail, Result};
 
 type Aes256CtrBE = ctr::Ctr64BE<aes::Aes256>;
@@ -37,17 +37,16 @@ pub struct Encryptor {
     /// Cipher used to encrypt raknet.
     cipher_encrypt: Mutex<Aes256CtrBE>,
     /// Increased by one for every packet sent by the server.
-    send_counter: AtomicU64,
+    send_counter: Secret<AtomicU64>,
     /// Increased by one for every packet received from the client.
-    receive_counter: AtomicU64,
+    receive_counter: Secret<AtomicU64>,
     /// Shared secret.
-    secret: [u8; 32],
+    secret: Secret<[u8; 32]>,
 }
 
-impl Debug for Encryptor {
-    /// Allow usage in debug derived structs, but prevent logging the secret.
-    fn fmt(&self, fmt: &mut Formatter<'_>) -> std::fmt::Result {
-        fmt.write_str("Encryptor(*secret hidden*)")
+impl fmt::Debug for Encryptor {
+    fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
+        write!(fmt, "Encryptor([secret])")
     }
 }
 
@@ -66,6 +65,10 @@ impl Encryptor {
     ///
     /// This shared secret is hashed using with SHA-256 and the salt contained in the JWT.
     /// The produced hash can then be used to encrypt raknet.
+    #[tracing::instrument(
+        skip_all,
+        name = "Encryptor::new"
+    )]
     pub fn new(client_public_key_der: &str) -> anyhow::Result<(Self, String)> {
         // Generate a random salt using a cryptographically secure generator.
         let salt = (0..16).map(|_| OsRng.sample(Alphanumeric) as char).collect::<String>();
@@ -73,19 +76,20 @@ impl Encryptor {
         // Generate a random private key for the session.
         let private_key: SigningKey = SigningKey::random(&mut OsRng);
         // Convert the key to the PKCS#8 DER format used by Minecraft.
-        let private_key_der = match private_key.to_pkcs8_der() {
-            Ok(k) => k,
-            Err(e) => bail!(Malformed, "Failed to convert private to PKCS#8 DER format: {e}"),
+        let private_key_der = if let Ok(pkcs) = private_key.to_pkcs8_der() {
+            pkcs
+        } else {
+            tracing::warn!("Unable to convert session private key to PKCS#8 DER format");
+            anyhow::bail!("Unable to convert session private key to PKCS#8 DER format")
         };
 
         // Extract and convert the public key, which will be sent to the client.
         let public_key = private_key.verifying_key();
-        let public_key_der = {
-            let binary_der = match public_key.to_public_key_der() {
-                Ok(d) => d,
-                Err(e) => bail!(Malformed, "Failed to convert public key to DER format: {e}"),
-            };
-            BASE64_ENGINE.encode(binary_der)
+        let public_key_der = if let Ok(k) = public_key.to_public_key_der() {
+            BASE64_ENGINE.encode(k)
+        } else {
+            tracing::warn!("Unable to convert session public key to DER format");
+            anyhow::bail!("Unable to convert session public key to DER format")
         };
 
         // The typ header is set to none to match the official server software.
@@ -101,9 +105,11 @@ impl Encryptor {
         let jwt = jsonwebtoken::encode(&header, &claims, &signing_key)?;
         let client_public_key = {
             let bytes = BASE64_ENGINE.decode(client_public_key_der)?;
-            match PublicKey::from_public_key_der(&bytes) {
-                Ok(k) => k,
-                Err(e) => bail!(Malformed, "Failed to read DER-encoded client public key: {e}"),
+            if let Ok(key) = PublicKey::from_public_key_der(&bytes) {
+                key
+            } else {
+                tracing::warn!("Unable to read DER-encoded client public key");
+                anyhow::bail!("Unable to read DER-encoded client public key")
             }
         };
 
@@ -115,19 +121,19 @@ impl Encryptor {
         hasher.update(salt);
         hasher.update(shared_secret.raw_secret_bytes().as_slice());
 
-        let mut secret = [0u8; 32];
-        secret.copy_from_slice(&hasher.finalize()[..32]);
+        let mut secret = Secret::new([0u8; 32]);
+        secret.expose_mut().copy_from_slice(&hasher.finalize()[..32]);
 
         // Initialisation vector is composed of the first 12 bytes of the secret and 0x0000000002
         let mut iv = [0u8; 16];
-        iv[..12].copy_from_slice(&secret[..12]);
+        iv[..12].copy_from_slice(&(secret.expose())[..12]);
         iv[12..].copy_from_slice(&[0x00, 0x00, 0x00, 0x02]);
 
-        let cipher = Aes256CtrBE::new(&secret.into(), &iv.into());
+        let cipher = Aes256CtrBE::new(secret.expose().into(), &iv.into());
         Ok((
             Self {
-                send_counter: AtomicU64::new(0),
-                receive_counter: AtomicU64::new(0),
+                send_counter: Secret::new(AtomicU64::new(0)),
+                receive_counter: Secret::new(AtomicU64::new(0)),
                 cipher_decrypt: Mutex::new(cipher.clone()),
                 cipher_encrypt: Mutex::new(cipher),
                 secret,
@@ -140,20 +146,26 @@ impl Encryptor {
     ///
     /// If the checksum does not match, a [`BadPacket`](util::ErrorKind::Malformed) error is returned.
     /// The client must be disconnected if this fails, because the data has probably been tampered with.
+    #[tracing::instrument(
+        skip_all,
+        name = "Encryptor::decrypt"
+    )]
     pub fn decrypt(&self, reader: &mut Vec<u8>) -> anyhow::Result<()> {
         if reader.len() < 9 {
-            bail!(Malformed, "Encrypted buffer must be at least 9 bytes, received {}", reader.len());
+            tracing::error!("The encrypted buffer is too small to contain any data");
+            anyhow::bail!("Encrypted buffer must be at least 9 bytes, received {}", reader.len());
         }
 
         self.cipher_decrypt.lock().apply_keystream(reader.as_mut());
-        let counter = self.receive_counter.fetch_add(1, Ordering::SeqCst);
+        let counter = self.receive_counter.expose().fetch_add(1, Ordering::SeqCst);
 
         let slice = reader.as_slice();
         let checksum = &slice[slice.len() - 8..];
         let computed_checksum = self.compute_checksum(&slice[..slice.len() - 8], counter);
 
         if !checksum.eq(&computed_checksum) {
-            bail!(Malformed, "Encryption checksums do not match");
+            tracing::error!("The encryption checksums do not match. The packet is not properly encrypted");
+            anyhow::bail!("Encryption checksums do not match");
         }
 
         // Remove checksum from data.
@@ -163,8 +175,12 @@ impl Encryptor {
     }
 
     /// Encrypts a packet and appends the computed checksum.
+    #[tracing::instrument(
+        skip_all,
+        name = "Encryptor::encrypt"
+    )]
     pub fn encrypt<W: BinaryWrite>(&self, writer: &mut W) -> anyhow::Result<()> {
-        let counter = self.send_counter.fetch_add(1, Ordering::SeqCst);
+        let counter = self.send_counter.expose().fetch_add(1, Ordering::SeqCst);
         // Exclude 0xfe header from checksum calculations.
         let checksum = self.compute_checksum(&writer.as_ref()[1..], counter);
         writer.write_all(&checksum)?;
@@ -182,7 +198,7 @@ impl Encryptor {
         let mut hasher = Sha256::new();
         hasher.update(counter.to_le_bytes());
         hasher.update(data);
-        hasher.update(self.secret);
+        hasher.update(self.secret.expose());
 
         // Minecraft uses only the first 8 bytes of the hash.
         let mut checksum = [0u8; 8];

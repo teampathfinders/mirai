@@ -6,10 +6,10 @@ use util::Deserialize;
 use super::BedrockUser;
 
 impl BedrockUser {
-    pub fn process_interaction(&self, packet: Vec<u8>) -> anyhow::Result<()> {
+    pub fn handle_interaction(&self, packet: Vec<u8>) -> anyhow::Result<()> {
         let request = Interact::deserialize(packet.as_ref())?;
       
-        if request.action == InteractAction::OpenInventory && !self.player().is_inventory_open.fetch_or(true, Ordering::Relaxed) {
+        if request.action == InteractAction::OpenInventory && !self.player()?.is_inventory_open.fetch_or(true, Ordering::Relaxed) {
             self.send(ContainerOpen {
                 window_id: INVENTORY_WINDOW_ID,
                 container_type: ContainerType::Inventory,
@@ -20,10 +20,10 @@ impl BedrockUser {
         Ok(())
     }
 
-    pub fn process_container_close(&self, packet: Vec<u8>) -> anyhow::Result<()> {
+    pub fn handle_container_close(&self, packet: Vec<u8>) -> anyhow::Result<()> {
         let request = ContainerClose::deserialize(packet.as_ref())?;
         if request.window_id == INVENTORY_WINDOW_ID {
-            self.player().is_inventory_open.store(false, Ordering::Relaxed);
+            self.player()?.is_inventory_open.store(false, Ordering::Relaxed);
 
             // The server also needs to send a container close packet back.
             self.send(ContainerClose {
@@ -35,7 +35,7 @@ impl BedrockUser {
         Ok(())
     }
 
-    pub async fn process_move_player(&self, packet: Vec<u8>) -> anyhow::Result<()> {
+    pub async fn handle_move_player(&self, packet: Vec<u8>) -> anyhow::Result<()> {
         let _request = MovePlayer::deserialize(packet.as_ref())?;
 
         Ok(())
@@ -46,7 +46,7 @@ impl BedrockUser {
         // self.broadcast(request)
     }
 
-    pub fn process_player_action(&self, packet: Vec<u8>) -> anyhow::Result<()> {
+    pub fn handle_player_action(&self, packet: Vec<u8>) -> anyhow::Result<()> {
         let request = PlayerAction::deserialize(packet.as_ref())?;
         
         match request.action {
@@ -61,14 +61,16 @@ impl BedrockUser {
 
     #[inline]
     fn action_start_flying(&self, _action: PlayerAction) -> anyhow::Result<()> {
+        let player = self.player()?;
+
         // Only allow flying if the player is in the correct gamemode.
-        let gamemode = self.player().gamemode();
+        let gamemode = player.gamemode();
         if gamemode == GameMode::Creative || gamemode == GameMode::Spectator {
             self.send(UpdateAbilities(
                 AbilityData {
-                    command_permission_level: self.player().command_permission_level(),
-                    permission_level: self.player().permission_level(),
-                    unique_id: self.player().runtime_id(),
+                    command_permission_level: player.command_permission_level(),
+                    permission_level: player.permission_level(),
+                    unique_id: player.runtime_id(),
                     layers: vec![
                         AbilityLayer {
                             fly_speed: 0.05,
@@ -87,11 +89,13 @@ impl BedrockUser {
 
     #[inline]
     fn action_stop_flying(&self, _action: PlayerAction) -> anyhow::Result<()> {
+        let player = self.player()?;
+
         self.send(UpdateAbilities(
             AbilityData {
-                command_permission_level: self.player().command_permission_level,
-                permission_level: self.player().permission_level(),
-                unique_id: self.player().runtime_id(),
+                command_permission_level: player.command_permission_level,
+                permission_level: player.permission_level(),
+                unique_id: player.runtime_id(),
                 layers: vec![
                     AbilityLayer {
                         fly_speed: 0.05,

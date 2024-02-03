@@ -32,7 +32,7 @@ impl Replicator {
         client.connect();
         client.wait_for_connect().await?;
 
-        tracing::debug!("Replication layer created");
+        tracing::info!("Connected to database successfully");
 
         Ok(Self { client })
     }

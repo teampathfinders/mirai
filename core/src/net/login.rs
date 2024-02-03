@@ -1,7 +1,7 @@
 
 
 use std::sync::atomic::Ordering;
-use proto::bedrock::{AvailableCommands, BiomeDefinitionList, BroadcastIntent, CacheStatus, ChatRestrictionLevel, ChunkRadiusReply, ChunkRadiusRequest, CLIENT_VERSION_STRING, ClientToServerHandshake, CreativeContent, Difficulty, DISCONNECTED_LOGIN_FAILED, GameMode, Login, NETWORK_VERSION, NetworkChunkPublisherUpdate, NetworkSettings, PermissionLevel, PlayerMovementSettings, PlayerMovementType, PlayStatus, PropertyData, RequestNetworkSettings, ResourcePackClientResponse, ResourcePacksInfo, ResourcePackStack, ServerToClientHandshake, SetLocalPlayerAsInitialized, SpawnBiomeType, StartGame, Status, SubChunkResponse, TextData, TextMessage, ViolationWarning, WorldGenerator, ConnectedPacket};
+use proto::bedrock::{BiomeDefinitionList, BroadcastIntent, CacheStatus, ChatRestrictionLevel, ChunkRadiusReply, ChunkRadiusRequest, ClientToServerHandshake, ConnectedPacket, CreativeContent, Difficulty, DisconnectReason, GameMode, Login, NetworkSettings, PermissionLevel, PlayStatus, PlayerMovementSettings, PlayerMovementType, PropertyData, RequestNetworkSettings, ResourcePackClientResponse, ResourcePackStack, ResourcePacksInfo, ServerToClientHandshake, SetLocalPlayerAsInitialized, SpawnBiomeType, StartGame, Status, TextData, TextMessage, ViolationWarning, WorldGenerator, CLIENT_VERSION_STRING, NETWORK_VERSION};
 use proto::crypto::Encryptor;
 use proto::types::Dimension;
 
@@ -24,6 +24,7 @@ impl BedrockUser {
         Ok(())
     }
 
+    /// Handles a packet violation warning.
     pub async fn handle_violation_warning(&self, packet: Vec<u8>) -> anyhow::Result<()> {
         let request = ViolationWarning::deserialize(packet.as_ref())?;
         tracing::error!("Received violation warning: {request:?}");
@@ -71,7 +72,7 @@ impl BedrockUser {
 
             self.broadcast(TextMessage {
                 data: TextData::Translation {
-                    parameters: vec![&format!("§e{}", self.name())],
+                    parameters: vec![&format!("§e{}", self.name()?)],
                     message: "multiplayer.player.joined"
                     // message: &format!("§e{} has joined the server.", identity_data.display_name),
                 },
@@ -90,6 +91,8 @@ impl BedrockUser {
     /// Handles a [`ChunkRadiusRequest`] packet by returning the maximum allowed render distance.
     pub fn handle_chunk_radius_request(&self, packet: Vec<u8>) -> anyhow::Result<()> {
         let request = ChunkRadiusRequest::deserialize(packet.as_ref())?;
+
+        // FIXME: Use render distance configured with builder instead of SERVER_CONFIG global.
         let allowed_radius = std::cmp::min(
             SERVER_CONFIG.read().allowed_render_distance, request.radius
         );
@@ -102,7 +105,7 @@ impl BedrockUser {
             anyhow::bail!("Render distance must be greater than 0");
         }
 
-        self.player().viewer.set_radius(allowed_radius);
+        // self.player().viewer.set_radius(allowed_radius);
 
         Ok(())
     }
@@ -117,7 +120,7 @@ impl BedrockUser {
         let start_game = StartGame {
             entity_id: 1,
             runtime_id: 1,
-            game_mode: self.player().gamemode(),
+            game_mode: self.player()?.gamemode(),
             position: Vector::from([0.0, 60.0, 0.0]),
             rotation: Vector::from([0.0, 0.0]),
             world_seed: 0,
@@ -140,7 +143,9 @@ impl BedrockUser {
             platform_broadcast_intent: BroadcastIntent::Public,
             enable_commands: true,
             texture_packs_required: true,
-            game_rules: &self.level.get_game_rules(),
+            // FIXME: Reimplement with new level interface.
+            // game_rules: &self.level.get_game_rules(),
+            game_rules: &[],
             experiments: &[],
             experiments_previously_enabled: false,
             bonus_chest_enabled: false,
@@ -199,17 +204,17 @@ impl BedrockUser {
         let biome_definition_list = BiomeDefinitionList;
         self.send(biome_definition_list)?;
 
-        let commands = self.level.get_commands().iter().map(|kv| kv.value().clone()).collect::<Vec<_>>();
-        let available_commands = AvailableCommands { commands: commands.as_slice() };
-        self.send(available_commands)?;
+        // let commands = self.level.get_commands().iter().map(|kv| kv.value().clone()).collect::<Vec<_>>();
+        // let available_commands = AvailableCommands { commands: commands.as_slice() };
+        // self.send(available_commands)?;
 
         let play_status = PlayStatus { status: Status::PlayerSpawn };
         self.send(play_status)?;
 
-        self.send(NetworkChunkPublisherUpdate {
-            position: Vector::from([0, 0, 0]),
-            radius: self.player().viewer.get_radius() as u32
-        })?;
+        // self.send(NetworkChunkPublisherUpdate {
+        //     position: Vector::from([0, 0, 0]),
+        //     radius: self.player().viewer.get_radius() as u32
+        // })?;
 
         // let subchunks = self.player().viewer.recenter(
         //     Vector::from([0, 0]), &(0..5).map(|y| Vector::from([0, y, 0])).collect::<Vec<_>>()
@@ -225,6 +230,8 @@ impl BedrockUser {
         Ok(())
     }
 
+    /// Handles a [`ClientToServerHandshake packet`]. After receiving this packet, the server will now
+    /// use encryption when communicating with this client.
     pub fn handle_client_to_server_handshake(&self, packet: Vec<u8>) -> anyhow::Result<()> {
         self.expected.store(CacheStatus::ID, Ordering::SeqCst);
 
@@ -234,6 +241,8 @@ impl BedrockUser {
         self.send(response)?;
 
         // TODO: Implement resource packs
+        // FIXME: Sometimes these two packets might be sent in different ticks instead of being batched together.
+        // This will result in the client sending a resource pack response which we do not want.
         let pack_info = ResourcePacksInfo {
             required: false,
             scripting_enabled: false,
@@ -257,41 +266,51 @@ impl BedrockUser {
     }
 
     /// Handles a [`Login`] packet.
+    #[tracing::instrument(
+        skip_all,
+        name = "BedrockUser::handle_login",
+        fields(
+            username
+        )
+    )]
     pub async fn handle_login(&self, packet: Vec<u8>) -> anyhow::Result<()> {
         self.expected.store(ClientToServerHandshake::ID, Ordering::SeqCst);
 
-        let request = Login::deserialize(packet.as_ref());
-        let request = match request {
-            Ok(r) => r,
-            Err(e) => {
-                self.kick(DISCONNECTED_LOGIN_FAILED).await?;
-                return Err(e);
-            }
+        let request = if let Ok(request) = Login::deserialize(packet.as_ref()) {
+            request
+        } else {
+            // Kick the player when login fails. This is for security reasons.
+            // An error during login could mean the user is trying to impersonate someone else.
+            self.kick_with_reason("Login failed", DisconnectReason::BadPacket).await?;
+            anyhow::bail!("Client failed to login")
         };
+
+        tracing::Span::current().record("username", &request.identity.name);
 
         self.replicator.save_session(request.identity.xuid, &request.identity.name).await?;
 
-        let (encryptor, jwt) = Encryptor::new(&request.identity.public_key)?;
-
-        tracing::debug!("Identity verified as {}", request.identity.name);
-
+        let (encryptor, jwt) = if let Ok(data) = Encryptor::new(&request.identity.public_key) {
+            data
+        } else {
+            self.kick_with_reason("Encryption failed", DisconnectReason::BadPacket).await?;
+            anyhow::bail!("Failed to enable encryption");
+        };
+        
         self.identity.set(request.identity).unwrap();
         self.client_info.set(request.client_info).unwrap();
 
-        // Flush raknet before enabling encryption
+        // Flush unencrypted packets in queue before enabling encryption
         self.raknet.flush().await?;
-
-        tracing::debug!("Initiating encryption");
 
         self.send(ServerToClientHandshake { jwt: &jwt })?;
         if self.encryptor.set(encryptor).is_err() {
             // Client sent a second login packet?
             // Something is wrong, disconnect the client.
-            tracing::error!("Client sent a second login packet.");
-            self.kick("Invalid packet").await?;
+            tracing::warn!("Client unexpectedly sent a second login packet");
+            return self.kick_with_reason("Unexpected login", DisconnectReason::UnexpectedPacket).await
         }
 
-        if self.player.set(PlayerData::new(request.skin, self.level.clone())).is_err() {
+        if self.player.set(PlayerData::new(request.skin)).is_err() {
             anyhow::bail!("Player data was already set");
         };
 

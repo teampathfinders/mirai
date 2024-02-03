@@ -1,6 +1,7 @@
 #![allow(rustdoc::private_intra_doc_links)]
 #![allow(dead_code)]
 
+pub mod command;
 pub mod config;
 pub mod data;
 pub mod forms;

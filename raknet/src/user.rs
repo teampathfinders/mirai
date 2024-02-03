@@ -4,6 +4,7 @@ use parking_lot::{Mutex, RwLock};
 use proto::raknet::DisconnectNotification;
 use tokio::{net::UdpSocket, sync::{broadcast, mpsc}};
 use tokio_util::sync::CancellationToken;
+use util::Joinable;
 
 use crate::{Compounds, SendQueues, Recovery, BroadcastPacket, OrderChannel, SendConfig, Reliability, SendPriority};
 
@@ -123,28 +124,46 @@ impl RaknetUser {
         (state, output_rx)
     }
 
-    /// Waits for the job to finish processing.
-    pub async fn await_shutdown(&self) -> anyhow::Result<()> {
-        self.flush_all().await?;
-        self.active.cancel();
-
-        let job_handle = {
-            let mut lock = self.job_handle.write();
-            lock.take()
-        };
-
-        if let Some(job_handle) = job_handle {
-            job_handle.await?;
-        }
-
-        Ok(())
-    }
-
     /// Sends a RakNet disconnect packet to the client.
     pub fn disconnect(&self) {
         self.send_raw_buffer_with_config(vec![DisconnectNotification::ID], SendConfig {
             reliability: Reliability::Reliable,
             priority: SendPriority::High
         });
+    }
+}
+
+impl Joinable for RaknetUser {
+    #[tracing::instrument(
+        skip_all,
+        name = "RaknetUser::join",
+        fields(
+            %address = %self.address
+        )
+    )]
+    async fn join(&self) -> anyhow::Result<()> {
+        let handle = self.job_handle.write().take();
+        match handle {
+            Some(handle) => {
+                // self.disconnect();
+                match self.flush_all().await {
+                    Ok(_) => (),
+                    Err(e) => tracing::error!("Failed to flush last packets before shutdown: {e:#?}")
+                }
+
+                self.active.cancel();
+                match handle.await {
+                    Ok(_) => Ok(()),
+                    Err(err) => {
+                        tracing::error!("Error occurred while awaiting RakNet user service shutdown: {err:#?}");
+                        Ok(())
+                    }
+                }
+            },
+            None => {
+                tracing::error!("This RakNet user service has already been joined");
+                anyhow::bail!("RakNet user service already joined");
+            }
+        }
     }
 }

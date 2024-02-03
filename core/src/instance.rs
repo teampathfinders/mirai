@@ -3,23 +3,20 @@
 use anyhow::Context;
 use raknet::UserCreateInfo;
 
-use std::net::{Ipv4Addr, Ipv6Addr, SocketAddr, SocketAddrV4, SocketAddrV6};
+use std::net::{Ipv4Addr, Ipv6Addr, SocketAddrV4, SocketAddrV6};
 use std::sync::Arc;
 use std::time::Duration;
 
 use tokio::net::UdpSocket;
-use tokio::sync::oneshot::Receiver;
+
 use tokio_util::sync::CancellationToken;
 
-use util::{Deserialize, ReserveTo, Serialize};
+use util::{Deserialize, Joinable, ReserveTo, Serialize};
 
+use crate::command::{self};
 use crate::config::SERVER_CONFIG;
-use crate::level::Level;
 use crate::net::{ForwardablePacket, UserMap};
-use proto::bedrock::{
-    Command, CommandDataType, CommandEnum, CommandOverload, CommandParameter, CommandPermissionLevel, CompressionAlgorithm, BOOLEAN_GAME_RULES,
-    CLIENT_VERSION_STRING, INTEGER_GAME_RULES, MOBEFFECT_NAMES, NETWORK_VERSION,
-};
+use proto::bedrock::{CompressionAlgorithm, CLIENT_VERSION_STRING, NETWORK_VERSION};
 use proto::raknet::{
     IncompatibleProtocol, OpenConnectionReply1, OpenConnectionReply2, OpenConnectionRequest1, OpenConnectionRequest2, UnconnectedPing,
     UnconnectedPong, RAKNET_VERSION,
@@ -45,7 +42,7 @@ async fn signal_listener(token: CancellationToken) -> anyhow::Result<()> {
     Ok(())
 }
 
-//// Configuration for the network components.
+/// Configuration for the network components.
 pub struct NetConfig {
     /// The host and port to run the server on.
     ///
@@ -113,26 +110,26 @@ impl Default for DbConfig<'static> {
 /// Configuration for client options.
 pub struct ClientConfig {
     /// Whether the client should throttle other players.
-    /// 
+    ///
     /// Default: false.
     pub throttling_enabled: bool,
     /// When the player count exceeds this threshold, the client
     /// will start throttling other players.
-    /// 
+    ///
     /// Default: 0.
     pub throttling_threshold: u8,
     /// Amount of players that will be ticked when the client is
     /// actively throttling.
-    /// 
+    ///
     /// Default: 0.0.
     pub throttling_scalar: f32,
     /// Maximum server-allow render distance.
-    /// 
-    /// If the client requests a larger render distance, the server 
+    ///
+    /// If the client requests a larger render distance, the server
     /// will cap it to this maximum.
-    /// 
+    ///
     /// Default: 12.
-    pub render_distance: u32
+    pub render_distance: u32,
 }
 
 impl Default for ClientConfig {
@@ -141,7 +138,7 @@ impl Default for ClientConfig {
             throttling_enabled: false,
             throttling_threshold: 0,
             throttling_scalar: 0.0,
-            render_distance: 12
+            render_distance: 12,
         }
     }
 }
@@ -151,7 +148,7 @@ pub struct InstanceBuilder<'a> {
     name: String,
     net_config: NetConfig,
     db_config: DbConfig<'a>,
-    client_config: ClientConfig
+    client_config: ClientConfig,
 }
 
 impl<'a> InstanceBuilder<'a> {
@@ -191,7 +188,7 @@ impl<'a> InstanceBuilder<'a> {
     }
 
     /// Set the client config.
-    /// 
+    ///
     /// Default: See [`ClientConfig`].
     #[inline]
     pub fn client_config(mut self, config: ClientConfig) -> InstanceBuilder<'a> {
@@ -201,25 +198,33 @@ impl<'a> InstanceBuilder<'a> {
 
     /// Produces an [`Instance`] with the configured options, consuming the builder.
     pub async fn build(self) -> anyhow::Result<Instance> {
-        let ipv4_socket = UdpSocket::bind(self.net_config.ipv4_addr).await.context("Unable to create IPv4 UDP socket")?;
+        let ipv4_socket = UdpSocket::bind(self.net_config.ipv4_addr)
+            .await
+            .context("Unable to create IPv4 UDP socket")?;
         let ipv6_socket = match self.net_config.ipv6_addr {
             Some(addr) => Some(UdpSocket::bind(addr).await.context("Unable to create IPv6 UDP socket")?),
-            None => None
+            None => None,
         };
 
         let ipv4_socket = Arc::new(ipv4_socket);
         let ipv6_socket = ipv6_socket.map(Arc::new);
 
-        let replicator = Replicator::new(
-            self.db_config.host, self.db_config.port
-        ).await.context("Unable to create replicator")?;
+        let replicator = Replicator::new(self.db_config.host, self.db_config.port)
+            .await
+            .context("Unable to create replicator")?;
 
         let replicator = Arc::new(replicator);
-        
-        let user_map = Arc::new(UserMap::new(replicator));
+
+        let token = CancellationToken::new();
+        let command_service = command::Service::new(token.clone());
+        let user_map = Arc::new(UserMap::new(replicator, command_service.clone()));
 
         let instance = Instance {
-            ipv4_socket, ipv6_socket, user_map, token: CancellationToken::new()
+            ipv4_socket,
+            ipv6_socket,
+            user_map,
+            token: token.clone(),
+            command_service,
         };
 
         Ok(instance)
@@ -232,7 +237,7 @@ impl Default for InstanceBuilder<'static> {
             name: String::from("Server"),
             net_config: NetConfig::default(),
             db_config: DbConfig::default(),
-            client_config: ClientConfig::default()
+            client_config: ClientConfig::default(),
         }
     }
 }
@@ -251,24 +256,25 @@ pub struct Instance {
     /// Service that manages all player sessions.
     user_map: Arc<UserMap>,
     /// Token that can signal other services to stop running.
-    token: CancellationToken
+    token: CancellationToken,
+    /// Keeps track of all available commands.
+    command_service: Arc<command::Service>,
 }
 
 impl Instance {
     pub async fn run(self) -> anyhow::Result<()> {
-
         // FIXME: The level module will get a refactor and this will be changed
-        let level = Level::new(self.user_map.clone(), self.token.clone())?;
-        self.user_map.set_level(level);
+        // let level = Level::new(self.user_map.clone(), self.token.clone())?;
+        // self.user_map.set_level(level);
 
         let recv_job4 = {
             let socket = self.ipv4_socket.clone();
             let user_map = self.user_map.clone();
             let token = self.token.clone();
-            
+
             let handle = tokio::spawn(Instance::net_recv_job(token, socket, user_map));
             tracing::info!("IPv4 listener ready");
-            
+
             handle
         };
 
@@ -281,7 +287,7 @@ impl Instance {
                 tracing::info!("IPv6 listener ready");
 
                 Some(handle)
-            },
+            }
             None => {
                 tracing::info!("IPv6 functionality disabled");
                 None
@@ -290,216 +296,29 @@ impl Instance {
 
         signal_listener(self.token.clone()).await?;
 
-        _ = self.user_map.shutdown().await;
+        // Error is logged by user map.
+        // The user map requires manual shutdown to make sure it shuts down before all other services.
+        _ = self.user_map.join().await;
+
+        // Keep all services running until all clients have been disconnected.
+        // Only then start shutting down services.
         self.token.cancel();
 
-        _ = recv_job4.await;
-        if let Some(job) = recv_job6 {
-            _ = job.await;
+        if let Err(err) = recv_job4.await {
+            tracing::error!("Error occurred while awaiting IPv4 receiver shutdown: {err:#?}");
         }
+
+        if let Some(job) = recv_job6 {
+            if let Err(err) = job.await {
+                tracing::error!("Error occurred while awaiting IPv6 receiver shutdown: {err:#?}");
+            }
+        }
+
+        // Error is logged by command service.
+        _ = self.command_service.join().await;
 
         Ok(())
     }
-
-    // /// Creates a new server.
-    // ///
-    // /// This method is asynchronous and completes when the server is fully shut down again.
-    // pub async fn run() -> anyhow::Result<()> {
-    //     let (ipv4_port, _ipv6_port) = {
-    //         let lock = SERVER_CONFIG.read();
-    //         (lock.ipv4_port, lock.ipv6_port)
-    //     };
-
-    //     let token = CancellationToken::new();
-
-    //     let udp_socket = Arc::new(
-    //         UdpSocket::bind(SocketAddrV4::new(IPV4_LOCAL_ADDR, ipv4_port))
-    //             .await
-    //             .context("Unable to create UDP socket")?,
-    //     );
-
-    //     let replicator = Arc::new(Replicator::new().await.context("Cannot create replication layer")?);
-    //     let user_map = Arc::new(UserMap::new(replicator));
-
-    //     let level = Level::new(user_map.clone(), token.clone())?;
-    //     user_map.set_level(level.clone());
-
-    //     level.add_command(Command {
-    //         name: "gamerule".to_owned(),
-    //         description: "Sets or queries a game rule value.".to_owned(),
-    //         permission_level: CommandPermissionLevel::Normal,
-    //         aliases: vec![],
-    //         overloads: vec![
-    //             // Boolean game rules.
-    //             CommandOverload {
-    //                 parameters: vec![
-    //                     CommandParameter {
-    //                         data_type: CommandDataType::String,
-    //                         name: "rule".to_owned(),
-    //                         suffix: "".to_owned(),
-    //                         command_enum: Some(CommandEnum {
-    //                             dynamic: false,
-    //                             enum_id: "boolean gamerule".to_owned(),
-    //                             options: BOOLEAN_GAME_RULES.iter().map(|g| g.to_string()).collect::<Vec<_>>(),
-    //                         }),
-    //                         optional: false,
-    //                         options: 0,
-    //                     },
-    //                     CommandParameter {
-    //                         data_type: CommandDataType::String,
-    //                         name: "value".to_owned(),
-    //                         suffix: "".to_owned(),
-    //                         command_enum: Some(CommandEnum {
-    //                             dynamic: false,
-    //                             enum_id: "boolean".to_owned(),
-    //                             options: vec!["true".to_owned(), "false".to_owned()],
-    //                         }),
-    //                         optional: true,
-    //                         options: 0,
-    //                     },
-    //                 ],
-    //             },
-    //             // Integral game rules.
-    //             CommandOverload {
-    //                 parameters: vec![
-    //                     CommandParameter {
-    //                         data_type: CommandDataType::String,
-    //                         name: "rule".to_owned(),
-    //                         suffix: "".to_owned(),
-    //                         command_enum: Some(CommandEnum {
-    //                             dynamic: false,
-    //                             enum_id: "integral gamerule".to_owned(),
-    //                             options: INTEGER_GAME_RULES.iter().map(|g| g.to_string()).collect::<Vec<_>>(),
-    //                         }),
-    //                         optional: false,
-    //                         options: 0,
-    //                     },
-    //                     CommandParameter {
-    //                         data_type: CommandDataType::Int,
-    //                         name: "value".to_owned(),
-    //                         suffix: "this is a suffix".to_owned(),
-    //                         command_enum: None,
-    //                         optional: true,
-    //                         options: 0,
-    //                     },
-    //                 ],
-    //             },
-    //         ],
-    //     });
-
-    //     level.add_command(Command {
-    //         name: String::from("effect"),
-    //         aliases: vec![],
-    //         description: String::from("Adds or removes the status effects of players and other entities."),
-    //         overloads: vec![
-    //             CommandOverload {
-    //                 parameters: vec![
-    //                     CommandParameter {
-    //                         name: String::from("target"),
-    //                         data_type: CommandDataType::Target,
-    //                         command_enum: None,
-    //                         suffix: String::new(),
-    //                         optional: false,
-    //                         options: 0,
-    //                     },
-    //                     CommandParameter {
-    //                         name: String::from("effect"),
-    //                         data_type: CommandDataType::String,
-    //                         command_enum: Some(CommandEnum {
-    //                             enum_id: String::from("effect_clear"),
-    //                             options: vec![String::from("clear")],
-    //                             dynamic: false,
-    //                         }),
-    //                         suffix: String::new(),
-    //                         optional: false,
-    //                         options: 0,
-    //                     },
-    //                 ],
-    //             },
-    //             CommandOverload {
-    //                 parameters: vec![
-    //                     CommandParameter {
-    //                         name: String::from("target"),
-    //                         data_type: CommandDataType::Target,
-    //                         command_enum: None,
-    //                         suffix: String::new(),
-    //                         optional: false,
-    //                         options: 0,
-    //                     },
-    //                     CommandParameter {
-    //                         name: String::from("effect"),
-    //                         data_type: CommandDataType::String,
-    //                         command_enum: Some(CommandEnum {
-    //                             enum_id: String::from("effect"),
-    //                             options: MOBEFFECT_NAMES.iter().map(|s| String::from(*s)).collect(),
-    //                             dynamic: false,
-    //                         }),
-    //                         suffix: String::new(),
-    //                         optional: false,
-    //                         options: 0,
-    //                     },
-    //                     CommandParameter {
-    //                         name: String::from("duration"),
-    //                         data_type: CommandDataType::Int,
-    //                         command_enum: None,
-    //                         suffix: String::new(),
-    //                         optional: true,
-    //                         options: 0,
-    //                     },
-    //                     CommandParameter {
-    //                         name: String::from("amplifier"),
-    //                         data_type: CommandDataType::Int,
-    //                         command_enum: None,
-    //                         suffix: String::new(),
-    //                         optional: true,
-    //                         options: 0,
-    //                     },
-    //                     CommandParameter {
-    //                         name: String::from("hideParticles"),
-    //                         data_type: CommandDataType::String,
-    //                         command_enum: Some(CommandEnum {
-    //                             enum_id: String::from("boolean"),
-    //                             dynamic: false,
-    //                             options: vec![String::from("true"), String::from("false")],
-    //                         }),
-    //                         suffix: String::new(),
-    //                         optional: true,
-    //                         options: 0,
-    //                     },
-    //                 ],
-    //             },
-    //         ],
-    //         permission_level: CommandPermissionLevel::Normal,
-    //     });
-
-    //     // session_manager.set_level_manager(Arc::downgrade(&level))?;
-
-    //     // UDP receiver job.
-    //     let receiver_task = {
-    //         let udp_socket = udp_socket.clone();
-    //         let session_manager = user_map.clone();
-    //         let token = token.clone();
-
-    //         tokio::spawn(async move { Self::udp_recv_job(token, udp_socket, session_manager).await })
-    //     };
-
-    //     tracing::info!("Ready on localhost:{}!", ipv4_port);
-
-    //     // Wait for a shutdown signal...
-    //     signal_listener(token.clone()).await?;
-
-    //     tracing::info!("Shutting down server...");
-
-    //     user_map.shutdown().await?;
-    //     token.cancel();
-
-    //     drop(user_map);
-    //     // drop(level_manager);
-
-    //     let _ = tokio::join!(receiver_task /*, level_notifier*/);
-
-    //     Ok(())
-    // }
 
     /// Generates a response to the [`UnconnectedPing`] packet with [`UnconnectedPong`].
     #[inline]

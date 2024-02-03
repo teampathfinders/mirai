@@ -1,3 +1,4 @@
+use std::future::Future;
 use std::io::{Read, Write};
 
 use std::sync::{Arc, OnceLock};
@@ -17,12 +18,13 @@ use proto::uuid::Uuid;
 use replicator::Replicator;
 
 use tokio::task::JoinHandle;
-use util::{Vector, AtomicFlag, Serialize, Deserialize, BinaryWrite, BinaryRead};
+use util::{AtomicFlag, BinaryRead, BinaryWrite, Deserialize, Joinable, Serialize, Vector};
 
+use crate::command;
 use crate::config::SERVER_CONFIG;
-use crate::forms::{Subscriber, SubmittableForm, self};
-use crate::level::{ChunkViewer, Level};
+use crate::forms;
 
+/// Represents a user connected to the server.
 pub struct BedrockUser {
     pub(super) encryptor: OnceLock<Encryptor>,
     pub(super) identity: OnceLock<BedrockIdentity>,
@@ -36,21 +38,23 @@ pub struct BedrockUser {
     pub(crate) supports_cache: AtomicBool,
     /// Replication layer.
     pub(crate) replicator: Arc<Replicator>,
-    pub(crate) level: Arc<Level>,
     pub(crate) raknet: Arc<RaknetUser>,
     pub(crate) player: OnceLock<PlayerData>,
-    pub(crate) forms: Subscriber,
+
+    pub(crate) forms: forms::Subscriber,
+    pub(crate) commands: command::ServiceEndpoint,
 
     pub(crate) broadcast: broadcast::Sender<BroadcastPacket>,
     pub(crate) job_handle: RwLock<Option<JoinHandle<()>>>
 }
 
 impl BedrockUser {
+    /// Creates a new user.
     pub fn new(
         raknet: Arc<RaknetUser>,
-        level: Arc<Level>,
         replicator: Arc<Replicator>,
         receiver: mpsc::Receiver<Vec<u8>>,
+        commands: command::ServiceEndpoint,
         broadcast: broadcast::Sender<BroadcastPacket>
     ) -> Arc<Self> {
         let user = Arc::new(Self {
@@ -62,10 +66,11 @@ impl BedrockUser {
             supports_cache: AtomicBool::new(false),
             
             replicator,
-            level,
             raknet,
             player: OnceLock::new(),
-            forms: Subscriber::new(),
+
+            forms: forms::Subscriber::new(),
+            commands,
             
             broadcast,
             job_handle: RwLock::new(None)
@@ -80,21 +85,7 @@ impl BedrockUser {
         user
     }
 
-    /// Waits for the client to fully disconnect and the server to finish processing.
-    pub async fn await_shutdown(&self) -> anyhow::Result<()> {
-        let job_handle = {
-            let mut lock = self.job_handle.write();
-            lock.take()
-        };
-
-        self.raknet.active.cancel();
-        if let Some(job_handle) = job_handle {
-            job_handle.await?;
-        }
-
-        self.raknet.await_shutdown().await
-    }
-
+    /// The worker that processes incoming packets.
     async fn recv_job(self: &Arc<Self>, mut receiver: mpsc::Receiver<Vec<u8>>) {
         let mut broadcast = self.broadcast.subscribe();
 
@@ -125,7 +116,8 @@ impl BedrockUser {
         tracing::debug!("Bedrock job exited");
     }
 
-    pub fn handle_broadcast(&self, packet: BroadcastPacket) -> anyhow::Result<()> {
+    /// Handles a packet broadcasted by another user.
+    fn handle_broadcast(&self, packet: BroadcastPacket) -> anyhow::Result<()> {
         let should_send = packet.sender.map(|sender| sender != self.raknet.address).unwrap_or(true);
         if should_send {
             self.send_serialized(packet.content.as_ref(), DEFAULT_SEND_CONFIG)?;
@@ -138,30 +130,39 @@ impl BedrockUser {
     /// 
     /// In case it is more convenient to use a channel receiver instead, use the [`subscribe`](Subscriber::subscribe)
     /// method on the `forms` field of the user.
-    pub async fn send_form(&self, form: impl SubmittableForm) -> anyhow::Result<forms::Response> {
+    pub async fn send_form(&self, form: impl forms::SubmittableForm) -> anyhow::Result<forms::Response> {
         let recv = self.forms.subscribe(self, form)?;
         let resp = recv.await?;
 
         Ok(resp)
     }
 
-    /// Kicks a player from the server and display the specified message to them.
+    /// Kicks a player from the server and displays the specified message to them.
     #[inline]
-    pub async fn kick(&self, message: &str) -> anyhow::Result<()> {
-        self.kick_with_reason(message, DisconnectReason::Kicked).await
+    pub fn kick<'a>(&'a self, message: &'a str) -> impl Future<Output = anyhow::Result<()>> + 'a {
+        // This function returns a future object directly to reduce code bloat from async.
+        self.kick_with_reason(message, DisconnectReason::Kicked)
     }
 
     /// Kicks a player from the server and displays the specified message to them.
     /// This also adds a reason to the kick, which is used for telemetry purposes.
+    #[tracing::instrument(
+        name = "BedrockUser::kick_with_reason",
+        skip(self, message, reason)
+        fields(
+            username = %self.name().unwrap_or("<unknown>"),
+            reason = %message
+        )
+    )]
     pub async fn kick_with_reason(&self, message: &str, reason: DisconnectReason) -> anyhow::Result<()> {
         let disconnect_packet = Disconnect {
             reason, message, hide_message: false
         };
         self.send(disconnect_packet)?;
-        
-        tracing::info!("{} kicked: {message}", self.name());
 
-        self.raknet.await_shutdown().await
+        tracing::info!("Player kicked");
+
+        self.raknet.join().await
     }
 
     /// Sends a packet to all initialised sessions including self.
@@ -178,12 +179,6 @@ impl BedrockUser {
         packet: P,
     ) -> anyhow::Result<()> {
         self.raknet.broadcast_others(packet)
-    }
-
-    pub fn handle_disconnect(&self) {
-        self.raknet.active.cancel();
-
-        todo!("Disconnect");
     }
 
     /// Sends a game packet with default settings
@@ -245,9 +240,19 @@ impl BedrockUser {
         self.raknet.send_raw_buffer_with_config(out, config);
         Ok(())
     }
-  
+
+    /// Handles a received encrypted frame.
+    /// 
+    /// This is the first function that is called when a packet is received from the RakNet processing layer.
+    /// It first decrypts the packet if encryption has been enabled and then optionally decompresses it.
+    /// 
+    /// After processing, this function sends the processed packet to [`handle_frame_body`](Self::handle_frame_body)
+    /// function,
     async fn handle_encrypted_frame(self: &Arc<Self>, mut packet: Vec<u8>) -> anyhow::Result<()> {
-        debug_assert_eq!(packet[0], 0xfe);
+        if packet[0] != 0xfe {
+            anyhow::bail!("First byte in a Bedrock proto packet should be 0xfe");
+        }
+
         packet.remove(0);
 
         if let Some(encryptor) = self.encryptor.get() {
@@ -274,15 +279,25 @@ impl BedrockUser {
                     let mut decompressed = Vec::new();
                     reader.read_to_end(&mut decompressed)?;
 
-                    self.clone().handle_frame_body(decompressed).await
+                    self.handle_frame_body(decompressed).await
                 }
             }
         } else {
-            self.clone().handle_frame_body(packet).await
+            self.handle_frame_body(packet).await
         }
     }
 
-    async fn handle_frame_body(self: Arc<Self>, mut packet: Vec<u8>) -> anyhow::Result<()> {
+    /// Handles the body of a frame.
+    /// 
+    /// This function does the actual processing of the content of the frame and responds to it.
+    #[tracing::instrument(
+        skip_all,
+        name = "BedrockUser::handle_frame_body"
+        fields(
+            username = self.name().unwrap_or("<unknown>")
+        )
+    )]
+    async fn handle_frame_body(self: &Arc<Self>, mut packet: Vec<u8>) -> anyhow::Result<()> {
         let start_len = packet.len();
         let mut reader: &[u8] = packet.as_ref();
         let _length = reader.read_var_u32()?;
@@ -298,40 +313,41 @@ impl BedrockUser {
                 expected, header.id
             );
             
-            self.kick("Unexpected packet").await?;
+            self.kick_with_reason("Unexpected packet", DisconnectReason::UnexpectedPacket).await?;
         }
 
+        let this = self.clone();
         tokio::spawn(async move {
             match header.id {
-                PlayerAuthInput::ID => self.handle_auth_input(packet),
+                PlayerAuthInput::ID => this.handle_auth_input(packet),
                 RequestNetworkSettings::ID => {
-                    self.handle_network_settings_request(packet)
+                    this.handle_network_settings_request(packet)
                 }
-                Login::ID => self.handle_login(packet).await,
+                Login::ID => this.handle_login(packet).await,
                 ClientToServerHandshake::ID => {
-                    self.handle_client_to_server_handshake(packet)
+                    this.handle_client_to_server_handshake(packet)
                 }
-                CacheStatus::ID => self.handle_cache_status(packet),
+                CacheStatus::ID => this.handle_cache_status(packet),
                 ResourcePackClientResponse::ID => {
-                    self.handle_resource_client_response(packet)
+                    this.handle_resource_client_response(packet)
                 }
-                ViolationWarning::ID => self.handle_violation_warning(packet).await,
-                ChunkRadiusRequest::ID => self.handle_chunk_radius_request(packet),
-                Interact::ID => self.process_interaction(packet),
-                TextMessage::ID => self.handle_text_message(packet).await,
+                ViolationWarning::ID => this.handle_violation_warning(packet).await,
+                ChunkRadiusRequest::ID => this.handle_chunk_radius_request(packet),
+                Interact::ID => this.handle_interaction(packet),
+                TextMessage::ID => this.handle_text_message(packet).await,
                 SetLocalPlayerAsInitialized::ID => {
-                    self.handle_local_initialized(packet)
+                    this.handle_local_initialized(packet)
                 }
-                MovePlayer::ID => self.process_move_player(packet).await,
-                PlayerAction::ID => self.process_player_action(packet),
-                RequestAbility::ID => self.handle_ability_request(packet),
-                Animate::ID => self.handle_animation(packet),
-                CommandRequest::ID => self.handle_command_request(packet),
-                UpdateSkin::ID => self.handle_skin_update(packet),
-                SettingsCommand::ID => self.handle_settings_command(packet),
-                ContainerClose::ID => self.process_container_close(packet),
-                FormResponseData::ID => self.handle_form_response(packet),
-                TickSync::ID => self.handle_tick_sync(packet),
+                MovePlayer::ID => this.handle_move_player(packet).await,
+                PlayerAction::ID => this.handle_player_action(packet),
+                RequestAbility::ID => this.handle_ability_request(packet),
+                Animate::ID => this.handle_animation(packet),
+                CommandRequest::ID => this.handle_command_request(packet).await,
+                UpdateSkin::ID => this.handle_skin_update(packet),
+                SettingsCommand::ID => this.handle_settings_command(packet),
+                ContainerClose::ID => this.handle_container_close(packet),
+                FormResponseData::ID => this.handle_form_response(packet),
+                TickSync::ID => this.handle_tick_sync(packet),
                 id => anyhow::bail!("Invalid game packet: {id:#04x}"),
             }
         });
@@ -340,53 +356,93 @@ impl BedrockUser {
     }
 
     /// Returns the forms handler.
-    pub fn forms(&self) -> &Subscriber {
+    #[inline]
+    pub fn forms(&self) -> &forms::Subscriber {
         &self.forms
     }
 
     /// This function panics if the identity was not set.
-    pub fn identity(&self) -> &BedrockIdentity {
-        self.identity.get().unwrap()
+    #[inline]
+    pub fn identity(&self) -> anyhow::Result<&BedrockIdentity> {
+        self.identity.get().ok_or_else(|| anyhow::anyhow!("Identity unknown: user has not logged in yet"))
     }
 
     /// This function panics if the name was not set.
-    pub fn name(&self) -> &str {
-        &self.identity().name
+    #[inline]
+    pub fn name(&self) -> anyhow::Result<&str> {
+        self.identity().map(|id| id.name.as_str())
     }
 
     /// This function panics if the XUID was not set.
-    pub fn xuid(&self) -> u64 {
-        self.identity().xuid
+    #[inline]
+    pub fn xuid(&self) -> anyhow::Result<u64> {
+        self.identity().map(|id| id.xuid)
     }
 
     /// This function panics if the UUID was not set.
-    pub fn uuid(&self) -> &Uuid {
-        &self.identity().uuid
+    #[inline]
+    pub fn uuid(&self) -> anyhow::Result<&Uuid> {
+        self.identity().map(|id| &id.uuid)
     }
 
     /// This function panics if the encryptor was not set.
-    pub fn encryptor(&self) -> &Encryptor {
-        self.encryptor.get().unwrap()
+    #[inline]
+    pub fn encryptor(&self) -> anyhow::Result<&Encryptor> {
+        self.encryptor.get().ok_or_else(|| anyhow::anyhow!("Encryption handshake has not been performed yet"))
     }
 
     /// Returns the next expected packet for this session.
     /// The expected packet will be [`u32::MAX`] if the user is fully
     /// initialized and therefore doesn't follow a strict packet order anymore.
+    #[inline]
     pub fn expected(&self) -> u32 {
         self.expected.load(Ordering::SeqCst)
     }
 
     /// Returns whether the user is fully initialized.
+    #[inline]
     pub fn initialized(&self) -> bool {
         self.expected() == u32::MAX
     }
 
     /// This functions panic if the player data was not initialized.
-    pub fn player(&self) -> &PlayerData {
-        self.player.get().unwrap()
+    pub fn player(&self) -> anyhow::Result<&PlayerData> {
+        self.player.get().ok_or_else(|| anyhow::anyhow!("Player data unavailable"))
     }
 }
 
+impl Joinable for BedrockUser {
+    #[tracing::instrument(
+        skip(self),
+        name = "BedrockUser::join"
+    )]
+    async fn join(&self) -> anyhow::Result<()> {
+        let handle = self.job_handle.write().take();
+        match handle {
+            Some(handle) => {
+                // Error logged by RakNet join method.
+                _ = self.raknet.join().await;
+
+                match handle.await {
+                    Ok(_) => Ok(()),
+                    Err(err) => {
+                        tracing::error!("Error occurred while awaiting Bedrock user service shutdown: {err:#?}");
+                        Ok(())
+                    }
+                }
+            },  
+            None => {
+                tracing::error!("This user service has already been joined");
+                anyhow::bail!("User service already joined");
+            }
+        }
+        
+    }
+}
+
+/// Contains data that is mostly related to the player in the vanilla game.
+/// 
+/// Unlike [`BedrockUser`], most of this data is not related to the Bedrock protocol itself.
 pub struct PlayerData {
     /// Whether the player's inventory is currently open.
     pub is_inventory_open: AtomicBool,
@@ -406,12 +462,11 @@ pub struct PlayerData {
     pub skin: RwLock<Skin>,
     /// Runtime ID.
     pub runtime_id: u64,
-    /// Helper type that loads the chunks around the player.
-    pub viewer: ChunkViewer,
 }
 
 impl PlayerData {
-    pub fn new(skin: Skin, level: Arc<Level>) -> Self {
+    /// Creates a new player data struct.
+    pub fn new(skin: Skin) -> Self {
         Self {
             is_inventory_open: AtomicBool::new(false),
             position: Vector::from([0.0, 50.0, 0.0]),
@@ -420,23 +475,26 @@ impl PlayerData {
             permission_level: PermissionLevel::Operator,
             command_permission_level: CommandPermissionLevel::Owner,
             skin: RwLock::new(skin),
-            runtime_id: 1,
-            viewer: ChunkViewer::new(level)
+            runtime_id: 1
         }
     }
 
+    /// The gamemode the player is currently in.
     pub fn gamemode(&self) -> GameMode {
         self.game_mode
     }
 
+    /// The runtime ID of the player.
     pub fn runtime_id(&self) -> u64 {
         self.runtime_id
     }
 
+    /// The permission level of the player.
     pub fn permission_level(&self) -> PermissionLevel {
         self.permission_level
     }
 
+    /// The command permission level of the player.
     pub fn command_permission_level(&self) -> CommandPermissionLevel {
         self.command_permission_level
     }
