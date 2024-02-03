@@ -164,14 +164,13 @@ LevelResult level_remove(void *database_ptr, const char *key, int key_size) {
 
 void level_deallocate_array(char *array) { delete[] array; }
 
-LevelResult level_iter(void *database) {
+SizedData level_iter(void *database) {
   auto db = reinterpret_cast<Database *>(database);
 
   leveldb::Iterator *iter = db->database->NewIterator(db->read_options);
   iter->SeekToFirst();
 
-  LevelResult result{};
-  result.status = DbStatus::Success;
+  SizedData result{};
   result.size = static_cast<int>(sizeof(leveldb::Iterator));
   result.data = iter;
 
@@ -183,12 +182,11 @@ void level_destroy_iter(void *iter_raw) {
   delete iter;
 }
 
-LevelResult level_iter_key(const void *iter_raw) {
+SizedData level_iter_key(const void *iter_raw) {
   auto iter = reinterpret_cast<const leveldb::Iterator *>(iter_raw);
   leveldb::Slice key = iter->key();
 
-  LevelResult result{};
-  result.status = DbStatus::Success;
+  SizedData result{};
   result.size = key.size();
   result.data = new char[result.size];
   memcpy(result.data, key.data(), result.size);
@@ -196,12 +194,11 @@ LevelResult level_iter_key(const void *iter_raw) {
   return result;
 }
 
-LevelResult level_iter_value(const void *iter_raw) {
+SizedData level_iter_value(const void *iter_raw) {
   auto iter = reinterpret_cast<const leveldb::Iterator *>(iter_raw);
   leveldb::Slice value = iter->value();
 
-  LevelResult result{};
-  result.status = DbStatus::Success;
+  SizedData result{};
   result.size = value.size();
   result.data = new char[result.size];
   memcpy(result.data, value.data(), result.size);

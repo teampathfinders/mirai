@@ -74,7 +74,7 @@ impl<'a> KvRef<'a> {
         unsafe {
             // `level_iter_key` does not fail.
             let result = ffi::level_iter_key(self.iter.as_ptr());
-            debug_assert_eq!(result.status, LoadStatus::Success);
+            assert!(!result.data.is_null()); // Something is very wrong if this null...
 
             Guard::from_slice(std::slice::from_raw_parts(result.data as *const u8, result.size as usize))
         }
@@ -87,7 +87,7 @@ impl<'a> KvRef<'a> {
         unsafe {
             // `level_iter_value` does not fail.
             let result = ffi::level_iter_value(self.iter.as_ptr());
-            debug_assert_eq!(result.status, LoadStatus::Success);
+            assert!(!result.data.is_null()); // Something is very wrong if this null...
 
             Guard::from_slice(std::slice::from_raw_parts(result.data as *const u8, result.size as usize))
         }
@@ -110,12 +110,7 @@ impl<'a> Keys<'a> {
         // SAFETY: level_iter is guaranteed to not return an error.
         // The iterator position has also been initialized by FFI and is not in an invalid state.
         let result = unsafe { ffi::level_iter(db.ptr.as_ptr()) };
-        debug_assert_eq!(result.status, LoadStatus::Success);
-
-        if result.data.is_null() {
-            tracing::error!("Unable to create `Keys` iterator from null pointer");
-            anyhow::bail!("Unable to create `Keys` iterator from null pointer");
-        }
+        assert!(!result.data.is_null()); // Something is very wrong if this null...
 
         Ok(Keys {
             index: 0,
