@@ -20,9 +20,9 @@ use replicator::Replicator;
 use tokio::task::JoinHandle;
 use util::{AtomicFlag, BinaryRead, BinaryWrite, Deserialize, Joinable, Serialize, Vector};
 
-use crate::command::{self};
+use crate::command;
 use crate::config::SERVER_CONFIG;
-use crate::forms::{Subscriber, SubmittableForm, self};
+use crate::forms;
 
 /// Represents a user connected to the server.
 pub struct BedrockUser {
@@ -69,7 +69,7 @@ impl BedrockUser {
             raknet,
             player: OnceLock::new(),
 
-            forms: Subscriber::new(),
+            forms: forms::Subscriber::new(),
             commands,
             
             broadcast,
@@ -85,6 +85,7 @@ impl BedrockUser {
         user
     }
 
+    /// The worker that processes incoming packets.
     async fn recv_job(self: &Arc<Self>, mut receiver: mpsc::Receiver<Vec<u8>>) {
         let mut broadcast = self.broadcast.subscribe();
 
@@ -129,7 +130,7 @@ impl BedrockUser {
     /// 
     /// In case it is more convenient to use a channel receiver instead, use the [`subscribe`](Subscriber::subscribe)
     /// method on the `forms` field of the user.
-    pub async fn send_form(&self, form: impl SubmittableForm) -> anyhow::Result<forms::Response> {
+    pub async fn send_form(&self, form: impl forms::SubmittableForm) -> anyhow::Result<forms::Response> {
         let recv = self.forms.subscribe(self, form)?;
         let resp = recv.await?;
 
@@ -149,9 +150,8 @@ impl BedrockUser {
         name = "BedrockUser::kick_with_reason",
         skip(self, message, reason)
         fields(
-            username = %self.name(),
-            reason = %message,
-            telemetry_reason = ?reason            
+            username = %self.name().unwrap_or("<unknown>"),
+            reason = %message
         )
     )]
     pub async fn kick_with_reason(&self, message: &str, reason: DisconnectReason) -> anyhow::Result<()> {
@@ -161,6 +161,7 @@ impl BedrockUser {
         self.send(disconnect_packet)?;
 
         tracing::info!("Player kicked");
+
         self.raknet.join().await
     }
 
@@ -289,6 +290,13 @@ impl BedrockUser {
     /// Handles the body of a frame.
     /// 
     /// This function does the actual processing of the content of the frame and responds to it.
+    #[tracing::instrument(
+        skip_all,
+        name = "BedrockUser::handle_frame_body"
+        fields(
+            username = self.name().unwrap_or("<unknown>")
+        )
+    )]
     async fn handle_frame_body(self: &Arc<Self>, mut packet: Vec<u8>) -> anyhow::Result<()> {
         let start_len = packet.len();
         let mut reader: &[u8] = packet.as_ref();
@@ -348,60 +356,65 @@ impl BedrockUser {
     }
 
     /// Returns the forms handler.
-    pub fn forms(&self) -> &Subscriber {
+    #[inline]
+    pub fn forms(&self) -> &forms::Subscriber {
         &self.forms
     }
 
     /// This function panics if the identity was not set.
-    pub fn identity(&self) -> &BedrockIdentity {
-        self.identity.get().unwrap()
+    #[inline]
+    pub fn identity(&self) -> anyhow::Result<&BedrockIdentity> {
+        self.identity.get().ok_or_else(|| anyhow::anyhow!("Identity unknown: user has not logged in yet"))
     }
 
     /// This function panics if the name was not set.
-    pub fn name(&self) -> &str {
-        &self.identity().name
+    #[inline]
+    pub fn name(&self) -> anyhow::Result<&str> {
+        self.identity().map(|id| id.name.as_str())
     }
 
     /// This function panics if the XUID was not set.
-    pub fn xuid(&self) -> u64 {
-        self.identity().xuid
+    #[inline]
+    pub fn xuid(&self) -> anyhow::Result<u64> {
+        self.identity().map(|id| id.xuid)
     }
 
     /// This function panics if the UUID was not set.
-    pub fn uuid(&self) -> &Uuid {
-        &self.identity().uuid
+    #[inline]
+    pub fn uuid(&self) -> anyhow::Result<&Uuid> {
+        self.identity().map(|id| &id.uuid)
     }
 
     /// This function panics if the encryptor was not set.
-    pub fn encryptor(&self) -> &Encryptor {
-        self.encryptor.get().unwrap()
+    #[inline]
+    pub fn encryptor(&self) -> anyhow::Result<&Encryptor> {
+        self.encryptor.get().ok_or_else(|| anyhow::anyhow!("Encryption handshake has not been performed yet"))
     }
 
     /// Returns the next expected packet for this session.
     /// The expected packet will be [`u32::MAX`] if the user is fully
     /// initialized and therefore doesn't follow a strict packet order anymore.
+    #[inline]
     pub fn expected(&self) -> u32 {
         self.expected.load(Ordering::SeqCst)
     }
 
     /// Returns whether the user is fully initialized.
+    #[inline]
     pub fn initialized(&self) -> bool {
         self.expected() == u32::MAX
     }
 
     /// This functions panic if the player data was not initialized.
-    pub fn player(&self) -> &PlayerData {
-        self.player.get().unwrap()
+    pub fn player(&self) -> anyhow::Result<&PlayerData> {
+        self.player.get().ok_or_else(|| anyhow::anyhow!("Player data unavailable"))
     }
 }
 
 impl Joinable for BedrockUser {
     #[tracing::instrument(
         skip(self),
-        name = "BedrockUser::join",
-        fields(
-            username = %self.name()
-        )
+        name = "BedrockUser::join"
     )]
     async fn join(&self) -> anyhow::Result<()> {
         let handle = self.job_handle.write().take();

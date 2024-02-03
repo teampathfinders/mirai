@@ -72,7 +72,7 @@ impl BedrockUser {
 
             self.broadcast(TextMessage {
                 data: TextData::Translation {
-                    parameters: vec![&format!("§e{}", self.name())],
+                    parameters: vec![&format!("§e{}", self.name()?)],
                     message: "multiplayer.player.joined"
                     // message: &format!("§e{} has joined the server.", identity_data.display_name),
                 },
@@ -120,7 +120,7 @@ impl BedrockUser {
         let start_game = StartGame {
             entity_id: 1,
             runtime_id: 1,
-            game_mode: self.player().gamemode(),
+            game_mode: self.player()?.gamemode(),
             position: Vector::from([0.0, 60.0, 0.0]),
             rotation: Vector::from([0.0, 0.0]),
             world_seed: 0,
@@ -241,6 +241,8 @@ impl BedrockUser {
         self.send(response)?;
 
         // TODO: Implement resource packs
+        // FIXME: Sometimes these two packets might be sent in different ticks instead of being batched together.
+        // This will result in the client sending a resource pack response which we do not want.
         let pack_info = ResourcePacksInfo {
             required: false,
             scripting_enabled: false,

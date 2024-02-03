@@ -2,7 +2,7 @@
 
 use std::sync::Arc;
 
-use proto::bedrock::{Animate, CommandRequest, FormResponseData, RequestAbility, SettingsCommand, TextData, TextMessage, TickSync, UpdateSkin, PlayerAuthInput};
+use proto::bedrock::{Animate, CommandRequest, DisconnectReason, FormResponseData, PlayerAuthInput, RequestAbility, SettingsCommand, TextData, TextMessage, TickSync, UpdateSkin};
 
 use util::Deserialize;
 
@@ -30,34 +30,36 @@ impl BedrockUser {
     }
 
     /// Handles a [`TextMessage`] packet sent when a client wants to send a chat message.
+    #[tracing::instrument(
+        skip_all,
+        name = "BedrockUser::handle_text_message"
+        fields(
+            username = %self.name().unwrap_or("<unknown>"),
+            msg
+        )
+    )]
     pub async fn handle_text_message(self: &Arc<Self>, packet: Vec<u8>) -> anyhow::Result<()> {
         let request = TextMessage::deserialize(packet.as_ref())?;
         if let TextData::Chat {
-            source, ..
+            source, message
         } = request.data {
+            tracing::Span::current().record("msg", message);
+
+            let name = self.name()?;
             // Check that the source is equal to the player name to prevent spoofing.
-            if self.name() != source {
-                self.kick("Illegal packet modifications detected").await?;
-                anyhow::bail!(
-                    "Client attempted to spoof chat username. (actual: `{}`, spoofed: `{}`)",
-                    self.name(), source
-                );
+            if name == source {
+                tracing::warn!("Client and text message name do not match. Kicking them for forbidden modifications");
+                return self.kick_with_reason("Illegal packet modifications detected", DisconnectReason::BadPacket).await
             }
-
-            self.kick("test").await?;
-
-            // Send chat message to replication layer
-            self.replicator.text_msg(&request).await?;
 
             // We must also return the packet to the client that sent it.
             // Otherwise their message won't be displayed in their own chat.
             self.broadcast(request)
         } else {
             // Only the server is allowed to create text raknet that are not of the chat type.
-            anyhow::bail!("Client sent an illegally modified text message packet")
+            tracing::warn!("Client sent an illegal message type. Kicking them for forbidden modifications");
+            self.kick_with_reason("Illegal packet received", DisconnectReason::BadPacket).await
         }
-
-
     }
 
     /// Handles a [`PlayerAuthInput`] packet. These are sent every tick and are used
