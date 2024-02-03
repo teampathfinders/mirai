@@ -1,5 +1,5 @@
 use dashmap::DashMap;
-use proto::raknet::AckRecord;
+use proto::raknet::AckEntry;
 
 use crate::FrameBatch;
 
@@ -15,8 +15,8 @@ pub struct Recovery {
 
 impl Recovery {
     /// Creates a new recovery queue.
-    pub fn new() -> Self {
-        Default::default()
+    pub fn new() -> Recovery {
+        Recovery::default()
     }
 
     /// Inserts a frame batch into the queue.
@@ -30,13 +30,13 @@ impl Recovery {
     /// Removes the specified raknet from the recovery queue.
     ///
     /// This method should be called when an ACK is received.
-    pub fn acknowledge(&self, records: &[AckRecord]) {
+    pub fn acknowledge(&self, records: &[AckEntry]) {
         for record in records {
             match record {
-                AckRecord::Single(id) => {
+                AckEntry::Single(id) => {
                     self.frames.remove(id);
                 }
-                AckRecord::Range(range) => {
+                AckEntry::Range(range) => {
                     for id in range.clone() {
                         self.frames.remove(&id);
                     }
@@ -48,16 +48,16 @@ impl Recovery {
     /// Recovers the specified raknet from the recovery queue.
     ///
     /// This method should be called when a NAK is received.
-    pub fn recover(&self, records: &[AckRecord]) -> Vec<FrameBatch> {
+    pub fn recover(&self, records: &[AckEntry]) -> Vec<FrameBatch> {
         let mut recovered = Vec::new();
         for record in records {
             match record {
-                AckRecord::Single(id) => {
+                AckEntry::Single(id) => {
                     if let Some(frame) = self.frames.remove(id) {
                         recovered.push(frame.1);
                     }
                 }
-                AckRecord::Range(range) => {
+                AckEntry::Range(range) => {
                     recovered.reserve(range.len());
                     for id in range.clone() {
                         if let Some(frame) = self.frames.remove(&id) {

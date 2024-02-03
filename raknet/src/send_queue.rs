@@ -38,8 +38,9 @@ pub struct SendQueues {
 
 impl SendQueues {
     /// Creates a new send queue.
-    pub fn new() -> Self {
-        Default::default()
+    #[inline]
+    pub fn new() -> SendQueues {
+        SendQueues::default()
     }
 
     /// Whether all three priority queues are completely empty.
@@ -47,12 +48,13 @@ impl SendQueues {
     pub fn is_empty(&self) -> bool {
         let empty = self.is_empty.load(Ordering::SeqCst);
 
+        #[cfg(debug_assertions)]
         {
             let hp = self.high_priority.lock().is_empty();
             let mp = self.medium_priority.lock().is_empty();
             let lp = self.low_priority.lock().is_empty();
 
-            debug_assert_eq!(hp && mp && lp, empty);
+            debug_assert_eq!(hp && mp && lp, empty, "Empty status does not reflect actual state");
         }
 
         empty

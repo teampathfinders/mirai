@@ -18,14 +18,21 @@ impl RaknetUser {
     ///
     /// If a packet is an ACK or NACK type, it will be responded to accordingly (using [`Session::process_ack`] and [`Session::process_nak`]).
     /// Frame batches are processed by [`Session::process_frame_batch`].
+    #[tracing::instrument(
+        skip_all,
+        name = "RaknetUser::handle_raw_packet",
+        fields(
+            address = %self.address
+        )
+    )]
     pub async fn handle_raw_packet(&self, packet: Vec<u8>) -> anyhow::Result<bool> {
         *self.last_update.write() = Instant::now();
 
-        if packet.is_empty() {
-            anyhow::bail!("Packet is empty");
-        }
+        let Some(pk_id) = packet.first().copied() else {
+            tracing::error!("Received raw packet is empty");
+            anyhow::bail!("Raw packet is empty");
+        };  
 
-        let pk_id = *packet.first().unwrap();
         match pk_id {
             Ack::ID => self.handle_ack(packet.as_ref())?,
             Nak::ID => self.handle_nack(packet.as_ref()).await?,
@@ -89,13 +96,19 @@ impl RaknetUser {
         // Sequenced implies ordered
         if frame.reliability.is_ordered() || frame.reliability.is_sequenced() {
             // Add packet to order queue
-            if let Some(ready) = self.order[frame.order_channel as usize]
+            if let Ok(ready) = self.order[frame.order_channel as usize]
                 .insert(frame)
             {
-                for packet in ready {
-                    self.handle_frame_body(packet.body).await?;
+                if let Some(ready) = ready {
+                    for packet in ready {
+                        self.handle_frame_body(packet.body).await?;
+                    }
                 }
+            } else {
+                tracing::error!("Failed to insert packet into order channel");
+                anyhow::bail!("Failed to insert packet into order channel");
             }
+
             return Ok(());
         }
 
@@ -104,7 +117,10 @@ impl RaknetUser {
 
     /// Processes an unencapsulated game packet.
     async fn handle_frame_body(&self, packet: Vec<u8>) -> anyhow::Result<()> {
-        let packet_id = *packet.first().expect("Game packet buffer was empty");
+        let Some(packet_id) = packet.first().copied() else {
+            tracing::error!("Received packet is empty");
+            anyhow::bail!("Packet was empty");
+        };
 
         match packet_id {
             // CONNECTED_PACKET_ID => self.handle_encrypted_frame(packet).await?,

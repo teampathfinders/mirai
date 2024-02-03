@@ -53,7 +53,7 @@ impl ItemStack {
         // }
 
         writer.write_var_u32(extra_writer.len() as u32)?;
-        writer.write_all(&extra_writer.as_ref())?;
+        writer.write_all(extra_writer.as_ref())?;
 
         Ok(())
     }

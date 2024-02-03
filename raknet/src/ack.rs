@@ -23,6 +23,7 @@ impl RaknetUser {
     ///
     /// This function makes sure the packet is retrieved from the recovery queue and sent to the
     /// client again.
+    #[allow(clippy::future_not_send)]
     pub async fn handle_nack<'a, R: BinaryRead<'a>>(&self, reader: R) -> anyhow::Result<()> {
         let nack = Nak::deserialize(reader)?;
         let frame_batches = self.recovery.recover(&nack.records);

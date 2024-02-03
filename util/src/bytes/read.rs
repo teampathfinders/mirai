@@ -2,8 +2,7 @@ use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr};
 
 use paste::paste;
 
-use crate::{BlockPosition, Deserialize};
-use crate::{u24::u24, Vector};
+use crate::{BlockPosition, Deserialize, Vector};
 
 /// Implements the read functions for integer primitives.
 macro_rules! declare_primitive_fns {
@@ -42,7 +41,7 @@ macro_rules! declare_primitive_fns {
 
 /// Adds binary reading capabilities to a reader.
 pub trait BinaryRead<'a>: AsRef<[u8]> {
-    declare_primitive_fns!(u16, i16, u24, u32, i32, u64, i64, u128, i128, f32, f64);
+    declare_primitive_fns!(u16, i16, u32, i32, u64, i64, u128, i128, f32, f64);
 
     /// Consumes `n` bytes.
     fn advance(&mut self, n: usize) -> anyhow::Result<()>;
@@ -88,6 +87,42 @@ pub trait BinaryRead<'a>: AsRef<[u8]> {
     #[inline]
     fn read_i8(&mut self) -> anyhow::Result<i8> {
         Ok(self.take_const::<1>()?[0] as i8)
+    }
+
+    /// Reads a little endian `u24` from the reader without advancing the cursor.
+    #[inline]
+    fn read_u24_le(&mut self) -> anyhow::Result<u32> {
+        let bytes = self.take_const::<3>()?;
+        let val = u32::from_le_bytes([0, bytes[0], bytes[1], bytes[2]]);
+        
+        Ok(val)
+    }
+
+    /// Reads a big endian `u24` from the reader.
+    #[inline]
+    fn read_u24_be(&mut self) -> anyhow::Result<u32> {
+        let bytes = self.take_const::<3>()?;
+        let val = u32::from_be_bytes([bytes[0], bytes[1], bytes[2], 0]);
+
+        Ok(val)
+    }
+
+    /// Reads a little endian `u24` from the reader without advancing the cursor.
+    #[inline]
+    fn peek_u24_le(&self) -> anyhow::Result<u32> {
+        let bytes = self.peek_const::<3>()?;
+        let val = u32::from_le_bytes([0, bytes[0], bytes[1], bytes[2]]);
+
+        Ok(val)
+    }
+
+    /// Reads a big endian `u24` from the reader without advancing the cursor.
+    #[inline]
+    fn peek_u24_be(&self) -> anyhow::Result<u32> {
+        let bytes = self.peek_const::<3>()?;
+        let val = u32::from_be_bytes([bytes[0], bytes[1], bytes[2], 0]);
+
+        Ok(val)
     }
 
     /// Reads a variable size [`u32`] from the reader.

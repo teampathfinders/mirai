@@ -85,7 +85,7 @@ impl Replicator {
             .context("Unable to cache player XUID")
     }
 
-    pub async fn move_player(&self, _xuid: u64, _data: &MovePlayer) -> anyhow::Result<()> {
+    pub fn move_player(&self, _xuid: u64, _data: &MovePlayer) -> anyhow::Result<()> {
         todo!()
 
         // let mut buf = Vec::with_capacity(6 * 4 + 8);

@@ -12,7 +12,7 @@ pub struct CacheBlob<'a> {
 impl<'a> CacheBlob<'a> {
     pub fn serialize_into<W: BinaryWrite>(&self, writer: &mut W) -> anyhow::Result<()> {
         writer.write_u64_le(self.hash)?;
-        writer.write_all(&self.payload)?;
+        writer.write_all(self.payload)?;
 
         Ok(())
     }
@@ -20,5 +20,10 @@ impl<'a> CacheBlob<'a> {
     #[inline]
     pub const fn len(&self) -> usize {
         8 + self.payload.len()
+    }
+
+    #[inline]
+    pub const fn is_empty(&self) -> bool {
+        self.len() == 0
     }
 }

@@ -1,7 +1,7 @@
 use std::sync::atomic::Ordering;
 
 use async_recursion::async_recursion;
-use proto::raknet::{Ack, AckRecord};
+use proto::raknet::{Ack, AckEntry};
 
 use util::Serialize;
 
@@ -122,9 +122,9 @@ impl RaknetUser {
             if !is_last && id + 1 == confirmed[index + 1] {
                 consecutive.push(*id);
             } else if consecutive.is_empty() {
-                records.push(AckRecord::Single(*id));
+                records.push(AckEntry::Single(*id));
             } else {
-                records.push(AckRecord::Range(consecutive[0]..*id));
+                records.push(AckEntry::Range(consecutive[0]..*id));
                 consecutive.clear();
             }
         }
@@ -198,6 +198,7 @@ impl RaknetUser {
                 has_reliable_packet = true;
             }
 
+            #[allow(clippy::unwrap_used)]
             if batch.size_hint().unwrap() + frame_size <= self.mtu as usize {
                 batch.frames.push(frame);
             } else if !batch.is_empty() {
@@ -259,7 +260,7 @@ impl RaknetUser {
         let mut compound = Vec::with_capacity(compound_size);
         let chunks = frame.body.chunks(chunk_max_size);
 
-        debug_assert_eq!(chunks.len(), compound_size);
+        debug_assert_eq!(chunks.len(), compound_size, "Chunk count does not match compound size");
 
         let compound_id =
             self.compound_index.fetch_add(1, Ordering::SeqCst);

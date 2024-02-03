@@ -80,6 +80,8 @@ impl RaknetUser {
         broadcast: broadcast::Sender<BroadcastPacket>,
         forward_rx: mpsc::Receiver<Vec<u8>>
     ) -> (Arc<Self>, mpsc::Receiver<Vec<u8>>) {
+        // SAFETY: MaybeUninit does not require initialization, so it is safe to create an array
+        // of them like this.
         let mut order_channels: [MaybeUninit<OrderChannel>; ORDER_CHANNEL_COUNT] = unsafe {
             MaybeUninit::uninit().assume_init()
         };
@@ -88,6 +90,8 @@ impl RaknetUser {
             channel.write(OrderChannel::new());
         }
 
+        // SAFETY: This is safe because `MaybeUninit<T>` has the same memory layout as `T`.
+        // It is safe to transmute between them.
         let order_channels = unsafe { 
             std::mem::transmute::<
                 [MaybeUninit<OrderChannel>; ORDER_CHANNEL_COUNT], 
@@ -118,7 +122,7 @@ impl RaknetUser {
             job_handle: RwLock::new(None)
         });
 
-        let handle = tokio::spawn(state.clone().async_job(forward_rx));
+        let handle = tokio::spawn(Arc::clone(&state).async_job(forward_rx));
         *state.job_handle.write() = Some(handle);
     
         (state, output_rx)
@@ -143,27 +147,24 @@ impl Joinable for RaknetUser {
     )]
     async fn join(&self) -> anyhow::Result<()> {
         let handle = self.job_handle.write().take();
-        match handle {
-            Some(handle) => {
-                // self.disconnect();
-                match self.flush_all().await {
-                    Ok(_) => (),
-                    Err(e) => tracing::error!("Failed to flush last packets before shutdown: {e:#?}")
-                }
-
-                self.active.cancel();
-                match handle.await {
-                    Ok(_) => Ok(()),
-                    Err(err) => {
-                        tracing::error!("Error occurred while awaiting RakNet user service shutdown: {err:#?}");
-                        Ok(())
-                    }
-                }
-            },
-            None => {
-                tracing::error!("This RakNet user service has already been joined");
-                anyhow::bail!("RakNet user service already joined");
+        if let Some(handle) = handle {
+            // self.disconnect();
+            match self.flush_all().await {
+                Ok(_) => (),
+                Err(e) => tracing::error!("Failed to flush last packets before shutdown: {e:#?}")
             }
+
+            self.active.cancel();
+            match handle.await {
+                Ok(_) => Ok(()),
+                Err(err) => {
+                    tracing::error!("Error occurred while awaiting RakNet user service shutdown: {err:#?}");
+                    Ok(())
+                }
+            }
+        } else {
+            tracing::error!("This RakNet user service has already been joined");
+            anyhow::bail!("RakNet user service already joined");
         }
     }
 }

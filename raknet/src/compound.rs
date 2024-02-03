@@ -12,40 +12,41 @@ pub struct Compounds {
 
 impl Compounds {
     /// Creates a new collector.
-    pub fn new() -> Self {
-        Self { compounds: DashMap::new() }
+    pub fn new() -> Compounds {
+        Compounds { compounds: DashMap::new() }
     }
 
     /// Inserts a fragment into the collector.
     ///
     /// If this fragment makes the compound complete, all fragments will be merged
     /// and the completed packet will be returned.
+    #[allow(clippy::unwrap_used)] // Checks are performed before unwrapping.
+    #[allow(clippy::unwrap_in_result)]
+    #[allow(clippy::significant_drop_tightening)] // False positive.
+    #[allow(clippy::missing_panics_doc)] // Function should not panic.
     pub fn insert(&self, frame: Frame) -> anyhow::Result<Option<Frame>> {
         // Save compound_id, because the frame will be moved.
         let compound_id = frame.compound_id;
         let is_completed = {
-            let mut entry =
-                self.compounds.entry(frame.compound_id).or_insert_with(|| {
-                    let mut vec =
-                        Vec::with_capacity(frame.compound_size as usize);
-
-                    // resize_with instead of resize, because Frame and therefore Option<Frame>
-                    // does not implement Clone.
-                    vec.resize_with(frame.compound_size as usize, || None);
-                    vec
-                });
-
-            let fragments = entry.value_mut();
-
-            // Verify that the fragment index is valid
             if frame.compound_index >= frame.compound_size {
-                return Ok(None);
+                return Ok(None)
             }
 
             // Save compound_index, because frame is moved by the Some constructor.
             let compound_index = frame.compound_index as usize;
+
+            let mut entry = self.compounds.entry(frame.compound_id).or_insert_with(|| {
+                let mut vec = Vec::with_capacity(frame.compound_size as usize);
+
+                // resize_with instead of resize, because Frame does not implement Clone
+                vec.resize_with(frame.compound_size as usize, || None);
+                vec
+            });
+
+            let fragments = entry.value_mut();
             fragments[compound_index] = Some(frame);
 
+            // Verify that the fragment index is valid
             !fragments.iter().any(Option::is_none)
         };
 
@@ -53,7 +54,7 @@ impl Compounds {
             let mut kv = self
                 .compounds
                 .remove(&compound_id)
-                .expect("Compound ID was not found in collector");
+                .unwrap();
 
             let fragments = &mut kv.1;
 
