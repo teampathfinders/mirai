@@ -1,7 +1,7 @@
 
 
 use std::sync::atomic::Ordering;
-use proto::bedrock::{BiomeDefinitionList, BroadcastIntent, CacheStatus, ChatRestrictionLevel, ChunkRadiusReply, ChunkRadiusRequest, CLIENT_VERSION_STRING, ClientToServerHandshake, CreativeContent, Difficulty, DISCONNECTED_LOGIN_FAILED, GameMode, Login, NETWORK_VERSION, NetworkSettings, PermissionLevel, PlayerMovementSettings, PlayerMovementType, PlayStatus, PropertyData, RequestNetworkSettings, ResourcePackClientResponse, ResourcePacksInfo, ResourcePackStack, ServerToClientHandshake, SetLocalPlayerAsInitialized, SpawnBiomeType, StartGame, Status, TextData, TextMessage, ViolationWarning, WorldGenerator, ConnectedPacket};
+use proto::bedrock::{BiomeDefinitionList, BroadcastIntent, CacheStatus, ChatRestrictionLevel, ChunkRadiusReply, ChunkRadiusRequest, ClientToServerHandshake, ConnectedPacket, CreativeContent, Difficulty, DisconnectReason, GameMode, Login, NetworkSettings, PermissionLevel, PlayStatus, PlayerMovementSettings, PlayerMovementType, PropertyData, RequestNetworkSettings, ResourcePackClientResponse, ResourcePackStack, ResourcePacksInfo, ServerToClientHandshake, SetLocalPlayerAsInitialized, SpawnBiomeType, StartGame, Status, TextData, TextMessage, ViolationWarning, WorldGenerator, CLIENT_VERSION_STRING, NETWORK_VERSION};
 use proto::crypto::Encryptor;
 use proto::types::Dimension;
 
@@ -266,38 +266,43 @@ impl BedrockUser {
     }
 
     /// Handles a [`Login`] packet.
+    #[tracing::instrument(
+        skip_all,
+        name = "BedrockUser::handle_login",
+        fields(
+            username
+        )
+    )]
     pub async fn handle_login(&self, packet: Vec<u8>) -> anyhow::Result<()> {
         self.expected.store(ClientToServerHandshake::ID, Ordering::SeqCst);
 
-        let request = Login::deserialize(packet.as_ref());
-        let request = match request {
-            Ok(r) => r,
-            Err(e) => {
-                self.kick(DISCONNECTED_LOGIN_FAILED).await?;
-                return Err(e);
-            }
+        let request = if let Ok(request) = Login::deserialize(packet.as_ref()) {
+            request
+        } else {
+            // Kick the player when login fails. This is for security reasons.
+            // An error during login could mean the user is trying to impersonate someone else.
+            self.kick_with_reason("Login failed", DisconnectReason::BadPacket).await?;
+            anyhow::bail!("Client failed to login")
         };
+
+        tracing::Span::current().record("username", &request.identity.name);
 
         self.replicator.save_session(request.identity.xuid, &request.identity.name).await?;
 
         let (encryptor, jwt) = Encryptor::new(&request.identity.public_key)?;
-
-        tracing::debug!("Identity verified as {}", request.identity.name);
-
+        
         self.identity.set(request.identity).unwrap();
         self.client_info.set(request.client_info).unwrap();
 
-        // Flush raknet before enabling encryption
+        // Flush unencrypted packets in queue before enabling encryption
         self.raknet.flush().await?;
-
-        tracing::debug!("Initiating encryption");
 
         self.send(ServerToClientHandshake { jwt: &jwt })?;
         if self.encryptor.set(encryptor).is_err() {
             // Client sent a second login packet?
             // Something is wrong, disconnect the client.
-            tracing::error!("Client sent a second login packet.");
-            self.kick("Invalid packet").await?;
+            tracing::warn!("Client unexpectedly sent a second login packet");
+            return self.kick_with_reason("Unexpected login", DisconnectReason::UnexpectedPacket).await
         }
 
         if self.player.set(PlayerData::new(request.skin)).is_err() {

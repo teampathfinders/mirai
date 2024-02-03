@@ -4,8 +4,7 @@ use jsonwebtoken::{Algorithm, DecodingKey, Validation};
 use p384::pkcs8::spki;
 use uuid::Uuid;
 
-use util::{BinaryRead};
-use util::{bail, error, Result};
+use util::{bail, error, Result, BinaryRead};
 
 use crate::bedrock::Skin;
 use crate::bedrock::{DeviceOS, UiProfile};
@@ -97,6 +96,10 @@ pub struct UserDataTokenPayload {
 /// First token in the chain holds the client's self-signed public key in the X5U.
 /// It is extracted from the header of the token and used to verify its signature.
 /// The payload of the token contains a new key which is used to verify the next token.
+#[tracing::instrument(
+    skip_all,
+    name = "crypto::parse_initial_token"
+)]
 fn parse_initial_token(token: &str) -> anyhow::Result<String> {
     // Decode JWT header to get X5U.
     let header = jsonwebtoken::decode_header(token)?;
@@ -106,7 +109,10 @@ fn parse_initial_token(token: &str) -> anyhow::Result<String> {
     // Public key that can be used to verify the token.
     let public_key = match spki::SubjectPublicKeyInfoRef::try_from(bytes.as_ref()) {
         Ok(p) => p,
-        Err(e) => bail!(Malformed, "Invalid client public key: {e}"),
+        Err(e) => {
+            tracing::warn!("The first public key received during login is invalid");
+            anyhow::bail!("Invalid client public key: {e}")
+        }
     };
 
     let decoding_key = DecodingKey::from_ec_der(public_key.subject_public_key.raw_bytes());
@@ -121,11 +127,18 @@ fn parse_initial_token(token: &str) -> anyhow::Result<String> {
 /// The second token in the chain can be verified using Mojang's public key
 /// (or the identityPublicKey from the previous token).
 /// This token contains another identityPublicKey which is the public key for the third token.
+#[tracing::instrument(
+    skip_all,
+    name = "crypto::parse_mojang_token"
+)]
 fn parse_mojang_token(token: &str, key: &str) -> anyhow::Result<String> {
     let bytes = BASE64_ENGINE.decode(key)?;
     let public_key = match spki::SubjectPublicKeyInfoRef::try_from(bytes.as_ref()) {
         Ok(p) => p,
-        Err(e) => bail!(Malformed, "Invalid client public key: {e}"),
+        Err(e) => {
+            tracing::warn!("The second public key received during login is invalid");
+            anyhow::bail!("Invalid client public key: {e}")
+        }
     };
 
     let decoding_key = DecodingKey::from_ec_der(public_key.subject_public_key.raw_bytes());
@@ -143,11 +156,18 @@ fn parse_mojang_token(token: &str, key: &str) -> anyhow::Result<String> {
 /// The extraData field contains the XUID, client identity (UUID) and the display name.
 ///
 /// Just like the second one, this token can be verified using the identityPublicKey from the last token.
+#[tracing::instrument(
+    skip_all,
+    name = "crypto::parse_identity_token"
+)]
 fn parse_identity_token(token: &str, key: &str) -> anyhow::Result<IdentityTokenPayload> {
     let bytes = BASE64_ENGINE.decode(key)?;
     let public_key = match spki::SubjectPublicKeyInfoRef::try_from(bytes.as_ref()) {
         Ok(p) => p,
-        Err(e) => bail!(Malformed, "Invalid client public key: {e}"),
+        Err(e) => {
+            tracing::warn!("The third public key received during login is invalid");
+            anyhow::bail!("Invalid client public key: {e}")
+        }
     };
 
     let decoding_key = DecodingKey::from_ec_der(public_key.subject_public_key.raw_bytes());
@@ -162,11 +182,18 @@ fn parse_identity_token(token: &str, key: &str) -> anyhow::Result<IdentityTokenP
 }
 
 /// Verifies and decodes the user data token.
+#[tracing::instrument(
+    skip_all,
+    name = "crypto::parse_user_data_token"
+)]
 fn parse_user_data_token(token: &str, key: &str) -> anyhow::Result<UserDataTokenPayload> {
     let bytes = BASE64_ENGINE.decode(key)?;
     let public_key = match spki::SubjectPublicKeyInfoRef::try_from(bytes.as_ref()) {
         Ok(p) => p,
-        Err(e) => bail!(Malformed, "Invalid client public key: {e}"),
+        Err(e) => {
+            tracing::warn!("User data token public key is invalid");
+            anyhow::bail!("Invalid client public key: {e}")
+        }
     };
 
     let decoding_key = DecodingKey::from_ec_der(public_key.subject_public_key.raw_bytes());
@@ -191,7 +218,8 @@ pub fn parse_identity_data<'a, R: BinaryRead<'a>>(reader: &mut R) -> anyhow::Res
     let identity_data = match tokens.chain.len() {
         1 => {
             // Client is not signed into Xbox.
-            bail!(NotAuthenticated, "User must be authenticated with Microsoft services.");
+            tracing::warn!("User is not authenticated with Microsoft services");
+            anyhow::bail!("User must be authenticated with Microsoft services");
         }
         3 => {
             // Verify the first token and decode the public key for the next token.
@@ -199,13 +227,17 @@ pub fn parse_identity_data<'a, R: BinaryRead<'a>>(reader: &mut R) -> anyhow::Res
             // token was signed by Mojang.
             let mut key = parse_initial_token(&tokens.chain[0])?;
             if !key.eq(MOJANG_PUBLIC_KEY) {
-                bail!(Malformed, "Identity token was not signed by Mojang");
+                tracing::warn!("Attempt to login using a token that was not created by Mojang");
+                anyhow::bail!("Identity token was not signed by Mojang");
             }
 
             key = parse_mojang_token(&tokens.chain[1], &key)?;
             parse_identity_token(&tokens.chain[2], &key)?
         }
-        _ => bail!(Malformed, "Unexpected token count {}, expected 3", tokens.chain.len()),
+        len => {
+            tracing::error!("Received invalid amount of tokens. Got {len}, expected 3");
+            anyhow::bail!("Received invalid amount of tokens. Got {len}, expected 3")
+        }
     };
 
     Ok(identity_data)

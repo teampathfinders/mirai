@@ -2,11 +2,8 @@ use level::PaletteEntry;
 use nohash_hasher::BuildNoHashHasher;
 use proto::bedrock::ItemStack;
 use serde::Deserialize;
-use std::{
-    collections::HashMap,
-};
+use std::collections::HashMap;
 use tokio_util::bytes::Buf;
-
 
 // pub static RUNTIME_ID_DATA: LazyResult<RuntimeIdMap> = LazyResult::new(RuntimeIdMap::new);
 // pub static BLOCK_STATE_DATA: LazyResult<BlockStateMap> = LazyResult::new(BlockStateMap::new);

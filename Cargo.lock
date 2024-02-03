@@ -1001,6 +1001,7 @@ dependencies = [
  "serde_json",
  "serde_repr",
  "sha2",
+ "tracing",
  "uuid 1.7.0",
 ]
 

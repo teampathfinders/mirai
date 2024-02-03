@@ -16,10 +16,7 @@ use util::{Deserialize, Joinable, ReserveTo, Serialize};
 use crate::command::{self};
 use crate::config::SERVER_CONFIG;
 use crate::net::{ForwardablePacket, UserMap};
-use proto::bedrock::{
-    CompressionAlgorithm,
-    CLIENT_VERSION_STRING, NETWORK_VERSION,
-};
+use proto::bedrock::{CompressionAlgorithm, CLIENT_VERSION_STRING, NETWORK_VERSION};
 use proto::raknet::{
     IncompatibleProtocol, OpenConnectionReply1, OpenConnectionReply2, OpenConnectionRequest1, OpenConnectionRequest2, UnconnectedPing,
     UnconnectedPong, RAKNET_VERSION,
