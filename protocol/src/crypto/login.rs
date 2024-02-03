@@ -102,15 +102,28 @@ pub struct UserDataTokenPayload {
 )]
 fn parse_initial_token(token: &str) -> anyhow::Result<String> {
     // Decode JWT header to get X5U.
-    let header = jsonwebtoken::decode_header(token)?;
-    let base64 = header.x5u.ok_or_else(|| anyhow!("Missing X.509 certificate URL (x5u)"))?;
+    let header = match jsonwebtoken::decode_header(token) {
+        Ok(header) => header,
+        Err(err) => {
+            tracing::error!("Unable to parse initial JWT header | {err:#}");
+            anyhow::bail!("Unable to parse initial JWT header | {err:#}");
+        }
+    };
+
+    let base64 = if let Some(x5u) = header.x5u {
+        x5u
+    } else {
+        tracing::error!("Missing X.509 certificate in initial JWT");
+        anyhow::bail!("Missing X.509 certificate in initial JWT");
+    };
+
     let bytes = BASE64_ENGINE.decode(base64)?;
 
     // Public key that can be used to verify the token.
     let public_key = match spki::SubjectPublicKeyInfoRef::try_from(bytes.as_ref()) {
         Ok(p) => p,
         Err(e) => {
-            tracing::warn!("The first public key received during login is invalid");
+            tracing::error!("The first public key received during login is invalid");
             anyhow::bail!("Invalid client public key: {e}")
         }
     };
@@ -120,7 +133,14 @@ fn parse_initial_token(token: &str) -> anyhow::Result<String> {
     validation.validate_exp = true;
     validation.validate_nbf = true;
 
-    let payload = jsonwebtoken::decode::<KeyTokenPayload>(token, &decoding_key, &validation)?;
+    let payload = match jsonwebtoken::decode::<KeyTokenPayload>(token, &decoding_key, &validation) {
+        Ok(payload) => payload,
+        Err(err) => {
+            tracing::error!("Unable to decode initial JWT | {err:#}");
+            anyhow::bail!("Unable to decode initial JWT | {err:#}");
+        }
+    };
+
     Ok(payload.claims.public_key)
 }
 
@@ -136,7 +156,7 @@ fn parse_mojang_token(token: &str, key: &str) -> anyhow::Result<String> {
     let public_key = match spki::SubjectPublicKeyInfoRef::try_from(bytes.as_ref()) {
         Ok(p) => p,
         Err(e) => {
-            tracing::warn!("The second public key received during login is invalid");
+            tracing::error!("The second public key received during login is invalid");
             anyhow::bail!("Invalid client public key: {e}")
         }
     };
@@ -147,7 +167,13 @@ fn parse_mojang_token(token: &str, key: &str) -> anyhow::Result<String> {
     validation.validate_nbf = true;
     validation.validate_exp = true;
 
-    let payload = jsonwebtoken::decode::<KeyTokenPayload>(token, &decoding_key, &validation)?;
+    let payload = match jsonwebtoken::decode::<KeyTokenPayload>(token, &decoding_key, &validation) {
+        Ok(payload) => payload,
+        Err(err) => {
+            tracing::error!("Unable to decode second JWT | {err:#}");
+            anyhow::bail!("Unable to decode second JWT | {err:#}")
+        }
+    };
 
     Ok(payload.claims.public_key)
 }
@@ -165,7 +191,7 @@ fn parse_identity_token(token: &str, key: &str) -> anyhow::Result<IdentityTokenP
     let public_key = match spki::SubjectPublicKeyInfoRef::try_from(bytes.as_ref()) {
         Ok(p) => p,
         Err(e) => {
-            tracing::warn!("The third public key received during login is invalid");
+            tracing::error!("The third public key received during login is invalid");
             anyhow::bail!("Invalid client public key: {e}")
         }
     };
@@ -176,7 +202,13 @@ fn parse_identity_token(token: &str, key: &str) -> anyhow::Result<IdentityTokenP
     validation.validate_nbf = true;
     validation.validate_exp = true;
 
-    let payload = jsonwebtoken::decode::<IdentityTokenPayload>(token, &decoding_key, &validation)?;
+    let payload = match jsonwebtoken::decode::<IdentityTokenPayload>(token, &decoding_key, &validation) {
+        Ok(payload) => payload,
+        Err(err) => {
+            tracing::error!("Unable to decode identity JWT | {err:#}");
+            anyhow::bail!("Unable to decode identity JWT | {err:#}")
+        }
+    };
 
     Ok(payload.claims)
 }
@@ -191,7 +223,7 @@ fn parse_user_data_token(token: &str, key: &str) -> anyhow::Result<UserDataToken
     let public_key = match spki::SubjectPublicKeyInfoRef::try_from(bytes.as_ref()) {
         Ok(p) => p,
         Err(e) => {
-            tracing::warn!("User data token public key is invalid");
+            tracing::error!("User data token public key is invalid");
             anyhow::bail!("Invalid client public key: {e}")
         }
     };
@@ -202,7 +234,13 @@ fn parse_user_data_token(token: &str, key: &str) -> anyhow::Result<UserDataToken
     // No special header data include in this token, don't verify anything.
     validation.required_spec_claims.clear();
 
-    let payload = jsonwebtoken::decode::<UserDataTokenPayload>(token, &decoding_key, &validation)?;
+    let payload = match jsonwebtoken::decode::<UserDataTokenPayload>(token, &decoding_key, &validation) {
+        Ok(payload) => payload,
+        Err(err) => {
+            tracing::error!("Unable to decode user data JWT | {err:#}");
+            anyhow::bail!("Unable to decode user data JWT | {err:#}");
+        }
+    };
 
     Ok(payload.claims)
 }
@@ -214,20 +252,23 @@ pub fn parse_identity_data<'a, R: BinaryRead<'a>>(reader: &mut R) -> anyhow::Res
     let token_length = reader.read_u32_le()?;
     let token_chain = reader.take_n(token_length as usize)?;
 
-    let tokens = serde_json::from_slice::<TokenChain>(token_chain)?;
+    let mut tokens = serde_json::from_slice::<TokenChain>(token_chain)?;
     let identity_data = match tokens.chain.len() {
         1 => {
             // Client is not signed into Xbox.
-            tracing::warn!("User is not authenticated with Microsoft services");
+            tracing::error!("User is not authenticated with Microsoft services");
             anyhow::bail!("User must be authenticated with Microsoft services");
         }
         3 => {
             // Verify the first token and decode the public key for the next token.
             // This public key must be equal to Mojang's public key to verify that the second
             // token was signed by Mojang.
+
+            tokens.chain[2] = tokens.chain[2].to_uppercase();
+
             let mut key = parse_initial_token(&tokens.chain[0])?;
             if !key.eq(MOJANG_PUBLIC_KEY) {
-                tracing::warn!("Attempt to login using a token that was not created by Mojang");
+                tracing::error!("Attempt to login using a token that was not created by Mojang");
                 anyhow::bail!("Identity token was not signed by Mojang");
             }
 

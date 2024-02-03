@@ -289,7 +289,12 @@ impl BedrockUser {
 
         self.replicator.save_session(request.identity.xuid, &request.identity.name).await?;
 
-        let (encryptor, jwt) = Encryptor::new(&request.identity.public_key)?;
+        let (encryptor, jwt) = if let Ok(data) = Encryptor::new(&request.identity.public_key) {
+            data
+        } else {
+            self.kick_with_reason("Encryption failed", DisconnectReason::BadPacket).await?;
+            anyhow::bail!("Failed to enable encryption");
+        };
         
         self.identity.set(request.identity).unwrap();
         self.client_info.set(request.client_info).unwrap();

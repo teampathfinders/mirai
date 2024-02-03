@@ -62,7 +62,8 @@ impl ConnectedPacket for Login {
 
 impl<'a> Deserialize<'a> for Login {
     fn deserialize_from<R: BinaryRead<'a>>(reader: &mut R) -> anyhow::Result<Self> {
-        let _version = reader.read_u32_be()?; // Skip protocol version, use the one in RequestNetworkSettings instead.
+        // Skip protocol version, use the one in RequestNetworkSettings instead.
+        let _version = reader.read_u32_be()?; 
         reader.read_var_u32()?;
 
         let identity_data = crypto::parse_identity_data(reader)?;

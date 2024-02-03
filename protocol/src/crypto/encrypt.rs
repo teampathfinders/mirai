@@ -65,6 +65,10 @@ impl Encryptor {
     ///
     /// This shared secret is hashed using with SHA-256 and the salt contained in the JWT.
     /// The produced hash can then be used to encrypt raknet.
+    #[tracing::instrument(
+        skip_all,
+        name = "Encryptor::new"
+    )]
     pub fn new(client_public_key_der: &str) -> anyhow::Result<(Self, String)> {
         // Generate a random salt using a cryptographically secure generator.
         let salt = (0..16).map(|_| OsRng.sample(Alphanumeric) as char).collect::<String>();
@@ -72,19 +76,20 @@ impl Encryptor {
         // Generate a random private key for the session.
         let private_key: SigningKey = SigningKey::random(&mut OsRng);
         // Convert the key to the PKCS#8 DER format used by Minecraft.
-        let private_key_der = match private_key.to_pkcs8_der() {
-            Ok(k) => k,
-            Err(e) => bail!(Malformed, "Failed to convert private to PKCS#8 DER format: {e}"),
+        let private_key_der = if let Ok(pkcs) = private_key.to_pkcs8_der() {
+            pkcs
+        } else {
+            tracing::warn!("Unable to convert session private key to PKCS#8 DER format");
+            anyhow::bail!("Unable to convert session private key to PKCS#8 DER format")
         };
 
         // Extract and convert the public key, which will be sent to the client.
         let public_key = private_key.verifying_key();
-        let public_key_der = {
-            let binary_der = match public_key.to_public_key_der() {
-                Ok(d) => d,
-                Err(e) => bail!(Malformed, "Failed to convert public key to DER format: {e}"),
-            };
-            BASE64_ENGINE.encode(binary_der)
+        let public_key_der = if let Ok(k) = public_key.to_public_key_der() {
+            BASE64_ENGINE.encode(k)
+        } else {
+            tracing::warn!("Unable to convert session public key to DER format");
+            anyhow::bail!("Unable to convert session public key to DER format")
         };
 
         // The typ header is set to none to match the official server software.
@@ -100,9 +105,11 @@ impl Encryptor {
         let jwt = jsonwebtoken::encode(&header, &claims, &signing_key)?;
         let client_public_key = {
             let bytes = BASE64_ENGINE.decode(client_public_key_der)?;
-            match PublicKey::from_public_key_der(&bytes) {
-                Ok(k) => k,
-                Err(e) => bail!(Malformed, "Failed to read DER-encoded client public key: {e}"),
+            if let Ok(key) = PublicKey::from_public_key_der(&bytes) {
+                key
+            } else {
+                tracing::warn!("Unable to read DER-encoded client public key");
+                anyhow::bail!("Unable to read DER-encoded client public key")
             }
         };
 
@@ -139,9 +146,14 @@ impl Encryptor {
     ///
     /// If the checksum does not match, a [`BadPacket`](util::ErrorKind::Malformed) error is returned.
     /// The client must be disconnected if this fails, because the data has probably been tampered with.
+    #[tracing::instrument(
+        skip_all,
+        name = "Encryptor::decrypt"
+    )]
     pub fn decrypt(&self, reader: &mut Vec<u8>) -> anyhow::Result<()> {
         if reader.len() < 9 {
-            bail!(Malformed, "Encrypted buffer must be at least 9 bytes, received {}", reader.len());
+            tracing::error!("The encrypted buffer is too small to contain any data");
+            anyhow::bail!("Encrypted buffer must be at least 9 bytes, received {}", reader.len());
         }
 
         self.cipher_decrypt.lock().apply_keystream(reader.as_mut());
@@ -152,7 +164,8 @@ impl Encryptor {
         let computed_checksum = self.compute_checksum(&slice[..slice.len() - 8], counter);
 
         if !checksum.eq(&computed_checksum) {
-            bail!(Malformed, "Encryption checksums do not match");
+            tracing::error!("The encryption checksums do not match. The packet is not properly encrypted");
+            anyhow::bail!("Encryption checksums do not match");
         }
 
         // Remove checksum from data.
@@ -162,6 +175,10 @@ impl Encryptor {
     }
 
     /// Encrypts a packet and appends the computed checksum.
+    #[tracing::instrument(
+        skip_all,
+        name = "Encryptor::encrypt"
+    )]
     pub fn encrypt<W: BinaryWrite>(&self, writer: &mut W) -> anyhow::Result<()> {
         let counter = self.send_counter.expose().fetch_add(1, Ordering::SeqCst);
         // Exclude 0xfe header from checksum calculations.
