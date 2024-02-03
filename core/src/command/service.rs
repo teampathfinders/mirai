@@ -65,15 +65,15 @@ impl Service {
 
     /// Runs the service execution job.
     async fn execution_job(self: Arc<Service>, mut receiver: mpsc::Receiver<ServiceRequest>) {
-        loop {
+        // loop {
             tokio::select! {
                 _ = self.token.cancelled() => {
                     // Stop accepting requests.
                     receiver.close();
-                    break
+                    // break
                 }   
             }
-        }
+        // }
 
         tracing::info!("Command service closed");
     }
@@ -81,7 +81,8 @@ impl Service {
 
 impl Joinable for Service {
     async fn join(&self) -> anyhow::Result<()> {
-        match self.handle.write().take() {
+        let handle = self.handle.write().take();
+        match handle {
             Some(handle) => Ok(handle.await?),
             None => anyhow::bail!("This command service has already been joined.")
         }

@@ -42,7 +42,7 @@ async fn signal_listener(token: CancellationToken) -> anyhow::Result<()> {
     Ok(())
 }
 
-//// Configuration for the network components.
+/// Configuration for the network components.
 pub struct NetConfig {
     /// The host and port to run the server on.
     ///
