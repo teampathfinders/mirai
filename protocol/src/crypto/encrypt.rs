@@ -1,5 +1,4 @@
-use std::fmt::{self, Debug, Formatter};
-use std::io::Write;
+use std::fmt;
 use std::sync::atomic::{AtomicU64, Ordering};
 
 use base64::Engine;
@@ -16,8 +15,8 @@ use rand::rngs::OsRng;
 use rand::Rng;
 use sha2::{Digest, Sha256};
 
-use util::{BinaryRead, BinaryWrite, ExposeSecret, Secret};
-use util::{bail, Result};
+use util::{BinaryWrite, ExposeSecret, Secret};
+
 
 type Aes256CtrBE = ctr::Ctr64BE<aes::Aes256>;
 

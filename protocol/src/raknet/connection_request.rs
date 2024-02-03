@@ -1,7 +1,7 @@
 use util::{BinaryRead};
 use util::iassert;
 use util::Deserialize;
-use util::Result;
+
 
 /// Sent by the client to initiate a full connection.
 /// [`ConnectionRequestAccepted`](crate::raknet::ConnectionRequestAccepted) should be sent in response.

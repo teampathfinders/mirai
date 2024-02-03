@@ -1,4 +1,4 @@
-use util::{bail, Error, Result};
+
 use util::{Deserialize, Serialize};
 use util::{BinaryRead, BinaryWrite, VarInt, VarString};
 

@@ -1,4 +1,4 @@
-use util::{Result, Vector};
+use util::{Vector};
 use util::{BinaryWrite, size_of_varint};
 use util::Serialize;
 

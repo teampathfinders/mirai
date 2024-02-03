@@ -2,7 +2,7 @@ use std::ops::Range;
 
 use util::{BinaryRead, BinaryWrite};
 use util::iassert;
-use util::Result;
+
 use util::{Deserialize, Serialize};
 
 /// Record containing IDs of confirmed raknet.

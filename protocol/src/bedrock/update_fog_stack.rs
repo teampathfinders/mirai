@@ -1,4 +1,4 @@
-use util::{Result, Serialize};
+use util::{Serialize};
 use util::{BinaryWrite, size_of_varint};
 
 use crate::bedrock::ConnectedPacket;

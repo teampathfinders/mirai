@@ -1,5 +1,3 @@
-use std::io::Write;
-
 use util::BinaryWrite;
 use util::Serialize;
 

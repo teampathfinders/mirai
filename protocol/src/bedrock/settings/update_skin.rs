@@ -1,6 +1,6 @@
 use uuid::Uuid;
 
-use util::{Deserialize, Result, Serialize, BinaryRead};
+use util::{Deserialize, Serialize, BinaryRead};
 use util::{BinaryWrite};
 
 use crate::bedrock::{ConnectedPacket, Skin};

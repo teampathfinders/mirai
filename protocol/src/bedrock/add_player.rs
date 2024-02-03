@@ -1,11 +1,11 @@
 use uuid::Uuid;
 
-use util::{Result, Serialize, Vector};
+use util::{Serialize, Vector};
 use util::{BinaryWrite};
 
-use crate::bedrock::{AbilityData, DeviceOS, PermissionLevel};
+use crate::bedrock::{AbilityData, DeviceOS};
 use crate::bedrock::{ConnectedPacket, GameMode};
-use crate::bedrock::command::CommandPermissionLevel;
+
 
 /// Type of an entity link.
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]

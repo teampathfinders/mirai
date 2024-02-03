@@ -3,9 +3,9 @@ use std::collections::HashMap;
 use crate::types::Dimension;
 use macros::variant_count;
 use util::{Serialize, Vector};
-use util::Result;
+
 use util::BlockPosition;
-use util::{BinaryWrite, VarInt, VarString, BinaryRead};
+use util::{BinaryWrite, VarInt, VarString};
 
 use crate::bedrock::{CLIENT_VERSION_STRING, ConnectedPacket, Difficulty, GameMode, GameRule};
 use crate::bedrock::ExperimentData;

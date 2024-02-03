@@ -1,7 +1,7 @@
-use std::ops::Deref;
-
 use macros::variant_count;
+
 use util::{Deserialize, BinaryRead, Vector, BlockPosition};
+
 use crate::bedrock::{ConnectedPacket, PlayerActionType, PlayerAction};
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
@@ -51,14 +51,6 @@ pub enum InputDataFlag {
     StartFlying = 1 << 41,
     StopFlying = 1 << 42,
     AcknowledgeServerData = 1 << 43
-}
-
-impl Deref for InputDataFlag {
-    type Target = u64;
-
-    fn deref(&self) -> &Self::Target {
-        &self as &u64
-    }
 }
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
@@ -197,16 +189,16 @@ impl<'a> Deserialize<'a> for InventoryAction {
     fn deserialize_from<R: BinaryRead<'a>>(reader: &mut R) -> anyhow::Result<Self> {
         let source_type = InventoryActionSource::try_from(reader.read_u32_le()?)?;
         
-        let mut window = None;
-        let mut source_flags = 0;
+        let mut _window = None;
+        let mut _source_flags = 0;
 
         if source_type == InventoryActionSource::Container || source_type == InventoryActionSource::Todo {
-            window = Some(WindowId::try_from(reader.read_i32_le()?)?);
+            _window = Some(WindowId::try_from(reader.read_i32_le()?)?);
         } else if source_type == InventoryActionSource::World {
-            source_flags = reader.read_var_u32()?;
+            _source_flags = reader.read_var_u32()?;
         }
 
-        let inventory_slot = reader.read_var_u32()?;
+        let _inventory_slot = reader.read_var_u32()?;
 
         // https://github.com/Sandertv/gophertunnel/blob/36e5147307884b745b7d28d546c07ab03d4afb36/minecraft/protocol/inventory.go#L52
         todo!("Item instance reading");
@@ -506,7 +498,7 @@ pub enum StackRequestAction<'a> {
 }   
 
 impl<'a> Deserialize<'a> for StackRequestAction<'a> {
-    fn deserialize_from<R: BinaryRead<'a>>(reader: &mut R) -> anyhow::Result<Self> {
+    fn deserialize_from<R: BinaryRead<'a>>(_reader: &mut R) -> anyhow::Result<Self> {
         todo!()
     }
 }
@@ -529,7 +521,7 @@ impl<'a> Deserialize<'a> for StackRequest<'a> {
             actions.push(StackRequestAction::deserialize_from(reader)?);
         }
 
-        let mut filter_count = reader.read_var_u32()?;
+        let filter_count = reader.read_var_u32()?;
         let mut filters = Vec::with_capacity(filter_count as usize);
         for _ in 0..filter_count {
             filters.push(reader.read_str()?);

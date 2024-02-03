@@ -1,5 +1,3 @@
-use std::io::Write;
-
 use util::{Vector, Serialize, BinaryWrite};
 
 use crate::bedrock::ConnectedPacket;

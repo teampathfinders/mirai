@@ -1,4 +1,4 @@
-use util::{bail, Result};
+use util::{bail};
 use util::{BinaryRead};
 use util::Deserialize;
 

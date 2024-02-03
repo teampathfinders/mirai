@@ -1,8 +1,7 @@
-use std::io::Write;
 use std::net::SocketAddr;
 
 use util::{BinaryWrite, IPV4_MEM_SIZE, IPV6_MEM_SIZE};
-use util::Result;
+
 use util::Serialize;
 
 use crate::raknet::OFFLINE_MESSAGE_DATA;

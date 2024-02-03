@@ -1,6 +1,6 @@
 use std::fmt;
 
-use util::{bail, Result, Serialize};
+use util::{bail, Serialize};
 use util::{BinaryWrite, size_of_varint, VarInt, VarString};
 
 use crate::{bedrock::ParsedArgument, bedrock::ConnectedPacket};

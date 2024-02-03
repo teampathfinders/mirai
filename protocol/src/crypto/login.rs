@@ -1,10 +1,10 @@
-use anyhow::anyhow;
+
 use base64::Engine;
 use jsonwebtoken::{Algorithm, DecodingKey, Validation};
 use p384::pkcs8::spki;
 use uuid::Uuid;
 
-use util::{bail, error, Result, BinaryRead};
+use util::{BinaryRead};
 
 use crate::bedrock::Skin;
 use crate::bedrock::{DeviceOS, UiProfile};

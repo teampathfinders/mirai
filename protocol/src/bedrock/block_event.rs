@@ -1,4 +1,4 @@
-use util::{bail, BlockPosition, Deserialize, Error, Result, Serialize};
+use util::{bail, BlockPosition, Deserialize, Serialize};
 use util::{BinaryRead, BinaryWrite, size_of_varint};
 
 use crate::bedrock::ConnectedPacket;

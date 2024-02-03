@@ -1,7 +1,7 @@
 use util::{BinaryRead};
 use util::iassert;
 use util::Deserialize;
-use util::Result;
+
 
 /// Sent to retrieve information about the server
 /// while the user is in Minecraft's server tab.

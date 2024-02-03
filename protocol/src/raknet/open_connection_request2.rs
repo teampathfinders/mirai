@@ -1,7 +1,7 @@
 use util::{BinaryRead};
 use util::iassert;
 use util::Deserialize;
-use util::Result;
+
 
 /// Sent by the client, in response to [`OpenConnectionReply2`](crate::raknet::OpenConnectionReply2).
 #[derive(Debug)]

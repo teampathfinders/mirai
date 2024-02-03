@@ -1,7 +1,5 @@
-use std::io::Write;
-
 use util::BinaryWrite;
-use util::Result;
+
 use util::Serialize;
 
 use crate::raknet::OFFLINE_MESSAGE_DATA;

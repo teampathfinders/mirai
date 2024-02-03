@@ -1,4 +1,4 @@
-use util::{bail, Error, Result, Vector};
+use util::{bail, Vector};
 use util::{Deserialize, Serialize};
 use util::{BinaryRead, BinaryWrite, size_of_varint};
 

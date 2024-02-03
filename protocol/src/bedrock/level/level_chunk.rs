@@ -1,8 +1,4 @@
-use std::io::Write;
-
-use util::{Result, Vector};
-use util::{BinaryWrite};
-use util::Serialize;
+use util::{Vector, BinaryWrite, Serialize};
 
 use crate::bedrock::ConnectedPacket;
 

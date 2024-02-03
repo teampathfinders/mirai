@@ -1,7 +1,5 @@
-use std::io::Write;
 use util::Serialize;
 use util::{BinaryWrite, VarInt};
-use util::Result;
 
 use crate::bedrock::ConnectedPacket;
 

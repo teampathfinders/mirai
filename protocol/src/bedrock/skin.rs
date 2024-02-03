@@ -1,12 +1,7 @@
-use std::io::Write;
-
 use serde::Deserialize;
 use serde_repr::Deserialize_repr;
 
-use util::{
-    bail, Error, Result,
-};
-use util::{BinaryRead, BinaryWrite};
+use util::{bail, BinaryRead, BinaryWrite};
 
 /// Size of arms of a skin.
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Deserialize)]

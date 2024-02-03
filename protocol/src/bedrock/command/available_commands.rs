@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use util::BinaryWrite;
-use util::Result;
+
 use util::Serialize;
 
 use crate::bedrock::command::Command;

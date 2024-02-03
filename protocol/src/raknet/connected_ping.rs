@@ -1,7 +1,7 @@
 use util::{BinaryRead};
 use util::Deserialize;
 use util::iassert;
-use util::Result;
+
 
 /// Sent by the client or server to ping the other side.
 /// An [`ConnectedPong`](crate::raknet::ConnectedPong) packet should be sent in response.

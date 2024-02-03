@@ -1,7 +1,4 @@
-use std::io::Write;
-
-use util::{BinaryWrite};
-use util::Result;
+use util::BinaryWrite;
 
 /// A blob used in the cache protocol.
 #[derive(Debug, Clone)]
