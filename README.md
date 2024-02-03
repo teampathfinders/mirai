@@ -15,7 +15,7 @@ In case you don't want to use the Docker image and instead want to set up the se
 The minimum supported Rust version required to compile the project is 1.72. Additionally, the `inferno-level` crate also requires at least CMake 3.13+ and a compiler capable of compiling C++11 code. This is used to build [LevelDB](https://github.com/teampathfinders/leveldb) from source.  
   
 Minimum requirements:
-- Rust 1.72
+- Rust 1.75
 - CMake 3.13
 - C++11 compliant compiler
 
