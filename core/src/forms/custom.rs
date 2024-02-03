@@ -49,13 +49,16 @@ impl<'a> Custom<'a> {
     /// Sets the title of the form.
     ///
     /// Default: "Form".
-    pub fn title(mut self, title: impl Into<&'a str>) -> Self {
+    pub fn title<I: Into<&'a str>>(mut self, title: I) -> Self {
+        // The `Into` trait is used instead of `AsRef` to be able to attach
+        // the lifetime to the str.
+
         self.title = title.into();
         self
     }
 
     /// Adds an element to the body of the form.
-    pub fn with(mut self, key: impl Into<String>, submittable: impl Submittable) -> Self {
+    pub fn with<I: Into<String>, S: Submittable>(mut self, key: I, submittable: S) -> Self {
         self.content.insert(key.into(), submittable.into());
         self
     }

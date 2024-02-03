@@ -35,7 +35,7 @@ impl BedrockUser {
         Ok(())
     }
 
-    pub async fn handle_move_player(&self, packet: Vec<u8>) -> anyhow::Result<()> {
+    pub fn handle_move_player(&self, packet: Vec<u8>) -> anyhow::Result<()> {
         let _request = MovePlayer::deserialize(packet.as_ref())?;
 
         Ok(())

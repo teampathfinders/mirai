@@ -46,10 +46,10 @@ impl Service {
     pub fn new(token: CancellationToken) -> Arc<Service> {
         let (sender, receiver) = mpsc::channel(10);
         let service = Arc::new(Service {
-            token, handle: RwLock::new(None), sender: sender.clone()
+            token, handle: RwLock::new(None), sender
         });
 
-        let clone = service.clone();
+        let clone = Arc::clone(&service);
         let handle = tokio::spawn(async move {
             clone.execution_job(receiver).await
         });

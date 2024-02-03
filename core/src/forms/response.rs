@@ -2,7 +2,6 @@
 
 use std::{
     collections::HashMap,
-    ops::{Index, IndexMut},
     sync::atomic::{AtomicU32, Ordering},
 };
 
@@ -98,17 +97,17 @@ impl Body {
     }
 
     /// Whether this is a custom response.
-    pub fn is_custom(&self) -> bool {
+    pub const fn is_custom(&self) -> bool {
         matches!(self, Self::Custom(_))
     }
 
     /// Whether this is a menu response.
-    pub fn is_menu(&self) -> bool {
+    pub const fn is_menu(&self) -> bool {
         matches!(self, Self::Menu(_))
     }
 
     /// Whether this is a modal response.
-    pub fn is_modal(&self) -> bool {
+    pub const fn is_modal(&self) -> bool {
         matches!(self, Self::Modal(_))
     }
 }
@@ -122,7 +121,7 @@ pub struct ModalResponse {
 
 impl ModalResponse {
     /// Whether the confirm button was pressed.
-    pub fn confirmed(&self) -> bool {
+    pub const fn confirmed(&self) -> bool {
         self.confirmed
     }
 }
@@ -137,7 +136,7 @@ pub struct MenuResponse {
 impl MenuResponse {
     /// Which button was pressed. This corresponds to the nth button added to the form.
     /// Index starts at 0.
-    pub fn pressed(&self) -> usize {
+    pub const fn pressed(&self) -> usize {
         self.pressed
     }
 }
@@ -151,27 +150,13 @@ pub struct CustomResponse {
 
 impl CustomResponse {
     /// Gets a shared reference to the item at the given key.
-    pub fn get(&self, index: impl AsRef<str>) -> Option<&BodyValue> {
+    pub fn get<S: AsRef<str>>(&self, index: S) -> Option<&BodyValue> {
         self.body.get(index.as_ref())
     }
 
     /// Gets a mutable reference to the item at the given key.
-    pub fn get_mut(&mut self, index: impl AsRef<str>) -> Option<&mut BodyValue> {
+    pub fn get_mut<S: AsRef<str>>(&mut self, index: S) -> Option<&mut BodyValue> {
         self.body.get_mut(index.as_ref())
-    }
-}
-
-impl<S: AsRef<str>> Index<S> for CustomResponse {
-    type Output = BodyValue;
-
-    fn index(&self, index: S) -> &Self::Output {
-        self.get(index).unwrap()
-    }
-}
-
-impl<S: AsRef<str>> IndexMut<S> for CustomResponse {
-    fn index_mut(&mut self, index: S) -> &mut Self::Output {
-        self.get_mut(index).unwrap()
     }
 }
 
@@ -187,7 +172,7 @@ pub enum Response {
 impl Response {
     /// Whether the form was cancelled.
     #[inline]
-    pub fn is_cancelled(&self) -> bool {
+    pub const fn is_cancelled(&self) -> bool {
         matches!(self, Self::Cancelled(_))
     }
 
@@ -255,41 +240,45 @@ impl Subscriber {
         })?;
 
         if let Some(reason) = response.cancel_reason {
-            let _ = sender.send(Response::Cancelled(reason));
+            // Receiving an error means the receiver was closed.
+            // This can be silently ignored.
+            let _: Result<(), Response> = sender.send(Response::Cancelled(reason));
             return Ok(());
         }
 
         let body = response.response_data.ok_or_else(|| anyhow!("Form response body was empty"))?;
 
         match desc {
-            FormDesc::Custom(desc) => self.handle_custom(desc, sender, body),
-            FormDesc::Modal => self.handle_modal(sender, body),
-            FormDesc::Menu => self.handle_menu(sender, body),
+            FormDesc::Custom(desc) => Subscriber::handle_custom(desc, sender, body),
+            FormDesc::Modal => Subscriber::handle_modal(sender, body),
+            FormDesc::Menu => Subscriber::handle_menu(sender, body),
         }
     }
 
     /// Handles a menu response.
-    fn handle_menu(&self, sender: oneshot::Sender<Response>, body: &str) -> anyhow::Result<()> {
+    fn handle_menu(sender: oneshot::Sender<Response>, body: &str) -> anyhow::Result<()> {
         let pressed: usize = serde_json::from_str(body).context("Unable to parse menu response")?;
 
-        // If this returns an error, then the receiver was dropped which can be ignored.
-        let _ = sender.send(Response::Body(Body::Menu(MenuResponse { pressed })));
+        // Receiving an error means the receiver was closed.
+        // This can be silently ignored.
+        let _: Result<(), Response> = sender.send(Response::Body(Body::Menu(MenuResponse { pressed })));
 
         Ok(())
     }
 
     /// Handles a modal response.
-    fn handle_modal(&self, sender: oneshot::Sender<Response>, body: &str) -> anyhow::Result<()> {
+    fn handle_modal(sender: oneshot::Sender<Response>, body: &str) -> anyhow::Result<()> {
         let confirmed: bool = serde_json::from_str(body).context("Unable to parse modal response")?;
 
-        // If this returns an error, then the receiver was dropped which can be ignored.
-        let _ = sender.send(Response::Body(Body::Modal(ModalResponse { confirmed })));
+        // Receiving an error means the receiver was closed.
+        // This can be silently ignored.
+        let _: Result<(), Response> = sender.send(Response::Body(Body::Modal(ModalResponse { confirmed })));
 
         Ok(())
     }
 
     /// Handles a custom response.
-    fn handle_custom(&self, desc: HashMap<String, Content>, sender: oneshot::Sender<Response>, body: &str) -> anyhow::Result<()> {
+    fn handle_custom(desc: HashMap<String, Content>, sender: oneshot::Sender<Response>, body: &str) -> anyhow::Result<()> {
         let responses: Vec<serde_json::Value> = serde_json::from_str(body).context("Unable to parse custom form response")?;
 
         let mut out = CustomResponse::default();
@@ -352,8 +341,9 @@ impl Subscriber {
             }
         }
 
-        // If this returns an error, then the receiver was dropped which can be ignored.
-        let _ = sender.send(Response::Body(Body::Custom(out)));
+        // Receiving an error means the receiver was closed.
+        // This can be silently ignored.
+        let _: Result<(), Response> = sender.send(Response::Body(Body::Custom(out)));
 
         Ok(())
     }

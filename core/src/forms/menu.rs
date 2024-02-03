@@ -24,14 +24,20 @@ impl<'a> Menu<'a> {
     /// Sets the title of the form.
     ///
     /// Default: "Menu"
-    pub fn title(mut self, title: impl Into<&'a str>) -> Self {
+    pub fn title<I: Into<&'a str>>(mut self, title: I) -> Self {
+        // The `Into` trait is used instead of `AsRef` to be able to attach
+        // the lifetime to the str.
+
         self.title = title.into();
         self
     }
 
     /// Sets the body of the form.
     /// Default: ""
-    pub fn body(mut self, body: impl Into<&'a str>) -> Self {
+    pub fn body<I: Into<&'a str>>(mut self, body: I) -> Self {
+        // The `Into` trait is used instead of `AsRef` to be able to attach
+        // the lifetime to the str.
+
         self.body = body.into();
         self
     }

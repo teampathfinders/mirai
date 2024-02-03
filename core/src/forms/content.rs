@@ -16,7 +16,7 @@ impl Label {
     }
 
     /// Sets the body of this label.
-    pub fn label(mut self, label: impl Into<String>) -> Self {
+    pub fn label<I: Into<String>>(mut self, label: I) -> Self {
         self.label = label.into();
         self
     }
@@ -60,19 +60,19 @@ impl Input {
     }
 
     /// Sets the label.
-    pub fn label(mut self, label: impl Into<String>) -> Self {
+    pub fn label<I: Into<String>>(mut self, label: I) -> Self {
         self.label = label.into();
         self
     }
 
     /// Sets the placeholder.
-    pub fn placeholder(mut self, placeholder: impl Into<String>) -> Self {
+    pub fn placeholder<I: Into<String>>(mut self, placeholder: I) -> Self {
         self.placeholder = placeholder.into();
         self
     }
 
     /// Sets the default state.
-    pub fn default(mut self, default: impl Into<String>) -> Self {
+    pub fn default<I: Into<String>>(mut self, default: I) -> Self {
         self.default = default.into();
         self
     }
@@ -116,13 +116,13 @@ impl Toggle {
     }
 
     /// Sets the label.
-    pub fn label(mut self, label: impl Into<String>) -> Self {
+    pub fn label<I: Into<String>>(mut self, label: I) -> Self {
         self.label = label.into();
         self
     }
 
     /// Sets the default state.
-    pub fn default(mut self, default: impl Into<bool>) -> Self {
+    pub fn default<I: Into<bool>>(mut self, default: I) -> Self {
         self.default = default.into();
         self
     }
@@ -171,31 +171,31 @@ impl Slider {
     }
 
     /// Sets the label.
-    pub fn label(mut self, label: impl Into<String>) -> Self {
+    pub fn label<I: Into<String>>(mut self, label: I) -> Self {
         self.label = label.into();
         self
     }
 
     /// Sets the minimum value.
-    pub fn min(mut self, min: impl Into<f64>) -> Self {
+    pub fn min<I: Into<f64>>(mut self, min: I) -> Self {
         self.min = min.into();
         self
     }
 
     /// Sets the maximum value.
-    pub fn max(mut self, max: impl Into<f64>) -> Self {
+    pub fn max<I: Into<f64>>(mut self, max: I) -> Self {
         self.max = max.into();
         self
     }
 
     /// Sets the step between values.
-    pub fn step(mut self, step: impl Into<f64>) -> Self {
+    pub fn step<I: Into<f64>>(mut self, step: I) -> Self {
         self.step = step.into();
         self
     }
 
     /// Sets the default state.
-    pub fn default(mut self, default: impl Into<f64>) -> Self {
+    pub fn default<I: Into<f64>>(mut self, default: I) -> Self {
         self.default = default.into();
         self
     }
@@ -244,19 +244,19 @@ impl Dropdown {
     }
 
     /// Sets the label.
-    pub fn label(mut self, label: impl Into<String>) -> Self {
+    pub fn label<I: Into<String>>(mut self, label: I) -> Self {
         self.label = label.into();
         self
     }
 
     /// Adds an option.
-    pub fn option(mut self, option: impl Into<String>) -> Self {
+    pub fn option<I: Into<String>>(mut self, option: I) -> Self {
         self.options.push(option.into());
         self
     }
 
     /// Sets the default state.
-    pub fn default(mut self, default: impl Into<u32>) -> Self {
+    pub fn default<I: Into<u32>>(mut self, default: I) -> Self {
         self.default = default.into();
         self
     }
@@ -303,19 +303,19 @@ impl StepSlider {
     }
 
     /// Sets the label.
-    pub fn label(mut self, label: impl Into<String>) -> Self {
+    pub fn label<I: Into<String>>(mut self, label: I) -> Self {
         self.label = label.into();
         self
     }
 
     /// Adds a step.
-    pub fn option(mut self, step: impl Into<String>) -> Self {
+    pub fn option<I: Into<String>>(mut self, step: I) -> Self {
         self.steps.push(step.into());
         self
     }
 
     /// Sets the default state
-    pub fn default(mut self, default: impl Into<u32>) -> Self {
+    pub fn default<I: Into<u32>>(mut self, default: I) -> Self {
         self.default = default.into();
         self
     }
@@ -345,7 +345,7 @@ impl serde::Serialize for StepSlider {
 
 /// An image displayed next to a button.
 #[derive(Debug, Clone)]
-pub(crate) enum ButtonImage {
+enum ButtonImage {
     /// A URL pointing to an online image.
     Url(String),
     /// A path pointing to an image in an applied resource pack.
@@ -359,7 +359,7 @@ pub struct Button {
     pub(crate) body: String,
     /// An optional image shown to the left of the button.
     /// This button can either be a local file from a resource pack or a URL.
-    pub(crate) image: Option<ButtonImage>,
+    image: Option<ButtonImage>,
 }
 
 impl Button {
@@ -371,7 +371,7 @@ impl Button {
     /// Sets the content of the button.
     ///
     /// Default: "Button".
-    pub fn body(mut self, body: impl Into<String>) -> Self {
+    pub fn body<I: Into<String>>(mut self, body: I) -> Self {
         self.body = body.into();
         self
     }
@@ -379,7 +379,7 @@ impl Button {
     /// Sets the image URL. This can point to an online resource.
     ///
     /// Default: None
-    pub fn image_url(mut self, url: impl Into<String>) -> Self {
+    pub fn image_url<I: Into<String>>(mut self, url: I) -> Self {
         self.image = Some(ButtonImage::Url(url.into()));
         self
     }
@@ -387,7 +387,7 @@ impl Button {
     /// Sets the image path. This should point to an image from a resource pack.
     ///
     /// Default: None
-    pub fn image_path(mut self, path: impl Into<String>) -> Self {
+    pub fn image_path<I: Into<String>>(mut self, path: I) -> Self {
         self.image = Some(ButtonImage::Path(path.into()));
         self
     }

@@ -25,7 +25,10 @@ impl<'a> Modal<'a> {
     /// Sets the title of the modal.
     ///
     /// Default: "Modal".
-    pub fn title(mut self, title: impl Into<&'a str>) -> Self {
+    pub fn title<I: Into<&'a str>>(mut self, title: I) -> Self {
+        // The `Into` trait is used instead of `AsRef` to be able to attach
+        // the lifetime to the str.
+
         self.title = title.into();
         self
     }
@@ -33,7 +36,10 @@ impl<'a> Modal<'a> {
     /// Sets the body of the modal.
     ///
     /// Default: ""
-    pub fn body(mut self, body: impl Into<&'a str>) -> Self {
+    pub fn body<I: Into<&'a str>>(mut self, body: I) -> Self {
+        // The `Into` trait is used instead of `AsRef` to be able to attach
+        // the lifetime to the str.
+
         self.body = body.into();
         self
     }
@@ -41,7 +47,10 @@ impl<'a> Modal<'a> {
     /// Sets the text of the confirm button of the modal.
     ///
     /// Default: "Confirm".
-    pub fn confirm(mut self, confirm: impl Into<&'a str>) -> Self {
+    pub fn confirm<I: Into<&'a str>>(mut self, confirm: I) -> Self {
+        // The `Into` trait is used instead of `AsRef` to be able to attach
+        // the lifetime to the str.
+
         self.confirm = confirm.into();
         self
     }
@@ -49,7 +58,10 @@ impl<'a> Modal<'a> {
     /// Sets the text of the cancel button of the modal.
     ///
     /// Default: "Cancel".
-    pub fn cancel(mut self, cancel: impl Into<&'a str>) -> Self {
+    pub fn cancel<I: Into<&'a str>>(mut self, cancel: I) -> Self {
+        // The `Into` trait is used instead of `AsRef` to be able to attach
+        // the lifetime to the str.
+
         self.cancel = cancel.into();
         self
     }
