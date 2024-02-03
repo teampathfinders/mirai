@@ -6,8 +6,6 @@ use crate::settings::LevelSettings;
 use crate::{DataKey, KeyType, SubChunk};
 use anyhow::anyhow;
 use proto::types::Dimension;
-use std::fs::File;
-use std::io::Read;
 use std::path::{Path, PathBuf};
 use util::BinaryRead;
 use util::Vector;
@@ -48,9 +46,13 @@ impl Provider {
     /// # Errors
     ///
     /// This method returns an error if the content does not match what is specified in the header.
-    pub fn get_settings(&self) -> anyhow::Result<LevelSettings> {
-        let mut raw = Vec::new();
-        File::open(self.path.join("level.dat"))?.read_to_end(&mut raw)?;
+    #[tracing::instrument(
+        skip_all,
+        name = "Provider::settings",
+
+    )]
+    pub fn settings(&self) -> anyhow::Result<LevelSettings> {
+        let raw = std::fs::read(self.path.join("level.dat"))?;
 
         let mut reader = raw.as_slice();
         let _file_version = reader.read_u32_le()?;
@@ -58,10 +60,11 @@ impl Provider {
 
         let remaining = reader.remaining();
         if remaining != file_size as usize {
+            tracing::error!("Invalid `level.dat` file: header specified length of {file_size}, but found {remaining}");
             anyhow::bail!("Invalid `level.dat` file: header specified length of {file_size} bytes, but found {remaining}");
         }
 
-        let (settings, _) = nbt::from_le_bytes(reader).unwrap();
+        let (settings, _) = nbt::from_le_bytes(reader)?;
         Ok(settings)
     }
 
@@ -88,11 +91,7 @@ impl Provider {
             data: KeyType::ChunkVersion,
         };
 
-        if let Some(data) = self.database.get(key)? {
-            Ok(Some(data[0]))
-        } else {
-            Ok(None)
-        }
+        self.database.get(key)?.map_or_else(|| Ok(None), |data| Ok(Some(data[0])))
     }
 
     /// Gets the biomes in the specified chunk.

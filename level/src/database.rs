@@ -16,11 +16,16 @@ use crate::{ffi, DataKey};
 pub struct Guard<'a>(&'a [u8]);
 
 impl<'a> Guard<'a> {
-    // This is not implemented as a `From` trait so that `Guard` can only be constructed
-    // inside of this crate.
-    // SAFETY: A `Guard` must only be created from a slice that was allocated by
-    // `LevelDb` or `Keys`.
-    // The caller must also ensure that the slice is not referenced anywhere else in the program.
+    /// Creates a `Guard` from the given slice.
+    /// 
+    /// This is not implemented as a `From` trait so that `Guard` can only be constructed
+    /// inside of this crate.
+    ///
+    /// # Safety
+    /// 
+    /// A `Guard` must only be created from a slice that was allocated by
+    /// `LevelDb` or `Keys`.
+    /// The caller must also ensure that the slice is not referenced anywhere else in the program.
     #[inline]
     pub(crate) unsafe fn from_slice(slice: &'a [u8]) -> Self {
         Guard(slice)
@@ -67,6 +72,7 @@ impl<'a> KvRef<'a> {
         // SAFETY: A Ref should only exist while the iterator is valid.
         // This invariant is upheld by the lifetime 'a.
         unsafe {
+            // `level_iter_key` does not fail.
             let result = ffi::level_iter_key(self.iter.as_ptr());
             debug_assert_eq!(result.status, LoadStatus::Success);
 
@@ -79,6 +85,7 @@ impl<'a> KvRef<'a> {
         // SAFETY: A Ref should only exist while the iterator is valid.
         // This invariant is upheld by the lifetime 'a.
         unsafe {
+            // `level_iter_value` does not fail.
             let result = ffi::level_iter_value(self.iter.as_ptr());
             debug_assert_eq!(result.status, LoadStatus::Success);
 
@@ -99,20 +106,23 @@ pub struct Keys<'a> {
 
 impl<'a> Keys<'a> {
     /// Creates a new iterator for the given database.
-    pub fn new(db: &'a Database) -> Self {
+    pub fn new(db: &'a Database) -> anyhow::Result<Keys<'a>> {
         // SAFETY: level_iter is guaranteed to not return an error.
         // The iterator position has also been initialized by FFI and is not in an invalid state.
         let result = unsafe { ffi::level_iter(db.ptr.as_ptr()) };
-
         debug_assert_eq!(result.status, LoadStatus::Success);
-        debug_assert_ne!(result.data, std::ptr::null_mut());
 
-        Self {
+        if result.data.is_null() {
+            tracing::error!("Unable to create `Keys` iterator from null pointer");
+            anyhow::bail!("Unable to create `Keys` iterator from null pointer");
+        }
+
+        Ok(Keys {
             index: 0,
             // SAFETY: level_iter is guaranteed to not return an error.
             iter: unsafe { NonNull::new_unchecked(result.data) },
             _marker: PhantomData,
-        }
+        })
     }
 }
 
@@ -134,12 +144,7 @@ impl<'a> Iterator for Keys<'a> {
         // Furthermore, the above check ensures the iterator is valid and supports the key and value methods
         // provided by `Ref`.
         let valid = unsafe { ffi::level_iter_valid(self.iter.as_ptr()) };
-        if valid {
-            let raw_ref = KvRef { iter: self.iter, _marker: PhantomData };
-            Some(raw_ref)
-        } else {
-            None
-        }
+        valid.then_some(KvRef { iter: self.iter, _marker: PhantomData })
     }
 }
 
@@ -186,7 +191,11 @@ impl Database {
         unsafe {
             let result = ffi::level_open(ffi_path.as_ptr());
             if result.status == LoadStatus::Success {
-                debug_assert_ne!(result.data, std::ptr::null_mut());
+                if result.data.is_null() {
+                    tracing::error!("Received database was a null pointer despite the result being marked successful");
+                    anyhow::bail!("Received database was a null pointer");
+                }
+
                 // SAFETY: If result.is_success is true, then the caller has set data to a valid pointer.
                 Ok(Self { ptr: NonNull::new_unchecked(result.data) })
             } else {
@@ -197,7 +206,7 @@ impl Database {
 
     /// Creates a new [`Keys`] iterator.
     #[inline]
-    pub fn iter(&self) -> Keys {
+    pub fn iter(&self) -> anyhow::Result<Keys> {
         Keys::new(self)
     }
 
@@ -213,7 +222,10 @@ impl Database {
         unsafe {
             let result = ffi::level_get(self.ptr.as_ptr(), raw_key.as_ptr() as *const c_char, raw_key.len() as c_int);
             if result.status == LoadStatus::Success {
-                debug_assert_ne!(result.data, std::ptr::null_mut());
+                if result.data.is_null() {
+                    tracing::error!("Received world data is a null pointer despite being marked as a successful result");
+                    anyhow::bail!("Received world data is a null pointer");
+                }
 
                 // SAFETY: result.data is guaranteed by the caller to be a valid pointer.
                 // result.size is also guaranteed to be the size of the actual array.
@@ -272,7 +284,7 @@ impl Database {
         // SAFETY: This is safe because the data and lengths come from properly allocated vecs.
         // Additionally, the remove method does not keep references to the data after the function has been called.
         unsafe {
-            let result = ffi::level_remove(self.ptr.as_ptr(), raw_key.as_ptr() as *mut c_char, raw_key.len() as c_int);
+            let result = ffi::level_remove(self.ptr.as_ptr(), raw_key.as_mut_ptr() as *mut c_char, raw_key.len() as c_int);
 
             if result.status == LoadStatus::Success || result.status == LoadStatus::NotFound {
                 Ok(())
@@ -302,7 +314,7 @@ unsafe impl Sync for Database {}
 
 /// Translates an error received from the FFI, into an [`anyhow::Error`].
 unsafe fn translate_ffi_error(result: ffi::LevelResult) -> anyhow::Error {
-    debug_assert_ne!(result.status, LoadStatus::Success);
+    debug_assert_ne!(result.status, LoadStatus::Success, "Attempt to translate a success status into an error");
 
     // SAFETY: This string is guaranteed to have a null termination character,
     // as it has been created by the c_str method on std::string in C++.

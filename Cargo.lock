@@ -958,6 +958,7 @@ dependencies = [
  "inferno-proto",
  "inferno-util",
  "serde",
+ "tracing",
 ]
 
 [[package]]

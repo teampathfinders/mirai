@@ -15,7 +15,7 @@ static LOCK: Mutex<()> = Mutex::new(());
 fn level_settings() {
     let _lock = LOCK.lock().unwrap();
     let provider = unsafe { Provider::open("../test-level").unwrap() };
-    let _settings = provider.get_settings().unwrap();
+    let _settings = provider.settings().unwrap();
 }
 //
 // #[test]
