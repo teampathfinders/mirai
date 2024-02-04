@@ -12,7 +12,7 @@ impl BedrockUser {
     /// Handles a [`SettingsCommand`] packet used to adjust a world setting.
     pub fn handle_settings_command(&self, packet: Vec<u8>) -> anyhow::Result<()> {
         let request = SettingsCommand::deserialize(packet.as_ref())?;
-        dbg!(request);
+        tracing::debug!("{request:?}");
 
         Ok(())
     }
@@ -52,6 +52,8 @@ impl BedrockUser {
                 return self.kick_with_reason("Illegal packet modifications detected", DisconnectReason::BadPacket).await
             }
 
+            tracing::info!("<{source}>: {message}");
+
             // We must also return the packet to the client that sent it.
             // Otherwise their message won't be displayed in their own chat.
             self.broadcast(request)
@@ -71,42 +73,28 @@ impl BedrockUser {
         }
 
         Ok(())
-        // let move_player = MovePlayer {
-        //     runtime_id: 1,
-        //     mode: MovementMode::Normal,
-        //     translation: input.position,
-        //     pitch: input.pitch,
-        //     yaw: input.yaw,
-        //     head_yaw: input.head_yaw,
-        //     on_ground: false,
-        //     ridden_runtime_id: 0,
-        //     teleport_cause: TeleportCause::Unknown,
-        //     teleport_source_type: 0,
-        //     tick: input.tick  
-        // };
-        // self.send(move_player)
     }
 
     /// Handles an [`UpdateSkin`] packet.
     pub fn handle_skin_update(&self, packet: Vec<u8>) -> anyhow::Result<()> {
         let request = UpdateSkin::deserialize(packet.as_ref())?;
-        dbg!(&request);
+        tracing::debug!("{request:?}");
         self.broadcast(request)
     }
 
     /// Handles an [`AbilityRequest`] packet.
     pub fn handle_ability_request(&self, packet: Vec<u8>) -> anyhow::Result<()> {
         let request = RequestAbility::deserialize(packet.as_ref())?;
-        dbg!(request);
-
+        tracing::debug!("{request:?}");
+        
         Ok(())
     }
 
     /// Handles an [`Animation`] packet.
     pub fn handle_animation(&self, packet: Vec<u8>) -> anyhow::Result<()> {
         let request = Animate::deserialize(packet.as_ref())?;
-        dbg!(request);
-
+        tracing::debug!("{request:?}");
+        
         Ok(())
     }
 
@@ -134,61 +122,5 @@ impl BedrockUser {
         // dbg!(response);
 
         Ok(())
-
-    //     let command_list = self.level.get_commands();
-    //     let result = ParsedCommand::parse(command_list, request.command);
-
-    //     if let Ok(parsed) = result {
-    //         let caller = self.xuid();
-    //         let output = match parsed.name.as_str() {
-    //             "gamerule" => {
-    //                 self.level.on_gamerule_command(caller, parsed)
-    //             },
-    //             "effect" => {
-    //                 self.level.on_effect_command(caller, parsed)
-    //             }
-    //             _ => todo!(),
-    //         };
-
-    //         if let Ok(message) = output {
-    //             self.send(CommandOutput {
-    //                 origin: request.origin,
-    //                 request_id: request.request_id,
-    //                 output_type: CommandOutputType::AllOutput,
-    //                 success_count: 1,
-    //                 output: &[CommandOutputMessage {
-    //                     is_success: true,
-    //                     message: &message,
-    //                     parameters: &[],
-    //                 }],
-    //             })?;
-    //         } else {
-    //             self.send(CommandOutput {
-    //                 origin: request.origin,
-    //                 request_id: request.request_id,
-    //                 output_type: CommandOutputType::AllOutput,
-    //                 success_count: 0,
-    //                 output: &[CommandOutputMessage {
-    //                     is_success: false,
-    //                     message: &output.unwrap_err().to_string(),
-    //                     parameters: &[],
-    //                 }],
-    //             })?;
-    //         }
-    //     } else {
-    //         self.send(CommandOutput {
-    //             origin: request.origin,
-    //             request_id: request.request_id,
-    //             output_type: CommandOutputType::AllOutput,
-    //             success_count: 0,
-    //             output: &[CommandOutputMessage {
-    //                 is_success: false,
-    //                 message: &result.unwrap_err().to_string(),
-    //                 parameters: &[],
-    //             }],
-    //         })?;
-    //     }
-
-    //     Ok(())
     }
 }

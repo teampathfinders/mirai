@@ -1,7 +1,7 @@
 
 
 use std::sync::atomic::Ordering;
-use proto::bedrock::{BiomeDefinitionList, BroadcastIntent, CacheStatus, ChatRestrictionLevel, ChunkRadiusReply, ChunkRadiusRequest, ClientToServerHandshake, ConnectedPacket, CreativeContent, Difficulty, DisconnectReason, GameMode, Login, NetworkSettings, PermissionLevel, PlayStatus, PlayerMovementSettings, PlayerMovementType, PropertyData, RequestNetworkSettings, ResourcePackClientResponse, ResourcePackStack, ResourcePacksInfo, ServerToClientHandshake, SetLocalPlayerAsInitialized, SpawnBiomeType, StartGame, Status, TextData, TextMessage, ViolationWarning, WorldGenerator, CLIENT_VERSION_STRING, NETWORK_VERSION};
+use proto::bedrock::{BiomeDefinitionList, BroadcastIntent, CacheStatus, ChatRestrictionLevel, ChunkRadiusReply, ChunkRadiusRequest, ClientToServerHandshake, ConnectedPacket, CreativeContent, Difficulty, DisconnectReason, GameMode, Login, NetworkSettings, PermissionLevel, PlayStatus, PlayerMovementSettings, PlayerMovementType, PropertyData, RequestNetworkSettings, ResourcePackClientResponse, ResourcePackStack, ResourcePacksInfo, ServerToClientHandshake, SetLocalPlayerAsInitialized, SpawnBiomeType, StartGame, Status, TextData, TextMessage, ViolationWarning, WorldGenerator, CLIENT_VERSION_STRING, PROTOCOL_VERSION};
 use proto::crypto::Encryptor;
 use proto::types::Dimension;
 
@@ -15,16 +15,32 @@ use super::BedrockUser;
 impl BedrockUser {
     /// Handles a [`CacheStatus`] packet.
     /// This stores the result in the [`Session::cache_support`] field.
+    #[tracing::instrument(
+        skip_all,
+        name = "BedrockUser::handle_cache_status",
+        fields(
+            username = %self.name().unwrap_or("<unknown>")
+        )
+    )]
     pub fn handle_cache_status(&self, packet: Vec<u8>) -> anyhow::Result<()> {
         self.expected.store(ResourcePackClientResponse::ID, Ordering::SeqCst);
 
         let request = CacheStatus::deserialize(packet.as_ref())?;
         self.supports_cache.store(request.supports_cache, Ordering::Relaxed);
+        
+        tracing::debug!("Client cache status is: {}", request.supports_cache);
 
         Ok(())
     }
 
     /// Handles a packet violation warning.
+    #[tracing::instrument(
+        skip_all,
+        name = "BedrockUser::handle_violation_warning",
+        fields(
+            username = %self.name().unwrap_or("<unknown>")
+        )
+    )]
     pub async fn handle_violation_warning(&self, packet: Vec<u8>) -> anyhow::Result<()> {
         let request = ViolationWarning::deserialize(packet.as_ref())?;
         tracing::error!("Received violation warning: {request:?}");
@@ -37,9 +53,18 @@ impl BedrockUser {
     ///
     /// All connected sessions are notified of the new player
     /// and the new player gets a list of all current players.
+    #[tracing::instrument(
+        skip_all,
+        name = "BedrockUser::handle_local_initialized",
+        fields(
+            username = %self.name().unwrap_or("<unknown>")
+        )
+    )]
     pub fn handle_local_initialized(&self, packet: Vec<u8>) -> anyhow::Result<()> {
         let _request = SetLocalPlayerAsInitialized::deserialize(packet.as_ref())?;
         self.expected.store(u32::MAX, Ordering::SeqCst);
+
+        tracing::debug!("Player fully initialised");
 
         // Add player to other's player lists
 
@@ -70,6 +95,7 @@ impl BedrockUser {
             // let level_chunk = self.level_manager.request_biomes(Vector::from([0, 0]), Dimension::Overworld)?;
             // dbg!(level_chunk);
 
+            tracing::info!("{} has joined the server", self.name()?);
             self.broadcast(TextMessage {
                 data: TextData::Translation {
                     parameters: vec![&format!("§e{}", self.name()?)],
@@ -89,6 +115,13 @@ impl BedrockUser {
     }
 
     /// Handles a [`ChunkRadiusRequest`] packet by returning the maximum allowed render distance.
+    #[tracing::instrument(
+        skip_all,
+        name = "BedrockUser::handle_chunk_radius_request",
+        fields(
+            username = %self.name().unwrap_or("<unknown>")
+        )
+    )]
     pub fn handle_chunk_radius_request(&self, packet: Vec<u8>) -> anyhow::Result<()> {
         let request = ChunkRadiusRequest::deserialize(packet.as_ref())?;
 
@@ -96,14 +129,11 @@ impl BedrockUser {
         let allowed_radius = std::cmp::min(
             SERVER_CONFIG.read().allowed_render_distance, request.radius
         );
+        tracing::debug!("Chunk radius set to {allowed_radius} ({} was requested)", request.radius);
 
         self.send(ChunkRadiusReply {
             allowed_radius,
         })?;
-
-        if request.radius <= 0 {
-            anyhow::bail!("Render distance must be greater than 0");
-        }
 
         // self.player().viewer.set_radius(allowed_radius);
 
@@ -233,10 +263,18 @@ impl BedrockUser {
 
     /// Handles a [`ClientToServerHandshake packet`]. After receiving this packet, the server will now
     /// use encryption when communicating with this client.
+    #[tracing::instrument(
+        skip_all,
+        name = "BedrockUser::handle_client_to_server_handshake",
+        fields(
+            username = %self.name().unwrap_or("<unknown>")
+        )
+    )]
     pub fn handle_client_to_server_handshake(&self, packet: Vec<u8>) -> anyhow::Result<()> {
         self.expected.store(CacheStatus::ID, Ordering::SeqCst);
 
         ClientToServerHandshake::deserialize(packet.as_ref())?;
+        tracing::debug!("Encryption handshake successful");
 
         let response = PlayStatus { status: Status::LoginSuccess };
         self.send(response)?;
@@ -271,7 +309,8 @@ impl BedrockUser {
         skip_all,
         name = "BedrockUser::handle_login",
         fields(
-            username
+            // username is not yet known at this point.
+            address = %self.raknet.address
         )
     )]
     pub async fn handle_login(&self, packet: Vec<u8>) -> anyhow::Result<()> {
@@ -322,39 +361,51 @@ impl BedrockUser {
     }
 
     /// Handles a [`RequestNetworkSettings`] packet.
+    #[tracing::instrument(
+        skip_all,
+        name = "BedrockUser::handle_network_settings_request",
+        fields(
+            address = %self.raknet.address
+        )
+    )]
     pub fn handle_network_settings_request(&self, packet: Vec<u8>) -> anyhow::Result<()> {
         self.expected.store(Login::ID, Ordering::SeqCst);
 
         let request = RequestNetworkSettings::deserialize(packet.as_ref())?;
-        if request.protocol_version != NETWORK_VERSION {
-            if request.protocol_version > NETWORK_VERSION {
+        if request.protocol_version != PROTOCOL_VERSION {
+            if request.protocol_version > PROTOCOL_VERSION {
                 let response = PlayStatus { status: Status::FailedServer };
                 self.send(response)?;
 
+                tracing::warn!("Server is outdated. Client using protocol {}, server using {PROTOCOL_VERSION}", request.protocol_version);
                 anyhow::bail!(
                     "Client is using a newer protocol ({} vs. {})",
                     request.protocol_version,
-                    NETWORK_VERSION
+                    PROTOCOL_VERSION
                 );
             } else {
                 let response = PlayStatus { status: Status::FailedClient };
                 self.send(response)?;
 
+                tracing::warn!("Client is outdated. Client using protocol {}, server using {PROTOCOL_VERSION}", request.protocol_version);
                 anyhow::bail!(
                     "Client is using an older protocol ({} vs. {})",
                     request.protocol_version,
-                    NETWORK_VERSION
+                    PROTOCOL_VERSION
                 );
             }
         }
 
         let response = {
             let lock = SERVER_CONFIG.read();
-            NetworkSettings {
+            let settings = NetworkSettings {
                 compression_algorithm: lock.compression_algorithm,
                 compression_threshold: lock.compression_threshold,
                 client_throttle: lock.client_throttle,
-            }
+            };
+
+            tracing::debug!("Using {:?} compression with {} byte threshold", lock.compression_algorithm, lock.compression_threshold);
+            settings
         };
 
         self.send(response)?;

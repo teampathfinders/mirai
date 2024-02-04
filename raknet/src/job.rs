@@ -19,7 +19,14 @@ const SESSION_TIMEOUT: Duration = Duration::from_secs(5);
 
 impl RaknetUser {
     /// Starts the ticker task which takes care of packet submission and general user management.
-    pub async fn async_job(
+    #[tracing::instrument(
+        skip_all,
+        name = "RaknetUser::receiver",
+        fields(
+            address = %self.address
+        )
+    )]
+    pub async fn receiver(
         self: Arc<Self>, mut receiver: mpsc::Receiver<Vec<u8>>
     ) {
         let mut interval = tokio::time::interval(INTERNAL_TICK_INTERVAL);
@@ -44,7 +51,7 @@ impl RaknetUser {
             should_run = !self.active.is_cancelled();
         }
 
-        tracing::debug!("RakNet job exited");
+        tracing::debug!("RakNet processor shutdown");
     }
 
     /// Performs tasks not related to packet processing

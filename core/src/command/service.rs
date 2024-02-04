@@ -16,7 +16,9 @@ pub struct ServiceResponse {
 }
 
 /// A request that can be sent to the command [`Service`].
+#[derive(Debug)]
 pub struct ServiceRequest {
+    command: String,
     callback: oneshot::Sender<ServiceResponse>
 }
 
@@ -30,9 +32,9 @@ impl ServiceEndpoint {
     /// 
     /// This method will return a receiver that will receive the output when the command has been executed.
     /// Execution of the command might not happen within the same tick.
-    pub async fn request(&self, _request: CommandRequest<'_>) -> anyhow::Result<oneshot::Receiver<ServiceResponse>> {
+    pub async fn request(&self, request: CommandRequest<'_>) -> anyhow::Result<oneshot::Receiver<ServiceResponse>> {
         let (sender, receiver) = oneshot::channel();
-        let request = ServiceRequest { callback: sender };
+        let request = ServiceRequest { command: request.command.to_owned(), callback: sender };
 
         self.sender.send_timeout(request, SERVICE_TIMEOUT).await.context("Command service request timed out")?;
 
@@ -73,15 +75,18 @@ impl Service {
 
     /// Runs the service execution job.
     async fn execution_job(self: Arc<Service>, mut receiver: mpsc::Receiver<ServiceRequest>) {
-        // loop {
+        loop {
             tokio::select! {
+                request = receiver.recv() => {
+                    tracing::debug!("Request received {request:?}");
+                }
                 _ = self.token.cancelled() => {
                     // Stop accepting requests.
                     receiver.close();
-                    // break
+                    break
                 }   
             }
-        // }
+        }
 
         tracing::info!("Command service closed");
     }

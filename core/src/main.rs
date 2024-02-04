@@ -1,27 +1,27 @@
 use std::sync::atomic::{AtomicU16, Ordering};
 
 use anyhow::Context;
-use tokio::runtime;
+use tokio::runtime::{self, Handle};
 
 use inferno::instance::{DbConfig, InstanceBuilder, NetConfig};
 
 fn main() -> anyhow::Result<()> {
-    init_logging().context("Unable to initialise logging")?;
-    tracing::debug!("Telemetry disabled");
-
-    start_server()
+    app()
 }
 
-fn start_server() -> anyhow::Result<()> {
+fn app() -> anyhow::Result<()> {
     let runtime = runtime::Builder::new_multi_thread()
         .enable_io()
         .enable_time()
         .thread_name_fn(|| {
             static THREAD_COUNTER: AtomicU16 = AtomicU16::new(1);
-            format!("[worker {}]", THREAD_COUNTER.fetch_add(1, Ordering::Relaxed))
+            format!("worker-{}", THREAD_COUNTER.fetch_add(1, Ordering::Relaxed))
         })
         .build()
         .expect("Failed to build runtime");
+
+    let handle = runtime.handle();
+    init_logging(handle).context("Unable to initialise logging")?;
 
     let host = std::env::vars().find_map(|(k, v)| if k == "REDIS_HOST" { Some(v) } else { None });
 
@@ -48,10 +48,14 @@ fn start_server() -> anyhow::Result<()> {
         })
         .db_config(DbConfig { host: &host, port });
 
-    runtime.block_on(async move {
+    let out = runtime.block_on(async move {
         let instance = builder.build().await?;
         instance.run().await
-    })
+    });
+
+    opentelemetry::global::shutdown_tracer_provider();
+
+    out
 }
 
 /// Initialises logging with tokio-console.
@@ -81,23 +85,42 @@ fn init_logging() -> anyhow::Result<()> {
 
 /// Initialises logging without tokio-console.
 #[cfg(not(feature = "tokio-console"))]
-fn init_logging() -> anyhow::Result<()> {
+fn init_logging(handle: &Handle) -> anyhow::Result<()> {
     use std::str::FromStr;
     use tracing_subscriber::filter::LevelFilter;
+    use tracing_subscriber::layer::SubscriberExt;
+    use tracing_subscriber::util::SubscriberInitExt;
 
-    let max_level = LevelFilter::from_str(
+    use opentelemetry_sdk::runtime::Tokio;
+
+    let _guard = handle.enter();
+    let tracer = opentelemetry_jaeger::new_collector_pipeline()
+        .with_endpoint("http://localhost:14268/api/traces")
+        .with_isahc()
+        .with_service_name("inferno_tracing")
+        .install_batch(Tokio)?;
+
+    let level_filter = LevelFilter::from_str(
         &std::env::vars()
             .find_map(|(k, v)| if k == "LOG_LEVEL" { Some(v) } else { None })
             .unwrap_or(String::from("info")),
     )?;
 
-    tracing_subscriber::fmt()
-        .with_max_level(max_level)
+    let fmt = tracing_subscriber::fmt::layer()
+        // .with_level(max_level)
         .with_target(false)
-        .with_thread_names(true)
-        .with_file(true)
-        .pretty()
-        .init();
+        .with_ansi(true)
+        .with_line_number(false)
+        .with_file(false)
+        .without_time()
+        .pretty();
+
+    tracing_subscriber::registry()
+        .with(level_filter)
+        .with(fmt)
+        .with(tracing_opentelemetry::layer().with_tracer(tracer))
+        .try_init()
+        .context("Failed to register tracing subscriber")?;
 
     Ok(())
 }

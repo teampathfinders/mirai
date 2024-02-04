@@ -272,7 +272,7 @@ pub fn parse_identity_data<'a, R: BinaryRead<'a>>(reader: &mut R) -> anyhow::Res
     let identity_data = match tokens.chain.len() {
         1 => {
             // Client is not signed into Xbox.
-            tracing::error!("User is not authenticated with Microsoft services");
+            tracing::warn!("User is not authenticated with Microsoft services");
             anyhow::bail!("User must be authenticated with Microsoft services");
         }
         3 => {

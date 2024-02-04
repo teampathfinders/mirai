@@ -122,7 +122,7 @@ impl RaknetUser {
             job_handle: RwLock::new(None)
         });
 
-        let handle = tokio::spawn(Arc::clone(&state).async_job(forward_rx));
+        let handle = tokio::spawn(Arc::clone(&state).receiver(forward_rx));
         *state.job_handle.write() = Some(handle);
     
         (state, output_rx)

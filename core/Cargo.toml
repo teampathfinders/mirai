@@ -7,6 +7,7 @@ authors = ["Ruben Adema"]
 repository = "https://github.com/teampathfinders/inferno"
 license = "Apache-2.0"
 rust-version = "1.75.0"
+build = "build.rs"
 
 [lib]
 name = "inferno"
@@ -14,6 +15,9 @@ path = "src/lib.rs"
 
 [features]
 tokio-console = ["console-subscriber"]
+
+[build-dependencies]
+vergen = { version = "8.3.1", features = ["git", "gitcl"] }
 
 [dependencies]
 nbt = { package = "inferno-nbt", path = "../nbt" }
@@ -39,3 +43,10 @@ serde_json = { version = "1.0.113", features = ["preserve_order"] }
 anyhow = { version = "1.0.76", features = ["backtrace"] }
 legion = "0.4.0"
 nohash-hasher = "0.2.0"
+
+# Telemetry
+
+tracing-opentelemetry = "0.22.0"
+opentelemetry-jaeger = { version = "0.20.0", features = ["rt-tokio", "collector_client", "isahc_collector_client"] }
+opentelemetry = "0.21.0"
+opentelemetry_sdk = { version = "0.21.2", features = ["rt-tokio"] }

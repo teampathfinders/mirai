@@ -26,10 +26,12 @@ impl RaknetUser {
         )
     )]
     pub async fn handle_raw_packet(&self, packet: Vec<u8>) -> anyhow::Result<bool> {
+        tracing::debug!("Processing raw packet");
+
         *self.last_update.write() = Instant::now();
 
         let Some(pk_id) = packet.first().copied() else {
-            tracing::error!("Received raw packet is empty");
+            tracing::warn!("Received raw packet is empty");
             anyhow::bail!("Raw packet is empty");
         };  
 
@@ -38,6 +40,8 @@ impl RaknetUser {
             Nak::ID => self.handle_nak(packet.as_ref()).await?,
             _ => self.handle_frame_batch(packet).await?,
         }
+
+        tracing::debug!("Finished processing raw packet");
 
         Ok(true)
     }
@@ -120,7 +124,7 @@ impl RaknetUser {
     /// Processes an unencapsulated game packet.
     async fn handle_frame_body(&self, packet: Vec<u8>) -> anyhow::Result<()> {
         let Some(packet_id) = packet.first().copied() else {
-            tracing::error!("Received packet is empty");
+            tracing::warn!("Received packet is empty");
             anyhow::bail!("Packet was empty");
         };
 
@@ -130,18 +134,15 @@ impl RaknetUser {
                 if let Err(err) = self.output.send_timeout(packet, RAKNET_OUTPUT_TIMEOUT).await {
                     if matches!(err, SendTimeoutError::Closed(_)) {
                         // Output channel has been closed
-                        tracing::error!("RakNet layer output channel closed, disconnecting them...");
+                        tracing::warn!("RakNet layer output channel closed, disconnecting them...");
                     } else {
                         // Forward timeout
-                        tracing::error!("Client seems to be hanging server side, disconnecting them...")
+                        tracing::warn!("Client seems to be hanging server side, disconnecting them...")
                     }
                     self.disconnect();
                 }
             },
-            DisconnectNotification::ID => {
-                tracing::debug!("Received disconnect notification");
-                self.active.cancel()
-            }
+            DisconnectNotification::ID => self.active.cancel(),
             ConnectionRequest::ID => self.handle_connection_request(packet)?,
             NewIncomingConnection::ID => {
                 self.handle_new_incoming_connection(packet)?

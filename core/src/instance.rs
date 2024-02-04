@@ -16,7 +16,7 @@ use util::{Deserialize, Joinable, ReserveTo, Serialize};
 use crate::command::{self};
 use crate::config::SERVER_CONFIG;
 use crate::net::{ForwardablePacket, UserMap};
-use proto::bedrock::{CompressionAlgorithm, CLIENT_VERSION_STRING, NETWORK_VERSION};
+use proto::bedrock::{CompressionAlgorithm, CLIENT_VERSION_STRING, PROTOCOL_VERSION};
 use proto::raknet::{
     IncompatibleProtocol, OpenConnectionReply1, OpenConnectionReply2, OpenConnectionRequest1, OpenConnectionRequest2, UnconnectedPing,
     UnconnectedPong, RAKNET_VERSION,
@@ -198,6 +198,8 @@ impl<'a> InstanceBuilder<'a> {
 
     /// Produces an [`Instance`] with the configured options, consuming the builder.
     pub async fn build(self) -> anyhow::Result<Instance> {
+        tracing::info!("Inferno server v{} (rev. {}) built for MCBE {CLIENT_VERSION_STRING} (prot. {PROTOCOL_VERSION})", Instance::SERVER_VERSION, Instance::GIT_REV);
+
         let ipv4_socket = UdpSocket::bind(self.net_config.ipv4_addr)
             .await
             .context("Unable to create IPv4 UDP socket")?;
@@ -262,6 +264,15 @@ pub struct Instance {
 }
 
 impl Instance {
+    /// The current version of the server.
+    pub const SERVER_VERSION: &'static str = env!("CARGO_PKG_VERSION");
+    /// The Git revision of the server.
+    pub const GIT_REV: &'static str = env!("VERGEN_GIT_DESCRIBE");
+    /// The client version string (i.e "1.20")
+    pub const CLIENT_VERSION_STRING: &'static str = CLIENT_VERSION_STRING;
+    /// The network protocol version.
+    pub const PROTOCOL_VERSION: u32 = PROTOCOL_VERSION;
+
     /// Runs the server.
     ///
     /// This future resolves when the server has fully shut down again.
@@ -275,7 +286,7 @@ impl Instance {
             let user_map = Arc::clone(&self.user_map);
             let token = self.token.clone();
 
-            let handle = tokio::spawn(Instance::net_recv_job(token, socket, user_map));
+            let handle = tokio::spawn(Instance::net_receiver(token, socket, user_map));
             tracing::info!("IPv4 listener ready");
 
             handle
@@ -285,7 +296,7 @@ impl Instance {
             let user_map = Arc::clone(&self.user_map);
             let token = self.token.clone();
 
-            let handle = tokio::spawn(Instance::net_recv_job(token, socket, user_map));
+            let handle = tokio::spawn(Instance::net_receiver(token, socket, user_map));
             tracing::info!("IPv6 listener ready");
 
             Some(handle)
@@ -322,6 +333,13 @@ impl Instance {
 
     /// Generates a response to the [`UnconnectedPing`] packet with [`UnconnectedPong`].
     #[inline]
+    #[tracing::instrument(
+        skip_all,
+        name = "Instance::process_unconnected_ping",
+        fields(
+            %packet.addr
+        )
+    )]
     fn process_unconnected_ping(mut packet: ForwardablePacket, server_guid: u64, metadata: &str) -> anyhow::Result<ForwardablePacket> {
         let ping = UnconnectedPing::deserialize(packet.buf.as_ref())?;
         let pong = UnconnectedPong { time: ping.time, server_guid, metadata };
@@ -340,6 +358,13 @@ impl Instance {
 
     /// Generates a response to the [`OpenConnectionRequest1`] packet with [`OpenConnectionReply1`].
     #[inline]
+    #[tracing::instrument(
+        skip_all,
+        name = "Instance::process_open_connection_request1",
+        fields(
+            %packet.addr
+        )
+    )]
     fn process_open_connection_request1(mut packet: ForwardablePacket, server_guid: u64) -> anyhow::Result<ForwardablePacket> {
         let request = OpenConnectionRequest1::deserialize(packet.buf.as_ref())?;
 
@@ -368,6 +393,13 @@ impl Instance {
     /// This is also when a session is created for the client.
     /// From this point, all packets are encoded in a [`Frame`](crate::raknet::Frame).
     #[inline]
+    #[tracing::instrument(
+        skip_all,
+        name = "Instance::process_open_connection_request2",
+        fields(
+            %packet.addr
+        )
+    )]
     fn process_open_connection_request2(
         mut packet: ForwardablePacket,
         udp_socket: Arc<UdpSocket>,
@@ -399,7 +431,7 @@ impl Instance {
     }
 
     /// Receives raknet from IPv4 clients and adds them to the receive queue
-    async fn net_recv_job(token: CancellationToken, udp_socket: Arc<UdpSocket>, user_manager: Arc<UserMap>) {
+    async fn net_receiver(token: CancellationToken, udp_socket: Arc<UdpSocket>, user_manager: Arc<UserMap>) {
         let server_guid = rand::random();
 
         // TODO: Customizable server description.
@@ -441,7 +473,7 @@ impl Instance {
 
                 tokio::spawn(async move {
                     let Some(id) = packet.packet_id() else {
-                        tracing::error!("Unconnected packet was empty");
+                        tracing::warn!("Unconnected packet was empty");
                         return;
                     };
 
@@ -482,7 +514,7 @@ impl Instance {
         format!(
             "MCPE;{};{};{};{};{};{};{};Survival;1;{};{};",
             description,
-            NETWORK_VERSION,
+            PROTOCOL_VERSION,
             CLIENT_VERSION_STRING,
             session_count,
             max_session_count,

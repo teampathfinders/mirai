@@ -78,7 +78,7 @@ impl BedrockUser {
 
         let clone = Arc::clone(&user);
         let handle = tokio::spawn(async move {
-            clone.recv_job(receiver).await;
+            clone.receiver(receiver).await;
         });
 
         *user.job_handle.write() = Some(handle);
@@ -86,9 +86,17 @@ impl BedrockUser {
     }
 
     /// The worker that processes incoming packets.
-    async fn recv_job(self: &Arc<Self>, mut receiver: mpsc::Receiver<Vec<u8>>) {
+    #[tracing::instrument(
+        skip_all,
+        name = "BedrockUser::receiver",
+        fields(
+            username = %self.name().unwrap_or("<unknown>"),
+            address = %self.raknet.address
+        )
+    )]
+    async fn receiver(self: &Arc<Self>, mut receiver: mpsc::Receiver<Vec<u8>>) {
         let mut broadcast = self.broadcast.subscribe();
-
+        
         let mut should_run = true;
         while should_run {
             tokio::select! {
@@ -113,7 +121,7 @@ impl BedrockUser {
             };
         }
 
-        tracing::debug!("Bedrock job exited");
+        tracing::info!("{} has disconnected", self.name().unwrap_or("<unknown>"));
     }
 
     /// Handles a packet broadcasted by another user.
@@ -161,8 +169,7 @@ impl BedrockUser {
         };
         self.send(disconnect_packet)?;
 
-        tracing::info!("Player kicked");
-
+        tracing::info!("User has been kicked");
         self.raknet.join().await
     }
 
@@ -309,7 +316,7 @@ impl BedrockUser {
         let expected = self.expected();
         if expected != u32::MAX && header.id != expected {
             // Server received an unexpected packet.
-            tracing::error!(
+            tracing::warn!(
                 "Client sent unexpected packet while logging in (expected {:#04x}, got {:#04x})",
                 expected, header.id
             );
@@ -420,16 +427,16 @@ impl Joinable for BedrockUser {
     async fn join(&self) -> anyhow::Result<()> {
         let handle = self.job_handle.write().take();
         if let Some(handle) = handle {
-                            // Error logged by RakNet join method.
-                            let _: anyhow::Result<()> = self.raknet.join().await;
+            // Error logged by RakNet join method.
+            let _: anyhow::Result<()> = self.raknet.join().await;
 
-                            match handle.await {
-                                Ok(_) => Ok(()),
-                                Err(err) => {
-                                    tracing::error!("Error occurred while awaiting Bedrock user service shutdown: {err:#?}");
-                                    Ok(())
-                                }
-                            }
+            match handle.await {
+                Ok(_) => Ok(()),
+                Err(err) => {
+                    tracing::error!("Error occurred while awaiting Bedrock user service shutdown: {err:#?}");
+                    Ok(())
+                }
+            }
         } else {
             tracing::error!("This user service has already been joined");
             anyhow::bail!("User service already joined");

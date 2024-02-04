@@ -47,8 +47,6 @@ impl Serialize for FrameBatch {
     /// Serializes a batch of frames to a buffer.
     fn serialize_into<W: BinaryWrite>(&self, writer: &mut W) -> anyhow::Result<()> {
         writer.write_u8(CONNECTED_PEER_BIT_FLAG)?;
-
-        tracing::debug!("{}", self.sequence_number);
         writer.write_u24_le(self.sequence_number)?;
 
         for frame in &self.frames {
@@ -71,9 +69,9 @@ impl<'a> Deserialize<'a> for FrameBatch {
             frames.push(Frame::deserialize_from(reader)?);
         }
 
+        #[cfg(debug_assertions)]
         if reader.remaining() != 0 {
-            tracing::error!("Not all bytes have been read from the packet buffer");
-            anyhow::bail!("Not all bytes have been read from the packet buffer");
+            tracing::warn!("Not all bytes have been read from the packet buffer");
         }
 
         Ok(Self { sequence_number: batch_number, frames })
