@@ -35,7 +35,7 @@ impl RaknetUser {
 
         match pk_id {
             Ack::ID => self.handle_ack(packet.as_ref())?,
-            Nak::ID => self.handle_nack(packet.as_ref()).await?,
+            Nak::ID => self.handle_nak(packet.as_ref()).await?,
             _ => self.handle_frame_batch(packet).await?,
         }
 
@@ -51,9 +51,9 @@ impl RaknetUser {
     /// * Acknowledging reliable raknet
     async fn handle_frame_batch(&self, packet: Vec<u8>) -> anyhow::Result<()> {
         let batch = FrameBatch::deserialize(packet.as_ref())?;
-        self
-            .batch_number
-            .fetch_max(batch.sequence_number, Ordering::SeqCst);
+        // self
+        //     .batch_number
+        //     .fetch_max(batch.sequence_number, Ordering::SeqCst);
 
         for frame in batch.frames {
             self.handle_frame(frame, batch.sequence_number).await?;
@@ -72,6 +72,8 @@ impl RaknetUser {
             && frame.sequence_index
             < self.batch_number.load(Ordering::SeqCst)
         {
+            tracing::warn!("Received old packet. Discarding it");
+
             // Discard packet
             return Ok(());
         }

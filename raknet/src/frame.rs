@@ -47,7 +47,9 @@ impl Serialize for FrameBatch {
     /// Serializes a batch of frames to a buffer.
     fn serialize_into<W: BinaryWrite>(&self, writer: &mut W) -> anyhow::Result<()> {
         writer.write_u8(CONNECTED_PEER_BIT_FLAG)?;
-        writer.write_u24_le(self.sequence_number.try_into()?)?;
+
+        tracing::debug!("{}", self.sequence_number);
+        writer.write_u24_le(self.sequence_number)?;
 
         for frame in &self.frames {
             frame.serialize_into(writer)?;
@@ -128,13 +130,13 @@ impl Serialize for Frame {
         writer.write_u8(flags)?;
         writer.write_u16_be(self.body.len() as u16 * 8)?;
         if self.reliability.is_reliable() {
-            writer.write_u24_le(self.reliable_index.try_into()?)?;
+            writer.write_u24_le(self.reliable_index)?;
         }
         if self.reliability.is_sequenced() {
-            writer.write_u24_le(self.sequence_index.try_into()?)?;
+            writer.write_u24_le(self.sequence_index)?;
         }
         if self.reliability.is_ordered() {
-            writer.write_u24_le(self.order_index.try_into()?)?;
+            writer.write_u24_le(self.order_index)?;
             writer.write_u8(self.order_channel)?;
         }
         if self.is_compound {
@@ -159,7 +161,7 @@ impl<'a> Deserialize<'a> for Frame {
         let reliable_index = if reliability.is_reliable() { reader.read_u24_le()? } else { 0 };
         let sequence_index = if reliability.is_sequenced() { reader.read_u24_le()? } else { 0 };
     
-        let order_index = if reliability.is_reliable() { reader.read_u24_le()? } else { 0 };
+        let order_index = if reliability.is_ordered() { reader.read_u24_le()? } else { 0 };
         let order_channel = if reliability.is_ordered() { reader.read_u8()? } else  { 0 };
 
         let compound_size = if is_compound { reader.read_u32_be()? } else { 0 };

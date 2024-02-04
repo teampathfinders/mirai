@@ -168,9 +168,11 @@ impl RaknetUser {
             "Frames were not split properly"
         );
 
+        let num = self.batch_number.load(Ordering::SeqCst);
+        tracing::info!("batch number: {}", num);
+
         let mut batch = FrameBatch {
             sequence_number: self.batch_number.fetch_add(1, Ordering::SeqCst),
-
             frames: vec![],
         };
 
@@ -215,10 +217,13 @@ impl RaknetUser {
                 }
 
                 has_reliable_packet = false;
+
+                tracing::info!("sub");
                 batch = FrameBatch {
                     sequence_number: self
                         .batch_number
-                        .fetch_add(1, Ordering::SeqCst),
+                        .fetch_add(0, Ordering::SeqCst),
+
                     frames: vec![frame],
                 };
             }

@@ -249,7 +249,7 @@ pub fn parse_identity_data<'a, R: BinaryRead<'a>>(reader: &mut R) -> anyhow::Res
     let token_length = reader.read_u32_le()?;
     let token_chain = reader.take_n(token_length as usize)?;
 
-    let mut tokens = serde_json::from_slice::<TokenChain>(token_chain)?;
+    let tokens = serde_json::from_slice::<TokenChain>(token_chain)?;
     let identity_data = match tokens.chain.len() {
         1 => {
             // Client is not signed into Xbox.
@@ -260,8 +260,6 @@ pub fn parse_identity_data<'a, R: BinaryRead<'a>>(reader: &mut R) -> anyhow::Res
             // Verify the first token and decode the public key for the next token.
             // This public key must be equal to Mojang's public key to verify that the second
             // token was signed by Mojang.
-
-            tokens.chain[2] = tokens.chain[2].to_uppercase();
 
             let mut key = parse_initial_token(&tokens.chain[0])?;
             if !key.eq(MOJANG_PUBLIC_KEY) {

@@ -53,6 +53,7 @@ pub trait BinaryWrite: Write + AsRef<[u8]> + AsMut<[u8]> {
     #[inline]
     fn write_u24_le(&mut self, v: u32) -> anyhow::Result<()> {
         let bytes = &v.to_le_bytes()[..3];
+    
         self.write_all(&bytes)?;
         Ok(())
     }
@@ -60,7 +61,8 @@ pub trait BinaryWrite: Write + AsRef<[u8]> + AsMut<[u8]> {
     /// Writes a big endian `u24` to the writer.
     #[inline]
     fn write_u24_be(&mut self, v: u32) -> anyhow::Result<()> {
-        let bytes = &v.to_be_bytes()[..3];
+        let bytes = &v.to_be_bytes()[1..];
+
         self.write_all(&bytes)?;
         Ok(())
     }

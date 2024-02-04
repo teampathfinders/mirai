@@ -47,7 +47,7 @@ impl BedrockUser {
 
             let name = self.name()?;
             // Check that the source is equal to the player name to prevent spoofing.
-            if name == source {
+            if name != source {
                 tracing::warn!("Client and text message name do not match. Kicking them for forbidden modifications");
                 return self.kick_with_reason("Illegal packet modifications detected", DisconnectReason::BadPacket).await
             }

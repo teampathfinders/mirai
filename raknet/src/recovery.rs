@@ -48,6 +48,10 @@ impl Recovery {
     /// Recovers the specified raknet from the recovery queue.
     ///
     /// This method should be called when a NAK is received.
+    #[tracing::instrument(
+        skip(self),
+        name = "Recovery::recover"
+    )]
     pub fn recover(&self, records: &[AckEntry]) -> Vec<FrameBatch> {
         let mut recovered = Vec::new();
         for record in records {
@@ -66,6 +70,10 @@ impl Recovery {
                     }
                 }
             }
+        }
+
+        if recovered.is_empty() {
+            tracing::error!("None of the requested packets could be recovered");
         }
 
         recovered
