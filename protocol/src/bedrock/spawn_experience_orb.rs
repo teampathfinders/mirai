@@ -4,9 +4,14 @@ use util::Serialize;
 
 use crate::bedrock::ConnectedPacket;
 
+/// Spawns an experience orb.
+/// 
+/// Orbs cannot be spawned with the standard entity packets.
 #[derive(Debug, Clone)]
 pub struct SpawnExperienceOrb {
+    /// Position of the orb.
     pub position: Vector<f32, 3>,
+    /// Amount of experience this orb has.
     pub amount: u32,
 }
 

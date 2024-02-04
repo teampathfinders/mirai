@@ -27,35 +27,63 @@ use crate::bedrock::{ConnectedPacket, PermissionLevel};
 //     Count = 1 << 18,
 // }
 
+/// Allows a client to place blocks.
 pub const ABILITY_BUILD: u32 = 1 << 0;
+/// Allows a client to destroy blocks.
 pub const ABILITY_MINE: u32 = 1 << 1;
+/// Allows a client to interact with doors and switches.
 pub const ABILITY_DOORS_AND_SWITCHES: u32 = 1 << 2;
+/// Allows a client to open containers.
 pub const ABILITY_OPEN_CONTAINERS: u32 = 1 << 3;
+/// Allows a client to attack other players.
 pub const ABILITY_ATTACK_PLAYERS: u32 = 1 << 4;
+/// Allows a client to attack mobs.
 pub const ABILITY_ATTACK_MOBS: u32 = 1 << 5;
+/// Allows a client to execute operator commands.
 pub const ABILITY_OPERATOR_COMMANDS: u32 = 1 << 6;
+/// Allows a client to teleport.
+/// 
+/// I'm not sure why this ability is separate from the operator commands one.
 pub const ABILITY_TELEPORT: u32 = 1 << 7;
+/// Makes a client invulnerable?
 pub const ABILITY_INVULNERABLE: u32 = 1 << 8;
+/// Set when the client is currently flying.
 pub const ABILITY_FLYING: u32 = 1 << 9;
+/// Allows the client to fly.
 pub const ABILITY_MAYFLY: u32 = 1 << 10;
+/// Not sure what this does.
 pub const ABILITY_INSTANT_BUILD: u32 = 1 << 11;
+/// Not sure what this does.
 pub const ABILITY_LIGHTNING: u32 = 1 << 12;
+/// Used to set the fly speed of the client.
 pub const ABILITY_FLY_SPEED: u32 = 1 << 13;
+/// Used to set the walk speed of the client.
 pub const ABILITY_WALK_SPEED: u32 = 1 << 14;
+/// Mutes the player. This disables chat client-side and the client will refuse to send chat messages to the server.
 pub const ABILITY_MUTED: u32 = 1 << 15;
+/// Grants the world builder ability.
 pub const ABILITY_WORLD_BUILDER: u32 = 1 << 16;
+/// Not sure what this does. Possibly related to spectator mode?
 pub const ABILITY_NOCLIP: u32 = 1 << 17;
+/// Not sure what this does.
 pub const ABILITY_PRIVILEGED_BUILDER: u32 = 1 << 18;
+/// Indicates the highest value of the abilities.
 pub const ABILITY_FLAG_END: u32 = 1 << 19;
 
+/// Type of ability.
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 #[repr(u16)]
 #[variant_count]
 pub enum AbilityType {
+    /// No idea what this is.
     CustomCache,
+    /// Used for most abilities.
     Base,
+    /// Abilities for spectator.
     Spectator,
+    /// Command-related abilities.
     Commands,
+    /// Abilities in editor mode.
     Editor,
 }
 
@@ -75,12 +103,14 @@ impl TryFrom<u16> for AbilityType {
     }
 }
 
+/// A single layer in the ability data.
 #[derive(Debug, Clone)]
 pub struct AbilityLayer {
     /// Type of ability layer.
     pub ability_type: AbilityType,
     /// Enabled abilities for this layer.
     pub abilities: u32,
+    /// Values of the abilities.
     pub values: u32,
     /// Default fly speed.
     pub fly_speed: f32,
@@ -112,6 +142,7 @@ impl<'a> Deserialize<'a> for AbilityLayer {
     }
 }
 
+/// Ability data of the client.
 #[derive(Debug, Clone)]
 pub struct AbilityData {
     /// Entity unique ID.
@@ -122,6 +153,7 @@ pub struct AbilityData {
     /// The command permission level is separate from the standard level.
     /// This level affects which commands the player is allowed to execute.
     pub command_permission_level: CommandPermissionLevel,
+    /// Ability layers.
     pub layers: Vec<AbilityLayer>,
 }
 
@@ -159,6 +191,9 @@ impl<'a> Deserialize<'a> for AbilityData {
     }
 }
 
+/// Updates the abilities of a user. 
+/// 
+/// These are the abilities listed in [`AbilityData`].
 #[derive(Debug)]
 pub struct UpdateAbilities(pub AbilityData);
 

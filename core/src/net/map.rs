@@ -40,6 +40,7 @@ impl<T> UserMapEntry<T> {
     }
 }
 
+/// Keeps track of all users currently connected to the server.
 pub struct UserMap {
     replicator: Arc<Replicator>,
     

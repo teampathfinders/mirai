@@ -7,9 +7,13 @@ use crate::bedrock::ConnectedPacket;
 /// All types of interaction.
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum InteractAction {
+    /// The player leaves a vehicle.
     LeaveVehicle = 3,
+    /// The player hovers over an entity.
     MouseOverEntity = 4,
+    /// The player wants to open an NPC dialog.
     NpcOpen = 5,
+    /// The player wants to open their inventory.
     OpenInventory = 6,
 }
 
@@ -27,6 +31,7 @@ impl TryFrom<u8> for InteractAction {
     }
 }
 
+/// A packet that indicates a player interaction.
 #[derive(Debug, Clone)]
 pub struct Interact {
     /// Type of action to perform.

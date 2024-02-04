@@ -5,9 +5,12 @@ use util::{BinaryWrite};
 
 use crate::bedrock::{ConnectedPacket, Skin};
 
+/// Updates the skin of a player.
 #[derive(Debug, Clone)]
 pub struct UpdateSkin<'a> {
+    /// UUID of the player.
     pub uuid: Uuid,
+    /// New player skin.
     pub skin: &'a Skin,
 }
 

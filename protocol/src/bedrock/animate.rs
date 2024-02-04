@@ -7,11 +7,17 @@ use crate::bedrock::ConnectedPacket;
 /// Type of animation to perform.
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum AnimateAction {
+    /// The player punched something.
     SwingArm = 1,
+    /// The player stopped sleeping.
     StopSleep = 3,
+    /// A critical hit.
     CriticalHit,
+    /// A magic critical hit.
     MagicCriticalHit,
+    /// The player is rowing to the right.
     RowRight = 128,
+    /// The player is rowing to the left.
     RowLeft,
 }
 
@@ -32,18 +38,21 @@ impl TryFrom<i32> for AnimateAction {
 }
 
 impl AnimateAction {
+    /// Whether the player is currently rowing.
     #[inline]
     pub const fn is_rowing(&self) -> bool {
         (*self as i32) & 0x80 != 0
     }
 }
 
+/// Plays an animation.
 #[derive(Debug, Clone)]
 pub struct Animate {
     /// Type of animation to perform.
     pub action_type: AnimateAction,
     /// Runtime ID of the entity performing the animation.
     pub runtime_id: u64,
+    /// How long the client has been rowing for.
     pub rowing_time: f32,
 }
 

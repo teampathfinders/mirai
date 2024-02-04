@@ -4,7 +4,9 @@ use raknet::CONNECTED_PEER_BIT_FLAG;
 
 /// An unprocessed packet.
 pub struct ForwardablePacket {
+    /// Buffer received.
     pub buf: Vec<u8>,
+    /// IP address of the client.
     pub addr: SocketAddr,
 }
 

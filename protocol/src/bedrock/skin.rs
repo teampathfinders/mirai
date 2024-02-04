@@ -41,26 +41,37 @@ impl TryFrom<&str> for ArmSize {
 /// Type of a persona piece.
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Deserialize)]
 pub enum PersonaPieceType {
+    /// The skeleton piece of the skin.
     #[serde(rename = "persona_skeleton")]
     Skeleton,
+    /// The body piece.
     #[serde(rename = "persona_body")]
     Body,
+    /// The skin piece.
     #[serde(rename = "persona_skin")]
     Skin,
+    /// The bottom piece. These can be trousers for instance.
     #[serde(rename = "persona_bottom")]
     Bottom,
+    /// The foot piece. These can be shoes for instance.
     #[serde(rename = "persona_feet")]
     Feet,
+    /// The top piece. This can be a hat.
     #[serde(rename = "persona_top")]
     Top,
+    /// The mouth piece.
     #[serde(rename = "persona_mouth")]
     Mouth,
+    /// The hair piece.
     #[serde(rename = "persona_hair")]
     Hair,
+    /// The eyes piece.
     #[serde(rename = "persona_eyes")]
     Eyes,
+    /// The facial hair piece.
     #[serde(rename = "persona_facial_hair")]
     FacialHair,
+    /// The dress piece.
     #[serde(rename = "persona_dress")]
     Dress,
 }
@@ -128,7 +139,7 @@ pub struct PersonaPiece {
     pub product_id: String,
 }
 
-impl PersonaPiece {
+impl util::Serialize for PersonaPiece {
     fn serialize_into<W: BinaryWrite>(&self, writer: &mut W) -> anyhow::Result<()> {
         writer.write_str(&self.piece_id)?;
         writer.write_str(self.piece_type.name())?;
@@ -167,7 +178,7 @@ pub struct PersonaPieceTint {
     pub colors: [String; 4],
 }
 
-impl PersonaPieceTint {
+impl util::Serialize for PersonaPieceTint {
     fn serialize_into<W: BinaryWrite>(&self, writer: &mut W) -> anyhow::Result<()> {
         writer.write_str(self.piece_type.name())?;
 
@@ -206,9 +217,13 @@ impl<'a> util::Deserialize<'a> for PersonaPieceTint {
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Deserialize_repr)]
 #[repr(u8)]
 pub enum SkinAnimationType {
+    /// No animation type.
     None,
+    /// An animation related to the head.
     Head,
+    /// A 32x32 body animation.
     Body32x32,
+    /// A 128x128 body animation.
     Body128x128,
 }
 
@@ -230,7 +245,9 @@ impl TryFrom<u32> for SkinAnimationType {
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Deserialize_repr)]
 #[repr(u8)]
 pub enum SkinExpressionType {
+    /// Classic skins that do not blink.
     Linear,
+    /// Used for persona skins that can blink.
     Blinking,
 }
 
@@ -270,8 +287,8 @@ pub struct SkinAnimation {
     pub expression_type: SkinExpressionType,
 }
 
-impl SkinAnimation {
-    pub fn serialize_into<W: BinaryWrite>(&self, writer: &mut W) -> anyhow::Result<()> {
+impl util::Serialize for SkinAnimation {
+    fn serialize_into<W: BinaryWrite>(&self, writer: &mut W) -> anyhow::Result<()> {
         writer.write_u32_le(self.image_width)?;
         writer.write_u32_le(self.image_height)?;
 
@@ -343,6 +360,7 @@ pub struct Skin {
     /// JSON containing information like bones.
     #[serde(rename = "SkinGeometryData", with = "base64_string")]
     pub geometry: String,
+    /// Data related to animations.
     #[serde(rename = "SkinAnimationData", with = "base64_string")]
     pub animation_data: String,
     /// Engine version for geometry data.
@@ -376,8 +394,10 @@ pub struct Skin {
     /// The server shouldn't actually trust this because the client can change it.
     #[serde(rename = "TrustedSkin")]
     pub is_trusted: bool,
+    /// Full ID of the skin.
     #[serde(skip)]
     pub full_id: String,
+    /// Not sure what this is.
     #[serde(skip)]
     pub is_primary_user: bool,
 }
@@ -446,8 +466,10 @@ impl Skin {
 
         Ok(())
     }
+}
 
-    pub fn serialize_into<W: BinaryWrite>(&self, writer: &mut W) -> anyhow::Result<()> {
+impl util::Serialize for Skin {
+    fn serialize_into<W: BinaryWrite>(&self, writer: &mut W) -> anyhow::Result<()> {
         writer.write_str(&self.skin_id)?;
         writer.write_str(&self.playfab_id)?;
         writer.write_str(&self.resource_patch)?;

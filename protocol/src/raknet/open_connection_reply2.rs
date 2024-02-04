@@ -23,6 +23,7 @@ impl OpenConnectionReply2 {
     /// Unique identifier of the packet.
     pub const ID: u8 = 0x08;
 
+    /// Estimates the size of the packet when serialized.
     pub const fn size_hint(&self) -> usize {
         1 + 16 + if self.client_address.is_ipv4() { IPV4_MEM_SIZE } else { IPV6_MEM_SIZE } + 2 + 1
     }

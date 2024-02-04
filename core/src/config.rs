@@ -33,6 +33,7 @@ pub struct ServerConfig {
     pub level_path: &'static str,
 }
 
+/// Default server configuration.
 pub static SERVER_CONFIG: RwLock<ServerConfig> = RwLock::new(ServerConfig {
     ipv4_port: 19132,
     ipv6_port: 19133,

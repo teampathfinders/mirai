@@ -17,28 +17,33 @@ pub struct BookEdit<'a> {
 /// An action performed on a book.
 #[derive(Debug, Clone)]
 pub enum BookEditAction<'a> {
+    /// Replaces a page with new text.
     ReplacePage {
         /// Page to be modified.
         page_number: u8,
         /// New text for the page.
         text: &'a str,
     },
+    /// Adds a page.
     AddPage {
         /// Page to add.
         page_number: u8,
         /// Text to add to the new page.
         text: &'a str,
     },
+    /// Deletes a page.
     DeletePage {
         /// Page to delete.
         page_number: u8
     },
+    /// Swaps two pages.
     SwapPages {
         /// First page.
         first_page: u8,
         /// Second page.
         second_page: u8,
     },
+    /// Signs the book.
     Sign {
         /// Title of the book.
         title: &'a str,

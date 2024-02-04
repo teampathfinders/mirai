@@ -3,8 +3,10 @@ use util::{BinaryRead, BinaryWrite, size_of_varint};
 
 use crate::bedrock::ConnectedPacket;
 
+/// The type of block event.
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum BlockEventType {
+    /// Changes the state of a chest.
     ChangeChestState
 }
 
@@ -19,10 +21,14 @@ impl TryFrom<i32> for BlockEventType {
     }
 }
 
+/// A block event.
 #[derive(Debug, Clone)]
 pub struct BlockEvent {
+    /// Position of the block event.
     pub position: BlockPosition,
+    /// The type of block event.
     pub event_type: BlockEventType,
+    /// Associated block event data.
     pub event_data: i32,
 }
 

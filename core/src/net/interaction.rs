@@ -6,6 +6,7 @@ use util::Deserialize;
 use super::BedrockUser;
 
 impl BedrockUser {
+    /// Handles an [`Interact`] packet.
     pub fn handle_interaction(&self, packet: Vec<u8>) -> anyhow::Result<()> {
         let request = Interact::deserialize(packet.as_ref())?;
       
@@ -20,6 +21,7 @@ impl BedrockUser {
         Ok(())
     }
 
+    /// Handles a [`ContainerClose`] packet.
     pub fn handle_container_close(&self, packet: Vec<u8>) -> anyhow::Result<()> {
         let request = ContainerClose::deserialize(packet.as_ref())?;
         if request.window_id == INVENTORY_WINDOW_ID {
@@ -35,6 +37,7 @@ impl BedrockUser {
         Ok(())
     }
 
+    /// Handles a [`MovePlayer`] packet.
     pub fn handle_move_player(&self, packet: Vec<u8>) -> anyhow::Result<()> {
         let _request = MovePlayer::deserialize(packet.as_ref())?;
 
@@ -45,7 +48,8 @@ impl BedrockUser {
 
         // self.broadcast(request)
     }
-
+    
+    /// Handles a [`PlayerAction`] packet.
     pub fn handle_player_action(&self, packet: Vec<u8>) -> anyhow::Result<()> {
         let request = PlayerAction::deserialize(packet.as_ref())?;
         

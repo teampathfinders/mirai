@@ -14,6 +14,7 @@ impl ConnectedPong {
     /// Unique ID of this packet.
     pub const ID: u8 = 0x03;
 
+    /// Estimates the size of the packet when serialized.
     pub const fn size_hint(&self) -> usize {
         1 + 8 + 8
     }

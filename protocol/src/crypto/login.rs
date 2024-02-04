@@ -36,15 +36,24 @@ pub struct BedrockClientInfo {
     /// Operating system of the client.
     #[serde(rename = "DeviceOS")]
     pub build_platform: DeviceOS,
+    /// Device model of the client.
+    /// 
+    /// For example `Dell Inc. Latitude E7450`.
+    /// Or `System Product Name System Manufacturer` in my case.
     #[serde(rename = "DeviceModel")]
     pub device_model: String,
+    /// Device ID of the client. 
+    /// 
+    /// I'm not sure what this is because it's not the same as the Windows "device ID" on my PC.
     #[serde(rename = "DeviceId")]
     pub device_id: String,
     /// Language in ISO format (i.e. en_GB)
     #[serde(rename = "LanguageCode")]
     pub language_code: String,
+    /// UI profile that the client is used.
     #[serde(rename = "UIProfile")]
     pub ui_profile: UiProfile,
+    /// GUI scale setting of the client.
     #[serde(rename = "GuiScale")]
     pub gui_scale: i32,
 }
@@ -66,10 +75,16 @@ struct KeyTokenPayload {
 /// Data extracted from the "extraData" field in the last token in the identity chain.
 #[derive(serde::Deserialize, Debug)]
 pub struct RawIdentityData {
+    /// The Xbox user ID of the client. This is what uniquely identifies a user and is used in several packets.
     #[serde(rename = "XUID")]
     pub xuid: String,
+    /// The display name of the user. This is their Xbox gamertag.
     #[serde(rename = "displayName")]
     pub display_name: String,
+    /// The UUID of the user. This seems to mainly be used for users who aren't logged in with a
+    /// Microsoft account. Since the server only accepts Xbox users, this value does not have much use.
+    /// 
+    /// It is still stored because the player list packets use it.
     #[serde(rename = "identity")]
     pub uuid: Uuid,
 }
@@ -77,8 +92,10 @@ pub struct RawIdentityData {
 /// Used to extract the identity data and public key from the last identity token.
 #[derive(serde::Deserialize, Debug)]
 pub struct IdentityTokenPayload {
+    /// Contains the client data. See [`RawIdentityData`].
     #[serde(rename = "extraData")]
     pub client_data: RawIdentityData,
+    /// Contains the user's public key. This is used for encryption.
     #[serde(rename = "identityPublicKey")]
     pub public_key: String,
 }
@@ -87,8 +104,10 @@ pub struct IdentityTokenPayload {
 /// [`UserData`] parts.
 #[derive(serde::Deserialize, Debug)]
 pub struct UserDataTokenPayload {
+    /// Info about the client's device.
     #[serde(flatten)]
     pub data: BedrockClientInfo,
+    /// The user's full skin.
     #[serde(flatten)]
     pub skin: Skin,
 }

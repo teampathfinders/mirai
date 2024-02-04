@@ -5,10 +5,16 @@ use util::Serialize;
 use crate::bedrock::ConnectedPacket;
 
 /// Action to perform on the dynamic enum.
+/// 
+/// The dynamic enum is what is used for autocompletion in commands.
+/// This enum is only used if the `dynamic` option is set to true in [`CommandEnum`].
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum SoftEnumAction {
+    /// Adds an option to the soft enum.
     Add,
+    /// Removes an option to the soft enum.
     Remove,
+    /// Replaces the soft enum with the options given.
     Set,
 }
 

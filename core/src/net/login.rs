@@ -110,6 +110,7 @@ impl BedrockUser {
         Ok(())
     }
 
+    /// Handles a [`ResourcePackClientResponse`] packet.
     pub fn handle_resource_client_response(&self, packet: Vec<u8>) -> anyhow::Result<()> {
         self.expected.store(u32::MAX, Ordering::SeqCst);
 

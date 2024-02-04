@@ -3,20 +3,28 @@ use util::{BinaryWrite, size_of_varint};
 
 use crate::bedrock::ConnectedPacket;
 
+/// ID of the special inventory container.
 pub const INVENTORY_WINDOW_ID: u8 = 0xff;
 
+/// Type of container to open.
 #[derive(Debug, Default, Copy, Clone, PartialEq, Eq, Hash)]
 #[repr(u8)]
 pub enum ContainerType {
+    /// The inventory container type.
     #[default]
     Inventory = 0xff
 }
 
+/// Sent when a container has been opened.
 #[derive(Debug, Clone, Default)]
 pub struct ContainerOpen {
+    /// ID of the container window.
     pub window_id: u8,
+    /// Type of the container.
     pub container_type: ContainerType,
+    /// Position of the container.
     pub position: BlockPosition,
+    /// Unique ID of the entity if the container is an entity.
     pub container_entity_unique_id: i64,
 }
 

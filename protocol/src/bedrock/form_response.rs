@@ -2,6 +2,7 @@ use util::{BinaryRead};
 use util::Deserialize;
 use crate::bedrock::ConnectedPacket;
 
+/// Reason why the form was cancelled.
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum CancelReason {
     /// The client closed the form.
@@ -22,10 +23,18 @@ impl TryFrom<u8> for CancelReason {
     }
 }
 
+/// Response a to form.
 #[derive(Debug)]
 pub struct FormResponseData<'a> {
+    /// ID of the form that this is a response to.
     pub id: u32,
+    /// Data of the response.
+    /// 
+    /// This is `None` if the form was cancelled.
     pub response_data: Option<&'a str>,
+    /// Cancel reason.
+    /// 
+    /// This is `None` if the form was not cancelled.
     pub cancel_reason: Option<CancelReason>
 }
 

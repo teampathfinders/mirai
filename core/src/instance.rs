@@ -262,6 +262,9 @@ pub struct Instance {
 }
 
 impl Instance {
+    /// Runs the server.
+    ///
+    /// This future resolves when the server has fully shut down again.
     pub async fn run(self) -> anyhow::Result<()> {
         // FIXME: The level module will get a refactor and this will be changed
         // let level = Level::new(self.user_map.clone(), self.token.clone())?;

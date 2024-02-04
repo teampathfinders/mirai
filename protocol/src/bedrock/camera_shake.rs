@@ -4,15 +4,21 @@ use util::Serialize;
 
 use crate::bedrock::ConnectedPacket;
 
+/// Type of camera shake.
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum CameraShakeType {
+    /// Camera shakes by translating.
     Positional,
+    /// Camera shakes by rotating.
     Rotational,
 }
 
+/// Action to perform on the camera shake.
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum CameraShakeAction {
+    /// Adds camera shake.
     Add,
+    /// Removes the camera shake.
     Remove,
 }
 

@@ -1,4 +1,7 @@
+//! Implements NBT serialisation and deserialisation for three different integer encodings.
+
 #![deny(
+    missing_docs,
     clippy::expect_used,
     clippy::get_unwrap,
     clippy::if_then_some_else_none,
@@ -165,6 +168,7 @@ impl TryFrom<u8> for FieldType {
     }
 }
 
+/// An error that occurs in NBT serialisation or deserialisations
 #[derive(Debug)]
 #[repr(transparent)]
 pub struct NbtError(anyhow::Error);

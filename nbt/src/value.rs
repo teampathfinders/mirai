@@ -12,19 +12,33 @@ use serde::{de, Deserialize, Deserializer, Serialize, Serializer};
 /// type can be used to deserialise it.
 #[derive(Debug, Clone)]
 pub enum Value {
+    /// A signed byte.
     Byte(i8),
+    /// A signed short.
     Short(i16),
+    /// A signed int.
     Int(i32),
+    /// A signed long.
     Long(i64),
+    /// A signed float
     Float(f32),
+    /// A signed double
     Double(f64),
+    /// A byte array.
+    ///
+    /// This type is not used when deserialising due to issues with `serde`.
+    /// In case you are defining your own types, you can use [`serde_bytes`](https://crates.io/crates/serde_bytes)
+    /// to make use of the byte array type.
     ByteArray(Vec<u8>),
+    /// A UTF-8 string.
     String(String),
     /// List of an arbitrary NBT value.
     List(Vec<Value>),
     /// Key-value map.
     Compound(HashMap<String, Value>),
+    /// An array of integers.
     IntArray(Vec<i32>),
+    /// An array of longs.
     LongArray(Vec<i64>),
 }
 

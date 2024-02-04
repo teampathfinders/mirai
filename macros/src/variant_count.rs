@@ -9,7 +9,7 @@ pub fn inner(item: TokenStream) -> TokenStream {
     let Data::Enum(data) = &input.data else {
         return TokenStream::from(quote_spanned! {
             input.span() => compile_error!("variant_count can only be applied to enums")
-        })
+        });
     };
 
     let count = data.variants.len();
@@ -19,6 +19,7 @@ pub fn inner(item: TokenStream) -> TokenStream {
         #input
 
         impl #ident {
+            /// The amount of variants that this enum has.
             pub const fn variant_count() -> usize {
                 #count
             }

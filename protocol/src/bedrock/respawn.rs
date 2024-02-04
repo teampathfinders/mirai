@@ -4,10 +4,14 @@ use util::{BinaryRead, BinaryWrite, size_of_varint};
 
 use crate::bedrock::ConnectedPacket;
 
+/// State of the respawn process.
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum RespawnState {
+    /// The server is searching for a place to spawn the client.
     Searching,
+    /// The server is ready for respawning.
     ServerReady,
+    /// The client is ready for respawning.
     ClientReady,
 }
 
@@ -24,10 +28,14 @@ impl TryFrom<u8> for RespawnState {
     }
 }
 
+/// Tells a client to respawn.
 #[derive(Debug, Clone)]
 pub struct Respawn {
+    /// Respawn position.
     pub position: Vector<f32, 3>,
+    /// Respawn state.
     pub state: RespawnState,
+    /// Runtime ID of the client.
     pub runtime_id: u64,
 }
 

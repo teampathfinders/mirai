@@ -3,50 +3,80 @@ use util::{BinaryWrite};
 
 use crate::bedrock::ConnectedPacket;
 
+/// The boss event colour
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum BossEventColor {
+    /// Grey
     Grey,
+    /// Blue
     Blue,
+    /// Red
     Red,
+    /// Green
     Green,
+    /// Yellow
     Yellow,
+    /// Purple
     Purple,
+    /// White
     White,
 }
 
+/// The boss event type.
 #[derive(Debug, Clone)]
 pub enum BossEventType<'a> {
+    /// Shows a boss event.
     Show {
+        /// Title to display above the boss bar.
         bar_title: &'a str,
+        /// Colour of the boss event.
         color: BossEventColor,
     },
+    /// Registers a player to the boss event.
     RegisterPlayer {
+        /// Unique ID of the player.
         player_unique_id: i64
     },
+    /// Hides the boss event.
     Hide,
+    /// Unregisters a player from the boss event.
     UnregisterPlayer {
+        /// Unique ID of the player.
         player_unique_id: i64
     },
+    /// Sets the health percentage in the boss bar.
     HealthPercentage {
+        /// The health remaining.
         health_percentage: f32
     },
+    /// Adds a bossbar.
     Title {
+        /// Title to display above the bossbar.
         bar_title: &'a str
     },
+    /// Changes the colour of the boss event.
     AppearanceProperties {
+        /// New colour.
         color: BossEventColor
     },
+    /// Changes the colour of the boss event texture?
     Texture {
+        /// New colour
         color: BossEventColor
     },
+    /// Not sure what this does.
     Request {
+        /// Unique of the player in the request.
         player_unique_id: i64
     },
 }
 
+/// Creates a boss event.
 #[derive(Debug, Clone)]
 pub struct BossEvent<'a> {
+    /// Unique ID of the boss.
     pub boss_unique_id: i64,
+    /// Event that occurred.
     pub event: BossEventType<'a>,
 }
 

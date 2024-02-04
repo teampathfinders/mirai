@@ -9,20 +9,27 @@ use util::Joinable;
 
 const SERVICE_TIMEOUT: Duration = Duration::from_millis(10);
 
+/// A response received from the command [`Service`].
 #[derive(Debug)]
 pub struct ServiceResponse {
     
 }
 
+/// A request that can be sent to the command [`Service`].
 pub struct ServiceRequest {
     callback: oneshot::Sender<ServiceResponse>
 }
 
+/// Type used to communicate with the command [`Service`].
 pub struct ServiceEndpoint {
     sender: mpsc::Sender<ServiceRequest>
 }
 
 impl ServiceEndpoint {
+    /// Request execution of a command.
+    /// 
+    /// This method will return a receiver that will receive the output when the command has been executed.
+    /// Execution of the command might not happen within the same tick.
     pub async fn request(&self, _request: CommandRequest<'_>) -> anyhow::Result<oneshot::Receiver<ServiceResponse>> {
         let (sender, receiver) = oneshot::channel();
         let request = ServiceRequest { callback: sender };
@@ -33,6 +40,7 @@ impl ServiceEndpoint {
     }
 }
 
+/// Service that manages command execution.
 pub struct Service {
     token: CancellationToken,
     handle: RwLock<Option<JoinHandle<()>>>,

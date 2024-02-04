@@ -7,11 +7,21 @@ use crate::bedrock::ConnectedPacket;
 /// Title action type.
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum TitleAction {
+    /// Removes the title.
     Clear,
+    /// Resets the title.
     Reset,
+    /// Sets a title.
     SetTitle,
+    /// Sets a subtitle. 
+    /// 
+    /// This is shown below an existing title.
     SetSubtitle,
+    /// Sets the action bar. 
+    /// 
+    /// This is shown at the bottom of the screen.
     SetActionBar,
+    /// Set durations of a title.
     SetDurations,
     TitleTextObject,
     SubtitleTextObject,

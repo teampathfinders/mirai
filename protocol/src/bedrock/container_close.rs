@@ -3,6 +3,7 @@ use util::{BinaryWrite, BinaryRead};
 
 use crate::bedrock::ConnectedPacket;
 
+/// A container has been closed.
 #[derive(Default, Debug, Clone)]
 pub struct ContainerClose {
     /// Equal to the window ID sent in the [`ContainerOpen`](crate::bedrock::ContainerOpen) packet.

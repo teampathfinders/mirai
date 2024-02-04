@@ -7,6 +7,7 @@ use crate::{bedrock::ParsedArgument, bedrock::ConnectedPacket};
 
 // FIXME: This whole module could use some cleanup...
 
+/// Names of all boolean game rules.
 pub const BOOLEAN_GAME_RULES: &[&str] = &[
     "commandblocksenabled",
     "commandblockoutput",
@@ -36,6 +37,7 @@ pub const BOOLEAN_GAME_RULES: &[&str] = &[
     "tntexplodes"
 ];
 
+/// Names of all integer value gamerules.
 pub const INTEGER_GAME_RULES: &[&str] = &[
     "functioncommandlimit",
     "maxcommandchainlength",
@@ -46,35 +48,65 @@ pub const INTEGER_GAME_RULES: &[&str] = &[
 /// Minecraft game rules.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum GameRule {
+    /// Whether command blocks are enabled.
     CommandBlocksEnabled(bool),
+    /// Whether command blocks show output in chat.
     CommandBlockOutput(bool),
+    /// Whether time changes.
     DaylightCycle(bool),
+    /// Whether entities drop items.
     EntityDrops(bool),
+    /// Whether fire spreads.
     FireTick(bool),
+    /// Whether players can experience insomnia.
     Insomnia(bool),
+    /// Whether players immediately respawn without showing the death screen.
     ImmediateRespawn(bool),
+    /// Whether mobs drop loot.
     MobLoot(bool),
+    /// Whether mobs can spawn.
     MobSpawning(bool),
+    /// Whether tile entities drop items.
     TileDrops(bool),
+    /// Whether the weather will change.
     WeatherCycle(bool),
+    /// Whether players can drown.
     DrowningDamage(bool),
+    /// Whether fall damage is enabled.
     FallDamage(bool),
+    /// Whether fire damages players.
     FireDamage(bool),
+    /// Whether freezing damages players.
     FreezeDamage(bool),
+    /// Limit of the total amount of allowed commands in a single function.
     FunctionCommandLimit(i32),
+    /// Whether players retain their inventory on death.
     KeepInventory(bool),
+    /// Max length of a command block chain.
     MaxCommandChainLength(i32),
+    /// Whether mobs can destroy blocks.
     MobGriefing(bool),
+    /// Whether players naturally regenerate.
     NaturalRegeneration(bool),
+    /// Whether players can attack other players.
     Pvp(bool),
+    /// The random tick speed.
     RandomTickSpeed(i32),
+    /// Whether respawn blocks can explode.
     RespawnBlocksExplode(bool),
+    /// Whether to send command feedback.
     SendCommandFeedback(bool),
+    /// Whether to show the border effect.
     ShowBorderEffect(bool),
+    /// Whether to show coordinates.
     ShowCoordinates(bool),
+    /// Whether to show death messages.
     ShowDeathMessages(bool),
+    /// Whether to show tags.
     ShowTags(bool),
+    /// Radius around the spawnpoint that players can spawn in.
     SpawnRadius(i32),
+    /// Whether TNT can explode.
     TntExplodes(bool),
 }
 
@@ -120,6 +152,7 @@ impl fmt::Display for GameRule {
 }
 
 impl GameRule {
+    /// Whether the gamerule is a bool type.
     pub const fn is_bool(&self) -> bool {
         match self {
             Self::CommandBlocksEnabled(_)
@@ -198,6 +231,7 @@ impl GameRule {
         }
     }
 
+    /// Creates a [`GameRule`] from a parsed command argument.
     pub fn from_parsed(name: &str, value: &ParsedArgument) -> anyhow::Result<GameRule> {
         if let ParsedArgument::String(str_boolean) = value {
             let rule_value = match str_boolean.as_str() {

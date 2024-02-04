@@ -3,12 +3,16 @@ use util::{BinaryWrite, size_of_varint};
 
 use crate::bedrock::ConnectedPacket;
 
+/// Action to perform on the debug renderer.
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum DebugRendererAction {
+    /// Removes the renderer.
     Clear = 1,
+    /// Adds a cube.
     AddCube,
 }
 
+/// Creates a client-bound debug renderer.
 #[derive(Debug, Clone)]
 pub struct ClientBoundDebugRenderer<'a> {
     /// Action to perform.

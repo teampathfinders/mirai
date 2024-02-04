@@ -4,11 +4,16 @@ use util::{BinaryRead, BinaryWrite, size_of_varint};
 
 use crate::bedrock::ConnectedPacket;
 
+/// How the player has moved.
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum MovementMode {
+    /// Standard player movement.
     Normal,
+    /// Movement was reset by the server.
     Reset,
+    /// The player has been teleported.
     Teleport,
+    /// The player has only rotated.
     Rotation,
 }
 
@@ -26,12 +31,18 @@ impl TryFrom<u8> for MovementMode {
     }
 }
 
+/// Reason why the player was teleported.
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum TeleportCause {
+    /// Unknown why the player was teleported. This is the value given for any movement mode other than teleporting.
     Unknown,
+    /// The player was teleported by a projectile, such as an ender pearl.
     Projectile,
+    /// The player ate a chorus fruit.
     ChorusFruit,
+    /// A teleport command was issued.
     Command,
+    /// Unknown what this is.
     Behavior,
 }
 
@@ -50,18 +61,30 @@ impl TryFrom<i32> for TeleportCause {
     }
 }
 
+/// Movement with client-authoritative mode.
 #[derive(Debug, Clone)]
 pub struct MovePlayer {
+    /// Runtime ID of the player.
     pub runtime_id: u64,
+    /// Where the player moved.
     pub translation: Vector<f32, 3>,
+    /// Pitch of the player.
     pub pitch: f32,
+    /// Yaw of the player.
     pub yaw: f32,
+    /// Yaw of the head of the player.
     pub head_yaw: f32,
+    /// The mode that was used for movement.
     pub mode: MovementMode,
+    /// Whether the player is touching the ground.
     pub on_ground: bool,
+    /// Runtime ID of the entity that the player is riding.
     pub ridden_runtime_id: u64,
+    /// Reason why the player was teleported.
     pub teleport_cause: TeleportCause,
+    /// 
     pub teleport_source_type: i32,
+    /// The current tick.
     pub tick: u64,
 }
 

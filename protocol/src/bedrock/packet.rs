@@ -35,12 +35,19 @@ impl<T: ConnectedPacket + Serialize> Packet<T> {
         self.header.sender_subclient = sender;
         self
     }
+}
 
-    pub fn serialized_size(&self) -> usize {
-        self.header.serialized_size() + self.content.serialized_size()
+impl<T: ConnectedPacket + Serialize> Serialize for Packet<T> {
+    fn size_hint(&self) -> Option<usize> {
+        let hint = self.header.serialized_size() + self.content.serialized_size();
+        Some(hint)
     }
 
-    pub fn serialize(&self) -> anyhow::Result<Vec<u8>> {
+    fn serialize_into<W: BinaryWrite>(&self, _writer: &mut W) -> anyhow::Result<()> {
+        unimplemented!();
+    }
+
+    fn serialize(&self) -> anyhow::Result<Vec<u8>> {
         let expected_size = self.header.serialized_size() + self.content.serialized_size();
         let capacity = 5 + expected_size;
 

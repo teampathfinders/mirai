@@ -8,9 +8,13 @@ use crate::bedrock::ConnectedPacket;
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 #[repr(i32)]
 pub enum PaintingDirection {
+    /// The south direction.
     South,
+    /// The west direction.
     West,
+    /// The north direction.
     North,
+    /// The east direction.
     East,
 }
 

@@ -6,7 +6,9 @@ use crate::bedrock::ConnectedPacket;
 /// An action to perform on an identity entry.
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum ScoreboardIdentityAction {
+    /// Adds a scoreboard identity.
     Add,
+    /// Removes a scoreboard identity.
     Clear,
 }
 
@@ -18,6 +20,7 @@ pub struct ScoreboardIdentityEntry {
     pub entity_unique_id: i64,
 }
 
+/// Sets a scoreboard identity.
 #[derive(Debug, Clone)]
 pub struct SetScoreboardIdentity {
     /// Action to perform on the identity entries.

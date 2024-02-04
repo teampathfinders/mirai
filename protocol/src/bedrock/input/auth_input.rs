@@ -397,102 +397,141 @@ impl<'a> Deserialize<'a> for StackRequestSlotInfo {
     }
 }
 
+/// An action that can be performed with an item stack.
 #[derive(Debug)]
 pub enum StackRequestAction<'a> {
     /// Takes a certain amount of items from the given container.
     Take {
+        /// Amount of items to take from the container.
         count: u8,
+        /// Source slot to take the items from.
         source: StackRequestSlotInfo,
+        /// Destination slot to put the items into.
         destination: StackRequestSlotInfo
     },
     /// Moves an item from one slot into another.
     Place {
+        /// Amount of item to place in the slot.
         count: u8,
+        /// Where to take the items from.
         source: StackRequestSlotInfo,
+        /// Where to place the items.
         destination: StackRequestSlotInfo
     },
     /// Swaps two items with each other.
     Swap {
+        /// Source slot to swap from.
         source: StackRequestSlotInfo,
+        /// Destination slot to swap into.
         destination: StackRequestSlotInfo
     },
     /// The client dropped an item out of its inventory.
     /// [`InventoryTransaction`] is still used for items dropped from the hotbar.
     Drop {
+        /// Amount of items to drop.
         count: u8,
+        /// Source slot to drop from.
         source: StackRequestSlotInfo,
+        /// Whether the item was dropped randomly.
         randomly: bool
     },
     /// Destroys an item when the player is in creative mode.
     Destroy {
+        /// Amount of items to destroy.
         count: u8,
+        /// Source slot to destroy the items from.
         source: StackRequestSlotInfo
     },
     /// An item was used to craft another item.
     Consume {
+        /// Amount of items to consume in crafting.
         count: u8,
+        /// Source slot to consume from.
         source: StackRequestSlotInfo
     },
     /// Used for items that are created through crafting recipe. Gophertunnel says
     /// this for example happens when empty buckets are returned to the player after
     /// crafting a cake.
     Create {
+        /// Slot to put result in.
         results_slot: u8
     },
     /// No known purpose.
     PlaceInContainer {
+        /// Amount of items in the stack.
         count: u8,
+        /// Source slot.
         source: StackRequestSlotInfo,
+        /// Destination slot.
         destination: StackRequestSlotInfo
     },
     /// No known purpose.
     TakeOutContainer {
+        /// Amount of items to take out of the container.
         count: u8,
+        /// Where to take the items from.
         source: StackRequestSlotInfo,
+        /// Where to put the items.
         destination: StackRequestSlotInfo
     },
     /// Combines item stacks within a lab table.
     LabTableCombine,
     /// Enables a beacon using items moved to the beacon beforehand.
     BeaconPayment {
+        /// The primary effect given by the beacon.
         primary_effect: i32,
+        /// The secondary effect given by the beacon.
         secondary_effect: i32
     },
     /// Used when the client breaks a block.
     MineBlock {
+        /// Hotbar slot that was used to break the block.
         hotbar_slot: i32,
+        /// Predicted durability of the item used to break the block.
         predicted_durability: i32,
+        /// Network ID of the block that was broken.
         stack_network_id: i32
     },
     /// Used when an item is crafted (or enchanted). This is sent before all other actions
     /// that happen during crafting.
     CraftRecipe {
+        /// Network ID of the recipe to craft.
         recipe_network_id: u32
     },
     /// Similar to [`CraftRecipe`](`StackRequestAction::CraftRecipe`) but is sent when the client
     /// uses the recipe book instead.
     AutoCraftRecipe {
+        /// Network ID of the recipe to craft.
         recipe_network_id: u32,
+        /// How many times the item should be crafted.
         times_crafted: u8,
+        /// Ingredients used in the recipe.
         ingredients: Vec<ItemDescriptorCount<'a>>
     },
     /// Sent when a player "crafts" an item by taking it out of the creative inventory.
     CraftCreative {
+        /// Network ID of the creative item taken out of the creative inventory.
         creative_network_id: u32
     },
     /// Used when a recipe is used in an anvil. 
     /// In this case the `filter_string_index` field points to an item in the `filters` field of
     /// the [`StackRequest`] type.
     CraftRecipeOptional {
+        /// Network ID of the recipe to craft.
         recipe_network_id: u32,
+        /// The filter string used in this recipe.
         filter_string_index: i32
     },
     /// Sent when using a grindstone to craft something
     CraftGrindstoneRecipe {
+        /// Network ID of the grindstone recipe.
         recipe_network_id: u32,
+        /// Cost of the recipe.
         cost: i32
     },
+    /// Sent when using a loom to craft something.
     CraftLoomRecipe {
+        /// Pattern to craft with the loom.
         pattern: &'a str
     }
 }   
@@ -503,11 +542,16 @@ impl<'a> Deserialize<'a> for StackRequestAction<'a> {
     }
 }
 
+/// A request for a change to an item stack.
 #[derive(Debug)]
 pub struct StackRequest<'a> {
+    /// ID of the request.
     pub request_id: i32,
+    /// Actions to perform.
     pub actions: Vec<StackRequestAction<'a>>,
+    /// Optional filter strings used in the actions.
     pub filters: Vec<&'a str>,
+    /// Reason why filtering is required.
     pub filter_cause: FilterCause
 }
 
@@ -547,6 +591,7 @@ macro_rules! impl_getters {
     }
 }
 
+/// Bitfield that specifies which kinds of inputs were performed in the last tick.
 #[derive(Debug)]
 pub struct InputData(pub u64);
 
@@ -599,27 +644,40 @@ impl InputData {
     );
 }
 
+/// Sent every tick for server authoritative movement and inventory transactions.
 #[derive(Debug)]
 pub struct PlayerAuthInput<'a> {
+    /// Pitch of the player.
     pub pitch: f32,
+    /// Yaw of the player.
     pub yaw: f32,
+    /// Yaw of the head of the player.
     pub head_yaw: f32,
-
+    /// Position of the player.
     pub position: Vector<f32, 3>,
+    /// The direction the player moved in.
     pub moved: Vector<f32, 2>,
+    /// The direction the player moved in, but with analogue input.
     pub analogue_moved: Vector<f32, 2>,
-
+    /// Bitflags specifying movement options. See [`InputData`].
     pub input_data: InputData,
+    /// The controller used by the client for movement. See [`InputMode`].
     pub input_mode: InputMode,
+    /// The method by which the user is playing the game. See [`PlayMode`].
     pub play_mode: PlayMode,
+    /// The interaction model used by the game.
     pub interaction_model: InteractionModel,
+    /// Direction the player is looking in. This seems to only be used when playing in virtual reality mode.
     pub gaze_direction: Vector<f32, 3>,
-
+    /// The current game tick.
     pub tick: u64,
+    /// Change in position compared to the previous tick.
     pub delta: Vector<f32, 3>,
-
+    /// Item transactions that were performed in the last tick.
     pub item_transaction: Option<TransactionData<'a>>,
+    /// Item stack requests that were performed in the last tick.
     pub item_stack: Option<StackRequest<'a>>,
+    /// Block actions that were performed in the last tick.
     pub block_actions: Option<Vec<PlayerAction>>
 }
 

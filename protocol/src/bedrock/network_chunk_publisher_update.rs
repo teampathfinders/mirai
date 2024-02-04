@@ -4,9 +4,12 @@ use util::Serialize;
 
 use crate::bedrock::ConnectedPacket;
 
+/// Updates the chunk publisher position and radius.
 #[derive(Debug, Clone)]
 pub struct NetworkChunkPublisherUpdate {
+    /// Center position for chunk publishing.
     pub position: Vector<i32, 3>,
+    /// Viewing radius.
     pub radius: u32,
 }
 

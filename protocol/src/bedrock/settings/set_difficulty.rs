@@ -7,9 +7,13 @@ use crate::bedrock::ConnectedPacket;
 /// The Minecraft difficulties.
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum Difficulty {
+    /// The peaceful difficulty.
     Peaceful,
+    /// The easy difficulty.
     Easy,
+    /// The normal difficulty.
     Normal,
+    /// The hard difficulty.
     Hard,
 }
 

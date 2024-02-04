@@ -3,10 +3,14 @@ use util::{BinaryRead, BinaryWrite};
 
 use crate::bedrock::ConnectedPacket;
 
+/// A simple event that can be sent to the client.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum SimpleEvent {
+    /// Enables commands.
     CommandsEnabled = 1,
+    /// Disables commands.
     CommandsDisabled,
+    /// Unlocks the world settings.
     UnlockWorldTemplateSettings,
 }
 

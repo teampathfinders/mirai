@@ -3,10 +3,15 @@ use util::{BinaryRead};
 
 use crate::bedrock::ConnectedPacket;
 
+/// A generic level event.
+/// 
+/// The data of this event is encoded in NBT form.
 #[derive(Debug, Clone)]
 pub struct GenericLevelEvent {
+    /// ID of the generic level event.
     pub event_id: i32,
-    // pub data: nbt::Tag
+    /// Extra data for the event.
+    pub data: nbt::Value
 }
 
 impl ConnectedPacket for GenericLevelEvent {
@@ -15,13 +20,12 @@ impl ConnectedPacket for GenericLevelEvent {
 
 impl<'a> Deserialize<'a> for GenericLevelEvent {
     fn deserialize_from<R: BinaryRead<'a>>(reader: &mut R) -> anyhow::Result<Self> {
-        let _event_id = reader.read_var_i32()?;
-        // let data = nbt::from_le_bytes(&mut buffer)?;
+        let event_id = reader.read_var_i32()?;
+        let (data, _) = nbt::from_le_bytes(reader.as_ref())?;
 
-        todo!();
-        // Ok(Self {
-        //     event_id,
-        //     data
-        // })
+        Ok(Self {
+            event_id,
+            data
+        })
     }
 }

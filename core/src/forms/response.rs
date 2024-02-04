@@ -17,9 +17,21 @@ use super::{FormDesc, SubmittableForm};
 /// A value that can be found in a custom form response.
 #[derive(Debug)]
 pub enum BodyValue {
+    /// A boolean.
+    ///
+    /// This is used in [`Toggle`](super::Toggle).
     Bool(bool),
+    /// A string of text.
+    ///
+    /// This is used in [`Input`](super::Input).
     Text(String),
+    /// An index response.
+    ///
+    /// This is used in [`Dropdown`](super::Dropdown) and [`StepSlider`](super::StepSlider).
     Index(u64),
+    /// Float response value.
+    ///
+    /// This is used in [`Slider`](super::Slider).
     Float(f64),
 }
 

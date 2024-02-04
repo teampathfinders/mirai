@@ -1,3 +1,5 @@
+//! Contains data used throughout the server.
+
 use level::PaletteEntry;
 use nohash_hasher::BuildNoHashHasher;
 use proto::bedrock::ItemStack;
@@ -5,71 +7,14 @@ use serde::Deserialize;
 use std::collections::HashMap;
 use tokio_util::bytes::Buf;
 
-// pub static RUNTIME_ID_DATA: LazyResult<RuntimeIdMap> = LazyResult::new(RuntimeIdMap::new);
-// pub static BLOCK_STATE_DATA: LazyResult<BlockStateMap> = LazyResult::new(BlockStateMap::new);
-// pub static CREATIVE_ITEMS_DATA: LazyResult<CreativeItemsMap> = LazyResult::new(CreativeItemsMap::new);
-
-// union Data<T, F> {
-//     value: ManuallyDrop<T>,
-//     init: ManuallyDrop<F>
-// }
-
-// pub struct LazyResult<T, F = fn() -> anyhow::Result<T>> {
-//     flag: AtomicFlag,
-//     data: UnsafeCell<Data<T, F>>
-// }
-
-// impl<T, F: FnOnce() -> anyhow::Result<T>> LazyResult<T, F> {
-//     #[inline]
-//     pub const fn new(f: F) -> LazyResult<T, F> {
-//         LazyResult { flag: AtomicFlag::new(), data: UnsafeCell::new(Data { init: ManuallyDrop::new(f) }) }
-//     }
-
-//     #[inline]
-//     pub fn force(&self) -> &T {
-//         if !self.flag.get() {
-//             let data = unsafe { &mut *self.data.get() };
-//             let value: anyhow::Result<T> = unsafe { (data.init.deref())() };
-
-//             if
-
-//             unsafe { ManuallyDrop::drop(&mut data.init) };
-//             data.value = ManuallyDrop::new(value);
-
-//             self.flag.set();
-//         }
-
-//         unsafe { &*(*self.data.get()).value }
-//     }
-// }
-
-// impl<T, F: FnOnce() -> anyhow::Result<T>> Deref for LazyResult<T, F> {
-//     type Target = T;
-
-//     fn deref(&self) -> &T {
-//         self.force()
-//     }
-// }
-
-// impl<T, F> Drop for LazyResult<T, F> {
-//     fn drop(&mut self) {
-//         let data = unsafe { &mut *self.data.get() };
-//         if self.flag.get() {
-//             unsafe { ManuallyDrop::drop(&mut data.value) }
-//         } else {
-//             unsafe { ManuallyDrop::drop(&mut data.init) }
-//         }
-//     }
-// }
-
-// unsafe impl<T: Send + Sync, F: Send> Sync for LazyResult<T, F> {}
-
+/// Maps items to runtime IDs.
 #[derive(Debug)]
 pub struct RuntimeIdMap {
     map: HashMap<String, i32>,
 }
 
 impl RuntimeIdMap {
+    /// Creates a new runtime ID map.
     pub fn new() -> anyhow::Result<Self> {
         tracing::debug!("Generating item runtime ID map...");
 
@@ -79,11 +24,13 @@ impl RuntimeIdMap {
         Ok(Self { map })
     }
 
+    /// Gets the runtime ID of an item.
     pub fn get(&self, name: &str) -> Option<i32> {
-        self.map.get(name).cloned()
+        self.map.get(name).copied()
     }
 }
 
+/// Maps block states to runtime IDs.
 #[derive(Debug, Default)]
 pub struct BlockStateMap {
     /// Converts state hashes to runtime IDs.
@@ -127,6 +74,7 @@ impl BlockStateMap {
         Ok(map)
     }
 
+    /// Gets the runtime ID of a block state.
     pub fn get(&self, block: &PaletteEntry) -> Option<u32> {
         let hash = block.hash();
         let found = self.runtime_hashes.get(&hash).cloned();
@@ -139,10 +87,12 @@ impl BlockStateMap {
     }
 }
 
+/// Entry in the [`CreativeItemsMap`].
 #[derive(Debug, Deserialize)]
 pub struct CreativeItemsEntry {
     /// Name of the creative item.
     pub name: String,
+    /// Metadata value of the item.
     pub meta: i16,
     /// This field only exists if the given item has NBT data. This can be a command block or chest with data for example.
     pub nbt: Option<HashMap<String, nbt::Value>>,
@@ -150,12 +100,15 @@ pub struct CreativeItemsEntry {
     pub block_properties: Option<HashMap<String, nbt::Value>>,
 }
 
+/// List of items that are available in creative mode.
 #[derive(Debug)]
 pub struct CreativeItemsMap {
+    /// Creative items available on the server.
     pub item_stacks: Vec<ItemStack>,
 }
 
 impl CreativeItemsMap {
+    /// Creates a new item map.
     pub fn new() -> anyhow::Result<Self> {
         tracing::debug!("Generating creative items data...");
 
@@ -195,6 +148,7 @@ impl CreativeItemsMap {
         Ok(Self { item_stacks })
     }
 
+    /// Returns the items contained in the map.
     pub fn items(&self) -> &[ItemStack] {
         &self.item_stacks
     }

@@ -2,9 +2,16 @@ use util::{BinaryWrite, size_of_string, size_of_varint};
 use util::Serialize;
 use crate::bedrock::ConnectedPacket;
 
+/// Requests the client to open a form.
 #[derive(Debug, Clone)]
 pub struct FormRequest<'a> {
+    /// The ID of the form.
+    /// 
+    /// This ID will later be referenced again in the response.
     pub id: u32,
+    /// The content of the form.
+    /// 
+    /// This content is in JSON format.
     pub data: &'a str
 }
 

@@ -20,38 +20,71 @@ pub enum MobEffectAction {
 /// Type of effect to apply.
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum MobEffectKind {
+    /// Increases the speed of the player.
     Speed = 1,
+    /// Slows the player down.
     Slowness,
+    /// Increases mining speed.
     Haste,
+    /// Decreases mining speed.
     MiningFatigue,
+    /// Increases damage per hit.
     Strength,
+    /// Instantly adds a health to the player.
     InstantHealth,
+    /// Instantly damages the player.
     InstantDamage,
+    /// Increases the player's jump height.
     JumpBoost,
+    /// Causes the nausea effect.
     Nausea,
+    /// Slowly regenerates the player's health.
     Regeneration,
+    /// Makes the player more resistant against damage.
     Resistance,
+    /// Makes the player completely resistance against fire damage.
     FireResistance,
+    /// Allows the player to breathe underwater.
     WaterBreathing,
+    /// Makes the player invisible.
     Invisibility,
+    /// Makes the player blind.
     Blindness,
+    /// Improves vision in the dark.
     NightVision,
+    /// 
     Hunger,
+    /// Decrease damage per hit.
     Weakness,
+    /// Slowly damages the player but is unable to kill them.
     Poison,
+    /// Similar to poison but acts slower and can kill.
     Wither,
+    /// Increases the maximum health of the player. Unlike absorption, these hearts can be replenished by food.
     HealthBoost,
+    /// Adds yellow hearts to your healthbar that cannot be replenished by food.
     Absorption,
+    /// Makes the player able to regenerate naturally.
     Saturation,
+    /// Makes the player levitate into the air.
+    /// 
+    /// This effect is given by Shulkers.
     Levitation,
+    /// Similar to poison but can kill.
     FatalPoison,
+    /// Effect given by a conduit when it is active.
     ConduitPower,
+    /// Makes the player slowly fall down.
     SlowFalling,
+    /// Causes a raid when the player enters a village.
     BadOmen,
+    /// Allows the player to receive gifts from villagers after defeating a raid.
     HeroOfTheVillage,
+    /// Effect given to the player when in vicinity of a Warden.
     Darkness,
 }
 
+/// String names of the effects.
 pub const MOBEFFECT_NAMES: &[&str] = &[
     "absorption",
     "bad_omen",

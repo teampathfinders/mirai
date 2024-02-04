@@ -5,8 +5,10 @@ use util::Deserialize;
 
 use crate::bedrock::ConnectedPacket;
 
+/// The type of violation.
 #[derive(Debug, Copy, Clone)]
 pub enum ViolationType {
+    /// The server sent a malformed packet.
     Malformed,
 }
 
@@ -21,10 +23,14 @@ impl TryFrom<i32> for ViolationType {
     }
 }
 
+/// Severity of the violation.
 #[derive(Debug, Copy, Clone)]
 pub enum ViolationSeverity {
+    /// First warning given by the client.
     Warning,
+    /// Final warning before the client will disconnect.
     FinalWarning,
+    /// Client has disconnect from the server.
     TerminatingConnection,
 }
 
@@ -41,6 +47,8 @@ impl TryFrom<i32> for ViolationSeverity {
     }
 }
 
+/// (Sometimes) sent by the client when the server sends a broken packet.
+/// This packet is pretty useless since the client almost never actually sends it.
 #[derive(Debug)]
 pub struct ViolationWarning<'a> {
     /// Type of the violation.

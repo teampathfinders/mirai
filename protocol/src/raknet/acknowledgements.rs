@@ -21,12 +21,12 @@ fn serialize_records<W: BinaryWrite>(writer: &mut W, records: &[AckEntry]) -> an
         match record {
             AckEntry::Single(id) => {
                 writer.write_u8(1)?; // Is single
-                writer.write_u24_le((*id).try_into()?)?;
+                writer.write_u24_le(*id)?;
             }
             AckEntry::Range(range) => {
                 writer.write_u8(0)?; // Is range
-                writer.write_u24_le(range.start.try_into()?)?;
-                writer.write_u24_le(range.end.try_into()?)?;
+                writer.write_u24_le(range.start)?;
+                writer.write_u24_le(range.end)?;
             }
         }
     }
@@ -104,6 +104,7 @@ impl Nak {
     /// Unique identifier of this packet.
     pub const ID: u8 = 0xa0;
 
+    /// Estimates the size of the packet when serialized.
     pub fn serialized_size(&self) -> usize {
         1 + self.records.iter().fold(0, |acc, r| {
             acc + match r {

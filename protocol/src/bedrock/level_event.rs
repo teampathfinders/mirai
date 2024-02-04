@@ -3,58 +3,99 @@ use util::{BinaryRead, BinaryWrite, size_of_varint};
 
 use crate::bedrock::ConnectedPacket;
 
+/// The type of level event that occurred.
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum LevelEventType {
+    /// Plays a click sound.
     SoundClick = 1000,
+    /// Plays a failed click sound.
     SoundClickFail = 1001,
+    /// Plays the firework launch sound.
     SoundLaunch = 1002,
+    /// Plays the sound of a door opening.
     SoundOpenDoor = 1003,
     SoundFizz = 1004,
+    /// Plays the TNT fuse sound.
     SoundFuse = 1005,
     SoundPlayRecording = 1006,
+    /// Plays the sound a ghast makes before it shoots a fireball.
     SoundGhastWarning = 1007,
+    /// Plays the sound of a ghast fireball.
     SoundGhastFireball = 1008,
+    /// Plays the sound of a blaze fireball.
     SoundBlazeFireball = 1009,
+    /// Plays the sound of a zombie attempting to break a wooden door.
     SoundZombieWoodenDoor = 1010,
+    /// Plays the sound of a zombie breaking a door.
     SoundZombieDoorCrash = 1012,
+    /// Plays the sound of a villager being infected.
     SoundZombieInfected = 1016,
+    /// Plays the sound of a zombie being converted into a drowned.
     SoundZombieConverted = 1017,
+    /// Plays the sound of an enderman teleporting.
     SoundEndermanTeleport = 1018,
+    /// Plays the sound of an anvil breaking.
     SoundAnvilBroken = 1020,
+    /// Plays the sound of an anvil being used.
     SoundAnvilUsed = 1021,
+    /// Plays the sound of a landing anvil.
     SoundAnvilLand = 1022,
     SoundInfinityArrowPickup = 1030,
+    /// Plays the sound when an ender pearl teleports the player.
     SoundTeleportEnderPearl = 1032,
     SoundAddItem = 1040,
+    /// Plays the sound of an item frame breaking.
     SoundItemFrameBreak = 1041,
+    /// Plays the sound of an item being placed in an item frame.
     SoundItemFramePlace = 1042,
+    /// Plays the sound of an item being removed from a frame.
     SoundItemFrameRemoveItem = 1043,
+    /// Plays the sound of an item in an item frame being rotated.
     SoundItemFrameRotateItem = 1044,
+    /// Plays the sound of a picked up experience orb.
     SoundExperienceOrbPickup = 1051,
+    /// Plays the sound of a used totem of undying.
     SoundTotemUsed = 1052,
+    /// Plays the sound of an armour stand breaking.
     SoundArmorStandBreak = 1060,
+    /// Plays the sound of an armour stand being hit.
     SoundArmorStandHit = 1061,
+    /// Plays the sound of an armour stand landing.
     SoundArmorStandLand = 1062,
+    /// Plays the sound of an armour stand being placed.
     SoundArmorStandPlace = 1063,
+    /// Plays the sound of pointed dripstone landing.
     SoundPointedDripstoneLand = 1064,
+    /// Plays the sound of a dye being used.
     SoundDyeUsed = 1065,
+    /// Plays the sound of an ink sac being used.
     SoundInkSacUsed = 1066,
+    /// Queues a custom song.
     QueueCustomMusic = 1900,
+    /// Plays a custom song.
     PlayCustomMusic = 1901,
+    /// Stops a custom song.
     StopCustomMusic = 1902,
+    /// Sets the volume of the music.
     SetMusicVolume = 1903,
     ParticlesShoot = 2000,
     ParticlesDestroyBlock = 2001,
+    /// Spawns potion splash particles.
     ParticlesPotionSplash = 2002,
     ParticlesEyeOfEnderDeath = 2003,
     ParticlesMobBlockSpawn = 2004,
+    /// Spawns particles when a crop grows.
     ParticlesCropGrowth = 2005,
+    /// Plays the guardian ghost effect.
     ParticlesSoundGuardianGhost = 2006,
+    /// Spawns the particles of a mob dying.
     ParticlesDeathSmoke = 2007,
+    /// Spawns the particles of a deny block.
     ParticlesDenyBlock = 2008,
     ParticlesGenericSpawn = 2009,
     ParticlesDragonEgg = 2010,
     ParticlesCropEaten = 2011,
+    /// Spawns critical hit particles.
     ParticlesCritical = 2012,
     ParticlesTeleport = 2013,
     ParticlesCrackBlock = 2014,
@@ -68,48 +109,80 @@ pub enum LevelEventType {
     ParticlesKnockbackRoar = 2022,
     ParticlesTeleportTrail = 2023,
     ParticlesPointCloud = 2024,
+    /// Spawns explosion particles.
     ParticlesExplosion = 2025,
     ParticlesBlockExplosion = 2026,
     ParticlesVibrationSignal = 2027,
+    /// Spawns dripstone dripping particles.
     ParticlesDripstoneDrip = 2028,
     ParticlesFizzEffect = 2029,
+    /// Adds wax to a copper block.
     WaxOn = 2030,
+    /// Removes the wax from a copper block.
     WaxOff = 2031,
+    /// Scrapes the oxidisation of a copper block.
     Scrape = 2032,
+    /// Spawns an electric spark particle.
     ParticlesElectricSpark = 2033,
+    /// Spawns turtle egg particles.
     ParticlesTurtleEgg = 2034,
+    /// Spawns sculk shriek particles.
     ParticlesSculkShriek = 2035,
     SculkCatalystBloom = 2036,
     SculkCharge = 2037,
     SculkChargePop = 2038,
+    /// Spawns the Warden sonic explosion attack.
     SonicExplosion = 2039,
+    /// It has started raining.
     StartRaining = 3001,
+    /// A thunderstorm has started.
     StartThunderstorm = 3002,
+    /// It has stopped raining.
     StopRaining = 3003,
+    /// It has stopped thundering.
     StopThunderstorm = 3004,
+    /// The game has been paused.
     GlobalPause = 3005,
     SimTimeStep = 3006,
     SimTimeScale = 3007,
     ActivateBlock = 3500,
     CauldronExplode = 3501,
+    /// Armor was dyed in a cauldron.
     CauldronDyeArmor = 3502,
     CauldronCleanArmor = 3503,
+    /// A potion has been emptied in the cauldron.
     CauldronFillPotion = 3504,
+    /// A potion has been taken from the cauldron.
     CauldronTakePotion = 3505,
+    /// The cauldron has been filled with water.
     CauldronFillWater = 3506,
+    /// All water has been taken out of the cauldron.
     CauldronTakeWater = 3507,
+    /// A dye has been added to the cauldron.
     CauldronAddDye = 3508,
+    /// A banner has been cleaned in the cauldron.
     CauldronCleanBanner = 3509,
+    /// The cauldron has been flushed.
     CauldronFlush = 3510,
+    /// A code agent has been spawned.
     AgentSpawnEffect = 3511,
+    /// A cauldron has been filled with lava.
     CauldronFillLava = 3512,
+    /// Lava has been taken out of the cauldron.
     CauldronTakeLava = 3513,
+    /// A cauldron has been filled with powder snow.
     CauldronFillPowderSnow = 3514,
+    /// Powder snow has been taken out of the cauldron.
     CauldronTakePowderSnow = 3515,
+    /// A block has started cracking.
     StartBlockCracking = 3600,
+    /// A block has stopped cracking.
     StopBlockCracking = 3601,
+    /// Updates the state of block cracking.
     UpdateBlockCracking = 3602,
+    /// All players are sleeping.
     AllPlayersSleeping = 9800,
+    /// Some players have started sleeping.
     SleepingPlayers = 9801,
     JumpPrevented = 9810,
     ParticlesLegacyEvent = 0x4000,
@@ -234,10 +307,14 @@ impl TryFrom<i32> for LevelEventType {
     }
 }
 
+/// A level event.
 #[derive(Debug, Clone)]
 pub struct LevelEvent {
+    /// Type of level event that occurred.
     pub event_type: LevelEventType,
+    /// Position where the event occurred.
     pub position: Vector<f32, 3>,
+    /// Data associated with the event.
     pub event_data: i32,
 }
 

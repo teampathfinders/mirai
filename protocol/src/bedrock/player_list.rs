@@ -7,6 +7,7 @@ use crate::bedrock::ConnectedPacket;
 use crate::bedrock::DeviceOS;
 use crate::bedrock::Skin;
 
+/// A player to be added to the player list.
 #[derive(Debug, Clone)]
 pub struct PlayerListAddEntry<'a> {
     /// UUID.
@@ -32,6 +33,7 @@ pub struct PlayerListAddEntry<'a> {
 /// contained in [`PlayerListAddEntry`].
 #[derive(Debug, Clone)]
 pub struct PlayerListAdd<'a> {
+    /// Players to add to the list.
     pub entries: &'a [PlayerListAddEntry<'a>],
 }
 
@@ -67,6 +69,7 @@ impl<'a> Serialize for PlayerListAdd<'a> {
 /// Removes player(s) from the client's player list.
 #[derive(Debug, Clone)]
 pub struct PlayerListRemove<'a> {
+    /// Players to remove from the list.
     pub entries: &'a [Uuid],
 }
 
