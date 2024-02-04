@@ -35,7 +35,7 @@ impl RaknetUser {
                 pk = receiver.recv() => {
                     if let Some(pk) = pk {
                         if let Err(err) = self.handle_raw_packet(pk).await {
-                            tracing::error!("{err:#}");
+                            tracing::error!("{err:?}");
                         }
                     }
                 }

@@ -36,19 +36,12 @@ impl<'a> ConnectedPacket for FormResponseData<'a> {
 impl<'a> Deserialize<'a> for FormResponseData<'a> {
     fn deserialize_from<R: BinaryRead<'a>>(reader: &mut R) -> anyhow::Result<FormResponseData<'a>> {
         let id = reader.read_var_u32()?;
+        
         let has_data = reader.read_bool()?;
-        let response_data = if has_data {
-            Some(reader.read_str()?)
-        } else {
-            None
-        };
+        let response_data = has_data.then(|| reader.read_str()).transpose()?;
 
         let has_reason = reader.read_bool()?;
-        let cancel_reason = if has_reason {
-            Some(reader.read_u8()?)
-        } else {
-            None
-        };
+        let cancel_reason = has_reason.then(|| reader.read_u8()).transpose()?;
 
         Ok(FormResponseData {
             id,

@@ -17,7 +17,7 @@ impl RaknetUser {
         };
 
         packet.clear();
-        packet.reserve_to(reply.serialized_size());
+        packet.reserve_to(reply.size_hint());
         reply.serialize_into(&mut packet)?;
 
         self.send_raw_buffer(packet);
@@ -47,7 +47,7 @@ impl RaknetUser {
         }; 
 
         packet.clear();
-        packet.reserve_to(pong.serialized_size());
+        packet.reserve_to(pong.size_hint());
         pong.serialize_into(&mut packet)?;
 
         self.send_raw_buffer_with_config(

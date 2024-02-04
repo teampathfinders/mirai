@@ -1,5 +1,5 @@
 use crate::types::Dimension;
-use util::{Result, Vector};
+use util::{Vector};
 use util::{BinaryWrite};
 use util::Serialize;
 

@@ -1,7 +1,5 @@
-use std::io::Write;
-
 use util::BinaryWrite;
-use util::Result;
+
 use util::Serialize;
 
 use crate::raknet::OFFLINE_MESSAGE_DATA;
@@ -24,7 +22,7 @@ impl UnconnectedPong<'_> {
     /// Unique identifier of this packet.
     pub const ID: u8 = 0x1c;
 
-    pub fn serialized_size(&self) -> usize {
+    pub const fn size_hint(&self) -> usize {
         1 + 8 + 8 + 16 + 2 + self.metadata.len()
     }
 }

@@ -1,5 +1,3 @@
-use std::io::Write;
-
 use util::BinaryWrite;
 use util::Serialize;
 
@@ -20,7 +18,7 @@ impl OpenConnectionReply1 {
     /// Unique identifier of this packet.
     pub const ID: u8 = 0x06;
 
-    pub fn serialized_size(&self) -> usize {
+    pub const fn size_hint(&self) -> usize {
         1 + 16 + 8 + 1 + 2
     }
 }

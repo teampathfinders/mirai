@@ -1,7 +1,7 @@
 use util::{BinaryRead};
 use util::iassert;
 use util::Deserialize;
-use util::Result;
+
 
 /// Sent by the client, in response to [`OpenConnectionReply2`](crate::raknet::OpenConnectionReply2).
 #[derive(Debug)]
@@ -21,7 +21,7 @@ impl<'a> Deserialize<'a> for OpenConnectionRequest2 {
     fn deserialize_from<R: BinaryRead<'a>>(reader: &mut R) -> anyhow::Result<Self> {
         iassert!(reader.read_u8()? == Self::ID);
 
-        reader.advance(16); // Skip magic
+        reader.advance(16)?; // Skip magic
         reader.read_addr()?; // Skip server address
         let mtu = reader.read_u16_be()?;
         let client_guid = reader.read_u64_be()?;

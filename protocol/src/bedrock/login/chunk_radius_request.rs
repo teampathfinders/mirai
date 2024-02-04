@@ -1,6 +1,6 @@
 use util::{BinaryRead};
 use util::Deserialize;
-use util::Result;
+
 
 use crate::bedrock::ConnectedPacket;
 
@@ -18,7 +18,7 @@ impl ConnectedPacket for ChunkRadiusRequest {
 impl<'a> Deserialize<'a> for ChunkRadiusRequest {
     fn deserialize_from<R: BinaryRead<'a>>(reader: &mut R) -> anyhow::Result<Self> {
         let radius = reader.read_var_i32()?;
-        let max_radius = reader.read_u8()?;
+        let _max_radius = reader.read_u8()?;
 
         Ok(Self { radius })
     }

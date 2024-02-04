@@ -52,7 +52,9 @@ impl<T> TryExpect for Option<T> {
     fn try_expect<E: Debug>(self, error: E) -> anyhow::Result<Self::Output> {
         match self {
             Some(s) => Ok(s),
-            None => anyhow::bail!(format!("{error:?}")),
+            None => {
+                anyhow::bail!("{error:?}")
+            }
         }
     }
 }

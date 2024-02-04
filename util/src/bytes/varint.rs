@@ -22,6 +22,7 @@ pub fn size_of_string(value: &str) -> usize {
 }
 
 /// Determines the size in bytes of the given variable integer.
+#[allow(clippy::unwrap_used, clippy::missing_panics_doc)] // These unwraps will never panic.
 pub fn size_of_varint<T: VarInt + FromPrimitive>(mut value: T) -> usize {
     let mut count = 0;
     while value >= T::from_u32(0x80).unwrap() {

@@ -20,8 +20,8 @@ pub struct OrderChannel {
 
 impl OrderChannel {
     /// Creates a new order channel.
-    pub fn new() -> Self {
-        Default::default()
+    pub fn new() -> OrderChannel {
+        OrderChannel::default()
     }
 
     /// Fetches a new index to assign to an ordered frame.
@@ -35,7 +35,7 @@ impl OrderChannel {
     /// Inserts a frame into the order channel.
     ///
     /// In case a sequence of frames is completed, the ready frames will be returned.
-    pub fn insert(&self, frame: Frame) -> Option<Vec<Frame>> {
+    pub fn insert(&self, frame: Frame) -> anyhow::Result<Option<Vec<Frame>>> {
         // FIXME: Return some kind of status code to indicate missing raknet.
         // This should be returned when misses have occurred multiple consecutive times
         // and triggers a NAK to be sent.
@@ -59,17 +59,17 @@ impl OrderChannel {
         if ready_count != 0 {
             let mut ready = Vec::with_capacity(ready_count as usize);
             for i in old_index..current_index {
-                ready.push(
-                    self.channel
-                        .remove(&i)
-                        .expect("Packet not found in order channel")
-                        .1,
-                );
+                let Some((_, ready_frame)) = self.channel.remove(&i) else {
+                    tracing::error!("The requested packet was not found in the order channel. This is a bug");
+                    anyhow::bail!("Requested packet not found in order channel");
+                };
+
+                ready.push(ready_frame);
             }
 
-            Some(ready)
+            Ok(Some(ready))
         } else {
-            None
+            Ok(None)
         }
     }
 }

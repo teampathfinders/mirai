@@ -1,7 +1,4 @@
-use std::io::Write;
-
-use util::{BinaryWrite};
-use util::Result;
+use util::BinaryWrite;
 
 /// A blob used in the cache protocol.
 #[derive(Debug, Clone)]
@@ -15,13 +12,18 @@ pub struct CacheBlob<'a> {
 impl<'a> CacheBlob<'a> {
     pub fn serialize_into<W: BinaryWrite>(&self, writer: &mut W) -> anyhow::Result<()> {
         writer.write_u64_le(self.hash)?;
-        writer.write_all(&self.payload)?;
+        writer.write_all(self.payload)?;
 
         Ok(())
     }
 
     #[inline]
-    pub fn len(&self) -> usize {
+    pub const fn len(&self) -> usize {
         8 + self.payload.len()
+    }
+
+    #[inline]
+    pub const fn is_empty(&self) -> bool {
+        self.len() == 0
     }
 }

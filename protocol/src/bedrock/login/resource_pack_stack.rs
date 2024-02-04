@@ -1,5 +1,5 @@
 use util::{BinaryWrite, size_of_varint, VarString};
-use util::Result;
+
 use util::Serialize;
 
 use crate::bedrock::ConnectedPacket;

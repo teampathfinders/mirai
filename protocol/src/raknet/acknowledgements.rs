@@ -2,12 +2,12 @@ use std::ops::Range;
 
 use util::{BinaryRead, BinaryWrite};
 use util::iassert;
-use util::Result;
+
 use util::{Deserialize, Serialize};
 
 /// Record containing IDs of confirmed raknet.
 #[derive(Debug, Clone)]
-pub enum AckRecord {
+pub enum AckEntry {
     /// A single ID
     Single(u32),
     /// Range of IDs
@@ -15,15 +15,15 @@ pub enum AckRecord {
 }
 
 /// Encodes a list of acknowledgement records.
-fn serialize_records<W: BinaryWrite>(writer: &mut W, records: &[AckRecord]) -> anyhow::Result<()> {
+fn serialize_records<W: BinaryWrite>(writer: &mut W, records: &[AckEntry]) -> anyhow::Result<()> {
     writer.write_i16_be(records.len() as i16)?;
     for record in records {
         match record {
-            AckRecord::Single(id) => {
+            AckEntry::Single(id) => {
                 writer.write_u8(1)?; // Is single
                 writer.write_u24_le((*id).try_into()?)?;
             }
-            AckRecord::Range(range) => {
+            AckEntry::Range(range) => {
                 writer.write_u8(0)?; // Is range
                 writer.write_u24_le(range.start.try_into()?)?;
                 writer.write_u24_le(range.end.try_into()?)?;
@@ -35,16 +35,19 @@ fn serialize_records<W: BinaryWrite>(writer: &mut W, records: &[AckRecord]) -> a
 }
 
 /// Decodes a list of acknowledgement records.
-fn deserialize_records<'a, R: BinaryRead<'a>>(reader: &mut R) -> anyhow::Result<Vec<AckRecord>> {
+fn deserialize_records<'a, R: BinaryRead<'a>>(reader: &mut R) -> anyhow::Result<Vec<AckEntry>> {
     let record_count = reader.read_u16_be()?;
     let mut records = Vec::with_capacity(record_count as usize);
 
     for _ in 0..record_count {
         let is_range = reader.read_u8()? == 0;
         if is_range {
-            records.push(AckRecord::Range(reader.read_u24_le()?.into()..reader.read_u24_le()?.into()));
+            let min = reader.read_u24_le()?;
+            let max = reader.read_u24_le()?;
+
+            records.push(AckEntry::Range(min..max));
         } else {
-            records.push(AckRecord::Single(reader.read_u24_le()?.into()));
+            records.push(AckEntry::Single(reader.read_u24_le()?));
         }
     }
 
@@ -55,7 +58,7 @@ fn deserialize_records<'a, R: BinaryRead<'a>>(reader: &mut R) -> anyhow::Result<
 #[derive(Debug)]
 pub struct Ack {
     /// Records containing IDs of received raknet.
-    pub records: Vec<AckRecord>,
+    pub records: Vec<AckEntry>,
 }
 
 impl Ack {
@@ -65,8 +68,8 @@ impl Ack {
     pub fn serialized_size(&self) -> usize {
         1 + self.records.iter().fold(0, |acc, r| {
             acc + match r {
-                AckRecord::Single(_) => 1 + 3,
-                AckRecord::Range(_) => 1 + 3 + 3,
+                AckEntry::Single(_) => 1 + 3,
+                AckEntry::Range(_) => 1 + 3 + 3,
             }
         })
     }
@@ -94,7 +97,7 @@ impl<'a> Deserialize<'a> for Ack {
 #[derive(Debug)]
 pub struct Nak {
     /// Records containing the missing IDs
-    pub records: Vec<AckRecord>,
+    pub records: Vec<AckEntry>,
 }
 
 impl Nak {
@@ -104,8 +107,8 @@ impl Nak {
     pub fn serialized_size(&self) -> usize {
         1 + self.records.iter().fold(0, |acc, r| {
             acc + match r {
-                AckRecord::Single(_) => 1 + 3,
-                AckRecord::Range(_) => 1 + 3 + 3,
+                AckEntry::Single(_) => 1 + 3,
+                AckEntry::Range(_) => 1 + 3 + 3,
             }
         })
     }

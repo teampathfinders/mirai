@@ -1,5 +1,4 @@
-use std::fmt::{self, Debug, Formatter};
-use std::io::Write;
+use std::fmt;
 use std::sync::atomic::{AtomicU64, Ordering};
 
 use base64::Engine;
@@ -16,8 +15,8 @@ use rand::rngs::OsRng;
 use rand::Rng;
 use sha2::{Digest, Sha256};
 
-use util::{BinaryRead, BinaryWrite, ExposeSecret, Secret};
-use util::{bail, Result};
+use util::{BinaryWrite, ExposeSecret, Secret};
+
 
 type Aes256CtrBE = ctr::Ctr64BE<aes::Aes256>;
 
@@ -76,9 +75,7 @@ impl Encryptor {
         // Generate a random private key for the session.
         let private_key: SigningKey = SigningKey::random(&mut OsRng);
         // Convert the key to the PKCS#8 DER format used by Minecraft.
-        let private_key_der = if let Ok(pkcs) = private_key.to_pkcs8_der() {
-            pkcs
-        } else {
+        let Ok(private_key_der) = private_key.to_pkcs8_der() else {
             tracing::warn!("Unable to convert session private key to PKCS#8 DER format");
             anyhow::bail!("Unable to convert session private key to PKCS#8 DER format")
         };

@@ -13,6 +13,13 @@ pub enum LoadStatus {
     IOError,
 }
 
+#[derive(Debug)]
+#[repr(C)]
+pub struct SizedData {
+    pub size: c_int,
+    pub data: *mut c_void,
+}
+
 /// Result returned by fallible LevelDB operations.
 #[derive(Debug)]
 #[repr(C)]
@@ -40,15 +47,15 @@ extern "C" {
     /// Deallocates a string previously allocated by another function.
     pub fn level_deallocate_array(array: *mut c_char);
     /// Creates an iterator over the database keys.
-    pub fn level_iter(database: *mut c_void) -> LevelResult;
+    pub fn level_iter(database: *mut c_void) -> SizedData;
     /// Destroys an iterator previously created with [`level_iter`].
     pub fn level_destroy_iter(iter: *mut c_void);
     /// Whether the iterator is still valid.
     pub fn level_iter_valid(iter: *const c_void) -> bool;
     /// The current key the iterator is on.
-    pub fn level_iter_key(iter: *const c_void) -> LevelResult;
+    pub fn level_iter_key(iter: *const c_void) -> SizedData;
     /// The current value the iterator is on.
-    pub fn level_iter_value(iter: *const c_void) -> LevelResult;
+    pub fn level_iter_value(iter: *const c_void) -> SizedData;
     /// Moves the iterator to the next position.
     pub fn level_iter_next(iter: *mut c_void);
 }

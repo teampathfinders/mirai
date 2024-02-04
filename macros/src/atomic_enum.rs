@@ -13,7 +13,7 @@ pub fn inner(item: TokenStream) -> TokenStream {
 
     attrs.retain_mut(|attr| {
         if attr.meta.path().is_ident("repr") {
-            let _ = attr.parse_nested_meta(|meta| {
+            let _: syn::Result<()> = attr.parse_nested_meta(|meta| {
                 if meta.path.is_ident("u8") {
                     repr = Ident::new("u8", Span::call_site());
                 }

@@ -276,9 +276,7 @@ impl BedrockUser {
     pub async fn handle_login(&self, packet: Vec<u8>) -> anyhow::Result<()> {
         self.expected.store(ClientToServerHandshake::ID, Ordering::SeqCst);
 
-        let request = if let Ok(request) = Login::deserialize(packet.as_ref()) {
-            request
-        } else {
+        let Ok(request) = Login::deserialize(packet.as_ref()) else {
             // Kick the player when login fails. This is for security reasons.
             // An error during login could mean the user is trying to impersonate someone else.
             self.kick_with_reason("Login failed", DisconnectReason::BadPacket).await?;
@@ -289,15 +287,20 @@ impl BedrockUser {
 
         self.replicator.save_session(request.identity.xuid, &request.identity.name).await?;
 
-        let (encryptor, jwt) = if let Ok(data) = Encryptor::new(&request.identity.public_key) {
-            data
-        } else {
+        let Ok((encryptor, jwt)) = Encryptor::new(&request.identity.public_key) else {
             self.kick_with_reason("Encryption failed", DisconnectReason::BadPacket).await?;
             anyhow::bail!("Failed to enable encryption");
         };
         
-        self.identity.set(request.identity).unwrap();
-        self.client_info.set(request.client_info).unwrap();
+        if self.identity.set(request.identity).is_err() {
+            tracing::warn!("Identity data was already set");
+            return self.kick_with_reason("Unexpected login", DisconnectReason::UnexpectedPacket).await
+        }
+
+        if self.client_info.set(request.client_info).is_err() {
+            tracing::error!("Client info was already set");
+            return self.kick_with_reason("Unexpected login", DisconnectReason::UnexpectedPacket).await
+        }
 
         // Flush unencrypted packets in queue before enabling encryption
         self.raknet.flush().await?;

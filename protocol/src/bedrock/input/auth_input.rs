@@ -1,7 +1,7 @@
-use std::ops::Deref;
-
 use macros::variant_count;
+
 use util::{Deserialize, BinaryRead, Vector, BlockPosition};
+
 use crate::bedrock::{ConnectedPacket, PlayerActionType, PlayerAction};
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
@@ -53,14 +53,6 @@ pub enum InputDataFlag {
     AcknowledgeServerData = 1 << 43
 }
 
-impl Deref for InputDataFlag {
-    type Target = u64;
-
-    fn deref(&self) -> &Self::Target {
-        &self as &u64
-    }
-}
-
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 #[repr(u32)]
 #[variant_count]
@@ -102,9 +94,12 @@ pub enum InputMode {
 impl TryFrom<u32> for InputMode {
     type Error = anyhow::Error;
 
-    fn try_from(v: u32) -> anyhow::Result<Self> {
-        if v >= 1 && v <= Self::variant_count() as u32 {
-            Ok(unsafe { std::mem::transmute::<u32, Self>(v) })
+    fn try_from(v: u32) -> anyhow::Result<InputMode> {
+        if v >= 1 && v <= InputMode::variant_count() as u32 {
+            // SAFETY: This is safe because the discriminant is in range and
+            // the representations are the same. Additionally, none of the enum members
+            // have a manually assigned value (this is ensured by the `variant_count` macro).
+            Ok(unsafe { std::mem::transmute::<u32, InputMode>(v) })
         } else {
             anyhow::bail!("Input mode out of range")
         }
@@ -123,9 +118,12 @@ pub enum InteractionModel {
 impl TryFrom<i32> for InteractionModel {
     type Error = anyhow::Error;
 
-    fn try_from(v: i32) -> anyhow::Result<Self> {
-        if v <= Self::variant_count() as i32 {
-            Ok(unsafe { std::mem::transmute::<i32, Self>(v) })
+    fn try_from(v: i32) -> anyhow::Result<InteractionModel> {
+        if v <= InteractionModel::variant_count() as i32 {
+            // SAFETY: This is safe because the discriminant is in range and
+            // the representations are the same. Additionally, none of the enum members
+            // have a manually assigned value (this is ensured by the `variant_count` macro).
+            Ok(unsafe { std::mem::transmute::<i32, InteractionModel>(v) })
         } else {
             anyhow::bail!("Interaction model out of range")
         }
@@ -187,19 +185,20 @@ pub struct InventoryAction {
 }
 
 impl<'a> Deserialize<'a> for InventoryAction {
+    #[allow(clippy::collection_is_never_read)]
     fn deserialize_from<R: BinaryRead<'a>>(reader: &mut R) -> anyhow::Result<Self> {
         let source_type = InventoryActionSource::try_from(reader.read_u32_le()?)?;
         
-        let mut window = None;
-        let mut source_flags = 0;
+        let mut _window = None;
+        let mut _source_flags = 0;
 
         if source_type == InventoryActionSource::Container || source_type == InventoryActionSource::Todo {
-            window = Some(WindowId::try_from(reader.read_i32_le()?)?);
+            _window = Some(WindowId::try_from(reader.read_i32_le()?)?);
         } else if source_type == InventoryActionSource::World {
-            source_flags = reader.read_var_u32()?;
+            _source_flags = reader.read_var_u32()?;
         }
 
-        let inventory_slot = reader.read_var_u32()?;
+        let _inventory_slot = reader.read_var_u32()?;
 
         // https://github.com/Sandertv/gophertunnel/blob/36e5147307884b745b7d28d546c07ab03d4afb36/minecraft/protocol/inventory.go#L52
         todo!("Item instance reading");
@@ -239,6 +238,7 @@ pub struct TransactionData<'a> {
 }
 
 impl<'a> Deserialize<'a> for TransactionData<'a> {
+    #[allow(clippy::collection_is_never_read)]
     fn deserialize_from<R: BinaryRead<'a>>(reader: &mut R) -> anyhow::Result<Self> {
         let legacy_request_id = reader.read_var_i32()?;
         let mut legacy_slots = Vec::new();
@@ -286,9 +286,12 @@ pub enum FilterCause {
 impl TryFrom<i32> for FilterCause {
     type Error = anyhow::Error;
 
-    fn try_from(v: i32) -> anyhow::Result<Self> {
-        if v <= Self::variant_count() as i32 {
-            Ok(unsafe { std::mem::transmute::<i32, Self>(v) })
+    fn try_from(v: i32) -> anyhow::Result<FilterCause> {
+        if v <= FilterCause::variant_count() as i32 {
+            // SAFETY: This is safe because the discriminant is in range and
+            // the representations are the same. Additionally, none of the enum members
+            // have a manually assigned value (this is ensured by the `variant_count` macro).
+            Ok(unsafe { std::mem::transmute::<i32, FilterCause>(v) })
         } else {
             anyhow::bail!("Filter cause variant out of range ({v} >= {})", Self::variant_count())
         }
@@ -495,7 +498,7 @@ pub enum StackRequestAction<'a> {
 }   
 
 impl<'a> Deserialize<'a> for StackRequestAction<'a> {
-    fn deserialize_from<R: BinaryRead<'a>>(reader: &mut R) -> anyhow::Result<Self> {
+    fn deserialize_from<R: BinaryRead<'a>>(_reader: &mut R) -> anyhow::Result<Self> {
         todo!()
     }
 }
@@ -518,7 +521,7 @@ impl<'a> Deserialize<'a> for StackRequest<'a> {
             actions.push(StackRequestAction::deserialize_from(reader)?);
         }
 
-        let mut filter_count = reader.read_var_u32()?;
+        let filter_count = reader.read_var_u32()?;
         let mut filters = Vec::with_capacity(filter_count as usize);
         for _ in 0..filter_count {
             filters.push(reader.read_str()?);
@@ -538,7 +541,7 @@ macro_rules! impl_getters {
             paste::paste! {
                 #[inline]
                 #[doc = concat!("Checks whether the `", stringify!($flag) , "` flag is set")]
-                pub fn [< $flag:snake >](&self) -> bool { self.0 & InputDataFlag::$flag as u64 != 0 }
+                pub const fn [< $flag:snake >](&self) -> bool { self.0 & InputDataFlag::$flag as u64 != 0 }
             }
         )*
     }
@@ -645,24 +648,9 @@ impl<'a> Deserialize<'a> for PlayerAuthInput<'a> {
         let tick = reader.read_var_u64()?;
         let delta = reader.read_vecf()?;
 
-        let item_transaction = if input_data.perform_item_transaction() {
-            Some(TransactionData::deserialize_from(reader)?)
-        } else {
-            None
-        };
-
-        let item_stack = if input_data.perform_item_stack_request() {
-            Some(todo!())
-        } else {
-            None
-        };
-
-        let block_actions = if input_data.perform_block_actions() {
-            Some(todo!())
-        } else {
-            None
-        };
-
+        let item_transaction = input_data.perform_item_transaction().then(|| TransactionData::deserialize_from(reader)).transpose()?;
+        let item_stack = input_data.perform_item_stack_request().then(|| todo!());
+        let block_actions = input_data.perform_block_actions().then(|| todo!());
         let analogue_moved = reader.read_vecf()?;
         
         Ok(Self {

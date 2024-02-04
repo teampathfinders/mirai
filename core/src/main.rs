@@ -3,8 +3,6 @@ use std::sync::atomic::{AtomicU16, Ordering};
 use anyhow::Context;
 use tokio::runtime;
 
-use tracing_subscriber::filter::LevelFilter;
-
 use inferno::instance::{DbConfig, InstanceBuilder, NetConfig};
 
 fn main() -> anyhow::Result<()> {
@@ -85,6 +83,7 @@ fn init_logging() -> anyhow::Result<()> {
 #[cfg(not(feature = "tokio-console"))]
 fn init_logging() -> anyhow::Result<()> {
     use std::str::FromStr;
+    use tracing_subscriber::filter::LevelFilter;
 
     let max_level = LevelFilter::from_str(
         &std::env::vars()

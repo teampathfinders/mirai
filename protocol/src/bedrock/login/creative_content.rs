@@ -1,7 +1,5 @@
-use std::io::Write;
 use util::Serialize;
 use util::{BinaryWrite, VarInt};
-use util::Result;
 
 use crate::bedrock::ConnectedPacket;
 
@@ -22,7 +20,7 @@ pub struct ItemStack {
 }
 
 impl ItemStack {
-    pub fn serialized_size(&self) -> usize {
+    pub const fn serialized_size(&self) -> usize {
         30
     }
 
@@ -55,7 +53,7 @@ impl ItemStack {
         // }
 
         writer.write_var_u32(extra_writer.len() as u32)?;
-        writer.write_all(&extra_writer.as_ref())?;
+        writer.write_all(extra_writer.as_ref())?;
 
         Ok(())
     }

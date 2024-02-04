@@ -6,13 +6,10 @@ use syn::{spanned::Spanned, Data, DeriveInput};
 /// This is a temporary hack until the `std::mem::variant_count` function is stabilized.
 pub fn inner(item: TokenStream) -> TokenStream {
     let input = syn::parse_macro_input!(item as DeriveInput);
-    let data = match &input.data {
-        Data::Enum(data) => data,
-        _ => {
-            return TokenStream::from(quote_spanned! {
-                input.span() => compile_error!("variant_counter can only be applied to enums")
-            })
-        }
+    let Data::Enum(data) = &input.data else {
+        return TokenStream::from(quote_spanned! {
+            input.span() => compile_error!("variant_count can only be applied to enums")
+        })
     };
 
     let count = data.variants.len();

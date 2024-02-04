@@ -1,5 +1,3 @@
-use std::io::Write;
-
 use util::{Vector, Serialize, BinaryWrite};
 
 use crate::bedrock::ConnectedPacket;
@@ -39,7 +37,7 @@ pub struct SubChunkEntry {
 
 impl SubChunkEntry {
     #[inline]
-    fn serialize_cached<W: BinaryWrite>(&self, writer: &mut W) -> anyhow::Result<()> {
+    fn serialize_cached<W: BinaryWrite>(&self, _writer: &mut W) -> anyhow::Result<()> {
         todo!();
     }
     

@@ -1,10 +1,10 @@
-use anyhow::anyhow;
+
 use base64::Engine;
 use jsonwebtoken::{Algorithm, DecodingKey, Validation};
 use p384::pkcs8::spki;
 use uuid::Uuid;
 
-use util::{bail, error, Result, BinaryRead};
+use util::{BinaryRead};
 
 use crate::bedrock::Skin;
 use crate::bedrock::{DeviceOS, UiProfile};
@@ -110,14 +110,11 @@ fn parse_initial_token(token: &str) -> anyhow::Result<String> {
         }
     };
 
-    let base64 = if let Some(x5u) = header.x5u {
-        x5u
-    } else {
+    let Some(base64_x5u) = header.x5u else {
         tracing::error!("Missing X.509 certificate in initial JWT");
         anyhow::bail!("Missing X.509 certificate in initial JWT");
     };
-
-    let bytes = BASE64_ENGINE.decode(base64)?;
+    let bytes = BASE64_ENGINE.decode(base64_x5u)?;
 
     // Public key that can be used to verify the token.
     let public_key = match spki::SubjectPublicKeyInfoRef::try_from(bytes.as_ref()) {
@@ -252,7 +249,7 @@ pub fn parse_identity_data<'a, R: BinaryRead<'a>>(reader: &mut R) -> anyhow::Res
     let token_length = reader.read_u32_le()?;
     let token_chain = reader.take_n(token_length as usize)?;
 
-    let mut tokens = serde_json::from_slice::<TokenChain>(token_chain)?;
+    let tokens = serde_json::from_slice::<TokenChain>(token_chain)?;
     let identity_data = match tokens.chain.len() {
         1 => {
             // Client is not signed into Xbox.
@@ -263,8 +260,6 @@ pub fn parse_identity_data<'a, R: BinaryRead<'a>>(reader: &mut R) -> anyhow::Res
             // Verify the first token and decode the public key for the next token.
             // This public key must be equal to Mojang's public key to verify that the second
             // token was signed by Mojang.
-
-            tokens.chain[2] = tokens.chain[2].to_uppercase();
 
             let mut key = parse_initial_token(&tokens.chain[0])?;
             if !key.eq(MOJANG_PUBLIC_KEY) {

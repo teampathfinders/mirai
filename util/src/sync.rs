@@ -7,7 +7,7 @@ pub struct AtomicFlag {
 }
 
 impl AtomicFlag {
-    pub fn new() -> Self {
+    pub const fn new() -> Self {
         Self { flag: AtomicBool::new(false) }
     }
 

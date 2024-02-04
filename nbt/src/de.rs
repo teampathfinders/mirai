@@ -65,7 +65,7 @@ where
             _marker: PhantomData,
         };
 
-        let _ = de.deserialize_raw_str()?;
+        let _: &str = de.deserialize_raw_str()?;
 
         Ok(de)
     }
@@ -560,7 +560,7 @@ where
 {
     #[inline]
     pub fn new(de: &'a mut Deserializer<'de, F, R>, ty: FieldType, expected_len: u32) -> anyhow::Result<Self> {
-        debug_assert_ne!(ty, FieldType::End);
+        debug_assert_ne!(ty, FieldType::End, "Cannot serialize sequence of end tags");
 
         // ty is not read in here because the x_array types don't have a type prefix.
 
@@ -657,7 +657,7 @@ where
     where
         V: DeserializeSeed<'de>,
     {
-        debug_assert_ne!(self.de.next_ty, FieldType::End);
+        debug_assert_ne!(self.de.next_ty, FieldType::End, "Cannot serialize end as a map field");
         seed.deserialize(&mut *self.de)
     }
 }

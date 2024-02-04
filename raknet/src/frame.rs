@@ -35,6 +35,7 @@ impl FrameBatch {
 }
 
 impl Serialize for FrameBatch {
+    #[allow(clippy::unwrap_used)] // Frame size_hint always returns `Some`.
     fn size_hint(&self) -> Option<usize> {
         let hint = self.frames
             .iter()
@@ -46,7 +47,9 @@ impl Serialize for FrameBatch {
     /// Serializes a batch of frames to a buffer.
     fn serialize_into<W: BinaryWrite>(&self, writer: &mut W) -> anyhow::Result<()> {
         writer.write_u8(CONNECTED_PEER_BIT_FLAG)?;
-        writer.write_u24_le(self.sequence_number.try_into()?)?;
+
+        tracing::debug!("{}", self.sequence_number);
+        writer.write_u24_le(self.sequence_number)?;
 
         for frame in &self.frames {
             frame.serialize_into(writer)?;
@@ -59,8 +62,7 @@ impl Serialize for FrameBatch {
 impl<'a> Deserialize<'a> for FrameBatch {
     /// Deserializes a batch of frames from a buffer.
     fn deserialize_from<R: BinaryRead<'a>>(reader: &mut R) -> anyhow::Result<Self> {
-        let id = reader.read_u8()?;
-        debug_assert_ne!(id & 0x80, 0);
+        reader.advance(1)?; // Skip batch ID
 
         let batch_number = reader.read_u24_le()?;
         let mut frames = Vec::new();
@@ -68,9 +70,13 @@ impl<'a> Deserialize<'a> for FrameBatch {
         while !reader.eof() {
             frames.push(Frame::deserialize_from(reader)?);
         }
-        debug_assert_eq!(reader.remaining(), 0);
 
-        Ok(Self { sequence_number: batch_number.into(), frames })
+        if reader.remaining() != 0 {
+            tracing::error!("Not all bytes have been read from the packet buffer");
+            anyhow::bail!("Not all bytes have been read from the packet buffer");
+        }
+
+        Ok(Self { sequence_number: batch_number, frames })
     }
 }
 
@@ -124,13 +130,13 @@ impl Serialize for Frame {
         writer.write_u8(flags)?;
         writer.write_u16_be(self.body.len() as u16 * 8)?;
         if self.reliability.is_reliable() {
-            writer.write_u24_le(self.reliable_index.try_into()?)?;
+            writer.write_u24_le(self.reliable_index)?;
         }
         if self.reliability.is_sequenced() {
-            writer.write_u24_le(self.sequence_index.try_into()?)?;
+            writer.write_u24_le(self.sequence_index)?;
         }
         if self.reliability.is_ordered() {
-            writer.write_u24_le(self.order_index.try_into()?)?;
+            writer.write_u24_le(self.order_index)?;
             writer.write_u8(self.order_channel)?;
         }
         if self.is_compound {
@@ -152,31 +158,15 @@ impl<'a> Deserialize<'a> for Frame {
         let is_compound = flags & COMPOUND_BIT_FLAG != 0;
         let length = reader.read_u16_be()? / 8;
 
-        let mut reliable_index = 0;
-        if reliability.is_reliable() {
-            reliable_index = reader.read_u24_le()?.into();
-        }
+        let reliable_index = if reliability.is_reliable() { reader.read_u24_le()? } else { 0 };
+        let sequence_index = if reliability.is_sequenced() { reader.read_u24_le()? } else { 0 };
+    
+        let order_index = if reliability.is_ordered() { reader.read_u24_le()? } else { 0 };
+        let order_channel = if reliability.is_ordered() { reader.read_u8()? } else  { 0 };
 
-        let mut sequence_index = 0;
-        if reliability.is_sequenced() {
-            sequence_index = reader.read_u24_le()?.into();
-        }
-
-        let mut order_index = 0;
-        let mut order_channel = 0;
-        if reliability.is_ordered() {
-            order_index = reader.read_u24_le()?.into();
-            order_channel = reader.read_u8()?;
-        }
-
-        let mut compound_size = 0;
-        let mut compound_id = 0;
-        let mut compound_index = 0;
-        if is_compound {
-            compound_size = reader.read_u32_be()?;
-            compound_id = reader.read_u16_be()?;
-            compound_index = reader.read_u32_be()?;
-        }
+        let compound_size = if is_compound { reader.read_u32_be()? } else { 0 };
+        let compound_id = if is_compound { reader.read_u16_be()? } else { 0 };
+        let compound_index = if is_compound { reader.read_u32_be()? } else { 0 };
 
         let body = reader.take_n(length as usize)?.to_vec();
         let frame = Self {

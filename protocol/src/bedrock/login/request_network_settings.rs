@@ -1,6 +1,6 @@
 use util::{BinaryRead};
 use util::Deserialize;
-use util::Result;
+
 
 /// Sent by the client to request a [`NetworkSettings`](crate::bedrock::NetworkSettings) packet.
 #[derive(Debug)]

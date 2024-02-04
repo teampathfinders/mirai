@@ -1,3 +1,4 @@
+use macros::variant_count;
 use util::{BinaryRead, BinaryWrite};
 use util::{Deserialize, Serialize};
 use crate::bedrock::command::CommandPermissionLevel;
@@ -49,6 +50,7 @@ pub const ABILITY_FLAG_END: u32 = 1 << 19;
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 #[repr(u16)]
+#[variant_count]
 pub enum AbilityType {
     CustomCache,
     Base,
@@ -60,8 +62,10 @@ pub enum AbilityType {
 impl TryFrom<u16> for AbilityType {
     type Error = anyhow::Error;
 
-    fn try_from(value: u16) -> anyhow::Result<Self> {
-        if value <= 4 {
+    fn try_from(value: u16) -> anyhow::Result<AbilityType> {
+        if value <= AbilityType::variant_count() as u16 {
+            // SAFETY: This is safe because the enum has the correct representation and
+            // the discriminant is in range.
             Ok(unsafe {
                 std::mem::transmute::<u16, AbilityType>(value)
             })

@@ -958,6 +958,7 @@ dependencies = [
  "inferno-proto",
  "inferno-util",
  "serde",
+ "tracing",
 ]
 
 [[package]]
@@ -1046,6 +1047,7 @@ dependencies = [
  "serde_json",
  "snap",
  "tokio",
+ "tracing",
  "uuid 1.7.0",
 ]
 

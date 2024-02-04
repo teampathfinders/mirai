@@ -92,6 +92,11 @@ pub struct BlockStateMap {
 }
 
 impl BlockStateMap {
+    /// Creates a new block state map.
+    ///
+    /// # Panics
+    ///
+    /// This function panics if the deserialized state count is not equal to the expected count.
     pub fn new() -> anyhow::Result<Self> {
         tracing::debug!("Generating block state data...");
 
@@ -104,7 +109,7 @@ impl BlockStateMap {
 
         let mut current_id = 0;
         while reader.has_remaining() {
-            let (item, n): (PaletteEntry, usize) = nbt::from_var_bytes(reader).unwrap();
+            let (item, n): (PaletteEntry, usize) = nbt::from_var_bytes(reader)?;
             reader = reader.split_at(n).1;
 
             let state_hash = item.hash();
@@ -117,7 +122,7 @@ impl BlockStateMap {
             current_id += 1;
         }
 
-        assert_eq!(STATE_COUNT, current_id as usize);
+        assert_eq!(STATE_COUNT, current_id as usize, "Missing block state");
 
         Ok(map)
     }

@@ -164,7 +164,7 @@ impl<'a> InstanceBuilder<'a> {
     ///
     /// Default: Server.
     #[inline]
-    pub fn name(mut self, name: impl Into<String>) -> InstanceBuilder<'a> {
+    pub fn name<I: Into<String>>(mut self, name: I) -> InstanceBuilder<'a> {
         self.name = name.into();
         self
     }
@@ -173,7 +173,7 @@ impl<'a> InstanceBuilder<'a> {
     ///
     /// Default: See [`NetConfig`].
     #[inline]
-    pub fn net_config(mut self, config: NetConfig) -> InstanceBuilder<'a> {
+    pub const fn net_config(mut self, config: NetConfig) -> InstanceBuilder<'a> {
         self.net_config = config;
         self
     }
@@ -182,7 +182,7 @@ impl<'a> InstanceBuilder<'a> {
     ///
     /// Default: See [`DbConfig`].
     #[inline]
-    pub fn db_config(mut self, config: DbConfig<'a>) -> InstanceBuilder<'a> {
+    pub const fn db_config(mut self, config: DbConfig<'a>) -> InstanceBuilder<'a> {
         self.db_config = config;
         self
     }
@@ -191,7 +191,7 @@ impl<'a> InstanceBuilder<'a> {
     ///
     /// Default: See [`ClientConfig`].
     #[inline]
-    pub fn client_config(mut self, config: ClientConfig) -> InstanceBuilder<'a> {
+    pub const fn client_config(mut self, config: ClientConfig) -> InstanceBuilder<'a> {
         self.client_config = config;
         self
     }
@@ -217,13 +217,13 @@ impl<'a> InstanceBuilder<'a> {
 
         let token = CancellationToken::new();
         let command_service = command::Service::new(token.clone());
-        let user_map = Arc::new(UserMap::new(replicator, command_service.clone()));
+        let user_map = Arc::new(UserMap::new(replicator, Arc::clone(&command_service)));
 
         let instance = Instance {
             ipv4_socket,
             ipv6_socket,
             user_map,
-            token: token.clone(),
+            token,
             command_service,
         };
 
@@ -268,8 +268,8 @@ impl Instance {
         // self.user_map.set_level(level);
 
         let recv_job4 = {
-            let socket = self.ipv4_socket.clone();
-            let user_map = self.user_map.clone();
+            let socket = Arc::clone(&self.ipv4_socket);
+            let user_map = Arc::clone(&self.user_map);
             let token = self.token.clone();
 
             let handle = tokio::spawn(Instance::net_recv_job(token, socket, user_map));
@@ -278,20 +278,17 @@ impl Instance {
             handle
         };
 
-        let recv_job6 = match self.ipv6_socket {
-            Some(socket) => {
-                let user_map = self.user_map.clone();
-                let token = self.token.clone();
+        let recv_job6 = if let Some(socket) = self.ipv6_socket {
+            let user_map = Arc::clone(&self.user_map);
+            let token = self.token.clone();
 
-                let handle = tokio::spawn(Instance::net_recv_job(token, socket, user_map));
-                tracing::info!("IPv6 listener ready");
+            let handle = tokio::spawn(Instance::net_recv_job(token, socket, user_map));
+            tracing::info!("IPv6 listener ready");
 
-                Some(handle)
-            }
-            None => {
-                tracing::info!("IPv6 functionality disabled");
-                None
-            }
+            Some(handle)
+        } else {
+            tracing::info!("IPv6 functionality disabled");
+            None
         };
 
         signal_listener(self.token.clone()).await?;
@@ -330,7 +327,7 @@ impl Instance {
         tracing::debug!("{ping:?}");
 
         packet.buf.clear();
-        packet.buf.reserve_to(pong.serialized_size());
+        packet.buf.reserve_to(pong.size_hint());
         pong.serialize_into(&mut packet.buf)?;
 
         let packet = ForwardablePacket { buf: packet.buf, addr: packet.addr };
@@ -351,13 +348,13 @@ impl Instance {
             let reply = IncompatibleProtocol { server_guid };
 
             packet.buf.clear();
-            packet.buf.reserve_to(reply.serialized_size());
+            packet.buf.reserve_to(reply.size_hint());
             reply.serialize_into(&mut packet.buf)?;
         } else {
             let reply = OpenConnectionReply1 { mtu: request.mtu, server_guid };
 
             packet.buf.clear();
-            packet.buf.reserve_to(reply.serialized_size());
+            packet.buf.reserve_to(reply.size_hint());
             reply.serialize_into(&mut packet.buf)?;
         }
 
@@ -385,7 +382,7 @@ impl Instance {
         tracing::debug!("{request:?}");
 
         packet.buf.clear();
-        packet.buf.reserve_to(reply.serialized_size());
+        packet.buf.reserve_to(reply.size_hint());
         reply.serialize_into(&mut packet.buf)?;
 
         user_manager.insert(UserCreateInfo {
@@ -435,14 +432,12 @@ impl Instance {
             };
 
             if packet.is_unconnected() {
-                let udp_socket = udp_socket.clone();
-                let session_manager = user_manager.clone();
+                let udp_socket = Arc::clone(&udp_socket);
+                let session_manager = Arc::clone(&user_manager);
                 let metadata = metadata.clone();
 
                 tokio::spawn(async move {
-                    let id = if let Some(id) = packet.packet_id() {
-                        id
-                    } else {
+                    let Some(id) = packet.packet_id() else {
                         tracing::error!("Unconnected packet was empty");
                         return;
                     };
@@ -451,7 +446,7 @@ impl Instance {
                         UnconnectedPing::ID => Self::process_unconnected_ping(packet, server_guid, &metadata),
                         OpenConnectionRequest1::ID => Self::process_open_connection_request1(packet, server_guid),
                         OpenConnectionRequest2::ID => {
-                            Self::process_open_connection_request2(packet, udp_socket.clone(), session_manager, server_guid)
+                            Self::process_open_connection_request2(packet, Arc::clone(&udp_socket), session_manager, server_guid)
                         }
                         _ => {
                             tracing::error!("Invalid unconnected packet ID: {id:x}");

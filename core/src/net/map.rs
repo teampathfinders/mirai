@@ -33,6 +33,7 @@ pub struct UserMapEntry<T> {
 impl<T> UserMapEntry<T> {
     /// Forwards a packet to the user for processing.
     #[inline]
+    #[allow(clippy::future_not_send)]
     pub async fn forward(&self, packet: Vec<u8>) -> anyhow::Result<()> {
         self.channel.send_timeout(packet, FORWARD_TIMEOUT).await.context("Server-side client timed out")?;
         Ok(())
@@ -77,9 +78,9 @@ impl UserMap {
         let (state, state_rx) = 
             RaknetUser::new(info, self.broadcast.clone(), rx);
         
-        let connecting_map = self.connecting_map.clone();
-        let connected_map = self.connected_map.clone();
-        let replicator = self.replicator.clone();
+        let connecting_map = Arc::clone(&self.connecting_map);
+        let connected_map = Arc::clone(&self.connected_map);
+        let replicator = Arc::clone(&self.replicator);
         let broadcast = self.broadcast.clone();
         let endpoint = self.commands.create_endpoint();
 
@@ -100,9 +101,10 @@ impl UserMap {
             }
         });
 
-        let connecting_map = self.connecting_map.clone();
-        let connected_map = self.connected_map.clone();
-        let state_clone = state.clone();
+        let connecting_map = Arc::clone(&self.connecting_map);
+        let connected_map = Arc::clone(&self.connected_map);
+        let state_clone = Arc::clone(&state);
+
         tokio::spawn(async move {
             state_clone.active.cancelled().await;
             connected_map.remove(&state_clone.address);
@@ -183,14 +185,14 @@ impl Joinable for UserMap {
         self.connecting_map.retain(|_, user| {
             user.state.disconnect();
 
-            let clone = user.state.clone();
+            let clone = Arc::clone(&user.state);
             join_set.spawn(async move { clone.join().await });
 
             false
         });
 
         self.connected_map.retain(|_, user| {
-            let clone = user.state.clone();
+            let clone = Arc::clone(&user.state);
             join_set.spawn(async move { clone.join().await });
 
             false

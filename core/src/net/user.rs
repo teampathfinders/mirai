@@ -76,7 +76,7 @@ impl BedrockUser {
             job_handle: RwLock::new(None)
         });
 
-        let clone = user.clone();
+        let clone = Arc::clone(&user);
         let handle = tokio::spawn(async move {
             clone.recv_job(receiver).await;
         });
@@ -130,7 +130,8 @@ impl BedrockUser {
     /// 
     /// In case it is more convenient to use a channel receiver instead, use the [`subscribe`](Subscriber::subscribe)
     /// method on the `forms` field of the user.
-    pub async fn send_form(&self, form: impl forms::SubmittableForm) -> anyhow::Result<forms::Response> {
+    #[allow(clippy::future_not_send)]
+    pub async fn send_form<F: forms::SubmittableForm>(&self, form: F) -> anyhow::Result<forms::Response> {
         let recv = self.forms.subscribe(self, form)?;
         let resp = recv.await?;
 
@@ -316,7 +317,7 @@ impl BedrockUser {
             self.kick_with_reason("Unexpected packet", DisconnectReason::UnexpectedPacket).await?;
         }
 
-        let this = self.clone();
+        let this = Arc::clone(self);
         tokio::spawn(async move {
             match header.id {
                 PlayerAuthInput::ID => this.handle_auth_input(packet),
@@ -338,7 +339,7 @@ impl BedrockUser {
                 SetLocalPlayerAsInitialized::ID => {
                     this.handle_local_initialized(packet)
                 }
-                MovePlayer::ID => this.handle_move_player(packet).await,
+                MovePlayer::ID => this.handle_move_player(packet),
                 PlayerAction::ID => this.handle_player_action(packet),
                 RequestAbility::ID => this.handle_ability_request(packet),
                 Animate::ID => this.handle_animation(packet),
@@ -357,7 +358,7 @@ impl BedrockUser {
 
     /// Returns the forms handler.
     #[inline]
-    pub fn forms(&self) -> &forms::Subscriber {
+    pub const fn forms(&self) -> &forms::Subscriber {
         &self.forms
     }
 
@@ -418,25 +419,21 @@ impl Joinable for BedrockUser {
     )]
     async fn join(&self) -> anyhow::Result<()> {
         let handle = self.job_handle.write().take();
-        match handle {
-            Some(handle) => {
-                // Error logged by RakNet join method.
-                _ = self.raknet.join().await;
+        if let Some(handle) = handle {
+                            // Error logged by RakNet join method.
+                            let _: anyhow::Result<()> = self.raknet.join().await;
 
-                match handle.await {
-                    Ok(_) => Ok(()),
-                    Err(err) => {
-                        tracing::error!("Error occurred while awaiting Bedrock user service shutdown: {err:#?}");
-                        Ok(())
-                    }
-                }
-            },  
-            None => {
-                tracing::error!("This user service has already been joined");
-                anyhow::bail!("User service already joined");
-            }
-        }
-        
+                            match handle.await {
+                                Ok(_) => Ok(()),
+                                Err(err) => {
+                                    tracing::error!("Error occurred while awaiting Bedrock user service shutdown: {err:#?}");
+                                    Ok(())
+                                }
+                            }
+        } else {
+            tracing::error!("This user service has already been joined");
+            anyhow::bail!("User service already joined");
+        }        
     }
 }
 
@@ -480,22 +477,22 @@ impl PlayerData {
     }
 
     /// The gamemode the player is currently in.
-    pub fn gamemode(&self) -> GameMode {
+    pub const fn gamemode(&self) -> GameMode {
         self.game_mode
     }
 
     /// The runtime ID of the player.
-    pub fn runtime_id(&self) -> u64 {
+    pub const fn runtime_id(&self) -> u64 {
         self.runtime_id
     }
 
     /// The permission level of the player.
-    pub fn permission_level(&self) -> PermissionLevel {
+    pub const fn permission_level(&self) -> PermissionLevel {
         self.permission_level
     }
 
     /// The command permission level of the player.
-    pub fn command_permission_level(&self) -> CommandPermissionLevel {
+    pub const fn command_permission_level(&self) -> CommandPermissionLevel {
         self.command_permission_level
     }
 }

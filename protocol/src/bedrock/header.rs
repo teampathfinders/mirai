@@ -1,4 +1,4 @@
-use util::{Result, Serialize, Deserialize};
+use util::{Serialize, Deserialize};
 use util::{BinaryRead, BinaryWrite, size_of_varint};
 
 /// Game raknet are prefixed with a length and a header.

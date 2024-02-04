@@ -47,7 +47,7 @@ impl BedrockUser {
 
             let name = self.name()?;
             // Check that the source is equal to the player name to prevent spoofing.
-            if name == source {
+            if name != source {
                 tracing::warn!("Client and text message name do not match. Kicking them for forbidden modifications");
                 return self.kick_with_reason("Illegal packet modifications detected", DisconnectReason::BadPacket).await
             }
@@ -112,12 +112,20 @@ impl BedrockUser {
 
     /// Handles a [`FormResponseData`] packet. This packet is forwarded to the forms [`Subscriber`](crate::forms::response::Subscriber)
     /// which will properly handle the response.
+    /// 
+    /// # Errors
+    /// 
+    /// May return an error if the packet fails to deserialize or handling a form response fails.
     pub fn handle_form_response(&self, packet: Vec<u8>) -> anyhow::Result<()> {
         let response = FormResponseData::deserialize(packet.as_ref())?;
         self.forms.handle_response(response)
     }
 
     /// Handles a [`CommandRequest`] packet.
+    /// 
+    /// # Errors
+    /// 
+    /// May return an error if the packet fails to deserialize or executing the command fails.
     pub async fn handle_command_request(&self, packet: Vec<u8>) -> anyhow::Result<()> {
         let request = CommandRequest::deserialize(packet.as_ref())?;
         let _callback = self.commands.request(request).await?;

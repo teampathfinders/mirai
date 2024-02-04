@@ -1,5 +1,4 @@
 use util::BinaryWrite;
-use util::Result;
 use util::Serialize;
 
 /// Sent by the server or client in response to an [`ConnectedPing`](crate::raknet::ConnectedPing) packet.
@@ -15,7 +14,7 @@ impl ConnectedPong {
     /// Unique ID of this packet.
     pub const ID: u8 = 0x03;
 
-    pub fn serialized_size(&self) -> usize {
+    pub const fn size_hint(&self) -> usize {
         1 + 8 + 8
     }
 }

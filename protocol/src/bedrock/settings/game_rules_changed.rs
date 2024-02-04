@@ -1,6 +1,6 @@
 use std::fmt;
 
-use util::{bail, Result, Serialize};
+use util::{bail, Serialize};
 use util::{BinaryWrite, size_of_varint, VarInt, VarString};
 
 use crate::{bedrock::ParsedArgument, bedrock::ConnectedPacket};
@@ -120,7 +120,7 @@ impl fmt::Display for GameRule {
 }
 
 impl GameRule {
-    pub fn is_bool(&self) -> bool {
+    pub const fn is_bool(&self) -> bool {
         match self {
             Self::CommandBlocksEnabled(_)
             | Self::CommandBlockOutput(_)

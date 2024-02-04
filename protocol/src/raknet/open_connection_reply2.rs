@@ -1,8 +1,7 @@
-use std::io::Write;
 use std::net::SocketAddr;
 
 use util::{BinaryWrite, IPV4_MEM_SIZE, IPV6_MEM_SIZE};
-use util::Result;
+
 use util::Serialize;
 
 use crate::raknet::OFFLINE_MESSAGE_DATA;
@@ -24,7 +23,7 @@ impl OpenConnectionReply2 {
     /// Unique identifier of the packet.
     pub const ID: u8 = 0x08;
 
-    pub fn serialized_size(&self) -> usize {
+    pub const fn size_hint(&self) -> usize {
         1 + 16 + if self.client_address.is_ipv4() { IPV4_MEM_SIZE } else { IPV6_MEM_SIZE } + 2 + 1
     }
 }

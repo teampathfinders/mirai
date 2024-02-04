@@ -1,7 +1,7 @@
-use std::net::SocketAddr;
+
 
 use util::{BinaryWrite, size_of_varint};
-use util::Result;
+
 use util::Serialize;
 
 use crate::bedrock::ConnectedPacket;
@@ -20,7 +20,7 @@ impl<'a> ConnectedPacket for Transfer<'a> {
     const ID: u32 = 0x55;
 
     fn serialized_size(&self) -> usize {
-        let addr_string = self.addr.to_string();
+        let addr_string = self.addr.to_owned();
 
         size_of_varint(addr_string.len() as u32) + addr_string.len() + 2
     }
