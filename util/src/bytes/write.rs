@@ -4,7 +4,6 @@ use std::net::SocketAddr;
 use paste::paste;
 use uuid::Uuid;
 
-use crate::u24::u24;
 use crate::{BlockPosition, Vector};
 
 macro_rules! declare_primitive_fns {
@@ -30,7 +29,7 @@ macro_rules! declare_primitive_fns {
 }
 
 pub trait BinaryWrite: Write + AsRef<[u8]> + AsMut<[u8]> {
-    declare_primitive_fns!(u16, i16, u24, u32, i32, u64, i64, u128, i128, f32, f64);
+    declare_primitive_fns!(u16, i16, u32, i32, u64, i64, u128, i128, f32, f64);
 
     #[inline]
     fn write_bool(&mut self, v: bool) -> anyhow::Result<()> {
@@ -47,6 +46,22 @@ pub trait BinaryWrite: Write + AsRef<[u8]> + AsMut<[u8]> {
     #[inline]
     fn write_i8(&mut self, v: i8) -> anyhow::Result<()> {
         self.write_all(&[v as u8])?;
+        Ok(())
+    }
+
+    /// Writes a little endian `u24` to the writer.
+    #[inline]
+    fn write_u24_le(&mut self, v: u32) -> anyhow::Result<()> {
+        let bytes = &v.to_le_bytes()[..3];
+        self.write_all(&bytes)?;
+        Ok(())
+    }
+
+    /// Writes a big endian `u24` to the writer.
+    #[inline]
+    fn write_u24_be(&mut self, v: u32) -> anyhow::Result<()> {
+        let bytes = &v.to_be_bytes()[..3];
+        self.write_all(&bytes)?;
         Ok(())
     }
 

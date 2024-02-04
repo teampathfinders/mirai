@@ -43,7 +43,6 @@
 mod macros;
 #[macro_use]
 mod error;
-mod u24;
 
 use std::{
     fmt,
