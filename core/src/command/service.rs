@@ -42,6 +42,12 @@ impl ServiceEndpoint {
     }
 }
 
+impl Clone for ServiceEndpoint {
+    fn clone(&self) -> ServiceEndpoint {
+        ServiceEndpoint { sender: self.sender.clone() }
+    }
+}
+
 /// Service that manages command execution.
 pub struct Service {
     token: CancellationToken,

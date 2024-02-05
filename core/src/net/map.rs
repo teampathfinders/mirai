@@ -6,7 +6,7 @@ use std::time::Duration;
 use anyhow::Context;
 use dashmap::DashMap;
 
-use raknet::{RaknetUser, BroadcastPacket, UserCreateInfo};
+use raknet::{BroadcastPacket, RaknetCommand, RaknetCreateInfo, RaknetUser};
 
 use tokio::sync::{broadcast, mpsc};
 use proto::bedrock::{ConnectedPacket, Disconnect, DisconnectReason};
@@ -72,7 +72,7 @@ impl UserMap {
     // }
 
     /// Inserts a user into the map.
-    pub fn insert(&self, info: UserCreateInfo) {
+    pub fn insert(&self, info: RaknetCreateInfo) {
         let (tx, rx) = mpsc::channel(BROADCAST_CHANNEL_CAPACITY);
 
         let address = info.address;

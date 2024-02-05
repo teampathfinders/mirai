@@ -1,7 +1,7 @@
 //! Contains the server instance.
 
 use anyhow::Context;
-use raknet::UserCreateInfo;
+use raknet::RaknetCreateInfo;
 
 use std::net::{Ipv4Addr, Ipv6Addr, SocketAddrV4, SocketAddrV6};
 use std::sync::Arc;
@@ -424,7 +424,7 @@ impl Instance {
         packet.buf.reserve_to(reply.size_hint());
         reply.serialize_into(&mut packet.buf)?;
 
-        user_manager.insert(UserCreateInfo {
+        user_manager.insert(RaknetCreateInfo {
             address: packet.addr,
             guid: request.client_guid,
             mtu: request.mtu,

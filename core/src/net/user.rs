@@ -13,7 +13,7 @@ use flate2::write::DeflateEncoder;
 use parking_lot::RwLock;
 use prometheus_client::metrics::gauge::Gauge;
 use prometheus_client::metrics::histogram::{linear_buckets, Histogram};
-use raknet::{SendConfig, DEFAULT_SEND_CONFIG, RaknetUser, BroadcastPacket};
+use raknet::{BroadcastPacket, RaknetCommand, RaknetUser, SendConfig, DEFAULT_SEND_CONFIG};
 use systemstat::Duration;
 use tokio::sync::{broadcast, mpsc, Semaphore, TryAcquireError};
 use proto::bedrock::{CommandPermissionLevel, Disconnect, GameMode, PermissionLevel, Skin, ConnectedPacket, CONNECTED_PACKET_ID, CompressionAlgorithm, Packet, Header, RequestNetworkSettings, Login, ClientToServerHandshake, CacheStatus, ResourcePackClientResponse, ViolationWarning, ChunkRadiusRequest, Interact, TextMessage, SetLocalPlayerAsInitialized, MovePlayer, PlayerAction, RequestAbility, Animate, CommandRequest, SettingsCommand, ContainerClose, FormResponseData, TickSync, UpdateSkin, PlayerAuthInput, DisconnectReason};
@@ -84,7 +84,7 @@ impl BedrockUser {
     pub fn new(
         raknet: Arc<RaknetUser>,
         replicator: Arc<Replicator>,
-        receiver: mpsc::Receiver<Vec<u8>>,
+        receiver: mpsc::Receiver<RaknetCommand>,
         commands: command::ServiceEndpoint,
         broadcast: broadcast::Sender<BroadcastPacket>
     ) -> Arc<Self> {
@@ -125,33 +125,37 @@ impl BedrockUser {
         skip_all,
         name = "BedrockUser::receiver",
         fields(
-            username = %self.name().unwrap_or("<unknown>"),
             address = %self.raknet.address
         )
     )]
-    async fn receiver(self: &Arc<Self>, mut receiver: mpsc::Receiver<Vec<u8>>) {
+    async fn receiver(self: &Arc<Self>, mut receiver: mpsc::Receiver<RaknetCommand>) {
         let mut broadcast = self.broadcast.subscribe();
         
         let mut should_run = true;
         while should_run {
             tokio::select! {
-                packet = receiver.recv() => {            
-                    // Ensure that the client has not exhausted its budget.
-                    match self.budget.try_acquire() {
-                        Ok(permit) => permit.forget(),
-                        Err(TryAcquireError::NoPermits) => {
-                            tracing::warn!("Client exhausted its budget. Too many packets have been sent within a short timeframe");
-                            let _: anyhow::Result<()> = self.kick_with_reason("Request budget exhausted", DisconnectReason::NotAllowed).await;
-                        }
-                        Err(TryAcquireError::Closed) => unreachable!()
-                    }
-
-                    if let Some(packet) = packet {
-                        if let Err(err) = self.handle_encrypted_frame(packet).await {
-                            tracing::error!("Failed to handle packet: {err:#}");
-                        }
-                    } else {
+                cmd = receiver.recv() => {  
+                    let Some(cmd) = cmd else {
+                        // Channel has been closed.
                         break
+                    };
+
+                    match cmd {
+                        RaknetCommand::Received(packet) => {
+                            if let Err(err) = self.handle_encrypted_frame(packet).await {
+                                tracing::error!("Failed to handle protocol packet: {err:#}");
+                            }
+                        },
+                        RaknetCommand::BudgetExhausted => {
+                            if self.kick_with_reason("Exhausted request budget", DisconnectReason::NotAllowed).await.is_err() {
+                                // If kicking does not work, force disconnect them.
+                                self.raknet.disconnect();
+                            }
+                        },
+                        RaknetCommand::Disconnected => {
+                            tracing::warn!("Raknet has reported a disconnect status, destroying user");
+                            break
+                        }
                     }
                 },
                 packet = broadcast.recv() => {

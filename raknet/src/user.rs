@@ -2,17 +2,30 @@ use std::{net::SocketAddr, sync::{Arc, atomic::{AtomicU16, AtomicU32, AtomicU64}
 
 use parking_lot::{Mutex, RwLock};
 use proto::raknet::DisconnectNotification;
-use tokio::{net::UdpSocket, sync::{broadcast, mpsc}};
+use tokio::{net::UdpSocket, sync::{broadcast, mpsc, Semaphore}};
 use tokio_util::sync::CancellationToken;
 use util::Joinable;
 
-use crate::{Compounds, SendQueues, Recovery, BroadcastPacket, OrderChannel, SendConfig, Reliability, SendPriority};
+use crate::{BroadcastPacket, Compounds, OrderChannel, Recovery, Reliability, SendConfig, SendPriority, SendQueues, BUDGET_SIZE};
 
 const ORDER_CHANNEL_COUNT: usize = 5;
 const OUTPUT_CHANNEL_SIZE: usize = 5;
+/// A command that the Raknet layer will send to its parent.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum RaknetCommand {
+    /// The client has exhausted its budget and should be disconnected.
+    /// An exhausted budget might be the result of a DOS attack.
+    /// 
+    /// This mechanism prevents flooding by rate limiting requests.
+    BudgetExhausted,
+    /// The Raknet client has disconnected.
+    Disconnected,
+    /// The Raknet layer has received a packet and finished preprocessing it.
+    Received(Vec<u8>)
+}
 
 /// Information required to create a new RakNet user.
-pub struct UserCreateInfo {
+pub struct RaknetCreateInfo {
     /// IP address of the client.
     pub address: SocketAddr,
     /// Maximum transfer unit of the client.
@@ -26,6 +39,9 @@ pub struct UserCreateInfo {
 
 /// The Raknet layer of the user. This handles the entire Raknet protocol for the client.
 pub struct RaknetUser {
+    /// Keeps track of the remaining "budget" of this user.
+    /// This is used to implement rate limiting.
+    pub budget: Semaphore,
     /// IP address of the user.
     pub address: SocketAddr,
     /// Socket used for communication with this user.
@@ -68,7 +84,7 @@ pub struct RaknetUser {
     /// Channel used to submit packets that have been fully processed by the RakNet layer.
     /// These packets go on to be processed further by protocols running on top of RakNet
     /// such as the Minecraft Bedrock protocol.
-    pub output: mpsc::Sender<Vec<u8>>,
+    pub output: mpsc::Sender<RaknetCommand>,
     /// Handle to the processing job of this RakNet client.
     pub job_handle: RwLock<Option<tokio::task::JoinHandle<()>>>
 }
@@ -76,10 +92,10 @@ pub struct RaknetUser {
 impl RaknetUser {
     /// Creates a new RakNet user with the specified info.
     pub fn new(
-        info: UserCreateInfo, 
+        info: RaknetCreateInfo, 
         broadcast: broadcast::Sender<BroadcastPacket>,
         forward_rx: mpsc::Receiver<Vec<u8>>
-    ) -> (Arc<Self>, mpsc::Receiver<Vec<u8>>) {
+    ) -> (Arc<Self>, mpsc::Receiver<RaknetCommand>) {
         // SAFETY: MaybeUninit does not require initialization, so it is safe to create an array
         // of them like this.
         let mut order_channels: [MaybeUninit<OrderChannel>; ORDER_CHANNEL_COUNT] = unsafe {
@@ -102,6 +118,7 @@ impl RaknetUser {
         let (output_tx, output_rx) = mpsc::channel(OUTPUT_CHANNEL_SIZE);
 
         let state = Arc::new(RaknetUser {
+            budget: Semaphore::new(BUDGET_SIZE),
             active: CancellationToken::new(),
             address: info.address,
             last_update: RwLock::new(Instant::now()),

@@ -5,11 +5,12 @@ use std::time::{Instant, Duration};
 use async_recursion::async_recursion;
 use proto::bedrock::CONNECTED_PACKET_ID;
 use proto::raknet::{Ack, ConnectedPing, ConnectionRequest, DisconnectNotification, Nak, NewIncomingConnection};
+use tokio::sync::TryAcquireError;
 use util::Deserialize;
 
 use tokio::sync::mpsc::error::SendTimeoutError;
 
-use crate::{RaknetUser, FrameBatch, Frame};
+use crate::{Frame, FrameBatch, RaknetCommand, RaknetUser};
 
 const RAKNET_OUTPUT_TIMEOUT: Duration = Duration::from_millis(10);
 
@@ -127,7 +128,7 @@ impl RaknetUser {
         match packet_id {
             // CONNECTED_PACKET_ID => self.handle_encrypted_frame(packet).await?,
             CONNECTED_PACKET_ID => {
-                if let Err(err) = self.output.send_timeout(packet, RAKNET_OUTPUT_TIMEOUT).await {
+                if let Err(err) = self.output.send_timeout(RaknetCommand::Received(packet), RAKNET_OUTPUT_TIMEOUT).await {
                     if matches!(err, SendTimeoutError::Closed(_)) {
                         // Output channel has been closed
                         tracing::warn!("RakNet layer output channel closed, disconnecting them...");

@@ -115,11 +115,22 @@ impl BedrockUser {
     /// 
     /// May return an error if the packet fails to deserialize or executing the command fails.
     pub async fn handle_command_request(&self, packet: Vec<u8>) -> anyhow::Result<()> {
-        let request = CommandRequest::deserialize(packet.as_ref())?;
-        let _callback = self.commands.request(request).await?;
+        // Command execution could take several ticks, await the result in a separate task
+        // to avoid blocking the request handler.
+        let endpoint = self.commands.clone();
+        tokio::spawn(async move {
+            let request = CommandRequest::deserialize(packet.as_ref()).unwrap();
+            let receiver = match endpoint.request(request).await {
+                Ok(r) => r,
+                Err(e) => {
+                    tracing::error!("{e:#}"); 
+                    return
+                }
+            };
+            let response = receiver.await;
 
-        // let response = callback.await?;
-        // dbg!(response);
+            tracing::debug!("{response:?}");
+        });
 
         Ok(())
     }
