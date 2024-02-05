@@ -3,13 +3,14 @@ use std::sync::atomic::{AtomicU16, Ordering};
 use anyhow::Context;
 use tokio::runtime::{self, Handle};
 
+use lazy_static::lazy_static;
+use prometheus_client::registry::Registry;
+
 use inferno::instance::{DbConfig, InstanceBuilder, NetConfig};
 
-fn main() -> anyhow::Result<()> {
-    app()
-}
+mod metrics;
 
-fn app() -> anyhow::Result<()> {
+fn main() -> anyhow::Result<()> {
     let runtime = runtime::Builder::new_multi_thread()
         .enable_io()
         .enable_time()
@@ -21,6 +22,7 @@ fn app() -> anyhow::Result<()> {
         .expect("Failed to build runtime");
 
     let handle = runtime.handle();
+
     init_logging(handle).context("Unable to initialise logging")?;
 
     let host = std::env::vars().find_map(|(k, v)| if k == "REDIS_HOST" { Some(v) } else { None });
@@ -49,11 +51,13 @@ fn app() -> anyhow::Result<()> {
         .db_config(DbConfig { host: &host, port });
 
     let out = runtime.block_on(async move {
+        tokio::spawn(async move { metrics::metrics_agent().await });
+
         let instance = builder.build().await?;
         instance.run().await
     });
 
-    opentelemetry::global::shutdown_tracer_provider();
+    // opentelemetry::global::shutdown_tracer_provider();
 
     out
 }
@@ -85,20 +89,11 @@ fn init_logging() -> anyhow::Result<()> {
 
 /// Initialises logging without tokio-console.
 #[cfg(not(feature = "tokio-console"))]
-fn init_logging(handle: &Handle) -> anyhow::Result<()> {
+fn init_logging(_handle: &Handle) -> anyhow::Result<()> {
     use std::str::FromStr;
     use tracing_subscriber::filter::LevelFilter;
     use tracing_subscriber::layer::SubscriberExt;
     use tracing_subscriber::util::SubscriberInitExt;
-
-    use opentelemetry_sdk::runtime::Tokio;
-
-    let _guard = handle.enter();
-    let tracer = opentelemetry_jaeger::new_collector_pipeline()
-        .with_endpoint("http://localhost:14268/api/traces")
-        .with_isahc()
-        .with_service_name("inferno_tracing")
-        .install_batch(Tokio)?;
 
     let level_filter = LevelFilter::from_str(
         &std::env::vars()
@@ -107,7 +102,6 @@ fn init_logging(handle: &Handle) -> anyhow::Result<()> {
     )?;
 
     let fmt = tracing_subscriber::fmt::layer()
-        // .with_level(max_level)
         .with_target(false)
         .with_ansi(true)
         .with_line_number(false)
@@ -118,7 +112,6 @@ fn init_logging(handle: &Handle) -> anyhow::Result<()> {
     tracing_subscriber::registry()
         .with(level_filter)
         .with(fmt)
-        .with(tracing_opentelemetry::layer().with_tracer(tracer))
         .try_init()
         .context("Failed to register tracing subscriber")?;
 

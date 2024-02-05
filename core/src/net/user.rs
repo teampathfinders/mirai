@@ -3,15 +3,18 @@ use std::io::{Read, Write};
 
 use std::sync::{Arc, OnceLock};
 use std::sync::atomic::{
-    AtomicBool, Ordering, AtomicU32,
+    AtomicBool, AtomicI64, AtomicU32, Ordering
 };
+use std::time::Instant;
 
 use anyhow::Context;
 use flate2::Compression;
 use flate2::write::DeflateEncoder;
 use parking_lot::RwLock;
+use prometheus_client::metrics::gauge::Gauge;
+use prometheus_client::metrics::histogram::{linear_buckets, Histogram};
 use raknet::{SendConfig, DEFAULT_SEND_CONFIG, RaknetUser, BroadcastPacket};
-use tokio::sync::{mpsc, broadcast};
+use tokio::sync::{broadcast, mpsc, Semaphore, TryAcquireError};
 use proto::bedrock::{CommandPermissionLevel, Disconnect, GameMode, PermissionLevel, Skin, ConnectedPacket, CONNECTED_PACKET_ID, CompressionAlgorithm, Packet, Header, RequestNetworkSettings, Login, ClientToServerHandshake, CacheStatus, ResourcePackClientResponse, ViolationWarning, ChunkRadiusRequest, Interact, TextMessage, SetLocalPlayerAsInitialized, MovePlayer, PlayerAction, RequestAbility, Animate, CommandRequest, SettingsCommand, ContainerClose, FormResponseData, TickSync, UpdateSkin, PlayerAuthInput, DisconnectReason};
 use proto::crypto::{Encryptor, BedrockIdentity, BedrockClientInfo};
 use proto::uuid::Uuid;
@@ -23,6 +26,30 @@ use util::{AtomicFlag, BinaryRead, BinaryWrite, Deserialize, Joinable, Serialize
 use crate::command;
 use crate::config::SERVER_CONFIG;
 use crate::forms;
+
+use lazy_static::lazy_static;
+// use prometheus::{IntGauge, Histogram, register_int_gauge, register_histogram, opts};
+
+const USER_BUDGET: usize = 10;
+
+lazy_static! {
+    #[doc(hidden)]
+    pub static ref CONNECTED_CLIENTS_METRIC: Gauge::<i64, AtomicI64> = Gauge::default();
+    #[doc(hidden)]
+    pub static ref RESPONSE_TIMES_METRIC: Histogram = Histogram::new(linear_buckets(0.0, 1.0, 25));
+}
+
+// lazy_static! {
+//     #[doc(hidden)]
+//     pub static ref BEDROCK_CONNECTED_CLIENTS: IntGauge = register_int_gauge!(
+//         opts!("bedrock_connected_clients", "Total connected clients")
+//     ).expect("Cannot create connected clients metric");
+
+//     #[doc(hidden)]
+//     pub static ref BEDROCK_RESPONSE_TIMES: Histogram = register_histogram!(
+//         "bedrock_response_time_ms", "Server response times"
+//     ).expect("Cannot create response time metric");
+// }
 
 /// Represents a user connected to the server.
 pub struct BedrockUser {
@@ -44,6 +71,8 @@ pub struct BedrockUser {
     pub(crate) forms: forms::Subscriber,
     pub(crate) commands: command::ServiceEndpoint,
 
+    pub(crate) budget: Semaphore,
+
     pub(crate) broadcast: broadcast::Sender<BroadcastPacket>,
     pub(crate) job_handle: RwLock<Option<JoinHandle<()>>>
 }
@@ -57,6 +86,8 @@ impl BedrockUser {
         commands: command::ServiceEndpoint,
         broadcast: broadcast::Sender<BroadcastPacket>
     ) -> Arc<Self> {
+        CONNECTED_CLIENTS_METRIC.inc();
+
         let user = Arc::new(Self {
             encryptor: OnceLock::new(),
             identity: OnceLock::new(),
@@ -71,6 +102,8 @@ impl BedrockUser {
 
             forms: forms::Subscriber::new(),
             commands,
+
+            budget: Semaphore::new(USER_BUDGET),
             
             broadcast,
             job_handle: RwLock::new(None)
@@ -101,6 +134,16 @@ impl BedrockUser {
         while should_run {
             tokio::select! {
                 packet = receiver.recv() => {            
+                    // Ensure that the client has not exhausted its budget.
+                    match self.budget.try_acquire() {
+                        Ok(permit) => permit.forget(),
+                        Err(TryAcquireError::NoPermits) => {
+                            tracing::warn!("Client exhausted its budget. Too many packets have been sent within a short timeframe");
+                            let _: anyhow::Result<()> = self.kick_with_reason("Request budget exhausted", DisconnectReason::NotAllowed).await;
+                        }
+                        Err(TryAcquireError::Closed) => unreachable!()
+                    }
+
                     if let Some(packet) = packet {
                         if let Err(err) = self.handle_encrypted_frame(packet).await {
                             tracing::error!("Failed to handle packet: {err:#}");
@@ -122,6 +165,7 @@ impl BedrockUser {
         }
 
         tracing::info!("{} has disconnected", self.name().unwrap_or("<unknown>"));
+        CONNECTED_CLIENTS_METRIC.dec();
     }
 
     /// Handles a packet broadcasted by another user.
@@ -257,6 +301,8 @@ impl BedrockUser {
     /// After processing, this function sends the processed packet to [`handle_frame_body`](Self::handle_frame_body)
     /// function,
     async fn handle_encrypted_frame(self: &Arc<Self>, mut packet: Vec<u8>) -> anyhow::Result<()> {
+        let timestamp = Instant::now();
+
         if packet[0] != 0xfe {
             anyhow::bail!("First byte in a Bedrock proto packet should be 0xfe");
         }
@@ -268,8 +314,7 @@ impl BedrockUser {
         }
 
         let compression_threshold = SERVER_CONFIG.read().compression_threshold;
-
-        if self.compressed.get()
+        let result = if self.compressed.get()
             && compression_threshold != 0
             && packet.len() > compression_threshold as usize
         {
@@ -292,7 +337,11 @@ impl BedrockUser {
             }
         } else {
             self.handle_frame_body(packet).await
-        }
+        };
+
+        RESPONSE_TIMES_METRIC.observe(timestamp.elapsed().as_millis() as f64);
+
+        result
     }
 
     /// Handles the body of a frame.

@@ -26,8 +26,6 @@ impl RaknetUser {
         )
     )]
     pub async fn handle_raw_packet(&self, packet: Vec<u8>) -> anyhow::Result<bool> {
-        tracing::debug!("Processing raw packet");
-
         *self.last_update.write() = Instant::now();
 
         let Some(pk_id) = packet.first().copied() else {
@@ -40,8 +38,6 @@ impl RaknetUser {
             Nak::ID => self.handle_nak(packet.as_ref()).await?,
             _ => self.handle_frame_batch(packet).await?,
         }
-
-        tracing::debug!("Finished processing raw packet");
 
         Ok(true)
     }

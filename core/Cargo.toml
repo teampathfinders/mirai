@@ -46,7 +46,6 @@ nohash-hasher = "0.2.0"
 
 # Telemetry
 
-tracing-opentelemetry = "0.22.0"
-opentelemetry-jaeger = { version = "0.20.0", features = ["rt-tokio", "collector_client", "isahc_collector_client"] }
-opentelemetry = "0.21.0"
-opentelemetry_sdk = { version = "0.21.2", features = ["rt-tokio"] }
+prometheus-client = "0.22.1"
+systemstat = "0.2.3"
+lazy_static = "1.4.0"

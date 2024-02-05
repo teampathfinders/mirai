@@ -1,11 +1,19 @@
 use std::{
-    sync::{Arc, atomic::Ordering},
+    sync::{Arc, atomic::{AtomicU64, Ordering}},
     time::{Duration, Instant},
 };
 
+use prometheus_client::metrics::counter::Counter;
 use tokio::sync::mpsc;
 
 use crate::RaknetUser;
+
+use lazy_static::lazy_static;
+
+lazy_static! {
+    #[doc(hidden)]
+    pub static ref TOTAL_PACKETS_METRIC: Counter::<u64, AtomicU64> = Counter::default();
+}
 
 /// Tick interval of the internal session tick.
 const INTERNAL_TICK_INTERVAL: Duration = Duration::from_millis(1000 / 20);
@@ -45,6 +53,7 @@ impl RaknetUser {
                             tracing::error!("{err:?}");
                         }
                     }
+                    TOTAL_PACKETS_METRIC.inc();
                 }
             }
 
