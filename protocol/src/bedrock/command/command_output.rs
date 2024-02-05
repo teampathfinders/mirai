@@ -1,7 +1,6 @@
 use uuid::Uuid;
 
-use util::{Serialize};
-use util::{BinaryWrite};
+use util::{Serialize, BinaryWrite};
 
 use crate::bedrock::CommandOriginType;
 use crate::bedrock::ConnectedPacket;

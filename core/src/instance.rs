@@ -222,7 +222,9 @@ impl<'a> InstanceBuilder<'a> {
         let replicator = Arc::new(replicator);
 
         let token = CancellationToken::new();
+
         let command_service = command::Service::new(token.clone());
+
         let user_map = Arc::new(UserMap::new(replicator, Arc::clone(&command_service)));
 
         let instance = Instance {

@@ -29,9 +29,7 @@ use crate::config::SERVER_CONFIG;
 use crate::forms;
 
 use lazy_static::lazy_static;
-// use prometheus::{IntGauge, Histogram, register_int_gauge, register_histogram, opts};
 
-const USER_BUDGET: usize = 10;
 const REQUEST_TIMEOUT: Duration = Duration::from_millis(10);
 
 lazy_static! {
@@ -40,18 +38,6 @@ lazy_static! {
     #[doc(hidden)]
     pub static ref RESPONSE_TIMES_METRIC: Histogram = Histogram::new(linear_buckets(0.0, 1.0, 25));
 }
-
-// lazy_static! {
-//     #[doc(hidden)]
-//     pub static ref BEDROCK_CONNECTED_CLIENTS: IntGauge = register_int_gauge!(
-//         opts!("bedrock_connected_clients", "Total connected clients")
-//     ).expect("Cannot create connected clients metric");
-
-//     #[doc(hidden)]
-//     pub static ref BEDROCK_RESPONSE_TIMES: Histogram = register_histogram!(
-//         "bedrock_response_time_ms", "Server response times"
-//     ).expect("Cannot create response time metric");
-// }
 
 /// Represents a user connected to the server.
 pub struct BedrockUser {
@@ -72,8 +58,6 @@ pub struct BedrockUser {
 
     pub(crate) forms: forms::Subscriber,
     pub(crate) commands: command::ServiceEndpoint,
-
-    pub(crate) budget: Semaphore,
 
     pub(crate) broadcast: broadcast::Sender<BroadcastPacket>,
     pub(crate) job_handle: RwLock<Option<JoinHandle<()>>>
@@ -104,8 +88,6 @@ impl BedrockUser {
 
             forms: forms::Subscriber::new(),
             commands,
-
-            budget: Semaphore::new(USER_BUDGET),
             
             broadcast,
             job_handle: RwLock::new(None)

@@ -109,10 +109,10 @@ pub struct ParsedCommand {
 
 impl ParsedCommand {
     /// Parses the command and verifies the arguments.
-    pub fn parse(command_list: &DashMap<String, Command>, raw: &str)
+    pub fn parse(syntax: &Command, input: &str)
         -> anyhow::Result<Self>
     {
-        let mut parts = raw.split(' ');
+        let mut parts = input.split(' ');
 
         // Make sure the string is not empty.
         let name = if let Some(name) = parts.next() {
@@ -124,11 +124,11 @@ impl ParsedCommand {
         };
 
         // Verify the command exists and find the command's parameters.
-        if let Some(command) = command_list.get(&name) {
+        // if let Some(command) = command_list.get(&name) {
             let mut latest_error = String::new();
             let mut furthest_param = -1i32;
 
-            for overload in &command.overloads {
+            for overload in &syntax.overloads {
                 let parse_result = parse_overload(overload, parts.clone());
                 match parse_result {
                     Ok(parsed) => {
@@ -155,9 +155,9 @@ impl ParsedCommand {
             }
 
             anyhow::bail!("Syntax error: {latest_error}")
-        } else {
-            anyhow::bail!("Unknown command: {name}. Please check that the comamnd exists and you have permission to use it.")
-        }
+        // } else {
+        //     anyhow::bail!("Unknown command: {name}. Please check that the comamnd exists and you have permission to use it.")
+        // }
     }
 }
 
