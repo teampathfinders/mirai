@@ -14,6 +14,7 @@ use parking_lot::RwLock;
 use prometheus_client::metrics::gauge::Gauge;
 use prometheus_client::metrics::histogram::{linear_buckets, Histogram};
 use raknet::{SendConfig, DEFAULT_SEND_CONFIG, RaknetUser, BroadcastPacket};
+use systemstat::Duration;
 use tokio::sync::{broadcast, mpsc, Semaphore, TryAcquireError};
 use proto::bedrock::{CommandPermissionLevel, Disconnect, GameMode, PermissionLevel, Skin, ConnectedPacket, CONNECTED_PACKET_ID, CompressionAlgorithm, Packet, Header, RequestNetworkSettings, Login, ClientToServerHandshake, CacheStatus, ResourcePackClientResponse, ViolationWarning, ChunkRadiusRequest, Interact, TextMessage, SetLocalPlayerAsInitialized, MovePlayer, PlayerAction, RequestAbility, Animate, CommandRequest, SettingsCommand, ContainerClose, FormResponseData, TickSync, UpdateSkin, PlayerAuthInput, DisconnectReason};
 use proto::crypto::{Encryptor, BedrockIdentity, BedrockClientInfo};
@@ -31,6 +32,7 @@ use lazy_static::lazy_static;
 // use prometheus::{IntGauge, Histogram, register_int_gauge, register_histogram, opts};
 
 const USER_BUDGET: usize = 10;
+const REQUEST_TIMEOUT: Duration = Duration::from_millis(10);
 
 lazy_static! {
     #[doc(hidden)]
@@ -374,7 +376,7 @@ impl BedrockUser {
         }
 
         let this = Arc::clone(self);
-        tokio::spawn(async move {
+        let future = async move {
             match header.id {
                 PlayerAuthInput::ID => this.handle_auth_input(packet),
                 RequestNetworkSettings::ID => {
@@ -407,9 +409,16 @@ impl BedrockUser {
                 TickSync::ID => this.handle_tick_sync(packet),
                 id => anyhow::bail!("Invalid game packet: {id:#04x}"),
             }
-        });
-
-        Ok(())
+        };
+        
+        let timeout = tokio::time::timeout(REQUEST_TIMEOUT, future);
+        match timeout.await {
+            Ok(result) => result,
+            Err(_) => {
+                tracing::error!("Request timed out");
+                anyhow::bail!("Request timed out")
+            }
+        }
     }
 
     /// Returns the forms handler.
