@@ -185,7 +185,7 @@ fn parse_overload(overload: &CommandOverload, mut parts: Split<char>)
 
             if !valid {
                 // Invalid option.
-                let mut options_tip = cmd_enum.options.iter().take(3).cloned().collect::<Vec<_>>().join(", ");
+                let mut options_tip = cmd_enum.options.iter().take(3).cloned().collect::<String>();
                 if cmd_enum.options.len() > 3 {
                     options_tip += "..";
                 }
@@ -210,6 +210,10 @@ fn parse_overload(overload: &CommandOverload, mut parts: Split<char>)
         };
 
         parsed.insert(parameter.name.clone(), value);
+    }
+
+    if parts.count() != 0 {
+        return Err((String::from("Too many arguments given to command"), 0))
     }
 
     Ok(parsed)
