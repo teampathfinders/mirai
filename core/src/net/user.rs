@@ -387,7 +387,8 @@ impl BedrockUser {
                 PlayerAction::ID => this.handle_player_action(packet),
                 RequestAbility::ID => this.handle_ability_request(packet),
                 Animate::ID => this.handle_animation(packet),
-                CommandRequest::ID => this.handle_command_request(packet).await,
+                // Command request does not return a result because it does not fail.
+                CommandRequest::ID => Ok(this.handle_command_request(packet)),
                 UpdateSkin::ID => this.handle_skin_update(packet),
                 SettingsCommand::ID => this.handle_settings_command(packet),
                 ContainerClose::ID => this.handle_container_close(packet),

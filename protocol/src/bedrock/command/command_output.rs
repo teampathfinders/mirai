@@ -1,3 +1,5 @@
+use std::borrow::Cow;
+
 use uuid::Uuid;
 
 use util::{Serialize, BinaryWrite};
@@ -22,7 +24,7 @@ pub struct CommandOutputMessage<'a> {
     /// Message to display in the output.
     pub message: &'a str,
     /// Parameters to use in the outputted message.
-    pub parameters: &'a [String],
+    pub parameters: &'a [Cow<'a, str>],
 }
 
 /// Returns the output of a command back to the user.

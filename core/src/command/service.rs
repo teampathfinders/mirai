@@ -22,20 +22,11 @@ pub struct CommandOutput {
 /// The result of a command execution.
 pub type ExecutionResult = Result<CommandOutput, CommandOutput>;
 
-/// A response received from the command [`Service`].
-#[derive(Debug)]
-pub struct ServiceResponse {
-    // /// How many executions were successful.
-    // pub success_count: u32,
-    // /// Command outputs.
-    // pub entries: Vec<CommandHandlerResult>
-}
-
 /// A request that can be sent to the command [`Service`].
 #[derive(Debug)]
 pub struct ServiceRequest {
     command: String,
-    callback: oneshot::Sender<ServiceResponse>
+    callback: oneshot::Sender<ExecutionResult>
 }
 
 /// Type used to communicate with the command [`Service`].
@@ -48,9 +39,9 @@ impl ServiceEndpoint {
     /// 
     /// This method will return a receiver that will receive the output when the command has been executed.
     /// Execution of the command might not happen within the same tick.
-    pub async fn request(&self, request: CommandRequest<'_>) -> anyhow::Result<oneshot::Receiver<ServiceResponse>> {
+    pub async fn request(&self, command: String) -> anyhow::Result<oneshot::Receiver<ExecutionResult>> {
         let (sender, receiver) = oneshot::channel();
-        let request = ServiceRequest { command: request.command.to_owned(), callback: sender };
+        let request = ServiceRequest { command, callback: sender };
 
         self.sender.send_timeout(request, SERVICE_TIMEOUT).await.context("Command service request timed out")?;
 
@@ -209,15 +200,15 @@ impl Service {
     }
 
     /// Parses the syntactic structure of a command before sending it off to a custom handler.
-    fn parse_command(&self, request: ServiceRequest) -> ParseResult {
+    fn execute_handler(&self, command: &str) -> ExecutionResult {
         let command_name = {
-            let mut split = request.command.split(' ');
+            let mut split = command.split(' ');
             let first = split
                 .next()
                 .ok_or_else(|| {
-                    ParseError {
-                        kind: ParseErrorKind::InvalidSyntax,
-                        description: Cow::Borrowed("Expected command name after /")
+                    CommandOutput {
+                        message: Cow::Borrowed("Expected command name after /"),
+                        parameters: vec![]
                     }
                 })?;
 
@@ -228,15 +219,13 @@ impl Service {
         };
         
         let Some(handler) = self.registry.get(command_name) else {
-            return Err(ParseError {
-                kind: ParseErrorKind::UnknownCommand,
-                description: Cow::Owned(format!("Unknown command {command_name}. Make sure the command exists and you have permission to use it."))
-            });
+            return Err(CommandOutput {
+                message: Cow::Owned(format!("Unknown command {command_name}. Make sure the command exists and you have permission to use it.")),
+                parameters: vec![]
+            })
         };
-
-        let grammar = handler.structure();
-
-        todo!()
+        
+        handler.call(command)
     }
 
     /// Runs the service execution job.
@@ -249,7 +238,12 @@ impl Service {
                         break
                     };
 
-                    let _ = self.parse_command(request);
+                    let clone = Arc::clone(&self);
+                    tokio::spawn(async move {
+                        let result = clone.execute_handler(&request.command);
+                        // Error can be ignored because it only occurs if the receiver does not exist anymore.
+                        let _: Result<(), ExecutionResult> = request.callback.send(result);
+                    });
                 }
                 _ = self.token.cancelled() => {
                     // Stop accepting requests.
