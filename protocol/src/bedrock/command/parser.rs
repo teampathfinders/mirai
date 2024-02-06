@@ -1,30 +1,32 @@
-use std::cmp::Ordering;
+use std::{borrow::Cow, cmp::Ordering};
 use std::collections::HashMap;
 use std::str::Split;
-
-use dashmap::DashMap;
 
 use crate::bedrock::{Command, CommandDataType, CommandOverload};
 
 /// A type of error that occurred while parsing a command.
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
-pub enum CommandParseErrorKind {
+pub enum ParseErrorKind {
     /// The command issued does not exist.
-    NonExistentCommand,
+    UnknownCommand,
     /// The command is missing a required argument.
     MissingArgument,
     /// An invalid option was used in an argument.
     InvalidOption,
+    /// Some syntax in the command was incorrect.
+    InvalidSyntax
 }
 
 /// Error that occurred while parsing a command.
 #[derive(Debug, Clone)]
-pub struct CommandParseError {
+pub struct ParseError {
     /// Type of error that occurred.
-    kind: CommandParseErrorKind,
+    pub kind: ParseErrorKind,
     /// Information about the error.
-    description: String,
+    pub description: Cow<'static, str>,
 }
+
+pub type ParseResult = Result<ParsedCommand, ParseError>;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum CommandTarget {
@@ -109,9 +111,7 @@ pub struct ParsedCommand {
 
 impl ParsedCommand {
     /// Parses the command and verifies the arguments.
-    pub fn parse(syntax: &Command, input: &str)
-        -> anyhow::Result<Self>
-    {
+    pub fn default_parser(syntax: &Command, input: &str) -> ParseResult {
         let mut parts = input.split(' ');
 
         // Make sure the string is not empty.
@@ -120,44 +120,45 @@ impl ParsedCommand {
             chars.next();
             chars.as_str().to_owned()
         } else {
-            anyhow::bail!("Command cannot be empty")
+            return Err(ParseError {
+                kind: ParseErrorKind::InvalidSyntax,
+                description: Cow::Borrowed("Command cannot be empty")
+            })
         };
 
-        // Verify the command exists and find the command's parameters.
-        // if let Some(command) = command_list.get(&name) {
-            let mut latest_error = String::new();
-            let mut furthest_param = -1i32;
+        let mut latest_error = String::new();
+        let mut furthest_param = -1i32;
 
-            for overload in &syntax.overloads {
-                let parse_result = parse_overload(overload, parts.clone());
-                match parse_result {
-                    Ok(parsed) => {
-                        return Ok(Self {
-                            name,
-                            parameters: parsed,
-                        });
-                    },
-                    Err((msg, index)) => {
-                        // Only log the overload that was most "successful". (i.e. most arguments parsed correctly)
-                        match furthest_param.cmp(&(index as i32)) {
-                            Ordering::Less => {
-                                latest_error = msg;
-                                furthest_param = index as i32
-                            }
-                            // If two overloads are equally successful, use the newest one only.
-                            Ordering::Equal => {
-                                latest_error = msg;
-                            }
-                            Ordering::Greater => ()
+        for overload in &syntax.overloads {
+            let parse_result = parse_overload(overload, parts.clone());
+            match parse_result {
+                Ok(parsed) => {
+                    return Ok(Self {
+                        name,
+                        parameters: parsed,
+                    });
+                },
+                Err((msg, index)) => {
+                    // Only log the overload that was most "successful". (i.e. most arguments parsed correctly)
+                    match furthest_param.cmp(&(index as i32)) {
+                        Ordering::Less => {
+                            latest_error = msg;
+                            furthest_param = index as i32
                         }
+                        // If two overloads are equally successful, use the newest one only.
+                        Ordering::Equal => {
+                            latest_error = msg;
+                        }
+                        Ordering::Greater => ()
                     }
                 }
             }
+        }
 
-            anyhow::bail!("Syntax error: {latest_error}")
-        // } else {
-        //     anyhow::bail!("Unknown command: {name}. Please check that the comamnd exists and you have permission to use it.")
-        // }
+        Err(ParseError {
+            kind: ParseErrorKind::InvalidSyntax,
+            description: Cow::Owned(format!("Syntax error: {latest_error}"))
+        })
     }
 }
 

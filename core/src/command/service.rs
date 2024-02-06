@@ -1,9 +1,9 @@
-use std::{sync::{Arc}, time::Duration};
+use std::{borrow::Cow, sync::Arc, time::Duration};
 
 use anyhow::Context;
 use dashmap::DashMap;
 use parking_lot::RwLock;
-use proto::bedrock::{Command, CommandOutputMessage, CommandRequest, ParsedCommand};
+use proto::bedrock::{Command, CommandOutputMessage, CommandRequest, ParseError, ParseErrorKind, ParseResult, ParsedCommand};
 use tokio::{sync::{mpsc, oneshot}, task::JoinHandle};
 use tokio_util::sync::CancellationToken;
 use util::Joinable;
@@ -12,32 +12,23 @@ const SERVICE_TIMEOUT: Duration = Duration::from_millis(10);
 
 /// Represents a single output message in the command service response.
 #[derive(Debug)]
-pub struct CommandHandlerOutput {
-    /// Whether this execution was successful.
-    pub is_success: bool,
+pub struct CommandOutput {
     /// Output of the command.
-    pub message: String,
+    pub message: Cow<'static, str>,
     /// Optional parameters used in the command output.
-    pub parameters: Vec<String>
+    pub parameters: Vec<Cow<'static, str>>
 }
 
-impl<'a> From<&'a CommandHandlerOutput> for CommandOutputMessage<'a> {
-    fn from(entry: &'a CommandHandlerOutput) -> CommandOutputMessage<'a> {
-        CommandOutputMessage {
-            is_success: entry.is_success,
-            message: &entry.message,
-            parameters: &entry.parameters
-        }
-    }
-}
+/// The result of a command execution.
+pub type ExecutionResult = Result<CommandOutput, CommandOutput>;
 
 /// A response received from the command [`Service`].
 #[derive(Debug)]
 pub struct ServiceResponse {
-    /// How many executions were successful.
-    pub success_count: u32,
-    /// Command outputs.
-    pub entries: Vec<CommandHandlerOutput>
+    // /// How many executions were successful.
+    // pub success_count: u32,
+    // /// Command outputs.
+    // pub entries: Vec<CommandHandlerResult>
 }
 
 /// A request that can be sent to the command [`Service`].
@@ -74,19 +65,16 @@ impl Clone for ServiceEndpoint {
 }
 
 trait CommandHandler: Send + Sync {
-    fn call(&self) -> CommandHandlerOutput;
+    /// Executes the command using this handlers.
+    /// This function also performs parsing of the input.
+    fn call(&self, input: &str) -> ExecutionResult;
+    /// Returns the syntax structure of the command.
     fn structure(&self) -> &Command;
-    /// Use a custom command parser. This can be used for commands that not follow the standard
-    /// Minecraft syntax.
-    /// 
-    /// The default implementation of this function returns `None` which indicates that the
-    /// built-in parser should be used instead.
-    fn parse(&self, input: &str) -> Option<anyhow::Result<ParsedCommand>> { None }
 }
 
 struct HandlerImpl<F> 
 where
-    F: Fn(ParsedCommand) -> CommandHandlerOutput + Send + Sync
+    F: Fn(ParsedCommand) -> ExecutionResult + Send + Sync
 {
     handler: F,
     structure: Command,
@@ -94,10 +82,21 @@ where
 
 impl<F> CommandHandler for HandlerImpl<F> 
 where
-    F: Fn(ParsedCommand) -> CommandHandlerOutput + Send + Sync
+    F: Fn(ParsedCommand) -> ExecutionResult + Send + Sync
 {
-    fn call(&self) -> CommandHandlerOutput {
-        todo!()
+    fn call(&self, input: &str) -> ExecutionResult {
+        // Parse command with default parser.
+        let parsed = match ParsedCommand::default_parser(&self.structure, input) {
+            Ok(cmd) => cmd,
+            Err(err) => {
+                return Err(CommandOutput {
+                    message: err.description,
+                    parameters: Vec::new()
+                })
+            }
+        };
+
+        (self.handler)(parsed)
     }
 
     fn structure(&self) -> &Command {
@@ -107,8 +106,8 @@ where
 
 struct ParserHandlerImpl<F, P> 
 where
-    F: Fn(ParsedCommand) -> CommandHandlerOutput + Send + Sync,
-    P: Fn(&str) -> anyhow::Result<ParsedCommand> + Send + Sync
+    F: Fn(ParsedCommand) -> ExecutionResult + Send + Sync,
+    P: Fn(&str) -> ParseResult + Send + Sync
 {
     handler: F,
     parser: P,
@@ -117,19 +116,26 @@ where
 
 impl<F, P> CommandHandler for ParserHandlerImpl<F, P> 
 where
-    F: Fn(ParsedCommand) -> CommandHandlerOutput + Send + Sync,
-    P: Fn(&str) -> anyhow::Result<ParsedCommand> + Send + Sync
+    F: Fn(ParsedCommand) -> ExecutionResult + Send + Sync,
+    P: Fn(&str) -> ParseResult + Send + Sync
 {
-    fn call(&self) -> CommandHandlerOutput {
-        todo!()
+    fn call(&self, input: &str) -> ExecutionResult {
+        // Parse command with a custom parser.
+        let parsed = match (self.parser)(input) {
+            Ok(cmd) => cmd,
+            Err(err) => {
+                return Err(CommandOutput {
+                    message: err.description,
+                    parameters: Vec::new()
+                })
+            }
+        };
+
+        (self.handler)(parsed)
     }
 
     fn structure(&self) -> &Command {
         &self.structure
-    }
-
-    fn parse(&self, input: &str) -> Option<anyhow::Result<ParsedCommand>> {
-        Some((self.parser)(input))
     }
 }
 
@@ -163,7 +169,7 @@ impl Service {
     /// Registers a new command with the default syntax parser. 
     pub fn register<F>(&self, structure: Command, handler: F) 
     where
-        F: Fn(ParsedCommand) -> CommandHandlerOutput + Send + Sync + 'static
+        F: Fn(ParsedCommand) -> ExecutionResult + Send + Sync + 'static
     {   
         let aliases = structure.aliases.clone();
         let name = structure.name.clone();
@@ -181,8 +187,8 @@ impl Service {
     /// Registers a new command with a custom parser.
     pub fn register_with_parser<F, P>(&self, structure: Command, handler: F, parser: P) 
     where
-        F: Fn(ParsedCommand) -> CommandHandlerOutput + Send + Sync + 'static,
-        P: Fn(&str) -> anyhow::Result<ParsedCommand>
+        F: Fn(ParsedCommand) -> ExecutionResult + Send + Sync + 'static,
+        P: Fn(&str) -> ParseResult
     {
         // let aliases = structure.aliases.clone();
         // let name = structure.name.clone();
@@ -203,10 +209,17 @@ impl Service {
     }
 
     /// Parses the syntactic structure of a command before sending it off to a custom handler.
-    fn parse_command(&self, request: ServiceRequest) -> anyhow::Result<ParsedCommand> {
+    fn parse_command(&self, request: ServiceRequest) -> ParseResult {
         let command_name = {
             let mut split = request.command.split(' ');
-            let first = split.next().ok_or_else(|| anyhow::anyhow!("Unable to find command name"))?;
+            let first = split
+                .next()
+                .ok_or_else(|| {
+                    ParseError {
+                        kind: ParseErrorKind::InvalidSyntax,
+                        description: Cow::Borrowed("Expected command name after /")
+                    }
+                })?;
 
             // Get rid of slash in front of name.
             let mut chars = first.chars();
@@ -215,7 +228,10 @@ impl Service {
         };
         
         let Some(handler) = self.registry.get(command_name) else {
-            anyhow::bail!("Unknown command {command_name}. Make sure the command exists and you have permission to use it.");
+            return Err(ParseError {
+                kind: ParseErrorKind::UnknownCommand,
+                description: Cow::Owned(format!("Unknown command {command_name}. Make sure the command exists and you have permission to use it."))
+            });
         };
 
         let grammar = handler.structure();
