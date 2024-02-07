@@ -16,7 +16,7 @@ proto = { package = "inferno-proto", path = "../protocol" }
 
 serde = { version = "1.0.196", features = ["derive"] }
 anyhow = { version = "1.0.79", features = ["backtrace"] }
-bytemuck = "1.14.1"
+bytemuck = "1.14.2"
 tracing = "0.1.40"
 
 [build-dependencies]

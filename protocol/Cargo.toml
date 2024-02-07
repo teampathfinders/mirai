@@ -9,7 +9,7 @@ macros = { package = "inferno-macros", path = "../macros" }
 nbt = { package = "inferno-nbt", path = "../nbt" }
 
 anyhow = "1.0.79"
-bytemuck = "1.14.1"
+bytemuck = "1.14.2"
 uuid = { version = "1.7.0", features = ["serde"], default-features = false }
 serde_repr = "0.1.18"
 serde_json = "1.0.113"
