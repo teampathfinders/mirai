@@ -27,6 +27,8 @@ impl TryFrom<u8> for CompressionAlgorithm {
 
     fn try_from(value: u8) -> anyhow::Result<CompressionAlgorithm> {
         if value < Self::variant_count() as u8 {    
+            // SAFETY: This is safe because the enum and value have the same representation.
+            // The check also ensures that the discriminant is in range.
             Ok(unsafe {
                 std::mem::transmute::<u8, CompressionAlgorithm>(value)
             })
