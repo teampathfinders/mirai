@@ -1,10 +1,8 @@
 use std::{net::SocketAddr, sync::Arc};
 
-use proto::bedrock::{ConnectedPacket, Packet};
+use proto::bedrock::ConnectedPacket;
 
 use util::Serialize;
-
-use crate::RaknetUser;
 
 /// A packet that can be broadcast to other sessions.
 ///
@@ -35,38 +33,11 @@ impl BroadcastPacket {
     pub fn new<T: ConnectedPacket + Serialize>(
         packet: T,
         sender: Option<SocketAddr>,
+        // algorithm: Option<CompressionAlgorithm>
     ) -> anyhow::Result<Self> {
-        let packet = Packet::new(packet);
-
         Ok(Self {
             sender,
             content: Arc::from(packet.serialize()?),
         })
-    }
-}
-
-impl RaknetUser {
-    /// Sends a packet to all initialised sessions including self.
-    pub fn broadcast<P: ConnectedPacket + Serialize + Clone>(
-        &self,
-        packet: P,
-    ) -> anyhow::Result<()> {
-        self.broadcast.send(BroadcastPacket::new(packet, None)?)?;
-        Ok(())
-    }
-
-    /// Sends a packet to all initialised sessions other than self.
-    pub fn broadcast_others<P: ConnectedPacket + Serialize + Clone>(
-        &self,
-        packet: P,
-    ) -> anyhow::Result<()> {
-        self.broadcast.send(BroadcastPacket::new(
-            packet,
-            Some(
-                self.address
-            ),
-        )?)?;
-
-        Ok(())
     }
 }

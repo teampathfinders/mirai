@@ -34,7 +34,6 @@ glob_export!(interact);
 glob_export!(level_event);
 glob_export!(mob_effect);
 glob_export!(network_chunk_publisher_update);
-glob_export!(packet);
 glob_export!(play_sound);
 glob_export!(player_list);
 glob_export!(request_ability);
@@ -58,6 +57,6 @@ glob_export!(violation_warning);
 /// ID of Minecraft game raknet.
 pub const CONNECTED_PACKET_ID: u8 = 0xfe;
 /// Semver version that this server supports.
-pub const CLIENT_VERSION_STRING: &str = "1.20";
+pub const CLIENT_VERSION_STRING: &str = "1.20.60";
 /// Protocol version that this server supports.
-pub const PROTOCOL_VERSION: u32 = 630;
+pub const PROTOCOL_VERSION: u32 = 649;

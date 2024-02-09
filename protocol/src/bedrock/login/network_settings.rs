@@ -1,3 +1,4 @@
+use macros::variant_count;
 use util::{BinaryWrite};
 
 use util::Serialize;
@@ -10,6 +11,7 @@ use crate::bedrock::ConnectedPacket;
 /// Flate is slow, but produces high compression ratios.
 #[derive(Debug, Copy, Clone)]
 #[repr(u8)]
+#[variant_count]
 pub enum CompressionAlgorithm {
     /// The Deflate/Zlib compression algorithm.
     Flate,
@@ -18,6 +20,20 @@ pub enum CompressionAlgorithm {
     /// 
     /// WARNING: This option is currently not support by the server.
     Snappy,
+}
+
+impl TryFrom<u8> for CompressionAlgorithm {
+    type Error = anyhow::Error;
+
+    fn try_from(value: u8) -> anyhow::Result<CompressionAlgorithm> {
+        if value < Self::variant_count() as u8 {    
+            Ok(unsafe {
+                std::mem::transmute::<u8, CompressionAlgorithm>(value)
+            })
+        } else {
+            anyhow::bail!("Compression algorithm variant out of range: {value}");
+        }
+    }
 }
 
 /// Settings for client throttling.

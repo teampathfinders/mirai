@@ -96,7 +96,7 @@ impl BedrockUser {
             // dbg!(level_chunk);
 
             tracing::info!("{} has joined the server", self.name()?);
-            self.broadcast(TextMessage {
+            self.send(TextMessage {
                 data: TextData::Translation {
                     parameters: vec![&format!("§e{}", self.name()?)],
                     message: "multiplayer.player.joined"
@@ -409,7 +409,7 @@ impl BedrockUser {
         };
 
         self.send(response)?;
-        self.compressed.set();
+        self.should_decompress.set();
 
         Ok(())
     }

@@ -13,17 +13,15 @@ pub struct Header {
     pub target_subclient: u8,
 }
 
-impl Header {
-    pub fn serialized_size(&self) -> usize {
-        let value = self.id
-            | ((self.sender_subclient as u32) << 10)
-            | ((self.target_subclient as u32) << 12);
-
-        size_of_varint(value)
-    }
-}
-
 impl Serialize for Header {
+    fn size_hint(&self) -> Option<usize> {
+        let value = self.id
+        | ((self.sender_subclient as u32) << 10)
+        | ((self.target_subclient as u32) << 12);
+
+        Some(size_of_varint(value))
+    }
+
     /// Encodes the header.
     fn serialize_into<W: BinaryWrite>(&self, writer: &mut W) -> anyhow::Result<()> {
         let value = self.id

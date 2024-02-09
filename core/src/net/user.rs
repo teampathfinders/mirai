@@ -15,8 +15,8 @@ use prometheus_client::metrics::gauge::Gauge;
 use prometheus_client::metrics::histogram::{linear_buckets, Histogram};
 use raknet::{BroadcastPacket, RaknetCommand, RaknetUser, SendConfig, DEFAULT_SEND_CONFIG};
 use systemstat::Duration;
-use tokio::sync::{broadcast, mpsc, Semaphore, TryAcquireError};
-use proto::bedrock::{CommandPermissionLevel, Disconnect, GameMode, PermissionLevel, Skin, ConnectedPacket, CONNECTED_PACKET_ID, CompressionAlgorithm, Packet, Header, RequestNetworkSettings, Login, ClientToServerHandshake, CacheStatus, ResourcePackClientResponse, ViolationWarning, ChunkRadiusRequest, Interact, TextMessage, SetLocalPlayerAsInitialized, MovePlayer, PlayerAction, RequestAbility, Animate, CommandRequest, SettingsCommand, ContainerClose, FormResponseData, TickSync, UpdateSkin, PlayerAuthInput, DisconnectReason};
+use tokio::sync::{broadcast, mpsc};
+use proto::bedrock::{CommandPermissionLevel, Disconnect, GameMode, PermissionLevel, Skin, ConnectedPacket, CONNECTED_PACKET_ID, CompressionAlgorithm, Header, RequestNetworkSettings, Login, ClientToServerHandshake, CacheStatus, ResourcePackClientResponse, ViolationWarning, ChunkRadiusRequest, Interact, TextMessage, SetLocalPlayerAsInitialized, MovePlayer, PlayerAction, RequestAbility, Animate, CommandRequest, SettingsCommand, ContainerClose, FormResponseData, TickSync, UpdateSkin, PlayerAuthInput, DisconnectReason};
 use proto::crypto::{Encryptor, BedrockIdentity, BedrockClientInfo};
 use proto::uuid::Uuid;
 use replicator::Replicator;
@@ -30,7 +30,7 @@ use crate::forms;
 
 use lazy_static::lazy_static;
 
-const REQUEST_TIMEOUT: Duration = Duration::from_millis(10);
+const REQUEST_TIMEOUT: Duration = Duration::from_millis(50);
 
 lazy_static! {
     #[doc(hidden)]
@@ -48,7 +48,7 @@ pub struct BedrockUser {
     /// Next packet that the server is expecting to receive.
     pub(crate) expected: AtomicU32,
     /// Whether compression has been configured.
-    pub(crate) compressed: AtomicFlag,
+    pub(crate) should_decompress: AtomicFlag,
     /// Whether the client supports the blob cache.
     pub(crate) supports_cache: AtomicBool,
     /// Replication layer.
@@ -79,7 +79,7 @@ impl BedrockUser {
             identity: OnceLock::new(),
             client_info: OnceLock::new(),
             expected: AtomicU32::new(RequestNetworkSettings::ID),
-            compressed: AtomicFlag::new(),
+            should_decompress: AtomicFlag::new(),
             supports_cache: AtomicBool::new(false),
             
             replicator,
@@ -210,7 +210,8 @@ impl BedrockUser {
         &self,
         packet: P,
     ) -> anyhow::Result<()> {
-        self.raknet.broadcast(packet)
+        self.broadcast.send(BroadcastPacket::new(packet, None)?)?;
+        Ok(())
     }
 
     /// Sends a packet to all initialised sessions other than self.
@@ -218,16 +219,26 @@ impl BedrockUser {
         &self,
         packet: P,
     ) -> anyhow::Result<()> {
-        self.raknet.broadcast_others(packet)
+        self.broadcast.send(BroadcastPacket::new(packet, Some(self.raknet.address))?)?;
+        Ok(())
     }
 
     /// Sends a game packet with default settings
     /// (reliable ordered and medium priority)
     pub fn send<T: ConnectedPacket + Serialize>(&self, packet: T) -> anyhow::Result<()> {
-        let packet = Packet::new(packet);
-        let serialized = packet.serialize()?;
+        let header = Header {
+            id: T::ID, sender_subclient: 0, target_subclient: 0
+        };
 
-        self.send_serialized(serialized, DEFAULT_SEND_CONFIG)
+        let mut body = Vec::new();
+        header.serialize_into(&mut body)?;
+        packet.serialize_into(&mut body)?;
+
+        let mut full = Vec::with_capacity(body.len() + 5);
+        full.write_var_u32(body.len() as u32)?;
+        full.write_all(&body)?;
+
+        self.send_serialized(full, DEFAULT_SEND_CONFIG)
     }
 
     /// Sends a game packet with custom reliability and priority
@@ -235,8 +246,8 @@ impl BedrockUser {
         where
             B: AsRef<[u8]>
     {
-        let mut out;
-        if self.compressed.get() {
+        let mut out = Vec::new();
+        if self.should_decompress.get() {
             let (algorithm, threshold) = {
                 let config = SERVER_CONFIG.read();
                 (config.compression_algorithm, config.compression_threshold)
@@ -249,13 +260,14 @@ impl BedrockUser {
                         unimplemented!("Snappy compression");
                     }
                     CompressionAlgorithm::Flate => {
-                        let mut writer = DeflateEncoder::new(
-                            vec![CONNECTED_PACKET_ID],
-                            Compression::best(),
-                        );
+                        let mut writer = DeflateEncoder::new(Vec::new(), Compression::best());
 
                         writer.write_all(packet.as_ref())?;
-                        out = writer.finish()?;
+                        let compressed_body = writer.finish()?;
+
+                        out.write_u8(CONNECTED_PACKET_ID)?;
+                        out.write_u8(algorithm as u8)?;
+                        out.write_all(&compressed_body)?;
                     }
                 }
             } else {
@@ -297,39 +309,67 @@ impl BedrockUser {
 
         packet.remove(0);
 
+        // Decrypt if encryption is enabled.
         if let Some(encryptor) = self.encryptor.get() {
             encryptor.decrypt(&mut packet).context("Failed to decrypt packet")?;
         }
 
-        let compression_threshold = SERVER_CONFIG.read().compression_threshold;
-        let result = if self.compressed.get()
-            && compression_threshold != 0
-            && packet.len() > compression_threshold as usize
-        {
-            let alg = SERVER_CONFIG.read().compression_algorithm;
+        let out = if self.should_decompress.get() {
+            if packet[0] == 0xff {
+                packet.remove(0);
+                self.handle_frame_body(packet).await
+            } else {
+                let algorithm = CompressionAlgorithm::try_from(packet[0])?;
+                packet.remove(0);
 
-            // Packet is compressed
-            match alg {
-                CompressionAlgorithm::Snappy => {
-                    unimplemented!("Snappy decompression");
-                }
-                CompressionAlgorithm::Flate => {
-                    let mut reader =
-                        flate2::read::DeflateDecoder::new(packet.as_slice());
+                match algorithm {
+                    CompressionAlgorithm::Flate => {
+                        let mut reader = flate2::read::DeflateDecoder::new(packet.as_slice());
 
-                    let mut decompressed = Vec::new();
-                    reader.read_to_end(&mut decompressed)?;
+                        let mut decompressed = Vec::new();
+                        reader.read_to_end(&mut decompressed)?;
 
-                    self.handle_frame_body(decompressed).await
+                        tracing::debug!("{decompressed:?}");
+                        self.handle_frame_body(decompressed).await
+                    },
+                    CompressionAlgorithm::Snappy => {
+                        anyhow::bail!("Snappy compression is not implemented");
+                    }
                 }
             }
         } else {
             self.handle_frame_body(packet).await
         };
 
+        // let compression_threshold = SERVER_CONFIG.read().compression_threshold;
+        // let result = if self.should_decompress.get()
+        //     && compression_threshold != 0
+        //     && packet.len() > compression_threshold as usize
+        // {
+        //     let alg = SERVER_CONFIG.read().compression_algorithm;
+
+        //     // Packet is compressed
+        //     match alg {
+        //         CompressionAlgorithm::Snappy => {
+        //             unimplemented!("Snappy decompression");
+        //         }
+        //         CompressionAlgorithm::Flate => {
+        //             let mut reader =
+        //                 flate2::read::DeflateDecoder::new(packet.as_slice());
+
+        //             let mut decompressed = Vec::new();
+        //             reader.read_to_end(&mut decompressed)?;
+
+        //             self.handle_frame_body(decompressed).await
+        //         }
+        //     }
+        // } else {
+        //     self.handle_frame_body(packet).await
+        // };
+
         RESPONSE_TIMES_METRIC.observe(timestamp.elapsed().as_millis() as f64);
 
-        result
+        out
     }
 
     /// Handles the body of a frame.
@@ -347,6 +387,8 @@ impl BedrockUser {
         let mut reader: &[u8] = packet.as_ref();
         let _length = reader.read_var_u32()?;
         let header = Header::deserialize_from(&mut reader)?;
+
+        tracing::debug!("Received {:#04x}", header.id);
 
         packet.drain(0..(start_len - reader.remaining()));
 
