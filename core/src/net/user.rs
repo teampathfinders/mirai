@@ -160,7 +160,19 @@ impl BedrockUser {
     fn handle_broadcast(&self, packet: BroadcastPacket) -> anyhow::Result<()> {
         let should_send = packet.sender.map(|sender| sender != self.raknet.address).unwrap_or(true);
         if should_send {
-            self.send_serialized(packet.content.as_ref(), DEFAULT_SEND_CONFIG)?;
+            let header = Header {
+                id: packet.id, sender_subclient: 0, target_subclient: 0
+            };
+    
+            let mut body = Vec::new();
+            header.serialize_into(&mut body)?;
+            body.write_all(&packet.content)?;
+    
+            let mut full = Vec::with_capacity(body.len() + 5);
+            full.write_var_u32(body.len() as u32)?;
+            full.write_all(&body)?;
+
+            self.send_serialized(full, DEFAULT_SEND_CONFIG)?;
         }
 
         Ok(())
@@ -328,8 +340,6 @@ impl BedrockUser {
 
                         let mut decompressed = Vec::new();
                         reader.read_to_end(&mut decompressed)?;
-
-                        tracing::debug!("{decompressed:?}");
                         self.handle_frame_body(decompressed).await
                     },
                     CompressionAlgorithm::Snappy => {
@@ -340,32 +350,6 @@ impl BedrockUser {
         } else {
             self.handle_frame_body(packet).await
         };
-
-        // let compression_threshold = SERVER_CONFIG.read().compression_threshold;
-        // let result = if self.should_decompress.get()
-        //     && compression_threshold != 0
-        //     && packet.len() > compression_threshold as usize
-        // {
-        //     let alg = SERVER_CONFIG.read().compression_algorithm;
-
-        //     // Packet is compressed
-        //     match alg {
-        //         CompressionAlgorithm::Snappy => {
-        //             unimplemented!("Snappy decompression");
-        //         }
-        //         CompressionAlgorithm::Flate => {
-        //             let mut reader =
-        //                 flate2::read::DeflateDecoder::new(packet.as_slice());
-
-        //             let mut decompressed = Vec::new();
-        //             reader.read_to_end(&mut decompressed)?;
-
-        //             self.handle_frame_body(decompressed).await
-        //         }
-        //     }
-        // } else {
-        //     self.handle_frame_body(packet).await
-        // };
 
         RESPONSE_TIMES_METRIC.observe(timestamp.elapsed().as_millis() as f64);
 
@@ -387,8 +371,6 @@ impl BedrockUser {
         let mut reader: &[u8] = packet.as_ref();
         let _length = reader.read_var_u32()?;
         let header = Header::deserialize_from(&mut reader)?;
-
-        tracing::debug!("Received {:#04x}", header.id);
 
         packet.drain(0..(start_len - reader.remaining()));
 

@@ -17,7 +17,10 @@ use util::{Deserialize, Joinable, ReserveTo, Serialize};
 use crate::command::{self};
 use crate::config::SERVER_CONFIG;
 use crate::net::{ForwardablePacket, UserMap};
-use proto::bedrock::{Command, CommandDataType, CommandOverload, CommandParameter, CommandPermissionLevel, CompressionAlgorithm, CLIENT_VERSION_STRING, PROTOCOL_VERSION};
+use proto::bedrock::{
+    Command, CommandDataType, CommandOverload, CommandParameter, CommandPermissionLevel, CompressionAlgorithm, CLIENT_VERSION_STRING,
+    PROTOCOL_VERSION,
+};
 use proto::raknet::{
     IncompatibleProtocol, OpenConnectionReply1, OpenConnectionReply2, OpenConnectionRequest1, OpenConnectionRequest2, UnconnectedPing,
     UnconnectedPong, RAKNET_VERSION,
@@ -225,31 +228,32 @@ impl<'a> InstanceBuilder<'a> {
         let token = CancellationToken::new();
 
         let command_service = command::Service::new(token.clone());
-        command_service.register(Command {
-            aliases: vec!["test2".to_owned()],
-            description: "This is a test".to_owned(),
-            name: "test".to_owned(),
-            overloads: vec![
-                CommandOverload {
+        command_service.register(
+            Command {
+                aliases: vec!["test2".to_owned()],
+                description: "This is a test".to_owned(),
+                name: "test".to_owned(),
+                overloads: vec![CommandOverload {
                     parameters: vec![CommandParameter {
                         command_enum: None,
                         data_type: CommandDataType::String,
                         name: "name".to_owned(),
                         suffix: String::new(),
                         optional: true,
-                        options: 0
-                    }]
-                }
-            ],
-            permission_level: CommandPermissionLevel::Normal
-        }, |input| {
-            tracing::debug!("{input:?}");
+                        options: 0,
+                    }],
+                }],
+                permission_level: CommandPermissionLevel::Normal,
+            },
+            |input| {
+                tracing::debug!("{input:?}");
 
-            Ok(command::CommandOutput {
-                message: Cow::Borrowed("Hello, World!"),
-                parameters: Vec::new()
-            })
-        });
+                Ok(command::CommandOutput {
+                    message: Cow::Borrowed("Hello, World!"),
+                    parameters: Vec::new(),
+                })
+            },
+        );
 
         let user_map = Arc::new(UserMap::new(replicator, Arc::clone(&command_service)));
 

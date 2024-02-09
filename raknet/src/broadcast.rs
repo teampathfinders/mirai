@@ -21,6 +21,8 @@ pub struct BroadcastPacket {
     /// If it matches, the packet will not be sent.
     /// This can be used to broadcast raknet to every client other than self.
     pub sender: Option<SocketAddr>,
+    /// The ID of the packet.
+    pub id: u32,
     /// Content of the packet.
     ///
     /// This must be an already serialized packet (use the [`Serialize`] trait)
@@ -37,6 +39,7 @@ impl BroadcastPacket {
     ) -> anyhow::Result<Self> {
         Ok(Self {
             sender,
+            id: T::ID,
             content: Arc::from(packet.serialize()?),
         })
     }

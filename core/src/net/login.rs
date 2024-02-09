@@ -96,7 +96,7 @@ impl BedrockUser {
             // dbg!(level_chunk);
 
             tracing::info!("{} has joined the server", self.name()?);
-            self.send(TextMessage {
+            self.broadcast(TextMessage {
                 data: TextData::Translation {
                     parameters: vec![&format!("§e{}", self.name()?)],
                     message: "multiplayer.player.joined"
