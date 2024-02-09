@@ -16,7 +16,7 @@ lazy_static! {
 }
 
 /// Limit to the amount of packets a client is allowed to send per second.
-pub(crate) const BUDGET_SIZE: usize = 50;
+pub const BUDGET_SIZE: usize = 50;
 
 /// Tick interval of the internal session tick.
 const INTERNAL_TICK_INTERVAL: Duration = Duration::from_millis(1000 / 20);

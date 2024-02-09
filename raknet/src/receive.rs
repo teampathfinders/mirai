@@ -5,7 +5,6 @@ use std::time::{Instant, Duration};
 use async_recursion::async_recursion;
 use proto::bedrock::CONNECTED_PACKET_ID;
 use proto::raknet::{Ack, ConnectedPing, ConnectionRequest, DisconnectNotification, Nak, NewIncomingConnection};
-use tokio::sync::TryAcquireError;
 use util::Deserialize;
 
 use tokio::sync::mpsc::error::SendTimeoutError;
