@@ -1,6 +1,7 @@
 //! Contains the server instance.
 
 use anyhow::Context;
+use proto::types::Dimension;
 use raknet::RaknetCreateInfo;
 
 use std::borrow::Cow;
@@ -13,10 +14,11 @@ use tokio::net::UdpSocket;
 
 use tokio_util::sync::CancellationToken;
 
-use util::{Deserialize, Joinable, ReserveTo, Serialize};
+use util::{Deserialize, Joinable, ReserveTo, Serialize, Vector};
 
 use crate::command::{self};
 use crate::config::SERVER_CONFIG;
+use crate::level::SubchunkGetSingle;
 use crate::net::{ForwardablePacket, UserMap};
 use proto::bedrock::{
     Command, CommandDataType, CommandOverload, CommandParameter, CommandPermissionLevel, CompressionAlgorithm, ParsedCommand, CLIENT_VERSION_STRING, PROTOCOL_VERSION
@@ -201,7 +203,7 @@ impl<'a> InstanceBuilder<'a> {
     }
 
     /// Produces an [`Instance`] with the configured options, consuming the builder.
-    pub async fn build(self) -> anyhow::Result<Instance> {
+    pub async fn build(self) -> anyhow::Result<Arc<Instance>> {
         tracing::info!(
             "Inferno server v{} (rev. {}) built for MCBE {CLIENT_VERSION_STRING} (prot. {PROTOCOL_VERSION})",
             Instance::SERVER_VERSION,
@@ -245,7 +247,7 @@ impl<'a> InstanceBuilder<'a> {
                 }],
                 permission_level: CommandPermissionLevel::Normal,
             },
-            |input| {
+            |input, ctx| {
                 tracing::debug!("{input:?}");
 
                 Ok(command::CommandOutput {
@@ -265,7 +267,7 @@ impl<'a> InstanceBuilder<'a> {
                 }],
                 permission_level: CommandPermissionLevel::Normal
             },
-            |input| {
+            |input, _ctx| {
                 tracing::debug!("Custom: {input:?}");
 
                 Ok(command::CommandOutput {
@@ -273,7 +275,7 @@ impl<'a> InstanceBuilder<'a> {
                     parameters: Vec::new()
                 })
             },
-            |input| {
+            |input, _ctx| {
                 tracing::debug!("Input: {input}");
                 Ok(ParsedCommand {
                     name: String::from("custom_parsed"),
@@ -295,7 +297,7 @@ impl<'a> InstanceBuilder<'a> {
             level_service
         };
 
-        Ok(instance)
+        Ok(Arc::new(instance))
     }
 }
 
@@ -341,13 +343,28 @@ impl Instance {
     /// The network protocol version.
     pub const PROTOCOL_VERSION: u32 = PROTOCOL_VERSION;
 
+    /// Gets the command service of this instance.
+    #[inline]
+    pub fn commands(&self) -> &Arc<crate::command::Service> {
+        &self.command_service
+    }
+
+    /// Gets the level service of this instance.
+    #[inline]
+    pub fn level(&self) -> &Arc<crate::level::Service> {
+        &self.level_service
+    }
+
     /// Runs the server.
     ///
     /// This future resolves when the server has fully shut down again.
-    pub async fn run(self) -> anyhow::Result<()> {
+    pub async fn run(self: Arc<Instance>) -> anyhow::Result<()> {
         // FIXME: The level module will get a refactor and this will be changed
         // let level = Level::new(self.user_map.clone(), self.token.clone())?;
         // self.user_map.set_level(level);
+
+        self.command_service.set_instance(&self)?;
+        self.level_service.set_instance(&self)?;
 
         let recv_job4 = {
             let socket = Arc::clone(&self.ipv4_socket);
@@ -360,7 +377,9 @@ impl Instance {
             handle
         };
 
-        let recv_job6 = if let Some(socket) = self.ipv6_socket {
+        let recv_job6 = if let Some(socket) = &self.ipv6_socket {
+            let socket = Arc::clone(socket);
+
             let user_map = Arc::clone(&self.user_map);
             let token = self.token.clone();
 

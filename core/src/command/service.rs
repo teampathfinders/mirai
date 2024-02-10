@@ -1,4 +1,4 @@
-use std::{borrow::Cow, sync::Arc, time::Duration};
+use std::{borrow::Cow, sync::{Arc, OnceLock, Weak}, time::Duration};
 
 use anyhow::Context as _;
 use dashmap::DashMap;
@@ -31,12 +31,14 @@ pub struct ServiceRequest {
     callback: oneshot::Sender<ExecutionResult>
 }
 
-/// Contains data accessible to command handlers
-pub struct Context {
-    instance: Arc<Instance>
-    // level: Arc<crate::level::Service>,
-    // commands: Arc<crate::command::Service>
-}
+// /// Contains data accessible to command handlers
+// pub struct Context {
+//     instance: Arc<Instance>
+//     // level: Arc<crate::level::Service>,
+//     // commands: Arc<crate::command::Service>
+// }
+
+pub type Context = Arc<Instance>;
 
 /// A function that parses and executes a command.
 trait CommandHandler: Send + Sync {
@@ -122,8 +124,8 @@ pub struct Service {
     handle: RwLock<Option<JoinHandle<()>>>,
     registry: DashMap<String, Arc<dyn CommandHandler>>,
 
-    // instance: Arc<Instance>,
-    sender: mpsc::Sender<ServiceRequest>
+    sender: mpsc::Sender<ServiceRequest>,
+    instance: OnceLock<Weak<Instance>>    
 }
 
 impl Service {
@@ -131,7 +133,7 @@ impl Service {
     pub fn new(token: CancellationToken) -> Arc<Service> {
         let (sender, receiver) = mpsc::channel(10);
         let service = Arc::new(Service {
-            token, handle: RwLock::new(None), sender, registry: DashMap::new()
+            token, handle: RwLock::new(None), sender, registry: DashMap::new(), instance: OnceLock::new()
         });
 
         let clone = Arc::clone(&service);
@@ -141,6 +143,10 @@ impl Service {
 
         *service.handle.write() = Some(handle);
         service
+    }
+
+    pub(crate) fn set_instance(&self, instance: &Arc<Instance>) -> anyhow::Result<()> {
+        self.instance.set(Arc::downgrade(instance)).map_err(|_| anyhow::anyhow!("Instance was already set"))
     }
 
     /// Registers a new command with the default syntax parser. 
@@ -234,7 +240,15 @@ impl Service {
 
                     let clone = Arc::clone(&self);
                     tokio::spawn(async move {
-                        let ctx = todo!();
+                        let Some(ctx) = clone.instance.get() else {
+                            tracing::error!("Command service instance was not set");
+                            return;
+                        };
+
+                        let Some(ctx) = ctx.upgrade() else {
+                            tracing::error!("Attempt to create command context failed: instance has been dropped");
+                            return;
+                        };
 
                         let result = clone.execute_handler(&request.command, &ctx);
                         // Error can be ignored because it only occurs if the receiver does not exist anymore.

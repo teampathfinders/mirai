@@ -1,9 +1,11 @@
-use std::{any::TypeId, sync::Arc};
+use std::{any::TypeId, sync::{Arc, OnceLock, Weak}};
 
 use proto::types::Dimension;
 use tokio::sync::{mpsc, oneshot};
 use tokio_util::sync::CancellationToken;
 use util::Vector;
+
+use crate::instance::Instance;
 
 const LEVEL_REQUEST_BUFFER_SIZE: usize = 10;
 
@@ -95,7 +97,9 @@ pub struct Service {
     token: CancellationToken,
 
     requests: mpsc::Receiver<ServiceRequest>,
-    request_producer: mpsc::Sender<ServiceRequest>
+    request_producer: mpsc::Sender<ServiceRequest>,
+
+    instance: OnceLock<Weak<Instance>>
 }
 
 impl Service {
@@ -104,8 +108,14 @@ impl Service {
         Arc::new(Service {
             token,
             requests: receiver,
-            request_producer: sender
+            request_producer: sender,
+
+            instance: OnceLock::new()
         })
+    }
+
+    pub(crate) fn set_instance(&self, instance: &Arc<Instance>) -> anyhow::Result<()> {
+        self.instance.set(Arc::downgrade(instance)).map_err(|_| anyhow::anyhow!("Level service instance was already set"))
     }
 
     pub fn request<R: ExpensiveRequestable>(&self, request: R) -> anyhow::Result<oneshot::Receiver<anyhow::Result<R::Output>>> {
