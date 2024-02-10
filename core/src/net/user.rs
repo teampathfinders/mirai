@@ -57,7 +57,8 @@ pub struct BedrockUser {
     pub(crate) player: OnceLock<PlayerData>,
 
     pub(crate) forms: forms::Subscriber,
-    pub(crate) commands: command::ServiceEndpoint,
+    pub(crate) commands: Arc<crate::command::Service>,
+    pub(crate) level: Arc<crate::level::Service>,
 
     pub(crate) broadcast: broadcast::Sender<BroadcastPacket>,
     pub(crate) job_handle: RwLock<Option<JoinHandle<()>>>
@@ -69,7 +70,8 @@ impl BedrockUser {
         raknet: Arc<RaknetUser>,
         replicator: Arc<Replicator>,
         receiver: mpsc::Receiver<RaknetCommand>,
-        commands: command::ServiceEndpoint,
+        commands: Arc<crate::command::Service>,
+        level: Arc<crate::level::Service>,
         broadcast: broadcast::Sender<BroadcastPacket>
     ) -> Arc<Self> {
         CONNECTED_CLIENTS_METRIC.inc();
@@ -88,6 +90,7 @@ impl BedrockUser {
 
             forms: forms::Subscriber::new(),
             commands,
+            level,
             
             broadcast,
             job_handle: RwLock::new(None)

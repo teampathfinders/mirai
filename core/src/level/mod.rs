@@ -1,5 +1,5 @@
-//! Code related to working with the world.
+//! Implements basic Minecraft level functionality.
 
-mod serialize;
-mod subchunk;
-mod viewer;
+use util::glob_export;
+
+glob_export!(service);

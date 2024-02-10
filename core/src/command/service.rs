@@ -29,40 +29,16 @@ pub struct ServiceRequest {
     callback: oneshot::Sender<ExecutionResult>
 }
 
-/// Type used to communicate with the command [`Service`].
-pub struct ServiceEndpoint {
-    sender: mpsc::Sender<ServiceRequest>
-}
-
-impl ServiceEndpoint {
-    /// Request execution of a command.
-    /// 
-    /// This method will return a receiver that will receive the output when the command has been executed.
-    /// Execution of the command might not happen within the same tick.
-    pub async fn request(&self, command: String) -> anyhow::Result<oneshot::Receiver<ExecutionResult>> {
-        let (sender, receiver) = oneshot::channel();
-        let request = ServiceRequest { command, callback: sender };
-
-        self.sender.send_timeout(request, SERVICE_TIMEOUT).await.context("Command service request timed out")?;
-
-        Ok(receiver)
-    }
-}
-
-impl Clone for ServiceEndpoint {
-    fn clone(&self) -> ServiceEndpoint {
-        ServiceEndpoint { sender: self.sender.clone() }
-    }
-}
-
+/// A function that parses and executes a command.
 trait CommandHandler: Send + Sync {
     /// Executes the command using this handlers.
     /// This function also performs parsing of the input.
     fn call(&self, input: &str) -> ExecutionResult;
-    /// Returns the syntax structure of the command.
+    /// Returns the syntactic structure of the command.
     fn structure(&self) -> &Command;
 }
 
+/// A handler that uses the built-in command parser.
 struct HandlerImpl<F> 
 where
     F: Fn(ParsedCommand) -> ExecutionResult + Send + Sync
@@ -95,6 +71,7 @@ where
     }
 }
 
+/// A handler that uses a custom user-provided parser.
 struct ParserHandlerImpl<F, P> 
 where
     F: Fn(ParsedCommand) -> ExecutionResult + Send + Sync,
@@ -136,7 +113,6 @@ pub struct Service {
     handle: RwLock<Option<JoinHandle<()>>>,
     registry: DashMap<String, Arc<dyn CommandHandler>>,
 
-    /// Simply stored here so it can be used for endpoints.
     sender: mpsc::Sender<ServiceRequest>
 }
 
@@ -179,24 +155,32 @@ impl Service {
     pub fn register_with_parser<F, P>(&self, structure: Command, handler: F, parser: P) 
     where
         F: Fn(ParsedCommand) -> ExecutionResult + Send + Sync + 'static,
-        P: Fn(&str) -> ParseResult
+        P: Fn(&str) -> ParseResult + Send + Sync + 'static
     {
-        // let aliases = structure.aliases.clone();
-        // let name = structure.name.clone();
+        let aliases = structure.aliases.clone();
+        let name = structure.name.clone();
 
-        // let wrap = Arc::new(CommandHandlerImpl {
-        //     handler, structure
-        // });
+        let wrap = Arc::new(ParserHandlerImpl {
+            handler, structure, parser
+        });
 
-        // for alias in aliases {
-        //     self.registry.insert(alias, wrap.clone());
-        // }
-        // self.registry.insert(name, wrap);
+        for alias in aliases {
+            self.registry.insert(alias, Arc::clone(&wrap) as Arc<dyn CommandHandler>);
+        }
+        self.registry.insert(name, wrap);
     }
 
-    /// Creates a new [`ServiceEndpoint`].
-    pub fn create_endpoint(&self) -> ServiceEndpoint {
-        ServiceEndpoint { sender: self.sender.clone() }
+    /// Request execution of a command.
+    /// 
+    /// This method will return a receiver that will receive the output when the command has been executed.
+    /// Execution of the command might not happen within the same tick.
+    pub async fn request(&self, command: String) -> anyhow::Result<oneshot::Receiver<ExecutionResult>> {
+        let (sender, receiver) = oneshot::channel();
+        let request = ServiceRequest { command, callback: sender };
+
+        self.sender.send_timeout(request, SERVICE_TIMEOUT).await.context("Command service request timed out")?;
+
+        Ok(receiver)
     }
 
     /// Parses the syntactic structure of a command before sending it off to a custom handler.

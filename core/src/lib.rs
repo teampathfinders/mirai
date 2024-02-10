@@ -3,7 +3,7 @@
 //! The aim of this software is to be correct and performant.
 
 #![deny(
-    missing_docs,
+    // missing_docs,
     clippy::expect_used,
     clippy::get_unwrap,
     clippy::if_then_some_else_none,

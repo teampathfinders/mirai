@@ -4,6 +4,7 @@ use anyhow::Context;
 use raknet::RaknetCreateInfo;
 
 use std::borrow::Cow;
+use std::collections::HashMap;
 use std::net::{Ipv4Addr, Ipv6Addr, SocketAddrV4, SocketAddrV6};
 use std::sync::Arc;
 use std::time::Duration;
@@ -18,8 +19,7 @@ use crate::command::{self};
 use crate::config::SERVER_CONFIG;
 use crate::net::{ForwardablePacket, UserMap};
 use proto::bedrock::{
-    Command, CommandDataType, CommandOverload, CommandParameter, CommandPermissionLevel, CompressionAlgorithm, CLIENT_VERSION_STRING,
-    PROTOCOL_VERSION,
+    Command, CommandDataType, CommandOverload, CommandParameter, CommandPermissionLevel, CompressionAlgorithm, ParsedCommand, CLIENT_VERSION_STRING, PROTOCOL_VERSION
 };
 use proto::raknet::{
     IncompatibleProtocol, OpenConnectionReply1, OpenConnectionReply2, OpenConnectionRequest1, OpenConnectionRequest2, UnconnectedPing,
@@ -227,7 +227,7 @@ impl<'a> InstanceBuilder<'a> {
 
         let token = CancellationToken::new();
 
-        let command_service = command::Service::new(token.clone());
+        let command_service = crate::command::Service::new(token.clone());
         command_service.register(
             Command {
                 aliases: vec!["test2".to_owned()],
@@ -255,7 +255,36 @@ impl<'a> InstanceBuilder<'a> {
             },
         );
 
-        let user_map = Arc::new(UserMap::new(replicator, Arc::clone(&command_service)));
+        command_service.register_with_parser(
+            Command {
+                aliases: Vec::new(),
+                description: "This is a custom parser command".to_owned(),
+                name: "custom".to_owned(),
+                overloads: vec![CommandOverload {
+                    parameters: Vec::new()
+                }],
+                permission_level: CommandPermissionLevel::Normal
+            },
+            |input| {
+                tracing::debug!("Custom: {input:?}");
+
+                Ok(command::CommandOutput {
+                    message: Cow::Borrowed("Hello!"),
+                    parameters: Vec::new()
+                })
+            },
+            |input| {
+                tracing::debug!("Input: {input}");
+                Ok(ParsedCommand {
+                    name: String::from("custom_parsed"),
+                    parameters: HashMap::new()
+                })
+            }
+        );
+
+        let level_service = crate::level::Service::new(token.clone());
+
+        let user_map = Arc::new(UserMap::new(replicator, Arc::clone(&command_service), Arc::clone(&level_service)));
 
         let instance = Instance {
             ipv4_socket,
@@ -263,6 +292,7 @@ impl<'a> InstanceBuilder<'a> {
             user_map,
             token,
             command_service,
+            level_service
         };
 
         Ok(instance)
@@ -296,7 +326,9 @@ pub struct Instance {
     /// Token that can signal other services to stop running.
     token: CancellationToken,
     /// Keeps track of all available commands.
-    command_service: Arc<command::Service>,
+    command_service: Arc<crate::command::Service>,
+    /// Keeps track of the level state.
+    level_service: Arc<crate::level::Service>
 }
 
 impl Instance {

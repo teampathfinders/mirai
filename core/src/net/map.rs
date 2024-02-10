@@ -48,19 +48,21 @@ pub struct UserMap {
     connected_map: Arc<DashMap<SocketAddr, UserMapEntry<BedrockUser>>>,
     /// Channel that sends a packet to all connected sessions.
     broadcast: broadcast::Sender<BroadcastPacket>,
-    commands: Arc<command::Service>
+
+    commands: Arc<crate::command::Service>,
+    level: Arc<crate::level::Service>
 }
 
 impl UserMap {
     /// Creates a new user map.
-    pub fn new(replicator: Arc<Replicator>, commands: Arc<command::Service>) -> Self {
+    pub fn new(replicator: Arc<Replicator>, commands: Arc<crate::command::Service>, level: Arc<crate::level::Service>) -> Self {
         let connecting_map = Arc::new(DashMap::new());
         let connected_map = Arc::new(DashMap::new());
 
         let (broadcast, _) = broadcast::channel(BROADCAST_CHANNEL_CAPACITY);
 
         Self {
-            replicator, connecting_map, connected_map, broadcast, commands
+            replicator, connecting_map, connected_map, broadcast, commands, level
         }
     }   
 
@@ -83,7 +85,8 @@ impl UserMap {
         let connected_map = Arc::clone(&self.connected_map);
         let replicator = Arc::clone(&self.replicator);
         let broadcast = self.broadcast.clone();
-        let endpoint = self.commands.create_endpoint();
+        let endpoint = Arc::clone(&self.commands);
+        let level = Arc::clone(&self.level);
 
         // Callback to move the client from the connecting map to the connected map.
         // This is done when the Raknet layer attempts to send a message to the Bedrock layer
@@ -92,7 +95,7 @@ impl UserMap {
             if let Some((_, raknet_user)) = connecting_map.remove(&address) {
                 let bedrock_user = UserMapEntry {
                     channel: raknet_user.channel, state: BedrockUser::new(
-                        raknet_user.state, replicator, state_rx, endpoint, broadcast
+                        raknet_user.state, replicator, state_rx, endpoint, level, broadcast
                     )
                 };
 
