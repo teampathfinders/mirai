@@ -2,7 +2,7 @@
 
 use std::sync::Arc;
 
-use proto::bedrock::{Animate, CommandOutput, CommandOutputMessage, CommandOutputType, CommandRequest, DisconnectReason, FormResponseData, PlayerAuthInput, RequestAbility, SettingsCommand, TextData, TextMessage, TickSync, UpdateSkin};
+use proto::bedrock::{Animate, CommandOutput, CommandOutputMessage, CommandOutputType, CommandRequest, DisconnectReason, FormResponseData, HudElement, HudVisibility, PlayerAuthInput, RequestAbility, SetHud, SettingsCommand, TextData, TextMessage, TickSync, UpdateSkin};
 
 use util::Deserialize;
 
@@ -93,6 +93,12 @@ impl BedrockUser {
     /// Handles an [`Animation`] packet.
     pub fn handle_animation(&self, packet: Vec<u8>) -> anyhow::Result<()> {
         let request = Animate::deserialize(packet.as_ref())?;
+
+        self.send(SetHud {
+            elements: &[HudElement::Hotbar],
+            visibibility: HudVisibility::Hide
+        })?;
+
         tracing::debug!("{request:?}");
         
         Ok(())

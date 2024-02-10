@@ -38,6 +38,7 @@ glob_export!(play_sound);
 glob_export!(player_list);
 glob_export!(request_ability);
 glob_export!(respawn);
+glob_export!(set_hud);
 glob_export!(set_local_player_as_initialized);
 glob_export!(show_credits);
 glob_export!(show_profile);
