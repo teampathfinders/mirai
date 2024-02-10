@@ -170,7 +170,7 @@ impl Service {
         });
 
         for alias in aliases {
-            self.registry.insert(alias, wrap.clone());
+            self.registry.insert(alias, Arc::clone(&wrap) as Arc<dyn CommandHandler>);
         }
         self.registry.insert(name, wrap);
     }

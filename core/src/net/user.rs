@@ -412,7 +412,10 @@ impl BedrockUser {
                 RequestAbility::ID => this.handle_ability_request(packet),
                 Animate::ID => this.handle_animation(packet),
                 // Command request does not return a result because it does not fail.
-                CommandRequest::ID => Ok(this.handle_command_request(packet)),
+                CommandRequest::ID => {
+                    this.handle_command_request(packet); 
+                    Ok(())
+                },
                 UpdateSkin::ID => this.handle_skin_update(packet),
                 SettingsCommand::ID => this.handle_settings_command(packet),
                 ContainerClose::ID => this.handle_container_close(packet),
@@ -423,13 +426,12 @@ impl BedrockUser {
         };
         
         let timeout = tokio::time::timeout(REQUEST_TIMEOUT, future);
-        match timeout.await {
-            Ok(result) => result,
-            Err(_) => {
-                tracing::error!("Request timed out");
-                anyhow::bail!("Request timed out")
-            }
-        }
+        let Ok(result) = timeout.await else {
+            tracing::error!("Request timed out");
+            anyhow::bail!("Request timed out");
+        };
+
+        result
     }
 
     /// Returns the forms handler.

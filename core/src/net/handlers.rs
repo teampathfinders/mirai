@@ -127,7 +127,13 @@ impl BedrockUser {
         // to avoid blocking the request handler.
         let endpoint = self.commands.clone();
         tokio::spawn(async move {
-            let request = CommandRequest::deserialize(packet.as_ref()).unwrap();
+            let request = match CommandRequest::deserialize(packet.as_ref()) {
+                Ok(req) => req,
+                Err(err) => {
+                    tracing::error!("Failed to deserialize `CommandRequest`: {err:#}");
+                    return;
+                }
+            };
             tracing::Span::current().record("command", request.command);
 
             let receiver = match endpoint.request(request.command.to_owned()).await {
@@ -138,35 +144,29 @@ impl BedrockUser {
                 }
             };
 
-            match receiver.await {
-                Ok(result) => {
-                    let is_success = result.is_ok();
-                    let data = match result {
-                        Ok(r) => r,
-                        Err(r) => r
-                    };
+            receiver.await.map_or_else(|_| tracing::error!("Command service shut down while awaiting execution"), |result| {
+                let is_success = result.is_ok();
+                let data = match result {
+                    Ok(r) => r,
+                    Err(r) => r
+                };
 
-                    let output = CommandOutput {
-                        success_count: if is_success { 1 } else { 0 },
-                        request_id: request.request_id,
-                        origin: request.origin,
-                        output_type: CommandOutputType::AllOutput,
-                        output: &[CommandOutputMessage {
-                            is_success,
-                            message: &data.message,
-                            parameters: &data.parameters
-                        }]
-                    };
+                let output = CommandOutput {
+                    success_count: if is_success { 1 } else { 0 },
+                    request_id: request.request_id,
+                    origin: request.origin,
+                    output_type: CommandOutputType::AllOutput,
+                    output: &[CommandOutputMessage {
+                        is_success,
+                        message: &data.message,
+                        parameters: &data.parameters
+                    }]
+                }; 
 
-                    match self.send(output) {
-                        Ok(_) => (),
-                        Err(err) => {
-                            tracing::error!("Failed to send command output to client | {err:#}");
-                        }
-                    }
-                },
-                Err(_) => tracing::error!("Command service shut down while awaiting execution")
-            }
+                if let Err(err) = self.send(output) {
+                    tracing::error!("Failed to send command output to client: {err:#}");
+                }
+            });
         });
     }
 }
