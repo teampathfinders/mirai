@@ -1,12 +1,14 @@
 use std::{borrow::Cow, sync::Arc, time::Duration};
 
-use anyhow::Context;
+use anyhow::Context as _;
 use dashmap::DashMap;
 use parking_lot::RwLock;
-use proto::bedrock::{Command, CommandOutputMessage, CommandRequest, ParseError, ParseErrorKind, ParseResult, ParsedCommand};
+use proto::bedrock::{Command, ParseResult, ParsedCommand};
 use tokio::{sync::{mpsc, oneshot}, task::JoinHandle};
 use tokio_util::sync::CancellationToken;
 use util::Joinable;
+
+use crate::instance::Instance;
 
 const SERVICE_TIMEOUT: Duration = Duration::from_millis(10);
 
@@ -29,11 +31,18 @@ pub struct ServiceRequest {
     callback: oneshot::Sender<ExecutionResult>
 }
 
+/// Contains data accessible to command handlers
+pub struct Context {
+    instance: Arc<Instance>
+    // level: Arc<crate::level::Service>,
+    // commands: Arc<crate::command::Service>
+}
+
 /// A function that parses and executes a command.
 trait CommandHandler: Send + Sync {
     /// Executes the command using this handlers.
     /// This function also performs parsing of the input.
-    fn call(&self, input: &str) -> ExecutionResult;
+    fn call(&self, input: &str, ctx: &Context) -> ExecutionResult;
     /// Returns the syntactic structure of the command.
     fn structure(&self) -> &Command;
 }
@@ -41,7 +50,7 @@ trait CommandHandler: Send + Sync {
 /// A handler that uses the built-in command parser.
 struct HandlerImpl<F> 
 where
-    F: Fn(ParsedCommand) -> ExecutionResult + Send + Sync
+    F: Fn(ParsedCommand, &Context) -> ExecutionResult + Send + Sync
 {
     handler: F,
     structure: Command,
@@ -49,9 +58,9 @@ where
 
 impl<F> CommandHandler for HandlerImpl<F> 
 where
-    F: Fn(ParsedCommand) -> ExecutionResult + Send + Sync
+    F: Fn(ParsedCommand, &Context) -> ExecutionResult + Send + Sync
 {
-    fn call(&self, input: &str) -> ExecutionResult {
+    fn call(&self, input: &str, ctx: &Context) -> ExecutionResult {
         // Parse command with default parser.
         let parsed = match ParsedCommand::default_parser(&self.structure, input) {
             Ok(cmd) => cmd,
@@ -63,7 +72,7 @@ where
             }
         };
 
-        (self.handler)(parsed)
+        (self.handler)(parsed, ctx)
     }
 
     fn structure(&self) -> &Command {
@@ -74,8 +83,8 @@ where
 /// A handler that uses a custom user-provided parser.
 struct ParserHandlerImpl<F, P> 
 where
-    F: Fn(ParsedCommand) -> ExecutionResult + Send + Sync,
-    P: Fn(&str) -> ParseResult + Send + Sync
+    F: Fn(ParsedCommand, &Context) -> ExecutionResult + Send + Sync,
+    P: Fn(&str, &Context) -> ParseResult + Send + Sync
 {
     handler: F,
     parser: P,
@@ -84,12 +93,12 @@ where
 
 impl<F, P> CommandHandler for ParserHandlerImpl<F, P> 
 where
-    F: Fn(ParsedCommand) -> ExecutionResult + Send + Sync,
-    P: Fn(&str) -> ParseResult + Send + Sync
+    F: Fn(ParsedCommand, &Context) -> ExecutionResult + Send + Sync,
+    P: Fn(&str, &Context) -> ParseResult + Send + Sync
 {
-    fn call(&self, input: &str) -> ExecutionResult {
+    fn call(&self, input: &str, ctx: &Context) -> ExecutionResult {
         // Parse command with a custom parser.
-        let parsed = match (self.parser)(input) {
+        let parsed = match (self.parser)(input, ctx) {
             Ok(cmd) => cmd,
             Err(err) => {
                 return Err(CommandOutput {
@@ -99,7 +108,7 @@ where
             }
         };
 
-        (self.handler)(parsed)
+        (self.handler)(parsed, ctx)
     }
 
     fn structure(&self) -> &Command {
@@ -113,6 +122,7 @@ pub struct Service {
     handle: RwLock<Option<JoinHandle<()>>>,
     registry: DashMap<String, Arc<dyn CommandHandler>>,
 
+    // instance: Arc<Instance>,
     sender: mpsc::Sender<ServiceRequest>
 }
 
@@ -136,7 +146,7 @@ impl Service {
     /// Registers a new command with the default syntax parser. 
     pub fn register<F>(&self, structure: Command, handler: F) 
     where
-        F: Fn(ParsedCommand) -> ExecutionResult + Send + Sync + 'static
+        F: Fn(ParsedCommand, &Context) -> ExecutionResult + Send + Sync + 'static
     {   
         let aliases = structure.aliases.clone();
         let name = structure.name.clone();
@@ -154,8 +164,8 @@ impl Service {
     /// Registers a new command with a custom parser.
     pub fn register_with_parser<F, P>(&self, structure: Command, handler: F, parser: P) 
     where
-        F: Fn(ParsedCommand) -> ExecutionResult + Send + Sync + 'static,
-        P: Fn(&str) -> ParseResult + Send + Sync + 'static
+        F: Fn(ParsedCommand, &Context) -> ExecutionResult + Send + Sync + 'static,
+        P: Fn(&str, &Context) -> ParseResult + Send + Sync + 'static
     {
         let aliases = structure.aliases.clone();
         let name = structure.name.clone();
@@ -184,7 +194,7 @@ impl Service {
     }
 
     /// Parses the syntactic structure of a command before sending it off to a custom handler.
-    fn execute_handler(&self, command: &str) -> ExecutionResult {
+    fn execute_handler(&self, command: &str, ctx: &Context) -> ExecutionResult {
         let command_name = {
             let mut split = command.split(' ');
             let first = split
@@ -209,7 +219,7 @@ impl Service {
             })
         };
         
-        handler.call(command)
+        handler.call(command, ctx)
     }
 
     /// Runs the service execution job.
@@ -224,7 +234,9 @@ impl Service {
 
                     let clone = Arc::clone(&self);
                     tokio::spawn(async move {
-                        let result = clone.execute_handler(&request.command);
+                        let ctx = todo!();
+
+                        let result = clone.execute_handler(&request.command, &ctx);
                         // Error can be ignored because it only occurs if the receiver does not exist anymore.
                         let _: Result<(), ExecutionResult> = request.callback.send(result);
                     });
