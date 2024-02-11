@@ -60,7 +60,7 @@ impl Compounds {
             let fragments = &mut kv.1;
 
             // Merge all fragments
-            let mut merged = Vec::with_capacity(
+            let mut merged = Reusable::alloc_with_capacity(
                 fragments
                     .iter()
                     .fold(0, |acc, f| acc + f.as_ref().unwrap().body.len())
@@ -80,7 +80,7 @@ impl Compounds {
             }
 
             let mut frame = fragments[0].take().unwrap();
-            frame.body = Reusable::from(merged);
+            frame.body = merged;
 
             // Set compound tag to false to make sure the completed packet isn't added into the
             // collector again.

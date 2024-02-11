@@ -166,7 +166,7 @@ impl<'a> Deserialize<'a> for Frame {
         let compound_id = if is_compound { reader.read_u16_be()? } else { 0 };
         let compound_index = if is_compound { reader.read_u32_be()? } else { 0 };
 
-        let body = Reusable::from(reader.take_n(length as usize)?.to_vec());
+        let body = Reusable::alloc_from_slice(reader.take_n(length as usize)?);
         let frame = Self {
             reliability,
             reliable_index,

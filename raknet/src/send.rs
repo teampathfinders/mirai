@@ -272,7 +272,7 @@ impl RaknetUser {
                 compound_index: i as u32,
                 compound_size: compound_size as u32,
                 compound_id,
-                body: Reusable::from(chunk.to_owned()),
+                body: Reusable::alloc_from_slice(chunk),
                 ..Default::default()
             };
 

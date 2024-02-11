@@ -13,7 +13,7 @@ pub trait Serialize {
     /// Serializes the object into binary format.
     fn serialize(&self) -> anyhow::Result<BVec> {
         let cap = self.size_hint().unwrap_or(0);
-        let mut writer = Reusable::from(Vec::with_capacity(cap));
+        let mut writer = Reusable::alloc_with_capacity(cap);
 
         self.serialize_into(&mut writer)?;
 

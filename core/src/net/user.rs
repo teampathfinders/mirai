@@ -22,7 +22,7 @@ use proto::uuid::Uuid;
 use replicator::Replicator;
 
 use tokio::task::JoinHandle;
-use util::{AtomicFlag, BVec, BinaryRead, BinaryWrite, Deserialize, Joinable, Reusable, Serialize, Vector};
+use util::{AtomicFlag, BVec, BinaryRead, BinaryWrite, Deserialize, Joinable, Poolable, Serialize, Vector};
 
 
 use crate::config::SERVER_CONFIG;
@@ -156,6 +156,8 @@ impl BedrockUser {
         }
 
         tracing::info!("{} has disconnected", self.name().unwrap_or("<unknown>"));
+        <Vec<u8>>::pool().debug_print();
+
         CONNECTED_CLIENTS_METRIC.dec();
     }
 
@@ -340,8 +342,10 @@ impl BedrockUser {
                 match algorithm {
                     CompressionAlgorithm::Flate => {
                         let mut reader = flate2::read::DeflateDecoder::new(packet.as_slice());
+                        tracing::debug!("Decompressed to {}", reader.total_out());
 
-                        let mut decompressed = Reusable::from(Vec::new());
+                        let mut decompressed = BVec::alloc_with_capacity(reader.total_out() as usize);
+                        
                         reader.read_to_end(&mut decompressed)?;
                         self.handle_frame_body(decompressed).await
                     },
