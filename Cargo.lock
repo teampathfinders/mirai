@@ -1053,6 +1053,7 @@ dependencies = [
  "dashmap",
  "jsonwebtoken",
  "num-traits",
+ "parking_lot 0.12.1",
  "paste",
  "serde",
  "serde_json",

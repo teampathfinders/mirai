@@ -45,31 +45,16 @@ mod macros;
 mod error;
 
 mod fast;
+mod pool;
 
 use std::{
     fmt,
-    ops::{Deref, DerefMut},
     sync::atomic::{AtomicU64, Ordering},
 };
 
 pub use error::*;
 pub use fast::*;
-
-pub struct NonCopy<T>(pub T);
-
-impl<T> Deref for NonCopy<T> {
-    type Target = T;
-
-    fn deref(&self) -> &T {
-        &self.0
-    }
-}
-
-impl<T> DerefMut for NonCopy<T> {
-    fn deref_mut(&mut self) -> &mut T {
-        &mut self.0
-    }
-}
+pub use pool::*;
 
 /// Overwrites the memory of a type when it is dropped.
 pub trait Zeroize {
