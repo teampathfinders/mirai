@@ -44,6 +44,8 @@ mod macros;
 #[macro_use]
 mod error;
 
+mod borrow;
+
 use std::{
     fmt,
     ops::{Deref, DerefMut},
@@ -51,6 +53,7 @@ use std::{
 };
 
 pub use error::*;
+pub use borrow::*;
 
 pub struct NonCopy<T>(pub T);
 

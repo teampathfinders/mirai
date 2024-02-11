@@ -1,6 +1,8 @@
 use std::{any::TypeId, sync::{Arc, OnceLock, Weak}};
 
-use proto::types::Dimension;
+use dashmap::{DashMap, DashSet};
+use parking_lot::RwLock;
+use proto::{bedrock::GameRule, types::Dimension};
 use tokio::sync::{mpsc, oneshot};
 use tokio_util::sync::CancellationToken;
 use util::Vector;
@@ -96,9 +98,10 @@ struct ServiceRequest {
 pub struct Service {
     token: CancellationToken,
 
+    // gamerules: RwLock<[GameRule; GameRule::variant_count()]>,
+
     requests: mpsc::Receiver<ServiceRequest>,
     request_producer: mpsc::Sender<ServiceRequest>,
-
     instance: OnceLock<Weak<Instance>>
 }
 
@@ -107,39 +110,57 @@ impl Service {
         let (sender, receiver) = mpsc::channel(LEVEL_REQUEST_BUFFER_SIZE);
         Arc::new(Service {
             token,
+
+            // gamerules: RwLock::new(Default::default()),
+
             requests: receiver,
             request_producer: sender,
-
             instance: OnceLock::new()
         })
     }
 
+    /// Sets the instance pointer for this service.
+    /// 
+    /// This is used to access data from other services.
     pub(crate) fn set_instance(&self, instance: &Arc<Instance>) -> anyhow::Result<()> {
         self.instance.set(Arc::downgrade(instance)).map_err(|_| anyhow::anyhow!("Level service instance was already set"))
     }
-
-    pub fn request<R: ExpensiveRequestable>(&self, request: R) -> anyhow::Result<oneshot::Receiver<anyhow::Result<R::Output>>> {
+    
+    pub fn get<R: ExpensiveRequestable>(&self, request: R) -> anyhow::Result<oneshot::Receiver<anyhow::Result<R::Output>>> {
         let (sender, receiver) = oneshot::channel();
 
         match R::VARIANT {
             RequestableVariant::MultiGet => {
                 let cast = request.cast::<SubchunkGetMulti>();
-                self.get_multi(cast);
+                self.load_multi(cast);
                 Ok(receiver)
             },
             RequestableVariant::SingleGet => {
                 let cast = request.cast::<SubchunkGetSingle>();
-                self.get_single(cast);
+                self.load_single(cast);
                 Ok(receiver)
             }
         }
     }
 
-    fn get_single(&self, request: SubchunkGetSingle) {
-        tracing::debug!("{request:?}");
+    /// Sets the new value of a game rule and returns the old value if there was one.
+    pub fn set_gamerule(&self, val: GameRule) -> Option<GameRule> {
+        // Gamerules need rework before finishing this.
+        todo!()
+    } 
+
+    pub fn gamerule<S: AsRef<str>>(&self, name: S) -> GameRule {
+        // Gamerules need rework before finishing this.
+        todo!()
     }
 
-    fn get_multi(&self, request: SubchunkGetMulti) {
-        tracing::debug!("{request:?}");
+    /// Loads a single subchunk.
+    fn load_single(&self, request: SubchunkGetSingle) {
+        todo!();
+    }
+
+    /// Loads multiple subchunks around a center.
+    fn load_multi(&self, request: SubchunkGetMulti) {
+        todo!();
     }
 }

@@ -6,7 +6,7 @@ use parking_lot::RwLock;
 use proto::bedrock::{Command, ParseResult, ParsedCommand};
 use tokio::{sync::{mpsc, oneshot}, task::JoinHandle};
 use tokio_util::sync::CancellationToken;
-use util::Joinable;
+use util::{FastSlice, FastString, Joinable};
 
 use crate::instance::Instance;
 
@@ -16,9 +16,11 @@ const SERVICE_TIMEOUT: Duration = Duration::from_millis(10);
 #[derive(Debug)]
 pub struct CommandOutput {
     /// Output of the command.
-    pub message: Cow<'static, str>,
+    pub message: FastString<'static>,
+    // pub message: Cow<'static, str>
     /// Optional parameters used in the command output.
-    pub parameters: Vec<Cow<'static, str>>
+    // pub parameters: Vec<Cow<'static, str>>
+    pub parameters: FastSlice<'static, FastString<'static>>
 }
 
 /// The result of a command execution.
@@ -69,7 +71,7 @@ where
             Err(err) => {
                 return Err(CommandOutput {
                     message: err.description,
-                    parameters: Vec::new()
+                    parameters: FastSlice::empty()
                 })
             }
         };
@@ -145,6 +147,9 @@ impl Service {
         service
     }
 
+    /// Sets the instance pointer of this service.
+    /// 
+    /// This is used to create contexts when calling command handlers.
     pub(crate) fn set_instance(&self, instance: &Arc<Instance>) -> anyhow::Result<()> {
         self.instance.set(Arc::downgrade(instance)).map_err(|_| anyhow::anyhow!("Instance was already set"))
     }

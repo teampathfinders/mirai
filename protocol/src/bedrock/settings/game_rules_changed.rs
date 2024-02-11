@@ -1,5 +1,6 @@
 use std::fmt;
 
+use macros::variant_count;
 use util::{bail, Serialize};
 use util::{BinaryWrite, size_of_varint, VarInt, VarString};
 
@@ -47,6 +48,8 @@ pub const INTEGER_GAME_RULES: &[&str] = &[
 
 /// Minecraft game rules.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[repr(u8)]
+#[variant_count]
 pub enum GameRule {
     /// Whether command blocks are enabled.
     CommandBlocksEnabled(bool),
@@ -108,47 +111,6 @@ pub enum GameRule {
     SpawnRadius(i32),
     /// Whether TNT can explode.
     TntExplodes(bool),
-}
-
-impl fmt::Display for GameRule {
-    fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
-        match self {
-            Self::CommandBlocksEnabled(b)
-            | Self::CommandBlockOutput(b)
-            | Self::DaylightCycle(b)
-            | Self::EntityDrops(b)
-            | Self::FireTick(b)
-            | Self::Insomnia(b)
-            | Self::ImmediateRespawn(b)
-            | Self::MobLoot(b)
-            | Self::MobSpawning(b)
-            | Self::TileDrops(b)
-            | Self::WeatherCycle(b)
-            | Self::DrowningDamage(b)
-            | Self::FallDamage(b)
-            | Self::FireDamage(b)
-            | Self::FreezeDamage(b)
-            | Self::KeepInventory(b)
-            | Self::MobGriefing(b)
-            | Self::NaturalRegeneration(b)
-            | Self::Pvp(b)
-            | Self::RespawnBlocksExplode(b)
-            | Self::SendCommandFeedback(b)
-            | Self::ShowBorderEffect(b)
-            | Self::ShowCoordinates(b)
-            | Self::ShowDeathMessages(b)
-            | Self::ShowTags(b)
-            | Self::TntExplodes(b) => {
-                write!(fmt, "{b}")
-            }
-            Self::FunctionCommandLimit(i)
-            | Self::MaxCommandChainLength(i)
-            | Self::RandomTickSpeed(i)
-            | Self::SpawnRadius(i) => {
-                write!(fmt, "{i}")
-            }
-        }
-    }
 }
 
 impl GameRule {
@@ -360,6 +322,47 @@ impl GameRule {
             Self::ShowTags(_) => "showtags",
             Self::SpawnRadius(_) => "spawnradius",
             Self::TntExplodes(_) => "tntexplodes",
+        }
+    }
+}
+
+impl fmt::Display for GameRule {
+    fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            Self::CommandBlocksEnabled(b)
+            | Self::CommandBlockOutput(b)
+            | Self::DaylightCycle(b)
+            | Self::EntityDrops(b)
+            | Self::FireTick(b)
+            | Self::Insomnia(b)
+            | Self::ImmediateRespawn(b)
+            | Self::MobLoot(b)
+            | Self::MobSpawning(b)
+            | Self::TileDrops(b)
+            | Self::WeatherCycle(b)
+            | Self::DrowningDamage(b)
+            | Self::FallDamage(b)
+            | Self::FireDamage(b)
+            | Self::FreezeDamage(b)
+            | Self::KeepInventory(b)
+            | Self::MobGriefing(b)
+            | Self::NaturalRegeneration(b)
+            | Self::Pvp(b)
+            | Self::RespawnBlocksExplode(b)
+            | Self::SendCommandFeedback(b)
+            | Self::ShowBorderEffect(b)
+            | Self::ShowCoordinates(b)
+            | Self::ShowDeathMessages(b)
+            | Self::ShowTags(b)
+            | Self::TntExplodes(b) => {
+                write!(fmt, "{b}")
+            }
+            Self::FunctionCommandLimit(i)
+            | Self::MaxCommandChainLength(i)
+            | Self::RandomTickSpeed(i)
+            | Self::SpawnRadius(i) => {
+                write!(fmt, "{i}")
+            }
         }
     }
 }

@@ -230,59 +230,60 @@ impl<'a> InstanceBuilder<'a> {
         let token = CancellationToken::new();
 
         let command_service = crate::command::Service::new(token.clone());
-        command_service.register(
-            Command {
-                aliases: vec!["test2".to_owned()],
-                description: "This is a test".to_owned(),
-                name: "test".to_owned(),
-                overloads: vec![CommandOverload {
-                    parameters: vec![CommandParameter {
-                        command_enum: None,
-                        data_type: CommandDataType::String,
-                        name: "name".to_owned(),
-                        suffix: String::new(),
-                        optional: true,
-                        options: 0,
-                    }],
-                }],
-                permission_level: CommandPermissionLevel::Normal,
-            },
-            |input, ctx| {
-                tracing::debug!("{input:?}");
 
-                Ok(command::CommandOutput {
-                    message: Cow::Borrowed("Hello, World!"),
-                    parameters: Vec::new(),
-                })
-            },
-        );
+        // command_service.register(
+        //     Command {
+        //         aliases: vec!["test2".to_owned()],
+        //         description: "This is a test".to_owned(),
+        //         name: "test".to_owned(),
+        //         overloads: vec![CommandOverload {
+        //             parameters: vec![CommandParameter {
+        //                 command_enum: None,
+        //                 data_type: CommandDataType::String,
+        //                 name: "name".to_owned(),
+        //                 suffix: String::new(),
+        //                 optional: true,
+        //                 options: 0,
+        //             }],
+        //         }],
+        //         permission_level: CommandPermissionLevel::Normal,
+        //     },
+        //     |input, ctx| {
+        //         tracing::debug!("{input:?}");
 
-        command_service.register_with_parser(
-            Command {
-                aliases: Vec::new(),
-                description: "This is a custom parser command".to_owned(),
-                name: "custom".to_owned(),
-                overloads: vec![CommandOverload {
-                    parameters: Vec::new()
-                }],
-                permission_level: CommandPermissionLevel::Normal
-            },
-            |input, _ctx| {
-                tracing::debug!("Custom: {input:?}");
+        //         Ok(command::CommandOutput {
+        //             message: Cow::Borrowed("Hello, World!"),
+        //             parameters: Vec::new(),
+        //         })
+        //     },
+        // );
 
-                Ok(command::CommandOutput {
-                    message: Cow::Borrowed("Hello!"),
-                    parameters: Vec::new()
-                })
-            },
-            |input, _ctx| {
-                tracing::debug!("Input: {input}");
-                Ok(ParsedCommand {
-                    name: String::from("custom_parsed"),
-                    parameters: HashMap::new()
-                })
-            }
-        );
+        // command_service.register_with_parser(
+        //     Command {
+        //         aliases: Vec::new(),
+        //         description: "This is a custom parser command".to_owned(),
+        //         name: "custom".to_owned(),
+        //         overloads: vec![CommandOverload {
+        //             parameters: Vec::new()
+        //         }],
+        //         permission_level: CommandPermissionLevel::Normal
+        //     },
+        //     |input, _ctx| {
+        //         tracing::debug!("Custom: {input:?}");
+
+        //         Ok(command::CommandOutput {
+        //             message: Cow::Borrowed("Hello!"),
+        //             parameters: Vec::new()
+        //         })
+        //     },
+        //     |input, _ctx| {
+        //         tracing::debug!("Input: {input}");
+        //         Ok(ParsedCommand {
+        //             name: String::from("custom_parsed"),
+        //             parameters: HashMap::new()
+        //         })
+        //     }
+        // );
 
         let level_service = crate::level::Service::new(token.clone());
 
