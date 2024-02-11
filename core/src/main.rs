@@ -5,12 +5,7 @@ use std::sync::atomic::{AtomicU16, Ordering};
 use anyhow::Context;
 use tokio::runtime::{self, Handle};
 
-
-
-
 use inferno::instance::{DbConfig, InstanceBuilder, NetConfig};
-
-mod metrics;
 
 fn main() -> anyhow::Result<()> {
     let runtime = runtime::Builder::new_multi_thread()
@@ -53,13 +48,9 @@ fn main() -> anyhow::Result<()> {
         .db_config(DbConfig { host: &host, port });
 
     let out = runtime.block_on(async move {
-        tokio::spawn(async move { metrics::metrics_agent().await });
-
         let instance = builder.build().await?;
         instance.run().await
     });
-
-    // opentelemetry::global::shutdown_tracer_provider();
 
     out
 }
