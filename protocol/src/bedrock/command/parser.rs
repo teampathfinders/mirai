@@ -1,6 +1,8 @@
-use std::{borrow::Cow, cmp::Ordering};
+use std::cmp::Ordering;
 use std::collections::HashMap;
 use std::str::Split;
+
+use util::FastString;
 
 use crate::bedrock::{Command, CommandDataType, CommandOverload};
 
@@ -23,7 +25,7 @@ pub struct ParseError {
     /// Type of error that occurred.
     pub kind: ParseErrorKind,
     /// Information about the error.
-    pub description: Cow<'static, str>,
+    pub description: FastString<'static>,
 }
 
 pub type ParseResult = Result<ParsedCommand, ParseError>;
@@ -122,7 +124,7 @@ impl ParsedCommand {
         } else {
             return Err(ParseError {
                 kind: ParseErrorKind::InvalidSyntax,
-                description: Cow::Borrowed("Command cannot be empty")
+                description: "Command cannot be empty".into()
             })
         };
 
@@ -157,7 +159,7 @@ impl ParsedCommand {
 
         Err(ParseError {
             kind: ParseErrorKind::InvalidSyntax,
-            description: Cow::Owned(format!("Syntax error: {latest_error}"))
+            description: format!("Syntax error: {latest_error}").into()
         })
     }
 }

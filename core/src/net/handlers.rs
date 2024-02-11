@@ -4,7 +4,7 @@ use std::sync::Arc;
 
 use proto::{bedrock::{Animate, CommandOutput, CommandOutputMessage, CommandOutputType, CommandRequest, DisconnectReason, FormResponseData, HudElement, HudVisibility, PlayerAuthInput, RequestAbility, SetHud, SettingsCommand, TextData, TextMessage, TickSync, UpdateSkin}, types::Dimension};
 
-use util::Deserialize;
+use util::{Deserialize, FastSlice};
 
 use super::BedrockUser;
 
@@ -157,16 +157,18 @@ impl BedrockUser {
                     Err(r) => r
                 };
 
+                let messages = vec![CommandOutputMessage {
+                    is_success,
+                    message: data.message,
+                    parameters: FastSlice::Owned(data.parameters)
+                }];
+
                 let output = CommandOutput {
                     success_count: if is_success { 1 } else { 0 },
                     request_id: request.request_id,
                     origin: request.origin,
                     output_type: CommandOutputType::AllOutput,
-                    output: &[CommandOutputMessage {
-                        is_success,
-                        message: &data.message,
-                        parameters: &data.parameters
-                    }]
+                    output: FastSlice::Owned(messages)
                 }; 
 
                 if let Err(err) = self.send(output) {

@@ -44,7 +44,7 @@ mod macros;
 #[macro_use]
 mod error;
 
-mod borrow;
+mod fast;
 
 use std::{
     fmt,
@@ -53,7 +53,7 @@ use std::{
 };
 
 pub use error::*;
-pub use borrow::*;
+pub use fast::*;
 
 pub struct NonCopy<T>(pub T);
 

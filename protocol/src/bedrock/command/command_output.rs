@@ -1,5 +1,5 @@
-use std::borrow::Cow;
-
+use util::FastSlice;
+use util::FastString;
 use uuid::Uuid;
 
 use util::{Serialize, BinaryWrite};
@@ -22,9 +22,9 @@ pub struct CommandOutputMessage<'a> {
     /// is white or red.
     pub is_success: bool,
     /// Message to display in the output.
-    pub message: &'a str,
+    pub message: FastString<'a>,
     /// Parameters to use in the outputted message.
-    pub parameters: &'a [Cow<'a, str>],
+    pub parameters: FastSlice<'a, FastString<'a>>,
 }
 
 /// Returns the output of a command back to the user.
@@ -38,7 +38,7 @@ pub struct CommandOutput<'a> {
     /// How many of the executions were successful.
     pub success_count: u32,
     /// Output(s)
-    pub output: &'a [CommandOutputMessage<'a>],
+    pub output: FastSlice<'a, CommandOutputMessage<'a>>,
 }
 
 impl ConnectedPacket for CommandOutput<'_> {
@@ -62,12 +62,12 @@ impl Serialize for CommandOutput<'_> {
         writer.write_var_u32(self.success_count)?;
 
         writer.write_var_u32(self.output.len() as u32)?;
-        for output in self.output {
+        for output in &*self.output {
             writer.write_bool(output.is_success)?;
-            writer.write_str(output.message)?;
+            writer.write_str(&output.message)?;
 
             writer.write_var_u32(output.parameters.len() as u32)?;
-            for param in output.parameters {
+            for param in &*output.parameters {
                 writer.write_str(param)?;
             }
         }

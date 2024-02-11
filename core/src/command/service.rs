@@ -1,4 +1,4 @@
-use std::{borrow::Cow, sync::{Arc, OnceLock, Weak}, time::Duration};
+use std::{sync::{Arc, OnceLock, Weak}, time::Duration};
 
 use anyhow::Context as _;
 use dashmap::DashMap;
@@ -6,7 +6,7 @@ use parking_lot::RwLock;
 use proto::bedrock::{Command, ParseResult, ParsedCommand};
 use tokio::{sync::{mpsc, oneshot}, task::JoinHandle};
 use tokio_util::sync::CancellationToken;
-use util::{FastSlice, FastString, Joinable};
+use util::{FastString, Joinable};
 
 use crate::instance::Instance;
 
@@ -20,7 +20,7 @@ pub struct CommandOutput {
     // pub message: Cow<'static, str>
     /// Optional parameters used in the command output.
     // pub parameters: Vec<Cow<'static, str>>
-    pub parameters: FastSlice<'static, FastString<'static>>
+    pub parameters: Vec<FastString<'static>>
 }
 
 /// The result of a command execution.
@@ -71,7 +71,7 @@ where
             Err(err) => {
                 return Err(CommandOutput {
                     message: err.description,
-                    parameters: FastSlice::empty()
+                    parameters: Vec::new()
                 })
             }
         };
@@ -212,8 +212,8 @@ impl Service {
                 .next()
                 .ok_or_else(|| {
                     CommandOutput {
-                        message: Cow::Borrowed("Expected command name after /"),
-                        parameters: vec![]
+                        message: "Expected command name after /".into(),
+                        parameters: Vec::new()
                     }
                 })?;
 
@@ -225,8 +225,8 @@ impl Service {
         
         let Some(handler) = self.registry.get(command_name) else {
             return Err(CommandOutput {
-                message: Cow::Owned(format!("Unknown command {command_name}. Make sure the command exists and you have permission to use it.")),
-                parameters: vec![]
+                message: format!("Unknown command {command_name}. Make sure the command exists and you have permission to use it.").into(),
+                parameters: Vec::new()
             })
         };
         

@@ -1,7 +1,6 @@
 use anyhow::anyhow;
 
-use util::{BinaryRead};
-use util::Deserialize;
+use util::{BinaryRead, Deserialize};
 
 use crate::bedrock::ConnectedPacket;
 

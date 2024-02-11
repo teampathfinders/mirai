@@ -1,11 +1,8 @@
 //! Contains the server instance.
 
 use anyhow::Context;
-use proto::types::Dimension;
 use raknet::RaknetCreateInfo;
 
-use std::borrow::Cow;
-use std::collections::HashMap;
 use std::net::{Ipv4Addr, Ipv6Addr, SocketAddrV4, SocketAddrV6};
 use std::sync::Arc;
 use std::time::Duration;
@@ -14,14 +11,12 @@ use tokio::net::UdpSocket;
 
 use tokio_util::sync::CancellationToken;
 
-use util::{Deserialize, Joinable, ReserveTo, Serialize, Vector};
+use util::{Deserialize, Joinable, ReserveTo, Serialize};
 
-use crate::command::{self};
 use crate::config::SERVER_CONFIG;
-use crate::level::SubchunkGetSingle;
 use crate::net::{ForwardablePacket, UserMap};
 use proto::bedrock::{
-    Command, CommandDataType, CommandOverload, CommandParameter, CommandPermissionLevel, CompressionAlgorithm, ParsedCommand, CLIENT_VERSION_STRING, PROTOCOL_VERSION
+    CompressionAlgorithm, CLIENT_VERSION_STRING, PROTOCOL_VERSION
 };
 use proto::raknet::{
     IncompatibleProtocol, OpenConnectionReply1, OpenConnectionReply2, OpenConnectionRequest1, OpenConnectionRequest2, UnconnectedPing,

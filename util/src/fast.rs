@@ -12,8 +12,8 @@ mod private {
     impl Sealed for &str {}
 }
 
-pub trait FastStringValue<'a>: Sized + private::Sealed {
-    const IS_OWNED: bool;
+pub trait IntoFastString<'a>: Sized + private::Sealed {
+    const OWNED: bool;
 
     #[doc(hidden)]
     unsafe fn fsv_cast<T>(self) -> T {
@@ -24,12 +24,12 @@ pub trait FastStringValue<'a>: Sized + private::Sealed {
     }
 }
 
-impl FastStringValue<'_> for String {
-    const IS_OWNED: bool = true;
+impl IntoFastString<'_> for String {
+    const OWNED: bool = true;
 }
 
-impl<'a> FastStringValue<'a> for &'a str {
-    const IS_OWNED: bool = false;
+impl<'a> IntoFastString<'a> for &'a str {
+    const OWNED: bool = false;
 }
 
 #[derive(Clone)]
@@ -39,8 +39,8 @@ pub enum FastString<'a> {
 }
 
 impl<'a> FastString<'a> {
-    pub fn new<V: FastStringValue<'a>>(val: V) -> FastString<'a> {
-        if V::IS_OWNED {
+    pub fn new<V: IntoFastString<'a>>(val: V) -> FastString<'a> {
+        if V::OWNED {
             let owned = unsafe { val.fsv_cast::<String>() };
             FastString::Owned(owned)
         } else {
@@ -54,6 +54,14 @@ impl<'a> FastString<'a> {
             FastString::Owned(v) => &v,
             FastString::Borrowed(v) => v
         }
+    }
+}
+
+impl<'a> Deref for FastString<'a> {
+    type Target = str;
+
+    fn deref(&self) -> &str {
+        self.get()
     }
 }
 
@@ -96,8 +104,8 @@ impl<'a> From<FastString<'a>> for Cow<'a, str> {
     }
 }
 
-pub trait FastSliceValue<'a, T>: Sized + private::Sealed {
-    const IS_OWNED: bool;
+pub trait IntoFastSlice<'a, T>: Sized + private::Sealed {
+    const OWNED: bool;
 
     #[doc(hidden)]
     unsafe fn fsv_cast<C>(self) -> C {
@@ -120,8 +128,8 @@ impl<'a, T> FastSlice<'a, T>
 where
     [T]: ToOwned
 {
-    pub fn new<V: FastSliceValue<'a, T>>(val: V) -> FastSlice<'a, T> {
-        if V::IS_OWNED {
+    pub fn new<V: IntoFastSlice<'a, T>>(val: V) -> FastSlice<'a, T> {
+        if V::OWNED {
             let owned = unsafe { val.fsv_cast::<<[T] as ToOwned>::Owned>() };
             FastSlice::Owned(owned)
         } else {
@@ -130,15 +138,26 @@ where
         }
     }
 
-    pub fn empty() -> FastSlice<'a, T> {
+    /// Creates an empty borrowed slice.
+    pub fn empty() -> FastSlice<'static, T> {
         FastSlice::Borrowed(&[])
     }
 
-    pub fn get(&'a self) -> &'a [T] {
+    /// Gets the inner value of the slice.
+    pub fn get(&'a self, idx: usize) -> Option<&'a T> {
         match self {
-            FastSlice::Owned(v) => v.borrow(),
-            FastSlice::Borrowed(v) => v
+            FastSlice::Owned(v) => v.borrow().get(idx),
+            FastSlice::Borrowed(v) => v.get(idx)
         }
+    }
+}
+
+impl<'a, T> Clone for FastSlice<'a, T> 
+where
+    [T]: ToOwned
+{
+    fn clone(&self) -> FastSlice<'a, T> {
+        self.to_owned()
     }
 }
 
@@ -170,6 +189,15 @@ where
     }
 }
 
+impl<'a, T> From<&'a [T]> for FastSlice<'a, T> 
+where
+    [T]: ToOwned
+{
+    fn from(value: &'a [T]) -> FastSlice<'a, T> {
+        FastSlice::Borrowed(value)
+    }
+}
+
 impl<'a, T, const N: usize> From<&'a [T; N]> for FastSlice<'a, T> 
 where
     [T]: ToOwned
@@ -178,6 +206,15 @@ where
         FastSlice::Borrowed(value)
     }
 }
+
+// impl<T> From<<[T] as ToOwned>::Owned> for FastSlice<'static, T>
+// where
+//     [T]: ToOwned
+// {
+//     fn from(value: <[T] as ToOwned>::Owned) -> FastSlice<'static, T> {
+//         FastSlice::Owned(value)
+//     }
+// }
 
 impl<'a, T> From<FastSlice<'a, T>> for Cow<'a, [T]> 
 where
