@@ -6,7 +6,7 @@ use std::time::Duration;
 use anyhow::Context;
 use dashmap::DashMap;
 
-use raknet::{BroadcastPacket, RaknetCommand, RaknetCreateInfo, RaknetUser};
+use raknet::{BroadcastPacket, RaknetCreateInfo, RaknetUser};
 
 use tokio::sync::{broadcast, mpsc};
 use proto::bedrock::{ConnectedPacket, Disconnect, DisconnectReason};
@@ -16,7 +16,7 @@ use replicator::Replicator;
 use tokio::task::JoinSet;
 use util::{Joinable, Serialize};
 
-use crate::command;
+
 use crate::config::SERVER_CONFIG;
 
 use super::{ForwardablePacket, BedrockUser};

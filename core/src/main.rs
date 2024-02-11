@@ -5,8 +5,8 @@ use std::sync::atomic::{AtomicU16, Ordering};
 use anyhow::Context;
 use tokio::runtime::{self, Handle};
 
-use lazy_static::lazy_static;
-use prometheus_client::registry::Registry;
+
+
 
 use inferno::instance::{DbConfig, InstanceBuilder, NetConfig};
 

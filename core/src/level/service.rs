@@ -1,7 +1,7 @@
 use std::{any::TypeId, sync::{Arc, OnceLock, Weak}};
 
-use dashmap::{DashMap, DashSet};
-use parking_lot::RwLock;
+
+
 use proto::{bedrock::GameRule, types::Dimension};
 use tokio::sync::{mpsc, oneshot};
 use tokio_util::sync::CancellationToken;
@@ -127,7 +127,7 @@ impl Service {
     }
     
     pub fn get<R: ExpensiveRequestable>(&self, request: R) -> anyhow::Result<oneshot::Receiver<anyhow::Result<R::Output>>> {
-        let (sender, receiver) = oneshot::channel();
+        let (_sender, receiver) = oneshot::channel();
 
         match R::VARIANT {
             RequestableVariant::MultiGet => {
@@ -144,23 +144,23 @@ impl Service {
     }
 
     /// Sets the new value of a game rule and returns the old value if there was one.
-    pub fn set_gamerule(&self, val: GameRule) -> Option<GameRule> {
+    pub fn set_gamerule(&self, _val: GameRule) -> Option<GameRule> {
         // Gamerules need rework before finishing this.
         todo!()
     } 
 
-    pub fn gamerule<S: AsRef<str>>(&self, name: S) -> GameRule {
+    pub fn gamerule<S: AsRef<str>>(&self, _name: S) -> GameRule {
         // Gamerules need rework before finishing this.
         todo!()
     }
 
     /// Loads a single subchunk.
-    fn load_single(&self, request: SubchunkGetSingle) {
+    fn load_single(&self, _request: SubchunkGetSingle) {
         todo!();
     }
 
     /// Loads multiple subchunks around a center.
-    fn load_multi(&self, request: SubchunkGetMulti) {
+    fn load_multi(&self, _request: SubchunkGetMulti) {
         todo!();
     }
 }

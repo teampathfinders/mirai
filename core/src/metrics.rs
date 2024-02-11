@@ -25,7 +25,7 @@ fn register_metrics() -> Registry {
 
 #[tracing::instrument]
 pub async fn metrics_agent() -> anyhow::Result<()> {
-    let registry = Arc::new(register_metrics());
+    let _registry = Arc::new(register_metrics());
     let listener = TcpListener::bind("0.0.0.0:9090").await?;
 
     let (stream, _) = listener.accept().await?;

@@ -1,4 +1,4 @@
-use std::{borrow::{Borrow, BorrowMut, Cow}, fmt::{self, Debug}, ops::{Deref, DerefMut}};
+use std::{borrow::{Borrow, Cow}, fmt::{self, Debug}, ops::{Deref}};
 
 enum FastStringData<'a> {
     Owned(String),
