@@ -14,7 +14,7 @@ use replicator::Replicator;
 
 
 use tokio::task::JoinSet;
-use util::{Joinable, Serialize};
+use util::{BVec, Joinable, Serialize};
 
 
 use crate::config::SERVER_CONFIG;
@@ -26,7 +26,7 @@ const FORWARD_TIMEOUT: Duration = Duration::from_millis(10);
 
 /// Contains the user state itself and a method to contact the user.
 pub struct UserMapEntry<T> {
-    channel: mpsc::Sender<Vec<u8>>,
+    channel: mpsc::Sender<BVec>,
     state: Arc<T>
 }
 
@@ -34,7 +34,7 @@ impl<T> UserMapEntry<T> {
     /// Forwards a packet to the user for processing.
     #[inline]
     #[allow(clippy::future_not_send)]
-    pub async fn forward(&self, packet: Vec<u8>) -> anyhow::Result<()> {
+    pub async fn forward(&self, packet: BVec) -> anyhow::Result<()> {
         self.channel.send_timeout(packet, FORWARD_TIMEOUT).await.context("Server-side client timed out")?;
         Ok(())
     }

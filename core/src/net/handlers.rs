@@ -4,13 +4,13 @@ use std::sync::Arc;
 
 use proto::{bedrock::{Animate, CommandOutput, CommandOutputMessage, CommandOutputType, CommandRequest, DisconnectReason, FormResponseData, HudElement, HudVisibility, PlayerAuthInput, RequestAbility, SetHud, SettingsCommand, TextData, TextMessage, TickSync, UpdateSkin}};
 
-use util::{Deserialize, FastSlice};
+use util::{BVec, Deserialize, FastSlice};
 
 use super::BedrockUser;
 
 impl BedrockUser {
     /// Handles a [`SettingsCommand`] packet used to adjust a world setting.
-    pub fn handle_settings_command(&self, packet: Vec<u8>) -> anyhow::Result<()> {
+    pub fn handle_settings_command(&self, packet: BVec) -> anyhow::Result<()> {
         let request = SettingsCommand::deserialize(packet.as_ref())?;
         tracing::debug!("{request:?}");
 
@@ -18,7 +18,7 @@ impl BedrockUser {
     }
 
     /// Handles a [`TickSync`] packet used to synchronise ticks between the client and server.
-    pub fn handle_tick_sync(&self, packet: Vec<u8>) -> anyhow::Result<()> {
+    pub fn handle_tick_sync(&self, packet: BVec) -> anyhow::Result<()> {
         let _request = TickSync::deserialize(packet.as_ref())?;
         // TODO: Implement tick synchronisation
         Ok(())
@@ -38,7 +38,7 @@ impl BedrockUser {
             msg
         )
     )]
-    pub async fn handle_text_message(self: &Arc<Self>, packet: Vec<u8>) -> anyhow::Result<()> {
+    pub async fn handle_text_message(self: &Arc<Self>, packet: BVec) -> anyhow::Result<()> {
         let request = TextMessage::deserialize(packet.as_ref())?;
         if let TextData::Chat {
             source, message
@@ -66,7 +66,7 @@ impl BedrockUser {
 
     /// Handles a [`PlayerAuthInput`] packet. These are sent every tick and are used
     /// for server authoritative player movement.
-    pub fn handle_auth_input(&self, packet: Vec<u8>) -> anyhow::Result<()> {
+    pub fn handle_auth_input(&self, packet: BVec) -> anyhow::Result<()> {
         let input = PlayerAuthInput::deserialize(packet.as_ref())?;
         if input.input_data.0 != 0 {
             tracing::debug!("{:?}", input.input_data);
@@ -76,14 +76,14 @@ impl BedrockUser {
     }
 
     /// Handles an [`UpdateSkin`] packet.
-    pub fn handle_skin_update(&self, packet: Vec<u8>) -> anyhow::Result<()> {
+    pub fn handle_skin_update(&self, packet: BVec) -> anyhow::Result<()> {
         let request = UpdateSkin::deserialize(packet.as_ref())?;
         tracing::debug!("{request:?}");
         self.broadcast(request)
     }
 
     /// Handles an [`AbilityRequest`] packet.
-    pub fn handle_ability_request(&self, packet: Vec<u8>) -> anyhow::Result<()> {
+    pub fn handle_ability_request(&self, packet: BVec) -> anyhow::Result<()> {
         let request = RequestAbility::deserialize(packet.as_ref())?;
         tracing::debug!("{request:?}");
         
@@ -91,7 +91,7 @@ impl BedrockUser {
     }
 
     /// Handles an [`Animation`] packet.
-    pub fn handle_animation(&self, packet: Vec<u8>) -> anyhow::Result<()> {
+    pub fn handle_animation(&self, packet: BVec) -> anyhow::Result<()> {
         let request = Animate::deserialize(packet.as_ref())?;
 
         self.send(SetHud {
@@ -110,7 +110,7 @@ impl BedrockUser {
     /// # Errors
     /// 
     /// May return an error if the packet fails to deserialize or handling a form response fails.
-    pub fn handle_form_response(&self, packet: Vec<u8>) -> anyhow::Result<()> {
+    pub fn handle_form_response(&self, packet: BVec) -> anyhow::Result<()> {
         let response = FormResponseData::deserialize(packet.as_ref())?;
         self.forms.handle_response(response)
     }
@@ -128,7 +128,7 @@ impl BedrockUser {
             username = self.name().unwrap_or("<unknown>")
         )
     )]
-    pub fn handle_command_request(self: Arc<Self>, packet: Vec<u8>) {
+    pub fn handle_command_request(self: Arc<Self>, packet: BVec) {
         // Command execution could take several ticks, await the result in a separate task
         // to avoid blocking the request handler.
         let endpoint = self.commands.clone();

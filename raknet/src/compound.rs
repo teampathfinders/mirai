@@ -1,6 +1,7 @@
 use std::io::Write;
 
 use dashmap::DashMap;
+use util::Reusable;
 
 use crate::Frame;
 
@@ -79,7 +80,7 @@ impl Compounds {
             }
 
             let mut frame = fragments[0].take().unwrap();
-            frame.body = merged;
+            frame.body = Reusable::from(merged);
 
             // Set compound tag to false to make sure the completed packet isn't added into the
             // collector again.

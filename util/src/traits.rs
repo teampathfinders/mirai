@@ -1,4 +1,4 @@
-use crate::{BinaryRead, BinaryWrite};
+use crate::{BVec, BinaryRead, BinaryWrite, Reusable};
 use std::{fmt::Debug, future::Future};
 
 /// Trait that describes an object that can be serialised from raw bytes.
@@ -11,9 +11,9 @@ pub trait Serialize {
     fn size_hint(&self) -> Option<usize> { None }
 
     /// Serializes the object into binary format.
-    fn serialize(&self) -> anyhow::Result<Vec<u8>> {
+    fn serialize(&self) -> anyhow::Result<BVec> {
         let cap = self.size_hint().unwrap_or(0);
-        let mut writer = Vec::with_capacity(cap);
+        let mut writer = Reusable::from(Vec::with_capacity(cap));
 
         self.serialize_into(&mut writer)?;
 
@@ -63,7 +63,7 @@ pub trait ReserveTo {
     fn reserve_to(&mut self, capacity: usize);
 }
 
-impl ReserveTo for Vec<u8> {
+impl<T> ReserveTo for Vec<T> {
     fn reserve_to(&mut self, capacity: usize) {
         self.reserve(capacity - self.len());
     }

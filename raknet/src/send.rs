@@ -3,7 +3,7 @@ use std::sync::atomic::Ordering;
 use async_recursion::async_recursion;
 use proto::raknet::{Ack, AckEntry};
 
-use util::Serialize;
+use util::{BVec, Reusable, Serialize};
 
 use crate::{SendPriority, RaknetUser, Reliability, Frame, FrameBatch};
 
@@ -26,7 +26,7 @@ impl RaknetUser {
     /// (reliable ordered and medium priority).
     pub fn send_raw_buffer<B>(&self, buffer: B)
         where
-            B: Into<Vec<u8>>
+            B: Into<BVec>
     {
         self.send_raw_buffer_with_config(buffer, DEFAULT_SEND_CONFIG);
     }
@@ -36,7 +36,7 @@ impl RaknetUser {
         &self,
         buffer: B,
         config: SendConfig,
-    ) where B: Into<Vec<u8>> {
+    ) where B: Into<BVec> {
         let buffer = buffer.into();
         self.send.insert_raw(
             config.priority,
@@ -272,7 +272,7 @@ impl RaknetUser {
                 compound_index: i as u32,
                 compound_size: compound_size as u32,
                 compound_id,
-                body: chunk.to_owned(),
+                body: Reusable::from(chunk.to_owned()),
                 ..Default::default()
             };
 

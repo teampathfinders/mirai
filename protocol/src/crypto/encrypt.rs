@@ -15,7 +15,7 @@ use rand::rngs::OsRng;
 use rand::Rng;
 use sha2::{Digest, Sha256};
 
-use util::{BinaryWrite, ExposeSecret, Secret};
+use util::{BVec, BinaryWrite, ExposeSecret, Secret};
 
 
 type Aes256CtrBE = ctr::Ctr64BE<aes::Aes256>;
@@ -147,7 +147,7 @@ impl Encryptor {
         skip_all,
         name = "Encryptor::decrypt"
     )]
-    pub fn decrypt(&self, reader: &mut Vec<u8>) -> anyhow::Result<()> {
+    pub fn decrypt(&self, reader: &mut BVec) -> anyhow::Result<()> {
         if reader.len() < 9 {
             tracing::error!("The encrypted buffer is too small to contain any data");
             anyhow::bail!("Encrypted buffer must be at least 9 bytes, received {}", reader.len());
@@ -166,7 +166,8 @@ impl Encryptor {
         }
 
         // Remove checksum from data.
-        reader.truncate(reader.len() - 8);
+        let len = reader.len();
+        reader.truncate(len - 8);
 
         Ok(())
     }

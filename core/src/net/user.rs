@@ -22,7 +22,7 @@ use proto::uuid::Uuid;
 use replicator::Replicator;
 
 use tokio::task::JoinHandle;
-use util::{AtomicFlag, BinaryRead, BinaryWrite, Deserialize, Joinable, Serialize, Vector};
+use util::{AtomicFlag, BVec, BinaryRead, BinaryWrite, Deserialize, Joinable, Reusable, Serialize, Vector};
 
 
 use crate::config::SERVER_CONFIG;
@@ -315,7 +315,7 @@ impl BedrockUser {
     /// 
     /// After processing, this function sends the processed packet to [`handle_frame_body`](Self::handle_frame_body)
     /// function,
-    async fn handle_encrypted_frame(self: &Arc<Self>, mut packet: Vec<u8>) -> anyhow::Result<()> {
+    async fn handle_encrypted_frame(self: &Arc<Self>, mut packet: BVec) -> anyhow::Result<()> {
         let timestamp = Instant::now();
 
         if packet[0] != 0xfe {
@@ -341,7 +341,7 @@ impl BedrockUser {
                     CompressionAlgorithm::Flate => {
                         let mut reader = flate2::read::DeflateDecoder::new(packet.as_slice());
 
-                        let mut decompressed = Vec::new();
+                        let mut decompressed = Reusable::from(Vec::new());
                         reader.read_to_end(&mut decompressed)?;
                         self.handle_frame_body(decompressed).await
                     },
@@ -369,13 +369,14 @@ impl BedrockUser {
             username = self.name().unwrap_or("<unknown>")
         )
     )]
-    async fn handle_frame_body(self: &Arc<Self>, mut packet: Vec<u8>) -> anyhow::Result<()> {
+    async fn handle_frame_body(self: &Arc<Self>, mut packet: BVec) -> anyhow::Result<()> {
         let start_len = packet.len();
         let mut reader: &[u8] = packet.as_ref();
         let _length = reader.read_var_u32()?;
         let header = Header::deserialize_from(&mut reader)?;
 
-        packet.drain(0..(start_len - reader.remaining()));
+        let remaining = reader.remaining();
+        packet.drain(0..(start_len - remaining));
 
         let expected = self.expected();
         if expected != u32::MAX && header.id != expected {

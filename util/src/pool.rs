@@ -1,4 +1,4 @@
-use std::{io::Write, ops::{Deref, DerefMut}};
+use std::{fmt::{self, Debug}, io::Write, ops::{Deref, DerefMut}};
 use parking_lot::Mutex;
 
 static BYTE_POOL: Pool<Vec<u8>> = Pool::new();
@@ -42,13 +42,16 @@ impl<T: Poolable> Reusable<T> {
     /// to the pool automatically. Create a new `Reusable` to put it back into the pool.
     #[inline]
     pub fn into_inner(mut self) -> T {
-        std::mem::take(&mut self.inner)
+        let inner = std::mem::take(&mut self.inner);
+        std::mem::forget(self);
+
+        inner
     }
 }
 
 impl Write for Reusable<Vec<u8>> {
     fn write(&mut self, buf: &[u8]) -> std::io::Result<usize> {
-        self.write_all(buf)?;
+        self.inner.write_all(buf)?;
         Ok(buf.len())
     }
 
@@ -63,17 +66,52 @@ impl Write for Reusable<Vec<u8>> {
     }
 }
 
+impl AsRef<[u8]> for Reusable<Vec<u8>> {
+    fn as_ref(&self) -> &[u8] {
+        &self.inner
+    }
+}
+
+impl AsMut<[u8]> for Reusable<Vec<u8>> {
+    fn as_mut(&mut self) -> &mut [u8] {
+        &mut self.inner
+    }
+}
+
+impl<T: Poolable + Debug> Debug for Reusable<T> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        self.inner.fmt(f)
+    }
+}
+
+impl<T: Poolable + PartialEq> PartialEq for Reusable<T> {
+    fn eq(&self, other: &Self) -> bool {
+        self.inner.eq(&other.inner)
+    }
+}
+
+impl<T: Poolable + Eq> Eq for Reusable<T> {}
+
 impl<T: Poolable> Drop for Reusable<T> {
     fn drop(&mut self) {
         self.inner.reset();
 
         let container = std::mem::take(self);
-        T::pool().reuse(container.into_inner())
+        T::pool().reuse(container.into_inner());
+
+        tracing::debug!("Reusable returned to pool");
+    }
+}
+
+impl<T: Poolable + Clone> Clone for Reusable<T> {
+    fn clone(&self) -> Reusable<T> {
+        Reusable::from(self.inner.clone())
     }
 }
 
 impl<T: Poolable> From<T> for Reusable<T> {
     fn from(value: T) -> Self {
+        tracing::debug!("Reusable::from called");
         Reusable { inner: value }
     }
 }

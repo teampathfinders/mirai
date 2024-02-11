@@ -1,13 +1,13 @@
 use std::sync::atomic::Ordering;
 
 use proto::bedrock::{ABILITY_FLYING, AbilityData, AbilityLayer, AbilityType, ContainerClose, ContainerOpen, ContainerType, GameMode, Interact, InteractAction, INVENTORY_WINDOW_ID, MovePlayer, PlayerAction, PlayerActionType, UpdateAbilities, ABILITY_FLAG_END};
-use util::Deserialize;
+use util::{BVec, Deserialize};
 
 use super::BedrockUser;
 
 impl BedrockUser {
     /// Handles an [`Interact`] packet.
-    pub fn handle_interaction(&self, packet: Vec<u8>) -> anyhow::Result<()> {
+    pub fn handle_interaction(&self, packet: BVec) -> anyhow::Result<()> {
         let request = Interact::deserialize(packet.as_ref())?;
       
         if request.action == InteractAction::OpenInventory && !self.player()?.is_inventory_open.fetch_or(true, Ordering::Relaxed) {
@@ -22,7 +22,7 @@ impl BedrockUser {
     }
 
     /// Handles a [`ContainerClose`] packet.
-    pub fn handle_container_close(&self, packet: Vec<u8>) -> anyhow::Result<()> {
+    pub fn handle_container_close(&self, packet: BVec) -> anyhow::Result<()> {
         let request = ContainerClose::deserialize(packet.as_ref())?;
         if request.window_id == INVENTORY_WINDOW_ID {
             self.player()?.is_inventory_open.store(false, Ordering::Relaxed);
@@ -38,7 +38,7 @@ impl BedrockUser {
     }
 
     /// Handles a [`MovePlayer`] packet.
-    pub fn handle_move_player(&self, packet: Vec<u8>) -> anyhow::Result<()> {
+    pub fn handle_move_player(&self, packet: BVec) -> anyhow::Result<()> {
         let _request = MovePlayer::deserialize(packet.as_ref())?;
 
         Ok(())
@@ -50,7 +50,7 @@ impl BedrockUser {
     }
     
     /// Handles a [`PlayerAction`] packet.
-    pub fn handle_player_action(&self, packet: Vec<u8>) -> anyhow::Result<()> {
+    pub fn handle_player_action(&self, packet: BVec) -> anyhow::Result<()> {
         let request = PlayerAction::deserialize(packet.as_ref())?;
         
         match request.action {

@@ -1,11 +1,12 @@
 use std::net::SocketAddr;
 
 use raknet::CONNECTED_PEER_BIT_FLAG;
+use util::BVec;
 
 /// An unprocessed packet.
 pub struct ForwardablePacket {
     /// Buffer received.
-    pub buf: Vec<u8>,
+    pub buf: BVec,
     /// IP address of the client.
     pub addr: SocketAddr,
 }

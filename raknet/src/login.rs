@@ -1,11 +1,11 @@
 use proto::raknet::{ConnectedPing, ConnectedPong, ConnectionRequest, ConnectionRequestAccepted, NewIncomingConnection};
-use util::{Deserialize, Serialize, ReserveTo};
+use util::{BVec, Deserialize, ReserveTo, Serialize};
 
 use crate::{RaknetUser, Reliability, SendPriority, SendConfig};
 
 impl RaknetUser {
     /// Handles a [`ConnectionRequest`] packet.
-    pub fn handle_connection_request(&self, mut packet: Vec<u8>) -> anyhow::Result<()> {
+    pub fn handle_connection_request(&self, mut packet: BVec) -> anyhow::Result<()> {
         let request = ConnectionRequest::deserialize(packet.as_ref())?;
 
         #[cfg(trace_raknet)]
@@ -25,7 +25,7 @@ impl RaknetUser {
     }
 
     /// Handles a [`NewIncomingConnection`] packet.
-    pub fn handle_new_incoming_connection(&self, packet: Vec<u8>) -> anyhow::Result<()> {
+    pub fn handle_new_incoming_connection(&self, packet: BVec) -> anyhow::Result<()> {
         let _request = NewIncomingConnection::deserialize(packet.as_ref())?;
 
         #[cfg(trace_raknet)]
@@ -35,7 +35,7 @@ impl RaknetUser {
     }
 
     /// Handles an [`ConnectedPing`] packet.
-    pub fn handle_connected_ping(&self, mut packet: Vec<u8>) -> anyhow::Result<()> {
+    pub fn handle_connected_ping(&self, mut packet: BVec) -> anyhow::Result<()> {
         let ping = ConnectedPing::deserialize(packet.as_ref())?;
 
         #[cfg(trace_raknet)]

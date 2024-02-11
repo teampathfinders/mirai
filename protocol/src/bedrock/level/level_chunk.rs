@@ -1,4 +1,4 @@
-use util::{Vector, BinaryWrite, Serialize};
+use util::{BVec, BinaryWrite, Serialize, Vector};
 
 use crate::bedrock::ConnectedPacket;
 
@@ -27,7 +27,7 @@ pub struct LevelChunk {
     /// This should be set to None if the client does not support the blob cache.
     pub blob_hashes: Option<Vec<u64>>,
     /// Raw chunk data.
-    pub raw_payload: Vec<u8>,
+    pub raw_payload: BVec,
 }
 
 impl ConnectedPacket for LevelChunk {

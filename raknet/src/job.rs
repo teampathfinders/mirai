@@ -5,6 +5,7 @@ use std::{
 
 use prometheus_client::metrics::counter::Counter;
 use tokio::sync::{mpsc, TryAcquireError};
+use util::BVec;
 
 use crate::{RaknetCommand, RaknetUser};
 
@@ -38,7 +39,7 @@ impl RaknetUser {
         )
     )]
     pub async fn receiver(
-        self: Arc<Self>, mut receiver: mpsc::Receiver<Vec<u8>>
+        self: Arc<Self>, mut receiver: mpsc::Receiver<BVec>
     ) {
         let mut interval = tokio::time::interval(INTERNAL_TICK_INTERVAL);
 
