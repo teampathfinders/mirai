@@ -83,16 +83,15 @@ fn init_logging() -> anyhow::Result<()> {
 /// Initialises logging without tokio-console.
 #[cfg(not(feature = "tokio-console"))]
 fn init_logging(_handle: &Handle) -> anyhow::Result<()> {
-    use std::str::FromStr;
-    use tracing_subscriber::filter::LevelFilter;
     use tracing_subscriber::layer::SubscriberExt;
     use tracing_subscriber::util::SubscriberInitExt;
+    use tracing_subscriber::EnvFilter;
 
-    let level_filter = LevelFilter::from_str(
-        &std::env::vars()
-            .find_map(|(k, v)| if k == "LOG_LEVEL" { Some(v) } else { None })
-            .unwrap_or(String::from("info")),
-    )?;
+    let requested_level = std::env::vars()
+        .find_map(|(k, v)| if k == "LOG_LEVEL" { Some(v) } else { None })
+        .unwrap_or(String::from("info"));
+
+    let env_filter = EnvFilter::new(format!("inferno={requested_level}"));
 
     let fmt = tracing_subscriber::fmt::layer()
         .with_target(false)
@@ -103,7 +102,7 @@ fn init_logging(_handle: &Handle) -> anyhow::Result<()> {
         .pretty();
 
     tracing_subscriber::registry()
-        .with(level_filter)
+        .with(env_filter)
         .with(fmt)
         .try_init()
         .context("Failed to register tracing subscriber")?;

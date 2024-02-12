@@ -1,6 +1,7 @@
 //! Contains the server instance.
 
 use anyhow::Context;
+use proto::xbox::XboxService;
 use raknet::RaknetCreateInfo;
 
 use std::net::{Ipv4Addr, Ipv6Addr, SocketAddrV4, SocketAddrV6};
@@ -204,6 +205,9 @@ impl<'a> InstanceBuilder<'a> {
             Instance::SERVER_VERSION,
             Instance::GIT_REV
         );
+
+        let xbox_service = XboxService::new();
+        xbox_service.request_live_token().await?;
 
         let ipv4_socket = UdpSocket::bind(self.net_config.ipv4_addr)
             .await

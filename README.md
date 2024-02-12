@@ -37,3 +37,4 @@ If you do not plan on connecting to a server on the same PC, this is not necessa
 This project is licensed under the Apache 2.0 license.
 LevelDB is licensed under [BSD-3 license](https://github.com/teampathfinders/leveldb/blob/master/LICENSE).
 
+This project is not affiliated with Microsoft or Mojang AB.
