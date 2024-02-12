@@ -206,8 +206,9 @@ impl<'a> InstanceBuilder<'a> {
             Instance::GIT_REV
         );
 
-        let xbox_service = XboxService::new();
-        xbox_service.request_live_token().await?;
+        let xbox_service = XboxService::new()?;
+        // let live_token = xbox_service.fetch_live_token().await?;
+        let xbox_token = xbox_service.fetch_minecraft_token().await?;
 
         let ipv4_socket = UdpSocket::bind(self.net_config.ipv4_addr)
             .await

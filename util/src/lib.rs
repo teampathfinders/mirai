@@ -88,10 +88,31 @@ impl<T: Zeroize, const N: usize> Zeroize for [T; N] {
     }
 }
 
+impl<T: Zeroize> Zeroize for &mut [T] {
+    #[inline]
+    fn zeroize(&mut self) {
+        self.iter_mut().for_each(T::zeroize);
+    }
+}
+
 impl Zeroize for AtomicU64 {
     #[inline]
     fn zeroize(&mut self) {
         self.store(0, Ordering::SeqCst);
+    }
+}
+
+impl<T: Zeroize> Zeroize for Vec<T> {
+    #[inline]
+    fn zeroize(&mut self) {
+        (self.as_mut_slice()).zeroize();
+    }
+}
+
+impl Zeroize for String {
+    #[inline]
+    fn zeroize(&mut self) {
+        unsafe { self.as_mut_vec() }.zeroize()
     }
 }
 

@@ -3,6 +3,7 @@
 use std::time::{Duration, Instant};
 
 use reqwest::StatusCode;
+use util::Secret;
 
 use super::XboxService;
 
@@ -32,6 +33,7 @@ struct LivePollResponse {
 }
 
 pub struct LiveToken {
+    pub user_id: String,
     pub expires_at: Instant,
     pub access_token: String,
     pub refresh_token: String
@@ -45,7 +47,7 @@ impl LiveToken {
 
 impl XboxService {
     /// Requests a live token from Microsoft.
-    pub async fn request_live_token(&self) -> anyhow::Result<LiveToken> {
+    pub async fn fetch_live_token(&self) -> anyhow::Result<LiveToken> {
         let request = self.http_client
             .post(LIVE_DEVICE_CODE_URL)
             .form(&[
@@ -77,6 +79,7 @@ impl XboxService {
         tracing::info!("Succesfully logged into Microsoft services");
 
         Ok(LiveToken {
+            user_id: poll_response.user_id,
             expires_at: Instant::now() + Duration::from_secs(poll_response.expires_in),
             access_token: poll_response.access_token,
             refresh_token: poll_response.refresh_token
