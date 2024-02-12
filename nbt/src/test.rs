@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 
 use serde::{Deserialize, Serialize};
+use util::BVec;
 
 use crate::ser::to_be_bytes;
 use crate::{from_be_bytes, from_le_bytes, from_var_bytes, to_le_bytes, to_var_bytes, Value};
@@ -43,7 +44,7 @@ fn read_write_all() {
         ("long".to_owned(), Value::Long(42)),
         ("float".to_owned(), Value::Float(42.0)),
         ("double".to_owned(), Value::Double(42.0)),
-        ("byte_array".to_owned(), Value::ByteArray(vec![1, 2, 3])),
+        ("byte_array".to_owned(), Value::ByteArray(BVec::alloc_from_slice(&[1, 2, 3]))),
         ("string".to_owned(), Value::String("Hello, World!".to_owned())),
         (
             "list".to_owned(),
