@@ -6,7 +6,7 @@ use std::ops::{Index, IndexMut};
 
 use serde::{Deserialize, Serialize};
 
-use util::{BVec, Reusable, Vector};
+use util::{BVec, Vector};
 use util::{BinaryRead, BinaryWrite};
 
 use crate::PackedArrayReturn;
@@ -66,7 +66,7 @@ mod block_version {
 }
 
 /// Definition of block in the sub chunk block palette.
-#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
+#[derive(Debug, PartialEq, Eq, Deserialize, Serialize)]
 #[serde(rename = "")]
 pub struct PaletteEntry {
     /// Name of the block.
@@ -397,7 +397,7 @@ impl SubChunk {
 
     /// Serialises the sub chunk into a new buffer and returns the buffer.
     pub fn serialize_disk(&self) -> anyhow::Result<BVec> {
-        let mut buffer = Reusable::from(Vec::new());
+        let mut buffer = BVec::alloc();
         self.serialize_disk_in(&mut buffer)?;
         Ok(buffer)
     }

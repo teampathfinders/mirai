@@ -134,7 +134,7 @@ impl PlayerMovementSettings {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct BlockEntry {
     /// Name of the block.
     pub name: String,
@@ -218,7 +218,7 @@ impl BroadcastIntent {
 }
 
 /// The start game packet contains most of the world settings displayed in the settings menu.
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct StartGame<'a> {
     pub entity_id: i64,
     /// Runtime ID of the client.

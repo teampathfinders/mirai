@@ -3,7 +3,7 @@ use std::sync::atomic::Ordering;
 use async_recursion::async_recursion;
 use proto::raknet::{Ack, AckEntry};
 
-use util::{BVec, Reusable, Serialize};
+use util::{BVec, Serialize};
 
 use crate::{SendPriority, RaknetUser, Reliability, Frame, FrameBatch};
 
@@ -130,7 +130,7 @@ impl RaknetUser {
         }
 
         let ack = Ack { records };
-        let mut serialized = Vec::with_capacity(ack.serialized_size());
+        let mut serialized = BVec::alloc_with_capacity(ack.serialized_size());
         ack.serialize_into(&mut serialized)?;
 
         self
@@ -272,7 +272,7 @@ impl RaknetUser {
                 compound_index: i as u32,
                 compound_size: compound_size as u32,
                 compound_id,
-                body: Reusable::alloc_from_slice(chunk),
+                body: BVec::alloc_from_slice(chunk),
                 ..Default::default()
             };
 

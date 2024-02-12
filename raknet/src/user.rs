@@ -11,7 +11,7 @@ use crate::{BroadcastPacket, Compounds, OrderChannel, Recovery, Reliability, Sen
 const ORDER_CHANNEL_COUNT: usize = 5;
 const OUTPUT_CHANNEL_SIZE: usize = 5;
 /// A command that the Raknet layer will send to its parent.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq)]
 pub enum RaknetCommand {
     /// The client has exhausted its budget and should be disconnected.
     /// An exhausted budget might be the result of a DOS attack.

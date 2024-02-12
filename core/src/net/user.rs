@@ -168,12 +168,14 @@ impl BedrockUser {
             let header = Header {
                 id: packet.id, sender_subclient: 0, target_subclient: 0
             };
+
+            let size_hint = header.size_hint().unwrap() + packet.content.len();
     
-            let mut body = Vec::new();
+            let mut body = BVec::alloc_with_capacity(size_hint);
             header.serialize_into(&mut body)?;
             body.write_all(&packet.content)?;
     
-            let mut full = Vec::with_capacity(body.len() + 5);
+            let mut full = BVec::alloc_with_capacity(body.len() + 5);
             full.write_var_u32(body.len() as u32)?;
             full.write_all(&body)?;
 
@@ -247,11 +249,15 @@ impl BedrockUser {
             id: T::ID, sender_subclient: 0, target_subclient: 0
         };
 
-        let mut body = Vec::new();
+        let size_hint = 
+            header.size_hint().unwrap() + 
+            packet.size_hint().unwrap_or(0);
+
+        let mut body = BVec::alloc_with_capacity(size_hint);
         header.serialize_into(&mut body)?;
         packet.serialize_into(&mut body)?;
 
-        let mut full = Vec::with_capacity(body.len() + 5);
+        let mut full = BVec::alloc_with_capacity(body.len() + 5);
         full.write_var_u32(body.len() as u32)?;
         full.write_all(&body)?;
 
@@ -263,7 +269,7 @@ impl BedrockUser {
         where
             B: AsRef<[u8]>
     {
-        let mut out = Vec::new();
+        let mut out;
         if self.should_decompress.get() {
             let (algorithm, threshold) = {
                 let config = SERVER_CONFIG.read();
@@ -277,11 +283,13 @@ impl BedrockUser {
                         unimplemented!("Snappy compression");
                     }
                     CompressionAlgorithm::Flate => {
-                        let mut writer = DeflateEncoder::new(Vec::new(), Compression::best());
+                        let writer_inner = BVec::alloc_with_capacity(packet.as_ref().len());
+                        let mut writer = DeflateEncoder::new(writer_inner, Compression::best());
 
                         writer.write_all(packet.as_ref())?;
                         let compressed_body = writer.finish()?;
 
+                        out = BVec::alloc_with_capacity(1 + 1 + compressed_body.len());
                         out.write_u8(CONNECTED_PACKET_ID)?;
                         out.write_u8(algorithm as u8)?;
                         out.write_all(&compressed_body)?;
@@ -290,14 +298,14 @@ impl BedrockUser {
             } else {
                 // Also reserve capacity for checksum even if encryption is disabled,
                 // preventing allocations.
-                out = Vec::with_capacity(1 + packet.as_ref().len() + 8);
+                out = BVec::alloc_with_capacity(1 + packet.as_ref().len() + 8);
                 out.write_u8(CONNECTED_PACKET_ID)?;
                 out.write_all(packet.as_ref())?;
             }
         } else {
             // Also reserve capacity for checksum even if encryption is disabled,
             // preventing allocations.
-            out = Vec::with_capacity(1 + packet.as_ref().len() + 8);
+            out = BVec::alloc_with_capacity(1 + packet.as_ref().len() + 8);
             out.write_u8(CONNECTED_PACKET_ID)?;
             out.write_all(packet.as_ref())?;
         };
@@ -342,9 +350,7 @@ impl BedrockUser {
                 match algorithm {
                     CompressionAlgorithm::Flate => {
                         let mut reader = flate2::read::DeflateDecoder::new(packet.as_slice());
-                        tracing::debug!("Decompressed to {}", reader.total_out());
-
-                        let mut decompressed = BVec::alloc_with_capacity(reader.total_out() as usize);
+                        let mut decompressed = BVec::alloc_with_capacity(packet.len() * 2);
                         
                         reader.read_to_end(&mut decompressed)?;
                         self.handle_frame_body(decompressed).await

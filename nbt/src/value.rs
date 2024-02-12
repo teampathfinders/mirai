@@ -5,12 +5,13 @@ use std::hash::{Hash, Hasher};
 use serde::de::{MapAccess, SeqAccess, Visitor};
 use serde::ser::{SerializeMap, SerializeSeq};
 use serde::{de, Deserialize, Deserializer, Serialize, Serializer};
+use util::BVec;
 
 /// General NBT value type that can represent any value.
 ///
 /// In case the structure of some piece of NBT data is not known, this
 /// type can be used to deserialise it.
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub enum Value {
     /// A signed byte.
     Byte(i8),
@@ -29,7 +30,7 @@ pub enum Value {
     /// This type is not used when deserialising due to issues with `serde`.
     /// In case you are defining your own types, you can use [`serde_bytes`](https://crates.io/crates/serde_bytes)
     /// to make use of the byte array type.
-    ByteArray(Vec<u8>),
+    ByteArray(BVec),
     /// A UTF-8 string.
     String(String),
     /// List of an arbitrary NBT value.
@@ -270,7 +271,7 @@ impl PartialEq<Value> for Value {
             Value::Long(lhs) => rhs.as_i64().map_or(false, |rhs| *lhs == rhs),
             Value::Float(lhs) => rhs.as_f32().map_or(false, |rhs| *lhs == rhs),
             Value::Double(lhs) => rhs.as_f64().map_or(false, |rhs| *lhs == rhs),
-            Value::ByteArray(lhs) => rhs.as_u8_array().map_or(false, |rhs| lhs == rhs),
+            Value::ByteArray(lhs) => rhs.as_u8_array().map_or(false, |rhs| lhs.as_slice() == rhs),
             Value::String(lhs) => rhs.as_string().map_or(false, |rhs| lhs == rhs),
             Value::List(lhs) => rhs.as_list().map_or(false, |rhs| lhs == rhs),
             Value::Compound(lhs) => rhs.as_compound().map_or(false, |rhs| lhs == rhs),
@@ -703,7 +704,7 @@ impl<'de> Visitor<'de> for ValueVisitor {
     where
         E: de::Error,
     {
-        Ok(Value::ByteArray(v))
+        Ok(Value::ByteArray(BVec::from(v)))
     }
 
     #[inline]

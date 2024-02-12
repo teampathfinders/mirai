@@ -1,4 +1,5 @@
 use anyhow::anyhow;
+use util::BVec;
 
 use std::ptr::NonNull;
 use std::{
@@ -212,7 +213,7 @@ impl Database {
 
     /// Loads the specified value from the database.
     pub fn get(&self, key: DataKey) -> anyhow::Result<Option<Guard>> {
-        let mut raw_key = Vec::with_capacity(key.serialized_size());
+        let mut raw_key = BVec::alloc_with_capacity(key.serialized_size());
         key.serialize(&mut raw_key)?;
 
         // SAFETY: This function is guaranteed to not modify any arguments.
@@ -252,7 +253,7 @@ impl Database {
     where
         V: AsRef<[u8]>,
     {
-        let mut raw_key = Vec::with_capacity(key.serialized_size());
+        let mut raw_key = BVec::alloc_with_capacity(key.serialized_size());
         key.serialize(&mut raw_key)?;
 
         let value = value.as_ref();
@@ -278,7 +279,7 @@ impl Database {
 
     /// Removes the given key from the database.
     pub fn remove(&self, key: DataKey) -> anyhow::Result<()> {
-        let mut raw_key = Vec::with_capacity(key.serialized_size());
+        let mut raw_key = BVec::alloc_with_capacity(key.serialized_size());
         key.serialize(&mut raw_key)?;
 
         // SAFETY: This is safe because the data and lengths come from properly allocated vecs.

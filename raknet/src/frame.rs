@@ -1,4 +1,4 @@
-use util::{BVec, BinaryRead, BinaryWrite, Deserialize, Reusable, Serialize};
+use util::{BVec, BinaryRead, BinaryWrite, Deserialize, Serialize};
 
 use crate::Reliability;
 
@@ -18,7 +18,7 @@ pub const CONTINUOUS_SEND_BIT_FLAG: u8 = 0x08;
 pub const NEEDS_B_AND_AS_BIT_FLAG: u8 = 0x04;
 
 /// Contains a set of frames.
-#[derive(Debug, Default)]
+#[derive(Debug)]
 pub struct FrameBatch {
     /// Unique ID of this frame batch.
     pub sequence_number: u32,
@@ -81,7 +81,7 @@ impl<'a> Deserialize<'a> for FrameBatch {
 /// Encapsulates game raknet.
 ///
 /// A frame provides extra metadata for the Raknet reliability layer.
-#[derive(Debug, Default)]
+#[derive(Debug)]
 pub struct Frame {
     /// Reliability of this packet.
     pub reliability: Reliability,
@@ -108,7 +108,18 @@ pub struct Frame {
 impl Frame {
     /// Creates a new frame.
     pub fn new(reliability: Reliability, body: BVec) -> Self {
-        Self { reliability, body, ..Default::default() }
+        Self { 
+            reliability, 
+            body, 
+            reliable_index: 0,
+            sequence_index: 0,
+            is_compound: false,
+            compound_id: 0,
+            compound_size: 0,
+            compound_index: 0,
+            order_channel: 0,
+            order_index: 0
+        }
     }
 }
 
@@ -166,7 +177,7 @@ impl<'a> Deserialize<'a> for Frame {
         let compound_id = if is_compound { reader.read_u16_be()? } else { 0 };
         let compound_index = if is_compound { reader.read_u32_be()? } else { 0 };
 
-        let body = Reusable::alloc_from_slice(reader.take_n(length as usize)?);
+        let body = BVec::alloc_from_slice(reader.take_n(length as usize)?);
         let frame = Self {
             reliability,
             reliable_index,
@@ -181,5 +192,22 @@ impl<'a> Deserialize<'a> for Frame {
         };
 
         Ok(frame)
+    }
+}
+
+impl Default for Frame {
+    fn default() -> Frame {
+        Frame { 
+            reliability: Reliability::Unreliable, 
+            body: BVec::alloc(),
+            reliable_index: 0,
+            sequence_index: 0,
+            is_compound: false,
+            compound_id: 0,
+            compound_size: 0,
+            compound_index: 0,
+            order_channel: 0,
+            order_index: 0
+        }
     }
 }

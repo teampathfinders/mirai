@@ -11,7 +11,7 @@ use tokio::net::UdpSocket;
 
 use tokio_util::sync::CancellationToken;
 
-use util::{BVec, Deserialize, Joinable, ReserveTo, Reusable, Serialize};
+use util::{BVec, Deserialize, Joinable, ReserveTo, Serialize};
 
 use crate::config::SERVER_CONFIG;
 use crate::net::{ForwardablePacket, UserMap};
@@ -545,7 +545,7 @@ impl Instance {
             };
 
             let packet = ForwardablePacket {
-                buf: Reusable::alloc_from_slice(&recv_buf[..n]),
+                buf: BVec::alloc_from_slice(&recv_buf[..n]),
                 addr: address,
             };
 

@@ -6,7 +6,7 @@ use crate::bedrock::ConnectedPacket;
 /// A generic level event.
 /// 
 /// The data of this event is encoded in NBT form.
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct GenericLevelEvent {
     /// ID of the generic level event.
     pub event_id: i32,

@@ -25,7 +25,7 @@ pub enum HeightmapType {
     TooLow
 }
 
-#[derive(Debug, Default)]
+#[derive(Debug)]
 pub struct SubChunkEntry {
     pub offset: Vector<i8, 3>,
     pub result: SubChunkResult,
