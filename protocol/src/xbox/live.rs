@@ -1,6 +1,6 @@
 //! Used to obtain live tokens from login.live.com.
 
-use std::time::{Duration, Instant};
+use std::{borrow::Cow, time::{Duration, Instant}};
 
 use rand::Rng;
 use reqwest::{Client, StatusCode};
@@ -58,6 +58,39 @@ struct AccessToken {
     access_token: String
 }
 
+#[derive(serde::Deserialize, Debug)]
+struct Xui {
+    #[serde(rename = "uhs")]
+    user_hash: String
+}
+
+#[derive(serde::Deserialize, Debug)]
+struct DisplayClaims {
+    xui: (Xui, )
+}
+
+#[derive(serde::Deserialize, Debug)]
+#[serde(rename_all = "PascalCase")]
+struct UserToken {
+    issue_instant: String,
+    not_after: String,
+    token: String,
+    display_claims: DisplayClaims
+}
+
+#[derive(serde::Deserialize, Debug)]
+struct Item {
+    pub name: Cow<'static, str>
+}
+
+#[derive(serde::Deserialize, Debug)]
+#[serde(rename_all = "PascalCase")]
+struct Store {
+    items: Vec<Item>,
+    #[serde(rename = "keyId")]
+    key_id: String
+}
+
 impl XboxService {
     pub async fn fetch_live_token(&self) -> anyhow::Result<LiveToken> {
         let client_id = std::env::var("CLIENT_ID")?;
@@ -79,7 +112,7 @@ impl XboxService {
         open::that_detached(&url)?;
 
         let query = self.poll_authorize().await?;
-        dbg!(&query);
+        tracing::debug!("Obtained authorization code");
 
         let client = Client::new();
 
@@ -93,8 +126,67 @@ impl XboxService {
                 ("redirect_uri", redirect_uri)
             ])
             .send().await?.json().await?;
-            
-        dbg!(&access_token);
+        
+        tracing::debug!("Obtained RPS token");
+
+        let access_token = access_token.access_token;
+        let user_request = serde_json::json!({
+            "Properties": {
+                "AuthMethod": "RPS",
+                "SiteName": "user.auth.xboxlive.com",
+                "RpsTicket": format!("d={access_token}")
+            },
+            "RelyingParty": "http://auth.xboxlive.com",
+            "TokenType": "JWT"
+        });
+
+        let user_response: UserToken = client
+            .post("https://user.auth.xboxlive.com/user/authenticate")
+            .json(&user_request)
+            .send().await?.json().await?;
+
+        tracing::debug!("Obtained user token");
+
+        let token = user_response.token;
+        let user_hash = user_response.display_claims.xui.0.user_hash;
+
+        let xsts_request = serde_json::json!({
+            "Properties": {
+                "SandboxId": "RETAIL",
+                "UserTokens": [token],
+            },
+            "RelyingParty": "rp://api.minecraftservices.com/",
+            "TokenType": "JWT"
+        });
+
+        let xsts_response: UserToken = client
+            .post("https://xsts.auth.xboxlive.com/xsts/authorize")
+            .json(&xsts_request)
+            .send().await?.json().await?;
+
+        let token = xsts_response.token;
+
+        tracing::debug!("Obtained XSTS token");
+        let access_request = serde_json::json!({
+            "identityToken": format!("XBL3.0 x={};{}", user_hash, token)
+        });
+
+        let access_token = client
+            .post("https://api.minecraftservices.com/authentication/login_with_xbox")
+            .json(&access_request)
+            .send().await?;
+
+        dbg!(access_token.text().await?);
+
+        // tracing::debug!("Authenticated with Minecraft");
+        // let access_token = access_token.access_token;
+
+        // let store: Store = client 
+        //     .get("https://api.minecraftservices.com/entitlements/mcstore")
+        //     .bearer_auth(&access_token)
+        //     .send().await?.json().await?;
+
+        // dbg!(&store);
 
         todo!()
     }
