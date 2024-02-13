@@ -8,23 +8,83 @@ static BYTE_POOL: Pool<Vec<u8>> = Pool::new();
 // take an incredibly long time because it is checking all available buffers.
 const POOL_MAX_SEARCH_COUNT: usize = 10;
 
+pub trait PoolStorage: Sized + 'static {}
+
+pub trait PoolCollectionStorage: PoolStorage {
+    fn capacity(&self) -> usize;
+    fn reserve(&mut self, capacity: usize);
+    fn with_capacity(capacity: usize) -> Self;
+}
+
+impl PoolStorage for Vec<u8> {}
+
+impl PoolCollectionStorage for Vec<u8> {
+    fn capacity(&self) -> usize {
+        self.capacity()
+    }
+
+    fn reserve(&mut self, capacity: usize) {
+        self.reserve(capacity);
+    }
+
+    fn with_capacity(capacity: usize) -> Self {
+        Vec::with_capacity(capacity)
+    }
+}
+
 /// An item that can be used in a global memory pool.
 pub trait Poolable: Sized + 'static {
-    fn pool() -> &'static Pool<Self>;
+    /// Underlying storage used for this type.
+    /// 
+    /// A `String` can be created from and turned into a `Vec<u8>` which would
+    /// therefore be a valid storage type.
+    type Storage: PoolStorage;
 
-    /// Resets the collection, returning it back to the pool.
-    fn reset(&mut self);
+    fn pool() -> &'static Pool<Self::Storage>;
+
+    /// Converts a storage type into a usable type.
+    fn into_usable(storage: Self::Storage) -> Self;
+
+    /// Resets the collection, converting it to its underlying storage
+    /// and returning it back to the associated pool.
+    fn into_storage(self) -> Self::Storage;
 }
 
 impl Poolable for Vec<u8> {
+    type Storage = Vec<u8>;
+
     #[inline]
     fn pool() -> &'static Pool<Vec<u8>> { 
         &BYTE_POOL 
     }
 
     #[inline]
-    fn reset(&mut self) {
+    fn into_usable(storage: Vec<u8>) -> Vec<u8>{ storage }
+
+    #[inline]
+    fn into_storage(mut self) -> Vec<u8> {
         self.clear();
+        self
+    }
+}
+
+impl Poolable for String {
+    type Storage = Vec<u8>;
+
+    #[inline]
+    fn pool() -> &'static Pool<Vec<u8>> {
+        &BYTE_POOL
+    }
+
+    #[inline]
+    fn into_usable(storage: Vec<u8>) -> Self {
+        String::from_utf8(storage).unwrap()
+    }
+
+    #[inline]
+    fn into_storage(mut self) -> Self::Storage {
+        self.clear();
+        self.into_bytes()
     }
 }
 
@@ -72,12 +132,16 @@ impl<T: Poolable + Default> Reusable<T> {
     }
 }
 
-impl<T: Clone> Reusable<Vec<T>> where Vec<T>: Poolable {
+impl<T: Clone> Reusable<Vec<T>> 
+where 
+    Vec<T>: Poolable, 
+    <Vec<T> as Poolable>::Storage: PoolCollectionStorage  
+{
     /// Returns a collection with the given capacity. 
     /// 
     /// If there is a collection available with the given capacity, it will be returned .
     /// If no collections have the requested capacity, a collection from the pool will be resized and returned.
-    /// If the pool is empty a new collection will be created with the requested capacity.
+    /// If the pool is empty, a new collection will be created with the requested capacity.
     pub fn alloc_with_capacity(cap: usize) -> Reusable<Vec<T>> {
         let pool = <Vec<T>>::pool();
         pool.alloc_with_capacity(cap)
@@ -92,7 +156,8 @@ impl<T: Clone> Reusable<Vec<T>> where Vec<T>: Poolable {
 
 impl<T: Clone> From<&[T]> for Reusable<Vec<T>> 
 where
-    Vec<T>: Poolable
+    Vec<T>: Poolable, 
+    <Vec<T> as Poolable>::Storage: PoolCollectionStorage
 {
     #[inline]
     fn from(value: &[T]) -> Self {
@@ -141,16 +206,20 @@ impl<T: Poolable + Eq> Eq for Reusable<T> {}
 
 impl<T: Poolable> Drop for Reusable<T> {
     fn drop(&mut self) {
-        let mut inner = unsafe {
+        let inner = unsafe {
             self.inner.assume_init_read()
         };
 
-        inner.reset();
+        let inner = inner.into_storage();
         T::pool().dealloc(inner)
     }
 }
 
-impl<T: Clone> Clone for Reusable<Vec<T>> where Vec<T>: Poolable {
+impl<T: Clone> Clone for Reusable<Vec<T>> 
+where 
+    Vec<T>: Poolable, 
+    <Vec<T> as Poolable>::Storage: PoolCollectionStorage 
+{
     fn clone(&self) -> Reusable<Vec<T>> {
         Reusable::alloc_from_slice(unsafe { self.inner.assume_init_ref() })
     }
@@ -178,23 +247,19 @@ impl<T: Poolable> DerefMut for Reusable<T> {
 
 pub type BVec = Reusable<Vec<u8>>;
 
-pub struct Pool<T: Poolable> {
-    items: Mutex<Vec<T>>
+pub struct Pool<S: PoolStorage> {
+    items: Mutex<Vec<S>>
 }
 
-impl<T: Poolable> Pool<T> {
-    pub const fn new() -> Pool<T> {
+impl<S: PoolStorage> Pool<S> {
+    pub const fn new() -> Pool<S> {
         Pool { items: Mutex::new(Vec::new()) }
     }
 
-    pub fn prune(&self) {
-        self.items
-            .lock()
-            .drain(..)
-            .for_each(|c| Reusable::from(c).prune());
-    }
-
-    pub fn alloc_with<F: FnOnce() -> T>(&self, init: F) -> Reusable<T> {
+    pub fn alloc_with<P, F: FnOnce() -> P>(&self, init: F) -> Reusable<P> 
+    where
+        P: Poolable<Storage = S>
+    {
         let pop = {
             let mut lock = self.items.lock();
             lock.pop()
@@ -203,7 +268,7 @@ impl<T: Poolable> Pool<T> {
         ALLOC_COUNTER.fetch_add(1, Ordering::SeqCst);
 
         let vec = if let Some(value) = pop {
-            value
+            P::into_usable(value)
         } else {
             init()
         };
@@ -212,14 +277,17 @@ impl<T: Poolable> Pool<T> {
     }
 
     #[inline]
-    pub fn dealloc(&self, value: T) {
+    pub fn dealloc(&self, value: S) {
         self.items.lock().push(value);
     }
 }
 
-impl<T: Poolable + Default> Pool<T> {
+impl<S: PoolStorage> Pool<S> {
     #[inline]
-    pub fn alloc(&self) -> Reusable<T> {
+    pub fn alloc<P>(&self) -> Reusable<P> 
+    where
+        P: Poolable<Storage = S> + Default
+    {
         let pop = {
             let mut lock = self.items.lock();
             lock.pop()
@@ -228,16 +296,16 @@ impl<T: Poolable + Default> Pool<T> {
         ALLOC_COUNTER.fetch_add(1, Ordering::SeqCst);
 
         let vec = if let Some(value) = pop {
-            value
+            P::into_usable(value)
         } else {
-            T::default()
+            P::default()
         };
 
         Reusable { inner: MaybeUninit::new(vec) }
     }
 }
 
-impl<T> Pool<Vec<T>> where Vec<T>: Poolable {
+impl<T> Pool<T> where T: PoolCollectionStorage {
     pub fn debug_print(&self) {
         let lock = self.items.lock();
         let mut total = 0;
@@ -250,10 +318,13 @@ impl<T> Pool<Vec<T>> where Vec<T>: Poolable {
         println!("\nTotal size: {total} | Total count: {} | Alloc: {} | Dealloc: {}", lock.len(), ALLOC_COUNTER.load(Ordering::SeqCst), DEALLOC_COUNTER.load(Ordering::SeqCst));
     }
 
-    pub fn alloc_with_capacity(&self, cap: usize) -> Reusable<Vec<T>> {
+    pub fn alloc_with_capacity<P>(&self, cap: usize) -> Reusable<Vec<P>> 
+    where
+        Vec<P>: Poolable<Storage = T>
+    {
         // Skip whole capacity procedure when the capacity is 0.
         if cap == 0 {
-            return self.alloc();
+            return self.alloc()
         }
 
         ALLOC_COUNTER.fetch_add(1, Ordering::SeqCst);
@@ -290,10 +361,11 @@ impl<T> Pool<Vec<T>> where Vec<T>: Poolable {
 
             value
         } else {
-            Vec::with_capacity(cap)
+            T::with_capacity(cap)
+            // <Vec<T> as PoolCollectionStorage>::with_capacity(cap)
         };
 
-        Reusable { inner: MaybeUninit::new(vec) }
+        Reusable { inner: MaybeUninit::new(<Vec<P>>::into_usable(vec)) }
     }
 }
 

@@ -3,10 +3,10 @@ use std::{sync::{Arc, OnceLock, Weak}, time::Duration};
 use anyhow::Context as _;
 use dashmap::DashMap;
 use parking_lot::RwLock;
-use proto::bedrock::{Command, ParseResult, ParsedCommand};
+use proto::bedrock::{AvailableCommands, Command, ParseResult, ParsedCommand};
 use tokio::{sync::{mpsc, oneshot}, task::JoinHandle};
 use tokio_util::sync::CancellationToken;
-use util::{FastString, Joinable};
+use util::{BVec, FastString, Joinable, Reusable};
 
 use crate::instance::Instance;
 
@@ -124,10 +124,12 @@ where
 pub struct Service {
     token: CancellationToken,
     handle: RwLock<Option<JoinHandle<()>>>,
-    registry: DashMap<String, Arc<dyn CommandHandler>>,
 
     sender: mpsc::Sender<ServiceRequest>,
-    instance: OnceLock<Weak<Instance>>    
+    instance: OnceLock<Weak<Instance>>,
+
+    registry: DashMap<String, Arc<dyn CommandHandler>>,
+    available: RwLock<Vec<Command>>
 }
 
 impl Service {
@@ -135,7 +137,11 @@ impl Service {
     pub fn new(token: CancellationToken) -> Arc<Service> {
         let (sender, receiver) = mpsc::channel(10);
         let service = Arc::new(Service {
-            token, handle: RwLock::new(None), sender, registry: DashMap::new(), instance: OnceLock::new()
+            token, sender,
+            handle: RwLock::new(None), 
+            registry: DashMap::new(),
+            available: RwLock::new(Vec::new()), 
+            instance: OnceLock::new()
         });
 
         let clone = Arc::clone(&service);
@@ -153,6 +159,12 @@ impl Service {
     pub(crate) fn set_instance(&self, instance: &Arc<Instance>) -> anyhow::Result<()> {
         self.instance.set(Arc::downgrade(instance)).map_err(|_| anyhow::anyhow!("Instance was already set"))
     }
+
+    // /// Returns a list of all registered commands that can be used in an [`AvailableCommands`] packet.
+    // #[inline]
+    // pub fn available(&self) -> Reusable<Vec<Command>> {
+    //     todo!()
+    // }
 
     /// Registers a new command with the default syntax parser. 
     pub fn register<F>(&self, structure: Command, handler: F) 
