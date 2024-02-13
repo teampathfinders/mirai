@@ -597,9 +597,9 @@ dependencies = [
 
 [[package]]
 name = "fred"
-version = "8.0.1"
+version = "8.0.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d3b2a2ac060e3266004c552235c241b481e438e2b1ea75715ea1176914ef2868"
+checksum = "7e09748ee5cef6c572ecaac3e6024a46cc7962e685444a43d97738ba75d16b83"
 dependencies = [
  "arc-swap",
  "async-trait",
