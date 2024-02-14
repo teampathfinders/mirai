@@ -6,7 +6,7 @@ use parking_lot::RwLock;
 use proto::bedrock::{AvailableCommands, Command, ParseResult, ParsedCommand};
 use tokio::{sync::{mpsc, oneshot}, task::JoinHandle};
 use tokio_util::sync::CancellationToken;
-use util::{BVec, FastString, Joinable, Reusable};
+use util::{PVec, FastString, Joinable, Pooled};
 
 use crate::instance::Instance;
 

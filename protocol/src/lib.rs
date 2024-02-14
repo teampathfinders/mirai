@@ -43,10 +43,10 @@
 #![allow(clippy::use_self)]
 
 pub mod bedrock;
-pub mod xbox;
 pub mod crypto;
 pub mod raknet;
 pub mod types;
+pub mod xbox;
 
 pub use base64;
 pub use uuid;

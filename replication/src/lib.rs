@@ -46,7 +46,7 @@ use fred::{
     types::{RedisConfig, RespVersion, Server, ServerConfig},
 };
 use proto::bedrock::{MovePlayer, TextData, TextMessage};
-use util::{size_of_string, BVec, BinaryWrite};
+use util::{size_of_string, BinaryWrite, PVec};
 
 #[cfg(test)]
 mod test;
@@ -101,7 +101,7 @@ impl Replicator {
 
     pub async fn text_msg(&self, msg: &TextMessage<'_>) -> anyhow::Result<()> {
         if let TextData::Chat { message, source } = msg.data {
-            let mut buf = BVec::alloc_with_capacity(8 + size_of_string(message) + size_of_string(source));
+            let mut buf = PVec::alloc_with_capacity(8 + size_of_string(message) + size_of_string(source));
             buf.write_u64_le(msg.xuid)?;
             buf.write_str(source)?;
             buf.write_str(message)?;

@@ -5,7 +5,7 @@ use std::{
 
 use prometheus_client::metrics::counter::Counter;
 use tokio::sync::{mpsc, TryAcquireError};
-use util::BVec;
+use util::PVec;
 
 use crate::{RaknetCommand, RaknetUser};
 
@@ -39,7 +39,7 @@ impl RaknetUser {
         )
     )]
     pub async fn receiver(
-        self: Arc<Self>, mut receiver: mpsc::Receiver<BVec>
+        self: Arc<Self>, mut receiver: mpsc::Receiver<PVec>
     ) {
         let mut interval = tokio::time::interval(INTERNAL_TICK_INTERVAL);
 
@@ -54,8 +54,16 @@ impl RaknetUser {
                     }
                 },
                 packet = receiver.recv() => {
+                    if packet.is_none() {
+                        // Receiver channel closed, shut down this session.
+                        break
+                    }
+
+                    let packet = packet.unwrap();
+
                     match self.budget.try_acquire() {
                         Ok(permit) => permit.forget(),
+                        Err(TryAcquireError::Closed) => unreachable!(),
                         Err(TryAcquireError::NoPermits) if !has_exhausted => {
                             // Prevent printing error twice.
                             has_exhausted = true;
@@ -68,14 +76,11 @@ impl RaknetUser {
                                 self.disconnect();
                             }
                         }
-                        Err(TryAcquireError::Closed) => unreachable!(),
                         _ => ()
                     }
 
-                    if let Some(packet) = packet {
-                        if let Err(err) = self.handle_raw_packet(packet).await {
-                            tracing::error!("{err:?}");
-                        }
+                    if let Err(err) = self.handle_raw_packet(packet).await {
+                        tracing::error!("{err:?}");
                     }
                     TOTAL_PACKETS_METRIC.inc();
                 }
@@ -83,8 +88,6 @@ impl RaknetUser {
 
             should_run = !self.active.is_cancelled();
         }
-
-        tracing::debug!("RakNet processor shutdown");
     }
 
     /// Performs tasks not related to packet processing
@@ -93,7 +96,8 @@ impl RaknetUser {
 
         // Reset budget every second.
         if current_tick % 20 == 0 {
-            self.budget.add_permits(BUDGET_SIZE - self.budget.available_permits());
+            // self.budget.add_permits(BUDGET_SIZE - self.budget.available_permits());
+            self.refill_budget();
         }
 
         // Session has timed out

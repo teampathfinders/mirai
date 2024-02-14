@@ -4,7 +4,7 @@ use parking_lot::{Mutex, RwLock};
 use proto::raknet::DisconnectNotification;
 use tokio::{net::UdpSocket, sync::{broadcast, mpsc, Semaphore}};
 use tokio_util::sync::CancellationToken;
-use util::{BVec, Joinable};
+use util::{PVec, Joinable};
 
 use crate::{BroadcastPacket, Compounds, OrderChannel, Recovery, Reliability, SendConfig, SendPriority, SendQueues, BUDGET_SIZE};
 
@@ -21,7 +21,7 @@ pub enum RaknetCommand {
     /// The Raknet client has disconnected.
     Disconnected,
     /// The Raknet layer has received a packet and finished preprocessing it.
-    Received(BVec)
+    Received(PVec)
 }
 
 /// Information required to create a new RakNet user.
@@ -94,7 +94,7 @@ impl RaknetUser {
     pub fn new(
         info: RaknetCreateInfo, 
         broadcast: broadcast::Sender<BroadcastPacket>,
-        forward_rx: mpsc::Receiver<BVec>
+        forward_rx: mpsc::Receiver<PVec>
     ) -> (Arc<Self>, mpsc::Receiver<RaknetCommand>) {
         // SAFETY: MaybeUninit does not require initialization, so it is safe to create an array
         // of them like this.
@@ -145,6 +145,12 @@ impl RaknetUser {
         (state, output_rx)
     }
 
+    /// Resets the request budget of this client.
+    #[inline]
+    pub fn refill_budget(&self) {
+        self.budget.add_permits(BUDGET_SIZE - self.budget.available_permits());
+    }
+
     /// Sends a RakNet disconnect packet to the client.
     pub fn disconnect(&self) {
         self.send_raw_buffer_with_config(vec![DisconnectNotification::ID], SendConfig {
@@ -165,13 +171,12 @@ impl Joinable for RaknetUser {
     async fn join(&self) -> anyhow::Result<()> {
         let handle = self.job_handle.write().take();
         if let Some(handle) = handle {
-            // self.disconnect();
             match self.flush_all().await {
                 Ok(_) => (),
                 Err(e) => tracing::error!("Failed to flush last packets before shutdown: {e:#?}")
             }
 
-            self.active.cancel();
+            // self.active.cancel();
             match handle.await {
                 Ok(_) => Ok(()),
                 Err(err) => {

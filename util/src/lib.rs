@@ -45,7 +45,7 @@ mod macros;
 mod error;
 
 mod fast;
-mod pool;
+mod memory;
 
 use std::{
     fmt,
@@ -54,7 +54,7 @@ use std::{
 
 pub use error::*;
 pub use fast::*;
-pub use pool::*;
+pub use memory::*;
 
 /// Overwrites the memory of a type when it is dropped.
 pub trait Zeroize {

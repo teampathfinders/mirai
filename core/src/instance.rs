@@ -12,13 +12,11 @@ use tokio::net::UdpSocket;
 
 use tokio_util::sync::CancellationToken;
 
-use util::{BVec, Deserialize, Joinable, ReserveTo, Serialize};
+use util::{Deserialize, Joinable, PString, PVec, ReserveTo, Serialize};
 
 use crate::config::SERVER_CONFIG;
 use crate::net::{ForwardablePacket, UserMap};
-use proto::bedrock::{
-    CompressionAlgorithm, CLIENT_VERSION_STRING, PROTOCOL_VERSION
-};
+use proto::bedrock::{CompressionAlgorithm, CLIENT_VERSION_STRING, PROTOCOL_VERSION};
 use proto::raknet::{
     IncompatibleProtocol, OpenConnectionReply1, OpenConnectionReply2, OpenConnectionRequest1, OpenConnectionRequest2, UnconnectedPing,
     UnconnectedPong, RAKNET_VERSION,
@@ -147,7 +145,7 @@ impl Default for ClientConfig {
 
 /// Builder used to configure a new server instance.
 pub struct InstanceBuilder<'a> {
-    name: String,
+    name: PString,
     net_config: NetConfig,
     db_config: DbConfig<'a>,
     client_config: ClientConfig,
@@ -166,7 +164,7 @@ impl<'a> InstanceBuilder<'a> {
     ///
     /// Default: Server.
     #[inline]
-    pub fn name<I: Into<String>>(mut self, name: I) -> InstanceBuilder<'a> {
+    pub fn name<I: Into<PString>>(mut self, name: I) -> InstanceBuilder<'a> {
         self.name = name.into();
         self
     }
@@ -295,7 +293,7 @@ impl<'a> InstanceBuilder<'a> {
             user_map,
             token,
             command_service,
-            level_service
+            level_service,
         };
 
         Ok(Arc::new(instance))
@@ -305,7 +303,7 @@ impl<'a> InstanceBuilder<'a> {
 impl Default for InstanceBuilder<'static> {
     fn default() -> InstanceBuilder<'static> {
         InstanceBuilder {
-            name: String::from("Server"),
+            name: PString::from("Server"),
             net_config: NetConfig::default(),
             db_config: DbConfig::default(),
             client_config: ClientConfig::default(),
@@ -331,7 +329,7 @@ pub struct Instance {
     /// Keeps track of all available commands.
     command_service: Arc<crate::command::Service>,
     /// Keeps track of the level state.
-    level_service: Arc<crate::level::Service>
+    level_service: Arc<crate::level::Service>,
 }
 
 impl Instance {
@@ -550,7 +548,7 @@ impl Instance {
             };
 
             let packet = ForwardablePacket {
-                buf: BVec::alloc_from_slice(&recv_buf[..n]),
+                buf: PVec::alloc_from_slice(&recv_buf[..n]),
                 addr: address,
             };
 

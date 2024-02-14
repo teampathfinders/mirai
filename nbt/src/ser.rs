@@ -4,7 +4,7 @@ use paste::paste;
 use serde::ser::{Impossible, SerializeMap, SerializeSeq, SerializeStruct, SerializeTuple};
 use serde::{ser, Serialize};
 
-use util::{BVec, BinaryWrite};
+use util::{BinaryWrite, PVec};
 
 use crate::{BigEndian, FieldType, LittleEndian, NbtError, Variable, Variant, VariantImpl};
 
@@ -55,11 +55,11 @@ macro_rules! forward_unsupported_field {
 /// # }
 /// ```
 #[inline]
-pub fn to_be_bytes<T>(v: &T) -> anyhow::Result<BVec>
+pub fn to_be_bytes<T>(v: &T) -> anyhow::Result<PVec>
 where
     T: ?Sized + Serialize,
 {
-    let mut ser = Serializer::<_, BigEndian>::new(BVec::alloc());
+    let mut ser = Serializer::<_, BigEndian>::new(PVec::alloc());
 
     v.serialize(&mut ser)?;
     Ok(ser.into_inner())
@@ -88,11 +88,11 @@ where
 /// # }
 /// ```
 #[inline]
-pub fn to_le_bytes<T>(v: &T) -> anyhow::Result<BVec>
+pub fn to_le_bytes<T>(v: &T) -> anyhow::Result<PVec>
 where
     T: ?Sized + Serialize,
 {
-    let mut ser = Serializer::<_, LittleEndian>::new(BVec::alloc());
+    let mut ser = Serializer::<_, LittleEndian>::new(PVec::alloc());
 
     v.serialize(&mut ser)?;
     Ok(ser.into_inner())
@@ -121,11 +121,11 @@ where
 /// # }
 /// ```
 #[inline]
-pub fn to_var_bytes<T>(v: &T) -> anyhow::Result<BVec>
+pub fn to_var_bytes<T>(v: &T) -> anyhow::Result<PVec>
 where
     T: ?Sized + Serialize,
 {
-    let mut ser = Serializer::<_, Variable>::new(BVec::alloc());
+    let mut ser = Serializer::<_, Variable>::new(PVec::alloc());
 
     v.serialize(&mut ser)?;
     Ok(ser.into_inner())

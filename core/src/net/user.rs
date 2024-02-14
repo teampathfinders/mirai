@@ -22,7 +22,7 @@ use proto::uuid::Uuid;
 use replicator::Replicator;
 
 use tokio::task::JoinHandle;
-use util::{AtomicFlag, BVec, BinaryRead, BinaryWrite, Deserialize, Joinable, Poolable, Serialize, Vector};
+use util::{AtomicFlag, BinaryRead, BinaryWrite, Deserialize, Joinable, PVec, pool, Serialize, Vector};
 
 
 use crate::config::SERVER_CONFIG;
@@ -156,7 +156,11 @@ impl BedrockUser {
         }
 
         tracing::info!("{} has disconnected", self.name().unwrap_or("<unknown>"));
-        <Vec<u8>>::pool().debug_print();
+
+        tracing::info!(
+            "Requests: {} | Returns: {} | Allocations: {}",
+            pool::total_requests(), pool::total_returns(), pool::total_allocations()
+        );
 
         CONNECTED_CLIENTS_METRIC.dec();
     }
@@ -171,11 +175,11 @@ impl BedrockUser {
 
             let size_hint = header.size_hint().unwrap() + packet.content.len();
     
-            let mut body = BVec::alloc_with_capacity(size_hint);
+            let mut body = PVec::alloc_with_capacity(size_hint);
             header.serialize_into(&mut body)?;
             body.write_all(&packet.content)?;
     
-            let mut full = BVec::alloc_with_capacity(body.len() + 5);
+            let mut full = PVec::alloc_with_capacity(body.len() + 5);
             full.write_var_u32(body.len() as u32)?;
             full.write_all(&body)?;
 
@@ -221,6 +225,9 @@ impl BedrockUser {
         self.send(disconnect_packet)?;
 
         tracing::info!("User has been kicked");
+
+        // Force the session to shut down. Without this, the client could just ignore the disconnect packet.
+        self.raknet.active.cancel();
         self.raknet.join().await
     }
 
@@ -253,11 +260,11 @@ impl BedrockUser {
             header.size_hint().unwrap() + 
             packet.size_hint().unwrap_or(0);
 
-        let mut body = BVec::alloc_with_capacity(size_hint);
+        let mut body = PVec::alloc_with_capacity(size_hint);
         header.serialize_into(&mut body)?;
         packet.serialize_into(&mut body)?;
 
-        let mut full = BVec::alloc_with_capacity(body.len() + 5);
+        let mut full = PVec::alloc_with_capacity(body.len() + 5);
         full.write_var_u32(body.len() as u32)?;
         full.write_all(&body)?;
 
@@ -283,13 +290,13 @@ impl BedrockUser {
                         unimplemented!("Snappy compression");
                     }
                     CompressionAlgorithm::Flate => {
-                        let writer_inner = BVec::alloc_with_capacity(packet.as_ref().len());
+                        let writer_inner = PVec::alloc_with_capacity(packet.as_ref().len());
                         let mut writer = DeflateEncoder::new(writer_inner, Compression::best());
 
                         writer.write_all(packet.as_ref())?;
                         let compressed_body = writer.finish()?;
 
-                        out = BVec::alloc_with_capacity(1 + 1 + compressed_body.len());
+                        out = PVec::alloc_with_capacity(1 + 1 + compressed_body.len());
                         out.write_u8(CONNECTED_PACKET_ID)?;
                         out.write_u8(algorithm as u8)?;
                         out.write_all(&compressed_body)?;
@@ -298,14 +305,14 @@ impl BedrockUser {
             } else {
                 // Also reserve capacity for checksum even if encryption is disabled,
                 // preventing allocations.
-                out = BVec::alloc_with_capacity(1 + packet.as_ref().len() + 8);
+                out = PVec::alloc_with_capacity(1 + packet.as_ref().len() + 8);
                 out.write_u8(CONNECTED_PACKET_ID)?;
                 out.write_all(packet.as_ref())?;
             }
         } else {
             // Also reserve capacity for checksum even if encryption is disabled,
             // preventing allocations.
-            out = BVec::alloc_with_capacity(1 + packet.as_ref().len() + 8);
+            out = PVec::alloc_with_capacity(1 + packet.as_ref().len() + 8);
             out.write_u8(CONNECTED_PACKET_ID)?;
             out.write_all(packet.as_ref())?;
         };
@@ -325,7 +332,7 @@ impl BedrockUser {
     /// 
     /// After processing, this function sends the processed packet to [`handle_frame_body`](Self::handle_frame_body)
     /// function,
-    async fn handle_encrypted_frame(self: &Arc<Self>, mut packet: BVec) -> anyhow::Result<()> {
+    async fn handle_encrypted_frame(self: &Arc<Self>, mut packet: PVec) -> anyhow::Result<()> {
         let timestamp = Instant::now();
 
         if packet[0] != 0xfe {
@@ -350,7 +357,7 @@ impl BedrockUser {
                 match algorithm {
                     CompressionAlgorithm::Flate => {
                         let mut reader = flate2::read::DeflateDecoder::new(packet.as_slice());
-                        let mut decompressed = BVec::alloc_with_capacity(packet.len() * 2);
+                        let mut decompressed = PVec::alloc_with_capacity(packet.len() * 2);
                         
                         reader.read_to_end(&mut decompressed)?;
                         self.handle_frame_body(decompressed).await
@@ -379,7 +386,7 @@ impl BedrockUser {
             username = self.name().unwrap_or("<unknown>")
         )
     )]
-    async fn handle_frame_body(self: &Arc<Self>, mut packet: BVec) -> anyhow::Result<()> {
+    async fn handle_frame_body(self: &Arc<Self>, mut packet: PVec) -> anyhow::Result<()> {
         let start_len = packet.len();
         let mut reader: &[u8] = packet.as_ref();
         let _length = reader.read_var_u32()?;
@@ -510,11 +517,12 @@ impl Joinable for BedrockUser {
         name = "BedrockUser::join"
     )]
     async fn join(&self) -> anyhow::Result<()> {
+        
+        // Kicks the user and waits for the Raknet session to shut down.
+        self.kick_with_reason("Server closed", DisconnectReason::Shutdown).await?;
+
         let handle = self.job_handle.write().take();
         if let Some(handle) = handle {
-            // Error logged by RakNet join method.
-            let _: anyhow::Result<()> = self.raknet.join().await;
-
             match handle.await {
                 Ok(_) => Ok(()),
                 Err(err) => {

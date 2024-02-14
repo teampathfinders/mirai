@@ -6,7 +6,7 @@ use base64::Engine;
 use ecdsa::{elliptic_curve::group::prime::PrimeCurveAffine, signature::{DigestSigner, Signer}};
 use rand::rngs::OsRng;
 use sha2::{Digest, Sha256};
-use util::{BVec, BinaryWrite};
+use util::{PVec, BinaryWrite};
 use uuid::Uuid;
 use p256::ecdsa::{Signature, SigningKey, VerifyingKey};
 

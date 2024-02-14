@@ -15,7 +15,7 @@ use rand::rngs::OsRng;
 use rand::Rng;
 use sha2::{Digest, Sha256};
 
-use util::{BVec, BinaryWrite, ExposeSecret, Secret};
+use util::{PVec, BinaryWrite, ExposeSecret, Secret};
 
 
 type Aes256CtrBE = ctr::Ctr64BE<aes::Aes256>;
@@ -147,7 +147,7 @@ impl Encryptor {
         skip_all,
         name = "Encryptor::decrypt"
     )]
-    pub fn decrypt(&self, reader: &mut BVec) -> anyhow::Result<()> {
+    pub fn decrypt(&self, reader: &mut PVec) -> anyhow::Result<()> {
         if reader.len() < 9 {
             tracing::error!("The encrypted buffer is too small to contain any data");
             anyhow::bail!("Encrypted buffer must be at least 9 bytes, received {}", reader.len());
