@@ -1,17 +1,17 @@
 use std::{fmt::{self, Debug}, io::Write, mem::MaybeUninit, ops::{Deref, DerefMut}, sync::atomic::Ordering};
 
-use crate::{PoolCollectionStorage, Poolable};
+use crate::{RecycleCollectionStorage, Recyclable};
 use super::ALLOC_COUNTER;
 
 /// Wrapper around an object that automatically returns it to its pool when dropped.
 #[repr(transparent)]
-pub struct Recycle<T: Poolable> {
+pub struct Recycled<T: Recyclable> {
     pub(super) inner: MaybeUninit<T>
 }
 
-impl<T: Poolable> Recycle<T> {
+impl<T: Recyclable> Recycled<T> {
     /// Returns a collection from the pool or creates a new one using the given closure if none are available.
-    pub fn alloc_with<F: FnOnce() -> T>(init: F) -> Recycle<T> {
+    pub fn alloc_with<F: FnOnce() -> T>(init: F) -> Recycled<T> {
         let pool = T::pool();
         pool.alloc_with(init)
     }
@@ -48,47 +48,47 @@ impl<T: Poolable> Recycle<T> {
     }
 }
 
-impl<T: Poolable + Default> Recycle<T> {
+impl<T: Recyclable + Default> Recycled<T> {
     /// Returns a collection from the pool or creates a new one if none are available.
     #[inline]
-    pub fn alloc() -> Recycle<T> {
+    pub fn alloc() -> Recycled<T> {
         let pool = T::pool();
         pool.alloc()
     }
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-/// STRING GUARD IMPLEMENTATIONS                                                                                   ///
+// STRING GUARD IMPLEMENTATIONS                                                                                     //
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 #[allow(clippy::fallible_impl_from)]
-impl From<&str> for Recycle<String> {
-    fn from(value: &str) -> Recycle<String> {
-        let bin = Recycle::alloc_from_slice(value.as_bytes());
+impl From<&str> for Recycled<String> {
+    fn from(value: &str) -> Recycled<String> {
+        let bin = Recycled::alloc_from_slice(value.as_bytes());
         let inner = bin.into_inner();
 
         // This does not panic because `inner` is a vector created directly
         // from the bytes of a valid string slice `value`. Therefore
         // it is a valid UTF-8 vector.
         #[allow(clippy::unwrap_used)]
-        Recycle::from(String::from_utf8(inner).unwrap())
+        Recycled::from(String::from_utf8(inner).unwrap())
     }
 }
 
-impl Clone for Recycle<String> {
-    fn clone(&self) -> Recycle<String> {
-        Recycle::from(self.as_str())
+impl Clone for Recycled<String> {
+    fn clone(&self) -> Recycled<String> {
+        Recycled::from(self.as_str())
     }
 }
 
-impl Default for Recycle<String> {
+impl Default for Recycled<String> {
     #[inline]
     fn default() -> Self {
-        Recycle::alloc()
+        Recycled::alloc()
     }
 }
 
-impl serde::Serialize for Recycle<String> {
+impl serde::Serialize for Recycled<String> {
     #[inline]
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
@@ -99,20 +99,20 @@ impl serde::Serialize for Recycle<String> {
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-/// VECTOR GUARD IMPLEMENTATIONS                                                                                   ///
+// VECTOR GUARD IMPLEMENTATIONS                                                                                     //
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-impl<T: Clone> Recycle<Vec<T>> 
+impl<T: Clone> Recycled<Vec<T>> 
 where 
-    Vec<T>: Poolable, 
-    <Vec<T> as Poolable>::Storage: PoolCollectionStorage  
+    Vec<T>: Recyclable, 
+    <Vec<T> as Recyclable>::Storage: RecycleCollectionStorage  
 {
     /// Returns a collection with the given capacity. 
     /// 
     /// If there is a collection available with the given capacity, it will be returned .
     /// If no collections have the requested capacity, a collection from the pool will be resized and returned.
     /// If the pool is empty, a new collection will be created with the requested capacity.
-    pub fn alloc_with_capacity(cap: usize) -> Recycle<Vec<T>> {
+    pub fn alloc_with_capacity(cap: usize) -> Recycled<Vec<T>> {
         let pool = <Vec<T>>::pool();
         pool.alloc_with_capacity(cap)
     }
@@ -123,8 +123,8 @@ where
     /// the data and will then copy it to the collection.
     /// 
     /// See [`alloc_with_capacity`](Reusable::alloc_with_capacity) for details on allocation.
-    pub fn alloc_from_slice(slice: &[T]) -> Recycle<Vec<T>> {
-        let mut collection: Recycle<Vec<T>> = Recycle::alloc_with_capacity(slice.len());
+    pub fn alloc_from_slice(slice: &[T]) -> Recycled<Vec<T>> {
+        let mut collection: Recycled<Vec<T>> = Recycled::alloc_with_capacity(slice.len());
 
         if collection.capacity() < slice.len() {
             ALLOC_COUNTER.fetch_add(1, Ordering::Relaxed);
@@ -135,18 +135,18 @@ where
     }
 }
 
-impl<T: Clone> From<&[T]> for Recycle<Vec<T>> 
+impl<T: Clone> From<&[T]> for Recycled<Vec<T>> 
 where
-    Vec<T>: Poolable, 
-    <Vec<T> as Poolable>::Storage: PoolCollectionStorage
+    Vec<T>: Recyclable, 
+    <Vec<T> as Recyclable>::Storage: RecycleCollectionStorage
 {
     #[inline]
     fn from(value: &[T]) -> Self {
-        Recycle::alloc_from_slice(value)
+        Recycled::alloc_from_slice(value)
     }
 }
 
-impl Write for Recycle<Vec<u8>> {
+impl Write for Recycled<Vec<u8>> {
     fn write(&mut self, buf: &[u8]) -> std::io::Result<usize> {
         // SAFETY: This is safe because `inner` will always be initialised except when it
         // is being dropped. Since calling this function means the object is still referenced, it is
@@ -165,7 +165,7 @@ impl Write for Recycle<Vec<u8>> {
     }
 }
 
-impl AsRef<[u8]> for Recycle<Vec<u8>> {
+impl AsRef<[u8]> for Recycled<Vec<u8>> {
     fn as_ref(&self) -> &[u8] {
         // SAFETY: This is safe because `inner` will always be initialised except when it
         // is being dropped. Since calling this function means the object is still referenced, it is
@@ -174,7 +174,7 @@ impl AsRef<[u8]> for Recycle<Vec<u8>> {
     }
 }
 
-impl AsMut<[u8]> for Recycle<Vec<u8>> {
+impl AsMut<[u8]> for Recycled<Vec<u8>> {
     fn as_mut(&mut self) -> &mut [u8] {
         // SAFETY: This is safe because `inner` will always be initialised except when it
         // is being dropped. Since calling this function means the object is still referenced, it is
@@ -183,31 +183,31 @@ impl AsMut<[u8]> for Recycle<Vec<u8>> {
     }
 }
 
-impl<T: Clone> Clone for Recycle<Vec<T>> 
+impl<T: Clone> Clone for Recycled<Vec<T>> 
 where 
-    Vec<T>: Poolable, 
-    <Vec<T> as Poolable>::Storage: PoolCollectionStorage 
+    Vec<T>: Recyclable, 
+    <Vec<T> as Recyclable>::Storage: RecycleCollectionStorage 
 {
-    fn clone(&self) -> Recycle<Vec<T>> {
+    fn clone(&self) -> Recycled<Vec<T>> {
         // SAFETY: This is safe because `inner` will always be initialised except when it
         // is being dropped. Since calling this function means the object is still referenced, it is
         // initialized.
-        Recycle::alloc_from_slice(unsafe { self.inner.assume_init_ref() })
+        Recycled::alloc_from_slice(unsafe { self.inner.assume_init_ref() })
     }
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-/// GENERAL GUARD IMPLEMENTATIONS                                                                                  ///
+// GENERAL GUARD IMPLEMENTATIONS                                                                                    //
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-impl<T: Poolable + Debug> Debug for Recycle<T> {
+impl<T: Recyclable + Debug> Debug for Recycled<T> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         self.inner.fmt(f)
     }
 }
 
 #[allow(clippy::unconditional_recursion)] // False positive.
-impl<T: Poolable + PartialEq> PartialEq for Recycle<T> {
+impl<T: Recyclable + PartialEq> PartialEq for Recycled<T> {
     fn eq(&self, other: &Self) -> bool {
         // SAFETY: This is safe because `inner` will always be initialised except when it
         // is being dropped. Since calling this function means the object is still referenced, it is
@@ -223,9 +223,9 @@ impl<T: Poolable + PartialEq> PartialEq for Recycle<T> {
     }
 }
 
-impl<T: Poolable + Eq> Eq for Recycle<T> {}
+impl<T: Recyclable + Eq> Eq for Recycled<T> {}
 
-impl<T: Poolable> Drop for Recycle<T> {
+impl<T: Recyclable> Drop for Recycled<T> {
     fn drop(&mut self) {
         // SAFETY: This is safe because `inner` will always be initialised except when it
         // is being dropped. Since calling this function means the object is still referenced, it is
@@ -239,13 +239,13 @@ impl<T: Poolable> Drop for Recycle<T> {
     }
 }
 
-impl<T: Poolable> From<T> for Recycle<T> {
+impl<T: Recyclable> From<T> for Recycled<T> {
     fn from(value: T) -> Self {
-        Recycle { inner: MaybeUninit::new(value) }
+        Recycled { inner: MaybeUninit::new(value) }
     }
 }
 
-impl<T: Poolable> Deref for Recycle<T> {
+impl<T: Recyclable> Deref for Recycled<T> {
     type Target = T;
 
     fn deref(&self) -> &Self::Target {
@@ -256,7 +256,7 @@ impl<T: Poolable> Deref for Recycle<T> {
     }
 }
 
-impl<T: Poolable> DerefMut for Recycle<T> {
+impl<T: Recyclable> DerefMut for Recycled<T> {
     fn deref_mut(&mut self) -> &mut Self::Target {
         // SAFETY: This is safe because `inner` will always be initialised except when it
         // is being dropped. Since calling this function means the object is still referenced, it is

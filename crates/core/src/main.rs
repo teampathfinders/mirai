@@ -48,7 +48,7 @@ fn main() -> anyhow::Result<()> {
 
     runtime.block_on(async move {
         let instance = builder.build().await?;
-        if let Err(err) = instance.start().await {
+        if let Err(err) = instance.start() {
             tracing::error!("Failed to start server: {err:#}");
             return Err(err);
         }

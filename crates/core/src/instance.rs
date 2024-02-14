@@ -7,7 +7,7 @@ use tokio::task::JoinHandle;
 
 
 use std::net::{Ipv4Addr, Ipv6Addr, SocketAddrV4, SocketAddrV6};
-use std::sync::{Arc};
+use std::sync::Arc;
 use std::time::Duration;
 
 use tokio::net::UdpSocket;
@@ -399,13 +399,13 @@ impl Instance {
     }
 
     /// Starts the server and immediately returns when the server has successfully started
-    pub async fn start(self: &Arc<Instance>) -> anyhow::Result<()> {
+    pub fn start(self: &Arc<Instance>) -> anyhow::Result<()> {
         // FIXME: The level module will get a refactor and this will be changed
         // let level = Level::new(self.user_map.clone(), self.token.clone())?;
         // self.user_map.set_level(level);
 
-        self.command_service.set_instance(&self)?;
-        self.level_service.set_instance(&self)?;
+        self.command_service.set_instance(self)?;
+        self.level_service.set_instance(self)?;
 
         {
             let socket = Arc::clone(&self.ipv4_socket);

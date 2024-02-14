@@ -4,7 +4,7 @@ use std::{
     sync::atomic::{AtomicUsize, Ordering},
 };
 
-use crate::Recycle;
+use crate::Recycled;
 
 static BINARY_POOL: Pool<Vec<u8>> = Pool::new();
 
@@ -14,13 +14,13 @@ static BINARY_POOL: Pool<Vec<u8>> = Pool::new();
 const POOL_MAX_SEARCH_COUNT: usize = 10;
 
 /// A pooled vector.
-pub type PVec = Recycle<Vec<u8>>;
+pub type PVec = Recycled<Vec<u8>>;
 
 /// A pooled string.
 ///
 /// The string uses `Vec<u8>` as a backing storage and therefore shares the pool
 /// with [`PVec`].
-pub type RString = Recycle<String>;
+pub type RString = Recycled<String>;
 
 /// A storage type that can be used by a pool.
 pub trait PoolStorage: Sized + 'static {}
@@ -28,7 +28,7 @@ pub trait PoolStorage: Sized + 'static {}
 /// Specialization of [`PoolStorage`] that is only implemented by collections.
 ///
 /// This trait allows [`Pool`] to provide functionality related to collection capacities.
-pub trait PoolCollectionStorage: PoolStorage {
+pub trait RecycleCollectionStorage: PoolStorage {
     /// The capacity of this storage object.
     fn capacity(&self) -> usize;
     /// Reserves additional capacity for the storage object.
@@ -39,7 +39,7 @@ pub trait PoolCollectionStorage: PoolStorage {
 
 impl PoolStorage for Vec<u8> {}
 
-impl PoolCollectionStorage for Vec<u8> {
+impl RecycleCollectionStorage for Vec<u8> {
     fn capacity(&self) -> usize {
         self.capacity()
     }
@@ -54,7 +54,7 @@ impl PoolCollectionStorage for Vec<u8> {
 }
 
 /// An item that can be used in a global memory pool.
-pub trait Poolable: Sized + 'static {
+pub trait Recyclable: Sized + 'static {
     /// Underlying storage used for this type.
     ///
     /// A `String` can be created from and turned into a `Vec<u8>` which would
@@ -72,7 +72,7 @@ pub trait Poolable: Sized + 'static {
     fn into_storage(self) -> Self::Storage;
 }
 
-impl Poolable for Vec<u8> {
+impl Recyclable for Vec<u8> {
     type Storage = Vec<u8>;
 
     #[inline]
@@ -92,7 +92,7 @@ impl Poolable for Vec<u8> {
     }
 }
 
-impl Poolable for String {
+impl Recyclable for String {
     type Storage = Vec<u8>;
 
     #[inline]
@@ -129,9 +129,9 @@ impl<S: PoolStorage> Pool<S> {
     /// Retrieves an object from the pool.
     ///
     /// If the pool had no available objects, a new one is initialised by calling `init`.
-    pub fn alloc_with<P, F: FnOnce() -> P>(&self, init: F) -> Recycle<P>
+    pub fn alloc_with<P, F: FnOnce() -> P>(&self, init: F) -> Recycled<P>
     where
-        P: Poolable<Storage = S>,
+        P: Recyclable<Storage = S>,
     {
         REQ_COUNTER.fetch_add(1, Ordering::Relaxed);
 
@@ -148,7 +148,7 @@ impl<S: PoolStorage> Pool<S> {
             |value| P::into_usable(value),
         );
 
-        Recycle { inner: MaybeUninit::new(vec) }
+        Recycled { inner: MaybeUninit::new(vec) }
     }
 
     /// Takes ownership of the object and returns it to its pool.
@@ -165,9 +165,9 @@ impl<S: PoolStorage> Pool<S> {
     /// If the pool had no available objects, a new one is initialized using its [`Default`]
     /// implementation.
     #[inline]
-    pub fn alloc<P>(&self) -> Recycle<P>
+    pub fn alloc<P>(&self) -> Recycled<P>
     where
-        P: Poolable<Storage = S> + Default,
+        P: Recyclable<Storage = S> + Default,
     {
         REQ_COUNTER.fetch_add(1, Ordering::Relaxed);
 
@@ -184,22 +184,22 @@ impl<S: PoolStorage> Pool<S> {
             |value| P::into_usable(value),
         );
 
-        Recycle { inner: MaybeUninit::new(vec) }
+        Recycled { inner: MaybeUninit::new(vec) }
     }
 }
 
 impl<T> Pool<T>
 where
-    T: PoolCollectionStorage,
+    T: RecycleCollectionStorage,
 {
     /// Retrieves a collection object from the pool with the given capacity.
     ///
     /// This function attempts to find an object with at least the specified capacity.
     /// If none of the searched objects have a big enough capacity, the largest object is taken
     /// and resized to the requested capacity.
-    pub fn alloc_with_capacity<P>(&self, cap: usize) -> Recycle<Vec<P>>
+    pub fn alloc_with_capacity<P>(&self, cap: usize) -> Recycled<Vec<P>>
     where
-        Vec<P>: Poolable<Storage = T>,
+        Vec<P>: Recyclable<Storage = T>,
     {
         // Skip whole capacity procedure when the capacity is 0.
         if cap == 0 {
@@ -249,7 +249,7 @@ where
             },
         );
 
-        Recycle {
+        Recycled {
             inner: MaybeUninit::new(<Vec<P>>::into_usable(vec)),
         }
     }

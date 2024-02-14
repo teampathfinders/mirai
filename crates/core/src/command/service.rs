@@ -43,8 +43,8 @@ pub struct ServiceRequest {
 pub type Context = Arc<Instance>;
 
 /// A function that parses and executes a command.
-trait CommandHandler: Send + Sync {
-    /// Executes the command using this handlers.
+pub trait CommandHandler: Send + Sync {
+    /// Executes the command using this handler.
     /// This function also performs parsing of the input.
     fn call(&self, input: &str, ctx: &Context) -> ExecutionResult;
     /// Returns the syntactic structure of the command.
@@ -52,7 +52,7 @@ trait CommandHandler: Send + Sync {
 }
 
 /// A handler that uses the built-in command parser.
-struct HandlerImpl<F> 
+pub struct HandlerImpl<F> 
 where
     F: Fn(ParsedCommand, &Context) -> ExecutionResult + Send + Sync
 {
@@ -85,7 +85,7 @@ where
 }
 
 /// A handler that uses a custom user-provided parser.
-struct ParserHandlerImpl<F, P> 
+pub struct ParserHandlerImpl<F, P> 
 where
     F: Fn(ParsedCommand, &Context) -> ExecutionResult + Send + Sync,
     P: Fn(&str, &Context) -> ParseResult + Send + Sync
@@ -131,7 +131,8 @@ pub struct Service {
     sender: mpsc::Sender<ServiceRequest>,
     instance: OnceLock<Weak<Instance>>,
 
-    available: AvailableCommands<'static>,
+    /// Up to date [`AvailableCommands`] packet that can be sent to new users.
+    available: RwLock<AvailableCommands<'static>>,
     registry: DashMap<String, Arc<dyn CommandHandler>>
 }
 
@@ -144,7 +145,7 @@ impl Service {
             handle: RwLock::new(None), 
             registry: DashMap::new(),
             dynamic_enums: DashMap::new(),
-            available: AvailableCommands::empty(),
+            available: RwLock::new(AvailableCommands::empty()),
             instance: OnceLock::new()
         });
 
@@ -163,6 +164,11 @@ impl Service {
     pub(crate) fn set_instance(&self, instance: &Arc<Instance>) -> anyhow::Result<()> {
         self.instance.set(Arc::downgrade(instance)).map_err(|_| anyhow::anyhow!("Instance was already set"))
     }   
+
+    /// Returns the current [`AvailableCommands`] packet.
+    pub(crate) fn available_commands(&self) -> AvailableCommands<'static> {
+        self.available.read().clone()
+    }
 
     /// Updates autocompletion entries for the given dynamic enum.
     /// 
@@ -193,8 +199,11 @@ impl Service {
         self.instance().clients().broadcast(update)
     }
 
-    fn register_handler(&self, handler: Arc<dyn CommandHandler>) {
+    /// Registers a raw handler with this service.
+    pub fn register_handler(&self, handler: Arc<dyn CommandHandler>) {
         let structure = handler.structure();
+        self.available.write().commands.push(structure.clone());
+
         for alias in &structure.aliases {
             self.registry.insert(alias.clone(), Arc::clone(&handler));
         }
@@ -212,12 +221,21 @@ impl Service {
     }
 
     /// Registers a new command with the default syntax parser. 
+    /// 
+    /// ## Arguments
+    /// 
+    /// * `structure` - This is the syntactic structure of the command and is what the game uses
+    /// for autocompletion. This grammar is also what is used by the server's command parser to
+    /// parse and validate the command.
+    /// 
+    /// * `handler` - This is the function that is ran by the service when your command is executed
+    /// by a client. 
     pub fn register<F>(&self, structure: Command, handler: F) 
     where
         F: Fn(ParsedCommand, &Context) -> ExecutionResult + Send + Sync + 'static
     {   
         let handler = Arc::new(HandlerImpl {
-            handler, structure: structure.clone()
+            handler, structure
         });
         
         self.register_handler(handler);
@@ -230,10 +248,17 @@ impl Service {
         P: Fn(&str, &Context) -> ParseResult + Send + Sync + 'static
     {
         let handler = Arc::new(ParserHandlerImpl {
-            handler, structure: structure.clone(), parser
+            handler, structure, parser
         });
         
         self.register_handler(handler);
+    }
+
+    /// Removes a command from the registry and returns its handler.
+    /// 
+    /// This function does not accept command aliases, you should use the original name of the command.
+    pub fn unregister<S: AsRef<str>>(&self, name: S) -> Option<Arc<dyn CommandHandler>> {
+        self.registry.remove(name.as_ref()).map(|(_, v)| v)
     }
 
     /// Request execution of a command.
@@ -249,7 +274,10 @@ impl Service {
         Ok(receiver)
     }
 
+    /// Returns the instance that owns this service.
     fn instance(&self) -> Arc<Instance> {
+        // This will not panic because the instance field is initialised before the first command can be executed.
+        #[allow(clippy::unwrap_used)]
         self.instance.get().unwrap().upgrade().unwrap()
     }
 

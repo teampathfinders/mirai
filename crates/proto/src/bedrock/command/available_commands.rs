@@ -22,7 +22,7 @@ pub struct AvailableCommands<'a> {
 }
 
 impl AvailableCommands<'_> {
-    pub fn empty() -> AvailableCommands<'static> {
+    pub const fn empty() -> AvailableCommands<'static> {
         AvailableCommands {
             commands: CowSlice::empty()
         }
@@ -43,7 +43,7 @@ impl Serialize for AvailableCommands<'_> {
     fn serialize_into<W: BinaryWrite>(&self, writer: &mut W) -> anyhow::Result<()> {
         let mut value_indices = HashMap::new();
         let mut values = Vec::new();
-        for command in self.commands {
+        for command in &self.commands {
             for alias in &command.aliases {
                 if !value_indices.contains_key(alias) {
                     value_indices.insert(alias, values.len() as u32);
@@ -67,7 +67,7 @@ impl Serialize for AvailableCommands<'_> {
 
         let mut suffix_indices = HashMap::new();
         let mut suffixes = Vec::new();
-        for command in self.commands {
+        for command in &self.commands {
             for overload in &command.overloads {
                 for parameter in &overload.parameters {
                     if !parameter.suffix.is_empty() && !suffix_indices.contains_key(&parameter.suffix) {
@@ -83,7 +83,7 @@ impl Serialize for AvailableCommands<'_> {
 
         let mut enum_indices = HashMap::new();
         let mut enums = Vec::new();
-        for command in self.commands {
+        for command in &self.commands {
             if !command.aliases.is_empty() {
                 let alias_enum = CommandEnum {
                     enum_id: command.name.clone() + "Aliases",
@@ -117,7 +117,7 @@ impl Serialize for AvailableCommands<'_> {
 
         let mut dynamic_indices = HashMap::new();
         let mut dynamic_enums = Vec::new();
-        for command in self.commands {
+        for command in &self.commands {
             for overload in &command.overloads {
                 for parameter in &overload.parameters {
                     if let Some(ref command_enum) = parameter.command_enum {
@@ -164,7 +164,7 @@ impl Serialize for AvailableCommands<'_> {
 
         writer.write_var_u32(0)?; // No subcommand data
         writer.write_var_u32(self.commands.len() as u32)?;
-        for command in self.commands {
+        for command in &self.commands {
             let alias = if !command.aliases.is_empty() {
                 enum_indices[&(command.name.clone() + "Aliases")] as i32
             } else {

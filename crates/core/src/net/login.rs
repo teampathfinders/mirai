@@ -235,6 +235,9 @@ impl BedrockUser {
         let biome_definition_list = BiomeDefinitionList;
         self.send(biome_definition_list)?;
 
+        let available_commands = self.commands.available_commands();
+        self.send(available_commands)?;
+
         // let commands = self.level.get_commands().iter().map(|kv| kv.value().clone()).collect::<Vec<_>>();
         // let available_commands = AvailableCommands { commands: commands.as_slice() };
         // self.send(available_commands)?;
