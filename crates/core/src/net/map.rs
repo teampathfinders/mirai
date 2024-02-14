@@ -42,7 +42,7 @@ impl<T> UserMapEntry<T> {
 }
 
 /// Keeps track of all users currently connected to the server.
-pub struct UserMap {
+pub struct Clients {
     /// Token that indicates whether this user map has fully shut down.
     /// 
     /// This is used by other services to wait for all players to disconnect before
@@ -60,7 +60,7 @@ pub struct UserMap {
     level: Arc<crate::level::Service>
 }
 
-impl UserMap {
+impl Clients {
     /// Creates a new user map.
     pub fn new(replicator: Arc<Replicator>, commands: Arc<crate::command::Service>, level: Arc<crate::level::Service>) -> Self {
         let connecting_map = Arc::new(DashMap::new());
@@ -165,7 +165,7 @@ impl UserMap {
     /// Signals the user map to shut down.
     /// 
     /// This function returns a handle that can be used to await shutdown.
-    pub fn shutdown(self: &Arc<UserMap>) -> JoinHandle<anyhow::Result<()>> {
+    pub fn shutdown(self: &Arc<Clients>) -> JoinHandle<anyhow::Result<()>> {
         let this = Arc::clone(self);
         tokio::spawn(async move {
             tracing::info!("Disconnecting all clients");
@@ -209,7 +209,7 @@ impl UserMap {
     }
 }
 
-impl Joinable for UserMap {
+impl Joinable for Clients {
     /// Sends a [`Disconnect`] packet to every connected user and waits for all users
     /// to acknowledge they have been disconnected.
     /// 

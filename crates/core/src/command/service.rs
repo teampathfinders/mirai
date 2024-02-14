@@ -3,7 +3,7 @@ use std::{sync::{Arc, OnceLock, Weak}, time::Duration};
 use anyhow::Context as _;
 use dashmap::DashMap;
 use parking_lot::RwLock;
-use proto::bedrock::{Command, ParseResult, ParsedCommand};
+use proto::bedrock::{Command, DynamicEnumAction, ParseResult, ParsedCommand, UpdateDynamicEnum};
 use tokio::{sync::{mpsc, oneshot}, task::JoinHandle};
 use tokio_util::sync::CancellationToken;
 use util::{FastString, Joinable};
@@ -120,16 +120,18 @@ where
     }
 }
 
+
 /// Service that manages command execution.
 pub struct Service {
+    dynamic_enums: DashMap<String, Vec<String>>,
+
     token: CancellationToken,
     handle: RwLock<Option<JoinHandle<()>>>,
 
     sender: mpsc::Sender<ServiceRequest>,
     instance: OnceLock<Weak<Instance>>,
 
-    registry: DashMap<String, Arc<dyn CommandHandler>>,
-    available: RwLock<Vec<Command>>
+    registry: DashMap<String, Arc<dyn CommandHandler>>
 }
 
 impl Service {
@@ -140,7 +142,7 @@ impl Service {
             token, sender,
             handle: RwLock::new(None), 
             registry: DashMap::new(),
-            available: RwLock::new(Vec::new()), 
+            dynamic_enums: DashMap::new(),
             instance: OnceLock::new()
         });
 
@@ -158,30 +160,65 @@ impl Service {
     /// This is used to create contexts when calling command handlers.
     pub(crate) fn set_instance(&self, instance: &Arc<Instance>) -> anyhow::Result<()> {
         self.instance.set(Arc::downgrade(instance)).map_err(|_| anyhow::anyhow!("Instance was already set"))
+    }   
+
+    /// Updates autocompletion entries for the given dynamic enum.
+    /// 
+    /// This function can only be used with enums that were marked as dynamic on creation.
+    /// 
+    /// This function returns an error if the dynamic enum does not exist or
+    /// if sending the update packet to clients fails.
+    pub fn update_dynamic_enum(&self, update: UpdateDynamicEnum) -> anyhow::Result<()> {
+        let Some(mut denum) = self.dynamic_enums.get_mut(update.enum_id) else {
+            anyhow::bail!("Dynamic enum does not exist")
+        };
+
+        match update.action {
+            DynamicEnumAction::Add => {
+                denum.extend_from_slice(update.options);
+            }
+            DynamicEnumAction::Set => {
+                denum.clear();
+                denum.extend_from_slice(update.options);
+            }
+            DynamicEnumAction::Remove => {
+                denum.retain(|opt| {
+                    !update.options.contains(opt)
+                })
+            }
+        }
+
+        self.instance().clients().broadcast(update)
     }
 
-    // /// Returns a list of all registered commands that can be used in an [`AvailableCommands`] packet.
-    // #[inline]
-    // pub fn available(&self) -> Reusable<Vec<Command>> {
-    //     todo!()
-    // }
+    fn register_handler(&self, handler: Arc<dyn CommandHandler>) {
+        let structure = handler.structure();
+        for alias in &structure.aliases {
+            self.registry.insert(alias.clone(), Arc::clone(&handler));
+        }
+
+        for overload in &structure.overloads {
+            for parameter in &overload.parameters {
+                let Some(denum) = &parameter.command_enum else { continue };
+                if denum.dynamic {
+                    self.dynamic_enums.insert(denum.enum_id.clone(), denum.options.clone());
+                }
+            }
+        }
+
+        self.registry.insert(structure.name.clone(), handler);
+    }
 
     /// Registers a new command with the default syntax parser. 
     pub fn register<F>(&self, structure: Command, handler: F) 
     where
         F: Fn(ParsedCommand, &Context) -> ExecutionResult + Send + Sync + 'static
     {   
-        let aliases = structure.aliases.clone();
-        let name = structure.name.clone();
-
-        let wrap = Arc::new(HandlerImpl {
-            handler, structure
+        let handler = Arc::new(HandlerImpl {
+            handler, structure: structure.clone()
         });
-
-        for alias in aliases {
-            self.registry.insert(alias, Arc::clone(&wrap) as Arc<dyn CommandHandler>);
-        }
-        self.registry.insert(name, wrap);
+        
+        self.register_handler(handler);
     }
 
     /// Registers a new command with a custom parser.
@@ -190,17 +227,11 @@ impl Service {
         F: Fn(ParsedCommand, &Context) -> ExecutionResult + Send + Sync + 'static,
         P: Fn(&str, &Context) -> ParseResult + Send + Sync + 'static
     {
-        let aliases = structure.aliases.clone();
-        let name = structure.name.clone();
-
-        let wrap = Arc::new(ParserHandlerImpl {
-            handler, structure, parser
+        let handler = Arc::new(ParserHandlerImpl {
+            handler, structure: structure.clone(), parser
         });
-
-        for alias in aliases {
-            self.registry.insert(alias, Arc::clone(&wrap) as Arc<dyn CommandHandler>);
-        }
-        self.registry.insert(name, wrap);
+        
+        self.register_handler(handler);
     }
 
     /// Request execution of a command.
@@ -214,6 +245,10 @@ impl Service {
         self.sender.send_timeout(request, SERVICE_TIMEOUT).await.context("Command service request timed out")?;
 
         Ok(receiver)
+    }
+
+    fn instance(&self) -> Arc<Instance> {
+        self.instance.get().unwrap().upgrade().unwrap()
     }
 
     /// Parses the syntactic structure of a command before sending it off to a custom handler.

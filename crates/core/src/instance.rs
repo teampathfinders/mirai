@@ -5,9 +5,9 @@ use anyhow::Context;
 use raknet::RaknetCreateInfo;
 use tokio::task::JoinHandle;
 
-use std::borrow::Cow;
+
 use std::net::{Ipv4Addr, Ipv6Addr, SocketAddrV4, SocketAddrV6};
-use std::sync::{Arc, OnceLock};
+use std::sync::{Arc};
 use std::time::Duration;
 
 use tokio::net::UdpSocket;
@@ -18,9 +18,9 @@ use util::{Deserialize, FastString, Joinable, PString, PVec, ReserveTo, Serializ
 
 use crate::command;
 use crate::config::SERVER_CONFIG;
-use crate::net::{ForwardablePacket, UserMap};
+use crate::net::{ForwardablePacket, Clients};
 use proto::bedrock::{
-    Command, CommandDataType, CommandOverload, CommandParameter, CommandPermissionLevel, CompressionAlgorithm, CLIENT_VERSION_STRING,
+    Command, CommandOverload, CommandPermissionLevel, CompressionAlgorithm, CLIENT_VERSION_STRING,
     PROTOCOL_VERSION,
 };
 use proto::raknet::{
@@ -273,12 +273,12 @@ impl<'a> InstanceBuilder<'a> {
 
         let level_service = crate::level::Service::new(running_token.clone());
 
-        let user_map = Arc::new(UserMap::new(replicator, Arc::clone(&command_service), Arc::clone(&level_service)));
+        let user_map = Arc::new(Clients::new(replicator, Arc::clone(&command_service), Arc::clone(&level_service)));
 
         let instance = Instance {
             ipv4_socket,
             ipv6_socket,
-            user_map,
+            clients: user_map,
             command_service,
             level_service,
 
@@ -314,7 +314,7 @@ pub struct Instance {
     /// IPv6 UDP socket.
     ipv6_socket: Option<Arc<UdpSocket>>,
     /// Service that manages all player sessions.
-    user_map: Arc<UserMap>,
+    clients: Arc<Clients>,
     /// Keeps track of all available commands.
     command_service: Arc<crate::command::Service>,
     /// Keeps track of the level state.
@@ -350,6 +350,12 @@ impl Instance {
         &self.level_service
     }
 
+    /// Gets the client list of this instance.
+    #[inline]
+    pub const fn clients(&self) -> &Arc<crate::net::Clients> {
+        &self.clients
+    }
+
     /// Signals the server to start shutting down.
     ///
     /// This function returns `None` if the server is already shutting down.
@@ -366,7 +372,7 @@ impl Instance {
 
         let this = Arc::clone(self);
         let handle = tokio::spawn(async move {
-            let handle = this.user_map.shutdown();
+            let handle = this.clients.shutdown();
             match handle.await {
                 Ok(_) => (),
                 Err(e) => {
@@ -403,7 +409,7 @@ impl Instance {
 
         {
             let socket = Arc::clone(&self.ipv4_socket);
-            let user_map = Arc::clone(&self.user_map);
+            let user_map = Arc::clone(&self.clients);
             let token = self.running_token.clone();
 
             tokio::spawn(Instance::net_receiver(token, socket, user_map));
@@ -413,7 +419,7 @@ impl Instance {
         if let Some(ipv6_socket) = &self.ipv6_socket {
             let socket = Arc::clone(ipv6_socket);
 
-            let user_map = Arc::clone(&self.user_map);
+            let user_map = Arc::clone(&self.clients);
             let token = self.running_token.clone();
 
             tokio::spawn(Instance::net_receiver(token, socket, user_map));
@@ -508,7 +514,7 @@ impl Instance {
     fn process_open_connection_request2(
         mut packet: ForwardablePacket,
         udp_socket: Arc<UdpSocket>,
-        user_manager: Arc<UserMap>,
+        user_manager: Arc<Clients>,
         server_guid: u64,
     ) -> anyhow::Result<ForwardablePacket> {
         let request = OpenConnectionRequest2::deserialize(packet.buf.as_ref())?;
@@ -536,7 +542,7 @@ impl Instance {
     }
 
     /// Receives raknet from IPv4 clients and adds them to the receive queue
-    async fn net_receiver(running_token: CancellationToken, udp_socket: Arc<UdpSocket>, user_manager: Arc<UserMap>) {
+    async fn net_receiver(running_token: CancellationToken, udp_socket: Arc<UdpSocket>, user_manager: Arc<Clients>) {
         let server_guid = rand::random();
 
         // TODO: Customizable server description.

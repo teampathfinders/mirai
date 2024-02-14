@@ -9,7 +9,7 @@ use crate::bedrock::ConnectedPacket;
 /// The dynamic enum is what is used for autocompletion in commands.
 /// This enum is only used if the `dynamic` option is set to true in [`CommandEnum`].
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
-pub enum SoftEnumAction {
+pub enum DynamicEnumAction {
     /// Adds an option to the soft enum.
     Add,
     /// Removes an option to the soft enum.
@@ -26,7 +26,7 @@ pub struct UpdateDynamicEnum<'a> {
     /// List of enum options.
     pub options: &'a [String],
     /// Action to perform on the dynamic enum.
-    pub action: SoftEnumAction,
+    pub action: DynamicEnumAction,
 }
 
 impl ConnectedPacket for UpdateDynamicEnum<'_> {
