@@ -2,7 +2,7 @@ use std::cmp::Ordering;
 use std::collections::HashMap;
 use std::str::Split;
 
-use util::FastString;
+use util::CowString;
 
 use crate::bedrock::{Command, CommandDataType, CommandOverload};
 
@@ -25,7 +25,7 @@ pub struct ParseError {
     /// Type of error that occurred.
     pub kind: ParseErrorKind,
     /// Information about the error.
-    pub description: FastString<'static>,
+    pub description: CowString<'static>,
 }
 
 pub type ParseResult = Result<ParsedCommand, ParseError>;

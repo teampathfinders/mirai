@@ -4,7 +4,7 @@ use std::{
     sync::atomic::{AtomicUsize, Ordering},
 };
 
-use crate::Pooled;
+use crate::Recycle;
 
 static BINARY_POOL: Pool<Vec<u8>> = Pool::new();
 
@@ -14,13 +14,13 @@ static BINARY_POOL: Pool<Vec<u8>> = Pool::new();
 const POOL_MAX_SEARCH_COUNT: usize = 10;
 
 /// A pooled vector.
-pub type PVec = Pooled<Vec<u8>>;
+pub type PVec = Recycle<Vec<u8>>;
 
 /// A pooled string.
 ///
 /// The string uses `Vec<u8>` as a backing storage and therefore shares the pool
 /// with [`PVec`].
-pub type PString = Pooled<String>;
+pub type RString = Recycle<String>;
 
 /// A storage type that can be used by a pool.
 pub trait PoolStorage: Sized + 'static {}
@@ -129,7 +129,7 @@ impl<S: PoolStorage> Pool<S> {
     /// Retrieves an object from the pool.
     ///
     /// If the pool had no available objects, a new one is initialised by calling `init`.
-    pub fn alloc_with<P, F: FnOnce() -> P>(&self, init: F) -> Pooled<P>
+    pub fn alloc_with<P, F: FnOnce() -> P>(&self, init: F) -> Recycle<P>
     where
         P: Poolable<Storage = S>,
     {
@@ -148,7 +148,7 @@ impl<S: PoolStorage> Pool<S> {
             |value| P::into_usable(value),
         );
 
-        Pooled { inner: MaybeUninit::new(vec) }
+        Recycle { inner: MaybeUninit::new(vec) }
     }
 
     /// Takes ownership of the object and returns it to its pool.
@@ -165,7 +165,7 @@ impl<S: PoolStorage> Pool<S> {
     /// If the pool had no available objects, a new one is initialized using its [`Default`]
     /// implementation.
     #[inline]
-    pub fn alloc<P>(&self) -> Pooled<P>
+    pub fn alloc<P>(&self) -> Recycle<P>
     where
         P: Poolable<Storage = S> + Default,
     {
@@ -184,7 +184,7 @@ impl<S: PoolStorage> Pool<S> {
             |value| P::into_usable(value),
         );
 
-        Pooled { inner: MaybeUninit::new(vec) }
+        Recycle { inner: MaybeUninit::new(vec) }
     }
 }
 
@@ -197,7 +197,7 @@ where
     /// This function attempts to find an object with at least the specified capacity.
     /// If none of the searched objects have a big enough capacity, the largest object is taken
     /// and resized to the requested capacity.
-    pub fn alloc_with_capacity<P>(&self, cap: usize) -> Pooled<Vec<P>>
+    pub fn alloc_with_capacity<P>(&self, cap: usize) -> Recycle<Vec<P>>
     where
         Vec<P>: Poolable<Storage = T>,
     {
@@ -249,7 +249,7 @@ where
             },
         );
 
-        Pooled {
+        Recycle {
             inner: MaybeUninit::new(<Vec<P>>::into_usable(vec)),
         }
     }

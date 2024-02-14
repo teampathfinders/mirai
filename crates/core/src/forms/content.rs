@@ -1,5 +1,5 @@
 use serde::ser::SerializeStruct;
-use util::PString;
+use util::RString;
 
 use super::Submittable;
 
@@ -7,7 +7,7 @@ use super::Submittable;
 #[derive(Debug, Default)]
 pub struct Label {
     /// Text to display.
-    pub(super) label: PString,
+    pub(super) label: RString,
 }
 
 impl Label {
@@ -17,7 +17,7 @@ impl Label {
     }
 
     /// Sets the body of this label.
-    pub fn label<I: Into<PString>>(mut self, label: I) -> Self {
+    pub fn label<I: Into<RString>>(mut self, label: I) -> Self {
         self.label = label.into();
         self
     }
@@ -47,11 +47,11 @@ impl serde::Serialize for Label {
 #[derive(Debug, Default)]
 pub struct Input {
     /// Label to display above the field.
-    pub(super) label: PString,
+    pub(super) label: RString,
     /// Placeholder to display inside the field when it is empty.
-    pub(super) placeholder: PString,
+    pub(super) placeholder: RString,
     /// Initial state of the field.
-    pub(super) default: PString,
+    pub(super) default: RString,
 }
 
 impl Input {
@@ -61,19 +61,19 @@ impl Input {
     }
 
     /// Sets the label.
-    pub fn label<I: Into<PString>>(mut self, label: I) -> Self {
+    pub fn label<I: Into<RString>>(mut self, label: I) -> Self {
         self.label = label.into();
         self
     }
 
     /// Sets the placeholder.
-    pub fn placeholder<I: Into<PString>>(mut self, placeholder: I) -> Self {
+    pub fn placeholder<I: Into<RString>>(mut self, placeholder: I) -> Self {
         self.placeholder = placeholder.into();
         self
     }
 
     /// Sets the default state.
-    pub fn default<I: Into<PString>>(mut self, default: I) -> Self {
+    pub fn default<I: Into<RString>>(mut self, default: I) -> Self {
         self.default = default.into();
         self
     }
@@ -105,7 +105,7 @@ impl serde::Serialize for Input {
 #[derive(Debug, Default)]
 pub struct Toggle {
     /// Label to display next to the toggle.
-    pub(super) label: PString,
+    pub(super) label: RString,
     /// Initial state of the toggle.
     pub(super) default: bool,
 }
@@ -117,7 +117,7 @@ impl Toggle {
     }
 
     /// Sets the label.
-    pub fn label<I: Into<PString>>(mut self, label: I) -> Self {
+    pub fn label<I: Into<RString>>(mut self, label: I) -> Self {
         self.label = label.into();
         self
     }
@@ -154,7 +154,7 @@ impl serde::Serialize for Toggle {
 #[derive(Debug, Default)]
 pub struct Slider {
     /// Label to display above the slider.
-    pub(super) label: PString,
+    pub(super) label: RString,
     /// Minimum value of the slider.
     pub(super) min: f64,
     /// Maximum value of the slider.
@@ -172,7 +172,7 @@ impl Slider {
     }
 
     /// Sets the label.
-    pub fn label<I: Into<PString>>(mut self, label: I) -> Self {
+    pub fn label<I: Into<RString>>(mut self, label: I) -> Self {
         self.label = label.into();
         self
     }
@@ -230,10 +230,10 @@ impl serde::Serialize for Slider {
 #[derive(Debug, Default)]
 pub struct Dropdown {
     /// Label to display above the menu.
-    pub(super) label: PString,
+    pub(super) label: RString,
     /// List of options that can be selected.
     /// The dropdown is of type radio and users can therefore only select a single option.
-    pub(super) options: Vec<PString>,
+    pub(super) options: Vec<RString>,
     /// Initial state of the dropdown.
     pub(super) default: u32,
 }
@@ -245,13 +245,13 @@ impl Dropdown {
     }
 
     /// Sets the label.
-    pub fn label<I: Into<PString>>(mut self, label: I) -> Self {
+    pub fn label<I: Into<RString>>(mut self, label: I) -> Self {
         self.label = label.into();
         self
     }
 
     /// Adds an option.
-    pub fn option<I: Into<PString>>(mut self, option: I) -> Self {
+    pub fn option<I: Into<RString>>(mut self, option: I) -> Self {
         self.options.push(option.into());
         self
     }
@@ -289,10 +289,10 @@ impl serde::Serialize for Dropdown {
 #[derive(Debug, Default)]
 pub struct StepSlider {
     /// Label to display above the slider.
-    pub(super) label: PString,
+    pub(super) label: RString,
     /// A list of available options.
     /// The user can pick between these options using the slider.
-    pub(super) steps: Vec<PString>,
+    pub(super) steps: Vec<RString>,
     /// Initial state of the step slider.
     pub(super) default: u32,
 }
@@ -304,13 +304,13 @@ impl StepSlider {
     }
 
     /// Sets the label.
-    pub fn label<I: Into<PString>>(mut self, label: I) -> Self {
+    pub fn label<I: Into<RString>>(mut self, label: I) -> Self {
         self.label = label.into();
         self
     }
 
     /// Adds a step.
-    pub fn option<I: Into<PString>>(mut self, step: I) -> Self {
+    pub fn option<I: Into<RString>>(mut self, step: I) -> Self {
         self.steps.push(step.into());
         self
     }
@@ -348,16 +348,16 @@ impl serde::Serialize for StepSlider {
 #[derive(Debug, Clone)]
 enum ButtonImage {
     /// A URL pointing to an online image.
-    Url(PString),
+    Url(RString),
     /// A path pointing to an image in an applied resource pack.
-    Path(PString),
+    Path(RString),
 }
 
 /// A simple button with optional image.
 #[derive(Debug)]
 pub struct Button {
     /// Text displayed on the button.
-    pub(crate) body: PString,
+    pub(crate) body: RString,
     /// An optional image shown to the left of the button.
     /// This button can either be a local file from a resource pack or a URL.
     image: Option<ButtonImage>,
@@ -372,7 +372,7 @@ impl Button {
     /// Sets the content of the button.
     ///
     /// Default: "Button".
-    pub fn body<I: Into<PString>>(mut self, body: I) -> Self {
+    pub fn body<I: Into<RString>>(mut self, body: I) -> Self {
         self.body = body.into();
         self
     }
@@ -380,7 +380,7 @@ impl Button {
     /// Sets the image URL. This can point to an online resource.
     ///
     /// Default: None
-    pub fn image_url<I: Into<PString>>(mut self, url: I) -> Self {
+    pub fn image_url<I: Into<RString>>(mut self, url: I) -> Self {
         self.image = Some(ButtonImage::Url(url.into()));
         self
     }
@@ -388,7 +388,7 @@ impl Button {
     /// Sets the image path. This should point to an image from a resource pack.
     ///
     /// Default: None
-    pub fn image_path<I: Into<PString>>(mut self, path: I) -> Self {
+    pub fn image_path<I: Into<RString>>(mut self, path: I) -> Self {
         self.image = Some(ButtonImage::Path(path.into()));
         self
     }
@@ -397,7 +397,7 @@ impl Button {
 impl Default for Button {
     fn default() -> Self {
         Self {
-            body: PString::from("Button"),
+            body: RString::from("Button"),
             image: None,
         }
     }

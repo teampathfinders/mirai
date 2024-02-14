@@ -3,10 +3,10 @@ use std::{sync::{Arc, OnceLock, Weak}, time::Duration};
 use anyhow::Context as _;
 use dashmap::DashMap;
 use parking_lot::RwLock;
-use proto::bedrock::{Command, DynamicEnumAction, ParseResult, ParsedCommand, UpdateDynamicEnum};
+use proto::bedrock::{AvailableCommands, Command, DynamicEnumAction, ParseResult, ParsedCommand, UpdateDynamicEnum};
 use tokio::{sync::{mpsc, oneshot}, task::JoinHandle};
 use tokio_util::sync::CancellationToken;
-use util::{FastString, Joinable};
+use util::{CowString, Joinable};
 
 use crate::instance::Instance;
 
@@ -16,11 +16,11 @@ const SERVICE_TIMEOUT: Duration = Duration::from_millis(10);
 #[derive(Debug)]
 pub struct CommandOutput {
     /// Output of the command.
-    pub message: FastString<'static>,
+    pub message: CowString<'static>,
     // pub message: Cow<'static, str>
     /// Optional parameters used in the command output.
     // pub parameters: Vec<Cow<'static, str>>
-    pub parameters: Vec<FastString<'static>>
+    pub parameters: Vec<CowString<'static>>
 }
 
 /// The result of a command execution.
@@ -131,6 +131,7 @@ pub struct Service {
     sender: mpsc::Sender<ServiceRequest>,
     instance: OnceLock<Weak<Instance>>,
 
+    available: AvailableCommands<'static>,
     registry: DashMap<String, Arc<dyn CommandHandler>>
 }
 
@@ -143,6 +144,7 @@ impl Service {
             handle: RwLock::new(None), 
             registry: DashMap::new(),
             dynamic_enums: DashMap::new(),
+            available: AvailableCommands::empty(),
             instance: OnceLock::new()
         });
 

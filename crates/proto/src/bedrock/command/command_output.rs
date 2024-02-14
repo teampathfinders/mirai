@@ -1,5 +1,5 @@
-use util::FastSlice;
-use util::FastString;
+use util::CowSlice;
+use util::CowString;
 use uuid::Uuid;
 
 use util::{Serialize, BinaryWrite};
@@ -22,9 +22,9 @@ pub struct CommandOutputMessage<'a> {
     /// is white or red.
     pub is_success: bool,
     /// Message to display in the output.
-    pub message: FastString<'a>,
+    pub message: CowString<'a>,
     /// Parameters to use in the outputted message.
-    pub parameters: FastSlice<'a, FastString<'a>>,
+    pub parameters: CowSlice<'a, CowString<'a>>,
 }
 
 /// Returns the output of a command back to the user.
@@ -38,7 +38,7 @@ pub struct CommandOutput<'a> {
     /// How many of the executions were successful.
     pub success_count: u32,
     /// Output(s)
-    pub output: FastSlice<'a, CommandOutputMessage<'a>>,
+    pub output: CowSlice<'a, CommandOutputMessage<'a>>,
 }
 
 impl ConnectedPacket for CommandOutput<'_> {

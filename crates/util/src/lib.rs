@@ -44,7 +44,6 @@ mod macros;
 #[macro_use]
 mod error;
 
-mod fast;
 mod memory;
 
 use std::{
@@ -53,7 +52,6 @@ use std::{
 };
 
 pub use error::*;
-pub use fast::*;
 pub use memory::*;
 
 /// Overwrites the memory of a type when it is dropped.

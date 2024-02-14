@@ -2,6 +2,7 @@ use std::collections::HashMap;
 
 use util::BinaryWrite;
 
+use util::CowSlice;
 use util::Serialize;
 
 use crate::bedrock::command::Command;
@@ -17,7 +18,15 @@ pub const COMMAND_PARAMETER_SOFT_ENUM: u32 = 0x4000000;
 #[derive(Debug, Clone)]
 pub struct AvailableCommands<'a> {
     /// List of available commands
-    pub commands: &'a [Command],
+    pub commands: CowSlice<'a, Command>,
+}
+
+impl AvailableCommands<'_> {
+    pub fn empty() -> AvailableCommands<'static> {
+        AvailableCommands {
+            commands: CowSlice::empty()
+        }
+    }
 }
 
 impl ConnectedPacket for AvailableCommands<'_> {

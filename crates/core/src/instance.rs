@@ -14,7 +14,7 @@ use tokio::net::UdpSocket;
 
 use tokio_util::sync::CancellationToken;
 
-use util::{Deserialize, FastString, Joinable, PString, PVec, ReserveTo, Serialize};
+use util::{Deserialize, CowString, Joinable, RString, PVec, ReserveTo, Serialize};
 
 use crate::command;
 use crate::config::SERVER_CONFIG;
@@ -142,7 +142,7 @@ impl Default for ClientConfig {
 
 /// Builder used to configure a new server instance.
 pub struct InstanceBuilder<'a> {
-    name: PString,
+    name: RString,
     net_config: NetConfig,
     db_config: DbConfig<'a>,
     client_config: ClientConfig,
@@ -161,7 +161,7 @@ impl<'a> InstanceBuilder<'a> {
     ///
     /// Default: Server.
     #[inline]
-    pub fn name<I: Into<PString>>(mut self, name: I) -> InstanceBuilder<'a> {
+    pub fn name<I: Into<RString>>(mut self, name: I) -> InstanceBuilder<'a> {
         self.name = name.into();
         self
     }
@@ -238,7 +238,7 @@ impl<'a> InstanceBuilder<'a> {
                 ctx.shutdown();
 
                 Ok(command::CommandOutput {
-                    message: FastString::new("Server is shutting down"),
+                    message: CowString::new("Server is shutting down"),
                     parameters: Vec::new(),
                 })
             },
@@ -294,7 +294,7 @@ impl<'a> InstanceBuilder<'a> {
 impl Default for InstanceBuilder<'static> {
     fn default() -> InstanceBuilder<'static> {
         InstanceBuilder {
-            name: PString::from("Server"),
+            name: RString::from("Server"),
             net_config: NetConfig::default(),
             db_config: DbConfig::default(),
             client_config: ClientConfig::default(),
