@@ -102,6 +102,9 @@ impl Poolable for String {
 
     #[inline]
     fn into_usable(storage: Vec<u8>) -> Self {
+        // This does not panic because `storage` will always be an empty vector
+        // and therefore a valid UTF-8 string.
+        #[allow(clippy::unwrap_used)]
         String::from_utf8(storage).unwrap()
     }
 
@@ -137,12 +140,12 @@ impl<S: PoolStorage> Pool<S> {
             lock.pop()
         };
 
-        let vec = if let Some(value) = pop {
-            P::into_usable(value)
-        } else {
+        let vec = pop.map_or_else(|| {
             ALLOC_COUNTER.fetch_add(1, Ordering::Relaxed);
             init()
-        };
+        }, |value| {
+            P::into_usable(value)
+        });
 
         Pooled { inner: MaybeUninit::new(vec) }
     }
@@ -172,12 +175,12 @@ impl<S: PoolStorage> Pool<S> {
             lock.pop()
         };
 
-        let vec = if let Some(value) = pop {
-            P::into_usable(value)
-        } else {
+        let vec = pop.map_or_else(|| {
             ALLOC_COUNTER.fetch_add(1, Ordering::Relaxed);
             P::default()
-        };
+        }, |value| {
+            P::into_usable(value)
+        });
 
         Pooled { inner: MaybeUninit::new(vec) }
     }
@@ -212,7 +215,8 @@ where
                 None
             } else {
                 // Find collection with largest capacity
-                for (idx, collection) in lock.iter().enumerate().take(POOL_MAX_SEARCH_COUNT) {
+                let taken = lock.iter().enumerate().take(POOL_MAX_SEARCH_COUNT);
+                for (idx, collection) in taken {
                     if collection.capacity() > cap {
                         largest_idx = idx;
                         break;
@@ -228,17 +232,17 @@ where
             }
         };
 
-        let vec = if let Some(mut value) = found {
+        let vec = found.map_or_else(|| {
+            ALLOC_COUNTER.fetch_add(1, Ordering::Relaxed);
+            T::with_capacity(cap)
+        }, |mut value| {
             if value.capacity() < cap {
                 value.reserve(cap);
                 ALLOC_COUNTER.fetch_add(1, Ordering::Relaxed);
             }
 
             value
-        } else {
-            ALLOC_COUNTER.fetch_add(1, Ordering::Relaxed);
-            T::with_capacity(cap)
-        };
+        });
 
         Pooled {
             inner: MaybeUninit::new(<Vec<P>>::into_usable(vec)),

@@ -166,6 +166,7 @@ impl BedrockUser {
     }
 
     /// Handles a packet broadcasted by another user.
+    #[allow(clippy::unwrap_in_result)]
     fn handle_broadcast(&self, packet: BroadcastPacket) -> anyhow::Result<()> {
         let should_send = packet.sender.map(|sender| sender != self.raknet.address).unwrap_or(true);
         if should_send {
@@ -173,6 +174,8 @@ impl BedrockUser {
                 id: packet.id, sender_subclient: 0, target_subclient: 0
             };
 
+            // Header::size_hint always returns `Some`.
+            #[allow(clippy::unwrap_used)]
             let size_hint = header.size_hint().unwrap() + packet.content.len();
     
             let mut body = PVec::alloc_with_capacity(size_hint);
@@ -251,11 +254,14 @@ impl BedrockUser {
 
     /// Sends a game packet with default settings
     /// (reliable ordered and medium priority)
+    #[allow(clippy::unwrap_in_result, clippy::missing_panics_doc)]
     pub fn send<T: ConnectedPacket + Serialize>(&self, packet: T) -> anyhow::Result<()> {
         let header = Header {
             id: T::ID, sender_subclient: 0, target_subclient: 0
         };
 
+        // Header::size_hint always returns a value.
+        #[allow(clippy::unwrap_used)]
         let size_hint = 
             header.size_hint().unwrap() + 
             packet.size_hint().unwrap_or(0);

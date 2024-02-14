@@ -47,12 +47,10 @@ fn main() -> anyhow::Result<()> {
         })
         .db_config(DbConfig { host: &host, port });
 
-    let out = runtime.block_on(async move {
+    runtime.block_on(async move {
         let instance = builder.build().await?;
         instance.run().await
-    });
-
-    out
+    })
 }
 
 /// Initialises logging with tokio-console.

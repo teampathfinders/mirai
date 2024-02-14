@@ -6,8 +6,6 @@ use proto::bedrock::{Animate, CommandOutput, CommandOutputMessage, CommandOutput
 
 use util::{PVec, Deserialize, FastSlice};
 
-use crate::forms;
-
 use super::BedrockUser;
 
 impl BedrockUser {
@@ -53,21 +51,6 @@ impl BedrockUser {
                 tracing::warn!("Client and text message name do not match. Kicking them for forbidden modifications");
                 return self.kick_with_reason("Illegal packet modifications detected", DisconnectReason::BadPacket).await
             }
-
-            let clone = Arc::clone(self);
-            tokio::spawn(async move {
-                tokio::time::sleep(std::time::Duration::from_millis(500)).await;
-
-                let receiver = clone.forms.subscribe(
-                    &clone, 
-                    forms::Modal::new()
-                        .title("Modal")
-                        .body("Body")
-                ).unwrap();
-
-                let response = receiver.await;
-                tracing::debug!("{response:?}"); 
-            });
 
             // We must also return the packet to the client that sent it.
             // Otherwise their message won't be displayed in their own chat.
@@ -146,7 +129,7 @@ impl BedrockUser {
     pub fn handle_command_request(self: Arc<Self>, packet: PVec) {
         // Command execution could take several ticks, await the result in a separate task
         // to avoid blocking the request handler.
-        let endpoint = self.commands.clone();
+        let endpoint = Arc::clone(&self.commands);
         tokio::spawn(async move {
             let request = match CommandRequest::deserialize(packet.as_ref()) {
                 Ok(req) => req,

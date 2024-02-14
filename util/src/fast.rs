@@ -45,9 +45,11 @@ pub enum FastString<'a> {
 impl<'a> FastString<'a> {
     pub fn new<V: IntoFastString<'a>>(val: V) -> FastString<'a> {
         if V::OWNED {
+            // SAFETY: This is safe because `V` is guaranteed to be the same type as `String`.
             let owned = unsafe { val.fsv_cast::<String>() };
             FastString::Owned(owned)
         } else {
+            // SAFETY: This is safe because `V` is guaranteed to be the same type as `&'a str`.
             let borrow = unsafe { val.fsv_cast::<&'a str>() };
             FastString::Borrowed(borrow)
         }
@@ -55,7 +57,7 @@ impl<'a> FastString<'a> {
 
     pub fn get(&'a self) -> &'a str {
         match self {
-            FastString::Owned(v) => &v,
+            FastString::Owned(v) => v,
             FastString::Borrowed(v) => v,
         }
     }
@@ -111,6 +113,9 @@ impl<'a> From<FastString<'a>> for Cow<'a, str> {
 pub trait IntoFastSlice<'a, T>: Sized + private::Sealed {
     const OWNED: bool;
 
+    /// ## Safety
+    /// 
+    /// This function requires that `Self` and `C` are the exact same type and have the same lifetime.
     #[doc(hidden)]
     unsafe fn fsv_cast<C>(self) -> C {
         let cpy = std::mem::transmute_copy::<Self, C>(&self);
@@ -133,17 +138,20 @@ where
     [T]: ToOwned,
 {
     pub fn new<V: IntoFastSlice<'a, T>>(val: V) -> FastSlice<'a, T> {
-        if V::OWNED {
+        if V::OWNED {   
+            // SAFETY: Because V::OWNED is true, `V` is guaranteed to be the same type as the one
+            // used in the cast.
             let owned = unsafe { val.fsv_cast::<<[T] as ToOwned>::Owned>() };
             FastSlice::Owned(owned)
         } else {
+            // SAFETY: This is safe because `val` is guaranteed to be of type `&'a [T]`.
             let borrow = unsafe { val.fsv_cast::<&'a [T]>() };
             FastSlice::Borrowed(borrow)
         }
     }
 
     /// Creates an empty borrowed slice.
-    pub fn empty() -> FastSlice<'static, T> {
+    pub const fn empty() -> FastSlice<'static, T> {
         FastSlice::Borrowed(&[])
     }
 

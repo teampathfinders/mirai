@@ -1,7 +1,7 @@
 //! Contains the server instance.
 
 use anyhow::Context;
-use proto::xbox::XboxService;
+
 use raknet::RaknetCreateInfo;
 
 use std::net::{Ipv4Addr, Ipv6Addr, SocketAddrV4, SocketAddrV6};
@@ -344,13 +344,13 @@ impl Instance {
 
     /// Gets the command service of this instance.
     #[inline]
-    pub fn commands(&self) -> &Arc<crate::command::Service> {
+    pub const fn commands(&self) -> &Arc<crate::command::Service> {
         &self.command_service
     }
 
     /// Gets the level service of this instance.
     #[inline]
-    pub fn level(&self) -> &Arc<crate::level::Service> {
+    pub const fn level(&self) -> &Arc<crate::level::Service> {
         &self.level_service
     }
 
@@ -376,7 +376,10 @@ impl Instance {
             handle
         };
 
-        let recv_job6 = if let Some(socket) = &self.ipv6_socket {
+        let recv_job6 = self.ipv6_socket.as_ref().map_or_else(|| {
+            tracing::info!("IPv6 functionality disabled");
+            None
+        }, |socket| {
             let socket = Arc::clone(socket);
 
             let user_map = Arc::clone(&self.user_map);
@@ -386,10 +389,7 @@ impl Instance {
             tracing::info!("IPv6 listener ready");
 
             Some(handle)
-        } else {
-            tracing::info!("IPv6 functionality disabled");
-            None
-        };
+        });
 
         signal_listener(self.token.clone()).await?;
 

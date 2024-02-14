@@ -6,7 +6,7 @@ use reqwest::StatusCode;
 
 use super::XboxService;
 
-const LIVE_CLIENT_ID: &'static str = "0000000048183522";
+const LIVE_CLIENT_ID: &str = "0000000048183522";
 
 #[derive(Debug)]
 pub struct LiveToken {

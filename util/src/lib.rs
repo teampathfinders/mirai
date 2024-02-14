@@ -106,12 +106,16 @@ impl<T: Zeroize> Zeroize for Vec<T> {
     #[inline]
     fn zeroize(&mut self) {
         (self.as_mut_slice()).zeroize();
+        self.clear();
     }
 }
 
 impl Zeroize for String {
     #[inline]
     fn zeroize(&mut self) {
+        // SAFETY: This is safe because zeroizing a vector is safe.
+        // After this the vector will be empty, which is a valid string
+        // representation.
         unsafe { self.as_mut_vec() }.zeroize()
     }
 }

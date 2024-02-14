@@ -61,11 +61,16 @@ impl<T: Poolable + Default> Pooled<T> {
 /// STRING GUARD IMPLEMENTATIONS                                                                                   ///
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+#[allow(clippy::fallible_impl_from)]
 impl From<&str> for Pooled<String> {
     fn from(value: &str) -> Pooled<String> {
         let bin = Pooled::alloc_from_slice(value.as_bytes());
         let inner = bin.into_inner();
 
+        // This does not panic because `inner` is a vector created directly
+        // from the bytes of a valid string slice `value`. Therefore
+        // it is a valid UTF-8 vector.
+        #[allow(clippy::unwrap_used)]
         Pooled::from(String::from_utf8(inner).unwrap())
     }
 }
@@ -201,12 +206,20 @@ impl<T: Poolable + Debug> Debug for Pooled<T> {
     }
 }
 
+#[allow(clippy::unconditional_recursion)] // False positive.
 impl<T: Poolable + PartialEq> PartialEq for Pooled<T> {
     fn eq(&self, other: &Self) -> bool {
         // SAFETY: This is safe because `inner` will always be initialised except when it
         // is being dropped. Since calling this function means the object is still referenced, it is
         // initialized.
-        unsafe { self.inner.assume_init_ref() }.eq(unsafe { other.inner.assume_init_ref() })
+        let this = unsafe { self.inner.assume_init_ref() };
+
+        // SAFETY: This is safe because `inner` will always be initialised except when it
+        // is being dropped. Since calling this function means the object is still referenced, it is
+        // initialized.
+        let other = unsafe { other.inner.assume_init_ref() };
+
+        this.eq(other)
     }
 }
 

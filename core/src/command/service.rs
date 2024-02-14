@@ -3,10 +3,10 @@ use std::{sync::{Arc, OnceLock, Weak}, time::Duration};
 use anyhow::Context as _;
 use dashmap::DashMap;
 use parking_lot::RwLock;
-use proto::bedrock::{AvailableCommands, Command, ParseResult, ParsedCommand};
+use proto::bedrock::{Command, ParseResult, ParsedCommand};
 use tokio::{sync::{mpsc, oneshot}, task::JoinHandle};
 use tokio_util::sync::CancellationToken;
-use util::{PVec, FastString, Joinable, Pooled};
+use util::{FastString, Joinable};
 
 use crate::instance::Instance;
 

@@ -54,12 +54,10 @@ impl RaknetUser {
                     }
                 },
                 packet = receiver.recv() => {
-                    if packet.is_none() {
+                    let Some(packet) = packet else {
                         // Receiver channel closed, shut down this session.
                         break
-                    }
-
-                    let packet = packet.unwrap();
+                    };
 
                     match self.budget.try_acquire() {
                         Ok(permit) => permit.forget(),

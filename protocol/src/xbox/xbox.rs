@@ -3,12 +3,12 @@
 use std::{io::Write, time::SystemTime};
 
 use base64::Engine;
-use ecdsa::{elliptic_curve::group::prime::PrimeCurveAffine, signature::{DigestSigner, Signer}};
-use rand::rngs::OsRng;
+use ecdsa::signature::DigestSigner;
+
 use sha2::{Digest, Sha256};
-use util::{PVec, BinaryWrite};
+use util::BinaryWrite;
 use uuid::Uuid;
-use p256::ecdsa::{Signature, SigningKey, VerifyingKey};
+use p256::ecdsa::Signature;
 
 use super::{LiveToken, XboxService};
 
@@ -23,8 +23,8 @@ struct DeviceToken {
 }
 
 impl XboxService {
-    pub async fn fetch_xbox_token(&self, live_token: &LiveToken) -> anyhow::Result<XboxToken> {
-        let device_token = self.fetch_device_token().await?;
+    pub async fn fetch_xbox_token(&self, _live_token: &LiveToken) -> anyhow::Result<XboxToken> {
+        let _device_token = self.fetch_device_token().await?;
 
         todo!()
     }
@@ -35,7 +35,11 @@ impl XboxService {
         let public_key = self.private_key.verifying_key();
 
         let curve_point = public_key.to_encoded_point(false);
-        let (x, y) = (curve_point.x().unwrap(), curve_point.y().unwrap());
+
+        let (x, y) = (
+            curve_point.x().ok_or_else(|| anyhow::anyhow!("Failed to get key x"))?, 
+            curve_point.y().ok_or_else(|| anyhow::anyhow!("Failed to get key y"))?
+        );
 
         let b64_x = ENGINE.encode(x.as_slice());
         let b64_y = ENGINE.encode(y.as_slice());
@@ -91,7 +95,7 @@ impl XboxService {
 
         let timestamp = {
             let elapsed = SystemTime::now().duration_since(SystemTime::UNIX_EPOCH)?;
-            ((elapsed.as_millis() / 1000) + 11_644_473_600) * 1_0000_000
+            ((elapsed.as_millis() / 1000) + 11_644_473_600) * 10_000_000
         } as u64;
 
         // let mut writer = BVec::alloc();
