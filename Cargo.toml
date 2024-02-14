@@ -1,14 +1,14 @@
 [workspace]
 resolver = "2"
 members = [
-    "core",
-    "level",
-    "util",
-    "nbt",
-    "protocol",
-    "replication",
-    "raknet",
-    "macros"
+    "crates/core",
+    "crates/level",
+    "crates/util",
+    "crates/nbt",
+    "crates/proto",
+    "crates/repl",
+    "crates/raknet",
+    "crates/macros"
 ]
 
 #[profile.release]

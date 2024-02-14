@@ -1,0 +1,14 @@
+build
+x64
+
+.idea
+**/.vs
+*.user
+*.sdf
+*.opensdf
+*.exe
+*.dll
+*.pdb
+*.obj
+*.ilk
+*.suo

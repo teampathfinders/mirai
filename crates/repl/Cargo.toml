@@ -1,0 +1,12 @@
+[package]
+name = "inferno-repl"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+proto = { package = "inferno-proto", path = "../proto" }
+util = { package = "inferno-util", path = "../util" }
+
+anyhow = "1.0.79"
+tracing = "0.1.40"
+fred = "8.0.2"
