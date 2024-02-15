@@ -5,7 +5,7 @@ use proto::raknet::{Ack, AckEntry};
 
 use util::{PVec, Serialize};
 
-use crate::{SendPriority, RaknetUser, Reliability, Frame, FrameBatch};
+use crate::{SendPriority, RakNetClient, Reliability, Frame, FrameBatch};
 
 /// Specifies the reliability and priority of a packet.
 pub struct SendConfig {
@@ -21,7 +21,7 @@ pub const DEFAULT_SEND_CONFIG: SendConfig = SendConfig {
     priority: SendPriority::Medium,
 };
 
-impl RaknetUser {
+impl RakNetClient {
     /// Sends a raw buffer with default settings
     /// (reliable ordered and medium priority).
     pub fn send_raw_buffer<B>(&self, buffer: B)

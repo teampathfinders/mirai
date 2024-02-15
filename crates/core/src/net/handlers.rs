@@ -38,7 +38,7 @@ impl BedrockClient {
             msg
         )
     )]
-    pub async fn handle_text_message(self: &Arc<Self>, packet: PVec) -> anyhow::Result<()> {
+    pub fn handle_text_message(self: &Arc<Self>, packet: PVec) -> anyhow::Result<()> {
         let request = TextMessage::deserialize(packet.as_ref())?;
         if let TextData::Chat {
             source, message
@@ -49,7 +49,7 @@ impl BedrockClient {
             // Check that the source is equal to the player name to prevent spoofing.
             if name != source {
                 tracing::warn!("Client and text message name do not match. Kicking them for forbidden modifications");
-                return self.kick_with_reason("Illegal packet modifications detected", DisconnectReason::BadPacket).await
+                return self.kick_with_reason("Illegal packet modifications detected", DisconnectReason::BadPacket)
             }
 
             // We must also return the packet to the client that sent it.
@@ -58,7 +58,7 @@ impl BedrockClient {
         } else {
             // Only the server is allowed to create text raknet that are not of the chat type.
             tracing::warn!("Client sent an illegal message type. Kicking them for forbidden modifications");
-            self.kick_with_reason("Illegal packet received", DisconnectReason::BadPacket).await
+            self.kick_with_reason("Illegal packet received", DisconnectReason::BadPacket)
         }
     }
 

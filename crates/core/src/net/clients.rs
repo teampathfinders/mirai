@@ -4,10 +4,11 @@ use std::sync::{Arc};
 use std::time::Duration;
 
 use anyhow::Context;
+use dashmap::mapref::one::Ref;
 use dashmap::DashMap;
 
 use proto::uuid::Uuid;
-use raknet::{BroadcastPacket, RaknetCreateInfo, RaknetUser};
+use raknet::{BroadcastPacket, RaknetCreateInfo, RakNetClient};
 
 use tokio::sync::{broadcast, mpsc};
 use proto::bedrock::{ConnectedPacket, Disconnect, DisconnectReason};
@@ -52,7 +53,7 @@ pub struct Clients {
 
     replicator: Arc<Replicator>,
     
-    connecting_map: Arc<DashMap<SocketAddr, UserMapEntry<RaknetUser>>>,
+    connecting_map: Arc<DashMap<SocketAddr, UserMapEntry<RakNetClient>>>,
     connected_map: Arc<DashMap<SocketAddr, UserMapEntry<BedrockClient>>>,
     /// Channel that sends a packet to all connected sessions.
     broadcast: broadcast::Sender<BroadcastPacket>,
@@ -80,7 +81,7 @@ impl Clients {
 
         let address = info.address;
         let (state, state_rx) = 
-            RaknetUser::new(info, self.broadcast.clone(), rx);
+            RakNetClient::new(info, self.broadcast.clone(), rx);
         
         let connecting_map = Arc::clone(&self.connecting_map);
         let connected_map = Arc::clone(&self.connected_map);
@@ -195,13 +196,13 @@ impl Clients {
 
             // Ignore result because it can only fail if there are no receivers remaining.
             // In that case this shouldn't do anything anyways.
-            this.broadcast(
-                Disconnect {
-                    reason: DisconnectReason::Shutdown,
-                    hide_message: false,
-                    message: "disconnect.disconnected"
-                }
-            )?;
+            // this.broadcast(
+            //     Disconnect {
+            //         reason: DisconnectReason::Shutdown,
+            //         hide_message: false,
+            //         message: "disconnect.disconnected"
+            //     }
+            // )?;
 
             let mut join_set = JoinSet::new();
             this.connecting_map.retain(|_, user| {
@@ -214,6 +215,13 @@ impl Clients {
             });
 
             this.connected_map.retain(|_, user| {
+                let _ = user.state.send(Disconnect {
+                    hide_message: false,
+                    message: "Server shutting down",
+                    reason: DisconnectReason::Shutdown
+                });
+                user.state.raknet.active.cancel();
+
                 let clone = Arc::clone(&user.state);
                 join_set.spawn(async move { clone.join().await });
 

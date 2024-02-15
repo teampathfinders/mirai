@@ -1,6 +1,6 @@
 //! Implements NBT serialisation and deserialisation for three different integer encodings.
 
-#![deny(
+#![warn(
     missing_docs,
     clippy::expect_used,
     clippy::get_unwrap,

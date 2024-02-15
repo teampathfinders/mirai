@@ -1,9 +1,9 @@
 use proto::raknet::{ConnectedPing, ConnectedPong, ConnectionRequest, ConnectionRequestAccepted, NewIncomingConnection};
 use util::{PVec, Deserialize, ReserveTo, Serialize};
 
-use crate::{RaknetUser, Reliability, SendPriority, SendConfig};
+use crate::{RakNetClient, Reliability, SendPriority, SendConfig};
 
-impl RaknetUser {
+impl RakNetClient {
     /// Handles a [`ConnectionRequest`] packet.
     pub fn handle_connection_request(&self, mut packet: PVec) -> anyhow::Result<()> {
         let request = ConnectionRequest::deserialize(packet.as_ref())?;

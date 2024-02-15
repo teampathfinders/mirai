@@ -38,7 +38,13 @@ pub struct RaknetCreateInfo {
 }
 
 /// The Raknet layer of the user. This handles the entire Raknet protocol for the client.
-pub struct RaknetUser {
+pub struct RakNetClient {
+    /// Cancelled when the client has fully disconnected.
+    pub shutdown_token: CancellationToken,
+    /// Whether the user is still active.
+    /// Cancelling this token means that all pending packets will be flushed and the server will process no more
+    /// packets coming from this user.
+    pub active: CancellationToken,
     /// Keeps track of the remaining "budget" of this user.
     /// This is used to implement rate limiting.
     pub budget: Semaphore,
@@ -48,10 +54,6 @@ pub struct RaknetUser {
     pub socket: Arc<UdpSocket>,
     /// Channel that can perform inter-user packet broadcasting.
     pub broadcast: broadcast::Sender<BroadcastPacket>,
-    /// Whether the user is still active.
-    /// Cancelling this token means that all pending packets will be flushed and the server will process no more
-    /// packets coming from this user.
-    pub active: CancellationToken,
     /// Maximum transfer unit. This is maximum size of a single packet. If a packet exceeds this size
     /// it will split into multiple fragments.
     pub mtu: u16,
@@ -84,12 +86,10 @@ pub struct RaknetUser {
     /// Channel used to submit packets that have been fully processed by the RakNet layer.
     /// These packets go on to be processed further by protocols running on top of RakNet
     /// such as the Minecraft Bedrock protocol.
-    pub output: mpsc::Sender<RaknetCommand>,
-    /// Handle to the processing job of this RakNet client.
-    pub job_handle: RwLock<Option<tokio::task::JoinHandle<()>>>
+    pub output: mpsc::Sender<RaknetCommand>
 }
 
-impl RaknetUser {
+impl RakNetClient {
     /// Creates a new RakNet user with the specified info.
     pub fn new(
         info: RaknetCreateInfo, 
@@ -117,7 +117,7 @@ impl RaknetUser {
 
         let (output_tx, output_rx) = mpsc::channel(OUTPUT_CHANNEL_SIZE);
 
-        let state = Arc::new(RaknetUser {
+        let state = Arc::new(RakNetClient {
             budget: Semaphore::new(BUDGET_SIZE),
             active: CancellationToken::new(),
             address: info.address,
@@ -136,11 +136,10 @@ impl RaknetUser {
             sequence_index: AtomicU32::new(0),
             order: order_channels,
             output: output_tx,
-            job_handle: RwLock::new(None)
+            shutdown_token: CancellationToken::new()
         });
 
-        let handle = tokio::spawn(Arc::clone(&state).receiver(forward_rx));
-        *state.job_handle.write() = Some(handle);
+        tokio::spawn(Arc::clone(&state).receiver(forward_rx));
     
         (state, output_rx)
     }
@@ -160,7 +159,7 @@ impl RaknetUser {
     }
 }
 
-impl Joinable for RaknetUser {
+impl Joinable for RakNetClient {
     #[tracing::instrument(
         skip_all,
         name = "RaknetUser::join",
@@ -168,25 +167,11 @@ impl Joinable for RaknetUser {
             %address = %self.address
         )
     )]
+    /// Waits for the client to fully disconnect.
+    /// 
+    /// This function is safe to call multiple times and will always return `Ok`.
     async fn join(&self) -> anyhow::Result<()> {
-        let handle = self.job_handle.write().take();
-        if let Some(handle) = handle {
-            match self.flush_all().await {
-                Ok(_) => (),
-                Err(e) => tracing::error!("Failed to flush last packets before shutdown: {e:#?}")
-            }
-
-            // self.active.cancel();
-            match handle.await {
-                Ok(_) => Ok(()),
-                Err(err) => {
-                    tracing::error!("Error occurred while awaiting RakNet user service shutdown: {err:#?}");
-                    Ok(())
-                }
-            }
-        } else {
-            tracing::error!("This RakNet user service has already been joined");
-            anyhow::bail!("RakNet user service already joined");
-        }
+        self.shutdown_token.cancelled().await;
+        Ok(())
     }
 }

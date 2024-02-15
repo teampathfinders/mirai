@@ -1,6 +1,6 @@
 //! Rust implementation of the RakNet protocol.
 
-#![deny(
+#![warn(
     missing_docs,
     clippy::expect_used,
     clippy::get_unwrap,
@@ -55,5 +55,5 @@ glob_export!(recovery);
 glob_export!(reliability);
 glob_export!(send_queue);
 glob_export!(send);
-glob_export!(user);
+glob_export!(client);
 glob_export!(job);

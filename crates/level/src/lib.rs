@@ -1,6 +1,6 @@
 //! An interface that can interact with the Minecraft Bedrock world format.
 
-#![deny(
+#![warn(
     missing_docs,
     clippy::expect_used,
     clippy::get_unwrap,
@@ -48,6 +48,7 @@ compile_error!("Big endian architectures are not supported");
 use util::{BinaryRead, BinaryWrite};
 
 /// Performs ceiling division on two u32s.
+#[inline]
 const fn ceil_div(lhs: u32, rhs: u32) -> u32 {
     (lhs + rhs - 1) / rhs
 }

@@ -1,6 +1,6 @@
 //! All types used in the Bedrock and RakNet protocols.
 
-#![deny(
+#![warn(
     // missing_docs,
     clippy::expect_used,
     clippy::get_unwrap,

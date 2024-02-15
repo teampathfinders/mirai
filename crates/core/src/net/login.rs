@@ -45,7 +45,7 @@ impl BedrockClient {
         let request = ViolationWarning::deserialize(packet.as_ref())?;
         tracing::error!("Received violation warning: {request:?}");
 
-        self.kick("Violation warning").await
+        self.kick("Violation warning")
     }
 
     /// Handles a [`SetLocalPlayerAsInitialized`] packet.
@@ -322,7 +322,7 @@ impl BedrockClient {
         let Ok(request) = Login::deserialize(packet.as_ref()) else {
             // Kick the player when login fails. This is for security reasons.
             // An error during login could mean the user is trying to impersonate someone else.
-            self.kick_with_reason("Login failed", DisconnectReason::BadPacket).await?;
+            self.kick_with_reason("Login failed", DisconnectReason::BadPacket)?;
             anyhow::bail!("Client failed to login")
         };
 
@@ -331,18 +331,18 @@ impl BedrockClient {
         self.replicator.save_session(request.identity.xuid, &request.identity.name).await?;
 
         let Ok((encryptor, jwt)) = Encryptor::new(&request.identity.public_key) else {
-            self.kick_with_reason("Encryption failed", DisconnectReason::BadPacket).await?;
+            self.kick_with_reason("Encryption failed", DisconnectReason::BadPacket)?;
             anyhow::bail!("Failed to enable encryption");
         };
         
         if self.identity.set(request.identity).is_err() {
             tracing::warn!("Identity data was already set");
-            return self.kick_with_reason("Unexpected login", DisconnectReason::UnexpectedPacket).await
+            return self.kick_with_reason("Unexpected login", DisconnectReason::UnexpectedPacket)
         }
 
         if self.client_info.set(request.client_info).is_err() {
             tracing::error!("Client info was already set");
-            return self.kick_with_reason("Unexpected login", DisconnectReason::UnexpectedPacket).await
+            return self.kick_with_reason("Unexpected login", DisconnectReason::UnexpectedPacket)
         }
 
         // Flush unencrypted packets in queue before enabling encryption
@@ -353,7 +353,7 @@ impl BedrockClient {
             // Client sent a second login packet?
             // Something is wrong, disconnect the client.
             tracing::warn!("Client unexpectedly sent a second login packet");
-            return self.kick_with_reason("Unexpected login", DisconnectReason::UnexpectedPacket).await
+            return self.kick_with_reason("Unexpected login", DisconnectReason::UnexpectedPacket)
         }
 
         if self.player.set(PlayerData::new(request.skin)).is_err() {

@@ -2,9 +2,9 @@ use util::{Deserialize, BinaryRead, Serialize};
 
 use proto::raknet::{Ack, Nak};
 
-use crate::RaknetUser;
+use crate::RakNetClient;
 
-impl RaknetUser {
+impl RakNetClient {
     /// Processes an acknowledgement received from the client.
     ///
     /// This function unregisters the specified packet IDs from the recovery queue.

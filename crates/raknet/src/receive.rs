@@ -9,11 +9,11 @@ use util::{PVec, Deserialize};
 
 use tokio::sync::mpsc::error::SendTimeoutError;
 
-use crate::{Frame, FrameBatch, RaknetCommand, RaknetUser};
+use crate::{Frame, FrameBatch, RaknetCommand, RakNetClient};
 
 const RAKNET_OUTPUT_TIMEOUT: Duration = Duration::from_millis(10);
 
-impl RaknetUser {
+impl RakNetClient {
     /// Processes the raw packet coming directly from the network.
     ///
     /// If a packet is an ACK or NACK type, it will be responded to accordingly (using [`Session::process_ack`] and [`Session::process_nak`]).

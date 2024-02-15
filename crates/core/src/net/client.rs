@@ -13,7 +13,7 @@ use flate2::write::DeflateEncoder;
 use parking_lot::RwLock;
 use prometheus_client::metrics::gauge::Gauge;
 use prometheus_client::metrics::histogram::{linear_buckets, Histogram};
-use raknet::{BroadcastPacket, RaknetCommand, RaknetUser, SendConfig, DEFAULT_SEND_CONFIG};
+use raknet::{BroadcastPacket, RaknetCommand, RakNetClient, SendConfig, DEFAULT_SEND_CONFIG};
 use systemstat::Duration;
 use tokio::sync::{broadcast, mpsc};
 use proto::bedrock::{CommandPermissionLevel, Disconnect, GameMode, PermissionLevel, Skin, ConnectedPacket, CONNECTED_PACKET_ID, CompressionAlgorithm, Header, RequestNetworkSettings, Login, ClientToServerHandshake, CacheStatus, ResourcePackClientResponse, ViolationWarning, ChunkRadiusRequest, Interact, TextMessage, SetLocalPlayerAsInitialized, MovePlayer, PlayerAction, RequestAbility, Animate, CommandRequest, SettingsCommand, ContainerClose, FormResponseData, TickSync, UpdateSkin, PlayerAuthInput, DisconnectReason};
@@ -22,6 +22,7 @@ use proto::uuid::Uuid;
 use replicator::Replicator;
 
 use tokio::task::JoinHandle;
+use tokio_util::sync::CancellationToken;
 use util::{AtomicFlag, BinaryRead, BinaryWrite, Deserialize, Joinable, PVec, pool, Serialize, Vector};
 
 
@@ -53,7 +54,7 @@ pub struct BedrockClient {
     pub(crate) supports_cache: AtomicBool,
     /// Replication layer.
     pub(crate) replicator: Arc<Replicator>,
-    pub(crate) raknet: Arc<RaknetUser>,
+    pub(crate) raknet: Arc<RakNetClient>,
     pub(crate) player: OnceLock<PlayerData>,
 
     pub(crate) forms: forms::Subscriber,
@@ -61,13 +62,14 @@ pub struct BedrockClient {
     pub(crate) level: Arc<crate::level::Service>,
 
     pub(crate) broadcast: broadcast::Sender<BroadcastPacket>,
-    pub(crate) job_handle: RwLock<Option<JoinHandle<()>>>
+
+    shutdown_token: CancellationToken
 }
 
 impl BedrockClient {
     /// Creates a new user.
     pub fn new(
-        raknet: Arc<RaknetUser>,
+        raknet: Arc<RakNetClient>,
         replicator: Arc<Replicator>,
         receiver: mpsc::Receiver<RaknetCommand>,
         commands: Arc<crate::command::Service>,
@@ -76,7 +78,7 @@ impl BedrockClient {
     ) -> Arc<Self> {
         CONNECTED_CLIENTS_METRIC.inc();
 
-        let user = Arc::new(Self {
+        let client = Arc::new(Self {
             encryptor: OnceLock::new(),
             identity: OnceLock::new(),
             client_info: OnceLock::new(),
@@ -93,16 +95,15 @@ impl BedrockClient {
             level,
             
             broadcast,
-            job_handle: RwLock::new(None)
+            shutdown_token: CancellationToken::new()
         });
 
-        let clone = Arc::clone(&user);
-        let handle = tokio::spawn(async move {
-            clone.receiver(receiver).await;
+        let this = Arc::clone(&client);
+        tokio::spawn(async move {
+            this.receiver(receiver).await;
         });
 
-        *user.job_handle.write() = Some(handle);
-        user
+        client
     }
 
     /// The worker that processes incoming packets.
@@ -132,7 +133,8 @@ impl BedrockClient {
                             }
                         },
                         RaknetCommand::BudgetExhausted => {
-                            if self.kick_with_reason("Exhausted request budget", DisconnectReason::NotAllowed).await.is_err() {
+                            if let Err(err) = self.kick_with_reason("Exhausted request budget", DisconnectReason::NotAllowed) {
+                                tracing::error!("Failed to kick user, forcing it: {err:#}");
                                 // If kicking does not work, force disconnect them.
                                 self.raknet.disconnect();
                             }
@@ -161,6 +163,8 @@ impl BedrockClient {
             "Requests: {} | Returns: {} | Allocations: {}",
             pool::total_requests(), pool::total_returns(), pool::total_allocations()
         );
+
+        self.shutdown_token.cancel();
 
         CONNECTED_CLIENTS_METRIC.dec();
     }
@@ -206,7 +210,7 @@ impl BedrockClient {
 
     /// Kicks a player from the server and displays the specified message to them.
     #[inline]
-    pub fn kick<'a>(&'a self, message: &'a str) -> impl Future<Output = anyhow::Result<()>> + 'a {
+    pub fn kick(&self, message: &str) -> anyhow::Result<()> {
         // This function returns a future object directly to reduce code bloat from async.
         self.kick_with_reason(message, DisconnectReason::Kicked)
     }
@@ -221,7 +225,7 @@ impl BedrockClient {
             reason = %message
         )
     )]
-    pub async fn kick_with_reason(&self, message: &str, reason: DisconnectReason) -> anyhow::Result<()> {
+    pub fn kick_with_reason(&self, message: &str, reason: DisconnectReason) -> anyhow::Result<()> {
         let disconnect_packet = Disconnect {
             reason, message, hide_message: false
         };
@@ -231,7 +235,7 @@ impl BedrockClient {
 
         // Force the session to shut down. Without this, the client could just ignore the disconnect packet.
         self.raknet.active.cancel();
-        self.raknet.join().await
+        Ok(())
     }
 
     /// Sends a packet to all initialised sessions including self.
@@ -409,7 +413,7 @@ impl BedrockClient {
                 expected, header.id
             );
             
-            self.kick_with_reason("Unexpected packet", DisconnectReason::UnexpectedPacket).await?;
+            self.kick_with_reason("Unexpected packet", DisconnectReason::UnexpectedPacket)?;
         }
 
         let this = Arc::clone(self);
@@ -430,7 +434,7 @@ impl BedrockClient {
                 ViolationWarning::ID => this.handle_violation_warning(packet).await,
                 ChunkRadiusRequest::ID => this.handle_chunk_radius_request(packet),
                 Interact::ID => this.handle_interaction(packet),
-                TextMessage::ID => this.handle_text_message(packet).await,
+                TextMessage::ID => this.handle_text_message(packet),
                 SetLocalPlayerAsInitialized::ID => {
                     this.handle_local_initialized(packet)
                 }
@@ -523,22 +527,8 @@ impl Joinable for BedrockClient {
         name = "BedrockUser::join"
     )]
     async fn join(&self) -> anyhow::Result<()> {
-        // Kicks the user and waits for the Raknet session to shut down.
-        self.kick_with_reason("Server shutting down", DisconnectReason::Shutdown).await?;
-
-        let handle = self.job_handle.write().take();
-        if let Some(handle) = handle {
-            match handle.await {
-                Ok(_) => Ok(()),
-                Err(err) => {
-                    tracing::error!("Error occurred while awaiting Bedrock user service shutdown: {err:#?}");
-                    Ok(())
-                }
-            }
-        } else {
-            tracing::error!("This user service has already been joined");
-            anyhow::bail!("User service already joined");
-        }        
+        self.shutdown_token.cancelled().await;
+        self.raknet.join().await
     }
 }
 

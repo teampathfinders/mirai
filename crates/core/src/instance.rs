@@ -5,7 +5,6 @@ use anyhow::Context;
 use raknet::RaknetCreateInfo;
 use tokio::task::JoinHandle;
 
-
 use std::net::{Ipv4Addr, Ipv6Addr, SocketAddrV4, SocketAddrV6};
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::Arc;
@@ -15,13 +14,13 @@ use tokio::net::UdpSocket;
 
 use tokio_util::sync::CancellationToken;
 
-use util::{Deserialize, CowString, Joinable, RString, PVec, ReserveTo, Serialize};
+use util::{CowString, Deserialize, Joinable, PVec, RString, ReserveTo, Serialize};
 
 use crate::command::{self, ExecutionResult};
 use crate::config::SERVER_CONFIG;
-use crate::net::{ForwardablePacket, Clients};
+use crate::net::{Clients, ForwardablePacket};
 use proto::bedrock::{
-    Command, CommandOverload, CommandPermissionLevel, CompressionAlgorithm, ParsedCommand, CLIENT_VERSION_STRING, PROTOCOL_VERSION
+    Command, CommandOverload, CommandPermissionLevel, CompressionAlgorithm, ParsedCommand, CLIENT_VERSION_STRING, PROTOCOL_VERSION,
 };
 use proto::raknet::{
     IncompatibleProtocol, OpenConnectionReply1, OpenConnectionReply2, OpenConnectionRequest1, OpenConnectionRequest2, UnconnectedPing,
@@ -411,13 +410,16 @@ impl Instance {
         static COUNTER: AtomicUsize = AtomicUsize::new(1);
 
         fn create_fn(_: ParsedCommand, ctx: &command::Context) -> ExecutionResult {
-            let _ = ctx.instance.commands().register(Command {
-                aliases: Vec::new(),
-                description: "hello".to_owned(),
-                name: format!("hello-{}", COUNTER.fetch_add(1, Ordering::Relaxed)),
-                overloads: vec![CommandOverload { parameters: Vec::new() }],
-                permission_level: CommandPermissionLevel::Normal
-            }, |_input, ctx| create_fn(_input, ctx));
+            let _ = ctx.instance.commands().register(
+                Command {
+                    aliases: Vec::new(),
+                    description: "hello".to_owned(),
+                    name: format!("hello-{}", COUNTER.fetch_add(1, Ordering::Relaxed)),
+                    overloads: vec![CommandOverload { parameters: Vec::new() }],
+                    permission_level: CommandPermissionLevel::Normal,
+                },
+                create_fn
+            );
 
             Ok(command::CommandOutput {
                 message: CowString::new("Created a new command"),
@@ -433,7 +435,7 @@ impl Instance {
                 overloads: vec![CommandOverload { parameters: Vec::new() }],
                 permission_level: CommandPermissionLevel::Normal,
             },
-            create_fn
+            create_fn,
         )?;
 
         {

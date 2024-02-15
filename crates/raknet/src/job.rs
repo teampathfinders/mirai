@@ -7,7 +7,7 @@ use prometheus_client::metrics::counter::Counter;
 use tokio::sync::{mpsc, TryAcquireError};
 use util::PVec;
 
-use crate::{RaknetCommand, RaknetUser};
+use crate::{RaknetCommand, RakNetClient};
 
 use lazy_static::lazy_static;
 
@@ -29,7 +29,7 @@ const INTERNAL_TICK_INTERVAL: Duration = Duration::from_millis(1000 / 20);
 /// Hence, they have to be disconnected manually after the timeout passes.
 const SESSION_TIMEOUT: Duration = Duration::from_secs(5);
 
-impl RaknetUser {
+impl RakNetClient {
     /// Starts the ticker task which takes care of packet submission and general user management.
     #[tracing::instrument(
         skip_all,
@@ -86,6 +86,12 @@ impl RaknetUser {
 
             should_run = !self.active.is_cancelled();
         }
+
+        if let Err(err) = self.flush_all().await {
+            tracing::error!("Failed to flush client's final packets: {err:#}");
+        }
+
+        self.shutdown_token.cancel();
     }
 
     /// Performs tasks not related to packet processing
