@@ -96,6 +96,8 @@ struct ServiceRequest {
 /// 
 /// All subchunk data is stored on the heap, it is therefore cheap to move subchunks through channels.
 pub struct Service {
+    provider: level::provider::Provider,
+
     instance_token: CancellationToken,
     shutdown_token: CancellationToken,
 
@@ -111,6 +113,8 @@ impl Service {
     pub fn new(token: CancellationToken) -> Arc<Service> {
         let (sender, receiver) = mpsc::channel(LEVEL_REQUEST_BUFFER_SIZE);
         Arc::new(Service {
+            provider: todo!(),
+
             instance_token: token,
             shutdown_token: CancellationToken::new(),
 
@@ -129,6 +133,10 @@ impl Service {
         self.instance.set(Arc::downgrade(instance)).map_err(|_| anyhow::anyhow!("Level service instance was already set"))
     }
     
+    /// Requests some data from the level.
+    /// 
+    /// This function is used to request "expensive" data from the world such as chunks.
+    /// Cheap data has their own special functions that do not make use of this.
     pub fn get<R: ExpensiveRequestable>(&self, request: R) 
         -> anyhow::Result<oneshot::Receiver<anyhow::Result<R::Output>>> 
     {

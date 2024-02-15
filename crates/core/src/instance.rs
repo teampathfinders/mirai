@@ -2,6 +2,7 @@
 
 use anyhow::Context;
 
+use parking_lot::RwLock;
 use raknet::RaknetCreateInfo;
 use tokio::task::JoinHandle;
 
@@ -14,13 +15,13 @@ use tokio::net::UdpSocket;
 
 use tokio_util::sync::CancellationToken;
 
-use util::{CowString, Deserialize, Joinable, RVec, RString, ReserveTo, Serialize};
+use util::{CowString, Deserialize, Joinable, RVec, ReserveTo, Serialize};
 
 use crate::command::{self, HandlerOutput, HandlerResult, ParsedCommand};
-use crate::config::SERVER_CONFIG;
+use crate::config::Config;
 use crate::net::{Clients, ForwardablePacket};
 use proto::bedrock::{
-    Command, CommandDataType, CommandEnum, CommandOverload, CommandParameter, CommandPermissionLevel, CompressionAlgorithm, CreditsStatus, CreditsUpdate, CLIENT_VERSION_STRING, PROTOCOL_VERSION
+    Command, CommandDataType, CommandEnum, CommandOverload, CommandParameter, CommandPermissionLevel, CreditsStatus, CreditsUpdate, CLIENT_VERSION_STRING, PROTOCOL_VERSION
 };
 use proto::raknet::{
     IncompatibleProtocol, OpenConnectionReply1, OpenConnectionReply2, OpenConnectionRequest1, OpenConnectionRequest2, UnconnectedPing,
@@ -33,162 +34,37 @@ pub const IPV4_LOCAL_ADDR: Ipv4Addr = Ipv4Addr::UNSPECIFIED;
 /// Local IPv6 address
 pub const IPV6_LOCAL_ADDR: Ipv6Addr = Ipv6Addr::UNSPECIFIED;
 /// Size of the UDP receive buffer.
-const RECV_BUF_SIZE: usize = 4096;
+const RECV_BUF_SIZE: usize = 2048;
 /// Refresh rate of the server's metadata.
 /// This data is displayed in the server menu.
 const METADATA_REFRESH_INTERVAL: Duration = Duration::from_secs(2);
 
-/// Configuration for the network components.
-pub struct NetConfig {
-    /// The host and port to run the server on.
-    ///
-    /// Default: 0.0.0.0:19132.
-    pub ipv4_addr: SocketAddrV4,
-    /// An optional IPv6 host and port can be specified to accept IPv6 connections as well.
-    /// Setting this to `None` will disable IPv6 functionality.
-    ///
-    /// Default: None.
-    pub ipv6_addr: Option<SocketAddrV6>,
-    /// Maximum amount of players that can concurrently be connected to this server.
-    ///
-    /// Default: 100
-    pub max_connections: usize,
-    /// The compression algorithm to use for packet compression.
-    ///
-    /// Default: [`Flate`])(CompressionAlgorithm::Flate).
-    pub compression: CompressionAlgorithm,
-    /// The packet length compression threshold.
-    ///
-    /// Packets with a length below this threshold will be left uncompressed.
-    /// Setting this to 1 will compress all packets, while setting it to 0 disables compression.
-    ///
-    /// Default: 1
-    pub compression_threshold: u16,
-}
+pub struct InstanceBuilder(Config);
 
-impl Default for NetConfig {
-    fn default() -> NetConfig {
-        NetConfig {
-            ipv4_addr: SocketAddrV4::new(IPV4_LOCAL_ADDR, 19132),
-            ipv6_addr: None,
-            max_connections: 100,
-            compression: CompressionAlgorithm::Flate,
-            compression_threshold: 1,
-        }
-    }
-}
-
-/// Configuration for the database connection.
-pub struct DbConfig<'a> {
-    /// Host address of the database server.
-    ///
-    /// Default: localhost.
-    ///
-    /// When running the server and database in Docker containers, this
-    /// should be set to the Docker network name.
-    ///
-    /// See [Docker networks](`https://docs.docker.com/network/`) for more information.
-    pub host: &'a str,
-    /// Port of the database server.
-    ///
-    /// This should usually be set to 6379 when using a Redis server.
-    ///
-    /// Default: 6379.
-    pub port: u16,
-}
-
-impl Default for DbConfig<'static> {
-    fn default() -> DbConfig<'static> {
-        DbConfig { host: "localhost", port: 6379 }
-    }
-}
-
-/// Configuration for client options.
-pub struct ClientConfig {
-    /// Whether the client should throttle other players.
-    ///
-    /// Default: false.
-    pub throttling_enabled: bool,
-    /// When the player count exceeds this threshold, the client
-    /// will start throttling other players.
-    ///
-    /// Default: 0.
-    pub throttling_threshold: u8,
-    /// Amount of players that will be ticked when the client is
-    /// actively throttling.
-    ///
-    /// Default: 0.0.
-    pub throttling_scalar: f32,
-    /// Maximum server-allow render distance.
-    ///
-    /// If the client requests a larger render distance, the server
-    /// will cap it to this maximum.
-    ///
-    /// Default: 12.
-    pub render_distance: u32,
-}
-
-impl Default for ClientConfig {
-    fn default() -> ClientConfig {
-        ClientConfig {
-            throttling_enabled: false,
-            throttling_threshold: 0,
-            throttling_scalar: 0.0,
-            render_distance: 12,
-        }
-    }
-}
-
-/// Builder used to configure a new server instance.
-pub struct InstanceBuilder<'a> {
-    name: RString,
-    net_config: NetConfig,
-    db_config: DbConfig<'a>,
-    client_config: ClientConfig,
-}
-
-impl<'a> InstanceBuilder<'a> {
-    /// Creates a new instance builder.
-    #[inline]
-    pub fn new() -> InstanceBuilder<'a> {
-        InstanceBuilder::default()
+impl InstanceBuilder {
+    pub fn new() -> InstanceBuilder {
+        Instance::builder()
     }
 
-    /// Set the name of the server.
-    ///
-    /// This is the name that shows up at the top of the member list.
-    ///
-    /// Default: Server.
-    #[inline]
-    pub fn name<I: Into<RString>>(mut self, name: I) -> InstanceBuilder<'a> {
-        self.name = name.into();
+    pub fn database_host<S: Into<CowString<'static>>>(mut self, host: S) -> InstanceBuilder {
+        self.0.database.host = host.into();
         self
     }
 
-    /// Set the network config.
-    ///
-    /// Default: See [`NetConfig`].
-    #[inline]
-    pub const fn net_config(mut self, config: NetConfig) -> InstanceBuilder<'a> {
-        self.net_config = config;
+    pub fn database_port<I: Into<u16>>(mut self, port: I) -> InstanceBuilder {
+        self.0.database.port = port.into();
         self
     }
 
-    /// Set the database config.
-    ///
-    /// Default: See [`DbConfig`].
-    #[inline]
-    pub const fn db_config(mut self, config: DbConfig<'a>) -> InstanceBuilder<'a> {
-        self.db_config = config;
-        self
+    /// Sets the IPv4 address of the instance.
+    pub fn ipv4_address<A: Into<SocketAddrV4>>(mut self, addr: A) -> InstanceBuilder {
+        self.0.ipv4_addr = addr.into();
+        self 
     }
 
-    /// Set the client config.
-    ///
-    /// Default: See [`ClientConfig`].
-    #[inline]
-    pub const fn client_config(mut self, config: ClientConfig) -> InstanceBuilder<'a> {
-        self.client_config = config;
+    /// Sets the IPv6 address of the instance.
+    pub fn ipv6_addr<A: Into<SocketAddrV6>>(mut self, addr: A) -> InstanceBuilder {
+        self.0.ipv6_addr = Some(addr.into());
         self
     }
 
@@ -200,14 +76,10 @@ impl<'a> InstanceBuilder<'a> {
             Instance::GIT_REV
         );
 
-        // let xbox_service = XboxService::new()?;
-        // let live_token = xbox_service.fetch_live_token().await?;
-        // let xbox_token = xbox_service.fetch_xbox_token(&live_token).await?;
-
-        let ipv4_socket = UdpSocket::bind(self.net_config.ipv4_addr)
+        let ipv4_socket = UdpSocket::bind(self.0.ipv4_addr)
             .await
             .context("Unable to create IPv4 UDP socket")?;
-        let ipv6_socket = match self.net_config.ipv6_addr {
+        let ipv6_socket = match self.0.ipv6_addr {
             Some(addr) => Some(UdpSocket::bind(addr).await.context("Unable to create IPv6 UDP socket")?),
             None => None,
         };
@@ -215,46 +87,20 @@ impl<'a> InstanceBuilder<'a> {
         let ipv4_socket = Arc::new(ipv4_socket);
         let ipv6_socket = ipv6_socket.map(Arc::new);
 
-        let replicator = Replicator::new(self.db_config.host, self.db_config.port)
+        let replicator = Replicator::new(&self.0.database.host, self.0.database.port)
             .await
             .context("Unable to create replicator")?;
 
-        let replicator = Arc::new(replicator);
-
         let running_token = CancellationToken::new();
 
+        let replicator = Arc::new(replicator);
         let command_service = crate::command::Service::new(running_token.clone());
-
-        // command_service.register_with_parser(
-        //     Command {
-        //         aliases: Vec::new(),
-        //         description: "This is a custom parser command".to_owned(),
-        //         name: "custom".to_owned(),
-        //         overloads: vec![CommandOverload {
-        //             parameters: Vec::new()
-        //         }],
-        //         permission_level: CommandPermissionLevel::Normal
-        //     },
-        //     |input, _ctx| {
-        //         tracing::debug!("Custom: {input:?}");
-
-        //         Ok(command::CommandOutput {
-        //             message: Cow::Borrowed("Hello!"),
-        //             parameters: Vec::new()
-        //         })
-        //     },
-        //     |input, _ctx| {
-        //         tracing::debug!("Input: {input}");
-        //         Ok(ParsedCommand {
-        //             name: String::from("custom_parsed"),
-        //             parameters: HashMap::new()
-        //         })
-        //     }
-        // );
-
         let level_service = crate::level::Service::new(running_token.clone());
-
-        let user_map = Arc::new(Clients::new(replicator, Arc::clone(&command_service), Arc::clone(&level_service)));
+        let user_map = Arc::new(Clients::new(
+            replicator, 
+            Arc::clone(&command_service), 
+            Arc::clone(&level_service)
+        ));
 
         let instance = Instance {
             ipv4_socket,
@@ -262,24 +108,19 @@ impl<'a> InstanceBuilder<'a> {
             clients: user_map,
             command_service,
             level_service,
+            config: self.0,
 
+            raknet_guid: rand::random(),
+            current_motd: RwLock::new(String::new()),
             running_token,
             shutdown_token: CancellationToken::new(),
             startup_token: CancellationToken::new(),
         };
 
-        Ok(Arc::new(instance))
-    }
-}
+        let instance = Arc::new(instance);
+        instance.refresh_motd();
 
-impl Default for InstanceBuilder<'static> {
-    fn default() -> InstanceBuilder<'static> {
-        InstanceBuilder {
-            name: RString::from("Server"),
-            net_config: NetConfig::default(),
-            db_config: DbConfig::default(),
-            client_config: ClientConfig::default(),
-        }
+        Ok(instance)
     }
 }
 
@@ -300,13 +141,18 @@ pub struct Instance {
     command_service: Arc<crate::command::Service>,
     /// Keeps track of the level state.
     level_service: Arc<crate::level::Service>,
-
+    /// Keeps track of the current configuration of the server.
+    config: Config,
     /// Cancelled when the server has started up successfully.
     startup_token: CancellationToken,
     /// Cancelled when the server is in the process of shutting down.
     running_token: CancellationToken,
     /// Cancelled when the server has fully shut down.
     shutdown_token: CancellationToken,
+    /// The RakNet GUID of the server. This is literally just randomly generated on startup.
+    raknet_guid: u64,
+    /// The current message of the day. Update every [`METADATA_REFRESH_INTERVAL`] seconds.
+    current_motd: RwLock<String>
 }
 
 impl Instance {
@@ -318,6 +164,17 @@ impl Instance {
     pub const CLIENT_VERSION_STRING: &'static str = CLIENT_VERSION_STRING;
     /// The network protocol version.
     pub const PROTOCOL_VERSION: u32 = PROTOCOL_VERSION;
+
+    /// Creates a new [`InstanceBuilder`].
+    pub fn builder() -> InstanceBuilder {
+        InstanceBuilder(Config::new())
+    }
+
+    /// Gets the current configuration of the instance.
+    #[inline]
+    pub const fn config(&self) -> &Config {
+        &self.config
+    }
 
     /// Gets the command service of this instance.
     #[inline]
@@ -335,6 +192,25 @@ impl Instance {
     #[inline]
     pub const fn clients(&self) -> &Arc<crate::net::Clients> {
         &self.clients
+    }
+
+    /// Refreshes the message of the day by calling the generating function again.
+    pub fn refresh_motd(self: &Arc<Instance>) {
+        let motd: CowString<'_> = (self.config.motd_callback)(self);
+        let metadata = format!(
+            "MCPE;{};{};{};{};{};{};{};Survival;1;{};{};",
+            motd.as_str(),
+            PROTOCOL_VERSION,
+            CLIENT_VERSION_STRING,
+            self.clients.total_connected(),
+            self.config.max_connections(),
+            self.raknet_guid,
+            self.config.name.as_str(),
+            self.config.ipv4_addr.port(),
+            self.config.ipv6_addr.map(|addr| addr.port()).unwrap_or(0)
+        );
+
+        *self.current_motd.write() = metadata;
     }
 
     /// Signals the server to start shutting down.
@@ -524,20 +400,17 @@ impl Instance {
 
         {
             let socket = Arc::clone(&self.ipv4_socket);
-            let user_map = Arc::clone(&self.clients);
-            let token = self.running_token.clone();
+            let this = Arc::clone(&self);
 
-            tokio::spawn(Instance::net_receiver(token, socket, user_map));
+            tokio::spawn(Instance::net_receiver(this, socket));
             tracing::info!("IPv4 listener ready");
         }
 
         if let Some(ipv6_socket) = &self.ipv6_socket {
             let socket = Arc::clone(ipv6_socket);
+            let this = Arc::clone(&self);
 
-            let user_map = Arc::clone(&self.clients);
-            let token = self.running_token.clone();
-
-            tokio::spawn(Instance::net_receiver(token, socket, user_map));
+            tokio::spawn(Instance::net_receiver(this, socket));
             tracing::info!("IPv6 listener ready");
         }
 
@@ -657,17 +530,10 @@ impl Instance {
     }
 
     /// Receives raknet from IPv4 clients and adds them to the receive queue
-    async fn net_receiver(running_token: CancellationToken, udp_socket: Arc<UdpSocket>, user_manager: Arc<Clients>) {
-        let server_guid = rand::random();
-
-        // TODO: Customizable server description.
-        let metadata = Self::refresh_metadata(
-            &String::from_utf8_lossy(&[0xee, 0x84, 0x88, 0x20]),
-            server_guid,
-            user_manager.total_connected(),
-            user_manager.max_count(),
-        );
-
+    async fn net_receiver(
+        self: Arc<Instance>,
+        udp_socket: Arc<UdpSocket>
+    ) {
         // This is heap-allocated because stack data is stored inline in tasks.
         // If it were to be stack-allocated, Tokio would have to copy the entire buffer each time
         // the task is moved across threads.
@@ -684,7 +550,7 @@ impl Instance {
                         }
                     }
                 },
-                _ = running_token.cancelled() => break
+                _ = self.running_token.cancelled() => break
             };
 
             let packet = ForwardablePacket {
@@ -694,9 +560,10 @@ impl Instance {
 
             if packet.is_unconnected() {
                 let udp_socket = Arc::clone(&udp_socket);
-                let session_manager = Arc::clone(&user_manager);
-                let metadata = metadata.clone();
+                let session_manager = Arc::clone(&self.clients);
+                let metadata = self.current_motd.read().clone();
 
+                let this = Arc::clone(&self);
                 tokio::spawn(async move {
                     let Some(id) = packet.packet_id() else {
                         tracing::warn!("Unconnected packet was empty");
@@ -704,10 +571,22 @@ impl Instance {
                     };
 
                     let pk_result = match id {
-                        UnconnectedPing::ID => Self::process_unconnected_ping(packet, server_guid, &metadata),
-                        OpenConnectionRequest1::ID => Self::process_open_connection_request1(packet, server_guid),
+                        UnconnectedPing::ID => Instance::process_unconnected_ping(
+                            packet, 
+                            this.raknet_guid, 
+                            &metadata
+                        ),
+                        OpenConnectionRequest1::ID => Instance::process_open_connection_request1(
+                            packet, 
+                            this.raknet_guid
+                        ),
                         OpenConnectionRequest2::ID => {
-                            Self::process_open_connection_request2(packet, Arc::clone(&udp_socket), session_manager, server_guid)
+                            Instance::process_open_connection_request2(
+                                packet, 
+                                Arc::clone(&udp_socket), 
+                                session_manager, 
+                                this.raknet_guid
+                            )
                         }
                         _ => {
                             tracing::error!("Invalid unconnected packet ID: {id:x}");
@@ -727,28 +606,12 @@ impl Instance {
                         }
                     }
                 });
-            } else if let Err(e) = user_manager.forward(packet).await {
+            } else if let Err(e) = self.clients.forward(packet).await {
                 tracing::error!("{e:#}");
             }
         }
 
         tracing::info!("Network receiver closed");
-    }
-
-    /// Generates a new metadata string using the given description and new player count.
-    fn refresh_metadata(description: &str, server_guid: u64, session_count: usize, max_session_count: usize) -> String {
-        format!(
-            "MCPE;{};{};{};{};{};{};{};Survival;1;{};{};",
-            description,
-            PROTOCOL_VERSION,
-            CLIENT_VERSION_STRING,
-            session_count,
-            max_session_count,
-            server_guid,
-            SERVER_CONFIG.read().server_name,
-            19132,
-            19133
-        )
     }
 }
 

@@ -1,7 +1,7 @@
 use std::future::Future;
 use std::io::{Read, Write};
 
-use std::sync::{Arc, OnceLock};
+use std::sync::{Arc, OnceLock, Weak};
 use std::sync::atomic::{
     AtomicBool, AtomicI64, AtomicU32, Ordering
 };
@@ -21,13 +21,11 @@ use proto::crypto::{Encryptor, BedrockIdentity, BedrockClientInfo};
 use proto::uuid::Uuid;
 use replicator::Replicator;
 
-use tokio::task::JoinHandle;
 use tokio_util::sync::CancellationToken;
 use util::{AtomicFlag, BinaryRead, BinaryWrite, Deserialize, Joinable, RVec, pool, Serialize, Vector};
 
-
-use crate::config::SERVER_CONFIG;
 use crate::forms;
+use crate::instance::Instance;
 
 use lazy_static::lazy_static;
 
@@ -63,6 +61,7 @@ pub struct BedrockClient {
 
     pub(crate) broadcast: broadcast::Sender<BroadcastPacket>,
 
+    instance: Weak<Instance>,
     shutdown_token: CancellationToken
 }
 
@@ -74,7 +73,8 @@ impl BedrockClient {
         receiver: mpsc::Receiver<RaknetCommand>,
         commands: Arc<crate::command::Service>,
         level: Arc<crate::level::Service>,
-        broadcast: broadcast::Sender<BroadcastPacket>
+        broadcast: broadcast::Sender<BroadcastPacket>,
+        instance: Weak<Instance>
     ) -> Arc<Self> {
         CONNECTED_CLIENTS_METRIC.inc();
 
@@ -85,16 +85,14 @@ impl BedrockClient {
             expected: AtomicU32::new(RequestNetworkSettings::ID),
             should_decompress: AtomicFlag::new(),
             supports_cache: AtomicBool::new(false),
-            
             replicator,
             raknet,
             player: OnceLock::new(),
-
             forms: forms::Subscriber::new(),
             commands,
             level,
-            
             broadcast,
+            instance,
             shutdown_token: CancellationToken::new()
         });
 
@@ -167,6 +165,13 @@ impl BedrockClient {
         self.shutdown_token.cancel();
 
         CONNECTED_CLIENTS_METRIC.dec();
+    }
+
+    /// Returns the instance this client belongs to.
+    pub(crate) fn instance(&self) -> Arc<Instance> {
+        // Instance should always exist while a client is active.
+        #[allow(clippy::unwrap_used)]
+        self.instance.upgrade().unwrap()
     }
 
     /// Handles a packet broadcasted by another user.
@@ -289,8 +294,9 @@ impl BedrockClient {
         let mut out;
         if self.should_decompress.get() {
             let (algorithm, threshold) = {
-                let config = SERVER_CONFIG.read();
-                (config.compression_algorithm, config.compression_threshold)
+                let instance = self.instance();
+                let compression = instance.config().compression();
+                (compression.algorithm, compression.threshold)
             };
 
             if packet.as_ref().len() > threshold as usize {

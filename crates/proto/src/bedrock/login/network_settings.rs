@@ -43,7 +43,7 @@ impl TryFrom<u8> for CompressionAlgorithm {
 /// If client throttling is enabled, the client will tick fewer players,
 /// improving performance on low-end devices.
 #[derive(Debug, Copy, Clone)]
-pub struct ClientThrottleSettings {
+pub struct ThrottleSettings {
     /// Regulates whether the client should throttle players.
     pub enabled: bool,
     /// Threshold for client throttling.
@@ -63,7 +63,7 @@ pub struct NetworkSettings {
     /// Algorithm used to compress raknet.
     pub compression_algorithm: CompressionAlgorithm,
     /// Client throttling settings.
-    pub client_throttle: ClientThrottleSettings,
+    pub client_throttle: ThrottleSettings,
 }
 
 impl ConnectedPacket for NetworkSettings {

@@ -1,26 +1,21 @@
 use std::net::SocketAddr;
-
-use std::sync::{Arc};
+use std::sync::{Arc, OnceLock, Weak};
 use std::time::Duration;
 
 use anyhow::Context;
-use dashmap::mapref::one::Ref;
 use dashmap::DashMap;
 
 use proto::uuid::Uuid;
 use raknet::{BroadcastPacket, RaknetCreateInfo, RakNetClient};
-
-use tokio::sync::{broadcast, mpsc};
 use proto::bedrock::{ConnectedPacket, Disconnect, DisconnectReason};
 use replicator::Replicator;
-
-
-use tokio::task::{JoinHandle, JoinSet};
-use tokio_util::sync::CancellationToken;
 use util::{RVec, Joinable, Serialize};
 
+use tokio::sync::{broadcast, mpsc};
+use tokio::task::{JoinHandle, JoinSet};
+use tokio_util::sync::CancellationToken;
 
-use crate::config::SERVER_CONFIG;
+use crate::instance::Instance;
 
 use super::{ForwardablePacket, BedrockClient};
 
@@ -59,7 +54,8 @@ pub struct Clients {
     broadcast: broadcast::Sender<BroadcastPacket>,
 
     commands: Arc<crate::command::Service>,
-    level: Arc<crate::level::Service>
+    level: Arc<crate::level::Service>,
+    instance: OnceLock<Weak<Instance>>
 }
 
 impl Clients {
@@ -71,7 +67,14 @@ impl Clients {
         let (broadcast, _) = broadcast::channel(BROADCAST_CHANNEL_CAPACITY);
 
         Self {
-            shutdown_token: CancellationToken::new(), replicator, connecting_map, connected_map, broadcast, commands, level
+            shutdown_token: CancellationToken::new(), 
+            replicator, 
+            connecting_map, 
+            connected_map, 
+            broadcast, 
+            commands, 
+            level,
+            instance: OnceLock::new()
         }
     }   
 
@@ -90,6 +93,10 @@ impl Clients {
         let endpoint = Arc::clone(&self.commands);
         let level = Arc::clone(&self.level);
 
+        // Instance should exist while the user map exists.
+        #[allow(clippy::unwrap_used)]
+        let instance = self.instance.get().unwrap().clone();
+
         // Callback to move the client from the connecting map to the connected map.
         // This is done when the Raknet layer attempts to send a message to the Bedrock layer
         // signalling that the Raknet connection is fully set up.
@@ -97,7 +104,13 @@ impl Clients {
             if let Some((_, raknet_user)) = connecting_map.remove(&address) {
                 let bedrock_user = UserMapEntry {
                     channel: raknet_user.channel, state: BedrockClient::new(
-                        raknet_user.state, replicator, state_rx, endpoint, level, broadcast
+                        raknet_user.state, 
+                        replicator, 
+                        state_rx, 
+                        endpoint, 
+                        level, 
+                        broadcast,
+                        instance
                     )
                 };
 
@@ -120,6 +133,20 @@ impl Clients {
         self.connecting_map.insert(address, UserMapEntry {
             channel: tx, state
         });
+    }
+
+    /// Sets the instance pointer for this service.
+    /// 
+    /// This is used to access data from other services.
+    pub(crate) fn set_instance(&self, instance: &Arc<Instance>) -> anyhow::Result<()> {
+        self.instance.set(Arc::downgrade(instance)).map_err(|_| anyhow::anyhow!("Client service instance was already set"))
+    }
+
+    /// Returns the instance that owns this service.
+    fn instance(&self) -> Arc<Instance> {
+        // This will not panic because the instance field is initialised before the first command can be executed.
+        #[allow(clippy::unwrap_used)]
+        self.instance.get().unwrap().upgrade().unwrap()
     }
 
     /// Attempts to retrieve the user with the given XUID.
@@ -172,18 +199,20 @@ impl Clients {
     }
 
     /// How many clients are currently in the process of logging in.
+    #[inline]
     pub fn total_connecting(&self) -> usize {
         self.connecting_map.len()
     }
 
     /// How many users are fully connected to the server.
+    #[inline]
     pub fn total_connected(&self) -> usize {
         self.connected_map.len()
     }
 
     /// Maximum amount of concurrently connected users.
-    pub fn max_count(&self) -> usize {
-        SERVER_CONFIG.read().max_players
+    pub fn max_connections(&self) -> usize {
+        self.instance().config().max_connections()
     }
 
     /// Signals the user map to shut down.
