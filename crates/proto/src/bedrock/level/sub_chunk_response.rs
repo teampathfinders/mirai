@@ -1,4 +1,4 @@
-use util::{PVec, BinaryWrite, Serialize, Vector};
+use util::{RVec, BinaryWrite, Serialize, Vector};
 
 use crate::bedrock::ConnectedPacket;
 use crate::types::Dimension;
@@ -29,7 +29,7 @@ pub enum HeightmapType {
 pub struct SubChunkEntry {
     pub offset: Vector<i8, 3>,
     pub result: SubChunkResult,
-    pub payload: PVec,
+    pub payload: RVec,
     pub heightmap_type: HeightmapType,
     pub heightmap: Box<[[u16; 16]; 16]>,
     pub blob_hash: u64

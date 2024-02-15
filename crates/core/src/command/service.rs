@@ -3,117 +3,22 @@ use std::{sync::{Arc, OnceLock, Weak}, time::Duration};
 use anyhow::Context as _;
 use dashmap::DashMap;
 use parking_lot::RwLock;
-use proto::bedrock::{AvailableCommands, Command, DynamicEnumAction, ParseResult, ParsedCommand, UpdateDynamicEnum};
-use tokio::{sync::{mpsc, oneshot}, task::JoinHandle};
+use proto::bedrock::{AvailableCommands, Command, DynamicEnumAction, UpdateDynamicEnum};
+use tokio::sync::{mpsc, oneshot};
 use tokio_util::sync::CancellationToken;
-use util::{CowString, Joinable};
+use util::Joinable;
 
 use crate::{instance::Instance, net::BedrockClient};
 
+use super::{CommandHandler, Context, HandlerImpl, HandlerOutput, HandlerResult, ParseResult, ParsedCommand, ParserHandlerImpl};
+
 const SERVICE_TIMEOUT: Duration = Duration::from_millis(10);
-
-/// Represents a single output message in the command service response.
-#[derive(Debug)]
-pub struct CommandOutput {
-    /// Output of the command.
-    pub message: CowString<'static>,
-    // pub message: Cow<'static, str>
-    /// Optional parameters used in the command output.
-    // pub parameters: Vec<Cow<'static, str>>
-    pub parameters: Vec<CowString<'static>>
-}
-
-/// The result of a command execution.
-pub type ExecutionResult = Result<CommandOutput, CommandOutput>;
 
 /// A request that can be sent to the command [`Service`].
 pub struct ServiceRequest {
     command: String,
     caller: Arc<BedrockClient>,
-    sender: oneshot::Sender<ExecutionResult>
-}
-
-pub struct Context {
-    pub caller: Arc<BedrockClient>,
-    pub instance: Arc<Instance>
-}
-
-/// A function that parses and executes a command.
-pub trait CommandHandler: Send + Sync {
-    /// Executes the command using this handler.
-    /// This function also performs parsing of the input.
-    fn call(&self, input: &str, ctx: &Context) -> ExecutionResult;
-    /// Returns the syntactic structure of the command.
-    fn structure(&self) -> &Command;
-}
-
-/// A handler that uses the built-in command parser.
-pub struct HandlerImpl<F> 
-where
-    F: Fn(ParsedCommand, &Context) -> ExecutionResult + Send + Sync
-{
-    handler: F,
-    structure: Command,
-}
-
-impl<F> CommandHandler for HandlerImpl<F> 
-where
-    F: Fn(ParsedCommand, &Context) -> ExecutionResult + Send + Sync
-{
-    fn call(&self, input: &str, ctx: &Context) -> ExecutionResult {
-        // Parse command with default parser.
-        let parsed = match ParsedCommand::default_parser(&self.structure, input) {
-            Ok(cmd) => cmd,
-            Err(err) => {
-                return Err(CommandOutput {
-                    message: err.description,
-                    parameters: Vec::new()
-                })
-            }
-        };
-
-        (self.handler)(parsed, ctx)
-    }
-
-    fn structure(&self) -> &Command {
-        &self.structure
-    }
-}
-
-/// A handler that uses a custom user-provided parser.
-pub struct ParserHandlerImpl<F, P> 
-where
-    F: Fn(ParsedCommand, &Context) -> ExecutionResult + Send + Sync,
-    P: Fn(&str, &Context) -> ParseResult + Send + Sync
-{
-    handler: F,
-    parser: P,
-    structure: Command
-}
-
-impl<F, P> CommandHandler for ParserHandlerImpl<F, P> 
-where
-    F: Fn(ParsedCommand, &Context) -> ExecutionResult + Send + Sync,
-    P: Fn(&str, &Context) -> ParseResult + Send + Sync
-{
-    fn call(&self, input: &str, ctx: &Context) -> ExecutionResult {
-        // Parse command with a custom parser.
-        let parsed = match (self.parser)(input, ctx) {
-            Ok(cmd) => cmd,
-            Err(err) => {
-                return Err(CommandOutput {
-                    message: err.description,
-                    parameters: Vec::new()
-                })
-            }
-        };
-
-        (self.handler)(parsed, ctx)
-    }
-
-    fn structure(&self) -> &Command {
-        &self.structure
-    }
+    sender: oneshot::Sender<HandlerResult>
 }
 
 
@@ -121,8 +26,9 @@ where
 pub struct Service {
     dynamic_enums: DashMap<String, Vec<String>>,
 
-    token: CancellationToken,
-    handle: RwLock<Option<JoinHandle<()>>>,
+    /// Cancelled by the instance to trigger a shutdown.
+    instance_token: CancellationToken,
+    shutdown_token: CancellationToken,
 
     sender: mpsc::Sender<ServiceRequest>,
     instance: OnceLock<Weak<Instance>>,
@@ -134,11 +40,11 @@ pub struct Service {
 
 impl Service {
     /// Creates a new command service.
-    pub fn new(token: CancellationToken) -> Arc<Service> {
+    pub(crate) fn new(token: CancellationToken) -> Arc<Service> {
         let (sender, receiver) = mpsc::channel(10);
         let service = Arc::new(Service {
-            token, sender,
-            handle: RwLock::new(None), 
+            instance_token: token, sender,
+            shutdown_token: CancellationToken::new(),
             registry: DashMap::new(),
             dynamic_enums: DashMap::new(),
             available: RwLock::new(AvailableCommands::empty()),
@@ -146,11 +52,10 @@ impl Service {
         });
 
         let clone = Arc::clone(&service);
-        let handle = tokio::spawn(async move {
-            clone.execution_job(receiver).await
+        tokio::spawn(async move {
+            clone.service_job(receiver).await
         });
 
-        *service.handle.write() = Some(handle);
         service
     }
 
@@ -172,7 +77,7 @@ impl Service {
     /// 
     /// This function returns an error if the dynamic enum does not exist or
     /// if sending the update packet to clients fails.
-    pub fn update_dynamic_enum(&self, update: UpdateDynamicEnum) -> anyhow::Result<()> {
+    pub fn update_enum(&self, update: UpdateDynamicEnum) -> anyhow::Result<()> {
         let Some(mut denum) = self.dynamic_enums.get_mut(update.enum_id) else {
             anyhow::bail!("Dynamic enum does not exist")
         };
@@ -235,7 +140,7 @@ impl Service {
     /// of an updated command list.
     pub fn register<F>(&self, structure: Command, handler: F)  -> anyhow::Result<()>
     where
-        F: Fn(ParsedCommand, &Context) -> ExecutionResult + Send + Sync + 'static
+        F: Fn(ParsedCommand, &Context) -> HandlerResult + Send + Sync + 'static
     {   
         let handler = Arc::new(HandlerImpl {
             handler, structure
@@ -250,7 +155,7 @@ impl Service {
     /// of an updated command list.
     pub fn register_with_parser<F, P>(&self, structure: Command, handler: F, parser: P) -> anyhow::Result<()>
     where
-        F: Fn(ParsedCommand, &Context) -> ExecutionResult + Send + Sync + 'static,
+        F: Fn(ParsedCommand, &Context) -> HandlerResult + Send + Sync + 'static,
         P: Fn(&str, &Context) -> ParseResult + Send + Sync + 'static
     {
         let handler = Arc::new(ParserHandlerImpl {
@@ -273,7 +178,9 @@ impl Service {
     /// 
     /// This method will return a receiver that will receive the output when the command has been executed.
     /// Execution of the command might not happen within the same tick.
-    pub async fn request(&self, caller: Arc<BedrockClient>, command: String) -> anyhow::Result<oneshot::Receiver<ExecutionResult>> {
+    pub(crate) async fn execute(&self, caller: Arc<BedrockClient>, command: String) 
+        -> anyhow::Result<oneshot::Receiver<HandlerResult>> 
+    {
         let (sender, receiver) = oneshot::channel();
         let request = ServiceRequest { command, caller, sender };
 
@@ -290,13 +197,13 @@ impl Service {
     }
 
     /// Parses the syntactic structure of a command before sending it off to a custom handler.
-    fn execute_handler(&self, command: &str, ctx: &Context) -> ExecutionResult {
+    fn execute_handler(&self, command: &str, ctx: &Context) -> HandlerResult {
         let command_name = {
             let mut split = command.split(' ');
             let first = split
                 .next()
                 .ok_or_else(|| {
-                    CommandOutput {
+                    HandlerOutput {
                         message: "Expected command name after /".into(),
                         parameters: Vec::new()
                     }
@@ -309,7 +216,7 @@ impl Service {
         };
         
         let Some(handler) = self.registry.get(command_name) else {
-            return Err(CommandOutput {
+            return Err(HandlerOutput {
                 message: format!("Unknown command {command_name}. Make sure the command exists and you have permission to use it.").into(),
                 parameters: Vec::new()
             })
@@ -319,7 +226,7 @@ impl Service {
     }
 
     /// Runs the service execution job.
-    async fn execution_job(self: Arc<Service>, mut receiver: mpsc::Receiver<ServiceRequest>) {
+    async fn service_job(self: Arc<Service>, mut receiver: mpsc::Receiver<ServiceRequest>) {
         loop {
             tokio::select! {
                 opt = receiver.recv() => {
@@ -346,10 +253,10 @@ impl Service {
 
                         let result = clone.execute_handler(&request.command, &ctx);
                         // Error can be ignored because it only occurs if the receiver does not exist anymore.
-                        let _: Result<(), ExecutionResult> = request.sender.send(result);
+                        let _: Result<(), HandlerResult> = request.sender.send(result);
                     });
                 }
-                _ = self.token.cancelled() => {
+                _ = self.instance_token.cancelled() => {
                     // Stop accepting requests.
                     receiver.close();
                     break
@@ -357,16 +264,14 @@ impl Service {
             }
         }
 
+        self.shutdown_token.cancel();
         tracing::info!("Command service closed");
     }
 }
 
 impl Joinable for Service {
     async fn join(&self) -> anyhow::Result<()> {
-        let handle = self.handle.write().take();
-        match handle {
-            Some(handle) => Ok(handle.await?),
-            None => anyhow::bail!("This command service has already been joined.")
-        }
+        self.shutdown_token.cancelled().await;
+        Ok(())
     }
 }

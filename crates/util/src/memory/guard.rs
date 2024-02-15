@@ -235,7 +235,7 @@ impl<T: Recyclable> Drop for Recycled<T> {
         };
 
         let inner = inner.into_storage();
-        T::pool().dealloc(inner)
+        T::pool().recycle(inner)
     }
 }
 

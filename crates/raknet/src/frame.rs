@@ -1,4 +1,4 @@
-use util::{PVec, BinaryRead, BinaryWrite, Deserialize, Serialize};
+use util::{RVec, BinaryRead, BinaryWrite, Deserialize, Serialize};
 
 use crate::Reliability;
 
@@ -102,12 +102,12 @@ pub struct Frame {
     /// Channel to perform ordering in
     pub order_channel: u8,
     /// Raw bytes of the body.
-    pub body: PVec,
+    pub body: RVec,
 }
 
 impl Frame {
     /// Creates a new frame.
-    pub fn new(reliability: Reliability, body: PVec) -> Self {
+    pub fn new(reliability: Reliability, body: RVec) -> Self {
         Self { 
             reliability, 
             body, 
@@ -177,7 +177,7 @@ impl<'a> Deserialize<'a> for Frame {
         let compound_id = if is_compound { reader.read_u16_be()? } else { 0 };
         let compound_index = if is_compound { reader.read_u32_be()? } else { 0 };
 
-        let body = PVec::alloc_from_slice(reader.take_n(length as usize)?);
+        let body = RVec::alloc_from_slice(reader.take_n(length as usize)?);
         let frame = Self {
             reliability,
             reliable_index,
@@ -199,7 +199,7 @@ impl Default for Frame {
     fn default() -> Frame {
         Frame { 
             reliability: Reliability::Unreliable, 
-            body: PVec::alloc(),
+            body: RVec::alloc(),
             reliable_index: 0,
             sequence_index: 0,
             is_compound: false,

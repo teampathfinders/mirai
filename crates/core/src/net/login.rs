@@ -5,7 +5,7 @@ use proto::bedrock::{BiomeDefinitionList, BroadcastIntent, CacheStatus, ChatRest
 use proto::crypto::Encryptor;
 use proto::types::Dimension;
 
-use util::{PVec, BlockPosition, Deserialize, Vector};
+use util::{RVec, BlockPosition, Deserialize, Vector};
 
 use crate::config::SERVER_CONFIG;
 use crate::net::PlayerData;
@@ -22,7 +22,7 @@ impl BedrockClient {
             username = %self.name().unwrap_or("<unknown>")
         )
     )]
-    pub fn handle_cache_status(&self, packet: PVec) -> anyhow::Result<()> {
+    pub fn handle_cache_status(&self, packet: RVec) -> anyhow::Result<()> {
         self.expected.store(ResourcePackClientResponse::ID, Ordering::SeqCst);
 
         let request = CacheStatus::deserialize(packet.as_ref())?;
@@ -41,7 +41,7 @@ impl BedrockClient {
             username = %self.name().unwrap_or("<unknown>")
         )
     )]
-    pub async fn handle_violation_warning(&self, packet: PVec) -> anyhow::Result<()> {
+    pub async fn handle_violation_warning(&self, packet: RVec) -> anyhow::Result<()> {
         let request = ViolationWarning::deserialize(packet.as_ref())?;
         tracing::error!("Received violation warning: {request:?}");
 
@@ -60,7 +60,7 @@ impl BedrockClient {
             username = %self.name().unwrap_or("<unknown>")
         )
     )]
-    pub fn handle_local_initialized(&self, packet: PVec) -> anyhow::Result<()> {
+    pub fn handle_local_initialized(&self, packet: RVec) -> anyhow::Result<()> {
         let _request = SetLocalPlayerAsInitialized::deserialize(packet.as_ref())?;
         self.expected.store(u32::MAX, Ordering::SeqCst);
 
@@ -122,7 +122,7 @@ impl BedrockClient {
             username = %self.name().unwrap_or("<unknown>")
         )
     )]
-    pub fn handle_chunk_radius_request(&self, packet: PVec) -> anyhow::Result<()> {
+    pub fn handle_chunk_radius_request(&self, packet: RVec) -> anyhow::Result<()> {
         let request = ChunkRadiusRequest::deserialize(packet.as_ref())?;
 
         // FIXME: Use render distance configured with builder instead of SERVER_CONFIG global.
@@ -141,7 +141,7 @@ impl BedrockClient {
     }
 
     /// Handles a [`ResourcePackClientResponse`] packet.
-    pub fn handle_resource_client_response(&self, packet: PVec) -> anyhow::Result<()> {
+    pub fn handle_resource_client_response(&self, packet: RVec) -> anyhow::Result<()> {
         self.expected.store(u32::MAX, Ordering::SeqCst);
 
         let _request = ResourcePackClientResponse::deserialize(packet.as_ref())?;
@@ -273,7 +273,7 @@ impl BedrockClient {
             username = %self.name().unwrap_or("<unknown>")
         )
     )]
-    pub fn handle_client_to_server_handshake(&self, packet: PVec) -> anyhow::Result<()> {
+    pub fn handle_client_to_server_handshake(&self, packet: RVec) -> anyhow::Result<()> {
         self.expected.store(CacheStatus::ID, Ordering::SeqCst);
 
         ClientToServerHandshake::deserialize(packet.as_ref())?;
@@ -316,7 +316,7 @@ impl BedrockClient {
             address = %self.raknet.address
         )
     )]
-    pub async fn handle_login(&self, packet: PVec) -> anyhow::Result<()> {
+    pub async fn handle_login(&self, packet: RVec) -> anyhow::Result<()> {
         self.expected.store(ClientToServerHandshake::ID, Ordering::SeqCst);
 
         let Ok(request) = Login::deserialize(packet.as_ref()) else {
@@ -371,7 +371,7 @@ impl BedrockClient {
             address = %self.raknet.address
         )
     )]
-    pub fn handle_network_settings_request(&self, packet: PVec) -> anyhow::Result<()> {
+    pub fn handle_network_settings_request(&self, packet: RVec) -> anyhow::Result<()> {
         self.expected.store(Login::ID, Ordering::SeqCst);
 
         let request = RequestNetworkSettings::deserialize(packet.as_ref())?;

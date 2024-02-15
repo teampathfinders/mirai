@@ -4,7 +4,7 @@ use parking_lot::{Mutex, RwLock};
 use proto::raknet::DisconnectNotification;
 use tokio::{net::UdpSocket, sync::{broadcast, mpsc, Semaphore}};
 use tokio_util::sync::CancellationToken;
-use util::{PVec, Joinable};
+use util::{RVec, Joinable};
 
 use crate::{BroadcastPacket, Compounds, OrderChannel, Recovery, Reliability, SendConfig, SendPriority, SendQueues, BUDGET_SIZE};
 
@@ -21,7 +21,7 @@ pub enum RaknetCommand {
     /// The Raknet client has disconnected.
     Disconnected,
     /// The Raknet layer has received a packet and finished preprocessing it.
-    Received(PVec)
+    Received(RVec)
 }
 
 /// Information required to create a new RakNet user.
@@ -94,7 +94,7 @@ impl RakNetClient {
     pub fn new(
         info: RaknetCreateInfo, 
         broadcast: broadcast::Sender<BroadcastPacket>,
-        forward_rx: mpsc::Receiver<PVec>
+        forward_rx: mpsc::Receiver<RVec>
     ) -> (Arc<Self>, mpsc::Receiver<RaknetCommand>) {
         // SAFETY: MaybeUninit does not require initialization, so it is safe to create an array
         // of them like this.

@@ -1,10 +1,9 @@
 use std::fmt;
 
 use macros::variant_count;
-use util::{bail, Serialize};
-use util::{BinaryWrite, size_of_varint, VarInt, VarString};
+use util::{Serialize, BinaryWrite, size_of_varint, VarInt, VarString};
 
-use crate::{bedrock::ParsedArgument, bedrock::ConnectedPacket};
+use crate::bedrock::ConnectedPacket;
 
 // FIXME: This whole module could use some cleanup...
 
@@ -193,56 +192,56 @@ impl GameRule {
         }
     }
 
-    /// Creates a [`GameRule`] from a parsed command argument.
-    pub fn from_parsed(name: &str, value: &ParsedArgument) -> anyhow::Result<GameRule> {
-        if let ParsedArgument::String(str_boolean) = value {
-            let rule_value = match str_boolean.as_str() {
-                "true" => true,
-                "false" => false,
-                _ => bail!(Malformed, "Invalid boolean, must be true or false, got {str_boolean}")
-            };
+    // /// Creates a [`GameRule`] from a parsed command argument.
+    // pub fn from_parsed(name: &str, value: &ParsedArgument) -> anyhow::Result<GameRule> {
+    //     if let ParsedArgument::String(str_boolean) = value {
+    //         let rule_value = match str_boolean.as_str() {
+    //             "true" => true,
+    //             "false" => false,
+    //             _ => bail!(Malformed, "Invalid boolean, must be true or false, got {str_boolean}")
+    //         };
 
-            Ok(match name {
-                "commandblocksenabled" => Self::CommandBlocksEnabled(rule_value),
-                "commandblockoutput" => Self::CommandBlockOutput(rule_value),
-                "dodaylightcycle" => Self::DaylightCycle(rule_value),
-                "doentitydrops" => Self::EntityDrops(rule_value),
-                "dofiretick" => Self::FireTick(rule_value),
-                "doimmediaterespawn" => Self::ImmediateRespawn(rule_value),
-                "doinsomnia" => Self::Insomnia(rule_value),
-                "domobloot" => Self::MobLoot(rule_value),
-                "domobspawning" => Self::MobSpawning(rule_value),
-                "dotiledrops" => Self::TileDrops(rule_value),
-                "doweathercycle" => Self::WeatherCycle(rule_value),
-                "drowningdamage" => Self::DrowningDamage(rule_value),
-                "falldamage" => Self::FallDamage(rule_value),
-                "firedamage" => Self::FireDamage(rule_value),
-                "freezedamage" => Self::FreezeDamage(rule_value),
-                "keepinventory" => Self::KeepInventory(rule_value),
-                "mobgriefing" => Self::MobGriefing(rule_value),
-                "naturalregeneration" => Self::NaturalRegeneration(rule_value),
-                "pvp" => Self::Pvp(rule_value),
-                "respawnblocksexplode" => Self::RespawnBlocksExplode(rule_value),
-                "sendcommandfeedback" => Self::SendCommandFeedback(rule_value),
-                "showbordereffect" => Self::ShowBorderEffect(rule_value),
-                "showcoordinates" => Self::ShowCoordinates(rule_value),
-                "showdeathmessages" => Self::ShowDeathMessages(rule_value),
-                "showtags" => Self::ShowTags(rule_value),
-                "tntexplodes" => Self::TntExplodes(rule_value),
-                _ => bail!(Malformed, "Invalid boolean game rule name {name}")
-            })
-        } else if let ParsedArgument::Int(integer) = value {
-            Ok(match name {
-                "functioncommandlimit" => Self::FunctionCommandLimit(*integer),
-                "maxcommandchainlength" => Self::MaxCommandChainLength(*integer),
-                "randomtickspeed" => Self::RandomTickSpeed(*integer),
-                "spawnradius" => Self::SpawnRadius(*integer),
-                _ => bail!(Malformed, "Invalid integer game rule name {name}")
-            })
-        } else {
-            bail!(Malformed, "Invalid game rule value type, it must be a boolean or integer")
-        }
-    }
+    //         Ok(match name {
+    //             "commandblocksenabled" => Self::CommandBlocksEnabled(rule_value),
+    //             "commandblockoutput" => Self::CommandBlockOutput(rule_value),
+    //             "dodaylightcycle" => Self::DaylightCycle(rule_value),
+    //             "doentitydrops" => Self::EntityDrops(rule_value),
+    //             "dofiretick" => Self::FireTick(rule_value),
+    //             "doimmediaterespawn" => Self::ImmediateRespawn(rule_value),
+    //             "doinsomnia" => Self::Insomnia(rule_value),
+    //             "domobloot" => Self::MobLoot(rule_value),
+    //             "domobspawning" => Self::MobSpawning(rule_value),
+    //             "dotiledrops" => Self::TileDrops(rule_value),
+    //             "doweathercycle" => Self::WeatherCycle(rule_value),
+    //             "drowningdamage" => Self::DrowningDamage(rule_value),
+    //             "falldamage" => Self::FallDamage(rule_value),
+    //             "firedamage" => Self::FireDamage(rule_value),
+    //             "freezedamage" => Self::FreezeDamage(rule_value),
+    //             "keepinventory" => Self::KeepInventory(rule_value),
+    //             "mobgriefing" => Self::MobGriefing(rule_value),
+    //             "naturalregeneration" => Self::NaturalRegeneration(rule_value),
+    //             "pvp" => Self::Pvp(rule_value),
+    //             "respawnblocksexplode" => Self::RespawnBlocksExplode(rule_value),
+    //             "sendcommandfeedback" => Self::SendCommandFeedback(rule_value),
+    //             "showbordereffect" => Self::ShowBorderEffect(rule_value),
+    //             "showcoordinates" => Self::ShowCoordinates(rule_value),
+    //             "showdeathmessages" => Self::ShowDeathMessages(rule_value),
+    //             "showtags" => Self::ShowTags(rule_value),
+    //             "tntexplodes" => Self::TntExplodes(rule_value),
+    //             _ => bail!(Malformed, "Invalid boolean game rule name {name}")
+    //         })
+    //     } else if let ParsedArgument::Int(integer) = value {
+    //         Ok(match name {
+    //             "functioncommandlimit" => Self::FunctionCommandLimit(*integer),
+    //             "maxcommandchainlength" => Self::MaxCommandChainLength(*integer),
+    //             "randomtickspeed" => Self::RandomTickSpeed(*integer),
+    //             "spawnradius" => Self::SpawnRadius(*integer),
+    //             _ => bail!(Malformed, "Invalid integer game rule name {name}")
+    //         })
+    //     } else {
+    //         bail!(Malformed, "Invalid game rule value type, it must be a boolean or integer")
+    //     }
+    // }
 
     pub fn serialize_into<W: BinaryWrite>(&self, writer: &mut W) -> anyhow::Result<()> {
         writer.write_str(self.name())?;

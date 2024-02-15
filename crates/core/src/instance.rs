@@ -14,13 +14,13 @@ use tokio::net::UdpSocket;
 
 use tokio_util::sync::CancellationToken;
 
-use util::{CowString, Deserialize, Joinable, PVec, RString, ReserveTo, Serialize};
+use util::{CowString, Deserialize, Joinable, RVec, RString, ReserveTo, Serialize};
 
-use crate::command::{self, ExecutionResult};
+use crate::command::{self, HandlerOutput, HandlerResult, ParsedCommand};
 use crate::config::SERVER_CONFIG;
 use crate::net::{Clients, ForwardablePacket};
 use proto::bedrock::{
-    Command, CommandOverload, CommandPermissionLevel, CompressionAlgorithm, ParsedCommand, CLIENT_VERSION_STRING, PROTOCOL_VERSION,
+    Command, CommandDataType, CommandEnum, CommandOverload, CommandParameter, CommandPermissionLevel, CompressionAlgorithm, CreditsStatus, CreditsUpdate, CLIENT_VERSION_STRING, PROTOCOL_VERSION
 };
 use proto::raknet::{
     IncompatibleProtocol, OpenConnectionReply1, OpenConnectionReply2, OpenConnectionRequest1, OpenConnectionRequest2, UnconnectedPing,
@@ -390,26 +390,110 @@ impl Instance {
 
         self.command_service.register(
             Command {
-                aliases: Vec::new(),
+                aliases: vec!["shutdown".to_owned(), "banjo".to_owned()],
                 description: "Shuts down the server".to_owned(),
                 name: "shutdown".to_owned(),
                 overloads: vec![CommandOverload { parameters: Vec::new() }],
                 permission_level: CommandPermissionLevel::Normal,
             },
             |_input, ctx| {
-                // ctx.instance.shutdown();
-                ctx.caller.kick("you dumbass").unwrap();
+                ctx.instance.shutdown();
 
-                Ok(command::CommandOutput {
+                Ok(command::HandlerOutput {
                     message: CowString::new("Server is shutting down"),
                     parameters: Vec::new(),
                 })
             },
         )?;
 
+        self.command_service.register(
+            Command {
+                aliases: vec![],
+                description: "Shows the credits".to_owned(),
+                name: "credits".to_owned(),
+                overloads: vec![
+                    CommandOverload {
+                        parameters: vec![]
+                    }
+                ],
+                permission_level: CommandPermissionLevel::Normal
+            },
+            |_input, ctx| {
+                ctx.caller.send(CreditsUpdate {
+                    runtime_id: 1,
+                    status: CreditsStatus::Start
+                });
+
+                Ok(HandlerOutput {
+                    message: "".into(),
+                    parameters: vec![]
+                })
+            }
+        )?;
+
+        self.command_service.register(
+            Command {
+                aliases: vec![],
+                description: "autocompletion example".to_owned(),
+                name: "autocomplete".to_owned(),
+                overloads: vec![CommandOverload {
+                    parameters: vec![
+                        CommandParameter {
+                            name: "param1".to_owned(),
+                            command_enum: Some(CommandEnum {
+                                dynamic: false,
+                                enum_id: "options".to_owned(),
+                                options: vec!["option1".to_owned(), "option2".to_owned()]
+                            }),
+                            data_type: CommandDataType::String,
+                            optional: true,
+                            options: 0,
+                            suffix: "".to_owned()
+                        }   
+                    ]
+                }, CommandOverload {
+                    parameters: vec![
+                        CommandParameter {
+                            name: "param1".to_owned(),
+                            command_enum: Some(CommandEnum {
+                                dynamic: false,
+                                enum_id: "options".to_owned(),
+                                options: vec!["option1".to_owned(), "option2".to_owned()]
+                            }),
+                            data_type: CommandDataType::String,
+                            optional: false,
+                            options: 0,
+                            suffix: "".to_owned()
+                        },
+                        CommandParameter {
+                            name: "param2".to_owned(),
+                            command_enum: Some(CommandEnum {
+                                dynamic: false,
+                                enum_id: "options2".to_owned(),
+                                options: vec!["option3".to_owned(), "option4".to_owned()]
+                            }),
+                            data_type: CommandDataType::String,
+                            optional: true,
+                            options: 0,
+                            suffix: "".to_owned()
+                        }   
+                    ]
+                }],
+                permission_level: CommandPermissionLevel::Normal
+            },
+            |input, _ctx| {
+                tracing::info!("Requested command is: {input:?}");
+
+                Ok(HandlerOutput {
+                    message: "this is a command response".into(),
+                    parameters: vec![]
+                })
+            }
+        )?;
+
         static COUNTER: AtomicUsize = AtomicUsize::new(1);
 
-        fn create_fn(_: ParsedCommand, ctx: &command::Context) -> ExecutionResult {
+        fn create_fn(_: ParsedCommand, ctx: &command::Context) -> HandlerResult {
             let _ = ctx.instance.commands().register(
                 Command {
                     aliases: Vec::new(),
@@ -421,7 +505,7 @@ impl Instance {
                 create_fn
             );
 
-            Ok(command::CommandOutput {
+            Ok(command::HandlerOutput {
                 message: CowString::new("Created a new command"),
                 parameters: Vec::new(),
             })
@@ -604,7 +688,7 @@ impl Instance {
             };
 
             let packet = ForwardablePacket {
-                buf: PVec::alloc_from_slice(&recv_buf[..n]),
+                buf: RVec::alloc_from_slice(&recv_buf[..n]),
                 addr: address,
             };
 

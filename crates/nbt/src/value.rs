@@ -5,7 +5,7 @@ use std::hash::{Hash, Hasher};
 use serde::de::{MapAccess, SeqAccess, Visitor};
 use serde::ser::{SerializeMap, SerializeSeq};
 use serde::{de, Deserialize, Deserializer, Serialize, Serializer};
-use util::PVec;
+use util::RVec;
 
 /// General NBT value type that can represent any value.
 ///
@@ -30,7 +30,7 @@ pub enum Value {
     /// This type is not used when deserialising due to issues with `serde`.
     /// In case you are defining your own types, you can use [`serde_bytes`](https://crates.io/crates/serde_bytes)
     /// to make use of the byte array type.
-    ByteArray(PVec),
+    ByteArray(RVec),
     /// A UTF-8 string.
     String(String),
     /// List of an arbitrary NBT value.
@@ -704,7 +704,7 @@ impl<'de> Visitor<'de> for ValueVisitor {
     where
         E: de::Error,
     {
-        Ok(Value::ByteArray(PVec::from(v)))
+        Ok(Value::ByteArray(RVec::from(v)))
     }
 
     #[inline]

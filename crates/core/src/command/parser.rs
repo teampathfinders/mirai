@@ -4,7 +4,7 @@ use std::str::Split;
 
 use util::CowString;
 
-use crate::bedrock::{Command, CommandDataType, CommandOverload};
+use proto::bedrock::{Command, CommandDataType, CommandOverload};
 
 /// A type of error that occurred while parsing a command.
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]

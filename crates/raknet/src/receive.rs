@@ -5,7 +5,7 @@ use std::time::{Instant, Duration};
 use async_recursion::async_recursion;
 use proto::bedrock::CONNECTED_PACKET_ID;
 use proto::raknet::{Ack, ConnectedPing, ConnectionRequest, DisconnectNotification, Nak, NewIncomingConnection};
-use util::{PVec, Deserialize};
+use util::{RVec, Deserialize};
 
 use tokio::sync::mpsc::error::SendTimeoutError;
 
@@ -25,7 +25,7 @@ impl RakNetClient {
             address = %self.address
         )
     )]
-    pub async fn handle_raw_packet(&self, packet: PVec) -> anyhow::Result<bool> {
+    pub async fn handle_raw_packet(&self, packet: RVec) -> anyhow::Result<bool> {
         *self.last_update.write() = Instant::now();
 
         let Some(pk_id) = packet.first().copied() else {
@@ -49,7 +49,7 @@ impl RakNetClient {
     /// * Inserting raknet into the compound collector
     /// * Discarding old sequenced frames
     /// * Acknowledging reliable raknet
-    async fn handle_frame_batch(&self, packet: PVec) -> anyhow::Result<()> {
+    async fn handle_frame_batch(&self, packet: RVec) -> anyhow::Result<()> {
         let batch = FrameBatch::deserialize(packet.as_ref())?;
         // self
         //     .batch_number
@@ -118,7 +118,7 @@ impl RakNetClient {
     }
 
     /// Processes an unencapsulated game packet.
-    async fn handle_frame_body(&self, packet: PVec) -> anyhow::Result<()> {
+    async fn handle_frame_body(&self, packet: RVec) -> anyhow::Result<()> {
         let Some(packet_id) = packet.first().copied() else {
             tracing::warn!("Received packet is empty");
             anyhow::bail!("Packet was empty");

@@ -1,7 +1,7 @@
 use serde::Deserialize;
 use serde_repr::Deserialize_repr;
 
-use util::{bail, PVec, BinaryRead, BinaryWrite};
+use util::{bail, RVec, BinaryRead, BinaryWrite};
 
 /// Size of arms of a skin.
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Deserialize)]
@@ -274,7 +274,7 @@ pub struct SkinAnimation {
     pub image_height: u32,
     /// Image data.
     #[serde(rename = "Image", with = "base64")]
-    pub image_data: PVec,
+    pub image_data: RVec,
     /// Animation type.
     #[serde(rename = "Type")]
     pub animation_type: SkinAnimationType,
@@ -306,7 +306,7 @@ impl<'a> util::Deserialize<'a> for SkinAnimation {
         let image_width = reader.read_u32_le()?;
         let image_height = reader.read_u32_le()?;
         let image_size = reader.read_var_u32()?;
-        let image_data = PVec::alloc_from_slice(reader.take_n(image_size as usize)?);
+        let image_data = RVec::alloc_from_slice(reader.take_n(image_size as usize)?);
 
         let animation_type = SkinAnimationType::try_from(reader.read_u32_le()?)?;
         let frame_count = reader.read_f32_le()?;
@@ -344,7 +344,7 @@ pub struct Skin {
     pub image_height: u32,
     /// Skin image data.
     #[serde(rename = "SkinData", with = "base64")]
-    pub image_data: PVec,
+    pub image_data: RVec,
     /// Animations that the skin possesses.
     #[serde(rename = "AnimatedImageData")]
     pub animations: Vec<SkinAnimation>,
@@ -356,7 +356,7 @@ pub struct Skin {
     pub cape_image_height: u32,
     /// Cape image data
     #[serde(rename = "CapeData", with = "base64")]
-    pub cape_image_data: PVec,
+    pub cape_image_data: RVec,
     /// JSON containing information like bones.
     #[serde(rename = "SkinGeometryData", with = "base64_string")]
     pub geometry: String,
@@ -406,13 +406,13 @@ pub struct Skin {
 mod base64 {
     use base64::Engine;
     use serde::{Deserialize, Deserializer};
-    use util::PVec;
+    use util::RVec;
 
     const ENGINE: base64::engine::GeneralPurpose = base64::engine::general_purpose::STANDARD;
 
-    pub fn deserialize<'de, D: Deserializer<'de>>(d: D) -> anyhow::Result<PVec, D::Error> {
+    pub fn deserialize<'de, D: Deserializer<'de>>(d: D) -> anyhow::Result<RVec, D::Error> {
         let base64 = String::deserialize(d)?;
-        let mut output = PVec::alloc();
+        let mut output = RVec::alloc();
         
         ENGINE.decode_vec(base64, &mut output).map_err(serde::de::Error::custom)?;
         Ok(output)
@@ -526,7 +526,7 @@ impl<'a> util::Deserialize<'a> for Skin {
         let image_width = reader.read_u32_le()?;
         let image_height = reader.read_u32_le()?;
         let image_size = reader.read_var_u32()?;
-        let image_data = PVec::alloc_from_slice(reader.take_n(image_size as usize)?);
+        let image_data = RVec::alloc_from_slice(reader.take_n(image_size as usize)?);
 
         let animation_count = reader.read_u32_le()?;
         let mut animations = Vec::with_capacity(animation_count as usize);
@@ -537,7 +537,7 @@ impl<'a> util::Deserialize<'a> for Skin {
         let cape_image_width = reader.read_u32_le()?;
         let cape_image_height = reader.read_u32_le()?;
         let cape_image_size = reader.read_var_u32()?;
-        let cape_image_data = PVec::alloc_from_slice(reader.take_n(cape_image_size as usize)?);
+        let cape_image_data = RVec::alloc_from_slice(reader.take_n(cape_image_size as usize)?);
 
         let geometry = reader.read_str()?.to_owned();
         let geometry_engine_version = reader.read_str()?.to_owned();

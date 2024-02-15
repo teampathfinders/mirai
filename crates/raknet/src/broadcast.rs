@@ -2,7 +2,7 @@ use std::{net::SocketAddr, sync::Arc};
 
 use proto::bedrock::ConnectedPacket;
 
-use util::{PVec, Serialize};
+use util::{RVec, Serialize};
 
 /// A packet that can be broadcast to other sessions.
 ///
@@ -27,7 +27,7 @@ pub struct BroadcastPacket {
     ///
     /// This must be an already serialized packet (use the [`Serialize`] trait)
     /// *without* a header.
-    pub content: Arc<PVec>,
+    pub content: Arc<RVec>,
 }
 
 impl BroadcastPacket {

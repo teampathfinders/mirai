@@ -1,7 +1,7 @@
 use std::io::Write;
 
 use dashmap::DashMap;
-use util::PVec;
+use util::RVec;
 
 use crate::Frame;
 
@@ -60,7 +60,7 @@ impl Compounds {
             let fragments = &mut kv.1;
 
             // Merge all fragments
-            let mut merged = PVec::alloc_with_capacity(
+            let mut merged = RVec::alloc_with_capacity(
                 fragments
                     .iter()
                     .fold(0, |acc, f| acc + f.as_ref().unwrap().body.len())

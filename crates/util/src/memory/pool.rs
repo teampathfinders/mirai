@@ -6,7 +6,7 @@ use std::{
 
 use crate::Recycled;
 
-static BINARY_POOL: Pool<Vec<u8>> = Pool::new();
+static BINARY_POOL: RecyclePool<Vec<u8>> = RecyclePool::new();
 
 // The amount of buffers the `alloc_with_capacity` function will check
 // before residing to the largest found. This is to ensure that the function does not
@@ -14,7 +14,7 @@ static BINARY_POOL: Pool<Vec<u8>> = Pool::new();
 const POOL_MAX_SEARCH_COUNT: usize = 10;
 
 /// A pooled vector.
-pub type PVec = Recycled<Vec<u8>>;
+pub type RVec = Recycled<Vec<u8>>;
 
 /// A pooled string.
 ///
@@ -23,12 +23,12 @@ pub type PVec = Recycled<Vec<u8>>;
 pub type RString = Recycled<String>;
 
 /// A storage type that can be used by a pool.
-pub trait PoolStorage: Sized + 'static {}
+pub trait RecycleStorage: Sized + 'static {}
 
-/// Specialization of [`PoolStorage`] that is only implemented by collections.
+/// Specialization of [`RecycleStorage`] that is only implemented by collections.
 ///
-/// This trait allows [`Pool`] to provide functionality related to collection capacities.
-pub trait RecycleCollectionStorage: PoolStorage {
+/// This trait allows [`RecyclePool`] to provide functionality related to collection capacities.
+pub trait RecycleCollectionStorage: RecycleStorage {
     /// The capacity of this storage object.
     fn capacity(&self) -> usize;
     /// Reserves additional capacity for the storage object.
@@ -37,7 +37,7 @@ pub trait RecycleCollectionStorage: PoolStorage {
     fn with_capacity(capacity: usize) -> Self;
 }
 
-impl PoolStorage for Vec<u8> {}
+impl RecycleStorage for Vec<u8> {}
 
 impl RecycleCollectionStorage for Vec<u8> {
     fn capacity(&self) -> usize {
@@ -59,10 +59,10 @@ pub trait Recyclable: Sized + 'static {
     ///
     /// A `String` can be created from and turned into a `Vec<u8>` which would
     /// therefore be a valid storage type.
-    type Storage: PoolStorage;
+    type Storage: RecycleStorage;
 
     /// Returns the pool associated with this poolable's backing storage.
-    fn pool() -> &'static Pool<Self::Storage>;
+    fn pool() -> &'static RecyclePool<Self::Storage>;
 
     /// Converts a storage type into a usable type.
     fn into_usable(storage: Self::Storage) -> Self;
@@ -76,7 +76,7 @@ impl Recyclable for Vec<u8> {
     type Storage = Vec<u8>;
 
     #[inline]
-    fn pool() -> &'static Pool<Vec<u8>> {
+    fn pool() -> &'static RecyclePool<Vec<u8>> {
         &BINARY_POOL
     }
 
@@ -96,7 +96,7 @@ impl Recyclable for String {
     type Storage = Vec<u8>;
 
     #[inline]
-    fn pool() -> &'static Pool<Vec<u8>> {
+    fn pool() -> &'static RecyclePool<Vec<u8>> {
         &BINARY_POOL
     }
 
@@ -116,14 +116,14 @@ impl Recyclable for String {
 }
 
 /// A pool that stores objects of type `S`.
-pub struct Pool<S: PoolStorage> {
+pub struct RecyclePool<S: RecycleStorage> {
     items: Mutex<Vec<S>>,
 }
 
-impl<S: PoolStorage> Pool<S> {
+impl<S: RecycleStorage> RecyclePool<S> {
     /// Creates a new pool.
-    pub const fn new() -> Pool<S> {
-        Pool { items: Mutex::new(Vec::new()) }
+    pub const fn new() -> RecyclePool<S> {
+        RecyclePool { items: Mutex::new(Vec::new()) }
     }
 
     /// Retrieves an object from the pool.
@@ -153,13 +153,13 @@ impl<S: PoolStorage> Pool<S> {
 
     /// Takes ownership of the object and returns it to its pool.
     #[inline]
-    pub fn dealloc(&self, value: S) {
-        RETURN_COUNTER.fetch_add(1, Ordering::Relaxed);
+    pub fn recycle(&self, value: S) {
+        RECYCLE_COUNTER.fetch_add(1, Ordering::Relaxed);
         self.items.lock().push(value);
     }
 }
 
-impl<S: PoolStorage> Pool<S> {
+impl<S: RecycleStorage> RecyclePool<S> {
     /// Retrieves an object from the pool.
     ///
     /// If the pool had no available objects, a new one is initialized using its [`Default`]
@@ -188,7 +188,7 @@ impl<S: PoolStorage> Pool<S> {
     }
 }
 
-impl<T> Pool<T>
+impl<T> RecyclePool<T>
 where
     T: RecycleCollectionStorage,
 {
@@ -261,8 +261,8 @@ pub fn total_requests() -> usize {
 }
 
 /// Returns the total amount of objects that have been returned to *all* pools.
-pub fn total_returns() -> usize {
-    RETURN_COUNTER.load(Ordering::Relaxed)
+pub fn total_recycles() -> usize {
+    RECYCLE_COUNTER.load(Ordering::Relaxed)
 }
 
 /// Returns the total amount of heap allocations that *all* pools have performed.
@@ -272,4 +272,4 @@ pub fn total_allocations() -> usize {
 
 pub(super) static REQ_COUNTER: AtomicUsize = AtomicUsize::new(0);
 pub(super) static ALLOC_COUNTER: AtomicUsize = AtomicUsize::new(0);
-pub(super) static RETURN_COUNTER: AtomicUsize = AtomicUsize::new(0);
+pub(super) static RECYCLE_COUNTER: AtomicUsize = AtomicUsize::new(0);

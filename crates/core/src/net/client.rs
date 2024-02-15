@@ -23,7 +23,7 @@ use replicator::Replicator;
 
 use tokio::task::JoinHandle;
 use tokio_util::sync::CancellationToken;
-use util::{AtomicFlag, BinaryRead, BinaryWrite, Deserialize, Joinable, PVec, pool, Serialize, Vector};
+use util::{AtomicFlag, BinaryRead, BinaryWrite, Deserialize, Joinable, RVec, pool, Serialize, Vector};
 
 
 use crate::config::SERVER_CONFIG;
@@ -161,7 +161,7 @@ impl BedrockClient {
 
         tracing::info!(
             "Requests: {} | Returns: {} | Allocations: {}",
-            pool::total_requests(), pool::total_returns(), pool::total_allocations()
+            pool::total_requests(), pool::total_recycles(), pool::total_allocations()
         );
 
         self.shutdown_token.cancel();
@@ -182,11 +182,11 @@ impl BedrockClient {
             #[allow(clippy::unwrap_used)]
             let size_hint = header.size_hint().unwrap() + packet.content.len();
     
-            let mut body = PVec::alloc_with_capacity(size_hint);
+            let mut body = RVec::alloc_with_capacity(size_hint);
             header.serialize_into(&mut body)?;
             body.write_all(&packet.content)?;
     
-            let mut full = PVec::alloc_with_capacity(body.len() + 5);
+            let mut full = RVec::alloc_with_capacity(body.len() + 5);
             full.write_var_u32(body.len() as u32)?;
             full.write_all(&body)?;
 
@@ -270,11 +270,11 @@ impl BedrockClient {
             header.size_hint().unwrap() + 
             packet.size_hint().unwrap_or(0);
 
-        let mut body = PVec::alloc_with_capacity(size_hint);
+        let mut body = RVec::alloc_with_capacity(size_hint);
         header.serialize_into(&mut body)?;
         packet.serialize_into(&mut body)?;
 
-        let mut full = PVec::alloc_with_capacity(body.len() + 5);
+        let mut full = RVec::alloc_with_capacity(body.len() + 5);
         full.write_var_u32(body.len() as u32)?;
         full.write_all(&body)?;
 
@@ -300,13 +300,13 @@ impl BedrockClient {
                         unimplemented!("Snappy compression");
                     }
                     CompressionAlgorithm::Flate => {
-                        let writer_inner = PVec::alloc_with_capacity(packet.as_ref().len());
+                        let writer_inner = RVec::alloc_with_capacity(packet.as_ref().len());
                         let mut writer = DeflateEncoder::new(writer_inner, Compression::best());
 
                         writer.write_all(packet.as_ref())?;
                         let compressed_body = writer.finish()?;
 
-                        out = PVec::alloc_with_capacity(1 + 1 + compressed_body.len());
+                        out = RVec::alloc_with_capacity(1 + 1 + compressed_body.len());
                         out.write_u8(CONNECTED_PACKET_ID)?;
                         out.write_u8(algorithm as u8)?;
                         out.write_all(&compressed_body)?;
@@ -315,14 +315,14 @@ impl BedrockClient {
             } else {
                 // Also reserve capacity for checksum even if encryption is disabled,
                 // preventing allocations.
-                out = PVec::alloc_with_capacity(1 + packet.as_ref().len() + 8);
+                out = RVec::alloc_with_capacity(1 + packet.as_ref().len() + 8);
                 out.write_u8(CONNECTED_PACKET_ID)?;
                 out.write_all(packet.as_ref())?;
             }
         } else {
             // Also reserve capacity for checksum even if encryption is disabled,
             // preventing allocations.
-            out = PVec::alloc_with_capacity(1 + packet.as_ref().len() + 8);
+            out = RVec::alloc_with_capacity(1 + packet.as_ref().len() + 8);
             out.write_u8(CONNECTED_PACKET_ID)?;
             out.write_all(packet.as_ref())?;
         };
@@ -342,7 +342,7 @@ impl BedrockClient {
     /// 
     /// After processing, this function sends the processed packet to [`handle_frame_body`](Self::handle_frame_body)
     /// function,
-    async fn handle_encrypted_frame(self: &Arc<Self>, mut packet: PVec) -> anyhow::Result<()> {
+    async fn handle_encrypted_frame(self: &Arc<Self>, mut packet: RVec) -> anyhow::Result<()> {
         let timestamp = Instant::now();
 
         if packet[0] != 0xfe {
@@ -367,7 +367,7 @@ impl BedrockClient {
                 match algorithm {
                     CompressionAlgorithm::Flate => {
                         let mut reader = flate2::read::DeflateDecoder::new(packet.as_slice());
-                        let mut decompressed = PVec::alloc_with_capacity(packet.len() * 2);
+                        let mut decompressed = RVec::alloc_with_capacity(packet.len() * 2);
                         
                         reader.read_to_end(&mut decompressed)?;
                         self.handle_frame_body(decompressed).await
@@ -396,7 +396,7 @@ impl BedrockClient {
             username = self.name().unwrap_or("<unknown>")
         )
     )]
-    async fn handle_frame_body(self: &Arc<Self>, mut packet: PVec) -> anyhow::Result<()> {
+    async fn handle_frame_body(self: &Arc<Self>, mut packet: RVec) -> anyhow::Result<()> {
         let start_len = packet.len();
         let mut reader: &[u8] = packet.as_ref();
         let _length = reader.read_var_u32()?;

@@ -96,7 +96,8 @@ struct ServiceRequest {
 /// 
 /// All subchunk data is stored on the heap, it is therefore cheap to move subchunks through channels.
 pub struct Service {
-    token: CancellationToken,
+    instance_token: CancellationToken,
+    shutdown_token: CancellationToken,
 
     // gamerules: RwLock<[GameRule; GameRule::variant_count()]>,
 
@@ -106,10 +107,12 @@ pub struct Service {
 }
 
 impl Service {
+    /// Creates a new `Service`.
     pub fn new(token: CancellationToken) -> Arc<Service> {
         let (sender, receiver) = mpsc::channel(LEVEL_REQUEST_BUFFER_SIZE);
         Arc::new(Service {
-            token,
+            instance_token: token,
+            shutdown_token: CancellationToken::new(),
 
             // gamerules: RwLock::new(Default::default()),
 
@@ -126,7 +129,9 @@ impl Service {
         self.instance.set(Arc::downgrade(instance)).map_err(|_| anyhow::anyhow!("Level service instance was already set"))
     }
     
-    pub fn get<R: ExpensiveRequestable>(&self, request: R) -> anyhow::Result<oneshot::Receiver<anyhow::Result<R::Output>>> {
+    pub fn get<R: ExpensiveRequestable>(&self, request: R) 
+        -> anyhow::Result<oneshot::Receiver<anyhow::Result<R::Output>>> 
+    {
         let (_sender, receiver) = oneshot::channel();
 
         match R::VARIANT {
@@ -163,10 +168,16 @@ impl Service {
     fn load_multi(&self, _request: SubchunkGetMulti) {
         todo!();
     }
+
+    async fn service_job(self: Arc<Service>, mut receiver: mpsc::Receiver<ServiceRequest>) {
+
+        self.shutdown_token.cancel();
+    }
 }
 
 impl Joinable for Service {
     async fn join(&self) -> anyhow::Result<()> {
+        self.shutdown_token.cancelled().await;
         Ok(())
     }
 }

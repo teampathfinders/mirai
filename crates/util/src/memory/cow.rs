@@ -130,6 +130,12 @@ impl<'a> From<Cow<'a, str>> for CowString<'a> {
     }
 }
 
+impl Default for CowString<'static> {
+    fn default() -> CowString<'static> {
+        CowString::Owned(RString::alloc())
+    }
+}
+
 impl<'a> From<CowString<'a>> for Cow<'a, str> {
     /// ## Warning
     /// 

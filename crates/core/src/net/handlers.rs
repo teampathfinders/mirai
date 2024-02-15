@@ -4,13 +4,13 @@ use std::sync::Arc;
 
 use proto::bedrock::{Animate, CommandOutput, CommandOutputMessage, CommandOutputType, CommandRequest, DisconnectReason, FormResponseData, HudElement, HudVisibility, PlayerAuthInput, RequestAbility, SetHud, SettingsCommand, TextData, TextMessage, TickSync, UpdateSkin};
 
-use util::{PVec, Deserialize, CowSlice};
+use util::{RVec, Deserialize, CowSlice};
 
 use super::BedrockClient;
 
 impl BedrockClient {
     /// Handles a [`SettingsCommand`] packet used to adjust a world setting.
-    pub fn handle_settings_command(&self, packet: PVec) -> anyhow::Result<()> {
+    pub fn handle_settings_command(&self, packet: RVec) -> anyhow::Result<()> {
         let request = SettingsCommand::deserialize(packet.as_ref())?;
         tracing::debug!("{request:?}");
 
@@ -18,7 +18,7 @@ impl BedrockClient {
     }
 
     /// Handles a [`TickSync`] packet used to synchronise ticks between the client and server.
-    pub fn handle_tick_sync(&self, packet: PVec) -> anyhow::Result<()> {
+    pub fn handle_tick_sync(&self, packet: RVec) -> anyhow::Result<()> {
         let _request = TickSync::deserialize(packet.as_ref())?;
         // TODO: Implement tick synchronisation
         Ok(())
@@ -38,7 +38,7 @@ impl BedrockClient {
             msg
         )
     )]
-    pub fn handle_text_message(self: &Arc<Self>, packet: PVec) -> anyhow::Result<()> {
+    pub fn handle_text_message(self: &Arc<Self>, packet: RVec) -> anyhow::Result<()> {
         let request = TextMessage::deserialize(packet.as_ref())?;
         if let TextData::Chat {
             source, message
@@ -64,7 +64,7 @@ impl BedrockClient {
 
     /// Handles a [`PlayerAuthInput`] packet. These are sent every tick and are used
     /// for server authoritative player movement.
-    pub fn handle_auth_input(&self, packet: PVec) -> anyhow::Result<()> {
+    pub fn handle_auth_input(&self, packet: RVec) -> anyhow::Result<()> {
         let input = PlayerAuthInput::deserialize(packet.as_ref())?;
         if input.input_data.0 != 0 {
             tracing::debug!("{:?}", input.input_data);
@@ -74,14 +74,14 @@ impl BedrockClient {
     }
 
     /// Handles an [`UpdateSkin`] packet.
-    pub fn handle_skin_update(&self, packet: PVec) -> anyhow::Result<()> {
+    pub fn handle_skin_update(&self, packet: RVec) -> anyhow::Result<()> {
         let request = UpdateSkin::deserialize(packet.as_ref())?;
         tracing::debug!("{request:?}");
         self.broadcast(request)
     }
 
     /// Handles an [`AbilityRequest`] packet.
-    pub fn handle_ability_request(&self, packet: PVec) -> anyhow::Result<()> {
+    pub fn handle_ability_request(&self, packet: RVec) -> anyhow::Result<()> {
         let request = RequestAbility::deserialize(packet.as_ref())?;
         tracing::debug!("{request:?}");
         
@@ -89,7 +89,7 @@ impl BedrockClient {
     }
 
     /// Handles an [`Animation`] packet.
-    pub fn handle_animation(&self, packet: PVec) -> anyhow::Result<()> {
+    pub fn handle_animation(&self, packet: RVec) -> anyhow::Result<()> {
         let request = Animate::deserialize(packet.as_ref())?;
 
         self.send(SetHud {
@@ -108,7 +108,7 @@ impl BedrockClient {
     /// # Errors
     /// 
     /// May return an error if the packet fails to deserialize or handling a form response fails.
-    pub fn handle_form_response(&self, packet: PVec) -> anyhow::Result<()> {
+    pub fn handle_form_response(&self, packet: RVec) -> anyhow::Result<()> {
         let response = FormResponseData::deserialize(packet.as_ref())?;
         self.forms.handle_response(response)
     }
@@ -126,7 +126,7 @@ impl BedrockClient {
             username = self.name().unwrap_or("<unknown>")
         )
     )]
-    pub fn handle_command_request(self: Arc<Self>, packet: PVec) {
+    pub fn handle_command_request(self: Arc<Self>, packet: RVec) {
         // Command execution could take several ticks, await the result in a separate task
         // to avoid blocking the request handler.
         tokio::spawn(async move {
@@ -139,7 +139,7 @@ impl BedrockClient {
             };
             tracing::Span::current().record("command", request.command);
 
-            let receiver = match self.commands.request(
+            let receiver = match self.commands.execute(
                 Arc::clone(&self),
                 request.command.to_owned()
             ).await {

@@ -1,4 +1,4 @@
-use crate::{PVec, BinaryRead, BinaryWrite};
+use crate::{RVec, BinaryRead, BinaryWrite};
 use std::{fmt::Debug, future::Future};
 
 /// Trait that describes an object that can be serialised from raw bytes.
@@ -11,9 +11,9 @@ pub trait Serialize {
     fn size_hint(&self) -> Option<usize> { None }
 
     /// Serializes the object into binary format.
-    fn serialize(&self) -> anyhow::Result<PVec> {
+    fn serialize(&self) -> anyhow::Result<RVec> {
         let cap = self.size_hint().unwrap_or(0);
-        let mut writer = PVec::alloc_with_capacity(cap);
+        let mut writer = RVec::alloc_with_capacity(cap);
 
         self.serialize_into(&mut writer)?;
 
