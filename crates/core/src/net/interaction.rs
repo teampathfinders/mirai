@@ -3,9 +3,9 @@ use std::sync::atomic::Ordering;
 use proto::bedrock::{ABILITY_FLYING, AbilityData, AbilityLayer, AbilityType, ContainerClose, ContainerOpen, ContainerType, GameMode, Interact, InteractAction, INVENTORY_WINDOW_ID, MovePlayer, PlayerAction, PlayerActionType, UpdateAbilities, ABILITY_FLAG_END};
 use util::{PVec, Deserialize};
 
-use super::BedrockUser;
+use super::BedrockClient;
 
-impl BedrockUser {
+impl BedrockClient {
     /// Handles an [`Interact`] packet.
     pub fn handle_interaction(&self, packet: PVec) -> anyhow::Result<()> {
         let request = Interact::deserialize(packet.as_ref())?;

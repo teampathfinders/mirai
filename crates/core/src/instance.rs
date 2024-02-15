@@ -7,6 +7,7 @@ use tokio::task::JoinHandle;
 
 
 use std::net::{Ipv4Addr, Ipv6Addr, SocketAddrV4, SocketAddrV6};
+use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::Arc;
 use std::time::Duration;
 
@@ -16,12 +17,11 @@ use tokio_util::sync::CancellationToken;
 
 use util::{Deserialize, CowString, Joinable, RString, PVec, ReserveTo, Serialize};
 
-use crate::command;
+use crate::command::{self, ExecutionResult};
 use crate::config::SERVER_CONFIG;
 use crate::net::{ForwardablePacket, Clients};
 use proto::bedrock::{
-    Command, CommandOverload, CommandPermissionLevel, CompressionAlgorithm, CLIENT_VERSION_STRING,
-    PROTOCOL_VERSION,
+    Command, CommandOverload, CommandPermissionLevel, CompressionAlgorithm, ParsedCommand, CLIENT_VERSION_STRING, PROTOCOL_VERSION
 };
 use proto::raknet::{
     IncompatibleProtocol, OpenConnectionReply1, OpenConnectionReply2, OpenConnectionRequest1, OpenConnectionRequest2, UnconnectedPing,
@@ -226,24 +226,6 @@ impl<'a> InstanceBuilder<'a> {
 
         let command_service = crate::command::Service::new(running_token.clone());
 
-        command_service.register(
-            Command {
-                aliases: Vec::new(),
-                description: "Shuts down the server".to_owned(),
-                name: "shutdown".to_owned(),
-                overloads: vec![CommandOverload { parameters: Vec::new() }],
-                permission_level: CommandPermissionLevel::Normal,
-            },
-            |_input, ctx| {
-                ctx.shutdown();
-
-                Ok(command::CommandOutput {
-                    message: CowString::new("Server is shutting down"),
-                    parameters: Vec::new(),
-                })
-            },
-        );
-
         // command_service.register_with_parser(
         //     Command {
         //         aliases: Vec::new(),
@@ -407,6 +389,53 @@ impl Instance {
         self.command_service.set_instance(self)?;
         self.level_service.set_instance(self)?;
 
+        self.command_service.register(
+            Command {
+                aliases: Vec::new(),
+                description: "Shuts down the server".to_owned(),
+                name: "shutdown".to_owned(),
+                overloads: vec![CommandOverload { parameters: Vec::new() }],
+                permission_level: CommandPermissionLevel::Normal,
+            },
+            |_input, ctx| {
+                // ctx.instance.shutdown();
+                ctx.caller.kick("you dumbass").unwrap();
+
+                Ok(command::CommandOutput {
+                    message: CowString::new("Server is shutting down"),
+                    parameters: Vec::new(),
+                })
+            },
+        )?;
+
+        static COUNTER: AtomicUsize = AtomicUsize::new(1);
+
+        fn create_fn(_: ParsedCommand, ctx: &command::Context) -> ExecutionResult {
+            let _ = ctx.instance.commands().register(Command {
+                aliases: Vec::new(),
+                description: "hello".to_owned(),
+                name: format!("hello-{}", COUNTER.fetch_add(1, Ordering::Relaxed)),
+                overloads: vec![CommandOverload { parameters: Vec::new() }],
+                permission_level: CommandPermissionLevel::Normal
+            }, |_input, ctx| create_fn(_input, ctx));
+
+            Ok(command::CommandOutput {
+                message: CowString::new("Created a new command"),
+                parameters: Vec::new(),
+            })
+        }
+
+        self.command_service.register(
+            Command {
+                aliases: Vec::new(),
+                description: "Shuts down the server".to_owned(),
+                name: "hello-0".to_owned(),
+                overloads: vec![CommandOverload { parameters: Vec::new() }],
+                permission_level: CommandPermissionLevel::Normal,
+            },
+            create_fn
+        )?;
+
         {
             let socket = Arc::clone(&self.ipv4_socket);
             let user_map = Arc::clone(&self.clients);
@@ -549,7 +578,7 @@ impl Instance {
         let metadata = Self::refresh_metadata(
             &String::from_utf8_lossy(&[0xee, 0x84, 0x88, 0x20]),
             server_guid,
-            user_manager.connected_count(),
+            user_manager.total_connected(),
             user_manager.max_count(),
         );
 

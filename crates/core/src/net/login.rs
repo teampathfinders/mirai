@@ -10,9 +10,9 @@ use util::{PVec, BlockPosition, Deserialize, Vector};
 use crate::config::SERVER_CONFIG;
 use crate::net::PlayerData;
 
-use super::BedrockUser;
+use super::BedrockClient;
 
-impl BedrockUser {
+impl BedrockClient {
     /// Handles a [`CacheStatus`] packet.
     /// This stores the result in the [`Session::cache_support`] field.
     #[tracing::instrument(

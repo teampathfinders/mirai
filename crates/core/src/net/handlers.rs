@@ -6,9 +6,9 @@ use proto::bedrock::{Animate, CommandOutput, CommandOutputMessage, CommandOutput
 
 use util::{PVec, Deserialize, CowSlice};
 
-use super::BedrockUser;
+use super::BedrockClient;
 
-impl BedrockUser {
+impl BedrockClient {
     /// Handles a [`SettingsCommand`] packet used to adjust a world setting.
     pub fn handle_settings_command(&self, packet: PVec) -> anyhow::Result<()> {
         let request = SettingsCommand::deserialize(packet.as_ref())?;
@@ -129,7 +129,6 @@ impl BedrockUser {
     pub fn handle_command_request(self: Arc<Self>, packet: PVec) {
         // Command execution could take several ticks, await the result in a separate task
         // to avoid blocking the request handler.
-        let endpoint = Arc::clone(&self.commands);
         tokio::spawn(async move {
             let request = match CommandRequest::deserialize(packet.as_ref()) {
                 Ok(req) => req,
@@ -140,7 +139,10 @@ impl BedrockUser {
             };
             tracing::Span::current().record("command", request.command);
 
-            let receiver = match endpoint.request(request.command.to_owned()).await {
+            let receiver = match self.commands.request(
+                Arc::clone(&self),
+                request.command.to_owned()
+            ).await {
                 Ok(r) => r,
                 Err(e) => {
                     tracing::error!("{e:#}"); 

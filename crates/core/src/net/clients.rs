@@ -6,6 +6,7 @@ use std::time::Duration;
 use anyhow::Context;
 use dashmap::DashMap;
 
+use proto::uuid::Uuid;
 use raknet::{BroadcastPacket, RaknetCreateInfo, RaknetUser};
 
 use tokio::sync::{broadcast, mpsc};
@@ -20,7 +21,7 @@ use util::{PVec, Joinable, Serialize};
 
 use crate::config::SERVER_CONFIG;
 
-use super::{ForwardablePacket, BedrockUser};
+use super::{ForwardablePacket, BedrockClient};
 
 const BROADCAST_CHANNEL_CAPACITY: usize = 5;
 const FORWARD_TIMEOUT: Duration = Duration::from_millis(10);
@@ -52,7 +53,7 @@ pub struct Clients {
     replicator: Arc<Replicator>,
     
     connecting_map: Arc<DashMap<SocketAddr, UserMapEntry<RaknetUser>>>,
-    connected_map: Arc<DashMap<SocketAddr, UserMapEntry<BedrockUser>>>,
+    connected_map: Arc<DashMap<SocketAddr, UserMapEntry<BedrockClient>>>,
     /// Channel that sends a packet to all connected sessions.
     broadcast: broadcast::Sender<BroadcastPacket>,
 
@@ -74,7 +75,7 @@ impl Clients {
     }   
 
     /// Inserts a user into the map.
-    pub fn insert(&self, info: RaknetCreateInfo) {
+    pub(crate) fn insert(&self, info: RaknetCreateInfo) {
         let (tx, rx) = mpsc::channel(BROADCAST_CHANNEL_CAPACITY);
 
         let address = info.address;
@@ -94,7 +95,7 @@ impl Clients {
         tokio::spawn(async move {
             if let Some((_, raknet_user)) = connecting_map.remove(&address) {
                 let bedrock_user = UserMapEntry {
-                    channel: raknet_user.channel, state: BedrockUser::new(
+                    channel: raknet_user.channel, state: BedrockClient::new(
                         raknet_user.state, replicator, state_rx, endpoint, level, broadcast
                     )
                 };
@@ -120,8 +121,30 @@ impl Clients {
         });
     }
 
+    /// Attempts to retrieve the user with the given XUID.
+    pub fn by_xuid(&self, xuid: u64) -> Option<Arc<BedrockClient>> {
+        todo!()
+    }
+
+    /// Attempts to retrieve the user with the given UUID.
+    pub fn by_uuid(&self, uuid: Uuid) -> Option<Arc<BedrockClient>> {
+        todo!()
+    }
+
+    /// Attempts to retrieve the user with the given IP address.
+    pub fn by_address(&self, address: &SocketAddr) -> Option<Arc<BedrockClient>> {
+        self.connected_map
+            .get(address)
+            .map(|r| Arc::clone(&r.value().state))
+    }
+
+    /// Attempts to retrieve the user with the given username.
+    pub fn by_username<S: AsRef<str>>(&self, username: S) -> Option<Arc<BedrockClient>> {
+        todo!()
+    }
+
     /// Forwards a packet to a user within the map.
-    pub async fn forward(&self, packet: ForwardablePacket) -> anyhow::Result<()> {
+    pub(crate) async fn forward(&self, packet: ForwardablePacket) -> anyhow::Result<()> {
         if let Some(user) = self.connected_map.get(&packet.addr) {
             return user.channel.send_timeout(packet.buf, FORWARD_TIMEOUT)
                 .await
@@ -148,12 +171,12 @@ impl Clients {
     }
 
     /// How many clients are currently in the process of logging in.
-    pub fn connecting_count(&self) -> usize {
+    pub fn total_connecting(&self) -> usize {
         self.connecting_map.len()
     }
 
     /// How many users are fully connected to the server.
-    pub fn connected_count(&self) -> usize {
+    pub fn total_connected(&self) -> usize {
         self.connected_map.len()
     }
 
@@ -165,7 +188,7 @@ impl Clients {
     /// Signals the user map to shut down.
     /// 
     /// This function returns a handle that can be used to await shutdown.
-    pub fn shutdown(self: &Arc<Clients>) -> JoinHandle<anyhow::Result<()>> {
+    pub(crate) fn shutdown(self: &Arc<Clients>) -> JoinHandle<anyhow::Result<()>> {
         let this = Arc::clone(self);
         tokio::spawn(async move {
             tracing::info!("Disconnecting all clients");

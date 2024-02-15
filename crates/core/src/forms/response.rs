@@ -10,7 +10,7 @@ use dashmap::DashMap;
 use proto::bedrock::{CancelReason, FormRequest, FormResponseData};
 use tokio::sync::oneshot;
 
-use crate::{forms::Content, net::BedrockUser};
+use crate::{forms::Content, net::BedrockClient};
 
 use super::{FormDesc, SubmittableForm};
 
@@ -233,7 +233,7 @@ impl Subscriber {
     }
 
     /// Submits a form to the user and returns a receiver that will receive the response.
-    pub fn subscribe<F: SubmittableForm>(&self, user: &BedrockUser, form: F) -> anyhow::Result<oneshot::Receiver<Response>> {
+    pub fn subscribe<F: SubmittableForm>(&self, user: &BedrockClient, form: F) -> anyhow::Result<oneshot::Receiver<Response>> {
         let data = serde_json::to_string(&form)?;
         let id = self.next_id.fetch_add(1, Ordering::Relaxed);
 

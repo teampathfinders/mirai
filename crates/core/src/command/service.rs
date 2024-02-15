@@ -8,7 +8,7 @@ use tokio::{sync::{mpsc, oneshot}, task::JoinHandle};
 use tokio_util::sync::CancellationToken;
 use util::{CowString, Joinable};
 
-use crate::instance::Instance;
+use crate::{instance::Instance, net::BedrockClient};
 
 const SERVICE_TIMEOUT: Duration = Duration::from_millis(10);
 
@@ -27,20 +27,16 @@ pub struct CommandOutput {
 pub type ExecutionResult = Result<CommandOutput, CommandOutput>;
 
 /// A request that can be sent to the command [`Service`].
-#[derive(Debug)]
 pub struct ServiceRequest {
     command: String,
-    callback: oneshot::Sender<ExecutionResult>
+    caller: Arc<BedrockClient>,
+    sender: oneshot::Sender<ExecutionResult>
 }
 
-// /// Contains data accessible to command handlers
-// pub struct Context {
-//     instance: Arc<Instance>
-//     // level: Arc<crate::level::Service>,
-//     // commands: Arc<crate::command::Service>
-// }
-
-pub type Context = Arc<Instance>;
+pub struct Context {
+    pub caller: Arc<BedrockClient>,
+    pub instance: Arc<Instance>
+}
 
 /// A function that parses and executes a command.
 pub trait CommandHandler: Send + Sync {
@@ -200,7 +196,10 @@ impl Service {
     }
 
     /// Registers a raw handler with this service.
-    pub fn register_handler(&self, handler: Arc<dyn CommandHandler>) {
+    /// 
+    /// This function returns an error if the service failed to notify clients 
+    /// of an updated command list.
+    pub fn register_handler(&self, handler: Arc<dyn CommandHandler>) -> anyhow::Result<()> {
         let structure = handler.structure();
         self.available.write().commands.push(structure.clone());
 
@@ -218,6 +217,7 @@ impl Service {
         }
 
         self.registry.insert(structure.name.clone(), handler);
+        self.instance().clients().broadcast(self.available_commands())
     }
 
     /// Registers a new command with the default syntax parser. 
@@ -230,7 +230,10 @@ impl Service {
     /// 
     /// * `handler` - This is the function that is ran by the service when your command is executed
     /// by a client. 
-    pub fn register<F>(&self, structure: Command, handler: F) 
+    /// 
+    /// This function returns an error if the service failed to notify clients 
+    /// of an updated command list.
+    pub fn register<F>(&self, structure: Command, handler: F)  -> anyhow::Result<()>
     where
         F: Fn(ParsedCommand, &Context) -> ExecutionResult + Send + Sync + 'static
     {   
@@ -238,11 +241,14 @@ impl Service {
             handler, structure
         });
         
-        self.register_handler(handler);
+        self.register_handler(handler)
     }
 
     /// Registers a new command with a custom parser.
-    pub fn register_with_parser<F, P>(&self, structure: Command, handler: F, parser: P) 
+    /// 
+    /// This function returns an error if the service failed to notify clients 
+    /// of an updated command list.
+    pub fn register_with_parser<F, P>(&self, structure: Command, handler: F, parser: P) -> anyhow::Result<()>
     where
         F: Fn(ParsedCommand, &Context) -> ExecutionResult + Send + Sync + 'static,
         P: Fn(&str, &Context) -> ParseResult + Send + Sync + 'static
@@ -251,13 +257,15 @@ impl Service {
             handler, structure, parser
         });
         
-        self.register_handler(handler);
+        self.register_handler(handler)
     }
 
     /// Removes a command from the registry and returns its handler.
     /// 
     /// This function does not accept command aliases, you should use the original name of the command.
     pub fn unregister<S: AsRef<str>>(&self, name: S) -> Option<Arc<dyn CommandHandler>> {
+        todo!("Remove function from commands packet");
+
         self.registry.remove(name.as_ref()).map(|(_, v)| v)
     }
 
@@ -265,9 +273,9 @@ impl Service {
     /// 
     /// This method will return a receiver that will receive the output when the command has been executed.
     /// Execution of the command might not happen within the same tick.
-    pub async fn request(&self, command: String) -> anyhow::Result<oneshot::Receiver<ExecutionResult>> {
+    pub async fn request(&self, caller: Arc<BedrockClient>, command: String) -> anyhow::Result<oneshot::Receiver<ExecutionResult>> {
         let (sender, receiver) = oneshot::channel();
-        let request = ServiceRequest { command, callback: sender };
+        let request = ServiceRequest { command, caller, sender };
 
         self.sender.send_timeout(request, SERVICE_TIMEOUT).await.context("Command service request timed out")?;
 
@@ -322,19 +330,23 @@ impl Service {
 
                     let clone = Arc::clone(&self);
                     tokio::spawn(async move {
-                        let Some(ctx) = clone.instance.get() else {
+                        let Some(instance) = clone.instance.get() else {
                             tracing::error!("Command service instance was not set");
                             return;
                         };
 
-                        let Some(ctx) = ctx.upgrade() else {
+                        let Some(instance) = instance.upgrade() else {
                             tracing::error!("Attempt to create command context failed: instance has been dropped");
                             return;
                         };
 
+                        let ctx = Context {
+                            caller: request.caller, instance: instance
+                        };
+
                         let result = clone.execute_handler(&request.command, &ctx);
                         // Error can be ignored because it only occurs if the receiver does not exist anymore.
-                        let _: Result<(), ExecutionResult> = request.callback.send(result);
+                        let _: Result<(), ExecutionResult> = request.sender.send(result);
                     });
                 }
                 _ = self.token.cancelled() => {

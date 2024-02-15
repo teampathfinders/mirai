@@ -40,7 +40,7 @@ lazy_static! {
 }
 
 /// Represents a user connected to the server.
-pub struct BedrockUser {
+pub struct BedrockClient {
     pub(super) encryptor: OnceLock<Encryptor>,
     pub(super) identity: OnceLock<BedrockIdentity>,
     pub(super) client_info: OnceLock<BedrockClientInfo>,
@@ -64,7 +64,7 @@ pub struct BedrockUser {
     pub(crate) job_handle: RwLock<Option<JoinHandle<()>>>
 }
 
-impl BedrockUser {
+impl BedrockClient {
     /// Creates a new user.
     pub fn new(
         raknet: Arc<RaknetUser>,
@@ -517,7 +517,7 @@ impl BedrockUser {
     }
 }
 
-impl Joinable for BedrockUser {
+impl Joinable for BedrockClient {
     #[tracing::instrument(
         skip(self),
         name = "BedrockUser::join"
