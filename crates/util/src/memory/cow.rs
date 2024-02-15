@@ -84,7 +84,11 @@ impl<'a> CowString<'a> {
         }
     }
 
-    pub fn get(&'a self) -> &'a str {
+    pub const fn empty() -> CowString<'static> {
+        CowString::Borrowed("")
+    }
+
+    pub fn as_str(&'a self) -> &'a str {
         match self {
             CowString::Owned(v) => v,
             CowString::Borrowed(v) => v,
@@ -96,7 +100,7 @@ impl<'a> Deref for CowString<'a> {
     type Target = str;
 
     fn deref(&self) -> &str {
-        self.get()
+        self.as_str()
     }
 }
 

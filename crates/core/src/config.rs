@@ -1,53 +1,148 @@
 //! Server configuration
 
-use std::time::Duration;
+use std::{net::{SocketAddr, SocketAddrV4, SocketAddrV6}, num::NonZeroUsize, sync::{atomic::{AtomicUsize, Ordering}, Arc}, time::Duration};
 
 use parking_lot::RwLock;
-use proto::bedrock::{ClientThrottleSettings, CompressionAlgorithm};
+use proto::bedrock::{ThrottleSettings, CompressionAlgorithm};
+use util::CowString;
 
-/// Global service that contains all configuration settings
-pub struct ServerConfig {
-    /// Port to bind the IPv4 socket to.
-    pub ipv4_port: u16,
-    /// Port to bind the IPv6 socket to.
-    pub ipv6_port: u16,
-    /// Max player count.
-    pub max_players: usize,
-    /// Compression algorithm to use (either Snappy or Deflate).
-    pub compression_algorithm: CompressionAlgorithm,
-    /// When a packet's size surpasses this threshold, it will be compressed.
-    /// Set the threshold to 0 to disable compression.
-    pub compression_threshold: u16,
-    /// Client throttling settings.
-    pub client_throttle: ClientThrottleSettings,
-    /// Name of the server.
-    /// This is only visible in LAN games.
-    pub server_name: &'static str,
-    /// Maximum render distance that the server will accept.
-    /// Clients requesting a higher value will be told to use this.
-    pub allowed_render_distance: i32,
-    /// Interval between world autosaves.
-    /// Set to 0 to disable autosaves.
-    pub autosave_interval: Duration,
-    /// Path to the world to host.
-    pub level_path: &'static str,
+use crate::{command::Context, instance::{Instance, IPV4_LOCAL_ADDR}};
+
+/// Compression related settings.
+pub struct Compression {
+    /// Which algorithm to use for compression.
+    pub algorithm: CompressionAlgorithm,
+    /// Packets above this size threshold will be compressed.
+    pub threshold: u16
 }
 
-/// Default server configuration.
-pub static SERVER_CONFIG: RwLock<ServerConfig> = RwLock::new(ServerConfig {
-    ipv4_port: 19132,
-    ipv6_port: 19133,
-    max_players: 1000,
-    compression_algorithm: CompressionAlgorithm::Flate,
-    compression_threshold: 1, // Compress all raknet
-    client_throttle: ClientThrottleSettings {
-        // Disable client throttling
-        enabled: false,
-        threshold: 0,
-        scalar: 0.0,
-    },
-    server_name: "Pathfinders",
-    allowed_render_distance: 16,
-    autosave_interval: Duration::from_secs(60),
-    level_path: "test-level",
-});
+/// Configuration for the database connection.
+pub struct DatabaseConfig {
+    /// Host address of the database server.
+    ///
+    /// Default: localhost.
+    ///
+    /// When running the server and database in Docker containers, this
+    /// should be set to the Docker network name.
+    ///
+    /// See [Docker networks](`https://docs.docker.com/network/`) for more information.
+    pub host: CowString<'static>,
+    /// Port of the database server.
+    ///
+    /// This should usually be set to 6379 when using a Redis server.
+    ///
+    /// Default: 6379.
+    pub port: u16,
+}
+
+/// Server configuration options.
+pub struct Config {
+    /// The port that the IPv4 socket is listening on.
+    pub(super) ipv4_addr: SocketAddrV4,
+    /// The port that the (optional) IPv6 socket is listening on.
+    pub(super) ipv6_addr: Option<SocketAddrV6>,
+    /// Name of the server.
+    /// 
+    /// This appears at the top of the player list and as the title for LAN broadcasted games.
+    pub(super) name: CowString<'static>,
+    /// Compression-related settings
+    pub(super) compression: Compression,
+    /// The client throttling behaviour.
+    /// 
+    /// See [`ThrottleSettings`] for more info,
+    pub(super) throttling: ThrottleSettings,
+    /// Maximum amount of players the server allows concurrently.
+    pub(super) max_connections: AtomicUsize,
+    /// The maximum render distance that clients are allowed to use.
+    /// 
+    /// Any client that requests a higher render distance will be capped to this value.
+    pub(super) max_render_distance: AtomicUsize,
+    /// Database configuration
+    pub(super) database: DatabaseConfig,
+    pub(super) motd_callback: Box<dyn Fn(&Arc<Instance>) -> CowString<'static> + Send + Sync>
+}
+
+impl Config {
+    pub(super) fn new() -> Config {
+        Config {
+            ipv4_addr: SocketAddrV4::new(IPV4_LOCAL_ADDR, 19132),
+            ipv6_addr: None,
+            name: CowString::Borrowed("Inferno server"),
+            compression: Compression {
+                algorithm: CompressionAlgorithm::Flate,
+                threshold: 1
+            },
+            throttling: ThrottleSettings {
+                enabled: false,
+                scalar: 0.0,
+                threshold: 0
+            },
+            database: DatabaseConfig {
+                host: CowString::Borrowed("localhost"),
+                port: 6379
+            },
+            max_connections: AtomicUsize::new(10),
+            max_render_distance: AtomicUsize::new(12),
+            motd_callback: Box::new(|_| "Powered by Inferno".into())
+        }
+    }
+
+    /// Returns the IPv4 port that the server is listening on.
+    #[inline]
+    pub const fn ipv4_addr(&self) -> SocketAddrV4 {
+        self.ipv4_addr
+    }
+
+    /// Returns the (optional) IPv6 port that the server is listening on.
+    #[inline]
+    pub const fn ipv6_addr(&self) -> Option<SocketAddrV6> {
+        self.ipv6_addr
+    }
+
+    /// Returns the server name.
+    #[inline]
+    pub fn name(&self) -> &str {
+        &self.name
+    }
+
+    /// Returns the compression settings.
+    #[inline]
+    pub const fn compression(&self) -> &Compression {
+        &self.compression
+    }
+
+    /// Returns the current client throttling settings.
+    #[inline]
+    pub const fn throttling(&self) -> &ThrottleSettings {
+        &self.throttling
+    }
+
+    /// Returns the current maximum player count.
+    #[inline]
+    pub fn max_connections(&self) -> usize {
+        self.max_connections.load(Ordering::Relaxed)
+    }
+
+    /// Sets the maximum amount of players that can be connected at the same time.
+    /// 
+    /// If the maximum is set below the current player count, no players will be disconnected.
+    /// Instead any new connections will be refused and the player count will slowly adjust to
+    /// the new maximum as players leave.
+    /// 
+    /// This mechanism can also be used to gracefully shutdown the server. Set the maximum player count to 0
+    /// so that no players are allowed to join and wait for connected players to slowly leave.
+    #[inline]
+    pub fn set_max_connections(&self, max: usize) {
+        self.max_connections.store(max, Ordering::Relaxed);
+    }
+
+    #[inline]
+    pub fn max_render_distance(&self) -> usize {
+        self.max_render_distance.load(Ordering::Relaxed)
+    }
+
+    #[inline]
+    pub fn set_max_render_distance(&self, max: usize) {
+        self.max_render_distance.store(max, Ordering::Relaxed);
+    }
+}

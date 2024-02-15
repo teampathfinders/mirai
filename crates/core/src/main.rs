@@ -5,7 +5,7 @@ use std::sync::atomic::{AtomicU16, Ordering};
 use anyhow::Context;
 use tokio::runtime;
 
-use inferno::instance::{DbConfig, InstanceBuilder, NetConfig};
+use inferno::instance::Instance;
 use util::Joinable;
 
 fn main() -> anyhow::Result<()> {
@@ -39,12 +39,7 @@ fn main() -> anyhow::Result<()> {
         6379
     };
 
-    let builder = InstanceBuilder::new()
-        .net_config(NetConfig {
-            max_connections: 10,
-            ..Default::default()
-        })
-        .db_config(DbConfig { host: &host, port });
+    let builder = Instance::builder();
 
     runtime.block_on(async move {
         let instance = builder.build().await?;

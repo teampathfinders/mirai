@@ -7,7 +7,6 @@ use proto::types::Dimension;
 
 use util::{RVec, BlockPosition, Deserialize, Vector};
 
-use crate::config::SERVER_CONFIG;
 use crate::net::PlayerData;
 
 use super::BedrockClient;
@@ -127,7 +126,7 @@ impl BedrockClient {
 
         // FIXME: Use render distance configured with builder instead of SERVER_CONFIG global.
         let allowed_radius = std::cmp::min(
-            SERVER_CONFIG.read().allowed_render_distance, request.radius
+            self.instance().config().max_render_distance() as i32, request.radius
         );
         tracing::debug!("Chunk radius set to {allowed_radius} ({} was requested)", request.radius);
 
@@ -400,14 +399,17 @@ impl BedrockClient {
         }
 
         let response = {
-            let lock = SERVER_CONFIG.read();
+            let instance = self.instance();
+            let config = instance.config();
+            let compression = config.compression();
+
             let settings = NetworkSettings {
-                compression_algorithm: lock.compression_algorithm,
-                compression_threshold: lock.compression_threshold,
-                client_throttle: lock.client_throttle,
+                compression_algorithm: compression.algorithm,
+                compression_threshold: compression.threshold,
+                client_throttle: config.throttling,
             };
 
-            tracing::debug!("Using {:?} compression with {} byte threshold", lock.compression_algorithm, lock.compression_threshold);
+            tracing::debug!("Using {:?} compression with {} byte threshold", compression.algorithm, compression.threshold);
             settings
         };
 
