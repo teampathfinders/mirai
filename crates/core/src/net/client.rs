@@ -13,7 +13,7 @@ use flate2::write::DeflateEncoder;
 use parking_lot::RwLock;
 use prometheus_client::metrics::gauge::Gauge;
 use prometheus_client::metrics::histogram::{linear_buckets, Histogram};
-use raknet::{BroadcastPacket, RaknetCommand, RakNetClient, SendConfig, DEFAULT_SEND_CONFIG};
+use raknet::{BroadcastPacket, RakNetCommand, RakNetClient, SendConfig, DEFAULT_SEND_CONFIG};
 use systemstat::Duration;
 use tokio::sync::{broadcast, mpsc};
 use proto::bedrock::{CommandPermissionLevel, Disconnect, GameMode, PermissionLevel, Skin, ConnectedPacket, CONNECTED_PACKET_ID, CompressionAlgorithm, Header, RequestNetworkSettings, Login, ClientToServerHandshake, CacheStatus, ResourcePackClientResponse, ViolationWarning, ChunkRadiusRequest, Interact, TextMessage, SetLocalPlayerAsInitialized, MovePlayer, PlayerAction, RequestAbility, Animate, CommandRequest, SettingsCommand, ContainerClose, FormResponseData, TickSync, UpdateSkin, PlayerAuthInput, DisconnectReason};
@@ -70,7 +70,7 @@ impl BedrockClient {
     pub fn new(
         raknet: Arc<RakNetClient>,
         replicator: Arc<Replicator>,
-        receiver: mpsc::Receiver<RaknetCommand>,
+        receiver: mpsc::Receiver<RakNetCommand>,
         commands: Arc<crate::command::Service>,
         level: Arc<crate::level::Service>,
         broadcast: broadcast::Sender<BroadcastPacket>,
@@ -112,7 +112,7 @@ impl BedrockClient {
             address = %self.raknet.address
         )
     )]
-    async fn receiver(self: &Arc<Self>, mut receiver: mpsc::Receiver<RaknetCommand>) {
+    async fn receiver(self: &Arc<Self>, mut receiver: mpsc::Receiver<RakNetCommand>) {
         let mut broadcast = self.broadcast.subscribe();
         
         let mut should_run = true;
@@ -125,19 +125,19 @@ impl BedrockClient {
                     };
 
                     match cmd {
-                        RaknetCommand::Received(packet) => {
+                        RakNetCommand::Received(packet) => {
                             if let Err(err) = self.handle_encrypted_frame(packet).await {
                                 tracing::error!("Failed to handle protocol packet: {err:#}");
                             }
                         },
-                        RaknetCommand::BudgetExhausted => {
+                        RakNetCommand::BudgetExhausted => {
                             if let Err(err) = self.kick_with_reason("Exhausted request budget", DisconnectReason::NotAllowed) {
                                 tracing::error!("Failed to kick user, forcing it: {err:#}");
                                 // If kicking does not work, force disconnect them.
                                 self.raknet.disconnect();
                             }
                         },
-                        RaknetCommand::Disconnected => {
+                        RakNetCommand::Disconnected => {
                             tracing::warn!("Raknet has reported a disconnect status, destroying user");
                             break
                         }

@@ -26,6 +26,7 @@ level = { package = "inferno-level", path = "../level" }
 proto = { package = "inferno-proto", path = "../proto" }
 replicator = { package = "inferno-repl", path = "../repl" }
 raknet = { package = "inferno-raknet", path = "../raknet" }
+macros = { package = "inferno-macros", path = "../macros" }
 
 console-subscriber = { version = "0.2.0", optional = true, features = ["parking_lot"] }
 
@@ -49,3 +50,4 @@ nohash-hasher = "0.2.0"
 prometheus-client = "0.22.1"
 systemstat = "0.2.3"
 lazy_static = "1.4.0"
+paste = "1.0.14"

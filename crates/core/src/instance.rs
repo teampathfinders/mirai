@@ -3,7 +3,7 @@
 use anyhow::Context;
 
 use parking_lot::RwLock;
-use raknet::RaknetCreateInfo;
+use raknet::RakNetCreateDescription;
 use tokio::task::JoinHandle;
 
 use std::net::{Ipv4Addr, Ipv6Addr, SocketAddrV4, SocketAddrV6};
@@ -519,7 +519,7 @@ impl Instance {
         packet.buf.reserve_to(reply.size_hint());
         reply.serialize_into(&mut packet.buf)?;
 
-        user_manager.insert(RaknetCreateInfo {
+        user_manager.insert(RakNetCreateDescription {
             address: packet.addr,
             guid: request.client_guid,
             mtu: request.mtu,

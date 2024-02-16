@@ -6,7 +6,7 @@ use anyhow::Context;
 use dashmap::DashMap;
 
 use proto::uuid::Uuid;
-use raknet::{BroadcastPacket, RaknetCreateInfo, RakNetClient};
+use raknet::{BroadcastPacket, RakNetCreateDescription, RakNetClient};
 use proto::bedrock::{ConnectedPacket, Disconnect, DisconnectReason};
 use replicator::Replicator;
 use util::{RVec, Joinable, Serialize};
@@ -79,7 +79,7 @@ impl Clients {
     }   
 
     /// Inserts a user into the map.
-    pub(crate) fn insert(&self, info: RaknetCreateInfo) {
+    pub(crate) fn insert(&self, info: RakNetCreateDescription) {
         let (tx, rx) = mpsc::channel(BROADCAST_CHANNEL_CAPACITY);
 
         let address = info.address;

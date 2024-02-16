@@ -12,7 +12,7 @@ const ORDER_CHANNEL_COUNT: usize = 5;
 const OUTPUT_CHANNEL_SIZE: usize = 5;
 /// A command that the Raknet layer will send to its parent.
 #[derive(Debug, PartialEq, Eq)]
-pub enum RaknetCommand {
+pub enum RakNetCommand {
     /// The client has exhausted its budget and should be disconnected.
     /// An exhausted budget might be the result of a DOS attack.
     /// 
@@ -25,7 +25,7 @@ pub enum RaknetCommand {
 }
 
 /// Information required to create a new RakNet user.
-pub struct RaknetCreateInfo {
+pub struct RakNetCreateDescription {
     /// IP address of the client.
     pub address: SocketAddr,
     /// Maximum transfer unit of the client.
@@ -86,16 +86,16 @@ pub struct RakNetClient {
     /// Channel used to submit packets that have been fully processed by the RakNet layer.
     /// These packets go on to be processed further by protocols running on top of RakNet
     /// such as the Minecraft Bedrock protocol.
-    pub output: mpsc::Sender<RaknetCommand>
+    pub output: mpsc::Sender<RakNetCommand>
 }
 
 impl RakNetClient {
     /// Creates a new RakNet user with the specified info.
     pub fn new(
-        info: RaknetCreateInfo, 
+        info: RakNetCreateDescription, 
         broadcast: broadcast::Sender<BroadcastPacket>,
         forward_rx: mpsc::Receiver<RVec>
-    ) -> (Arc<Self>, mpsc::Receiver<RaknetCommand>) {
+    ) -> (Arc<Self>, mpsc::Receiver<RakNetCommand>) {
         // SAFETY: MaybeUninit does not require initialization, so it is safe to create an array
         // of them like this.
         let mut order_channels: [MaybeUninit<OrderChannel>; ORDER_CHANNEL_COUNT] = unsafe {
