@@ -569,8 +569,8 @@ impl PlayerData {
             is_inventory_open: AtomicBool::new(false),
             position: Vector::from([0.0, 50.0, 0.0]),
             rotation: Vector::from([0.0; 3]),
-            game_mode: GameMode::Creative,
-            permission_level: PermissionLevel::Operator,
+            game_mode: GameMode::Survival,
+            permission_level: PermissionLevel::Member,
             command_permission_level: CommandPermissionLevel::Owner,
             skin: RwLock::new(skin),
             runtime_id: 1

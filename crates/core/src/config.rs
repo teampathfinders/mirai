@@ -26,13 +26,19 @@ pub struct DatabaseConfig {
     /// should be set to the Docker network name.
     ///
     /// See [Docker networks](`https://docs.docker.com/network/`) for more information.
-    pub host: CowString<'static>,
+    pub host: String,
     /// Port of the database server.
     ///
     /// This should usually be set to 6379 when using a Redis server.
     ///
     /// Default: 6379.
     pub port: u16,
+}
+
+/// Configuration of the level
+pub struct LevelConfig {
+    /// The path to the level.
+    pub path: String
 }
 
 /// Server configuration options.
@@ -59,6 +65,9 @@ pub struct Config {
     pub(super) max_render_distance: AtomicUsize,
     /// Database configuration
     pub(super) database: DatabaseConfig,
+    /// Level configuration
+    pub(super) level: LevelConfig,
+    /// Callback that generates a new message of the day.
     pub(super) motd_callback: Box<dyn Fn(&Arc<Instance>) -> CowString<'static> + Send + Sync>
 }
 
@@ -78,8 +87,11 @@ impl Config {
                 threshold: 0
             },
             database: DatabaseConfig {
-                host: CowString::Borrowed("localhost"),
+                host: String::from("localhost"),
                 port: 6379
+            },
+            level: LevelConfig {
+                path: String::from("../resources/level")
             },
             max_connections: AtomicUsize::new(10),
             max_render_distance: AtomicUsize::new(12),
@@ -136,13 +148,23 @@ impl Config {
         self.max_connections.store(max, Ordering::Relaxed);
     }
 
+    /// Returns the maximum render distance.
     #[inline]
     pub fn max_render_distance(&self) -> usize {
         self.max_render_distance.load(Ordering::Relaxed)
     }
 
+    /// Sets the maximum render distance.
     #[inline]
     pub fn set_max_render_distance(&self, max: usize) {
         self.max_render_distance.store(max, Ordering::Relaxed);
     }
+
+    /// Returns the database configuration.
+    #[inline]
+    pub fn database(&self) -> &DatabaseConfig { &self.database }
+
+    /// Returns the level configuration.
+    #[inline]
+    pub fn level(&self) -> &LevelConfig { &self.level }
 }

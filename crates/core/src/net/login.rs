@@ -158,10 +158,10 @@ impl BedrockClient {
             custom_biome_name: "plains",
             dimension: Dimension::Overworld,
             generator: WorldGenerator::Infinite,
-            world_game_mode: GameMode::Creative,
+            world_game_mode: GameMode::Survival,
             difficulty: Difficulty::Normal,
             world_spawn: BlockPosition::new(0, 60, 0),
-            achievements_disabled: true,
+            achievements_disabled: false,
             editor_world: false,
             day_cycle_lock_time: 0,
             education_features_enabled: true,
@@ -236,10 +236,6 @@ impl BedrockClient {
 
         let available_commands = self.commands.available_commands();
         self.send(available_commands)?;
-
-        // let commands = self.level.get_commands().iter().map(|kv| kv.value().clone()).collect::<Vec<_>>();
-        // let available_commands = AvailableCommands { commands: commands.as_slice() };
-        // self.send(available_commands)?;
 
         let play_status = PlayStatus { status: Status::PlayerSpawn };
         self.send(play_status)?;

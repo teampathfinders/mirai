@@ -14,6 +14,7 @@ pub struct Viewer {
 }
 
 impl Viewer {
+    /// Updates the position of this viewer.
     pub fn update_position(&self, position: Vector<f32, 2>) {
         // Transform player coordinates to chunk coordinates.
         let chunk_x = (position.x / 16.0).ceil() as i32;
@@ -26,6 +27,7 @@ impl Viewer {
         self.on_view_update();
     }
 
+    /// Updates the render distance of this viewer
     #[inline]
     pub fn update_radius(&self, radius: u16) {
         self.radius.store(radius, Ordering::Relaxed);
@@ -33,6 +35,7 @@ impl Viewer {
     }
     
     fn on_view_update(&self) {
-        todo!()
+        // Request the chunk the player is in
+
     }
 }

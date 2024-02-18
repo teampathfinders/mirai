@@ -4,7 +4,9 @@ use std::sync::Arc;
 
 use proto::bedrock::{Animate, CommandOutput, CommandOutputMessage, CommandOutputType, CommandRequest, DisconnectReason, FormResponseData, HudElement, HudVisibility, PlayerAuthInput, RequestAbility, SetHud, SettingsCommand, TextData, TextMessage, TickSync, UpdateSkin};
 
-use util::{RVec, Deserialize, CowSlice};
+use util::{RVec, Deserialize, CowSlice, Vector};
+
+use crate::level::RegionQuery;
 
 use super::BedrockClient;
 
@@ -39,6 +41,19 @@ impl BedrockClient {
         )
     )]
     pub fn handle_text_message(self: &Arc<Self>, packet: RVec) -> anyhow::Result<()> {
+
+        let this = Arc::clone(self);
+        tokio::spawn(async move {
+            let request = RegionQuery::from_bounds([0, -4, 0], [0, 15, 0]);
+
+            let mut receiver = this.level.request(request);
+            while let Some(chunk) = receiver.recv().await {
+                tracing::debug!("{chunk:?}");
+            }
+
+            tracing::debug!("All chunks loaded");
+        });
+
         let request = TextMessage::deserialize(packet.as_ref())?;
         if let TextData::Chat {
             source, message
