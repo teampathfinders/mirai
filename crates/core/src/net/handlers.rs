@@ -7,7 +7,7 @@ use proto::bedrock::{Animate, CommandOutput, CommandOutputMessage, CommandOutput
 
 use util::{RVec, Deserialize, CowSlice, Vector};
 
-use crate::level::RegionQuery;
+use crate::level::{BoxRegion, PointRegion};
 
 use super::BedrockClient;
 
@@ -44,7 +44,7 @@ impl BedrockClient {
     pub fn handle_text_message(self: &Arc<Self>, packet: RVec) -> anyhow::Result<()> {
         let this = Arc::clone(self);
         tokio::spawn(async move {
-            let request = RegionQuery::from_bounds([10, -4, 0], [0, 15, 10]);
+            let request = BoxRegion::from_bounds([10, -4, 0], [0, 15, 10]);
 
             let instant = std::time::Instant::now();
             let mut stream = this.level.request_region(request);
@@ -52,10 +52,28 @@ impl BedrockClient {
             while let Some(chunk) = stream.next().await {
                 if !chunk.data.is_empty() {
                     let coord = <Vector<i32, 3>>::from(chunk.index);
-                    println!("{coord:?} {:?}", chunk.index);
+                    // println!("{coord:?} {:?}", chunk.index);
                 }          
             }
             println!("loaded chunks in {:?}", instant.elapsed());
+
+            tracing::debug!("All chunks loaded");
+        });
+
+        let this = Arc::clone(self);
+        tokio::spawn(async move {
+            let request = PointRegion::from_points(vec![Vector::from([0, 4, 0]), Vector::from([0, 6, 0])]);
+
+            let instant = std::time::Instant::now();
+            let mut stream = this.level.request_region(request);
+
+            while let Some(chunk) = stream.next().await {
+                if !chunk.data.is_empty() {
+                    let coord = <Vector<i32, 3>>::from(chunk.index);
+                    // println!("point {coord:?} {:?}", chunk.index);
+                }          
+            }
+            println!("loaded chunks in point in {:?}", instant.elapsed());
 
             tracing::debug!("All chunks loaded");
         });

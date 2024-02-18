@@ -6,3 +6,7 @@ glob_export!(region);
 glob_export!(service);
 glob_export!(viewer);
 glob_export!(rule);
+glob_export!(io);
+glob_export!(r#box);
+glob_export!(radial);
+glob_export!(point);

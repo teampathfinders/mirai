@@ -2,18 +2,29 @@ use std::{iter::FusedIterator, ops::{Range, RangeInclusive}, pin::Pin, sync::Arc
 
 use level::{provider::Provider, SubChunk};
 use rayon::iter::{plumbing::{bridge, Consumer, Producer, ProducerCallback, UnindexedConsumer}, IndexedParallelIterator, ParallelIterator};
-use tokio::sync::mpsc;
 use util::Vector;
-use futures::{Stream, Sink};
 
-use super::{IntoRegion, Service};
+/// Types that can be used in region requests.
+pub trait Region: Clone + Send + Sync + 'static {
+    /// Iterator that this region can be turned into.
+    type IntoIter: IndexedParallelIterator<Item = Vector<i32, 3>>;
+
+    /// Creates an iterator over this region.
+    fn iter(&self, provider: Arc<Provider>) -> Self::IntoIter;
+    /// Converts a coordinate to an index into this region.
+    fn as_index(&self, coord: &Vector<i32, 3>) -> Option<usize>;
+    /// Converts an index to a coordinate into this region.
+    fn as_coord(&self, index: usize) -> Option<Vector<i32, 3>>;
+    /// Amount of subchunks contained in this region.
+    fn len(&self) -> usize;
+}
 
 /// Produces split region iterators.
-pub struct RegionProducer(RegionIter);
+pub struct RegionProducer<T: Region>(RegionIter<T>);
 
-impl Producer for RegionProducer {
+impl<T: Region> Producer for RegionProducer<T> {
     type Item = Vector<i32, 3>;
-    type IntoIter = RegionIter;
+    type IntoIter = RegionIter<T>;
 
     #[inline]
     fn into_iter(self) -> Self::IntoIter {
@@ -40,22 +51,22 @@ impl Producer for RegionProducer {
     }
 }
 
-impl From<RegionIter> for RegionProducer {
+impl<T: Region> From<RegionIter<T>> for RegionProducer<T> {
     #[inline]
-    fn from(value: RegionIter) -> Self {
+    fn from(value: RegionIter<T>) -> Self {
         Self(value)
     }
 }
 
 /// An iterator that iterates over every single subchunk coordinate within a region.
-pub struct RegionIter {    
-    region: RegionQuery,
-    front_index: usize,
-    back_index: usize,
-    provider: Arc<Provider>
+pub struct RegionIter<T: Region> {    
+    pub(super) region: T,
+    pub(super) front_index: usize,
+    pub(super) back_index: usize,
+    pub(super) provider: Arc<Provider>
 }
 
-impl ParallelIterator for RegionIter {
+impl<T: Region> ParallelIterator for RegionIter<T> {
     type Item = Vector<i32, 3>;
 
     #[inline]
@@ -72,7 +83,7 @@ impl ParallelIterator for RegionIter {
     }
 }
 
-impl IndexedParallelIterator for RegionIter {
+impl<T: Region> IndexedParallelIterator for RegionIter<T> {
     #[inline]
     fn with_producer<CB>(self, callback: CB) -> CB::Output 
     where
@@ -96,7 +107,7 @@ impl IndexedParallelIterator for RegionIter {
     }
 }
 
-impl Iterator for RegionIter {
+impl<T: Region> Iterator for RegionIter<T> {
     type Item = Vector<i32, 3>;
 
     fn nth(&mut self, n: usize) -> Option<Self::Item> {
@@ -105,10 +116,12 @@ impl Iterator for RegionIter {
     }
 
     fn next(&mut self) -> Option<Self::Item> {
-        (self.len() > 0).then(|| {
+        if self.len() > 0 {
             self.front_index += 1;
-            self.region.as_coord_unchecked(self.front_index - 1)
-        })
+            self.region.as_coord(self.front_index - 1)
+        } else {
+            None
+        }
     }
 
     fn size_hint(&self) -> (usize, Option<usize>) {
@@ -116,7 +129,7 @@ impl Iterator for RegionIter {
     }
 }
 
-impl ExactSizeIterator for RegionIter {
+impl<T: Region> ExactSizeIterator for RegionIter<T> {
     #[inline]
     fn len(&self) -> usize {
         // Use checked subtraction to make sure the length does not overflow
@@ -126,9 +139,9 @@ impl ExactSizeIterator for RegionIter {
     }
 }
 
-impl FusedIterator for RegionIter {}
+impl<T: Region> FusedIterator for RegionIter<T> {}
 
-impl DoubleEndedIterator for RegionIter {
+impl<T: Region> DoubleEndedIterator for RegionIter<T> {
     fn nth_back(&mut self, n: usize) -> Option<Self::Item> {
         // Unlike `nth`, this can overflow if we are already at 0.
         self.back_index.checked_sub(n)?;
@@ -136,220 +149,18 @@ impl DoubleEndedIterator for RegionIter {
     }
     
     fn next_back(&mut self) -> Option<Self::Item> {
-        (self.len() > 0).then(|| {
+        if self.len() > 0 {
             self.back_index -= 1;
-            self.region.as_coord_unchecked(self.back_index + 1)
-        })
+            self.region.as_coord(self.back_index + 1)
+        } else {
+            None
+        }
     }
 }
 
-impl From<RegionProducer> for RegionIter {
+impl<T: Region> From<RegionProducer<T>> for RegionIter<T> {
     #[inline]
-    fn from(producer: RegionProducer) -> Self {
+    fn from(producer: RegionProducer<T>) -> Self {
         producer.0
-    }
-}
-
-/// A query that requests a certain region of subchunks from the level provider.
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub struct RegionQuery {
-    xrange: Range<i32>,
-    yrange: Range<i32>,
-    zrange: Range<i32>
-}
-
-impl RegionQuery {
-    /// Creates an iterator over this region using the given level provider.
-    pub fn iter(&self, provider: Arc<Provider>) -> RegionIter {
-        RegionIter {
-            provider,
-            front_index: 0,
-            back_index: self.len(),
-            region: self.clone()
-        }
-    }
-
-    /// Creates a region query using two corner coordinates.
-    /// 
-    /// The region will represent the box between these two corners.
-    /// The given bounds should be in subchunk coordinates.
-    pub fn from_bounds<B1, B2>(bound1: B1, bound2: B2) -> Self 
-    where
-        B1: Into<Vector<i32, 3>>,
-        B2: Into<Vector<i32, 3>>
-    {
-        let bound1 = bound1.into();
-        let bound2 = bound2.into();
-
-        Self::from_bounds_inner(bound1, bound2)
-    }
-
-    /// Converts an index to a coordinate within this region, without checking
-    /// for bounds.
-    /// 
-    /// This function is not marked as unsafe because incorrect input does not cause memory unsafety.
-    /// Using an index out of bounds will simply return a coordinate outside of the region.
-    /// However, the coordinate will likely be incorrect because different regions use incompatible indices.
-    pub fn as_coord_unchecked(&self, mut index: usize) -> Vector<i32, 3> {
-        let x = index as i32 % (self.xrange.len() as i32) - self.xrange.start;
-        index /= self.xrange.len() as usize;
-
-        let y = index as i32 % (self.yrange.len() as i32) - self.yrange.start;
-        index /= self.yrange.len() as usize;
-
-        let z = index as i32 - self.zrange.start;
-
-        Vector::from([x, y, z])
-    }
-
-    /// Converts a coordinate to an index within this region, without checking 
-    /// for bounds.
-    /// 
-    /// This function is not marked as unsafe because incorrect input does not cause memory unsafety.
-    /// Using a coordinate out of bounds will simply return a index outside of the region.
-    /// However, the index will likely be incorrect because different regions use incompatible indices.
-    pub fn as_index_unchecked(&self, coord: &Vector<i32, 3>) -> usize {
-        (coord.x * (self.yrange.len() as i32 * self.zrange.len() as i32) + coord.y * (self.zrange.len() as i32) + coord.z) as usize
-    }
-
-    /// Converts a coordinate within this region to an index, ensuring
-    /// that the coordinate is not out of bounds.
-    pub fn as_index(&self, coord: &Vector<i32, 3>) -> Option<usize> {
-        if !self.xrange.contains(&coord.x) || 
-            !self.yrange.contains(&coord.y) || 
-            !self.zrange.contains(&coord.z) {
-            return None
-        }
-
-        Some(self.as_index_unchecked(coord))
-    }
-
-    /// Converts an index to a coordinate within this region, ensuring
-    /// that the index is not out of bounds.
-    pub fn as_coord(&self, index: usize) -> Option<Vector<i32, 3>> {
-        (index <= self.len()).then(|| self.as_coord_unchecked(index))
-    }
-
-    /// The amount of subchunks contained in this region.
-    pub fn len(&self) -> usize {
-        let len = self.xrange.len() * self.yrange.len() * self.zrange.len();
-        tracing::debug!("len = {len}");
-        len
-    }
-
-    fn from_bounds_inner(bound1: Vector<i32, 3>, bound2: Vector<i32, 3>) -> Self {
-        let xmin = std::cmp::min(bound1.x, bound2.x);
-        let xmax = std::cmp::max(bound1.x, bound2.x);
-        let xrange = xmin..xmax + 1;
-
-        let ymin = std::cmp::min(bound1.y, bound2.y);
-        let ymax = std::cmp::max(bound1.y, bound2.y);
-        let yrange = ymin..ymax + 1;
-
-        let zmin = std::cmp::min(bound1.z, bound2.z);
-        let zmax = std::cmp::max(bound1.z, bound2.z);
-        let zrange = zmin..zmax + 1;
-
-        Self {
-            xrange, yrange, zrange
-        }
-    }
-}
-
-impl IntoRegion for RegionQuery {
-    type IntoIter = RegionIter;
-
-    #[inline]
-    fn iter(&self, provider: Arc<Provider>) -> Self::IntoIter {
-        self.iter(provider)
-    }
-
-    fn as_index(&self, coord: &Vector<i32, 3>) -> usize {
-        self.as_index_unchecked(coord)
-    }
-
-    fn as_coord(&self, index: usize) -> Vector<i32, 3> {
-        self.as_coord_unchecked(index)
-    }
-}
-
-/// First 6 bits are the vertical index, 
-/// then 29 bits for the x-coordinate
-/// and 29 bits for the z-coordinate.
-#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
-pub struct RegionIndex(u64);
-
-impl From<Vector<i32, 3>> for RegionIndex {
-    fn from(value: Vector<i32, 3>) -> Self {
-        const XZ_MASK: u64 = 2u64.pow(29) - 1;
-
-        assert!((value.y as u64) < 63, "Region Y-coordinate too large");
-        assert!((value.x as u64) < XZ_MASK, "Region X-coordinate too large");
-        assert!((value.z as u64) < XZ_MASK, "Region Z-coordinate too large");
-
-        let mut index = (value.y as u64) << 58;
-        index |= ((value.x as u64) & XZ_MASK) << 29;
-        index |= (value.z as u64) & XZ_MASK;
-
-        RegionIndex(index)
-    }
-}
-
-impl From<RegionIndex> for Vector<i32, 3> {
-    fn from(value: RegionIndex) -> Self {
-        const XZ_MASK: u64 = 2u64.pow(29) - 1;
-
-        let index = value.0;
-        let y = (index >> 58) as i32;
-        let x = ((index >> 29) & XZ_MASK) as i32;
-        let z = (index & XZ_MASK) as i32;
-
-        Vector::from([x, y, z])
-    }
-}
-
-/// A subchunk with an added index into its owning region.
-#[derive(Debug)]
-pub struct IndexedSubChunk {
-    /// The region index.
-    pub index: RegionIndex,
-    /// The subchunk data.
-    pub data: SubChunk
-}
-
-/// Streams subchunk data as it is produced by the provider.
-pub struct RegionStream {
-    /// Chunk receiver
-    pub(super) inner: mpsc::Receiver<IndexedSubChunk>,
-    /// Remaining items in the receiver.
-    pub(super) len: usize
-}
-
-impl RegionStream {
-    /// Returns the remaining length of this stream.
-    pub fn len(&self) -> usize {
-        self.len
-    }
-}
-
-impl Stream for RegionStream {
-    type Item = IndexedSubChunk;
-
-    fn poll_next(
-        mut self: Pin<&mut Self>,
-        cx: &mut Context
-    ) -> Poll<Option<Self::Item>> {
-        let poll = self.inner.poll_recv(cx);
-        let ready = ready!(poll);
-
-        if ready.is_some() {
-            self.len -= 1;
-        }
-
-        Poll::Ready(ready)
-    }
-
-    fn size_hint(&self) -> (usize, Option<usize>) {
-        (0, Some(self.len))
     }
 }

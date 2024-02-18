@@ -61,20 +61,7 @@ use util::{Joinable, Vector};
 
 use crate::{command::ServiceRequest, instance::Instance};
 
-use super::{IndexedSubChunk, RegionIndex, RegionStream, Rule, RuleValue};
-
-/// Types that can be used in region requests.
-pub trait IntoRegion: Send + Sync + 'static {
-    /// Iterator that this region can be turned into.
-    type IntoIter: IndexedParallelIterator<Item = Vector<i32, 3>>;
-
-    /// Creates an iterator over this region.
-    fn iter(&self, provider: Arc<Provider>) -> Self::IntoIter;
-    /// Converts a coordinate to an index into this region.
-    fn as_index(&self, coord: &Vector<i32, 3>) -> usize;
-    /// Converts an index to a coordinate into this region.
-    fn as_coord(&self, index: usize) -> Vector<i32, 3>;
-}
+use super::{IndexedSubChunk, Region, RegionIndex, RegionStream, Rule, RuleValue};
 
 pub(crate) struct ServiceOptions {
     pub instance_token: CancellationToken,
@@ -127,7 +114,8 @@ impl Service {
     }   
 
     /// Requests chunks using the specified region iterator.
-    pub fn request_region<R: IntoRegion>(self: &Arc<Service>, region: R) -> RegionStream {
+    pub fn request_region<R: Region>(self: &Arc<Service>, region: R) -> RegionStream {
+        
         let iter = region.iter(Arc::clone(&self.provider));
         let len = iter.len();
         let (sender, receiver) = mpsc::channel(len);
