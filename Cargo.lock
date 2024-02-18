@@ -1159,6 +1159,7 @@ dependencies = [
  "console-subscriber",
  "dashmap",
  "flate2",
+ "futures",
  "inferno-level",
  "inferno-macros",
  "inferno-nbt",

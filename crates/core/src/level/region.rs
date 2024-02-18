@@ -1,11 +1,12 @@
-use std::{iter::FusedIterator, ops::{Range, RangeInclusive}, sync::Arc};
+use std::{iter::FusedIterator, ops::{Range, RangeInclusive}, pin::Pin, sync::Arc, task::{ready, Context, Poll}};
 
 use level::{provider::Provider, SubChunk};
 use rayon::iter::{plumbing::{bridge, Consumer, Producer, ProducerCallback, UnindexedConsumer}, IndexedParallelIterator, ParallelIterator};
 use tokio::sync::mpsc;
 use util::Vector;
+use futures::{Stream, Sink};
 
-use super::{ChunkRequest, Service};
+use super::{IntoRegion, Service};
 
 /// Produces split region iterators.
 pub struct RegionProducer(RegionIter);
@@ -106,7 +107,7 @@ impl Iterator for RegionIter {
     fn next(&mut self) -> Option<Self::Item> {
         (self.len() > 0).then(|| {
             self.front_index += 1;
-            self.region.get_unchecked(self.front_index - 1)
+            self.region.as_coord_unchecked(self.front_index - 1)
         })
     }
 
@@ -137,7 +138,7 @@ impl DoubleEndedIterator for RegionIter {
     fn next_back(&mut self) -> Option<Self::Item> {
         (self.len() > 0).then(|| {
             self.back_index -= 1;
-            self.region.get_unchecked(self.back_index + 1)
+            self.region.as_coord_unchecked(self.back_index + 1)
         })
     }
 }
@@ -189,7 +190,7 @@ impl RegionQuery {
     /// This function is not marked as unsafe because incorrect input does not cause memory unsafety.
     /// Using an index out of bounds will simply return a coordinate outside of the region.
     /// However, the coordinate will likely be incorrect because different regions use incompatible indices.
-    pub fn get_unchecked(&self, mut index: usize) -> Vector<i32, 3> {
+    pub fn as_coord_unchecked(&self, mut index: usize) -> Vector<i32, 3> {
         let x = index as i32 % (self.xrange.len() as i32) - self.xrange.start;
         index /= self.xrange.len() as usize;
 
@@ -207,20 +208,26 @@ impl RegionQuery {
     /// This function is not marked as unsafe because incorrect input does not cause memory unsafety.
     /// Using a coordinate out of bounds will simply return a index outside of the region.
     /// However, the index will likely be incorrect because different regions use incompatible indices.
-    pub fn index_unchecked(&self, coord: Vector<i32, 3>) -> usize {
-        todo!()
+    pub fn as_index_unchecked(&self, coord: &Vector<i32, 3>) -> usize {
+        (coord.x * (self.yrange.len() as i32 * self.zrange.len() as i32) + coord.y * (self.zrange.len() as i32) + coord.z) as usize
     }
 
     /// Converts a coordinate within this region to an index, ensuring
     /// that the coordinate is not out of bounds.
-    pub fn index(&self, coord: Vector<i32, 3>) -> Option<usize> {
-        todo!()
+    pub fn as_index(&self, coord: &Vector<i32, 3>) -> Option<usize> {
+        if !self.xrange.contains(&coord.x) || 
+            !self.yrange.contains(&coord.y) || 
+            !self.zrange.contains(&coord.z) {
+            return None
+        }
+
+        Some(self.as_index_unchecked(coord))
     }
 
     /// Converts an index to a coordinate within this region, ensuring
     /// that the index is not out of bounds.
-    pub fn get(&self, index: usize) -> Option<Vector<i32, 3>> {
-        (index <= self.len()).then(|| self.get_unchecked(index))
+    pub fn as_coord(&self, index: usize) -> Option<Vector<i32, 3>> {
+        (index <= self.len()).then(|| self.as_coord_unchecked(index))
     }
 
     /// The amount of subchunks contained in this region.
@@ -249,29 +256,65 @@ impl RegionQuery {
     }
 }
 
-impl ChunkRequest for RegionQuery {
+impl IntoRegion for RegionQuery {
     type IntoIter = RegionIter;
 
     #[inline]
-    fn into_iter(self, provider: Arc<Provider>) -> Self::IntoIter {
+    fn iter(&self, provider: Arc<Provider>) -> Self::IntoIter {
         self.iter(provider)
+    }
+
+    fn as_index(&self, coord: &Vector<i32, 3>) -> usize {
+        self.as_index_unchecked(coord)
+    }
+
+    fn as_coord(&self, index: usize) -> Vector<i32, 3> {
+        self.as_coord_unchecked(index)
     }
 }
 
-// impl Request for RegionQuery {
-//     type Output = mpsc::Receiver<SubChunk>;
+/// A subchunk with an added index into its owning region.
+#[derive(Debug)]
+pub struct IndexedSubChunk {
+    /// The region index.
+    pub index: usize,
+    /// The subchunk data.
+    pub data: SubChunk
+}
 
-//     fn execute(self, service: &Arc<Service>) -> Self::Output {
-//         let (sender, receiver) = mpsc::channel(self.len());
-//         let iter = RegionIter {
-//             provider: Arc::clone(&service.provider),
-//             front_index: 0,
-//             back_index: self.len() - 1,
-//             region: self
-//         };
+/// Streams subchunk data as it is produced by the provider.
+pub struct RegionStream {
+    /// Chunk receiver
+    pub(super) inner: mpsc::Receiver<IndexedSubChunk>,
+    /// Remaining items in the receiver.
+    pub(super) len: usize
+}
 
-//         todo!();
+impl RegionStream {
+    /// Returns the remaining length of this stream.
+    pub fn len(&self) -> usize {
+        self.len
+    }
+}
 
-//         receiver
-//     }
-// }
+impl Stream for RegionStream {
+    type Item = IndexedSubChunk;
+
+    fn poll_next(
+        mut self: Pin<&mut Self>,
+        cx: &mut Context
+    ) -> Poll<Option<Self::Item>> {
+        let poll = self.inner.poll_recv(cx);
+        let ready = ready!(poll);
+
+        if ready.is_some() {
+            self.len -= 1;
+        }
+
+        Poll::Ready(ready)
+    }
+
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        (0, Some(self.len))
+    }
+}

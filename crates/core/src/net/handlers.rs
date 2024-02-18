@@ -2,6 +2,7 @@
 
 use std::sync::Arc;
 
+use futures::StreamExt;
 use proto::bedrock::{Animate, CommandOutput, CommandOutputMessage, CommandOutputType, CommandRequest, DisconnectReason, FormResponseData, HudElement, HudVisibility, PlayerAuthInput, RequestAbility, SetHud, SettingsCommand, TextData, TextMessage, TickSync, UpdateSkin};
 
 use util::{RVec, Deserialize, CowSlice, Vector};
@@ -41,26 +42,17 @@ impl BedrockClient {
         )
     )]
     pub fn handle_text_message(self: &Arc<Self>, packet: RVec) -> anyhow::Result<()> {
-
         let this = Arc::clone(self);
         tokio::spawn(async move {
             let request = RegionQuery::from_bounds([10, -4, 0], [0, 15, 10]);
 
             let instant = std::time::Instant::now();
-            let mut receiver = this.level.request_chunks(request);
+            let mut stream = this.level.request_region(request);
 
-            let mut start = std::time::Instant::now();
-            loop {
-                let recv = receiver.recv().await;
-                let Some(recv) = recv else {
-                    break
-                };
-
-                if recv.is_some() {
-                    let elapsed = start.elapsed();
-                    println!("elapsed: {elapsed:?}");
-                }
-                start = std::time::Instant::now();
+            while let Some(chunk) = stream.next().await {
+                if !chunk.data.is_empty() {
+                    println!("{:?}", chunk.index);
+                }          
             }
 
             println!("loaded chunks in {:?}", instant.elapsed());

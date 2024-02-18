@@ -61,12 +61,19 @@ use util::{Joinable, Vector};
 
 use crate::{command::ServiceRequest, instance::Instance};
 
-use super::{Rule, RuleValue};
+use super::{IndexedSubChunk, RegionStream, Rule, RuleValue};
 
-pub trait ChunkRequest: 'static {
+/// Types that can be used in region requests.
+pub trait IntoRegion: Send + Sync + 'static {
+    /// Iterator that this region can be turned into.
     type IntoIter: IndexedParallelIterator<Item = Vector<i32, 3>>;
 
-    fn into_iter(self, provider: Arc<Provider>) -> Self::IntoIter;
+    /// Creates an iterator over this region.
+    fn iter(&self, provider: Arc<Provider>) -> Self::IntoIter;
+    /// Converts a coordinate to an index into this region.
+    fn as_index(&self, coord: &Vector<i32, 3>) -> usize;
+    /// Converts an index to a coordinate into this region.
+    fn as_coord(&self, index: usize) -> Vector<i32, 3>;
 }
 
 pub(crate) struct ServiceOptions {
@@ -120,29 +127,42 @@ impl Service {
     }   
 
     /// Requests chunks using the specified region iterator.
-    pub fn request_chunks<C: ChunkRequest>(self: &Arc<Service>, request: C) -> mpsc::Receiver<Option<SubChunk>> {
-        let iter = request.into_iter(Arc::clone(&self.provider));
-        let (sender, receiver) = mpsc::channel(iter.len());
+    pub fn request_region<R: IntoRegion>(self: &Arc<Service>, region: R) -> RegionStream {
+        let iter = region.iter(Arc::clone(&self.provider));
+        let len = iter.len();
+        let (sender, receiver) = mpsc::channel(len);
 
         let provider = Arc::clone(&self.provider);
         rayon::spawn(move || {
-            iter   
-                .for_each(|item| {
+            // If this returns an error, the receiver has closed so we can stop processing.
+            let _ = iter   
+                .try_for_each(|item| {
                     let subchunk = provider.get_subchunk(
                         Vector::from([item.x, item.z]), item.y as i8, Dimension::Overworld
                     );
 
-                    let _ = match subchunk {
-                        Ok(chunk) => sender.blocking_send(chunk),
+                    let subchunk = match subchunk {
+                        Ok(Some(chunk)) => chunk,
+                        Ok(None) => SubChunk::empty(item.y as i8),
                         Err(e) => {
-                            tracing::error!("{e:#}");
-                            sender.blocking_send(None)
+                            tracing::error!("Failed to load subchunk at {item:?}: {e:#}");
+                            SubChunk::empty(item.y as i8)
                         }
                     };
+
+                    let indexed = IndexedSubChunk {
+                        index: region.as_index(&item),
+                        data: subchunk
+                    };
+
+                    sender.blocking_send(indexed)
                 });
         });
 
-        receiver
+        RegionStream {
+            inner: receiver,
+            len
+        }
     }
 
     /// Sets the value of the given gamerule, returning the old value.
