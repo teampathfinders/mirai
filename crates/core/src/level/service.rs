@@ -52,9 +52,9 @@
 use std::{any::TypeId, sync::{Arc, OnceLock, Weak}};
 
 use dashmap::DashMap;
-use level::{provider::Provider, DataKey, KeyType, SubChunk};
+use level::SubChunk;
 use proto::types::Dimension;
-use rayon::iter::{IndexedParallelIterator, ParallelIterator};
+use rayon::iter::ParallelIterator;
 use tokio::sync::mpsc;
 use tokio_util::sync::CancellationToken;
 use util::{Joinable, Vector};
@@ -68,12 +68,17 @@ pub(crate) struct ServiceOptions {
     pub level_path: String
 }
 
+/// Threshold for the service to switch from singular to batching mode.
+/// Any requests with more chunks than specified in this threshold will be processed
+/// with a parallel iterator and threadpool.
+const REGION_BATCH_THRESHOLD: usize = 100;
+
 pub struct Service {
     instance_token: CancellationToken,
     shutdown_token: CancellationToken,
     instance: OnceLock<Weak<Instance>>,
     /// Provides level data from disk.
-    pub(super) provider: Arc<level::provider::Provider>,
+    pub provider: Arc<level::provider::Provider>,
     /// Current gamerule values.
     /// The gamerules are stored by TypeId to allow for user-defined gamerules.
     gamerules: DashMap<TypeId, RuleValue>,
@@ -115,9 +120,32 @@ impl Service {
 
     /// Requests chunks using the specified region iterator.
     pub fn request_region<R: Region>(self: &Arc<Service>, region: R) -> RegionStream {
-        
-        let iter = region.iter(Arc::clone(&self.provider));
-        let len = iter.len();
+        if region.len() >= REGION_BATCH_THRESHOLD {
+            self.request_batched_region(region)
+        } else {
+            self.request_singular_region(region)
+        }
+    }
+
+    fn request_singular_region<R: Region>(&self, region: R) -> RegionStream {
+        let len = region.len();
+        let iter = region.into_iter();
+
+        let (sender, receiver) = mpsc::channel(len);
+
+        tokio::task::spawn_blocking(|| {
+            todo!()
+        });
+
+        RegionStream {
+            inner: receiver,
+            len
+        }
+    }
+
+    fn request_batched_region<R: Region>(&self, region: R) -> RegionStream {
+        let len = region.len();
+        let iter = region.into_par_iter();
         let (sender, receiver) = mpsc::channel(len);
 
         let provider = Arc::clone(&self.provider);

@@ -1,16 +1,11 @@
 use std::{iter::FusedIterator, ops::{Range, RangeInclusive}, pin::Pin, sync::Arc, task::{ready, Context, Poll}};
 
 use level::{provider::Provider, SubChunk};
-use rayon::iter::{plumbing::{bridge, Consumer, Producer, ProducerCallback, UnindexedConsumer}, IndexedParallelIterator, ParallelIterator};
+use rayon::iter::{plumbing::{bridge, Consumer, Producer, ProducerCallback, UnindexedConsumer}, IndexedParallelIterator, IntoParallelIterator, ParallelIterator};
 use util::Vector;
 
 /// Types that can be used in region requests.
-pub trait Region: Clone + Send + Sync + 'static {
-    /// Iterator that this region can be turned into.
-    type IntoIter: IndexedParallelIterator<Item = Vector<i32, 3>>;
-
-    /// Creates an iterator over this region.
-    fn iter(&self, provider: Arc<Provider>) -> Self::IntoIter;
+pub trait Region: IntoIterator<Item = Vector<i32, 3>> + IntoParallelIterator<Item = Vector<i32, 3>> + Clone + Send + Sync + 'static {
     /// Converts a coordinate to an index into this region.
     fn as_index(&self, coord: &Vector<i32, 3>) -> Option<usize>;
     /// Converts an index to a coordinate into this region.
@@ -36,15 +31,13 @@ impl<T: Region> Producer for RegionProducer<T> {
         let left = Self(RegionIter {
             region: self.0.region.clone(),
             front_index: self.0.front_index,
-            back_index: self.0.front_index + index,
-            provider: Arc::clone(&self.0.provider)
+            back_index: self.0.front_index + index
         });
 
         let right = Self(RegionIter {
             region: self.0.region,
             front_index: self.0.front_index + index,
-            back_index: self.0.back_index,
-            provider: self.0.provider
+            back_index: self.0.back_index
         });
 
         (left, right)
@@ -62,8 +55,7 @@ impl<T: Region> From<RegionIter<T>> for RegionProducer<T> {
 pub struct RegionIter<T: Region> {    
     pub(super) region: T,
     pub(super) front_index: usize,
-    pub(super) back_index: usize,
-    pub(super) provider: Arc<Provider>
+    pub(super) back_index: usize
 }
 
 impl<T: Region> ParallelIterator for RegionIter<T> {

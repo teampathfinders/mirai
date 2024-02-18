@@ -1,6 +1,4 @@
-use std::sync::Arc;
-
-use level::provider::Provider;
+use rayon::iter::IntoParallelIterator;
 use util::Vector;
 
 use super::{Region, RegionIter};
@@ -20,18 +18,25 @@ impl PointRegion {
     }
 }
 
-impl Region for PointRegion {
+impl IntoIterator for PointRegion {
     type IntoIter = RegionIter<Self>;
+    type Item = Vector<i32, 3>;
 
-    fn iter(&self, provider: Arc<Provider>) -> Self::IntoIter {
-        RegionIter {
-            region: self.clone(),
-            front_index: 0,
-            back_index: self.points.len(),
-            provider
-        }
+    fn into_iter(self) -> Self::IntoIter {
+        RegionIter { front_index: 0, back_index: self.len(), region: self }
     }
+}
 
+impl IntoParallelIterator for PointRegion {
+    type Iter = RegionIter<Self>;
+    type Item = Vector<i32, 3>;
+
+    fn into_par_iter(self) -> Self::Iter {
+        RegionIter { front_index: 0, back_index: self.len(), region: self }
+    }
+}
+
+impl Region for PointRegion {
     fn as_coord(&self, index: usize) -> Option<Vector<i32, 3>> {
         self.points.get(index).cloned()
     }

@@ -1,6 +1,6 @@
-use std::{ops::Range, sync::Arc};
+use std::ops::Range;
 
-use level::provider::Provider;
+use rayon::iter::IntoParallelIterator;
 use util::Vector;
 
 use super::{Region, RegionIter};
@@ -100,18 +100,25 @@ impl BoxRegion {
     }
 }
 
-impl Region for BoxRegion {
+impl IntoIterator for BoxRegion {
     type IntoIter = RegionIter<Self>;
+    type Item = Vector<i32, 3>;
 
-    fn iter(&self, provider: Arc<Provider>) -> Self::IntoIter {
-        RegionIter {
-            provider,
-            front_index: 0,
-            back_index: self.len(),
-            region: self.clone()
-        }
+    fn into_iter(self) -> Self::IntoIter {
+        RegionIter { front_index: 0, back_index: self.len(), region: self }
     }
+}
 
+impl IntoParallelIterator for BoxRegion {
+    type Iter = RegionIter<Self>;
+    type Item = Vector<i32, 3>;
+
+    fn into_par_iter(self) -> Self::Iter {
+        RegionIter { front_index: 0, back_index: self.len(), region: self }
+    }
+}
+
+impl Region for BoxRegion {
     fn as_index(&self, coord: &Vector<i32, 3>) -> Option<usize> {
         self.as_index(coord)
     }
