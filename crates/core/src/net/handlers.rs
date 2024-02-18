@@ -51,10 +51,10 @@ impl BedrockClient {
 
             while let Some(chunk) = stream.next().await {
                 if !chunk.data.is_empty() {
-                    println!("{:?}", chunk.index);
+                    let coord = <Vector<i32, 3>>::from(chunk.index);
+                    println!("{coord:?} {:?}", chunk.index);
                 }          
             }
-
             println!("loaded chunks in {:?}", instant.elapsed());
 
             tracing::debug!("All chunks loaded");

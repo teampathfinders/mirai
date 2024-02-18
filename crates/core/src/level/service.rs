@@ -61,7 +61,7 @@ use util::{Joinable, Vector};
 
 use crate::{command::ServiceRequest, instance::Instance};
 
-use super::{IndexedSubChunk, RegionStream, Rule, RuleValue};
+use super::{IndexedSubChunk, RegionIndex, RegionStream, Rule, RuleValue};
 
 /// Types that can be used in region requests.
 pub trait IntoRegion: Send + Sync + 'static {
@@ -151,7 +151,7 @@ impl Service {
                     };
 
                     let indexed = IndexedSubChunk {
-                        index: region.as_index(&item),
+                        index: RegionIndex::from(item),
                         data: subchunk
                     };
 

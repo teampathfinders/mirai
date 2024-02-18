@@ -184,7 +184,7 @@ impl SubLayer {
     pub fn empty() -> Self {
         Self {
             indices: Box::new([0; 4096]),
-            palette: vec![]
+            palette: vec![],
         }
     }
 
@@ -347,7 +347,9 @@ impl SubChunk {
     /// Creates a subchunk filled with air.
     pub fn empty(index: i8) -> Self {
         Self {
-            index, layers: vec![SubLayer::empty()], version: SubChunkVersion::Limitless
+            index,
+            layers: vec![SubLayer::empty()],
+            version: SubChunkVersion::Limitless,
         }
     }
 

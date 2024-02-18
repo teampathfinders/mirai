@@ -21,7 +21,8 @@ use crate::command::{self, HandlerOutput, HandlerResult, ParsedCommand};
 use crate::config::Config;
 use crate::net::{Clients, ForwardablePacket};
 use proto::bedrock::{
-    Command, CommandDataType, CommandEnum, CommandOverload, CommandParameter, CommandPermissionLevel, CreditsStatus, CreditsUpdate, CLIENT_VERSION_STRING, PROTOCOL_VERSION
+    Command, CommandDataType, CommandEnum, CommandOverload, CommandParameter, CommandPermissionLevel, CreditsStatus, CreditsUpdate,
+    CLIENT_VERSION_STRING, PROTOCOL_VERSION,
 };
 use proto::raknet::{
     IncompatibleProtocol, OpenConnectionReply1, OpenConnectionReply2, OpenConnectionRequest1, OpenConnectionRequest2, UnconnectedPing,
@@ -67,7 +68,7 @@ impl InstanceBuilder {
     /// Sets the IPv4 address of the instance.
     pub fn ipv4_address<A: Into<SocketAddrV4>>(mut self, addr: A) -> InstanceBuilder {
         self.0.ipv4_addr = addr.into();
-        self 
+        self
     }
 
     /// Sets the IPv6 address of the instance.
@@ -84,9 +85,7 @@ impl InstanceBuilder {
             Instance::GIT_REV
         );
 
-        let ipv4_socket = UdpSocket::bind(self.0.ipv4_addr)
-            .await
-            .context("Unable to create IPv4 UDP socket")?;
+        let ipv4_socket = UdpSocket::bind(self.0.ipv4_addr).await.context("Unable to create IPv4 UDP socket")?;
         let ipv6_socket = match self.0.ipv6_addr {
             Some(addr) => Some(UdpSocket::bind(addr).await.context("Unable to create IPv6 UDP socket")?),
             None => None,
@@ -105,14 +104,10 @@ impl InstanceBuilder {
         let command_service = crate::command::Service::new(running_token.clone());
         let level_service = crate::level::Service::new(crate::level::ServiceOptions {
             instance_token: running_token.clone(),
-            level_path: self.0.level.path.clone()
+            level_path: self.0.level.path.clone(),
         })?;
-        
-        let user_map = Arc::new(Clients::new(
-            replicator, 
-            Arc::clone(&command_service), 
-            Arc::clone(&level_service)
-        ));
+
+        let user_map = Arc::new(Clients::new(replicator, Arc::clone(&command_service), Arc::clone(&level_service)));
 
         let instance = Instance {
             ipv4_socket,
@@ -164,7 +159,7 @@ pub struct Instance {
     /// The RakNet GUID of the server. This is literally just randomly generated on startup.
     raknet_guid: u64,
     /// The current message of the day. Update every [`METADATA_REFRESH_INTERVAL`] seconds.
-    current_motd: RwLock<String>
+    current_motd: RwLock<String>,
 }
 
 impl Instance {
@@ -300,24 +295,17 @@ impl Instance {
                 aliases: vec![],
                 description: "Shows the credits".to_owned(),
                 name: "credits".to_owned(),
-                overloads: vec![
-                    CommandOverload {
-                        parameters: vec![]
-                    }
-                ],
-                permission_level: CommandPermissionLevel::Normal
+                overloads: vec![CommandOverload { parameters: vec![] }],
+                permission_level: CommandPermissionLevel::Normal,
             },
             |_input, ctx| {
                 ctx.caller.send(CreditsUpdate {
                     runtime_id: 1,
-                    status: CreditsStatus::Start
+                    status: CreditsStatus::Start,
                 });
 
-                Ok(HandlerOutput {
-                    message: "".into(),
-                    parameters: vec![]
-                })
-            }
+                Ok(HandlerOutput { message: "".into(), parameters: vec![] })
+            },
         )?;
 
         self.command_service.register(
@@ -325,59 +313,60 @@ impl Instance {
                 aliases: vec![],
                 description: "autocompletion example".to_owned(),
                 name: "autocomplete".to_owned(),
-                overloads: vec![CommandOverload {
-                    parameters: vec![
-                        CommandParameter {
+                overloads: vec![
+                    CommandOverload {
+                        parameters: vec![CommandParameter {
                             name: "param1".to_owned(),
                             command_enum: Some(CommandEnum {
                                 dynamic: false,
                                 enum_id: "options".to_owned(),
-                                options: vec!["option1".to_owned(), "option2".to_owned()]
+                                options: vec!["option1".to_owned(), "option2".to_owned()],
                             }),
                             data_type: CommandDataType::String,
                             optional: true,
                             options: 0,
-                            suffix: "".to_owned()
-                        }   
-                    ]
-                }, CommandOverload {
-                    parameters: vec![
-                        CommandParameter {
-                            name: "param1".to_owned(),
-                            command_enum: Some(CommandEnum {
-                                dynamic: false,
-                                enum_id: "options".to_owned(),
-                                options: vec!["option1".to_owned(), "option2".to_owned()]
-                            }),
-                            data_type: CommandDataType::String,
-                            optional: false,
-                            options: 0,
-                            suffix: "".to_owned()
-                        },
-                        CommandParameter {
-                            name: "param2".to_owned(),
-                            command_enum: Some(CommandEnum {
-                                dynamic: false,
-                                enum_id: "options2".to_owned(),
-                                options: vec!["option3".to_owned(), "option4".to_owned()]
-                            }),
-                            data_type: CommandDataType::String,
-                            optional: true,
-                            options: 0,
-                            suffix: "".to_owned()
-                        }   
-                    ]
-                }],
-                permission_level: CommandPermissionLevel::Normal
+                            suffix: "".to_owned(),
+                        }],
+                    },
+                    CommandOverload {
+                        parameters: vec![
+                            CommandParameter {
+                                name: "param1".to_owned(),
+                                command_enum: Some(CommandEnum {
+                                    dynamic: false,
+                                    enum_id: "options".to_owned(),
+                                    options: vec!["option1".to_owned(), "option2".to_owned()],
+                                }),
+                                data_type: CommandDataType::String,
+                                optional: false,
+                                options: 0,
+                                suffix: "".to_owned(),
+                            },
+                            CommandParameter {
+                                name: "param2".to_owned(),
+                                command_enum: Some(CommandEnum {
+                                    dynamic: false,
+                                    enum_id: "options2".to_owned(),
+                                    options: vec!["option3".to_owned(), "option4".to_owned()],
+                                }),
+                                data_type: CommandDataType::String,
+                                optional: true,
+                                options: 0,
+                                suffix: "".to_owned(),
+                            },
+                        ],
+                    },
+                ],
+                permission_level: CommandPermissionLevel::Normal,
             },
             |input, _ctx| {
                 tracing::info!("Requested command is: {input:?}");
 
                 Ok(HandlerOutput {
                     message: "this is a command response".into(),
-                    parameters: vec![]
+                    parameters: vec![],
                 })
-            }
+            },
         )?;
 
         static COUNTER: AtomicUsize = AtomicUsize::new(1);
@@ -391,7 +380,7 @@ impl Instance {
                     overloads: vec![CommandOverload { parameters: Vec::new() }],
                     permission_level: CommandPermissionLevel::Normal,
                 },
-                create_fn
+                create_fn,
             );
 
             Ok(command::HandlerOutput {
@@ -543,10 +532,7 @@ impl Instance {
     }
 
     /// Receives raknet from IPv4 clients and adds them to the receive queue
-    async fn net_receiver(
-        self: Arc<Instance>,
-        udp_socket: Arc<UdpSocket>
-    ) {
+    async fn net_receiver(self: Arc<Instance>, udp_socket: Arc<UdpSocket>) {
         // This is heap-allocated because stack data is stored inline in tasks.
         // If it were to be stack-allocated, Tokio would have to copy the entire buffer each time
         // the task is moved across threads.
@@ -584,22 +570,10 @@ impl Instance {
                     };
 
                     let pk_result = match id {
-                        UnconnectedPing::ID => Instance::process_unconnected_ping(
-                            packet, 
-                            this.raknet_guid, 
-                            &metadata
-                        ),
-                        OpenConnectionRequest1::ID => Instance::process_open_connection_request1(
-                            packet, 
-                            this.raknet_guid
-                        ),
+                        UnconnectedPing::ID => Instance::process_unconnected_ping(packet, this.raknet_guid, &metadata),
+                        OpenConnectionRequest1::ID => Instance::process_open_connection_request1(packet, this.raknet_guid),
                         OpenConnectionRequest2::ID => {
-                            Instance::process_open_connection_request2(
-                                packet, 
-                                Arc::clone(&udp_socket), 
-                                session_manager, 
-                                this.raknet_guid
-                            )
+                            Instance::process_open_connection_request2(packet, Arc::clone(&udp_socket), session_manager, this.raknet_guid)
                         }
                         _ => {
                             tracing::error!("Invalid unconnected packet ID: {id:x}");
