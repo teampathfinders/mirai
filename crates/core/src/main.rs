@@ -39,7 +39,9 @@ fn main() -> anyhow::Result<()> {
         6379
     };
 
-    let builder = Instance::builder();
+    let builder = Instance::builder()
+        .database_host(host)
+        .database_port(port);
 
     runtime.block_on(async move {
         let instance = builder.build().await?;

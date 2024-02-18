@@ -9,7 +9,7 @@ use util::{RVec, Deserialize};
 
 use tokio::sync::mpsc::error::SendTimeoutError;
 
-use crate::{Frame, FrameBatch, RaknetCommand, RakNetClient};
+use crate::{Frame, FrameBatch, RakNetCommand, RakNetClient};
 
 const RAKNET_OUTPUT_TIMEOUT: Duration = Duration::from_millis(10);
 
@@ -127,7 +127,7 @@ impl RakNetClient {
         match packet_id {
             // CONNECTED_PACKET_ID => self.handle_encrypted_frame(packet).await?,
             CONNECTED_PACKET_ID => {
-                if let Err(err) = self.output.send_timeout(RaknetCommand::Received(packet), RAKNET_OUTPUT_TIMEOUT).await {
+                if let Err(err) = self.output.send_timeout(RakNetCommand::Received(packet), RAKNET_OUTPUT_TIMEOUT).await {
                     if matches!(err, SendTimeoutError::Closed(_)) {
                         // Output channel has been closed
                         tracing::warn!("RakNet layer output channel closed, disconnecting them...");

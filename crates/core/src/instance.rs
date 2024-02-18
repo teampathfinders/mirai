@@ -3,7 +3,7 @@
 use anyhow::Context;
 
 use parking_lot::RwLock;
-use raknet::RaknetCreateInfo;
+use raknet::RakNetCreateDescription;
 use tokio::task::JoinHandle;
 
 use std::net::{Ipv4Addr, Ipv6Addr, SocketAddrV4, SocketAddrV6};
@@ -46,13 +46,21 @@ impl InstanceBuilder {
         Instance::builder()
     }
 
-    pub fn database_host<S: Into<CowString<'static>>>(mut self, host: S) -> InstanceBuilder {
+    /// Sets the host address of the database.
+    pub fn database_host<S: Into<String>>(mut self, host: S) -> InstanceBuilder {
         self.0.database.host = host.into();
         self
     }
 
+    /// Sets the port of the database.
     pub fn database_port<I: Into<u16>>(mut self, port: I) -> InstanceBuilder {
         self.0.database.port = port.into();
+        self
+    }
+
+    /// Sets the path to the level.
+    pub fn level_path<P: Into<String>>(mut self, path: P) -> InstanceBuilder {
+        self.0.level.path = path.into();
         self
     }
 
@@ -95,7 +103,11 @@ impl InstanceBuilder {
 
         let replicator = Arc::new(replicator);
         let command_service = crate::command::Service::new(running_token.clone());
-        let level_service = crate::level::Service::new(running_token.clone());
+        let level_service = crate::level::Service::new(crate::level::ServiceOptions {
+            instance_token: running_token.clone(),
+            level_path: self.0.level.path.clone()
+        })?;
+        
         let user_map = Arc::new(Clients::new(
             replicator, 
             Arc::clone(&command_service), 
@@ -261,6 +273,7 @@ impl Instance {
         // let level = Level::new(self.user_map.clone(), self.token.clone())?;
         // self.user_map.set_level(level);
 
+        self.clients.set_instance(self)?;
         self.command_service.set_instance(self)?;
         self.level_service.set_instance(self)?;
 
@@ -519,7 +532,7 @@ impl Instance {
         packet.buf.reserve_to(reply.size_hint());
         reply.serialize_into(&mut packet.buf)?;
 
-        user_manager.insert(RaknetCreateInfo {
+        user_manager.insert(RakNetCreateDescription {
             address: packet.addr,
             guid: request.client_guid,
             mtu: request.mtu,

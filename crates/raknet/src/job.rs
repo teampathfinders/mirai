@@ -7,7 +7,7 @@ use prometheus_client::metrics::counter::Counter;
 use tokio::sync::{mpsc, TryAcquireError};
 use util::RVec;
 
-use crate::{RaknetCommand, RakNetClient};
+use crate::{RakNetCommand, RakNetClient};
 
 use lazy_static::lazy_static;
 
@@ -69,7 +69,7 @@ impl RakNetClient {
                             tracing::warn!("Client exhausted its budget. Too many packets have been sent within the last second");
 
                             // Notify parent of exhausted budget. The parent should then disconnect the client.
-                            if self.output.send(RaknetCommand::BudgetExhausted).await.is_err() {
+                            if self.output.send(RakNetCommand::BudgetExhausted).await.is_err() {
                                 // Parent has somehow been lost. This service is useless without a parent, so exit.
                                 self.disconnect();
                             }

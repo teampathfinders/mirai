@@ -31,4 +31,5 @@ pub use form::*;
 pub use menu::*;
 pub use modal::*;
 
+#[doc(inline)]
 pub use response::{Response, Subscriber};

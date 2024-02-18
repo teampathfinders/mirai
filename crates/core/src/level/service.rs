@@ -1,183 +1,205 @@
+// use std::{any::TypeId, sync::{Arc, OnceLock, Weak}};
+
+// use dashmap::DashMap;
+// use proto::types::Dimension;
+// use tokio::sync::{mpsc, oneshot};
+// use tokio_util::sync::CancellationToken;
+// use util::{Joinable, Vector};
+
+// use crate::instance::Instance;
+
+// use super::{gamerule, Rule, RuleValue};
+
+// pub struct RadiusRequest {
+//     pub dimension: Dimension,
+//     pub center: Vector<i32, 2>,
+//     pub radius: u16
+// }
+
+// impl Request for RadiusRequest {
+//     type Output = ();
+// }
+
+// pub struct SingleRequest {
+//     pub dimension: Dimension,
+//     pub position: Vector<i32, 3>
+// }
+
+// impl Request for SingleRequest {
+//     type Output = ();
+// }
+
+// mod private {
+//     pub trait Sealed {}
+//     impl Sealed for super::SingleRequest {}
+//     impl Sealed for super::RadiusRequest {}
+//     impl Sealed for super::RegionRequest {}
+// }
+
+// pub struct ServiceRequest {
+    
+// }
+
+// pub trait Request {
+//     type Output;
+
+//     fn execute(&self, service: &Arc<Service>) -> mpsc::Receiver<Self::Output> {
+//         let (sender, receiver) = mpsc::channel();
+//         receiver
+//     }
+// }
+
 use std::{any::TypeId, sync::{Arc, OnceLock, Weak}};
 
-
-
-use proto::{bedrock::GameRule, types::Dimension};
-use tokio::sync::{mpsc, oneshot};
+use dashmap::DashMap;
+use level::{provider::Provider, DataKey, KeyType, SubChunk};
+use proto::types::Dimension;
+use rayon::iter::{IndexedParallelIterator, ParallelIterator};
+use tokio::sync::mpsc;
 use tokio_util::sync::CancellationToken;
 use util::{Joinable, Vector};
 
-use crate::instance::Instance;
+use crate::{command::ServiceRequest, instance::Instance};
 
-const LEVEL_REQUEST_BUFFER_SIZE: usize = 10;
+use super::{Rule, RuleValue};
 
-#[derive(Debug, Copy, Clone, PartialEq, Eq)]
-pub enum RequestableVariant {
-    SingleGet,
-    MultiGet,
+pub trait ChunkRequest: 'static {
+    type IntoIter: IndexedParallelIterator<Item = Vector<i32, 3>>;
+
+    fn into_iter(self, provider: Arc<Provider>) -> Self::IntoIter;
 }
 
-pub trait ExpensiveRequestable: Sized + 'static {
-    type Output;
-
-    const VARIANT: RequestableVariant;
-
-    /// Casts a generic to the original type.
-    /// 
-    /// `T` and `Self` must be the exact same type.
-    fn cast<T: 'static>(self) -> T {
-        assert_eq!(TypeId::of::<T>(), TypeId::of::<Self>(), "Cannot cast requestable to different type");
-        
-        // SAFETY: This is safe because both types are guaranteed to be the same.
-        let cast = unsafe {
-            std::mem::transmute_copy::<Self, T>(&self)
-        };
-        std::mem::forget(self);
-
-        cast
-    }
+pub(crate) struct ServiceOptions {
+    pub instance_token: CancellationToken,
+    pub level_path: String
 }
 
-/// Loads multiple subchunks around a given center.
-#[derive(Debug)]
-pub struct SubchunkGetMulti {
-    /// Dimension to load the chunks from.
-    pub dimension: Dimension,
-    /// Center to load the chunks around.
-    /// 
-    /// This is in subchunk coordinates.
-    pub center: Vector<i32, 3>,
-    /// Offsets to load.
-    /// 
-    /// For example, given a center (0, 0, 0) an offset of (0, 1, 0) would
-    /// translate to the subchunk located at (0, 1, 0),
-    pub offsets: Vec<Vector<i8, 3>>
-}
-
-impl ExpensiveRequestable for SubchunkGetMulti {
-    type Output = String;
-    
-    const VARIANT: RequestableVariant = RequestableVariant::MultiGet;
-}
-
-/// Loads a single subchunk at the given position and dimension.
-/// 
-/// If possible, [`SubchunkGetMultiCommand`] should be preferred over this one
-/// to load subchunks in batches.
-#[derive(Debug)]
-pub struct SubchunkGetSingle {
-    /// Dimension to load the chunks from.
-    pub dimension: Dimension,
-    /// Position the subchunk is located at.
-    pub position: Vector<i32, 3>
-}
-
-impl ExpensiveRequestable for SubchunkGetSingle {
-    type Output = String;
-
-    const VARIANT: RequestableVariant = RequestableVariant::SingleGet;
-}
-
-pub struct ServiceResult {}
-
-pub enum ServiceCommand {
-    Multi(SubchunkGetMulti),
-    Single(SubchunkGetSingle)
-}
-
-struct ServiceRequest {
-    command: ServiceCommand,
-    callback: oneshot::Sender<ServiceResult>
-}
-
-/// Some simpler functionality (such as gamerules) is done using shared state while the more expensive computation
-/// such as subchunks is done with message passing. The message passing system ensures that a session can continue handling
-/// packets while a subchunk is loading.
-/// 
-/// All subchunk data is stored on the heap, it is therefore cheap to move subchunks through channels.
 pub struct Service {
-    provider: level::provider::Provider,
-
     instance_token: CancellationToken,
     shutdown_token: CancellationToken,
+    instance: OnceLock<Weak<Instance>>,
+    /// Provides level data from disk.
+    pub(super) provider: Arc<level::provider::Provider>,
+    /// Current gamerule values.
+    /// The gamerules are stored by TypeId to allow for user-defined gamerules.
+    gamerules: DashMap<TypeId, RuleValue>,
 
-    // gamerules: RwLock<[GameRule; GameRule::variant_count()]>,
-
-    requests: mpsc::Receiver<ServiceRequest>,
-    request_producer: mpsc::Sender<ServiceRequest>,
-    instance: OnceLock<Weak<Instance>>
+    sender: mpsc::Sender<ServiceRequest>
 }
 
 impl Service {
-    /// Creates a new `Service`.
-    pub fn new(token: CancellationToken) -> Arc<Service> {
-        let (sender, receiver) = mpsc::channel(LEVEL_REQUEST_BUFFER_SIZE);
-        Arc::new(Service {
-            provider: todo!(),
+    pub(crate) fn new(
+        options: ServiceOptions
+    ) -> anyhow::Result<Arc<Service>> {
+        let provider = Arc::new(unsafe {
+            level::provider::Provider::open(&options.level_path)
+        }?);
 
-            instance_token: token,
+        let (sender, receiver) = mpsc::channel(10);
+        let service = Arc::new(Service {
+            instance_token: options.instance_token,
             shutdown_token: CancellationToken::new(),
+            instance: OnceLock::new(),
 
-            // gamerules: RwLock::new(Default::default()),
+            provider,
+            gamerules: DashMap::new(),
+            sender
+        });
 
-            requests: receiver,
-            request_producer: sender,
-            instance: OnceLock::new()
-        })
+        let this = Arc::clone(&service);
+        tokio::spawn(this.service(receiver));
+
+        Ok(service)
     }
 
-    /// Sets the instance pointer for this service.
-    /// 
-    /// This is used to access data from other services.
+    /// Sets the parent instance of this service.
     pub(crate) fn set_instance(&self, instance: &Arc<Instance>) -> anyhow::Result<()> {
-        self.instance.set(Arc::downgrade(instance)).map_err(|_| anyhow::anyhow!("Level service instance was already set"))
-    }
-    
-    /// Requests some data from the level.
-    /// 
-    /// This function is used to request "expensive" data from the world such as chunks.
-    /// Cheap data has their own special functions that do not make use of this.
-    pub fn get<R: ExpensiveRequestable>(&self, request: R) 
-        -> anyhow::Result<oneshot::Receiver<anyhow::Result<R::Output>>> 
-    {
-        let (_sender, receiver) = oneshot::channel();
+        self.instance
+            .set(Arc::downgrade(instance))
+            .map_err(|_| anyhow::anyhow!("Level service instance was already set"))
+    }   
 
-        match R::VARIANT {
-            RequestableVariant::MultiGet => {
-                let cast = request.cast::<SubchunkGetMulti>();
-                self.load_multi(cast);
-                Ok(receiver)
-            },
-            RequestableVariant::SingleGet => {
-                let cast = request.cast::<SubchunkGetSingle>();
-                self.load_single(cast);
-                Ok(receiver)
+    /// Requests chunks using the specified region iterator.
+    pub fn request_chunks<C: ChunkRequest>(self: &Arc<Service>, request: C) -> mpsc::Receiver<Option<SubChunk>> {
+        let iter = request.into_iter(Arc::clone(&self.provider));
+        let (sender, receiver) = mpsc::channel(iter.len());
+
+        let provider = Arc::clone(&self.provider);
+        rayon::spawn(move || {
+            iter   
+                .for_each(|item| {
+                    let subchunk = provider.get_subchunk(
+                        Vector::from([item.x, item.z]), item.y as i8, Dimension::Overworld
+                    );
+
+                    let _ = match subchunk {
+                        Ok(chunk) => sender.blocking_send(chunk),
+                        Err(e) => {
+                            tracing::error!("{e:#}");
+                            sender.blocking_send(None)
+                        }
+                    };
+                });
+        });
+
+        receiver
+    }
+
+    /// Sets the value of the given gamerule, returning the old value.
+    /// 
+    /// Instead of referring to the gamerules by name, I decided to use generics instead.
+    /// So for example if you wanted to change the value of the `tntexplodes` gamerule in a command handler, you would do
+    /// it like this:
+    /// ```ignore
+    /// let old_value = ctx.instance.level().set_gamerule::<TntExplodes>(true);
+    /// ```
+    /// 
+    /// See [`Rule`] for defining your own custom gamerules.
+    pub fn set_gamerule<R: Rule>(&self, value: R::Value) -> R::Value
+        where RuleValue: From<R::Value> // Ensure that the gamerule has a valid value type.
+    {
+        let value = RuleValue::from(value);
+        let old = self.gamerules.insert(TypeId::of::<R>(), value);
+        
+        let Some(old) = old else {
+            return R::Value::default()
+        };
+
+        old.into()
+    }
+
+    /// Returns the value of the given gamerule.
+    /// 
+    /// Instead of referring to the gamerules by name, I decided to use generics instead.
+    /// So for example if you wanted to read the value of the `tntexplodes` gamerule in a command handler, you would do
+    /// it like this:
+    /// ```ignore
+    /// let value = ctx.instance.level().gamerule::<TntExplodes>();
+    /// ```
+    /// 
+    /// See [`Rule`] for defining your own custom gamerules.
+    pub fn gamerule<R: Rule>(&self) -> R::Value
+        where RuleValue: From<R::Value> // Ensure that the gamerule has a valid value type.
+    {
+        let Some(kv) = self.gamerules.get(&TypeId::of::<R>()) else {
+            return R::Value::default()
+        };
+
+        (*kv.value()).into()
+    }
+
+    async fn service(self: Arc<Service>, mut receiver: mpsc::Receiver<ServiceRequest>) {
+        loop {
+            tokio::select! {
+                request = receiver.recv() => {
+                    let Some(request) = request else {
+                        // This service is no longer referenced by anyone, shut down.
+                        break
+                    };
+                }
+                _ = self.instance_token.cancelled() => break
             }
         }
-    }
-
-    /// Sets the new value of a game rule and returns the old value if there was one.
-    pub fn set_gamerule(&self, _val: GameRule) -> Option<GameRule> {
-        // Gamerules need rework before finishing this.
-        todo!()
-    } 
-
-    pub fn gamerule<S: AsRef<str>>(&self, _name: S) -> GameRule {
-        // Gamerules need rework before finishing this.
-        todo!()
-    }
-
-    /// Loads a single subchunk.
-    fn load_single(&self, _request: SubchunkGetSingle) {
-        todo!();
-    }
-
-    /// Loads multiple subchunks around a center.
-    fn load_multi(&self, _request: SubchunkGetMulti) {
-        todo!();
-    }
-
-    async fn service_job(self: Arc<Service>, mut receiver: mpsc::Receiver<ServiceRequest>) {
 
         self.shutdown_token.cancel();
     }
