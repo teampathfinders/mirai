@@ -52,7 +52,9 @@
 use std::{any::TypeId, sync::{Arc, OnceLock, Weak}};
 
 use dashmap::DashMap;
-use level::{provider::Provider, SubChunk};
+use level::{provider::Provider, DataKey, KeyType, SubChunk};
+use proto::types::Dimension;
+use rayon::iter::{IndexedParallelIterator, ParallelIterator};
 use tokio::sync::mpsc;
 use tokio_util::sync::CancellationToken;
 use util::{Joinable, Vector};
@@ -61,12 +63,10 @@ use crate::{command::ServiceRequest, instance::Instance};
 
 use super::{Rule, RuleValue};
 
-/// A (possibly expensive) request that can be submitted to the level service.
-pub trait Request {
-    type Output: Send + 'static;
+pub trait ChunkRequest: 'static {
+    type IntoIter: IndexedParallelIterator<Item = Vector<i32, 3>>;
 
-    /// Executes the query.
-    fn execute(self, instance: &Arc<Service>) -> Self::Output;
+    fn into_iter(self, provider: Arc<Provider>) -> Self::IntoIter;
 }
 
 pub(crate) struct ServiceOptions {
@@ -117,11 +117,32 @@ impl Service {
         self.instance
             .set(Arc::downgrade(instance))
             .map_err(|_| anyhow::anyhow!("Level service instance was already set"))
-    }
+    }   
 
-    #[inline]
-    pub fn request<R: Request>(self: &Arc<Service>, request: R) -> R::Output {
-        request.execute(self)
+    /// Requests chunks using the specified region iterator.
+    pub fn request_chunks<C: ChunkRequest>(self: &Arc<Service>, request: C) -> mpsc::Receiver<Option<SubChunk>> {
+        let iter = request.into_iter(Arc::clone(&self.provider));
+        let (sender, receiver) = mpsc::channel(iter.len());
+
+        let provider = Arc::clone(&self.provider);
+        rayon::spawn(move || {
+            iter   
+                .for_each(|item| {
+                    let subchunk = provider.get_subchunk(
+                        Vector::from([item.x, item.z]), item.y as i8, Dimension::Overworld
+                    );
+
+                    let _ = match subchunk {
+                        Ok(chunk) => sender.blocking_send(chunk),
+                        Err(e) => {
+                            tracing::error!("{e:#}");
+                            sender.blocking_send(None)
+                        }
+                    };
+                });
+        });
+
+        receiver
     }
 
     /// Sets the value of the given gamerule, returning the old value.

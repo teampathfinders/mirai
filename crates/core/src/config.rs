@@ -91,7 +91,7 @@ impl Config {
                 port: 6379
             },
             level: LevelConfig {
-                path: String::from("../resources/level")
+                path: String::from("resources\\level")
             },
             max_connections: AtomicUsize::new(10),
             max_render_distance: AtomicUsize::new(12),

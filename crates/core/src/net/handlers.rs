@@ -44,12 +44,26 @@ impl BedrockClient {
 
         let this = Arc::clone(self);
         tokio::spawn(async move {
-            let request = RegionQuery::from_bounds([0, -4, 0], [0, 15, 0]);
+            let request = RegionQuery::from_bounds([10, -4, 0], [0, 15, 10]);
 
-            let mut receiver = this.level.request(request);
-            while let Some(chunk) = receiver.recv().await {
-                tracing::debug!("{chunk:?}");
+            let instant = std::time::Instant::now();
+            let mut receiver = this.level.request_chunks(request);
+
+            let mut start = std::time::Instant::now();
+            loop {
+                let recv = receiver.recv().await;
+                let Some(recv) = recv else {
+                    break
+                };
+
+                if recv.is_some() {
+                    let elapsed = start.elapsed();
+                    println!("elapsed: {elapsed:?}");
+                }
+                start = std::time::Instant::now();
             }
+
+            println!("loaded chunks in {:?}", instant.elapsed());
 
             tracing::debug!("All chunks loaded");
         });

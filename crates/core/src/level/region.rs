@@ -1,140 +1,11 @@
-// use std::iter::FusedIterator;
-// use std::ops::Range;
-// use std::sync::Arc;
-// use rayon::iter::plumbing::{bridge, Consumer, Producer, ProducerCallback, UnindexedConsumer};
-// use rayon::prelude::{IndexedParallelIterator, ParallelIterator};
-// use tokio::sync::mpsc;
-// use level::provider::Provider;
-// use level::SubChunk;
-// use util::Vector;
-// use crate::level::{Request, Service};
-
-// struct RegionProducer {
-//     xrange: Range<i32>,
-//     yrange: Range<i32>,
-//     zrange: Range<i32>,
-//     provider: Arc<Provider>
-// }
-
-// impl Producer for RegionProducer {
-//     type Item = SubChunk;
-//     type IntoIter = RegionQueryIter;
-
-//     fn into_iter(self) -> Self::IntoIter {
-//         RegionQueryIter { 
-//             provider: self.provider,
-//             query: RegionQuery::from_ranges(self.xrange, self.yrange, self.zrange)
-//         }
-//     }
-
-//     fn split_at(self, index: usize) -> (Self, Self) {
-        
-//     }
-// }
-
-// struct RegionQueryIter {
-//     query: RegionQuery,
-//     index_front: usize,
-//     index_back: usize,
-//     provider: Arc<Provider>
-// }
-
-// impl ParallelIterator for RegionQueryIter {
-//     type Item = SubChunk;
-
-//     #[inline]
-//     fn drive_unindexed<C>(self, consumer: C) -> C::Result
-//         where C: UnindexedConsumer<Self::Item>
-//     {
-//         bridge(self, consumer)
-//     }
-// }
-
-// impl IndexedParallelIterator for RegionQueryIter {
-//     #[inline]
-//     fn len(&self) -> usize {
-//         self.query.len()
-//     }
-
-//     #[inline]
-//     fn drive<C>(self, consumer: C) -> C::Result
-//     where
-//         C: Consumer<Self::Item>
-//     {
-//         bridge(self, consumer)
-//     }
-
-//     #[inline]
-//     fn with_producer<CB>(self, callback: CB) -> CB::Output
-//     where
-//         CB: ProducerCallback<Self::Item>
-//     {
-//         todo!()
-//     }
-// }
-
-// impl ExactSizeIterator for RegionQueryIter {
-//     fn len(&self) -> usize {
-//         self.index_back - self.index_front
-//     }
-// }
-
-// /// Requests all chunks in a rectangle between two bounds.
-// pub struct RegionQuery {
-//     xrange: Range<i32>,
-//     yrange: Range<i32>,
-//     zrange: Range<i32>,
-//     provider: Arc<Provider>
-// }
-
-// impl RegionQuery {
-//     #[inline]
-//     pub fn from_ranges(
-//         xrange: Range<i32>, yrange: Range<i32>, zrange: Range<i32>, provider: Arc<Provider>
-//     ) -> RegionQuery {
-//         Self { xrange, yrange, zrange, provider }
-//     }
-
-//     /// The amount of chunks this query will request.
-//     #[inline]
-//     pub fn len(&self) -> usize {
-//         self.xrange.len() * self.yrange.len() * self.zrange.len()
-//     }
-
-//     fn from_index(&self, mut index: usize) -> Vector<i32, 3> {
-//         let x = index as i32 % (self.xrange.len() as i32);
-//         index /= self.xrange.len() as usize;
-
-//         let y = index as i32 % (self.yrange.len() as i32);
-//         index /= self.yrange.len() as usize;
-
-//         let z = index as i32;
-
-//         Vector::from([x, y, z])
-//     }
-// }
-
-// impl Request for RegionQuery {
-//     type Output = ();
-
-//     fn execute(mut self, service: Arc<Service>) -> mpsc::Receiver<Self::Output> {
-//         let (sender, receiver) = mpsc::channel(self.len());
-
-
-//         receiver
-//     }
-// }
-
-use std::{iter::FusedIterator, ops::Range, sync::Arc};
+use std::{iter::FusedIterator, ops::{Range, RangeInclusive}, sync::Arc};
 
 use level::{provider::Provider, SubChunk};
 use rayon::iter::{plumbing::{bridge, Consumer, Producer, ProducerCallback, UnindexedConsumer}, IndexedParallelIterator, ParallelIterator};
 use tokio::sync::mpsc;
 use util::Vector;
 
-use crate::instance::Instance;
-
-use super::{Request, Service};
+use super::{ChunkRequest, Service};
 
 /// Produces split region iterators.
 pub struct RegionProducer(RegionIter);
@@ -152,14 +23,14 @@ impl Producer for RegionProducer {
     fn split_at(self, index: usize) -> (Self, Self) {
         let left = Self(RegionIter {
             region: self.0.region.clone(),
-            front_index: 0,
-            back_index: index,
+            front_index: self.0.front_index,
+            back_index: self.0.front_index + index,
             provider: Arc::clone(&self.0.provider)
         });
 
         let right = Self(RegionIter {
             region: self.0.region,
-            front_index: index,
+            front_index: self.0.front_index + index,
             back_index: self.0.back_index,
             provider: self.0.provider
         });
@@ -249,7 +120,8 @@ impl ExactSizeIterator for RegionIter {
     fn len(&self) -> usize {
         // Use checked subtraction to make sure the length does not overflow
         // when back_index < front_index.
-        self.front_index.checked_sub(self.back_index).unwrap_or(0)
+        let len = self.back_index.checked_sub(self.front_index).unwrap_or(0);
+        len
     }
 }
 
@@ -318,13 +190,13 @@ impl RegionQuery {
     /// Using an index out of bounds will simply return a coordinate outside of the region.
     /// However, the coordinate will likely be incorrect because different regions use incompatible indices.
     pub fn get_unchecked(&self, mut index: usize) -> Vector<i32, 3> {
-        let x = index as i32 % (self.xrange.len() as i32);
+        let x = index as i32 % (self.xrange.len() as i32) - self.xrange.start;
         index /= self.xrange.len() as usize;
 
-        let y = index as i32 % (self.yrange.len() as i32);
+        let y = index as i32 % (self.yrange.len() as i32) - self.yrange.start;
         index /= self.yrange.len() as usize;
 
-        let z = index as i32;
+        let z = index as i32 - self.zrange.start;
 
         Vector::from([x, y, z])
     }
@@ -353,21 +225,23 @@ impl RegionQuery {
 
     /// The amount of subchunks contained in this region.
     pub fn len(&self) -> usize {
-        self.xrange.len() * self.yrange.len() * self.zrange.len()
+        let len = self.xrange.len() * self.yrange.len() * self.zrange.len();
+        tracing::debug!("len = {len}");
+        len
     }
 
     fn from_bounds_inner(bound1: Vector<i32, 3>, bound2: Vector<i32, 3>) -> Self {
         let xmin = std::cmp::min(bound1.x, bound2.x);
-        let xmax = std::cmp::min(bound1.x, bound2.x);
-        let xrange = xmin..xmax;
+        let xmax = std::cmp::max(bound1.x, bound2.x);
+        let xrange = xmin..xmax + 1;
 
         let ymin = std::cmp::min(bound1.y, bound2.y);
-        let ymax = std::cmp::min(bound1.y, bound2.y);
-        let yrange = ymin..ymax;
+        let ymax = std::cmp::max(bound1.y, bound2.y);
+        let yrange = ymin..ymax + 1;
 
         let zmin = std::cmp::min(bound1.z, bound2.z);
-        let zmax = std::cmp::min(bound1.z, bound2.z);
-        let zrange = zmin..zmax;
+        let zmax = std::cmp::max(bound1.z, bound2.z);
+        let zrange = zmin..zmax + 1;
 
         Self {
             xrange, yrange, zrange
@@ -375,20 +249,29 @@ impl RegionQuery {
     }
 }
 
-impl Request for RegionQuery {
-    type Output = mpsc::Receiver<SubChunk>;
+impl ChunkRequest for RegionQuery {
+    type IntoIter = RegionIter;
 
-    fn execute(self, service: &Arc<Service>) -> Self::Output {
-        let (sender, receiver) = mpsc::channel(self.len());
-        let iter = RegionIter {
-            provider: Arc::clone(&service.provider),
-            front_index: 0,
-            back_index: self.len() - 1,
-            region: self
-        };
-
-        todo!();
-
-        receiver
+    #[inline]
+    fn into_iter(self, provider: Arc<Provider>) -> Self::IntoIter {
+        self.iter(provider)
     }
 }
+
+// impl Request for RegionQuery {
+//     type Output = mpsc::Receiver<SubChunk>;
+
+//     fn execute(self, service: &Arc<Service>) -> Self::Output {
+//         let (sender, receiver) = mpsc::channel(self.len());
+//         let iter = RegionIter {
+//             provider: Arc::clone(&service.provider),
+//             front_index: 0,
+//             back_index: self.len() - 1,
+//             region: self
+//         };
+
+//         todo!();
+
+//         receiver
+//     }
+// }
