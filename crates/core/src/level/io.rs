@@ -1,9 +1,9 @@
-use std::{pin::Pin, sync::Arc, future::Future, task::{ready, Context, Poll}};
+use std::{future::Future, pin::Pin, sync::Arc, task::{ready, Context, Poll, Waker}};
 
 use futures::{Sink, Stream};
 use level::SubChunk;
 use parking_lot::Mutex;
-use tokio::sync::{mpsc, Notify};
+use tokio::sync::{mpsc, watch, Notify};
 use util::Vector;
 
 /// A unique identifier for a specific subchunk.
@@ -52,7 +52,7 @@ pub struct IndexedSubChunk {
     pub data: SubChunk
 }
 
-/// Streams subchunk data as it is produced by the provider.
+/// Streams subchunk data as it is produced by an iterator.
 pub struct RegionStream {
     /// Chunk receiver
     pub(super) inner: mpsc::Receiver<IndexedSubChunk>,
@@ -89,60 +89,73 @@ impl Stream for RegionStream {
     }
 }
 
-const MAX_SINK_SIZE: usize = 10;
+const FLUSH_THRESHOLD: usize = 10;
 
-/// Sink that automatically buffers subchunk writes.
-pub struct RegionSink {
-    buffer: Arc<Mutex<Vec<IndexedSubChunk>>>,
-    flush: Notify
+/// Collects all subchunk updates and writes them to disk periodically.
+struct Collector {
+    consumer: mpsc::Receiver<IndexedSubChunk>,
+    flush: watch::Sender<()>,
+
+    collection: Vec<IndexedSubChunk>,
 }
 
-impl RegionSink {
-    fn flush(&self) -> anyhow::Result<()> {
-        todo!()
+impl Collector {
+    /// Flushes all subchunks in the collector to disk.
+    async fn service(mut self) {
+        loop {
+            let mut spare = Vec::new();
+            let Some(chunk) = self.consumer.recv().await else {
+                // This collector is no longer referenced, shut it down.
+                break
+            };
+
+            self.collection.push(chunk);
+            if self.collection.len() >= FLUSH_THRESHOLD {
+                std::mem::swap(&mut spare, &mut self.collection);
+                Self::begin_flush(spare);
+            }
+        }
     }
+
+    fn begin_flush(chunks: Vec<IndexedSubChunk>) {
+        // Start flushing to disk in a separate thread.
+    }
+}
+
+/// All unreferenced subchunks are thrown into this sink
+/// and will automatically be written to disk at a fixed interval or
+/// when the sink is filled up.
+pub struct RegionSink {
+    producer: mpsc::Sender<IndexedSubChunk>,
+    flush: Arc<Notify>
 }
 
 impl Sink<IndexedSubChunk> for RegionSink {
     type Error = anyhow::Error;
 
-    fn poll_ready(
-        self: Pin<&mut Self>,
-        cx: &mut Context
-    ) -> Poll<anyhow::Result<()>> {
-        {
-            let lock = self.buffer.lock();
-            if lock.len() >= MAX_SINK_SIZE {
+    fn poll_ready(self: Pin<&mut Self>, cx: &mut Context) -> Poll<anyhow::Result<()>> {
+        // Check whether collector has space.
+        // If not, notify it to flush.
+        if self.producer.capacity() == 0 {
+            self.flush.notify_one();
+            return Poll::Pending;
+        } else {
 
-            }
         }
 
-        Poll::Ready(Ok(()))
-    }
-
-    fn start_send(
-        self: Pin<&mut Self>,
-        item: IndexedSubChunk
-    ) -> anyhow::Result<()> {
-        {
-            let mut lock = self.buffer.lock();
-            lock.push(item);
-        }
-
-        Ok(())
-    }
-
-    fn poll_flush(
-        self: Pin<&mut Self>,
-        cx: &mut Context
-    ) -> Poll<anyhow::Result<()>> {
         todo!()
     }
 
-    fn poll_close(
-        self: Pin<&mut Self>,
-        cx: &mut Context
-    ) -> Poll<anyhow::Result<()>> {
+    fn start_send(self: Pin<&mut Self>, item: IndexedSubChunk) -> anyhow::Result<()> {
+        self.producer.try_send(item)?;
+        Ok(())
+    }
+
+    fn poll_flush(self: Pin<&mut Self>, cx: &mut Context) -> Poll<anyhow::Result<()>> {
+        todo!()
+    }
+
+    fn poll_close(self: Pin<&mut Self>, cx: &mut Context) -> Poll<anyhow::Result<()>> {
         self.poll_flush(cx)
     }
 }

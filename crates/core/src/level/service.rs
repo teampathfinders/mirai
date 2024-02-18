@@ -52,14 +52,14 @@
 use std::{any::TypeId, sync::{Arc, OnceLock, Weak}};
 
 use dashmap::DashMap;
-use level::SubChunk;
+use level::{provider::Provider, SubChunk};
 use proto::types::Dimension;
 use rayon::iter::ParallelIterator;
 use tokio::sync::mpsc;
 use tokio_util::sync::CancellationToken;
 use util::{Joinable, Vector};
 
-use crate::{command::ServiceRequest, instance::Instance};
+use crate::instance::Instance;
 
 use super::{IndexedSubChunk, Region, RegionIndex, RegionStream, Rule, RuleValue};
 
@@ -71,19 +71,22 @@ pub(crate) struct ServiceOptions {
 /// Threshold for the service to switch from singular to batching mode.
 /// Any requests with more chunks than specified in this threshold will be processed
 /// with a parallel iterator and threadpool.
-const REGION_BATCH_THRESHOLD: usize = 100;
+const REGION_PARALLEL_THRESHOLD: usize = 100;
 
+/// Manages the world of the server.
 pub struct Service {
+    /// Cancelled when the whole server is shutting down. This will then signal to this
+    /// service to shut down as well.
     instance_token: CancellationToken,
+    /// Cancelled once this service has fully shut down.
     shutdown_token: CancellationToken,
+    /// Reference to the parent instance.
     instance: OnceLock<Weak<Instance>>,
     /// Provides level data from disk.
     pub provider: Arc<level::provider::Provider>,
     /// Current gamerule values.
     /// The gamerules are stored by TypeId to allow for user-defined gamerules.
     gamerules: DashMap<TypeId, RuleValue>,
-
-    sender: mpsc::Sender<ServiceRequest>
 }
 
 impl Service {
@@ -94,19 +97,14 @@ impl Service {
             level::provider::Provider::open(&options.level_path)
         }?);
 
-        let (sender, receiver) = mpsc::channel(10);
         let service = Arc::new(Service {
             instance_token: options.instance_token,
             shutdown_token: CancellationToken::new(),
             instance: OnceLock::new(),
 
             provider,
-            gamerules: DashMap::new(),
-            sender
+            gamerules: DashMap::new()
         });
-
-        let this = Arc::clone(&service);
-        tokio::spawn(this.service(receiver));
 
         Ok(service)
     }
@@ -119,22 +117,39 @@ impl Service {
     }   
 
     /// Requests chunks using the specified region iterator.
-    pub fn request_region<R: Region>(self: &Arc<Service>, region: R) -> RegionStream {
-        if region.len() >= REGION_BATCH_THRESHOLD {
-            self.request_batched_region(region)
+    pub fn request_region<R: Region>(self: &Arc<Service>, region: R) -> RegionStream 
+    where
+        R::IntoIter: Send
+    {
+        if region.len() >= REGION_PARALLEL_THRESHOLD {
+            self.request_parallel_region(region)
         } else {
-            self.request_singular_region(region)
+            self.request_sequential_region(region)
         }
     }
 
-    fn request_singular_region<R: Region>(&self, region: R) -> RegionStream {
+    /// Loads a region using a parallel region.
+    /// 
+    /// This function is used for smaller regions that do not benefit from
+    /// parallel processing.
+    fn request_sequential_region<R: Region>(&self, region: R) -> RegionStream
+    where
+        R::IntoIter: Send
+    {
         let len = region.len();
-        let iter = region.into_iter();
+        let dim = region.dimension();
+        let mut iter = region.into_iter();
 
         let (sender, receiver) = mpsc::channel(len);
 
-        tokio::task::spawn_blocking(|| {
-            todo!()
+        let provider = Arc::clone(&self.provider);
+        tokio::task::spawn_blocking(move || {
+            // If this returns an error, the receiver has closed so we can stop processing.
+            let _ = iter
+                .try_for_each(|item| {
+                    let indexed = Self::for_each_subchunk(item, dim, &provider);
+                    sender.blocking_send(indexed)
+                });
         });
 
         RegionStream {
@@ -143,8 +158,19 @@ impl Service {
         }
     }
 
-    fn request_batched_region<R: Region>(&self, region: R) -> RegionStream {
+    /// Loads a region using a parallel iterator.
+    /// 
+    /// This function processes multiple subchunks in parallel by spreading
+    /// processing of the region over multiple threads.
+    /// 
+    /// On my machine a region of 1000 chunks benefits from a 3x speed up.
+    /// The more chunks that are requested at once, the better the speed up.
+    /// 
+    /// The parallel iterator is not used for small regions because the overhead is larger
+    /// than the performance boost for small regions.
+    fn request_parallel_region<R: Region>(&self, region: R) -> RegionStream {
         let len = region.len();
+        let dim = region.dimension();
         let iter = region.into_par_iter();
         let (sender, receiver) = mpsc::channel(len);
 
@@ -153,24 +179,7 @@ impl Service {
             // If this returns an error, the receiver has closed so we can stop processing.
             let _ = iter   
                 .try_for_each(|item| {
-                    let subchunk = provider.get_subchunk(
-                        Vector::from([item.x, item.z]), item.y as i8, Dimension::Overworld
-                    );
-
-                    let subchunk = match subchunk {
-                        Ok(Some(chunk)) => chunk,
-                        Ok(None) => SubChunk::empty(item.y as i8),
-                        Err(e) => {
-                            tracing::error!("Failed to load subchunk at {item:?}: {e:#}");
-                            SubChunk::empty(item.y as i8)
-                        }
-                    };
-
-                    let indexed = IndexedSubChunk {
-                        index: RegionIndex::from(item),
-                        data: subchunk
-                    };
-
+                    let indexed = Self::for_each_subchunk(item, dim, &provider);
                     sender.blocking_send(indexed)
                 });
         });
@@ -178,6 +187,29 @@ impl Service {
         RegionStream {
             inner: receiver,
             len
+        }
+    }
+
+    /// Operation performed on each subchunk. This is put into a separate function because both
+    /// the sequential and parallel iterator perform the exact same operations.
+    #[inline]
+    fn for_each_subchunk(item: Vector<i32, 3>, dimension: Dimension, provider: &Provider) -> IndexedSubChunk {
+        let subchunk = provider.get_subchunk(
+            Vector::from([item.x, item.z]), item.y as i8, dimension
+        );
+
+        let subchunk = match subchunk {
+            Ok(Some(chunk)) => chunk,
+            Ok(None) => SubChunk::empty(item.y as i8),
+            Err(e) => {
+                tracing::error!("Failed to load subchunk at {item:?}: {e:#}. Replacing it with an empty one...");
+                SubChunk::empty(item.y as i8)
+            }
+        };
+
+        IndexedSubChunk {
+            index: RegionIndex::from(item),
+            data: subchunk
         }
     }
 
@@ -223,27 +255,11 @@ impl Service {
 
         (*kv.value()).into()
     }
-
-    async fn service(self: Arc<Service>, mut receiver: mpsc::Receiver<ServiceRequest>) {
-        loop {
-            tokio::select! {
-                request = receiver.recv() => {
-                    let Some(request) = request else {
-                        // This service is no longer referenced by anyone, shut down.
-                        break
-                    };
-                }
-                _ = self.instance_token.cancelled() => break
-            }
-        }
-
-        self.shutdown_token.cancel();
-    }
 }
 
 impl Joinable for Service {
     async fn join(&self) -> anyhow::Result<()> {
-        self.shutdown_token.cancelled().await;
+        // self.shutdown_token.cancelled().await;
         Ok(())
     }
 }

@@ -1,3 +1,4 @@
+use proto::types::Dimension;
 use rayon::iter::IntoParallelIterator;
 use util::Vector;
 
@@ -8,13 +9,14 @@ use super::{Region, RegionIter};
 /// This region can be used to request only single chunks from specific coordinates.
 #[derive(Clone)]
 pub struct PointRegion {
-    points: Vec<Vector<i32, 3>>
+    points: Vec<Vector<i32, 3>>,
+    dimension: Dimension
 }
 
 impl PointRegion {
     /// Creates a point region from a set of points.
-    pub fn from_points(points: Vec<Vector<i32, 3>>) -> Self {
-        Self { points }
+    pub fn from_points(points: Vec<Vector<i32, 3>>, dimension: Dimension) -> Self {
+        Self { points, dimension }
     }
 }
 
@@ -46,6 +48,10 @@ impl Region for PointRegion {
             .iter()
             .enumerate()
             .find_map(|(i, item)| (item == coord).then_some(i))
+    }
+
+    fn dimension(&self) -> Dimension {
+        self.dimension
     }
 
     fn len(&self) -> usize {

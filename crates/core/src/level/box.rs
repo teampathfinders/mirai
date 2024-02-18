@@ -1,5 +1,6 @@
 use std::ops::Range;
 
+use proto::types::Dimension;
 use rayon::iter::IntoParallelIterator;
 use util::Vector;
 
@@ -10,7 +11,8 @@ use super::{Region, RegionIter};
 pub struct BoxRegion {
     xrange: Range<i32>,
     yrange: Range<i32>,
-    zrange: Range<i32>
+    zrange: Range<i32>,
+    dimension: Dimension
 }
 
 impl BoxRegion {
@@ -18,7 +20,7 @@ impl BoxRegion {
     /// 
     /// The region will represent the box between these two corners.
     /// The given bounds should be in subchunk coordinates.
-    pub fn from_bounds<B1, B2>(bound1: B1, bound2: B2) -> Self 
+    pub fn from_bounds<B1, B2>(bound1: B1, bound2: B2, dimension: Dimension) -> Self 
     where
         B1: Into<Vector<i32, 3>>,
         B2: Into<Vector<i32, 3>>
@@ -26,7 +28,7 @@ impl BoxRegion {
         let bound1 = bound1.into();
         let bound2 = bound2.into();
 
-        Self::from_bounds_inner(bound1, bound2)
+        Self::from_bounds_inner(bound1, bound2, dimension)
     }
 
     /// Converts an index to a coordinate within this region, without checking
@@ -81,7 +83,7 @@ impl BoxRegion {
         len
     }
 
-    fn from_bounds_inner(bound1: Vector<i32, 3>, bound2: Vector<i32, 3>) -> Self {
+    fn from_bounds_inner(bound1: Vector<i32, 3>, bound2: Vector<i32, 3>, dimension: Dimension) -> Self {
         let xmin = std::cmp::min(bound1.x, bound2.x);
         let xmax = std::cmp::max(bound1.x, bound2.x);
         let xrange = xmin..xmax + 1;
@@ -95,7 +97,7 @@ impl BoxRegion {
         let zrange = zmin..zmax + 1;
 
         Self {
-            xrange, yrange, zrange
+            xrange, yrange, zrange, dimension
         }
     }
 }
@@ -125,6 +127,10 @@ impl Region for BoxRegion {
 
     fn as_coord(&self, index: usize) -> Option<Vector<i32, 3>> {
         self.as_coord(index)
+    }
+
+    fn dimension(&self) -> Dimension {
+        self.dimension
     }
 
     fn len(&self) -> usize {

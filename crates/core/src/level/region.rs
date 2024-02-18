@@ -1,6 +1,7 @@
 use std::{iter::FusedIterator, ops::{Range, RangeInclusive}, pin::Pin, sync::Arc, task::{ready, Context, Poll}};
 
 use level::{provider::Provider, SubChunk};
+use proto::types::Dimension;
 use rayon::iter::{plumbing::{bridge, Consumer, Producer, ProducerCallback, UnindexedConsumer}, IndexedParallelIterator, IntoParallelIterator, ParallelIterator};
 use util::Vector;
 
@@ -10,6 +11,8 @@ pub trait Region: IntoIterator<Item = Vector<i32, 3>> + IntoParallelIterator<Ite
     fn as_index(&self, coord: &Vector<i32, 3>) -> Option<usize>;
     /// Converts an index to a coordinate into this region.
     fn as_coord(&self, index: usize) -> Option<Vector<i32, 3>>;
+    /// The dimension of this region.
+    fn dimension(&self) -> Dimension;
     /// Amount of subchunks contained in this region.
     fn len(&self) -> usize;
 }

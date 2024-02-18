@@ -1,3 +1,4 @@
+use proto::types::Dimension;
 use rayon::iter::IntoParallelIterator;
 use util::Vector;
 
@@ -7,7 +8,8 @@ use super::{Region, RegionIter};
 #[derive(Clone)]
 pub struct RadialRegion {
     center: Vector<i32, 3>,
-    radius: u32
+    radius: u32,
+    dimension: Dimension
 }
 
 impl IntoIterator for RadialRegion {
@@ -35,6 +37,10 @@ impl Region for RadialRegion {
 
     fn as_index(&self, coord: &Vector<i32, 3>) -> Option<usize> {
         todo!()
+    }
+
+    fn dimension(&self) -> Dimension {
+        self.dimension
     }
 
     fn len(&self) -> usize {
