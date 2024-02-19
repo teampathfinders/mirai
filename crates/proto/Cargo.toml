@@ -8,7 +8,7 @@ util = { package = "inferno-util", path = "../util" }
 macros = { package = "inferno-macros", path = "../macros" }
 nbt = { package = "inferno-nbt", path = "../nbt" }
 
-anyhow = "1.0.79"
+anyhow = "1.0.80"
 bytemuck = "1.14.3"
 uuid = { version = "1.7.0", features = ["v4", "serde"], default-features = false }
 serde_repr = "0.1.18"

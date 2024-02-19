@@ -7,6 +7,6 @@ edition = "2021"
 proto = { package = "inferno-proto", path = "../proto" }
 util = { package = "inferno-util", path = "../util" }
 
-anyhow = "1.0.79"
+anyhow = "1.0.80"
 tracing = "0.1.40"
 fred = "8.0.2"

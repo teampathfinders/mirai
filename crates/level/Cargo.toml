@@ -15,7 +15,7 @@ nbt = { package = "inferno-nbt", path = "../nbt" }
 proto = { package = "inferno-proto", path = "../proto" }
 
 serde = { version = "1.0.196", features = ["derive"] }
-anyhow = { version = "1.0.79", features = ["backtrace"] }
+anyhow = { version = "1.0.80", features = ["backtrace"] }
 bytemuck = "1.14.3"
 tracing = "0.1.40"
 
