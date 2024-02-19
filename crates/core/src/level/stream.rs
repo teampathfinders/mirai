@@ -1,10 +1,8 @@
-use std::{future::Future, ops::DerefMut, pin::Pin, sync::{atomic::{AtomicBool, Ordering}, Arc}, task::{ready, Context, Poll, Waker}};
+use std::{pin::Pin, task::{ready, Context, Poll}};
 
-use futures::{Sink, SinkExt, Stream};
+use futures::Stream;
 use level::SubChunk;
-use parking_lot::Mutex;
-use tokio::sync::{mpsc, oneshot, watch, Notify, Semaphore};
-use tokio_util::sync::CancellationToken;
+use tokio::sync::mpsc;
 use util::Vector;
 
 /// A unique identifier for a specific subchunk.
@@ -62,9 +60,14 @@ pub struct RegionStream {
 }
 
 impl RegionStream {
-    /// Returns the remaining length of this stream.
-    pub fn len(&self) -> usize {
+    /// Remaining length of this stream.
+    pub const fn len(&self) -> usize {
         self.len
+    }
+
+    /// Whether this stream is empty.
+    pub const fn is_empty(&self) -> bool {
+        self.len == 0
     }
 }
 

@@ -1,23 +1,17 @@
 //! Server configuration
 
 use std::{
-    net::{SocketAddr, SocketAddrV4, SocketAddrV6},
-    num::NonZeroUsize,
+    net::{SocketAddrV4, SocketAddrV6},
     sync::{
         atomic::{AtomicUsize, Ordering},
         Arc,
     },
-    time::Duration,
 };
 
-use parking_lot::RwLock;
 use proto::bedrock::{CompressionAlgorithm, ThrottleSettings};
 use util::CowString;
 
-use crate::{
-    command::Context,
-    instance::{Instance, IPV4_LOCAL_ADDR},
-};
+use crate::instance::{Instance, IPV4_LOCAL_ADDR};
 
 /// Compression related settings.
 pub struct Compression {
@@ -49,8 +43,11 @@ pub struct DatabaseConfig {
 /// Configuration of the level
 pub struct LevelConfig {
     /// The path to the level.
-    pub path: String
+    pub path: String,
 }
+
+/// A callback for the message of the day.
+pub type MotdCallback = Box<dyn Fn(&Arc<Instance>) -> CowString<'static> + Send + Sync>;
 
 /// Server configuration options.
 pub struct Config {
@@ -79,7 +76,7 @@ pub struct Config {
     /// Level configuration
     pub(super) level: LevelConfig,
     /// Callback that generates a new message of the day.
-    pub(super) motd_callback: Box<dyn Fn(&Arc<Instance>) -> CowString<'static> + Send + Sync>,
+    pub(super) motd_callback: MotdCallback,
 }
 
 impl Config {
@@ -171,13 +168,13 @@ impl Config {
 
     /// Returns the database configuration.
     #[inline]
-    pub fn database(&self) -> &DatabaseConfig {
+    pub const fn database(&self) -> &DatabaseConfig {
         &self.database
     }
 
     /// Returns the level configuration.
     #[inline]
-    pub fn level(&self) -> &LevelConfig {
+    pub const fn level(&self) -> &LevelConfig {
         &self.level
     }
 }

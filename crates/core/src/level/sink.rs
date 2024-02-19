@@ -108,6 +108,12 @@ impl FlushState {
     }
 }
 
+impl Default for FlushState {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl Future for FlushState {
     type Output = ();
 
@@ -204,6 +210,7 @@ impl Sink<IndexedSubChunk> for RegionSink {
         if self.producer.capacity() == 0 {
             self.state.flush();
 
+            // SAFETY: This is safe because the state objects it not moved while this pin is used.
             let pin = unsafe { Pin::new_unchecked(&mut self.state) };
             return pin.poll(cx).map(|_| Ok(()))
         }
@@ -225,6 +232,7 @@ impl Sink<IndexedSubChunk> for RegionSink {
 
         self.state.flush();
 
+        // SAFETY: The state object is not moved while this pin is active.
         let pin = unsafe { Pin::new_unchecked(&mut self.state) };
         pin.poll(cx).map(|_| Ok(()))
     }

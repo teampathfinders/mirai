@@ -49,9 +49,9 @@ pub mod config;
 pub mod data;
 pub mod forms;
 pub mod instance;
+pub mod item;
 pub mod level;
 pub mod net;
-pub mod item;
 
 #[cfg(test)]
 mod test;

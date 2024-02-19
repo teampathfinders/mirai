@@ -4,7 +4,7 @@ use dashmap::DashMap;
 use level::{provider::Provider, SubChunk};
 use proto::types::Dimension;
 use rayon::iter::ParallelIterator;
-use tokio::sync::mpsc;
+use tokio::sync::mpsc::{self, error::SendError};
 use tokio_util::sync::CancellationToken;
 use util::{Joinable, Vector};
 
@@ -12,7 +12,7 @@ use crate::instance::Instance;
 
 use super::{Collector, IndexedSubChunk, Region, RegionIndex, RegionSink, RegionStream, Rule, RuleValue};
 
-pub(crate) struct ServiceOptions {
+pub struct ServiceOptions {
     pub instance_token: CancellationToken,
     pub level_path: String
 }
@@ -100,7 +100,7 @@ impl Service {
         let provider = Arc::clone(&self.provider);
         tokio::task::spawn_blocking(move || {
             // If this returns an error, the receiver has closed so we can stop processing.
-            let _ = iter
+            let _: Result<(), SendError<IndexedSubChunk>> = iter
                 .try_for_each(|item| {
                     let indexed = Self::for_each_subchunk(item, dim, &provider);
                     sender.blocking_send(indexed)
@@ -132,7 +132,7 @@ impl Service {
         let provider = Arc::clone(&self.provider);
         rayon::spawn(move || {
             // If this returns an error, the receiver has closed so we can stop processing.
-            let _ = iter   
+            let _: Result<(), SendError<IndexedSubChunk>> = iter   
                 .try_for_each(|item| {
                     let indexed = Self::for_each_subchunk(item, dim, &provider);
                     sender.blocking_send(indexed)

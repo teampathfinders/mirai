@@ -1,13 +1,8 @@
+use std::sync::Arc;
 
+use proto::bedrock::{Animate, CommandOutput, CommandOutputMessage, CommandOutputType, CommandRequest, DisconnectReason, FormResponseData, HudElement, HudVisibility, PlayerAuthInput, RequestAbility, SetHud, SettingsCommand, TextData, TextMessage, TickSync, UpdateSkin};
 
-use std::{future, sync::Arc, task::Poll};
-
-use futures::{SinkExt, StreamExt};
-use proto::{bedrock::{Animate, CommandOutput, CommandOutputMessage, CommandOutputType, CommandRequest, DisconnectReason, FormResponseData, HudElement, HudVisibility, PlayerAuthInput, RequestAbility, SetHud, SettingsCommand, TextData, TextMessage, TickSync, UpdateSkin}, types::Dimension};
-
-use util::{RVec, Deserialize, CowSlice, Vector};
-
-use crate::level::{BoxRegion, PointRegion, RadialRegion, Region};
+use util::{RVec, Deserialize, CowSlice};
 
 use super::BedrockClient;
 

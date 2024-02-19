@@ -59,7 +59,7 @@ impl Region for RadialRegion {
         let mut last = 0;
         
         for row in 0..self.radius * 2 + 1 {
-            count += row_size((self.radius as i32 - row as i32).abs() as usize);
+            count += row_size((self.radius as i32 - row as i32).unsigned_abs() as usize);
             if index < count {
                 let mut coord = Vector::from([(index - last) as i32, y, row as i32]);
 
@@ -87,7 +87,6 @@ impl Region for RadialRegion {
         // Using the sum from Gauss's circle problem.
 
         1 + 4 * self.radius + 4 * (1..self.radius)
-            .into_iter()
             .map(|i: usize| (((self.radius.pow(2) - i.pow(2)) as f32).sqrt()).floor() as usize)
             .sum::<usize>()
     }
