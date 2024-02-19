@@ -2,11 +2,12 @@
 
 use std::sync::Arc;
 
-use proto::bedrock::{Animate, CommandOutput, CommandOutputMessage, CommandOutputType, CommandRequest, DisconnectReason, FormResponseData, HudElement, HudVisibility, PlayerAuthInput, RequestAbility, SetHud, SettingsCommand, TextData, TextMessage, TickSync, UpdateSkin};
+use futures::StreamExt;
+use proto::{bedrock::{Animate, CommandOutput, CommandOutputMessage, CommandOutputType, CommandRequest, DisconnectReason, FormResponseData, HudElement, HudVisibility, PlayerAuthInput, RequestAbility, SetHud, SettingsCommand, TextData, TextMessage, TickSync, UpdateSkin}, types::Dimension};
 
 use util::{RVec, Deserialize, CowSlice, Vector};
 
-use crate::level::RegionQuery;
+use crate::level::{BoxRegion, PointRegion, Region};
 
 use super::BedrockClient;
 
@@ -41,33 +42,6 @@ impl BedrockClient {
         )
     )]
     pub fn handle_text_message(self: &Arc<Self>, packet: RVec) -> anyhow::Result<()> {
-
-        let this = Arc::clone(self);
-        tokio::spawn(async move {
-            let request = RegionQuery::from_bounds([10, -4, 0], [0, 15, 10]);
-
-            let instant = std::time::Instant::now();
-            let mut receiver = this.level.request_chunks(request);
-
-            let mut start = std::time::Instant::now();
-            loop {
-                let recv = receiver.recv().await;
-                let Some(recv) = recv else {
-                    break
-                };
-
-                if recv.is_some() {
-                    let elapsed = start.elapsed();
-                    println!("elapsed: {elapsed:?}");
-                }
-                start = std::time::Instant::now();
-            }
-
-            println!("loaded chunks in {:?}", instant.elapsed());
-
-            tracing::debug!("All chunks loaded");
-        });
-
         let request = TextMessage::deserialize(packet.as_ref())?;
         if let TextData::Chat {
             source, message

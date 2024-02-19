@@ -1,90 +1,41 @@
-// use std::{any::TypeId, sync::{Arc, OnceLock, Weak}};
-
-// use dashmap::DashMap;
-// use proto::types::Dimension;
-// use tokio::sync::{mpsc, oneshot};
-// use tokio_util::sync::CancellationToken;
-// use util::{Joinable, Vector};
-
-// use crate::instance::Instance;
-
-// use super::{gamerule, Rule, RuleValue};
-
-// pub struct RadiusRequest {
-//     pub dimension: Dimension,
-//     pub center: Vector<i32, 2>,
-//     pub radius: u16
-// }
-
-// impl Request for RadiusRequest {
-//     type Output = ();
-// }
-
-// pub struct SingleRequest {
-//     pub dimension: Dimension,
-//     pub position: Vector<i32, 3>
-// }
-
-// impl Request for SingleRequest {
-//     type Output = ();
-// }
-
-// mod private {
-//     pub trait Sealed {}
-//     impl Sealed for super::SingleRequest {}
-//     impl Sealed for super::RadiusRequest {}
-//     impl Sealed for super::RegionRequest {}
-// }
-
-// pub struct ServiceRequest {
-    
-// }
-
-// pub trait Request {
-//     type Output;
-
-//     fn execute(&self, service: &Arc<Service>) -> mpsc::Receiver<Self::Output> {
-//         let (sender, receiver) = mpsc::channel();
-//         receiver
-//     }
-// }
-
 use std::{any::TypeId, sync::{Arc, OnceLock, Weak}};
 
 use dashmap::DashMap;
-use level::{provider::Provider, DataKey, KeyType, SubChunk};
+use level::{provider::Provider, SubChunk};
 use proto::types::Dimension;
-use rayon::iter::{IndexedParallelIterator, ParallelIterator};
+use rayon::iter::ParallelIterator;
 use tokio::sync::mpsc;
 use tokio_util::sync::CancellationToken;
 use util::{Joinable, Vector};
 
-use crate::{command::ServiceRequest, instance::Instance};
+use crate::instance::Instance;
 
-use super::{Rule, RuleValue};
-
-pub trait ChunkRequest: 'static {
-    type IntoIter: IndexedParallelIterator<Item = Vector<i32, 3>>;
-
-    fn into_iter(self, provider: Arc<Provider>) -> Self::IntoIter;
-}
+use super::{IndexedSubChunk, Region, RegionIndex, RegionStream, Rule, RuleValue};
 
 pub(crate) struct ServiceOptions {
     pub instance_token: CancellationToken,
     pub level_path: String
 }
 
+/// Threshold for the service to switch from singular to batching mode.
+/// Any requests with more chunks than specified in this threshold will be processed
+/// with a parallel iterator and threadpool.
+const REGION_PARALLEL_THRESHOLD: usize = 100;
+
+/// Manages the world of the server.
 pub struct Service {
+    /// Cancelled when the whole server is shutting down. This will then signal to this
+    /// service to shut down as well.
     instance_token: CancellationToken,
+    /// Cancelled once this service has fully shut down.
     shutdown_token: CancellationToken,
+    /// Reference to the parent instance.
     instance: OnceLock<Weak<Instance>>,
     /// Provides level data from disk.
-    pub(super) provider: Arc<level::provider::Provider>,
+    pub provider: Arc<level::provider::Provider>,
     /// Current gamerule values.
     /// The gamerules are stored by TypeId to allow for user-defined gamerules.
     gamerules: DashMap<TypeId, RuleValue>,
-
-    sender: mpsc::Sender<ServiceRequest>
 }
 
 impl Service {
@@ -95,20 +46,13 @@ impl Service {
             level::provider::Provider::open(&options.level_path)
         }?);
 
-        let (sender, receiver) = mpsc::channel(10);
         let service = Arc::new(Service {
             instance_token: options.instance_token,
             shutdown_token: CancellationToken::new(),
             instance: OnceLock::new(),
-
             provider,
-            gamerules: DashMap::new(),
-            sender
+            gamerules: DashMap::new()
         });
-
-        let this = Arc::clone(&service);
-        tokio::spawn(this.service(receiver));
-
         Ok(service)
     }
 
@@ -120,29 +64,100 @@ impl Service {
     }   
 
     /// Requests chunks using the specified region iterator.
-    pub fn request_chunks<C: ChunkRequest>(self: &Arc<Service>, request: C) -> mpsc::Receiver<Option<SubChunk>> {
-        let iter = request.into_iter(Arc::clone(&self.provider));
-        let (sender, receiver) = mpsc::channel(iter.len());
+    pub fn request_region<R: Region>(self: &Arc<Service>, region: R) -> RegionStream 
+    where
+        R::IntoIter: Send
+    {
+        if region.len() >= REGION_PARALLEL_THRESHOLD {
+            self.request_parallel_region(region)
+        } else {
+            self.request_sequential_region(region)
+        }
+    }
+
+    /// Loads a region using a parallel region.
+    /// 
+    /// This function is used for smaller regions that do not benefit from
+    /// parallel processing.
+    fn request_sequential_region<R: Region>(&self, region: R) -> RegionStream
+    where
+        R::IntoIter: Send
+    {
+        let len = region.len();
+        let dim = region.dimension();
+        let mut iter = region.into_iter();
+
+        let (sender, receiver) = mpsc::channel(len);
 
         let provider = Arc::clone(&self.provider);
-        rayon::spawn(move || {
-            iter   
-                .for_each(|item| {
-                    let subchunk = provider.get_subchunk(
-                        Vector::from([item.x, item.z]), item.y as i8, Dimension::Overworld
-                    );
-
-                    let _ = match subchunk {
-                        Ok(chunk) => sender.blocking_send(chunk),
-                        Err(e) => {
-                            tracing::error!("{e:#}");
-                            sender.blocking_send(None)
-                        }
-                    };
+        tokio::task::spawn_blocking(move || {
+            // If this returns an error, the receiver has closed so we can stop processing.
+            let _ = iter
+                .try_for_each(|item| {
+                    let indexed = Self::for_each_subchunk(item, dim, &provider);
+                    sender.blocking_send(indexed)
                 });
         });
 
-        receiver
+        RegionStream {
+            inner: receiver,
+            len
+        }
+    }
+
+    /// Loads a region using a parallel iterator.
+    /// 
+    /// This function processes multiple subchunks in parallel by spreading
+    /// processing of the region over multiple threads.
+    /// 
+    /// On my machine a region of 1000 chunks benefits from a 3x speed up.
+    /// The more chunks that are requested at once, the better the speed up.
+    /// 
+    /// The parallel iterator is not used for small regions because the overhead is larger
+    /// than the performance boost for small regions.
+    fn request_parallel_region<R: Region>(&self, region: R) -> RegionStream {
+        let len = region.len();
+        let dim = region.dimension();
+        let iter = region.into_par_iter();
+        let (sender, receiver) = mpsc::channel(len);
+
+        let provider = Arc::clone(&self.provider);
+        rayon::spawn(move || {
+            // If this returns an error, the receiver has closed so we can stop processing.
+            let _ = iter   
+                .try_for_each(|item| {
+                    let indexed = Self::for_each_subchunk(item, dim, &provider);
+                    sender.blocking_send(indexed)
+                });
+        });
+
+        RegionStream {
+            inner: receiver,
+            len
+        }
+    }
+
+    /// Operation performed on each subchunk. This is put into a separate function because both
+    /// the sequential and parallel iterator perform the exact same operations.
+    #[inline]
+    fn for_each_subchunk(item: Vector<i32, 3>, dimension: Dimension, provider: &Provider) -> IndexedSubChunk {
+        let subchunk = provider.get_subchunk(
+            Vector::from([item.x, item.z]), item.y as i8, dimension
+        );
+
+        let subchunk = match subchunk {
+            Ok(Some(chunk)) => chunk,
+            Ok(None) => SubChunk::empty(item.y as i8),
+            Err(e) => {
+                tracing::error!("Failed to load subchunk at {item:?}: {e:#}. Replacing it with an empty one...");
+                SubChunk::empty(item.y as i8)
+            }
+        };
+
+        IndexedSubChunk {
+            index: RegionIndex::from(item),
+            data: subchunk
+        }
     }
 
     /// Sets the value of the given gamerule, returning the old value.
@@ -187,27 +202,11 @@ impl Service {
 
         (*kv.value()).into()
     }
-
-    async fn service(self: Arc<Service>, mut receiver: mpsc::Receiver<ServiceRequest>) {
-        loop {
-            tokio::select! {
-                request = receiver.recv() => {
-                    let Some(request) = request else {
-                        // This service is no longer referenced by anyone, shut down.
-                        break
-                    };
-                }
-                _ = self.instance_token.cancelled() => break
-            }
-        }
-
-        self.shutdown_token.cancel();
-    }
 }
 
 impl Joinable for Service {
     async fn join(&self) -> anyhow::Result<()> {
-        self.shutdown_token.cancelled().await;
+        // self.shutdown_token.cancelled().await;
         Ok(())
     }
 }

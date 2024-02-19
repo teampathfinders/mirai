@@ -1,5 +1,5 @@
-[submodule "level/leveldb/vendor"]
-	path = level/leveldb/vendor
+[submodule "crates/level/leveldb/vendor"]
+	path = crates/level/leveldb/vendor
 	url = https://github.com/teampathfinders/leveldb
 [submodule "crates/level/leveldb/vendor"]
 	path = crates/level/leveldb/vendor

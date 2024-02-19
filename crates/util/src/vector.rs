@@ -1,10 +1,11 @@
+use std::fmt::{self, Debug, Display};
 use std::hash::{Hash, Hasher};
 use std::ops::{Deref, DerefMut};
 
 use crate::bytes::VarInt;
 
 /// Type and size independent vector type
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 #[repr(C)]
 pub struct Vector<T, const N: usize> {
     /// Generically-sized array of components of type `T` and size `N`.
@@ -43,6 +44,14 @@ where
     #[inline]
     fn default() -> Self {
         Self { components: <[T; N]>::default() }
+    }
+}
+
+impl<T: Debug, const N: usize> Debug for Vector<T, N> {
+    fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
+        fmt.debug_set()
+            .entries(&self.components)
+            .finish()
     }
 }
 

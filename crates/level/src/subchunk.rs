@@ -180,6 +180,19 @@ impl SubLayer {
 }
 
 impl SubLayer {
+    /// Creates an empty subchunk layer.
+    pub fn empty() -> Self {
+        Self {
+            indices: Box::new([0; 4096]),
+            palette: vec![],
+        }
+    }
+
+    /// Whether this subchunk layer is empty.
+    pub fn is_empty(&self) -> bool {
+        self.palette.is_empty()
+    }
+
     /// Deserializes a single layer from the given buffer.
     fn deserialize_disk<'a, R>(mut reader: R) -> anyhow::Result<Self>
     where
@@ -288,12 +301,8 @@ where
 }
 
 impl Default for SubLayer {
-    // Std using const generics for arrays would be really nice...
     fn default() -> Self {
-        Self {
-            indices: Box::new([0; 4096]),
-            palette: Vec::new(),
-        }
+        Self::empty()
     }
 }
 
@@ -335,6 +344,20 @@ pub struct SubChunk {
 }
 
 impl SubChunk {
+    /// Creates a subchunk filled with air.
+    pub fn empty(index: i8) -> Self {
+        Self {
+            index,
+            layers: vec![SubLayer::empty()],
+            version: SubChunkVersion::Limitless,
+        }
+    }
+
+    /// Whether this subchunk is empty.
+    pub fn is_empty(&self) -> bool {
+        self.layers.is_empty() || self.layers[0].is_empty()
+    }
+
     /// Version of this subchunk.
     /// See [`SubChunkVersion`] for more information.
     pub const fn version(&self) -> SubChunkVersion {
@@ -366,9 +389,7 @@ impl SubChunk {
     pub fn take_layers(self) -> Vec<SubLayer> {
         self.layers
     }
-}
 
-impl SubChunk {
     /// Deserialize a full sub chunk from the given buffer.
     pub fn deserialize_disk<'a, R>(mut reader: R) -> anyhow::Result<Self>
     where

@@ -1,19 +1,30 @@
 //! Server configuration
 
-use std::{net::{SocketAddr, SocketAddrV4, SocketAddrV6}, num::NonZeroUsize, sync::{atomic::{AtomicUsize, Ordering}, Arc}, time::Duration};
+use std::{
+    net::{SocketAddr, SocketAddrV4, SocketAddrV6},
+    num::NonZeroUsize,
+    sync::{
+        atomic::{AtomicUsize, Ordering},
+        Arc,
+    },
+    time::Duration,
+};
 
 use parking_lot::RwLock;
-use proto::bedrock::{ThrottleSettings, CompressionAlgorithm};
+use proto::bedrock::{CompressionAlgorithm, ThrottleSettings};
 use util::CowString;
 
-use crate::{command::Context, instance::{Instance, IPV4_LOCAL_ADDR}};
+use crate::{
+    command::Context,
+    instance::{Instance, IPV4_LOCAL_ADDR},
+};
 
 /// Compression related settings.
 pub struct Compression {
     /// Which algorithm to use for compression.
     pub algorithm: CompressionAlgorithm,
     /// Packets above this size threshold will be compressed.
-    pub threshold: u16
+    pub threshold: u16,
 }
 
 /// Configuration for the database connection.
@@ -48,19 +59,19 @@ pub struct Config {
     /// The port that the (optional) IPv6 socket is listening on.
     pub(super) ipv6_addr: Option<SocketAddrV6>,
     /// Name of the server.
-    /// 
+    ///
     /// This appears at the top of the player list and as the title for LAN broadcasted games.
     pub(super) name: CowString<'static>,
     /// Compression-related settings
     pub(super) compression: Compression,
     /// The client throttling behaviour.
-    /// 
+    ///
     /// See [`ThrottleSettings`] for more info,
     pub(super) throttling: ThrottleSettings,
     /// Maximum amount of players the server allows concurrently.
     pub(super) max_connections: AtomicUsize,
     /// The maximum render distance that clients are allowed to use.
-    /// 
+    ///
     /// Any client that requests a higher render distance will be capped to this value.
     pub(super) max_render_distance: AtomicUsize,
     /// Database configuration
@@ -68,7 +79,7 @@ pub struct Config {
     /// Level configuration
     pub(super) level: LevelConfig,
     /// Callback that generates a new message of the day.
-    pub(super) motd_callback: Box<dyn Fn(&Arc<Instance>) -> CowString<'static> + Send + Sync>
+    pub(super) motd_callback: Box<dyn Fn(&Arc<Instance>) -> CowString<'static> + Send + Sync>,
 }
 
 impl Config {
@@ -79,23 +90,21 @@ impl Config {
             name: CowString::Borrowed("Inferno server"),
             compression: Compression {
                 algorithm: CompressionAlgorithm::Flate,
-                threshold: 1
+                threshold: 1,
             },
             throttling: ThrottleSettings {
                 enabled: false,
                 scalar: 0.0,
-                threshold: 0
+                threshold: 0,
             },
             database: DatabaseConfig {
                 host: String::from("localhost"),
-                port: 6379
+                port: 6379,
             },
-            level: LevelConfig {
-                path: String::from("resources\\level")
-            },
+            level: LevelConfig { path: String::from("resources\\level") },
             max_connections: AtomicUsize::new(10),
             max_render_distance: AtomicUsize::new(12),
-            motd_callback: Box::new(|_| "Powered by Inferno".into())
+            motd_callback: Box::new(|_| "Powered by Inferno".into()),
         }
     }
 
@@ -136,11 +145,11 @@ impl Config {
     }
 
     /// Sets the maximum amount of players that can be connected at the same time.
-    /// 
+    ///
     /// If the maximum is set below the current player count, no players will be disconnected.
     /// Instead any new connections will be refused and the player count will slowly adjust to
     /// the new maximum as players leave.
-    /// 
+    ///
     /// This mechanism can also be used to gracefully shutdown the server. Set the maximum player count to 0
     /// so that no players are allowed to join and wait for connected players to slowly leave.
     #[inline]
@@ -162,9 +171,13 @@ impl Config {
 
     /// Returns the database configuration.
     #[inline]
-    pub fn database(&self) -> &DatabaseConfig { &self.database }
+    pub fn database(&self) -> &DatabaseConfig {
+        &self.database
+    }
 
     /// Returns the level configuration.
     #[inline]
-    pub fn level(&self) -> &LevelConfig { &self.level }
+    pub fn level(&self) -> &LevelConfig {
+        &self.level
+    }
 }
