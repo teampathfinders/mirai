@@ -1,4 +1,4 @@
-![Inferno thumbnail](https://github.com/teampathfinders/inferno/blob/master/resources/thumb.png?raw=true)
+![mirai thumbnail](https://github.com/teampathfinders/mirai/blob/master/resources/logo-wide.png?raw=true)
 
 Robust dedicated server software for Minecraft: Bedrock Edition built with safety in mind.
 
@@ -7,12 +7,12 @@ This project is still under development and not fit for production use.
 ## Running the project
 
 ### With Docker (recommended)
-The recommended way to run Inferno is inside a Docker container. This prevents the hassle of setting up the required services manually. See the [Docker documentation](https://docs.docker.com/desktop/) for a guide on how to install Docker on your platform. Running the server is then as easy as running `docker compose up` in your terminal. Docker will then automatically download the required tools and run the server for you. When the setup finishes, you will be able to join the server at localhost:19132 (or whatever the configured address is). In case it is not working, make sure to check [loopback workaround](#loopback-workaround).
+The recommended way to run mirai is inside a Docker container. This prevents the hassle of setting up the required services manually. See the [Docker documentation](https://docs.docker.com/desktop/) for a guide on how to install Docker on your platform. Running the server is then as easy as running `docker compose up` in your terminal. Docker will then automatically download the required tools and run the server for you. When the setup finishes, you will be able to join the server at localhost:19132 (or whatever the configured address is). In case it is not working, make sure to check [loopback workaround](#loopback-workaround).
 
 ### Manual setup
 In case you don't want to use the Docker image and instead want to set up the server manually you will first need to set up a [Redis instance](https://redis.io/docs/install/). This Redis instance will by default be running on port 6379. If you are using a different port make sure to set the `REDIS_PORT` environment variable before starting the server. Additionally, the `REDIS_HOST` variable can be used for instances on a different machine. 
 
-The minimum supported Rust version required to compile the project is 1.72. Additionally, the `inferno-level` crate also requires at least CMake 3.13+ and a compiler capable of compiling C++11 code. This is used to build [LevelDB](https://github.com/teampathfinders/leveldb) from source.  
+The minimum supported Rust version required to compile the project is 1.72. Additionally, the `mirai-level` crate also requires at least CMake 3.13+ and a compiler capable of compiling C++11 code. This is used to build [LevelDB](https://github.com/teampathfinders/leveldb) from source.  
   
 Minimum requirements:
 - Rust 1.75

@@ -42,7 +42,7 @@ macro_rules! forward_unsupported_field {
 /// # Example
 ///
 /// ```rust
-/// # use inferno_nbt as nbt;
+/// # use mirai_nbt as nbt;
 /// #
 /// # fn main() {
 ///  #[derive(serde::Serialize, serde::Deserialize)]
@@ -75,7 +75,7 @@ where
 /// # Example
 ///
 /// ```rust
-/// # use inferno_nbt as nbt;
+/// # use mirai_nbt as nbt;
 /// #
 /// # fn main() {
 ///  #[derive(serde::Serialize, serde::Deserialize)]
@@ -108,7 +108,7 @@ where
 /// # Example
 ///
 /// ```rust
-/// # use inferno_nbt as nbt;
+/// # use mirai_nbt as nbt;
 /// #
 /// # fn main() {
 ///  #[derive(serde::Serialize, serde::Deserialize)]
@@ -138,7 +138,7 @@ where
 /// # Example
 ///
 /// ```rust
-/// # use inferno_nbt as nbt;
+/// # use mirai_nbt as nbt;
 /// #
 /// # fn main() {
 ///  #[derive(serde::Serialize, serde::Deserialize)]
@@ -171,7 +171,7 @@ where
 /// # Example
 ///
 /// ```rust
-/// # use inferno_nbt as nbt;
+/// # use mirai_nbt as nbt;
 /// #
 /// # fn main() {
 ///  #[derive(serde::Serialize, serde::Deserialize)]
@@ -204,7 +204,7 @@ where
 /// # Example
 ///
 /// ```rust
-/// # use inferno_nbt as nbt;
+/// # use mirai_nbt as nbt;
 /// #
 /// # fn main() {
 ///  #[derive(serde::Serialize, serde::Deserialize)]

@@ -1,11 +1,11 @@
 [package]
-name = "inferno-raknet"
+name = "mirai-raknet"
 version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-util = { package = "inferno-util", path = "../util" }
-proto = { package = "inferno-proto", path = "../proto" }
+util = { package = "mirai-util", path = "../util" }
+proto = { package = "mirai-proto", path = "../proto" }
 
 tracing = "0.1.40"
 tokio = { version = "1.36.0", features = ["sync"] }

@@ -1,12 +1,12 @@
 [package]
-name = "inferno-proto"
+name = "mirai-proto"
 version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-util = { package = "inferno-util", path = "../util" }
-macros = { package = "inferno-macros", path = "../macros" }
-nbt = { package = "inferno-nbt", path = "../nbt" }
+util = { package = "mirai-util", path = "../util" }
+macros = { package = "mirai-macros", path = "../macros" }
+nbt = { package = "mirai-nbt", path = "../nbt" }
 
 anyhow = "1.0.79"
 bytemuck = "1.14.3"

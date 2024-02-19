@@ -115,7 +115,7 @@ where
 /// # Example
 ///
 /// ```rust
-/// # use inferno_nbt as nbt;
+/// # use mirai_nbt as nbt;
 /// # fn main() {
 ///  #[derive(serde::Serialize, serde::Deserialize, Debug)]
 ///  struct Data {
@@ -153,7 +153,7 @@ where
 /// # Example
 ///
 /// ```rust
-/// # use inferno_nbt as nbt;
+/// # use mirai_nbt as nbt;
 /// # fn main() {
 ///  #[derive(serde::Serialize, serde::Deserialize, Debug)]
 ///  struct Data {
@@ -191,7 +191,7 @@ where
 /// # Example
 ///
 /// ```rust
-/// # use inferno_nbt as nbt;
+/// # use mirai_nbt as nbt;
 /// # fn main() {
 ///  #[derive(serde::Serialize, serde::Deserialize, Debug)]
 ///  struct Data {

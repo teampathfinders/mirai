@@ -214,7 +214,6 @@ impl Service {
 
 impl Joinable for Service {
     async fn join(&self) -> anyhow::Result<()> {
-        // self.shutdown_token.cancelled().await;
-        Ok(())
+        self.collector.join().await
     }
 }

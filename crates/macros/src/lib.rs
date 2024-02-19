@@ -1,4 +1,4 @@
-//! Provides custom macros for the Inferno server.
+//! Provides custom macros for the mirai server.
 
 #![warn(
     clippy::expect_used,

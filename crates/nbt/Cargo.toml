@@ -1,14 +1,14 @@
 [package]
-name = "inferno-nbt"
+name = "mirai-nbt"
 version = "0.1.0"
 edition = "2021"
 authors = ["Ruben Adema"]
-repository = "https://github.com/teampathfinders/inferno"
+repository = "https://github.com/teampathfinders/mirai"
 license = "Apache-2.0"
 rust-version = "1.65.0"
 
 [dependencies]
-util = { package = "inferno-util", path = "../util" }
+util = { package = "mirai-util", path = "../util" }
 
 serde = { version = "1.0.196", features = ["derive"] }
 paste = "1.0.12"

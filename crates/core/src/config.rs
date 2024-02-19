@@ -87,7 +87,7 @@ impl Config {
         Config {
             ipv4_addr: SocketAddrV4::new(IPV4_LOCAL_ADDR, 19132),
             ipv6_addr: None,
-            name: CowString::Borrowed("Inferno server"),
+            name: CowString::Borrowed("mirai server"),
             compression: Compression {
                 algorithm: CompressionAlgorithm::Flate,
                 threshold: 1,
@@ -104,7 +104,7 @@ impl Config {
             level: LevelConfig { path: String::from("resources\\level") },
             max_connections: AtomicUsize::new(10),
             max_render_distance: AtomicUsize::new(12),
-            motd_callback: Box::new(|_| "Powered by Inferno".into()),
+            motd_callback: Box::new(|_| "Powered by mirai".into()),
         }
     }
 

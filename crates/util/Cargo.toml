@@ -1,9 +1,9 @@
 [package]
-name = "inferno-util"
+name = "mirai-util"
 version = "0.1.0"
 edition = "2021"
 authors = ["Ruben Adema"]
-repository = "https://github.com/teampathfinders/inferno"
+repository = "https://github.com/teampathfinders/mirai"
 license = "Apache-2.0"
 rust-version = "1.75.0"
 

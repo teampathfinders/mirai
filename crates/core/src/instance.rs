@@ -80,7 +80,7 @@ impl InstanceBuilder {
     /// Produces an [`Instance`] with the configured options, consuming the builder.
     pub async fn build(self) -> anyhow::Result<Arc<Instance>> {
         tracing::info!(
-            "Inferno server v{} (rev. {}) built for MCBE {CLIENT_VERSION_STRING} (prot. {PROTOCOL_VERSION})",
+            "mirai server v{} (rev. {}) built for MCBE {CLIENT_VERSION_STRING} (prot. {PROTOCOL_VERSION})",
             Instance::SERVER_VERSION,
             Instance::GIT_REV
         );

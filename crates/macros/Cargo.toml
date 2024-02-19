@@ -1,5 +1,5 @@
 [package]
-name = "inferno-macros"
+name = "mirai-macros"
 version = "0.1.0"
 edition = "2021"
 

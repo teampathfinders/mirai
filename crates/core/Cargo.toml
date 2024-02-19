@@ -1,16 +1,16 @@
 [package]
-name = "inferno"
+name = "mirai"
 version = "0.1.0"
 description = "Lightweight, dedicated server software for Minecraft: Bedrock Edition"
 edition = "2021"
 authors = ["Ruben Adema"]
-repository = "https://github.com/teampathfinders/inferno"
+repository = "https://github.com/teampathfinders/mirai"
 license = "Apache-2.0"
 rust-version = "1.75.0"
 build = "build.rs"
 
 [lib]
-name = "inferno"
+name = "mirai"
 path = "src/lib.rs"
 
 [features]
@@ -20,13 +20,13 @@ tokio-console = ["console-subscriber"]
 vergen = { version = "8.3.1", features = ["git", "gitcl"] }
 
 [dependencies]
-nbt = { package = "inferno-nbt", path = "../nbt" }
-util = { package = "inferno-util", path = "../util" }
-level = { package = "inferno-level", path = "../level" }
-proto = { package = "inferno-proto", path = "../proto" }
-replicator = { package = "inferno-repl", path = "../repl" }
-raknet = { package = "inferno-raknet", path = "../raknet" }
-macros = { package = "inferno-macros", path = "../macros" }
+nbt = { package = "mirai-nbt", path = "../nbt" }
+util = { package = "mirai-util", path = "../util" }
+level = { package = "mirai-level", path = "../level" }
+proto = { package = "mirai-proto", path = "../proto" }
+replicator = { package = "mirai-repl", path = "../repl" }
+raknet = { package = "mirai-raknet", path = "../raknet" }
+macros = { package = "mirai-macros", path = "../macros" }
 
 console-subscriber = { version = "0.2.0", optional = true, features = ["parking_lot"] }
 

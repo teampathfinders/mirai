@@ -40,7 +40,7 @@ jobs:
       run: |
         cd target/doc
         touch index.html
-        echo "<meta http-equiv=\"refresh\" content=\"0; url=https://teampathfinders.github.io/inferno/inferno/index.html\">" > index.html
+        echo "<meta http-equiv=\"refresh\" content=\"0; url=https://teampathfinders.github.io/mirai/mirai/index.html\">" > index.html
       
     - name: Upload build artifact
       uses: actions/upload-pages-artifact@v1
