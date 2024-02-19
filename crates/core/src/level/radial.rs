@@ -50,7 +50,6 @@ impl IntoParallelIterator for RadialRegion {
 impl Region for RadialRegion {
     fn as_coord(&self, index: usize) -> Option<Vector<i32, 3>> {
         let y = (index % (self.len() / self.vertical.len())) as i32 + self.vertical.start;
-        dbg!(y);
 
         let row_size = |row: usize| -> usize {
             2 * (((self.radius.pow(2) - row.pow(2)) as f32).sqrt()).floor() as usize + 1  

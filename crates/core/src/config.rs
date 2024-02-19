@@ -104,7 +104,7 @@ impl Config {
             level: LevelConfig { path: String::from("resources\\level") },
             max_connections: AtomicUsize::new(10),
             max_render_distance: AtomicUsize::new(12),
-            motd_callback: Box::new(|_| "Powered by mirai".into()),
+            motd_callback: Box::new(|_| "Powered by Mirai".into()),
         }
     }
 
