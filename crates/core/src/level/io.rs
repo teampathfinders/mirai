@@ -1,9 +1,10 @@
-use std::{future::Future, pin::Pin, sync::Arc, task::{ready, Context, Poll, Waker}};
+use std::{future::Future, ops::DerefMut, pin::Pin, sync::{atomic::{AtomicBool, Ordering}, Arc}, task::{ready, Context, Poll, Waker}};
 
-use futures::{Sink, Stream};
+use futures::{Sink, SinkExt, Stream};
 use level::SubChunk;
 use parking_lot::Mutex;
-use tokio::sync::{mpsc, watch, Notify};
+use tokio::sync::{mpsc, oneshot, watch, Notify, Semaphore};
+use tokio_util::sync::CancellationToken;
 use util::Vector;
 
 /// A unique identifier for a specific subchunk.
@@ -89,36 +90,189 @@ impl Stream for RegionStream {
     }
 }
 
-const FLUSH_THRESHOLD: usize = 10;
-
-/// Collects all subchunk updates and writes them to disk periodically.
-struct Collector {
-    consumer: mpsc::Receiver<IndexedSubChunk>,
-    flush: watch::Sender<()>,
-
-    collection: Vec<IndexedSubChunk>,
+/// Future that resolves when [`AsyncState`] transitions into a busy state.
+pub struct Begin<'state> {
+    state: &'state FlushStateInner
 }
 
-impl Collector {
-    /// Flushes all subchunks in the collector to disk.
-    async fn service(mut self) {
-        loop {
-            let mut spare = Vec::new();
-            let Some(chunk) = self.consumer.recv().await else {
-                // This collector is no longer referenced, shut it down.
-                break
-            };
+impl<'state> Future for Begin<'state> {
+    type Output = ();
 
-            self.collection.push(chunk);
-            if self.collection.len() >= FLUSH_THRESHOLD {
-                std::mem::swap(&mut spare, &mut self.collection);
-                Self::begin_flush(spare);
-            }
+    fn poll(self: Pin<&mut Self>, cx: &mut Context) -> Poll<()> {
+        if self.state.is_idle() {
+            // Register flush waker
+            self.state.busy_wakers.lock().push(cx.waker().clone());
+            return Poll::Pending
+        }
+
+        Poll::Ready(())
+    }
+}
+
+// /// Future that resolves when [`AsyncState`] transitions into a completed state.
+// pub struct Begin<'state> {
+//     state: &'state FlushStateInner
+// }
+
+// impl<'state> Future for Begin<'state> {
+//     type Output = ();
+
+//     fn poll(self: Pin<&mut Self>, cx: &mut Context) -> Poll<()> {
+//         if !self.state.is_idle() {
+//             // Register complete waker
+//             self.state.idle_wakers.lock().push(cx.waker().clone());
+//             return Poll::Pending
+//         }
+
+//         Poll::Ready(())
+//     }
+// }
+
+struct FlushStateInner {
+    /// Tasks that should be woken when processing finishes.
+    idle_wakers: Mutex<Vec<Waker>>,
+    /// Tasks that should be woken when the state triggers processing.
+    busy_wakers: Mutex<Vec<Waker>>,
+    /// Whether the state is currently in idle mode.
+    idle: AtomicBool
+}
+
+impl FlushStateInner {
+    pub fn is_idle(&self) -> bool {
+        self.idle.load(Ordering::SeqCst)
+    }
+}
+
+/// Token that can be in two states.
+/// 
+/// State changes can be awaited.
+#[derive(Clone)]
+pub struct FlushState {
+    inner: Arc<FlushStateInner>
+}
+
+impl FlushState {
+    /// Creates a new asynchronous state.
+    pub fn new() -> Self {
+        Self {
+            inner: Arc::new(FlushStateInner {
+                idle_wakers: Mutex::new(Vec::new()),
+                busy_wakers: Mutex::new(Vec::new()),
+                idle: AtomicBool::new(true)
+            })
         }
     }
 
-    fn begin_flush(chunks: Vec<IndexedSubChunk>) {
-        // Start flushing to disk in a separate thread.
+    /// Transitions the state to idle and wakes all waiting tasks.
+    pub fn finish(&self) {
+        self.inner.idle.store(true, Ordering::SeqCst);
+        
+        let wakers = {
+            let mut lock = self.inner.idle_wakers.lock();
+            std::mem::take(&mut *lock)
+        };
+
+        println!("Transition to idle, waking {} waiters", wakers.len());
+        for waker in wakers {
+            waker.wake();
+        }
+    }
+
+    /// Transitions the state to busy and wakes all waiting tasks.
+    pub fn begin(&self) {
+        self.inner.idle.store(false, Ordering::SeqCst);
+
+        let wakers = {
+            let mut lock = self.inner.busy_wakers.lock();
+            std::mem::take(&mut *lock)
+        };
+
+        println!("Transition to busy, waking {} waiters", wakers.len());
+        for waker in wakers {
+            waker.wake();
+        }
+    }
+
+    /// Resolves when the state transitions into processing.
+    pub fn busy(&self) -> Begin {
+        Begin { state: &self.inner }
+    }   
+
+    // /// Resolves when the state transitions into idle.
+    // pub fn idle(&self) -> Idle {
+    //     Idle { state: &self.inner }
+    // }
+
+    /// Whether the state is currently idle.
+    pub fn is_idle(&self) -> bool {
+        self.inner.is_idle()
+    }
+
+    /// Triggers a flush.
+    pub fn flush(&self) {
+        println!("Flush triggered");
+        self.inner.idle.store(false, Ordering::SeqCst);
+    }
+}
+
+impl Future for FlushState {
+    type Output = ();
+
+    fn poll(self: Pin<&mut Self>, cx: &mut Context) -> Poll<()> {
+        if !self.inner.idle.load(Ordering::SeqCst) {
+            self.inner.idle_wakers.lock().push(cx.waker().clone());
+            return Poll::Pending
+        }
+
+        Poll::Ready(())
+    }
+}
+
+/// Collects all subchunk updates and writes them to disk periodically.
+pub struct Collector {
+    producer: mpsc::Sender<IndexedSubChunk>,
+    state: FlushState
+}
+
+impl Collector {
+    pub(crate) fn new(
+        instance_token: CancellationToken,
+        collector_size: usize
+    ) -> Self {
+        let (producer, consumer) = mpsc::channel(collector_size);
+        let state = FlushState::new();
+
+        tokio::spawn(Self::collection(instance_token, consumer, state.clone()));
+
+        Self {
+            producer, state
+        }
+    }
+
+    /// Creates a new sink that can be used to write into this collector.
+    pub fn create_sink(&self) -> RegionSink {
+        RegionSink {
+            producer: self.producer.clone(),
+            state: self.state.clone()
+        }
+    }
+
+    async fn collection(
+        instance_token: CancellationToken,
+        mut receiver: mpsc::Receiver<IndexedSubChunk>, 
+        state: FlushState
+    ) {
+        loop {
+            tokio::select! {
+                _ = state.busy() => {
+                    while let Ok(recv) = receiver.try_recv() {
+
+                    }
+                    state.finish();
+                },
+                _ = instance_token.cancelled() => break
+            }
+        }   
     }
 }
 
@@ -127,32 +281,41 @@ impl Collector {
 /// when the sink is filled up.
 pub struct RegionSink {
     producer: mpsc::Sender<IndexedSubChunk>,
-    flush: Arc<Notify>
+    state: FlushState
 }
 
 impl Sink<IndexedSubChunk> for RegionSink {
     type Error = anyhow::Error;
 
-    fn poll_ready(self: Pin<&mut Self>, cx: &mut Context) -> Poll<anyhow::Result<()>> {
+    fn poll_ready(mut self: Pin<&mut Self>, cx: &mut Context) -> Poll<anyhow::Result<()>> {
         // Check whether collector has space.
         // If not, notify it to flush.
         if self.producer.capacity() == 0 {
-            self.flush.notify_one();
-            return Poll::Pending;
-        } else {
+            self.state.begin();
 
+            let pin = unsafe { Pin::new_unchecked(&mut self.state) };
+            return pin.poll(cx).map(|_| Ok(()))
         }
 
-        todo!()
+        Poll::Ready(Ok(()))
     }
 
     fn start_send(self: Pin<&mut Self>, item: IndexedSubChunk) -> anyhow::Result<()> {
+        println!("Send");
         self.producer.try_send(item)?;
         Ok(())
     }
 
-    fn poll_flush(self: Pin<&mut Self>, cx: &mut Context) -> Poll<anyhow::Result<()>> {
-        todo!()
+    fn poll_flush(mut self: Pin<&mut Self>, cx: &mut Context) -> Poll<anyhow::Result<()>> {
+        if self.producer.capacity() == self.producer.max_capacity() {
+            // Don't flush when the collector is empty.
+            return Poll::Ready(Ok(()))
+        }
+
+        self.state.begin();
+
+        let pin = unsafe { Pin::new_unchecked(&mut self.state) };
+        pin.poll(cx).map(|_| Ok(()))
     }
 
     fn poll_close(self: Pin<&mut Self>, cx: &mut Context) -> Poll<anyhow::Result<()>> {

@@ -10,7 +10,7 @@ use util::{Joinable, Vector};
 
 use crate::instance::Instance;
 
-use super::{IndexedSubChunk, Region, RegionIndex, RegionStream, Rule, RuleValue};
+use super::{Collector, IndexedSubChunk, Region, RegionIndex, RegionSink, RegionStream, Rule, RuleValue};
 
 pub(crate) struct ServiceOptions {
     pub instance_token: CancellationToken,
@@ -32,7 +32,9 @@ pub struct Service {
     /// Reference to the parent instance.
     instance: OnceLock<Weak<Instance>>,
     /// Provides level data from disk.
-    pub provider: Arc<level::provider::Provider>,
+    provider: Arc<level::provider::Provider>,
+    /// Collects subchunk changes using sinks and writes them to disk periodically.
+    collector: Collector,
     /// Current gamerule values.
     /// The gamerules are stored by TypeId to allow for user-defined gamerules.
     gamerules: DashMap<TypeId, RuleValue>,
@@ -47,6 +49,7 @@ impl Service {
         }?);
 
         let service = Arc::new(Service {
+            collector: Collector::new(options.instance_token.clone(), 100),
             instance_token: options.instance_token,
             shutdown_token: CancellationToken::new(),
             instance: OnceLock::new(),
@@ -64,7 +67,7 @@ impl Service {
     }   
 
     /// Requests chunks using the specified region iterator.
-    pub fn request_region<R: Region>(self: &Arc<Service>, region: R) -> RegionStream 
+    pub fn region<R: Region>(self: &Arc<Service>, region: R) -> RegionStream 
     where
         R::IntoIter: Send
     {
@@ -73,6 +76,11 @@ impl Service {
         } else {
             self.request_sequential_region(region)
         }
+    }
+
+    /// Creates a new [`RegionSink`]. A region sink allows you to save modified subchunks to disk.
+    pub fn region_sink(&self) -> RegionSink {
+        self.collector.create_sink()
     }
 
     /// Loads a region using a parallel region.

@@ -2,7 +2,9 @@
 /// to be able to store them in a single map.
 #[derive(Copy, Clone)]
 pub enum RuleValue {
+    /// A boolean value.
     Bool(bool),
+    /// An integer value.
     I32(i32)
 }
 

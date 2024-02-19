@@ -1,13 +1,13 @@
 
 
-use std::sync::Arc;
+use std::{future, sync::Arc, task::Poll};
 
-use futures::StreamExt;
+use futures::{SinkExt, StreamExt};
 use proto::{bedrock::{Animate, CommandOutput, CommandOutputMessage, CommandOutputType, CommandRequest, DisconnectReason, FormResponseData, HudElement, HudVisibility, PlayerAuthInput, RequestAbility, SetHud, SettingsCommand, TextData, TextMessage, TickSync, UpdateSkin}, types::Dimension};
 
 use util::{RVec, Deserialize, CowSlice, Vector};
 
-use crate::level::{BoxRegion, PointRegion, Region};
+use crate::level::{BoxRegion, PointRegion, RadialRegion, Region};
 
 use super::BedrockClient;
 
@@ -42,6 +42,22 @@ impl BedrockClient {
         )
     )]
     pub fn handle_text_message(self: &Arc<Self>, packet: RVec) -> anyhow::Result<()> {
+        let this = Arc::clone(self);
+        tokio::spawn(async move {
+            let region = RadialRegion::from_center(
+                [0, 0], 5, 0..5, Dimension::Overworld
+            );
+            
+            let mut sink = this.level.region_sink();
+
+            let mut stream = this.level.region(region);
+            while let Some(chunk) = stream.next().await {
+                sink.feed(chunk).await;
+            }
+
+            sink.flush().await;
+        });
+
         let request = TextMessage::deserialize(packet.as_ref())?;
         if let TextData::Chat {
             source, message
