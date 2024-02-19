@@ -1,4 +1,4 @@
-![mirai thumbnail](https://github.com/teampathfinders/mirai/blob/master/resources/logo-wide.png?raw=true)
+![Mirai logo](https://github.com/teampathfinders/mirai/blob/master/resources/logo-wide.png?raw=true)
 
 Robust dedicated server software for Minecraft: Bedrock Edition built with safety in mind.
 

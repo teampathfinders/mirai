@@ -87,7 +87,7 @@ impl Config {
         Config {
             ipv4_addr: SocketAddrV4::new(IPV4_LOCAL_ADDR, 19132),
             ipv6_addr: None,
-            name: CowString::Borrowed("mirai server"),
+            name: CowString::Borrowed("Mirai server"),
             compression: Compression {
                 algorithm: CompressionAlgorithm::Flate,
                 threshold: 1,
