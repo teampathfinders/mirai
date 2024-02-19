@@ -404,7 +404,7 @@ where
         let len = match F::AS_ENUM {
             Variant::BigEndian => self.input.read_i32_be()? as u32,
             Variant::LittleEndian => self.input.read_i32_le()? as u32,
-            Variant::Variable => self.input.read_var_u32()?,
+            Variant::Variable => self.input.read_var_i32()? as u32,
         };
 
         let buf = self.input.take_n(len as usize)?;
@@ -420,7 +420,7 @@ where
         let len = match F::AS_ENUM {
             Variant::BigEndian => self.input.read_i32_be()? as u32,
             Variant::LittleEndian => self.input.read_i32_le()? as u32,
-            Variant::Variable => self.input.read_var_u32()?,
+            Variant::Variable => self.input.read_var_i32()? as u32,
         };
 
         let buf = self.input.take_n(len as usize)?.to_vec();
@@ -568,7 +568,7 @@ where
         let remaining = match F::AS_ENUM {
             Variant::BigEndian => de.input.read_i32_be()? as u32,
             Variant::LittleEndian => de.input.read_i32_le()? as u32,
-            Variant::Variable => de.input.read_var_u32()?,
+            Variant::Variable => de.input.read_var_i32()? as u32,
         };
 
         if expected_len != 0 && expected_len != remaining {

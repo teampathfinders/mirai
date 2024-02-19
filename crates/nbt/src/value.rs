@@ -11,7 +11,7 @@ use util::RVec;
 ///
 /// In case the structure of some piece of NBT data is not known, this
 /// type can be used to deserialise it.
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum Value {
     /// A signed byte.
     Byte(i8),
@@ -546,11 +546,13 @@ impl Hash for Value {
             Value::Int(v) => state.write_i32(*v),
             Value::Long(v) => state.write_i64(*v),
             Value::String(v) => state.write(v.as_bytes()),
-            Value::Float(_v) => {
-                todo!()
+            Value::Float(v) => {
+                // f32 does not implement Hash so simply hash the byte repr.
+                state.write(&v.to_le_bytes());
             }
-            Value::Double(_v) => {
-                todo!()
+            Value::Double(v) => {
+                // f64 does not implement Hash so simply hash the byte repr.
+                state.write(&v.to_le_bytes());
             }
             Value::Compound(map) => {
                 for (k, v) in map {

@@ -19,6 +19,7 @@ use util::{CowString, Deserialize, Joinable, RVec, ReserveTo, Serialize};
 
 use crate::command::{self, HandlerOutput, HandlerResult, ParsedCommand};
 use crate::config::Config;
+use crate::data::{BlockStates, CreativeItems};
 use crate::net::{Clients, ForwardablePacket};
 use proto::bedrock::{
     Command, CommandDataType, CommandEnum, CommandOverload, CommandParameter, CommandPermissionLevel, CreditsStatus, CreditsUpdate,
@@ -274,6 +275,9 @@ impl Instance {
         // FIXME: The level module will get a refactor and this will be changed
         // let level = Level::new(self.user_map.clone(), self.token.clone())?;
         // self.user_map.set_level(level);
+
+        let block_states = BlockStates::new()?;
+        let creative_items = CreativeItems::new(&block_states)?;
 
         self.clients.set_instance(self)?;
         self.command_service.set_instance(self)?;

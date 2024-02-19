@@ -1,4 +1,6 @@
-use util::Serialize;
+use std::collections::HashMap;
+
+use util::{RString, RVec, Serialize};
 use util::{BinaryWrite, VarInt};
 
 use crate::bedrock::ConnectedPacket;
@@ -60,23 +62,92 @@ use crate::bedrock::ConnectedPacket;
 // }
 
 #[derive(Debug, Clone)]
-pub struct LegacyItem {
-    
+pub struct ItemType {
+    pub network_id: i32,
+    pub meta: u32
 }
 
-impl Serialize for LegacyItem {
+#[derive(Debug, Clone)]
+pub struct ItemStack {
+    pub item_type: ItemType,
+    pub block_runtime_id: i32,
+    pub count: u16,
+    pub nbt_data: HashMap<RString, nbt::Value>,
+    pub can_be_placed_on: Vec<RString>,
+    pub can_break: Vec<RString>,
+    pub has_network_id: bool
+}
+
+impl Serialize for ItemStack {
     fn size_hint(&self) -> Option<usize> {
         None
     }
 
     fn serialize_into<W: BinaryWrite>(&self, writer: &mut W) -> anyhow::Result<()> {
-        todo!()
+        writer.write_var_i32(self.item_type.network_id)?;
+        if self.item_type.network_id == 0 {
+            // Item is air, no more data
+            return Ok(())
+        }
+
+        writer.write_u16_le(self.count)?;
+        writer.write_var_u32(self.item_type.meta)?;
+        writer.write_var_i32(self.block_runtime_id)?;
+        
+        let extra_data_size = 0;
+        let mut extra_data = RVec::alloc_with_capacity(extra_data_size);
+            
+        if self.nbt_data.is_empty() {
+            extra_data.write_i16_le(0)?; // Length = 0
+        } else {
+            extra_data.write_i16_le(-1)?; // Length
+            extra_data.write_u8(1)?; // Version
+            nbt::to_var_bytes_in(&mut extra_data, &self.nbt_data)?;
+        }
+
+        writer.write_u32_le(self.can_be_placed_on.len() as u32)?;
+        for block in &self.can_be_placed_on {
+            writer.write_str(block)?;
+        }
+
+        writer.write_u32_le(self.can_break.len() as u32)?;
+        for block in &self.can_break {
+            writer.write_str(block)?;
+        }
+
+        const SHIELD_ID: i32 = 355;
+
+        if self.item_type.network_id == SHIELD_ID {
+            extra_data.write_i64_le(0)?; // Blocking tick
+        }
+
+        writer.write_all(&extra_data)?;
+
+        Ok(())
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct CreativeItem {
+    pub creative_network_id: u32,
+    pub item: ItemStack
+}
+
+impl Serialize for CreativeItem {
+    fn size_hint(&self) -> Option<usize> {
+        let size = self.creative_network_id.var_len() + self.item.size_hint().unwrap_or(0);
+        Some(size)
+    }
+
+    fn serialize_into<W: BinaryWrite>(&self, writer: &mut W) -> anyhow::Result<()> {
+        writer.write_var_u32(self.creative_network_id)?;
+        self.item.serialize_into(writer)
     }
 }
 
 #[derive(Debug, Clone)]
 pub struct CreativeContent<'a> {
-    pub items: &'a [LegacyItem],
+    pub items: &'a [CreativeItem],
 }
 
 impl ConnectedPacket for CreativeContent<'_> {
@@ -91,9 +162,8 @@ impl ConnectedPacket for CreativeContent<'_> {
 impl Serialize for CreativeContent<'_> {
     fn serialize_into<W: BinaryWrite>(&self, writer: &mut W) -> anyhow::Result<()> {
         writer.write_var_u32(self.items.len() as u32)?;
-        for (i, item) in self.items.iter().enumerate() {
-            writer.write_var_u32(i as u32 + 1)?;
-            // item.serialize(i as u32 + 1, writer)?;
+        for item in self.items {
+            item.serialize_into(writer)?;
         }
 
         Ok(())
