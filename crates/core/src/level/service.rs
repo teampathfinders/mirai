@@ -1,54 +1,3 @@
-// use std::{any::TypeId, sync::{Arc, OnceLock, Weak}};
-
-// use dashmap::DashMap;
-// use proto::types::Dimension;
-// use tokio::sync::{mpsc, oneshot};
-// use tokio_util::sync::CancellationToken;
-// use util::{Joinable, Vector};
-
-// use crate::instance::Instance;
-
-// use super::{gamerule, Rule, RuleValue};
-
-// pub struct RadiusRequest {
-//     pub dimension: Dimension,
-//     pub center: Vector<i32, 2>,
-//     pub radius: u16
-// }
-
-// impl Request for RadiusRequest {
-//     type Output = ();
-// }
-
-// pub struct SingleRequest {
-//     pub dimension: Dimension,
-//     pub position: Vector<i32, 3>
-// }
-
-// impl Request for SingleRequest {
-//     type Output = ();
-// }
-
-// mod private {
-//     pub trait Sealed {}
-//     impl Sealed for super::SingleRequest {}
-//     impl Sealed for super::RadiusRequest {}
-//     impl Sealed for super::RegionRequest {}
-// }
-
-// pub struct ServiceRequest {
-    
-// }
-
-// pub trait Request {
-//     type Output;
-
-//     fn execute(&self, service: &Arc<Service>) -> mpsc::Receiver<Self::Output> {
-//         let (sender, receiver) = mpsc::channel();
-//         receiver
-//     }
-// }
-
 use std::{any::TypeId, sync::{Arc, OnceLock, Weak}};
 
 use dashmap::DashMap;
@@ -101,11 +50,9 @@ impl Service {
             instance_token: options.instance_token,
             shutdown_token: CancellationToken::new(),
             instance: OnceLock::new(),
-
             provider,
             gamerules: DashMap::new()
         });
-
         Ok(service)
     }
 

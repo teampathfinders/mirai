@@ -49,7 +49,7 @@ pub struct DatabaseConfig {
 /// Configuration of the level
 pub struct LevelConfig {
     /// The path to the level.
-    pub path: String,
+    pub path: String
 }
 
 /// Server configuration options.

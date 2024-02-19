@@ -108,7 +108,6 @@ impl InstanceBuilder {
         })?;
 
         let user_map = Arc::new(Clients::new(replicator, Arc::clone(&command_service), Arc::clone(&level_service)));
-
         let instance = Instance {
             ipv4_socket,
             ipv6_socket,
