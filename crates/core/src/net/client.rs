@@ -1,4 +1,3 @@
-use std::future::Future;
 use std::io::{Read, Write};
 
 use std::sync::{Arc, OnceLock, Weak};

@@ -248,7 +248,7 @@ impl Service {
                         };
 
                         let ctx = Context {
-                            caller: request.caller, instance: instance
+                            caller: request.caller, instance
                         };
 
                         let result = clone.execute_handler(&request.command, &ctx);

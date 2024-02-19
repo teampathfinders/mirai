@@ -8,7 +8,7 @@ use crate::{instance::Instance, net::BedrockClient};
 use super::{ParseResult, ParsedCommand};
 
 /// Represents a single output message in the command service response.
-#[derive(Default, Debug)]
+#[derive(Debug)]
 pub struct HandlerOutput {
     /// Output of the command.
     pub message: CowString<'static>,
@@ -21,8 +21,11 @@ pub struct HandlerOutput {
 impl HandlerOutput {
     /// Creates a new empty output.
     #[inline]
-    pub fn new(&self) -> HandlerOutput {
-        HandlerOutput::default()
+    pub const fn new() -> HandlerOutput {
+        Self {
+            message: CowString::empty(),
+            parameters: Vec::new()
+        }
     }
 
     /// Sets the message of this output.
@@ -39,14 +42,20 @@ impl HandlerOutput {
 
     /// Turns this into a successful message.
     #[inline]
-    pub fn success(self) -> HandlerResult {
+    pub const fn success(self) -> HandlerResult {
         Ok(self)
     }
 
     /// Turns this into a command error.
     #[inline]
-    pub fn error(self) -> HandlerResult {
+    pub const fn error(self) -> HandlerResult {
         Err(self)
+    }
+}
+
+impl Default for HandlerOutput {
+    fn default() -> Self {
+        Self::new()
     }
 }
 

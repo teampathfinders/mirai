@@ -4,15 +4,15 @@ use dashmap::DashMap;
 use level::{provider::Provider, SubChunk};
 use proto::types::Dimension;
 use rayon::iter::ParallelIterator;
-use tokio::sync::mpsc;
+use tokio::sync::mpsc::{self, error::SendError};
 use tokio_util::sync::CancellationToken;
 use util::{Joinable, Vector};
 
 use crate::instance::Instance;
 
-use super::{IndexedSubChunk, Region, RegionIndex, RegionStream, Rule, RuleValue};
+use super::{Collector, IndexedSubChunk, Region, RegionIndex, RegionSink, RegionStream, Rule, RuleValue};
 
-pub(crate) struct ServiceOptions {
+pub struct ServiceOptions {
     pub instance_token: CancellationToken,
     pub level_path: String
 }
@@ -32,7 +32,9 @@ pub struct Service {
     /// Reference to the parent instance.
     instance: OnceLock<Weak<Instance>>,
     /// Provides level data from disk.
-    pub provider: Arc<level::provider::Provider>,
+    provider: Arc<level::provider::Provider>,
+    /// Collects subchunk changes using sinks and writes them to disk periodically.
+    collector: Collector,
     /// Current gamerule values.
     /// The gamerules are stored by TypeId to allow for user-defined gamerules.
     gamerules: DashMap<TypeId, RuleValue>,
@@ -47,6 +49,7 @@ impl Service {
         }?);
 
         let service = Arc::new(Service {
+            collector: Collector::new(options.instance_token.clone(), 100),
             instance_token: options.instance_token,
             shutdown_token: CancellationToken::new(),
             instance: OnceLock::new(),
@@ -64,7 +67,7 @@ impl Service {
     }   
 
     /// Requests chunks using the specified region iterator.
-    pub fn request_region<R: Region>(self: &Arc<Service>, region: R) -> RegionStream 
+    pub fn region<R: Region>(self: &Arc<Service>, region: R) -> RegionStream 
     where
         R::IntoIter: Send
     {
@@ -73,6 +76,11 @@ impl Service {
         } else {
             self.request_sequential_region(region)
         }
+    }
+
+    /// Creates a new [`RegionSink`]. A region sink allows you to save modified subchunks to disk.
+    pub fn region_sink(&self) -> RegionSink {
+        self.collector.create_sink()
     }
 
     /// Loads a region using a parallel region.
@@ -92,7 +100,7 @@ impl Service {
         let provider = Arc::clone(&self.provider);
         tokio::task::spawn_blocking(move || {
             // If this returns an error, the receiver has closed so we can stop processing.
-            let _ = iter
+            let _: Result<(), SendError<IndexedSubChunk>> = iter
                 .try_for_each(|item| {
                     let indexed = Self::for_each_subchunk(item, dim, &provider);
                     sender.blocking_send(indexed)
@@ -124,7 +132,7 @@ impl Service {
         let provider = Arc::clone(&self.provider);
         rayon::spawn(move || {
             // If this returns an error, the receiver has closed so we can stop processing.
-            let _ = iter   
+            let _: Result<(), SendError<IndexedSubChunk>> = iter   
                 .try_for_each(|item| {
                     let indexed = Self::for_each_subchunk(item, dim, &provider);
                     sender.blocking_send(indexed)
@@ -206,7 +214,6 @@ impl Service {
 
 impl Joinable for Service {
     async fn join(&self) -> anyhow::Result<()> {
-        // self.shutdown_token.cancelled().await;
-        Ok(())
+        self.collector.join().await
     }
 }

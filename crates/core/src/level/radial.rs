@@ -9,10 +9,24 @@ use super::{Region, RegionIter};
 /// A region representing all chunks in a radius around a center.
 #[derive(Clone)]
 pub struct RadialRegion {
-    center: Vector<i32, 3>,
+    center: Vector<i32, 2>,
     radius: usize,
-    yrange: Range<i32>,
+    vertical: Range<i32>,
     dimension: Dimension
+}
+
+impl RadialRegion {
+    /// Creates a radial region around a central point.
+    pub fn from_center<C: Into<Vector<i32, 2>>>(
+        center: C, radius: usize, vertical: Range<i32>, dimension: Dimension
+    ) -> Self {
+        Self {
+            center: center.into(),
+            radius,
+            vertical,
+            dimension
+        }
+    }
 }
 
 impl IntoIterator for RadialRegion {
@@ -35,7 +49,7 @@ impl IntoParallelIterator for RadialRegion {
 
 impl Region for RadialRegion {
     fn as_coord(&self, index: usize) -> Option<Vector<i32, 3>> {
-        let y = (index % self.len()) as i32 + self.yrange.start;
+        let y = (index % (self.len() / self.vertical.len())) as i32 + self.vertical.start;
 
         let row_size = |row: usize| -> usize {
             2 * (((self.radius.pow(2) - row.pow(2)) as f32).sqrt()).floor() as usize + 1  
@@ -45,15 +59,20 @@ impl Region for RadialRegion {
         let mut last = 0;
         
         for row in 0..self.radius * 2 + 1 {
-            count += row_size((self.radius as i32 - row as i32).abs() as usize);
+            count += row_size((self.radius as i32 - row as i32).unsigned_abs() as usize);
             if index < count {
-                let coord = Vector::from([(index - last) as i32, y, row as i32]);
+                let mut coord = Vector::from([(index - last) as i32, y, row as i32]);
+
+                // By default the coordinates are centered around (0, 0), move it to the given center point.
+                coord.x += self.center.x;
+                coord.z += self.center.y;
+
                 return Some(coord)
             }
             last = count;
         }
         
-        Some(Vector::from([0, y, 0]))
+        None
     }
 
     fn as_index(&self, coord: &Vector<i32, 3>) -> Option<usize> {
@@ -68,7 +87,6 @@ impl Region for RadialRegion {
         // Using the sum from Gauss's circle problem.
 
         1 + 4 * self.radius + 4 * (1..self.radius)
-            .into_iter()
             .map(|i: usize| (((self.radius.pow(2) - i.pow(2)) as f32).sqrt()).floor() as usize)
             .sum::<usize>()
     }

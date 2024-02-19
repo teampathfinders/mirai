@@ -1,6 +1,5 @@
-use std::{iter::FusedIterator, ops::{Range, RangeInclusive}, pin::Pin, sync::Arc, task::{ready, Context, Poll}};
+use std::iter::FusedIterator;
 
-use level::{provider::Provider, SubChunk};
 use proto::types::Dimension;
 use rayon::iter::{plumbing::{bridge, Consumer, Producer, ProducerCallback, UnindexedConsumer}, IndexedParallelIterator, IntoParallelIterator, ParallelIterator};
 use util::Vector;
@@ -15,6 +14,8 @@ pub trait Region: IntoIterator<Item = Vector<i32, 3>> + IntoParallelIterator<Ite
     fn dimension(&self) -> Dimension;
     /// Amount of subchunks contained in this region.
     fn len(&self) -> usize;
+    /// Whether this region is empty.
+    fn is_empty(&self) -> bool { self.len() == 0 }
 }
 
 /// Produces split region iterators.
@@ -129,8 +130,7 @@ impl<T: Region> ExactSizeIterator for RegionIter<T> {
     fn len(&self) -> usize {
         // Use checked subtraction to make sure the length does not overflow
         // when back_index < front_index.
-        let len = self.back_index.checked_sub(self.front_index).unwrap_or(0);
-        len
+        self.back_index.saturating_sub(self.front_index)
     }
 }
 

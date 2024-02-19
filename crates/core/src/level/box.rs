@@ -39,10 +39,10 @@ impl BoxRegion {
     /// However, the coordinate will likely be incorrect because different regions use incompatible indices.
     pub fn as_coord_unchecked(&self, mut index: usize) -> Vector<i32, 3> {
         let x = index as i32 % (self.xrange.len() as i32) - self.xrange.start;
-        index /= self.xrange.len() as usize;
+        index /= self.xrange.len();
 
         let y = index as i32 % (self.yrange.len() as i32) - self.yrange.start;
-        index /= self.yrange.len() as usize;
+        index /= self.yrange.len();
 
         let z = index as i32 - self.zrange.start;
 
@@ -57,30 +57,6 @@ impl BoxRegion {
     /// However, the index will likely be incorrect because different regions use incompatible indices.
     pub fn as_index_unchecked(&self, coord: &Vector<i32, 3>) -> usize {
         (coord.x * (self.yrange.len() as i32 * self.zrange.len() as i32) + coord.y * (self.zrange.len() as i32) + coord.z) as usize
-    }
-
-    /// Converts a coordinate within this region to an index, ensuring
-    /// that the coordinate is not out of bounds.
-    pub fn as_index(&self, coord: &Vector<i32, 3>) -> Option<usize> {
-        if !self.xrange.contains(&coord.x) || 
-            !self.yrange.contains(&coord.y) || 
-            !self.zrange.contains(&coord.z) {
-            return None
-        }
-
-        Some(self.as_index_unchecked(coord))
-    }
-
-    /// Converts an index to a coordinate within this region, ensuring
-    /// that the index is not out of bounds.
-    pub fn as_coord(&self, index: usize) -> Option<Vector<i32, 3>> {
-        (index <= self.len()).then(|| self.as_coord_unchecked(index))
-    }
-
-    /// The amount of subchunks contained in this region.
-    pub fn len(&self) -> usize {
-        let len = self.xrange.len() * self.yrange.len() * self.zrange.len();
-        len
     }
 
     fn from_bounds_inner(bound1: Vector<i32, 3>, bound2: Vector<i32, 3>, dimension: Dimension) -> Self {
@@ -122,11 +98,17 @@ impl IntoParallelIterator for BoxRegion {
 
 impl Region for BoxRegion {
     fn as_index(&self, coord: &Vector<i32, 3>) -> Option<usize> {
-        self.as_index(coord)
+        if !self.xrange.contains(&coord.x) || 
+            !self.yrange.contains(&coord.y) || 
+            !self.zrange.contains(&coord.z) {
+            return None
+        }
+
+        Some(self.as_index_unchecked(coord))
     }
 
     fn as_coord(&self, index: usize) -> Option<Vector<i32, 3>> {
-        self.as_coord(index)
+        (index <= self.len()).then(|| self.as_coord_unchecked(index))
     }
 
     fn dimension(&self) -> Dimension {
@@ -134,6 +116,6 @@ impl Region for BoxRegion {
     }
 
     fn len(&self) -> usize {
-        BoxRegion::len(self)
+        self.xrange.len() * self.yrange.len() * self.zrange.len()
     }
 }

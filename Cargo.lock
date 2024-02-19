@@ -1152,155 +1152,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "inferno"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "console-subscriber",
- "dashmap",
- "flate2",
- "futures",
- "inferno-level",
- "inferno-macros",
- "inferno-nbt",
- "inferno-proto",
- "inferno-raknet",
- "inferno-repl",
- "inferno-util",
- "lazy_static",
- "legion",
- "nohash-hasher",
- "parking_lot 0.12.1",
- "paste",
- "prometheus-client",
- "rand",
- "rayon",
- "serde",
- "serde_json",
- "systemstat",
- "tokio",
- "tokio-util",
- "tracing",
- "tracing-subscriber",
- "vergen",
-]
-
-[[package]]
-name = "inferno-level"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "bytemuck",
- "cmake",
- "inferno-nbt",
- "inferno-proto",
- "inferno-util",
- "serde",
- "tracing",
-]
-
-[[package]]
-name = "inferno-macros"
-version = "0.1.0"
-dependencies = [
- "proc-macro2",
- "quote",
- "syn 2.0.49",
-]
-
-[[package]]
-name = "inferno-nbt"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "inferno-util",
- "paste",
- "serde",
-]
-
-[[package]]
-name = "inferno-proto"
-version = "0.1.0"
-dependencies = [
- "aes",
- "anyhow",
- "base64 0.21.7",
- "bytemuck",
- "ctr",
- "dashmap",
- "ecdsa 0.16.9",
- "inferno-macros",
- "inferno-nbt",
- "inferno-util",
- "jsonwebkey",
- "jsonwebtoken",
- "open",
- "p256 0.13.2",
- "p384",
- "parking_lot 0.12.1",
- "paste",
- "rand",
- "reqwest",
- "ring",
- "serde",
- "serde_json",
- "serde_repr",
- "sha2 0.10.8",
- "tokio",
- "tracing",
- "uuid 1.7.0",
- "warp",
-]
-
-[[package]]
-name = "inferno-raknet"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "async-recursion",
- "dashmap",
- "inferno-proto",
- "inferno-util",
- "lazy_static",
- "parking_lot 0.12.1",
- "prometheus-client",
- "tokio",
- "tokio-util",
- "tracing",
-]
-
-[[package]]
-name = "inferno-repl"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "fred",
- "inferno-proto",
- "inferno-util",
- "tracing",
-]
-
-[[package]]
-name = "inferno-util"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "base64 0.21.7",
- "cipher",
- "dashmap",
- "jsonwebtoken",
- "num-traits",
- "parking_lot 0.12.1",
- "paste",
- "serde",
- "serde_json",
- "snap",
- "tokio",
- "tracing",
- "uuid 1.7.0",
-]
-
-[[package]]
 name = "inout"
 version = "0.1.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1540,6 +1391,155 @@ dependencies = [
  "libc",
  "wasi",
  "windows-sys 0.48.0",
+]
+
+[[package]]
+name = "mirai"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "console-subscriber",
+ "dashmap",
+ "flate2",
+ "futures",
+ "lazy_static",
+ "legion",
+ "mirai-level",
+ "mirai-macros",
+ "mirai-nbt",
+ "mirai-proto",
+ "mirai-raknet",
+ "mirai-repl",
+ "mirai-util",
+ "nohash-hasher",
+ "parking_lot 0.12.1",
+ "paste",
+ "prometheus-client",
+ "rand",
+ "rayon",
+ "serde",
+ "serde_json",
+ "systemstat",
+ "tokio",
+ "tokio-util",
+ "tracing",
+ "tracing-subscriber",
+ "vergen",
+]
+
+[[package]]
+name = "mirai-level"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "bytemuck",
+ "cmake",
+ "mirai-nbt",
+ "mirai-proto",
+ "mirai-util",
+ "serde",
+ "tracing",
+]
+
+[[package]]
+name = "mirai-macros"
+version = "0.1.0"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn 2.0.49",
+]
+
+[[package]]
+name = "mirai-nbt"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "mirai-util",
+ "paste",
+ "serde",
+]
+
+[[package]]
+name = "mirai-proto"
+version = "0.1.0"
+dependencies = [
+ "aes",
+ "anyhow",
+ "base64 0.21.7",
+ "bytemuck",
+ "ctr",
+ "dashmap",
+ "ecdsa 0.16.9",
+ "jsonwebkey",
+ "jsonwebtoken",
+ "mirai-macros",
+ "mirai-nbt",
+ "mirai-util",
+ "open",
+ "p256 0.13.2",
+ "p384",
+ "parking_lot 0.12.1",
+ "paste",
+ "rand",
+ "reqwest",
+ "ring",
+ "serde",
+ "serde_json",
+ "serde_repr",
+ "sha2 0.10.8",
+ "tokio",
+ "tracing",
+ "uuid 1.7.0",
+ "warp",
+]
+
+[[package]]
+name = "mirai-raknet"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "async-recursion",
+ "dashmap",
+ "lazy_static",
+ "mirai-proto",
+ "mirai-util",
+ "parking_lot 0.12.1",
+ "prometheus-client",
+ "tokio",
+ "tokio-util",
+ "tracing",
+]
+
+[[package]]
+name = "mirai-repl"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "fred",
+ "mirai-proto",
+ "mirai-util",
+ "tracing",
+]
+
+[[package]]
+name = "mirai-util"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "base64 0.21.7",
+ "cipher",
+ "dashmap",
+ "jsonwebtoken",
+ "num-traits",
+ "parking_lot 0.12.1",
+ "paste",
+ "serde",
+ "serde_json",
+ "snap",
+ "tokio",
+ "tracing",
+ "uuid 1.7.0",
 ]
 
 [[package]]

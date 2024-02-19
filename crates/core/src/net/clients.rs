@@ -95,7 +95,7 @@ impl Clients {
 
         // Instance should exist while the user map exists.
         #[allow(clippy::unwrap_used)]
-        let instance = self.instance.get().unwrap().clone();
+        let instance = Weak::clone(self.instance.get().unwrap());
 
         // Callback to move the client from the connecting map to the connected map.
         // This is done when the Raknet layer attempts to send a message to the Bedrock layer
@@ -244,7 +244,7 @@ impl Clients {
             });
 
             this.connected_map.retain(|_, user| {
-                let _ = user.state.send(Disconnect {
+                let _: anyhow::Result<()> = user.state.send(Disconnect {
                     hide_message: false,
                     message: "Server shutting down",
                     reason: DisconnectReason::Shutdown

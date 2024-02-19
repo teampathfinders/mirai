@@ -5,7 +5,7 @@ use std::sync::atomic::{AtomicU16, Ordering};
 use anyhow::Context;
 use tokio::runtime;
 
-use inferno::instance::Instance;
+use mirai::instance::Instance;
 use util::Joinable;
 
 fn main() -> anyhow::Result<()> {
@@ -88,7 +88,7 @@ fn init_logging() -> anyhow::Result<()> {
         .find_map(|(k, v)| if k == "LOG_LEVEL" { Some(v) } else { None })
         .unwrap_or(String::from("info"));
 
-    let env_filter = EnvFilter::new(format!("inferno={requested_level}"));
+    let env_filter = EnvFilter::new(format!("mirai={requested_level}"));
 
     let fmt = tracing_subscriber::fmt::layer()
         .with_target(false)

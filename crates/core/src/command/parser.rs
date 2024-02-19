@@ -28,15 +28,23 @@ pub struct ParseError {
     pub description: CowString<'static>,
 }
 
+/// Type alias for `Result<ParsedCommand, ParseError>`.
 pub type ParseResult = Result<ParsedCommand, ParseError>;
 
+/// A target used in a command parameter.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum CommandTarget {
+    /// Targets all players in the game. This is equivalent to `@a`.
     AllPlayers,
+    /// All entities in the game. This is equivalent to `@e`.
     AllEntities,
+    /// Targets the closest player to the caller. This is equivalent to `@p`. 
     ClosestPlayer,
+    /// A random player. This is equivalent to `@r`.
     RandomPlayer,
+    /// The caller themselves. This is equivalent to `@s`.
     Yourself,
+    /// A specific player, this occurs when a name is given instead of a selector.
     SpecificPlayer(String)
 }
 

@@ -40,9 +40,11 @@ const RECV_BUF_SIZE: usize = 2048;
 /// This data is displayed in the server menu.
 const METADATA_REFRESH_INTERVAL: Duration = Duration::from_secs(2);
 
+/// Configures and instance and constructs it.
 pub struct InstanceBuilder(Config);
 
 impl InstanceBuilder {
+    /// Creates a new instance builder. This is the same as calling [`builder`](Instance::builder) on [`Instance`].
     pub fn new() -> InstanceBuilder {
         Instance::builder()
     }
@@ -80,7 +82,7 @@ impl InstanceBuilder {
     /// Produces an [`Instance`] with the configured options, consuming the builder.
     pub async fn build(self) -> anyhow::Result<Arc<Instance>> {
         tracing::info!(
-            "Inferno server v{} (rev. {}) built for MCBE {CLIENT_VERSION_STRING} (prot. {PROTOCOL_VERSION})",
+            "Mirai server v{} (rev. {}) built for MCBE {CLIENT_VERSION_STRING} (prot. {PROTOCOL_VERSION})",
             Instance::SERVER_VERSION,
             Instance::GIT_REV
         );
@@ -127,6 +129,12 @@ impl InstanceBuilder {
         instance.refresh_motd();
 
         Ok(instance)
+    }
+}
+
+impl Default for InstanceBuilder {
+    fn default() -> Self {
+        Self::new()
     }
 }
 
@@ -401,7 +409,7 @@ impl Instance {
 
         {
             let socket = Arc::clone(&self.ipv4_socket);
-            let this = Arc::clone(&self);
+            let this = Arc::clone(self);
 
             tokio::spawn(Instance::net_receiver(this, socket));
             tracing::info!("IPv4 listener ready");
@@ -409,7 +417,7 @@ impl Instance {
 
         if let Some(ipv6_socket) = &self.ipv6_socket {
             let socket = Arc::clone(ipv6_socket);
-            let this = Arc::clone(&self);
+            let this = Arc::clone(self);
 
             tokio::spawn(Instance::net_receiver(this, socket));
             tracing::info!("IPv6 listener ready");
