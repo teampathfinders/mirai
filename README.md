@@ -1,4 +1,6 @@
-![Mirai logo](https://github.com/teampathfinders/mirai/blob/master/resources/logo-wide.png?raw=true)
+<p align="center">
+	<img src="https://github.com/teampathfinders/mirai/blob/master/resources/logo-wide.png?raw=true" />
+</p>
 
 Robust dedicated server software for Minecraft: Bedrock Edition built with safety in mind.
 
@@ -33,8 +35,12 @@ In case you want to connect to the server you are hosting locally, make sure to 
 
 If you do not plan on connecting to a server on the same PC, this is not necessary.
 
+## Contributing
+
+First of all thanks for wanting to contribute, we really need some more helping hands to really work on this software at a good rate. Make sure to read the [contributing guidelines](https://github.com/teampathfinders/mirai/blob/master/CONTRIBUTING.md) for more information on how to contribute!
+
 #### Legal
 This project is licensed under the Apache 2.0 license.
 LevelDB is licensed under [BSD-3 license](https://github.com/teampathfinders/leveldb/blob/master/LICENSE).
 
-This project is not affiliated with Microsoft or Mojang Studios.
+This project is not affiliated with Microsoft or Mojang Studios in any way.
