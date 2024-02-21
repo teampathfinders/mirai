@@ -9,4 +9,4 @@ util = { package = "mirai-util", path = "../util" }
 
 anyhow = "1.0.80"
 tracing = "0.1.40"
-fred = "8.0.2"
+fred = "8.0.3"
