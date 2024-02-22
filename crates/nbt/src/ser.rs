@@ -368,7 +368,7 @@ where
         match M::AS_ENUM {
             Variant::BigEndian => self.writer.write_i32_be(v.len() as i32),
             Variant::LittleEndian => self.writer.write_i32_le(v.len() as i32),
-            Variant::Variable => self.writer.write_var_u32(v.len() as u32),
+            Variant::Variable => self.writer.write_var_i32(v.len() as i32),
         }?;
 
         self.writer.write_all(v)?;
@@ -492,7 +492,7 @@ where
             match F::AS_ENUM {
                 Variant::BigEndian => self.writer.write_i32_be(self.len as i32),
                 Variant::LittleEndian => self.writer.write_i32_le(self.len as i32),
-                Variant::Variable => self.writer.write_var_u32(self.len as u32),
+                Variant::Variable => self.writer.write_var_i32(self.len as i32),
             }?;
             self.len = 0;
         }
@@ -526,7 +526,7 @@ where
             match M::AS_ENUM {
                 Variant::BigEndian => self.writer.write_i32_be(self.len as i32),
                 Variant::LittleEndian => self.writer.write_i32_le(self.len as i32),
-                Variant::Variable => self.writer.write_var_u32(self.len as u32),
+                Variant::Variable => self.writer.write_var_i32(self.len as i32),
             }?;
             self.len = 0;
         }
