@@ -49,18 +49,6 @@ impl InstanceBuilder {
         Instance::builder()
     }
 
-    /// Sets the host address of the database.
-    pub fn database_host<S: Into<String>>(mut self, host: S) -> InstanceBuilder {
-        self.0.database.host = host.into();
-        self
-    }
-
-    /// Sets the port of the database.
-    pub fn database_port<I: Into<u16>>(mut self, port: I) -> InstanceBuilder {
-        self.0.database.port = port.into();
-        self
-    }
-
     /// Sets the path to the level.
     pub fn level_path<P: Into<String>>(mut self, path: P) -> InstanceBuilder {
         self.0.level.path = path.into();
@@ -304,7 +292,7 @@ impl Instance {
                 permission_level: CommandPermissionLevel::Normal,
             },
             |_input, ctx| {
-                ctx.caller.send(CreditsUpdate {
+                let _ = ctx.caller.send(CreditsUpdate {
                     runtime_id: 1,
                     status: CreditsStatus::Start,
                 });

@@ -23,17 +23,11 @@ pub struct Provider {
 impl Provider {
     /// Opens the specified world.
     ///
-    /// # Safety
-    ///
-    /// It is up to the caller to ensure that the given `path` is not
-    /// already in use by another `Provider`.
-    /// Multiple databases owning the same directory is *guaranteed* to cause corruption.
-    ///
     /// # Errors
     ///
-    /// This method can fail if the database cannot be opened (it does not exist, it is corrupted, etc.)
+    /// This method can fail if the database cannot be opened (it does not exist, it is corrupted, it is already in use, etc.)
     /// It can also fail if the given path is not valid UTF-8.
-    pub unsafe fn open<P>(path: P) -> anyhow::Result<Self>
+    pub fn open<P>(path: P) -> anyhow::Result<Self>
     where
         P: AsRef<Path>,
     {
