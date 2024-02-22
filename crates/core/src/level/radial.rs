@@ -75,7 +75,7 @@ impl Region for RadialRegion {
         None
     }
 
-    fn as_index(&self, coord: &Vector<i32, 3>) -> Option<usize> {
+    fn as_index(&self, _coord: &Vector<i32, 3>) -> Option<usize> {
         todo!()
     }
 

@@ -1,14 +1,16 @@
 use std::{future::Future, pin::Pin, sync::{atomic::{AtomicBool, Ordering}, Arc}, task::{Context, Poll, Waker}};
 
 use futures::Sink;
+use level::provider::Provider;
 use parking_lot::Mutex;
+use rayon::iter::{IntoParallelIterator, ParallelIterator};
 use tokio::sync::mpsc;
 use tokio_util::sync::CancellationToken;
 use util::Joinable;
 
 use super::IndexedSubChunk;
 
-/// Future that resolves when [`AsyncState`] transitions into a busy state.
+/// Future that resolves when [`FlushState`] transitions into a busy state.
 pub struct Flushing<'state> {
     state: &'state FlushStateInner
 }
@@ -71,7 +73,6 @@ impl FlushState {
             std::mem::take(&mut *lock)
         };
 
-        println!("Transition to idle, waking {} waiters", wakers.len());
         for waker in wakers {
             waker.wake();
         }
@@ -86,7 +87,6 @@ impl FlushState {
             std::mem::take(&mut *lock)
         };
 
-        println!("Transition to busy, waking {} waiters", wakers.len());
         for waker in wakers {
             waker.wake();
         }
@@ -130,12 +130,14 @@ impl Future for FlushState {
 /// Collects all subchunk updates and writes them to disk periodically.
 pub struct Collector {
     producer: mpsc::Sender<IndexedSubChunk>,
+    provider: Arc<Provider>,
     state: FlushState,
     shutdown_token: CancellationToken
 }
 
 impl Collector {
     pub(crate) fn new(
+        provider: Arc<Provider>,
         instance_token: CancellationToken,
         collector_size: usize
     ) -> Self {
@@ -143,10 +145,12 @@ impl Collector {
         let state = FlushState::new();
         let shutdown_token = CancellationToken::new();
 
-        tokio::spawn(Self::collection(instance_token, shutdown_token.clone(), consumer, state.clone()));
+        tokio::spawn(Collector::collection(
+            instance_token, shutdown_token.clone(), consumer, state.clone(), collector_size
+        ));
 
         Self {
-            producer, state, shutdown_token
+            producer, provider, state, shutdown_token
         }
     }
 
@@ -162,27 +166,54 @@ impl Collector {
         instance_token: CancellationToken,
         shutdown_token: CancellationToken,
         mut receiver: mpsc::Receiver<IndexedSubChunk>, 
-        state: FlushState
+        state: FlushState,
+        collector_size: usize
     ) {
         loop {
             tokio::select! {
                 _ = state.flushing() => {
-                    while let Ok(recv) = receiver.try_recv() {
+                    // Empty channel and collect all changes.
+                    let collected = Collector::collect(&mut receiver, collector_size);
 
-                    }
-                    state.finish();
+                    // Resume normal sink operations.
+                    state.finish(); 
+
+                    Collector::flush(collected);
                 },
                 _ = instance_token.cancelled() => break
             }
         }   
 
         // Final flush before closing to prevent data loss
-        
-
-        state.finish();
-        shutdown_token.cancel();
+        let collected = Collector::collect(&mut receiver, collector_size);
+        Collector::flush(collected);
 
         tracing::info!("Level sink closed");
+    }
+
+    #[inline]
+    fn collect(
+        receiver: &mut mpsc::Receiver<IndexedSubChunk>,
+        collector_size: usize
+    ) -> Vec<IndexedSubChunk> {
+        let mut buffered = Vec::with_capacity(collector_size);
+        while let Ok(recv) = receiver.try_recv() {
+            buffered.push(recv);
+        }
+        
+        buffered
+    }
+
+    fn flush(data: Vec<IndexedSubChunk>) {
+        rayon::spawn(|| {
+            
+
+            data
+                .into_par_iter()
+                .for_each(|chunk| {
+                    
+                });
+        });
     }
 }
 

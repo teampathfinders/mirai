@@ -3,7 +3,7 @@
 use crate::biome::Biomes;
 use crate::database::Database;
 use crate::settings::LevelSettings;
-use crate::{DataKey, KeyType, SubChunk};
+use crate::{DataKey, KeyType, SubChunk, WriteBatch};
 use anyhow::anyhow;
 use proto::types::Dimension;
 use std::path::{Path, PathBuf};
@@ -58,7 +58,7 @@ impl Provider {
         Ok(settings)
     }
 
-    /// Gets the version of the specified chunk.
+    /// Load the version of the specified chunk.
     ///
     /// As of writing, the current chunk version is `40`.
     ///
@@ -71,7 +71,7 @@ impl Provider {
     ///
     /// This method returns `None` if the requested chunk was not found
     /// and an error if the data could not be loaded.
-    pub fn get_version<I>(&self, coordinates: I, dimension: Dimension) -> anyhow::Result<Option<u8>>
+    pub fn chunk_version<I>(&self, coordinates: I, dimension: Dimension) -> anyhow::Result<Option<u8>>
     where
         I: Into<Vector<i32, 2>>,
     {
@@ -84,7 +84,7 @@ impl Provider {
         self.database.get(key)?.map_or_else(|| Ok(None), |data| Ok(Some(data[0])))
     }
 
-    /// Gets the biomes in the specified chunk.
+    /// Load the biomes in the specified chunk.
     ///
     /// See [`Biomes`] for more information.
     ///
@@ -97,7 +97,7 @@ impl Provider {
     ///
     /// This method returns `None` if the requested chunk was not found
     /// and an error if the data could not be loaded.
-    pub fn get_biomes<I>(&self, coordinates: I, dimension: Dimension) -> anyhow::Result<Option<Biomes>>
+    pub fn biomes<I>(&self, coordinates: I, dimension: Dimension) -> anyhow::Result<Option<Biomes>>
     where
         I: Into<Vector<i32, 2>>,
     {
@@ -115,7 +115,7 @@ impl Provider {
         }
     }
 
-    /// Gets the specified sub chunk from the database.
+    /// Load the specified sub chunk from the database.
     ///
     /// See [`SubChunk`] for more information.
     ///
@@ -129,7 +129,7 @@ impl Provider {
     ///
     /// This method returns `None` if the sub chunk was not found
     /// and an error if the data could not be loaded.
-    pub fn get_subchunk<I>(&self, coordinates: I, index: i8, dimension: Dimension) -> anyhow::Result<Option<SubChunk>>
+    pub fn subchunk<I>(&self, coordinates: I, index: i8, dimension: Dimension) -> anyhow::Result<Option<SubChunk>>
     where
         I: Into<Vector<i32, 2>>,
     {
@@ -145,5 +145,11 @@ impl Provider {
         } else {
             Ok(None)
         }
+    }
+
+    /// Create a new write batch that can optionally be used in write operations.
+    #[inline]
+    pub fn batch() -> WriteBatch {
+        WriteBatch::new()
     }
 }
