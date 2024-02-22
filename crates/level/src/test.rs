@@ -15,7 +15,7 @@ static LOCK: Mutex<()> = Mutex::new(());
 #[test]
 fn level_settings() {
     let _lock = LOCK.lock().unwrap();
-    let provider = Provider::open("../../resources/level69").unwrap();
+    let provider = Provider::open("../../resources/level").unwrap();
     let _settings = provider.settings().unwrap();
 }
 //
