@@ -323,8 +323,6 @@ impl BedrockClient {
 
         tracing::Span::current().record("username", &request.identity.name);
 
-        self.replicator.save_session(request.identity.xuid, &request.identity.name).await?;
-
         let Ok((encryptor, jwt)) = Encryptor::new(&request.identity.public_key) else {
             self.kick_with_reason("Encryption failed", DisconnectReason::BadPacket)?;
             anyhow::bail!("Failed to enable encryption");

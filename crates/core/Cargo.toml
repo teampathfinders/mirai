@@ -24,7 +24,6 @@ nbt = { package = "mirai-nbt", path = "../nbt" }
 util = { package = "mirai-util", path = "../util" }
 level = { package = "mirai-level", path = "../level" }
 proto = { package = "mirai-proto", path = "../proto" }
-replicator = { package = "mirai-repl", path = "../repl" }
 raknet = { package = "mirai-raknet", path = "../raknet" }
 macros = { package = "mirai-macros", path = "../macros" }
 

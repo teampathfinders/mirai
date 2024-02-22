@@ -29,7 +29,6 @@ use proto::raknet::{
     IncompatibleProtocol, OpenConnectionReply1, OpenConnectionReply2, OpenConnectionRequest1, OpenConnectionRequest2, UnconnectedPing,
     UnconnectedPong, RAKNET_VERSION,
 };
-use replicator::Replicator;
 
 /// Local IPv4 address
 pub const IPV4_LOCAL_ADDR: Ipv4Addr = Ipv4Addr::UNSPECIFIED;
@@ -97,20 +96,15 @@ impl InstanceBuilder {
         let ipv4_socket = Arc::new(ipv4_socket);
         let ipv6_socket = ipv6_socket.map(Arc::new);
 
-        let replicator = Replicator::new(&self.0.database.host, self.0.database.port)
-            .await
-            .context("Unable to create replicator")?;
-
         let running_token = CancellationToken::new();
 
-        let replicator = Arc::new(replicator);
         let command_service = crate::command::Service::new(running_token.clone());
         let level_service = crate::level::Service::new(crate::level::ServiceOptions {
             instance_token: running_token.clone(),
             level_path: self.0.level.path.clone(),
         })?;
 
-        let user_map = Arc::new(Clients::new(replicator, Arc::clone(&command_service), Arc::clone(&level_service)));
+        let user_map = Arc::new(Clients::new(Arc::clone(&command_service), Arc::clone(&level_service)));
         let instance = Instance {
             ipv4_socket,
             ipv6_socket,

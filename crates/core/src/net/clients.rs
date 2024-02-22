@@ -8,7 +8,6 @@ use dashmap::DashMap;
 use proto::uuid::Uuid;
 use raknet::{BroadcastPacket, RakNetCreateDescription, RakNetClient};
 use proto::bedrock::{ConnectedPacket, Disconnect, DisconnectReason};
-use replicator::Replicator;
 use util::{RVec, Joinable, Serialize};
 
 use tokio::sync::{broadcast, mpsc};
@@ -45,8 +44,6 @@ pub struct Clients {
     /// This is used by other services to wait for all players to disconnect before
     /// shutting down.
     shutdown_token: CancellationToken,
-
-    replicator: Arc<Replicator>,
     
     connecting_map: Arc<DashMap<SocketAddr, UserMapEntry<RakNetClient>>>,
     connected_map: Arc<DashMap<SocketAddr, UserMapEntry<BedrockClient>>>,
@@ -60,15 +57,14 @@ pub struct Clients {
 
 impl Clients {
     /// Creates a new user map.
-    pub fn new(replicator: Arc<Replicator>, commands: Arc<crate::command::Service>, level: Arc<crate::level::Service>) -> Self {
+    pub fn new(commands: Arc<crate::command::Service>, level: Arc<crate::level::Service>) -> Self {
         let connecting_map = Arc::new(DashMap::new());
         let connected_map = Arc::new(DashMap::new());
 
         let (broadcast, _) = broadcast::channel(BROADCAST_CHANNEL_CAPACITY);
 
         Self {
-            shutdown_token: CancellationToken::new(), 
-            replicator, 
+            shutdown_token: CancellationToken::new(),
             connecting_map, 
             connected_map, 
             broadcast, 
@@ -88,7 +84,6 @@ impl Clients {
         
         let connecting_map = Arc::clone(&self.connecting_map);
         let connected_map = Arc::clone(&self.connected_map);
-        let replicator = Arc::clone(&self.replicator);
         let broadcast = self.broadcast.clone();
         let endpoint = Arc::clone(&self.commands);
         let level = Arc::clone(&self.level);
@@ -105,7 +100,6 @@ impl Clients {
                 let bedrock_user = UserMapEntry {
                     channel: raknet_user.channel, state: BedrockClient::new(
                         raknet_user.state, 
-                        replicator, 
                         state_rx, 
                         endpoint, 
                         level, 

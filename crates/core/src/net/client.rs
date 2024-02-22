@@ -15,7 +15,6 @@ use tokio::sync::{broadcast, mpsc};
 use proto::bedrock::{CommandPermissionLevel, Disconnect, GameMode, PermissionLevel, Skin, ConnectedPacket, CONNECTED_PACKET_ID, CompressionAlgorithm, Header, RequestNetworkSettings, Login, ClientToServerHandshake, CacheStatus, ResourcePackClientResponse, ViolationWarning, ChunkRadiusRequest, Interact, TextMessage, SetLocalPlayerAsInitialized, MovePlayer, PlayerAction, RequestAbility, Animate, CommandRequest, SettingsCommand, ContainerClose, FormResponseData, TickSync, UpdateSkin, PlayerAuthInput, DisconnectReason};
 use proto::crypto::{Encryptor, BedrockIdentity, BedrockClientInfo};
 use proto::uuid::Uuid;
-use replicator::Replicator;
 
 use tokio_util::sync::CancellationToken;
 use util::{AtomicFlag, BinaryRead, BinaryWrite, Deserialize, Joinable, RVec, pool, Serialize, Vector};
@@ -37,8 +36,6 @@ pub struct BedrockClient {
     pub(crate) should_decompress: AtomicFlag,
     /// Whether the client supports the blob cache.
     pub(crate) supports_cache: AtomicBool,
-    /// Replication layer.
-    pub(crate) replicator: Arc<Replicator>,
     pub(crate) raknet: Arc<RakNetClient>,
     pub(crate) player: OnceLock<PlayerData>,
 
@@ -56,7 +53,6 @@ impl BedrockClient {
     /// Creates a new user.
     pub fn new(
         raknet: Arc<RakNetClient>,
-        replicator: Arc<Replicator>,
         receiver: mpsc::Receiver<RakNetCommand>,
         commands: Arc<crate::command::Service>,
         level: Arc<crate::level::Service>,
@@ -70,7 +66,6 @@ impl BedrockClient {
             expected: AtomicU32::new(RequestNetworkSettings::ID),
             should_decompress: AtomicFlag::new(),
             supports_cache: AtomicBool::new(false),
-            replicator,
             raknet,
             player: OnceLock::new(),
             forms: forms::Subscriber::new(),
