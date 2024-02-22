@@ -4,21 +4,17 @@ use std::sync::{Arc, OnceLock, Weak};
 use std::sync::atomic::{
     AtomicBool, AtomicI64, AtomicU32, Ordering
 };
-use std::time::Instant;
+use std::time::{Instant, Duration};
 
 use anyhow::Context;
 use flate2::Compression;
 use flate2::write::DeflateEncoder;
 use parking_lot::RwLock;
-use prometheus_client::metrics::gauge::Gauge;
-use prometheus_client::metrics::histogram::{linear_buckets, Histogram};
 use raknet::{BroadcastPacket, RakNetCommand, RakNetClient, SendConfig, DEFAULT_SEND_CONFIG};
-use systemstat::Duration;
 use tokio::sync::{broadcast, mpsc};
 use proto::bedrock::{CommandPermissionLevel, Disconnect, GameMode, PermissionLevel, Skin, ConnectedPacket, CONNECTED_PACKET_ID, CompressionAlgorithm, Header, RequestNetworkSettings, Login, ClientToServerHandshake, CacheStatus, ResourcePackClientResponse, ViolationWarning, ChunkRadiusRequest, Interact, TextMessage, SetLocalPlayerAsInitialized, MovePlayer, PlayerAction, RequestAbility, Animate, CommandRequest, SettingsCommand, ContainerClose, FormResponseData, TickSync, UpdateSkin, PlayerAuthInput, DisconnectReason};
 use proto::crypto::{Encryptor, BedrockIdentity, BedrockClientInfo};
 use proto::uuid::Uuid;
-use replicator::Replicator;
 
 use tokio_util::sync::CancellationToken;
 use util::{AtomicFlag, BinaryRead, BinaryWrite, Deserialize, Joinable, RVec, pool, Serialize, Vector};
@@ -26,16 +22,7 @@ use util::{AtomicFlag, BinaryRead, BinaryWrite, Deserialize, Joinable, RVec, poo
 use crate::forms;
 use crate::instance::Instance;
 
-use lazy_static::lazy_static;
-
 const REQUEST_TIMEOUT: Duration = Duration::from_millis(50);
-
-lazy_static! {
-    #[doc(hidden)]
-    pub static ref CONNECTED_CLIENTS_METRIC: Gauge::<i64, AtomicI64> = Gauge::default();
-    #[doc(hidden)]
-    pub static ref RESPONSE_TIMES_METRIC: Histogram = Histogram::new(linear_buckets(0.0, 1.0, 25));
-}
 
 /// Represents a user connected to the server.
 pub struct BedrockClient {
@@ -49,8 +36,6 @@ pub struct BedrockClient {
     pub(crate) should_decompress: AtomicFlag,
     /// Whether the client supports the blob cache.
     pub(crate) supports_cache: AtomicBool,
-    /// Replication layer.
-    pub(crate) replicator: Arc<Replicator>,
     pub(crate) raknet: Arc<RakNetClient>,
     pub(crate) player: OnceLock<PlayerData>,
 
@@ -68,15 +53,12 @@ impl BedrockClient {
     /// Creates a new user.
     pub fn new(
         raknet: Arc<RakNetClient>,
-        replicator: Arc<Replicator>,
         receiver: mpsc::Receiver<RakNetCommand>,
         commands: Arc<crate::command::Service>,
         level: Arc<crate::level::Service>,
         broadcast: broadcast::Sender<BroadcastPacket>,
         instance: Weak<Instance>
     ) -> Arc<Self> {
-        CONNECTED_CLIENTS_METRIC.inc();
-
         let client = Arc::new(Self {
             encryptor: OnceLock::new(),
             identity: OnceLock::new(),
@@ -84,7 +66,6 @@ impl BedrockClient {
             expected: AtomicU32::new(RequestNetworkSettings::ID),
             should_decompress: AtomicFlag::new(),
             supports_cache: AtomicBool::new(false),
-            replicator,
             raknet,
             player: OnceLock::new(),
             forms: forms::Subscriber::new(),
@@ -162,8 +143,6 @@ impl BedrockClient {
         );
 
         self.shutdown_token.cancel();
-
-        CONNECTED_CLIENTS_METRIC.dec();
     }
 
     /// Returns the instance this client belongs to.
@@ -348,8 +327,6 @@ impl BedrockClient {
     /// After processing, this function sends the processed packet to [`handle_frame_body`](Self::handle_frame_body)
     /// function,
     async fn handle_encrypted_frame(self: &Arc<Self>, mut packet: RVec) -> anyhow::Result<()> {
-        let timestamp = Instant::now();
-
         if packet[0] != 0xfe {
             anyhow::bail!("First byte in a Bedrock proto packet should be 0xfe");
         }
@@ -385,8 +362,6 @@ impl BedrockClient {
         } else {
             self.handle_frame_body(packet).await
         };
-
-        RESPONSE_TIMES_METRIC.observe(timestamp.elapsed().as_millis() as f64);
 
         out
     }

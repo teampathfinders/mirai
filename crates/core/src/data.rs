@@ -153,3 +153,118 @@
 //         &self.item_stacks
 //     }
 // }
+
+use std::collections::HashMap;
+
+use level::PaletteEntry;
+use nohash_hasher::BuildNoHashHasher;
+use parking_lot::{Mutex, RwLock};
+use proto::bedrock::{CreativeItem, ItemStack};
+use util::BinaryRead;
+
+const CREATIVE_ITEMS_RAW: &[u8] = include_bytes!("../include/creative_items.nbt");
+
+#[derive(Debug, serde::Deserialize)]
+struct RawCreativeItem {
+    pub name: String,
+    pub meta: i16,
+    #[serde(default)]
+    pub nbt: HashMap<String, nbt::Value>,
+    #[serde(default)]
+    pub block_properties: HashMap<String, nbt::Value>
+}
+
+pub struct CreativeItems {
+    items: Vec<CreativeItem>
+}
+
+impl CreativeItems {
+    pub fn new(block_states: &BlockStates) -> anyhow::Result<Self> {
+        tracing::debug!("Loading creative items");
+
+        let nbt: Vec<RawCreativeItem> = nbt::from_var_bytes(CREATIVE_ITEMS_RAW)?.0;
+
+        let mut items = Vec::with_capacity(nbt.len());
+        for item in nbt {
+            // This item has a block associated with it.
+            if !item.block_properties.is_empty() {
+                
+            } else {
+
+            }
+        }
+
+        Ok(Self { items })
+    }
+}
+
+const BLOCK_STATES_RAW: &[u8] = include_bytes!("../include/block_states.nbt");
+
+/// Maps block states to runtime IDs.
+#[derive(Debug, Default)]
+pub struct BlockStates {
+    /// Converts state hashes to runtime IDs.
+    runtime_hashes: HashMap<u64, u32, BuildNoHashHasher<u64>>,
+    air_id: u32,
+}
+
+impl BlockStates {
+    /// Creates a new block state map.
+    ///
+    /// # Panics
+    ///
+    /// This function panics if the deserialized state count is not equal to the expected count.
+    pub fn new() -> anyhow::Result<Self> {
+        tracing::debug!("Loading block state data");
+
+        const STATE_COUNT: usize = 14127;
+        let mut reader = BLOCK_STATES_RAW;
+
+        let mut states = Self { 
+            runtime_hashes: HashMap::with_capacity_and_hasher(STATE_COUNT, BuildNoHashHasher::default()), 
+            air_id: 0 
+        };
+
+        while reader.remaining() > 0 {
+            let (item, n) = nbt::from_var_bytes(reader)?;
+            states.register(item)?;
+
+            (_, reader) = reader.split_at(n);
+        }
+
+        Ok(states)
+
+        // let mut map = BlockStates::default();
+        // map.runtime_hashes.reserve(STATE_COUNT);
+
+        // let mut current_id = 0;
+        // while reader.remaining() > 0 {
+        //     let (item, n): (PaletteEntry, usize) = nbt::from_var_bytes(reader)?;
+        //     reader = reader.split_at(n).1;
+
+        //     let state_hash = item.hash();
+        //     map.runtime_hashes.insert(state_hash, current_id);
+
+        //     if item.name == "minecraft:air" {
+        //         map.air_id = current_id;
+        //     }
+
+        //     current_id += 1;
+        // }
+
+        // assert_eq!(STATE_COUNT, current_id as usize, "Missing block state");
+
+        // Ok(map)
+    }
+
+    pub fn register(&mut self, state: PaletteEntry) -> anyhow::Result<()> {
+        let hash = state.hash();
+
+        if state.name == "minecraft:fence_gate" {
+            // dbg!(&state, hash);
+            dbg!(hash);
+        }
+
+        Ok(())
+    }
+}

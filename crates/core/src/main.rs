@@ -1,6 +1,6 @@
 #![allow(dead_code)]
 
-use std::sync::atomic::{AtomicU16, Ordering};
+use std::{net::SocketAddrV4, str::FromStr, sync::atomic::{AtomicU16, Ordering}};
 
 use anyhow::Context;
 use tokio::runtime;
@@ -21,25 +21,7 @@ fn main() -> anyhow::Result<()> {
 
     init_logging().context("Unable to initialise logging")?;
 
-    let host = std::env::vars().find_map(|(k, v)| if k == "REDIS_HOST" { Some(v) } else { None });
-
-    let host = if let Some(host) = host {
-        host
-    } else {
-        tracing::debug!("No REDIS_HOST environment variable found, using default host 127.0.0.1");
-        String::from("127.0.0.1")
-    };
-
-    let port = std::env::vars().find_map(|(k, v)| if k == "REDIS_PORT" { Some(v) } else { None });
-
-    let port: u16 = if let Some(port) = port {
-        port.parse().context("Failed to parse REDIS_PORT argument")?
-    } else {
-        tracing::debug!("No REDIS_PORT environment variable found, using default port 6379");
-        6379
-    };
-
-    let builder = Instance::builder().database_host(host).database_port(port);
+    let builder = Instance::builder().ipv4_address(SocketAddrV4::from_str("0.0.0.0:19133").unwrap());
 
     runtime.block_on(async move {
         let instance = builder.build().await?;

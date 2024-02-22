@@ -19,6 +19,7 @@ use util::{CowString, Deserialize, Joinable, RVec, ReserveTo, Serialize};
 
 use crate::command::{self, HandlerOutput, HandlerResult, ParsedCommand};
 use crate::config::Config;
+use crate::data::{BlockStates, CreativeItems};
 use crate::net::{Clients, ForwardablePacket};
 use proto::bedrock::{
     Command, CommandDataType, CommandEnum, CommandOverload, CommandParameter, CommandPermissionLevel, CreditsStatus, CreditsUpdate,
@@ -28,7 +29,6 @@ use proto::raknet::{
     IncompatibleProtocol, OpenConnectionReply1, OpenConnectionReply2, OpenConnectionRequest1, OpenConnectionRequest2, UnconnectedPing,
     UnconnectedPong, RAKNET_VERSION,
 };
-use replicator::Replicator;
 
 /// Local IPv4 address
 pub const IPV4_LOCAL_ADDR: Ipv4Addr = Ipv4Addr::UNSPECIFIED;
@@ -47,18 +47,6 @@ impl InstanceBuilder {
     /// Creates a new instance builder. This is the same as calling [`builder`](Instance::builder) on [`Instance`].
     pub fn new() -> InstanceBuilder {
         Instance::builder()
-    }
-
-    /// Sets the host address of the database.
-    pub fn database_host<S: Into<String>>(mut self, host: S) -> InstanceBuilder {
-        self.0.database.host = host.into();
-        self
-    }
-
-    /// Sets the port of the database.
-    pub fn database_port<I: Into<u16>>(mut self, port: I) -> InstanceBuilder {
-        self.0.database.port = port.into();
-        self
     }
 
     /// Sets the path to the level.
@@ -96,20 +84,15 @@ impl InstanceBuilder {
         let ipv4_socket = Arc::new(ipv4_socket);
         let ipv6_socket = ipv6_socket.map(Arc::new);
 
-        let replicator = Replicator::new(&self.0.database.host, self.0.database.port)
-            .await
-            .context("Unable to create replicator")?;
-
         let running_token = CancellationToken::new();
 
-        let replicator = Arc::new(replicator);
         let command_service = crate::command::Service::new(running_token.clone());
         let level_service = crate::level::Service::new(crate::level::ServiceOptions {
             instance_token: running_token.clone(),
             level_path: self.0.level.path.clone(),
         })?;
 
-        let user_map = Arc::new(Clients::new(replicator, Arc::clone(&command_service), Arc::clone(&level_service)));
+        let user_map = Arc::new(Clients::new(Arc::clone(&command_service), Arc::clone(&level_service)));
         let instance = Instance {
             ipv4_socket,
             ipv6_socket,
@@ -275,6 +258,9 @@ impl Instance {
         // let level = Level::new(self.user_map.clone(), self.token.clone())?;
         // self.user_map.set_level(level);
 
+        let block_states = BlockStates::new()?;
+        let creative_items = CreativeItems::new(&block_states)?;
+
         self.clients.set_instance(self)?;
         self.command_service.set_instance(self)?;
         self.level_service.set_instance(self)?;
@@ -306,7 +292,7 @@ impl Instance {
                 permission_level: CommandPermissionLevel::Normal,
             },
             |_input, ctx| {
-                ctx.caller.send(CreditsUpdate {
+                let _ = ctx.caller.send(CreditsUpdate {
                     runtime_id: 1,
                     status: CreditsStatus::Start,
                 });

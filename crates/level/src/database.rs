@@ -1,4 +1,4 @@
-use anyhow::anyhow;
+use anyhow::{anyhow, Context as _};
 use util::RVec;
 
 use std::ptr::NonNull;
@@ -170,21 +170,13 @@ pub struct Database {
 impl Database {
     /// Opens the database at the specified path.
     ///
-    /// # Safety
-    ///
-    /// It is up to the caller to ensure that the given `path` is not
-    /// already in use by another `Database`.
-    /// Multiple databases owning the same directory is *guaranteed* to cause corruption.
-    ///
     /// # Errors
     ///
     /// This method returns an error if the database could not be opened.
-    pub unsafe fn open<P>(path: P) -> anyhow::Result<Self>
+    pub fn open<P>(path: P) -> anyhow::Result<Self>
     where
         P: AsRef<str>,
     {
-        // Ensure that there can only be a single database open at once.
-        // Multiple databases causes corruption.
         let ffi_path = CString::new(path.as_ref())?;
 
         // SAFETY: This function is guaranteed to not return exceptions.
@@ -320,12 +312,16 @@ unsafe fn translate_ffi_error(result: ffi::LevelResult) -> anyhow::Error {
     // SAFETY: This string is guaranteed to have a null termination character,
     // as it has been created by the c_str method on std::string in C++.
     let ffi_err = CStr::from_ptr(result.data as *const c_char);
-    let str = ffi_err.to_string_lossy();
+    let str = match ffi_err.to_str().context("Error returned LevelDB contains invalid UTF-8") {
+        Ok(str) => str,
+        Err(err) => return err
+    };
+    let owned = str.to_owned();
 
     // Deallocate original string, now that it is converted into an owned Rust string.
     // SAFETY: The data has not been modified and has been allocated by C++.
     // It is therefore safe to deallocate.
     ffi::level_deallocate_array(result.data as *mut c_char);
 
-    anyhow!(str)
+    anyhow!(owned)
 }
