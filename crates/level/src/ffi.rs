@@ -34,28 +34,40 @@ pub struct LevelResult {
 
 extern "C" {
     /// Open a LevelDB database.
-    pub fn level_open(path: *const c_char) -> LevelResult;
+    pub fn db_open(path: *const c_char) -> LevelResult;
     /// Close a LevelDB database.
     /// This also frees the pointers, it must no longer be used.
-    pub fn level_close(database: *mut c_void);
+    pub fn db_close(database: *mut c_void);
     /// Loads a value from the database.
-    pub fn level_get(database: *mut c_void, key: *const c_char, key_size: c_int) -> LevelResult;
+    pub fn db_get(database: *mut c_void, key: *const c_char, key_size: c_int) -> LevelResult;
     /// Writes a value into the database.
-    pub fn level_insert(database: *mut c_void, key: *const c_char, key_size: c_int, value: *const c_char, value_size: c_int) -> LevelResult;
+    pub fn db_put(database: *mut c_void, key: *const c_char, key_size: c_int, value: *const c_char, value_size: c_int) -> LevelResult;
     /// Deletes a key from the database.
-    pub fn level_remove(database: *mut c_void, key: *const c_char, key_size: c_int) -> LevelResult;
+    pub fn db_delete(database: *mut c_void, key: *const c_char, key_size: c_int) -> LevelResult;
     /// Deallocates a string previously allocated by another function.
-    pub fn level_deallocate_array(array: *mut c_char);
+    pub fn buffer_destroy(array: *mut c_char);
     /// Creates an iterator over the database keys.
-    pub fn level_iter(database: *mut c_void) -> SizedData;
+    pub fn iter_new(database: *mut c_void) -> SizedData;
     /// Destroys an iterator previously created with [`level_iter`].
-    pub fn level_destroy_iter(iter: *mut c_void);
+    pub fn iter_destroy(iter: *mut c_void);
     /// Whether the iterator is still valid.
-    pub fn level_iter_valid(iter: *const c_void) -> bool;
+    pub fn iter_valid(iter: *const c_void) -> bool;
     /// The current key the iterator is on.
-    pub fn level_iter_key(iter: *const c_void) -> SizedData;
+    pub fn iter_key(iter: *const c_void) -> SizedData;
     /// The current value the iterator is on.
-    pub fn level_iter_value(iter: *const c_void) -> SizedData;
+    pub fn iter_value(iter: *const c_void) -> SizedData;
     /// Moves the iterator to the next position.
-    pub fn level_iter_next(iter: *mut c_void);
+    pub fn iter_next(iter: *mut c_void);
+    /// Creates a new reusable batch.
+    pub fn batch_new() -> *mut c_void;
+    /// Adds a delete operation to the batch.
+    pub fn batch_delete(batch: *mut c_void, key: *const c_char, key_size: c_int);
+    /// Adds a put operation to the batch.
+    pub fn batch_put(batch: *mut c_void, key: *const c_char, key_size: c_int, val: *const c_char, val_size: c_int);
+    /// Clears all operations from the batch.
+    pub fn batch_clear(batch: *mut c_void);
+    /// Deallocates the batch.
+    pub fn batch_destroy(batch: *mut c_void);
+    /// Executes the batch on the provided database
+    pub fn batch_execute(db: *mut c_void, batch: *mut c_void) -> LevelResult;
 }
