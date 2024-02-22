@@ -159,8 +159,9 @@ use std::collections::HashMap;
 use level::PaletteEntry;
 use nohash_hasher::BuildNoHashHasher;
 use parking_lot::{Mutex, RwLock};
-use proto::bedrock::{CreativeItem, ItemStack};
-use util::BinaryRead;
+use rayon::iter::WhileSome;
+use proto::bedrock::{CreativeItem, ItemStack, ItemType};
+use util::{BinaryRead, RString};
 
 const CREATIVE_ITEMS_RAW: &[u8] = include_bytes!("../include/creative_items.nbt");
 
@@ -175,7 +176,7 @@ struct RawCreativeItem {
 }
 
 pub struct CreativeItems {
-    items: Vec<CreativeItem>
+    pub(crate) items: Vec<CreativeItem>
 }
 
 impl CreativeItems {
@@ -185,12 +186,46 @@ impl CreativeItems {
         let nbt: Vec<RawCreativeItem> = nbt::from_var_bytes(CREATIVE_ITEMS_RAW)?.0;
 
         let mut items = Vec::with_capacity(nbt.len());
-        for item in nbt {
-            // This item has a block associated with it.
-            if !item.block_properties.is_empty() {
-                
-            } else {
+        for (i, item) in nbt.into_iter().enumerate() {
+            if item.block_properties.is_empty() {
+                let citem = CreativeItem {
+                    network_id: i as i32 + 1,
+                    meta: item.meta as u32,
+                    nbt: item.nbt,
+                    count: 64,
+                    block_id: 0,
+                    can_destroy: vec![],
+                    can_place_on: vec![]
+                };
 
+                items.push(citem);
+            } else {
+                // // This item has a block associated with it.
+                // let Some(block_runtime_id) = block_states.get(item) else {
+                //     continue
+                // };
+                //
+                // println!("found");
+                //
+                // let citem = CreativeItem {
+                //     network_id: i as u32 + 1,
+                //     item: ItemStack {
+                //         item_type: ItemType {
+                //             network_id: i as i32 + 1,
+                //             meta: item.meta as u32
+                //         },
+                //         block_runtime_id: block_runtime_id as i32,
+                //         count: 64,
+                //         nbt_data: item.nbt.clone(),
+                //         can_be_placed_on: vec![],
+                //         can_break: vec![],
+                //         has_network_id: true,
+                //     }
+                // };
+                //
+                // dbg!(&citem);
+
+                // items.push(citem);
             }
         }
 
@@ -232,6 +267,8 @@ impl BlockStates {
             (_, reader) = reader.split_at(n);
         }
 
+        // dbg!(&states);
+
         Ok(states)
 
         // let mut map = BlockStates::default();
@@ -257,13 +294,29 @@ impl BlockStates {
         // Ok(map)
     }
 
+    pub fn get(&self, item: &RawCreativeItem) -> Option<u32> {
+        let state = PaletteEntry {
+            name: item.name.clone(),
+            states: item.nbt.clone(),
+            version: None
+        };
+
+        if state.name == "minecraft:tnt" {
+            dbg!(&state);
+        }
+
+        let hash = state.hash();
+        self.runtime_hashes.get(&hash).copied()
+    }
+
     pub fn register(&mut self, state: PaletteEntry) -> anyhow::Result<()> {
         let hash = state.hash();
-
-        if state.name == "minecraft:fence_gate" {
-            // dbg!(&state, hash);
-            dbg!(hash);
+        let new_id = self.runtime_hashes.len() + 1;
+        if state.name == "minecraft:air" {
+            self.air_id = new_id as u32;
         }
+
+        self.runtime_hashes.insert(hash, new_id as u32);
 
         Ok(())
     }

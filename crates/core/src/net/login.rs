@@ -227,7 +227,7 @@ impl BedrockClient {
 
         let creative_content = CreativeContent {
             // items: CREATIVE_ITEMS_DATA.items()
-            items: &[]
+            items: &self.instance().creative_items.items
         };
         self.send(creative_content)?;
 

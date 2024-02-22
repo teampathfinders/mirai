@@ -75,6 +75,9 @@ impl InstanceBuilder {
             Instance::GIT_REV
         );
 
+        let block_states = BlockStates::new()?;
+        let creative_items = CreativeItems::new(&block_states)?;
+
         let ipv4_socket = UdpSocket::bind(self.0.ipv4_addr).await.context("Unable to create IPv4 UDP socket")?;
         let ipv6_socket = match self.0.ipv6_addr {
             Some(addr) => Some(UdpSocket::bind(addr).await.context("Unable to create IPv6 UDP socket")?),
@@ -106,6 +109,10 @@ impl InstanceBuilder {
             running_token,
             shutdown_token: CancellationToken::new(),
             startup_token: CancellationToken::new(),
+
+            // Data
+            creative_items,
+            block_states
         };
 
         let instance = Arc::new(instance);
@@ -150,6 +157,8 @@ pub struct Instance {
     raknet_guid: u64,
     /// The current message of the day. Update every [`METADATA_REFRESH_INTERVAL`] seconds.
     current_motd: RwLock<String>,
+    pub(crate) creative_items: CreativeItems,
+    block_states: BlockStates
 }
 
 impl Instance {
@@ -254,13 +263,6 @@ impl Instance {
 
     /// Starts the server and immediately returns when the server has successfully started
     pub fn start(self: &Arc<Instance>) -> anyhow::Result<()> {
-        // FIXME: The level module will get a refactor and this will be changed
-        // let level = Level::new(self.user_map.clone(), self.token.clone())?;
-        // self.user_map.set_level(level);
-
-        let block_states = BlockStates::new()?;
-        let creative_items = CreativeItems::new(&block_states)?;
-
         self.clients.set_instance(self)?;
         self.command_service.set_instance(self)?;
         self.level_service.set_instance(self)?;

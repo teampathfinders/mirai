@@ -21,7 +21,7 @@ fn main() -> anyhow::Result<()> {
 
     init_logging().context("Unable to initialise logging")?;
 
-    let builder = Instance::builder().ipv4_address(SocketAddrV4::from_str("0.0.0.0:19133").unwrap());
+    let builder = Instance::builder().ipv4_address(SocketAddrV4::from_str("0.0.0.0:19132").unwrap());
 
     runtime.block_on(async move {
         let instance = builder.build().await?;

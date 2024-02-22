@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use std::io::Write;
 
 use util::{RString, RVec, Serialize};
 use util::{BinaryWrite, VarInt};
@@ -72,9 +73,9 @@ pub struct ItemStack {
     pub item_type: ItemType,
     pub block_runtime_id: i32,
     pub count: u16,
-    pub nbt_data: HashMap<RString, nbt::Value>,
-    pub can_be_placed_on: Vec<RString>,
-    pub can_break: Vec<RString>,
+    pub nbt_data: HashMap<String, nbt::Value>,
+    pub can_be_placed_on: Vec<String>,
+    pub can_break: Vec<String>,
     pub has_network_id: bool
 }
 
@@ -129,19 +130,57 @@ impl Serialize for ItemStack {
 
 #[derive(Debug, Clone)]
 pub struct CreativeItem {
-    pub creative_network_id: u32,
-    pub item: ItemStack
+    pub network_id: i32,
+    pub count: u16,
+    pub meta: u32,
+    pub block_id: i32,
+    pub nbt: HashMap<String, nbt::Value>,
+    pub can_place_on: Vec<String>,
+    pub can_destroy: Vec<String>
 }
 
 impl Serialize for CreativeItem {
     fn size_hint(&self) -> Option<usize> {
-        let size = self.creative_network_id.var_len() + self.item.size_hint().unwrap_or(0);
-        Some(size)
+        Some(0)
     }
 
     fn serialize_into<W: BinaryWrite>(&self, writer: &mut W) -> anyhow::Result<()> {
-        writer.write_var_u32(self.creative_network_id)?;
-        self.item.serialize_into(writer)
+        writer.write_var_i32(self.network_id)?;
+
+        // Air has no more data
+        if self.network_id == 0 {
+            return Ok(())
+        }
+
+        writer.write_u16_le(self.count)?;
+        writer.write_var_u32(self.meta)?;
+        writer.write_var_i32(self.block_id)?;
+
+        let mut extra = Vec::new();
+        if self.nbt.is_empty() {
+            extra.write_u16_le(-1i16 as u16)?; // Has no NBT
+        } else {
+            extra.write_u16_le(0)?; // Has NBT
+            extra.write_u8(1)?; // Version
+            nbt::to_le_bytes_in(&mut extra, &self.nbt)?;
+        }
+
+        writer.write_u32_le(self.can_place_on.len() as u32)?;
+        for block in &self.can_place_on {
+            writer.write_u16_le(block.len() as u16)?;
+            writer.write_all(block.as_bytes())?;
+        }
+
+        writer.write_u32_le(self.can_destroy.len() as u32)?;
+        for block in &self.can_destroy {
+            writer.write_u16_le(block.len() as u16)?;
+            writer.write_all(block.as_bytes())?;
+        }
+
+        writer.write_var_u32(extra.len() as u32)?;
+        writer.write_all(&extra)?;
+
+        Ok(())
     }
 }
 

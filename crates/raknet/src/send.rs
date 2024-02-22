@@ -249,14 +249,7 @@ impl RakNetClient {
             - std::mem::size_of::<Frame>()
             - std::mem::size_of::<FrameBatch>();
 
-        let compound_size = {
-            let frame_size = frame.body.len() + std::mem::size_of::<Frame>();
-
-            // Ceiling divide without floating point conversion.
-            // usize::div_ceil is still unstable.
-            (frame_size + chunk_max_size - 1) / chunk_max_size
-        };
-
+        let compound_size = frame.body.len().div_ceil(chunk_max_size);
         let mut compound = Vec::with_capacity(compound_size);
         let chunks = frame.body.chunks(chunk_max_size);
 
