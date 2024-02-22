@@ -157,10 +157,10 @@
 use std::collections::HashMap;
 
 use level::PaletteEntry;
-use nohash_hasher::BuildNoHashHasher;
+use nohash_hasher::{BuildNoHashHasher, IntMap};
 use parking_lot::{Mutex, RwLock};
 use rayon::iter::WhileSome;
-use proto::bedrock::{CreativeItem, ItemStack, ItemType};
+use proto::bedrock::{ItemStack, ItemType};
 use util::{BinaryRead, RString};
 
 const CREATIVE_ITEMS_RAW: &[u8] = include_bytes!("../include/creative_items.nbt");
@@ -176,29 +176,51 @@ struct RawCreativeItem {
 }
 
 pub struct CreativeItems {
-    pub(crate) items: Vec<CreativeItem>
+    pub(crate) stacks: Vec<ItemStack>
 }
 
 impl CreativeItems {
-    pub fn new(block_states: &BlockStates) -> anyhow::Result<Self> {
+    pub fn new(
+        item_states: &ItemStates,
+        block_states: &BlockStates
+    ) -> anyhow::Result<Self> {
         tracing::debug!("Loading creative items");
 
         let nbt: Vec<RawCreativeItem> = nbt::from_var_bytes(CREATIVE_ITEMS_RAW)?.0;
 
-        let mut items = Vec::with_capacity(nbt.len());
+        let mut stacks = Vec::with_capacity(nbt.len());
+
+        stacks.push(ItemStack {
+            item_type: ItemType {
+                network_id: 0,
+                meta: 0
+            },
+            can_destroy: vec![],
+            can_place_on: vec![],
+            count: 0,
+            block_runtime_id: 0,
+            nbt_data: HashMap::new()
+        });
+
         for (i, item) in nbt.into_iter().enumerate() {
             if item.block_properties.is_empty() {
-                let citem = CreativeItem {
-                    network_id: i as i32 + 1,
-                    meta: item.meta as u32,
-                    nbt: item.nbt,
-                    count: 64,
-                    block_id: 0,
-                    can_destroy: vec![],
-                    can_place_on: vec![]
+                let Some(runtime_id) = item_states.runtime_id(&item.name) else {
+                    continue
                 };
 
-                items.push(citem);
+                let stack = ItemStack {
+                    item_type: ItemType {
+                        network_id: runtime_id,
+                        meta: item.meta as u32
+                    },
+                    block_runtime_id: 0,
+                    count: 1,
+                    nbt_data: item.nbt,
+                    can_place_on: vec![],
+                    can_destroy: vec![]
+                };
+
+                stacks.push(stack);
             } else {
                 // // This item has a block associated with it.
                 // let Some(block_runtime_id) = block_states.get(item) else {
@@ -229,7 +251,48 @@ impl CreativeItems {
             }
         }
 
-        Ok(Self { items })
+        Ok(Self { stacks: stacks })
+    }
+}
+
+const ITEM_IDS_RAW: &[u8] = include_bytes!("../include/item_runtime_ids.nbt");
+
+pub struct Item {
+
+}
+
+#[derive(Debug, Default)]
+pub struct ItemStates {
+    name_to_id: HashMap<String, i32>,
+    id_to_name: IntMap<i32, String>
+}
+
+impl ItemStates {
+    pub fn new() -> anyhow::Result<Self> {
+        let nbt: HashMap<String, i32> = nbt::from_var_bytes(ITEM_IDS_RAW)?.0;
+
+        for (name, id) in &nbt {
+
+        }
+
+        let mut name_to_id = HashMap::with_capacity(nbt.len());
+        for (name, id) in &nbt {
+            name_to_id.insert(name.clone(), *id);
+        }
+
+        let mut id_to_name = IntMap::with_capacity_and_hasher(nbt.len(), BuildNoHashHasher::default());
+        for (name, id) in nbt {
+            id_to_name.insert(id, name);
+        }
+
+        Ok(Self {
+            name_to_id, id_to_name
+        })
+    }
+
+    #[inline]
+    pub fn runtime_id(&self, name: &str) -> Option<i32> {
+        self.name_to_id.get(name).copied()
     }
 }
 
@@ -267,31 +330,7 @@ impl BlockStates {
             (_, reader) = reader.split_at(n);
         }
 
-        // dbg!(&states);
-
         Ok(states)
-
-        // let mut map = BlockStates::default();
-        // map.runtime_hashes.reserve(STATE_COUNT);
-
-        // let mut current_id = 0;
-        // while reader.remaining() > 0 {
-        //     let (item, n): (PaletteEntry, usize) = nbt::from_var_bytes(reader)?;
-        //     reader = reader.split_at(n).1;
-
-        //     let state_hash = item.hash();
-        //     map.runtime_hashes.insert(state_hash, current_id);
-
-        //     if item.name == "minecraft:air" {
-        //         map.air_id = current_id;
-        //     }
-
-        //     current_id += 1;
-        // }
-
-        // assert_eq!(STATE_COUNT, current_id as usize, "Missing block state");
-
-        // Ok(map)
     }
 
     pub fn get(&self, item: &RawCreativeItem) -> Option<u32> {

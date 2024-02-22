@@ -151,11 +151,13 @@ impl RakNetClient {
             let frame_size = frames[index].body.len() + std::mem::size_of::<Frame>();
 
             if frame_size > self.mtu as usize {
-                self.batch_number.fetch_sub(1, Ordering::SeqCst);
-
                 let large_frame = frames.swap_remove(index);
+
                 let compound = self.split_frame(&large_frame);
+                let compound_len = compound.len();
+
                 self.send_raw_frames(compound).await?;
+                self.batch_number.fetch_add(compound_len as u32 - 1, Ordering::SeqCst);
             } else {
                 index += 1;
             }

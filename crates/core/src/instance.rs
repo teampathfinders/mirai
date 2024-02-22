@@ -19,7 +19,7 @@ use util::{CowString, Deserialize, Joinable, RVec, ReserveTo, Serialize};
 
 use crate::command::{self, HandlerOutput, HandlerResult, ParsedCommand};
 use crate::config::Config;
-use crate::data::{BlockStates, CreativeItems};
+use crate::data::{BlockStates, CreativeItems, ItemStates};
 use crate::net::{Clients, ForwardablePacket};
 use proto::bedrock::{
     Command, CommandDataType, CommandEnum, CommandOverload, CommandParameter, CommandPermissionLevel, CreditsStatus, CreditsUpdate,
@@ -75,8 +75,9 @@ impl InstanceBuilder {
             Instance::GIT_REV
         );
 
+        let item_states = ItemStates::new()?;
         let block_states = BlockStates::new()?;
-        let creative_items = CreativeItems::new(&block_states)?;
+        let creative_items = CreativeItems::new(&item_states, &block_states)?;
 
         let ipv4_socket = UdpSocket::bind(self.0.ipv4_addr).await.context("Unable to create IPv4 UDP socket")?;
         let ipv6_socket = match self.0.ipv6_addr {
