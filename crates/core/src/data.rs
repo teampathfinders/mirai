@@ -267,16 +267,4 @@ impl BlockStates {
 
         Ok(())
     }
-
-    /// Gets the runtime ID of a block state.
-    pub fn get(&self, block: &PaletteEntry) -> Option<u32> {
-        let hash = block.hash();
-        let found = self.runtime_hashes.get(&hash).cloned();
-
-        // if found.is_none() {
-        //     dbg!(block);
-        // }
-
-        found
-    }
 }

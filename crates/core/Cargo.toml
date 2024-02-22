@@ -39,17 +39,10 @@ rand = "0.8.5"
 dashmap = "5.4.0"
 parking_lot = "0.12.1"
 flate2 = "1.0.26"
-serde = { version = "1.0.196", default-features = false }
-serde_json = { version = "1.0.113", features = ["preserve_order"] }
+serde = { version = "1.0.197", default-features = false }
+serde_json = { version = "1.0.114", features = ["preserve_order"] }
 anyhow = { version = "1.0.80", features = ["backtrace"] }
-legion = "0.4.0"
 nohash-hasher = "0.2.0"
-
-# Telemetry
-
-prometheus-client = "0.22.1"
-systemstat = "0.2.3"
-lazy_static = "1.4.0"
 paste = "1.0.14"
 rayon = "1.8.1"
-futures = "0.3.30"
+futures = { version = "0.3.30", default-features = false }
