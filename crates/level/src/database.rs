@@ -10,7 +10,7 @@ use std::{
 };
 
 use crate::ffi::LoadStatus;
-use crate::{ffi, DataKey};
+use crate::{ffi, DataKey, WriteBatch};
 
 /// Wraps a LevelDB buffer, ensuring the buffer is deallocated after use.
 #[derive(Debug)]
@@ -241,7 +241,7 @@ impl Database {
     /// # Arguments
     /// * `key` - Key to store the value at.
     /// * `value` - Value to store at the specified key.
-    pub fn insert<V>(&self, key: DataKey, value: V) -> anyhow::Result<()>
+    pub fn put<V>(&self, key: DataKey, value: V) -> anyhow::Result<()>
     where
         V: AsRef<[u8]>,
     {
@@ -270,7 +270,7 @@ impl Database {
     }
 
     /// Removes the given key from the database.
-    pub fn remove(&self, key: DataKey) -> anyhow::Result<()> {
+    pub fn delete(&self, key: DataKey) -> anyhow::Result<()> {
         let mut raw_key = RVec::alloc_with_capacity(key.serialized_size());
         key.serialize(&mut raw_key)?;
 
@@ -280,6 +280,19 @@ impl Database {
             let result = ffi::db_delete(self.ptr.as_ptr(), raw_key.as_mut_ptr() as *mut c_char, raw_key.len() as c_int);
 
             if result.status == LoadStatus::Success || result.status == LoadStatus::NotFound {
+                Ok(())
+            } else {
+                Err(translate_ffi_error(result))
+            }
+        }
+    }
+
+    /// Executes a batch.
+    pub fn execute(&self, batch: &WriteBatch) -> anyhow::Result<()> {
+        unsafe {
+            let result = ffi::batch_execute(self.ptr.as_ptr(), batch.ptr.as_ptr());
+
+            if result.status == LoadStatus::Success {
                 Ok(())
             } else {
                 Err(translate_ffi_error(result))
