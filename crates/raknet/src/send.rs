@@ -154,10 +154,10 @@ impl RakNetClient {
                 let large_frame = frames.swap_remove(index);
 
                 let compound = self.split_frame(&large_frame);
-                let compound_len = compound.len();
+                // let compound_len = compound.len();
 
                 self.send_raw_frames(compound).await?;
-                self.batch_number.fetch_add(compound_len as u32 - 1, Ordering::SeqCst);
+                // self.batch_number.fetch_add(compound_len as u32 - 1, Ordering::SeqCst);
             } else {
                 index += 1;
             }
@@ -171,7 +171,7 @@ impl RakNetClient {
         );
 
         let mut batch = FrameBatch {
-            sequence_number: self.batch_number.fetch_add(1, Ordering::SeqCst),
+            sequence_number: 0,
             frames: vec![],
         };
 
@@ -204,6 +204,8 @@ impl RakNetClient {
                 batch.frames.push(frame);
             } else if !batch.is_empty() {
                 serialized.clear();
+
+                batch.sequence_number = self.batch_number.fetch_add(1, Ordering::SeqCst);
                 batch.serialize_into(&mut serialized)?;
 
                 // TODO: Add IPv6 support
@@ -226,9 +228,11 @@ impl RakNetClient {
             }
         }
 
-        // Send remaining raknet not sent by loop
+        // Send remaining packets not sent by loop
         if !batch.is_empty() {
             serialized.clear();
+
+            batch.sequence_number = self.batch_number.fetch_add(1, Ordering::SeqCst);
             batch.serialize_into(&mut serialized)?;
 
             if has_reliable_packet {
@@ -239,9 +243,10 @@ impl RakNetClient {
             self.socket
                 .send_to(serialized.as_ref(), self.address)
                 .await?;
-        } else {
-            self.batch_number.fetch_sub(1, Ordering::SeqCst);
         }
+        // } else {
+        //     self.batch_number.fetch_sub(1, Ordering::SeqCst);
+        // }
 
         Ok(())
     }

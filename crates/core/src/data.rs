@@ -202,7 +202,7 @@ impl CreativeItems {
             nbt_data: HashMap::new()
         });
 
-        for (i, item) in nbt.into_iter().enumerate() {
+        for (i, item) in nbt.into_iter().enumerate().take(600) {
             if item.block_properties.is_empty() {
                 let Some(runtime_id) = item_states.runtime_id(&item.name) else {
                     continue
