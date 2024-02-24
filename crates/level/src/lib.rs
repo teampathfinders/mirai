@@ -163,19 +163,19 @@ where
 #[cfg(test)]
 mod test;
 
+mod batch;
 mod biome;
 mod ffi;
 mod key;
 mod settings;
 mod subchunk;
-mod batch;
 
 /// Direct access to the LevelDB database.
 pub mod database;
 /// Implements serialization and deserialization for important types.
 pub mod provider;
 
+pub use batch::*;
 pub use biome::*;
 pub use key::*;
 pub use subchunk::*;
-pub use batch::*;

@@ -19,7 +19,7 @@ use util::{CowString, Deserialize, Joinable, RVec, ReserveTo, Serialize};
 
 use crate::command::{self, HandlerOutput, HandlerResult, ParsedCommand};
 use crate::config::Config;
-use crate::data::{BlockStates, CreativeItems, ItemStates};
+use crate::data::{BlockStates, CreativeItems, ItemNetworkIds};
 use crate::net::{Clients, ForwardablePacket};
 use proto::bedrock::{
     Command, CommandDataType, CommandEnum, CommandOverload, CommandParameter, CommandPermissionLevel, CreditsStatus, CreditsUpdate,
@@ -75,7 +75,7 @@ impl InstanceBuilder {
             Instance::GIT_REV
         );
 
-        let item_states = ItemStates::new()?;
+        let item_states = ItemNetworkIds::new()?;
         let block_states = BlockStates::new()?;
         let creative_items = CreativeItems::new(&item_states, &block_states)?;
 
@@ -114,7 +114,7 @@ impl InstanceBuilder {
 
             // Data
             creative_items,
-            block_states
+            block_states,
         };
 
         let instance = Arc::new(instance);
@@ -160,7 +160,7 @@ pub struct Instance {
     /// The current message of the day. Update every [`METADATA_REFRESH_INTERVAL`] seconds.
     current_motd: RwLock<String>,
     pub(crate) creative_items: CreativeItems,
-    block_states: BlockStates
+    block_states: BlockStates,
 }
 
 impl Instance {

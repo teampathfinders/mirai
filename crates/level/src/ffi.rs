@@ -11,7 +11,7 @@ pub enum LoadStatus {
     NotSupported,
     InvalidArgument,
     IOError,
-    AllocationFailed
+    AllocationFailed,
 }
 
 #[derive(Debug)]

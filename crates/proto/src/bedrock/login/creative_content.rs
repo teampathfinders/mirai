@@ -64,12 +64,15 @@ use crate::bedrock::ConnectedPacket;
 
 #[derive(Debug, Clone)]
 pub struct ItemType {
+    /// ID that has been assigned in item_states.nbt. This is loaded at startup of the server.
     pub network_id: i32,
+    /// Metadata vaLue of the item.
     pub meta: u32
 }
 
 #[derive(Debug, Clone)]
 pub struct ItemStack {
+    /// The unique type of this item.
     pub item_type: ItemType,
     pub block_runtime_id: i32,
     pub count: u16,
@@ -79,10 +82,6 @@ pub struct ItemStack {
 }
 
 impl Serialize for ItemStack {
-    fn size_hint(&self) -> Option<usize> {
-        None
-    }
-
     fn serialize_into<W: BinaryWrite>(&self, writer: &mut W) -> anyhow::Result<()> {
         writer.write_var_i32(self.item_type.network_id)?;
         if self.item_type.network_id == 0 {

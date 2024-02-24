@@ -158,8 +158,6 @@ use std::collections::HashMap;
 
 use level::PaletteEntry;
 use nohash_hasher::{BuildNoHashHasher, IntMap};
-use parking_lot::{Mutex, RwLock};
-use rayon::iter::WhileSome;
 use proto::bedrock::{ItemStack, ItemType};
 use util::{BinaryRead, RString};
 
@@ -172,112 +170,104 @@ struct RawCreativeItem {
     #[serde(default)]
     pub nbt: HashMap<String, nbt::Value>,
     #[serde(default)]
-    pub block_properties: HashMap<String, nbt::Value>
+    pub block_properties: HashMap<String, nbt::Value>,
 }
 
 pub struct CreativeItems {
-    pub(crate) stacks: Vec<ItemStack>
+    pub(crate) stacks: Vec<ItemStack>,
 }
 
 impl CreativeItems {
-    pub fn new(
-        item_states: &ItemStates,
-        block_states: &BlockStates
-    ) -> anyhow::Result<Self> {
+    pub fn new(item_ids: &ItemNetworkIds, block_states: &BlockStates) -> anyhow::Result<Self> {
         tracing::debug!("Loading creative items");
 
         let nbt: Vec<RawCreativeItem> = nbt::from_var_bytes(CREATIVE_ITEMS_RAW)?.0;
-
         let mut stacks = Vec::with_capacity(nbt.len());
 
         stacks.push(ItemStack {
-            item_type: ItemType {
-                network_id: 0,
-                meta: 0
-            },
+            item_type: ItemType { network_id: 0, meta: 0 },
             can_destroy: vec![],
             can_place_on: vec![],
             count: 0,
             block_runtime_id: 0,
-            nbt_data: HashMap::new()
+            nbt_data: HashMap::new(),
         });
 
-        for (i, item) in nbt.into_iter().enumerate().take(600) {
+        for item in nbt.into_iter().take(20) {
             if item.block_properties.is_empty() {
-                let Some(runtime_id) = item_states.runtime_id(&item.name) else {
-                    continue
-                };
+                let Some(runtime_id) = item_ids.get_id(&item.name) else { continue };
 
                 let stack = ItemStack {
                     item_type: ItemType {
                         network_id: runtime_id,
-                        meta: item.meta as u32
+                        meta: item.meta as u32,
                     },
                     block_runtime_id: 0,
                     count: 1,
                     nbt_data: item.nbt,
                     can_place_on: vec![],
-                    can_destroy: vec![]
+                    can_destroy: vec![],
                 };
 
                 stacks.push(stack);
             } else {
-                // // This item has a block associated with it.
-                // let Some(block_runtime_id) = block_states.get(item) else {
-                //     continue
-                // };
-                //
-                // println!("found");
-                //
-                // let citem = CreativeItem {
-                //     network_id: i as u32 + 1,
-                //     item: ItemStack {
-                //         item_type: ItemType {
-                //             network_id: i as i32 + 1,
-                //             meta: item.meta as u32
-                //         },
-                //         block_runtime_id: block_runtime_id as i32,
-                //         count: 64,
-                //         nbt_data: item.nbt.clone(),
-                //         can_be_placed_on: vec![],
-                //         can_break: vec![],
-                //         has_network_id: true,
-                //     }
-                // };
-                //
-                // dbg!(&citem);
+                let Some(runtime_id) = block_states.get(&item) else { continue };
 
-                // items.push(citem);
+                println!("runtime_id: {runtime_id}");
+
+                let stack = ItemStack {
+                    item_type: ItemType {
+                        network_id: runtime_id as i32,
+                        meta: item.meta as u32,
+                    },
+                    block_runtime_id: runtime_id as i32,
+                    count: 1,
+                    nbt_data: item.nbt,
+                    can_place_on: vec![],
+                    can_destroy: vec![],
+                };
+
+                stacks.push(stack);
             }
         }
 
-        Ok(Self { stacks: stacks })
+        Ok(Self { stacks })
     }
 }
 
 const ITEM_IDS_RAW: &[u8] = include_bytes!("../include/item_runtime_ids.nbt");
 
-pub struct Item {
-
-}
-
+/// Mapping between item names and IDs.
 #[derive(Debug, Default)]
-pub struct ItemStates {
+pub struct ItemNetworkIds {
+    /// Converts item names to their network IDs.
     name_to_id: HashMap<String, i32>,
-    id_to_name: IntMap<i32, String>
+    /// Converts network IDs to item names.
+    id_to_name: IntMap<i32, String>,
+    /// The network ID of a shield.
+    /// Shields get special treatment in ItemStack, so this needs to be known.
+    shield_id: i32,
 }
 
-impl ItemStates {
+impl ItemNetworkIds {
+    /// Creates a new item map.
     pub fn new() -> anyhow::Result<Self> {
+        tracing::debug!("Loading item identifiers");
+
         let nbt: HashMap<String, i32> = nbt::from_var_bytes(ITEM_IDS_RAW)?.0;
-
-        for (name, id) in &nbt {
-
-        }
+        let mut shield_id = i32::MAX;
 
         let mut name_to_id = HashMap::with_capacity(nbt.len());
         for (name, id) in &nbt {
+            if name == "minecraft:shield" {
+                shield_id = *id;
+            }
+
             name_to_id.insert(name.clone(), *id);
+        }
+
+        if shield_id == i32::MAX {
+            anyhow::bail!("Unable to find shield network ID");
         }
 
         let mut id_to_name = IntMap::with_capacity_and_hasher(nbt.len(), BuildNoHashHasher::default());
@@ -285,14 +275,19 @@ impl ItemStates {
             id_to_name.insert(id, name);
         }
 
-        Ok(Self {
-            name_to_id, id_to_name
-        })
+        Ok(Self { name_to_id, id_to_name, shield_id })
     }
 
+    /// Convert an item name to a network ID.
     #[inline]
-    pub fn runtime_id(&self, name: &str) -> Option<i32> {
+    pub fn get_id(&self, name: &str) -> Option<i32> {
         self.name_to_id.get(name).copied()
+    }
+
+    /// Convert an item network ID to a name.
+    #[inline]
+    pub fn get_name(&self, id: i32) -> Option<&str> {
+        self.id_to_name.get(&id).map(|x| x.as_str())
     }
 }
 
@@ -318,9 +313,9 @@ impl BlockStates {
         const STATE_COUNT: usize = 14127;
         let mut reader = BLOCK_STATES_RAW;
 
-        let mut states = Self { 
-            runtime_hashes: HashMap::with_capacity_and_hasher(STATE_COUNT, BuildNoHashHasher::default()), 
-            air_id: 0 
+        let mut states = Self {
+            runtime_hashes: HashMap::with_capacity_and_hasher(STATE_COUNT, BuildNoHashHasher::default()),
+            air_id: 0,
         };
 
         while reader.remaining() > 0 {
@@ -337,11 +332,11 @@ impl BlockStates {
         let state = PaletteEntry {
             name: item.name.clone(),
             states: item.nbt.clone(),
-            version: None
+            version: None,
         };
 
-        if state.name == "minecraft:tnt" {
-            dbg!(&state);
+        if state.name.contains("grass") {
+            println!("get {state:?}")
         }
 
         let hash = state.hash();
@@ -353,6 +348,10 @@ impl BlockStates {
         let new_id = self.runtime_hashes.len() + 1;
         if state.name == "minecraft:air" {
             self.air_id = new_id as u32;
+        }
+
+        if state.name.contains("grass") {
+            println!("register {state:?}")
         }
 
         self.runtime_hashes.insert(hash, new_id as u32);

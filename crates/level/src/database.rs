@@ -327,7 +327,7 @@ unsafe fn translate_ffi_error(result: ffi::LevelResult) -> anyhow::Error {
     let ffi_err = CStr::from_ptr(result.data as *const c_char);
     let str = match ffi_err.to_str().context("Error returned LevelDB contains invalid UTF-8") {
         Ok(str) => str,
-        Err(err) => return err
+        Err(err) => return err,
     };
     let owned = str.to_owned();
 

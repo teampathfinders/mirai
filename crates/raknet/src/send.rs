@@ -141,6 +141,16 @@ impl RakNetClient {
         Ok(())
     }
 
+    /// Send a list of frames. 
+    ///
+    /// These frames are not guaranteed to be sent in the same frame batch.
+    /// If the batch would be bigger than the MTU, the list will be split into multiple batches.
+    /// Similarly if a frame is larger than the MTU, it will be split and sent in multiple packets.
+    ///
+    /// ## Warning 
+    ///
+    /// In case the passed frames are already fragmented, there should at maximum one compound
+    /// in the entire list.
     #[async_recursion]
     async fn send_raw_frames(&self, mut frames: Vec<Frame>) -> anyhow::Result<()> {
         let mut serialized = Vec::new();
@@ -152,12 +162,10 @@ impl RakNetClient {
 
             if frame_size > self.mtu as usize {
                 let large_frame = frames.swap_remove(index);
-
                 let compound = self.split_frame(&large_frame);
-                // let compound_len = compound.len();
 
+                // Only one compound is passed to the function, so this is fine.
                 self.send_raw_frames(compound).await?;
-                // self.batch_number.fetch_add(compound_len as u32 - 1, Ordering::SeqCst);
             } else {
                 index += 1;
             }
@@ -175,14 +183,27 @@ impl RakNetClient {
             frames: vec![],
         };
 
-        let mut has_reliable_packet = false;
+        let mut has_reliable_packet = false;    
+
+        // Set to u32::MAX when unset, otherwise set to the compound's order index
+        let mut compound_order_index = u32::MAX;
+
         for mut frame in frames {
             let frame_size = frame.body.len() + std::mem::size_of::<Frame>();
 
-            if frame.reliability.is_ordered() {
+            if frame.reliability.is_ordered() && !frame.is_compound {
                 let order_index = self.order[frame.order_channel as usize]
                     .alloc_index();
+
                 frame.order_index = order_index;
+            } else if frame.reliability.is_ordered() {
+                if compound_order_index == u32::MAX {
+                    let new_index = self.order[0].alloc_index();
+                    compound_order_index = new_index;
+                }
+
+                frame.order_channel = 0;
+                frame.order_index = compound_order_index;
             }
 
             if frame.reliability.is_sequenced() {
@@ -272,7 +293,7 @@ impl RakNetClient {
                 compound_index: i as u32,
                 compound_size: compound_size as u32,
                 compound_id,
-                body: RVec::alloc_from_slice(chunk),
+                body: RVec::alloc_from_slice(chunk),                
                 ..Default::default()
             };
 
