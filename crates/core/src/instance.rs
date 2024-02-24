@@ -297,7 +297,6 @@ impl Instance {
             },
             |_input, ctx| {
                 let _ = ctx.caller.send(CreditsUpdate {
-                let _ = ctx.caller.send(CreditsUpdate {
                     runtime_id: 1,
                     status: CreditsStatus::Start,
                 });
