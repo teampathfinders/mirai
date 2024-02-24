@@ -1,7 +1,6 @@
 #![allow(dead_code)]
 
-use std::{net::SocketAddrV4, str::FromStr, sync::atomic::{AtomicU16, Ordering}};
-use std::{net::SocketAddrV4, str::FromStr, sync::atomic::{AtomicU16, Ordering}};
+use std::sync::atomic::{AtomicU16, Ordering};
 
 use anyhow::Context;
 use tokio::runtime;
