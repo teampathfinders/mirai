@@ -79,6 +79,7 @@ pub struct ItemStack {
 }
 
 impl Serialize for ItemStack {
+impl Serialize for ItemStack {
     fn size_hint(&self) -> Option<usize> {
         None
     }

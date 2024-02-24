@@ -97,6 +97,7 @@ impl InstanceBuilder {
         })?;
 
         let user_map = Arc::new(Clients::new(Arc::clone(&command_service), Arc::clone(&level_service)));
+        let user_map = Arc::new(Clients::new(Arc::clone(&command_service), Arc::clone(&level_service)));
         let instance = Instance {
             ipv4_socket,
             ipv6_socket,
@@ -295,6 +296,7 @@ impl Instance {
                 permission_level: CommandPermissionLevel::Normal,
             },
             |_input, ctx| {
+                let _ = ctx.caller.send(CreditsUpdate {
                 let _ = ctx.caller.send(CreditsUpdate {
                     runtime_id: 1,
                     status: CreditsStatus::Start,
