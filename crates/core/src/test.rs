@@ -5,7 +5,8 @@ use proto::bedrock::Header;
 
 #[test]
 fn biome_nbt() {
-    let biomes: nbt::Value = nbt::from_var_bytes(include_bytes!("../include/biomes.nbt").as_ref()).unwrap().0;
+    let mut biomes_nbt: &[u8] = include_bytes!("../include/biomes.nbt");
+    let biomes: nbt::Value = nbt::from_var_bytes(&mut biomes_nbt).unwrap().0;
     dbg!(biomes);
 }
 

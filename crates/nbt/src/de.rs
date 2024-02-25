@@ -126,9 +126,9 @@ where
 /// #   value: String::from("Hello, World!")
 /// # };
 /// # let obuffer = nbt::to_le_bytes(&data).unwrap();
-/// # let buffer: &[u8] = obuffer.as_ref();
+/// # let mut buffer: &[u8] = obuffer.as_ref();
 ///
-///  let result = nbt::from_le_bytes(buffer).unwrap();
+///  let result = nbt::from_le_bytes(&mut buffer).unwrap();
 ///  let data: Data = result.0;
 ///
 ///  println!("Got {data:?}!");
@@ -164,9 +164,9 @@ where
 /// #   value: String::from("Hello, World!")
 /// # };
 /// # let owned_buffer = nbt::to_be_bytes(&data).unwrap();
-/// # let buffer = owned_buffer.as_slice();
+/// # let mut buffer = owned_buffer.as_slice();
 ///
-///  let result = nbt::from_be_bytes(buffer).unwrap();
+///  let result = nbt::from_be_bytes(&mut buffer).unwrap();
 ///  let data: Data = result.0;
 ///
 ///  println!("Got {data:?}!");
@@ -202,9 +202,9 @@ where
 /// #   value: String::from("Hello, World!")
 /// # };
 /// # let owned_buffer = nbt::to_var_bytes(&data).unwrap();
-/// # let buffer = owned_buffer.as_slice();
+/// # let mut buffer = owned_buffer.as_slice();
 ///
-///  let result = nbt::from_var_bytes(buffer).unwrap();
+///  let result = nbt::from_var_bytes(&mut buffer).unwrap();
 ///  let data: Data = result.0;
 ///
 ///  println!("Got {data:?}!");
