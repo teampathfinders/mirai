@@ -281,8 +281,6 @@ impl PartialEq<Value> for Value {
     }
 }
 
-impl Eq for Value {}
-
 impl PartialEq<i8> for Value {
     #[inline]
     fn eq(&self, rhs: &i8) -> bool {
