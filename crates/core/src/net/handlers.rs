@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use proto::bedrock::{Animate, CommandOutput, CommandOutputMessage, CommandOutputType, CommandRequest, DisconnectReason, FormResponseData, HudElement, HudVisibility, InventoryTransaction, PlayerAuthInput, RequestAbility, SetHud, SettingsCommand, TextData, TextMessage, TickSync, UpdateSkin};
+use proto::bedrock::{Animate, CommandOutput, CommandOutputMessage, CommandOutputType, CommandRequest, DisconnectReason, FormResponseData, HudElement, HudVisibility, InventoryTransaction, PlayerAuthInput, RequestAbility, SetHud, SettingsCommand, TextData, TextMessage, TickSync, TransactionSourceType, UpdateSkin};
 
 use util::{RVec, Deserialize, CowSlice};
 
@@ -9,7 +9,15 @@ use super::BedrockClient;
 impl BedrockClient {
     pub fn handle_inventory_transaction(&self, packet: RVec) -> anyhow::Result<()> {
         let transaction = InventoryTransaction::deserialize(packet.as_ref())?;
-        dbg!(transaction);
+
+        for action in transaction.actions {
+            let instance = self.instance();
+
+            let new = instance.item_network_ids.get_name(action.new_item.network_id);
+            let old = instance.item_network_ids.get_name(action.old_item.network_id);
+
+            println!("Switch from {old:?} to {new:?}");
+        }
 
         Ok(())
     }

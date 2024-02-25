@@ -75,9 +75,9 @@ impl InstanceBuilder {
             Instance::GIT_REV
         );
 
-        let item_states = ItemNetworkIds::new()?;
+        let item_network_ids = ItemNetworkIds::new()?;
         let block_states = BlockStates::new()?;
-        let creative_items = CreativeItems::new(&item_states, &block_states)?;
+        let creative_items = CreativeItems::new(&item_network_ids, &block_states)?;
 
         let ipv4_socket = UdpSocket::bind(self.0.ipv4_addr).await.context("Unable to create IPv4 UDP socket")?;
         let ipv6_socket = match self.0.ipv6_addr {
@@ -115,6 +115,7 @@ impl InstanceBuilder {
             // Data
             creative_items,
             block_states,
+            item_network_ids
         };
 
         let instance = Arc::new(instance);
@@ -159,8 +160,10 @@ pub struct Instance {
     raknet_guid: u64,
     /// The current message of the day. Update every [`METADATA_REFRESH_INTERVAL`] seconds.
     current_motd: RwLock<String>,
-    pub(crate) creative_items: CreativeItems,
-    block_states: BlockStates,
+
+    pub creative_items: CreativeItems,
+    pub block_states: BlockStates,
+    pub item_network_ids: ItemNetworkIds
 }
 
 impl Instance {

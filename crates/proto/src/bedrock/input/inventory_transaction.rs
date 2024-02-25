@@ -1,10 +1,12 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, sync::atomic::{AtomicI32, Ordering}};
 
-use util::{BinaryRead, BlockPosition, Deserialize, RString, Vector};
+use util::{BinaryRead, BlockPosition, Deserialize, Vector};
 
 use crate::bedrock::ConnectedPacket;
 
 use super::WindowId;
+
+pub static SHIELD_ID: AtomicI32 = AtomicI32::new(0);
 
 #[derive(Debug, Clone)]
 pub struct LegacyTransactionEntry<'a> {
@@ -47,9 +49,10 @@ pub enum TransactionSourceType {
 impl<'a> Deserialize<'a> for TransactionSourceType {
     fn deserialize_from<R: BinaryRead<'a>>(reader: &mut R) -> anyhow::Result<Self> {
         let source_type = reader.read_var_u32()?;
+
         Ok(match source_type {
             0 => Self::Container {
-                inventory_id: WindowId::try_from(reader.read_i8()?)?
+                inventory_id: WindowId::try_from(reader.read_var_i32()?)?
             },
             1 => Self::Global,
             2 => Self::WorldInteraction {
@@ -60,7 +63,7 @@ impl<'a> Deserialize<'a> for TransactionSourceType {
                 action: reader.read_var_u32()?
             },
             99_999 => Self::Craft {
-                inventory_id: WindowId::try_from(reader.read_i8()?)?,
+                inventory_id: WindowId::try_from(reader.read_var_i32()?)?,
                 action: reader.read_var_u32()?
             },
             _ => anyhow::bail!("Invalid transaction source type")
@@ -271,10 +274,10 @@ impl<'a> Deserialize<'a> for Item<'a> {
             can_destroy.push(name);
         }
 
-        let blocking_tick = if reader.eof() {
-            0
-        } else {
+        let blocking_tick = if network_id == SHIELD_ID.load(Ordering::Relaxed) {
             reader.read_i64_le()?
+        } else {
+            0
         };
 
         Ok(Item {
@@ -306,25 +309,21 @@ impl<'a> ConnectedPacket for InventoryTransaction<'a> {
 impl<'a> Deserialize<'a> for InventoryTransaction<'a> {
     fn deserialize_from<R: BinaryRead<'a>>(reader: &mut R) -> anyhow::Result<InventoryTransaction<'a>> {
         let legacy_request_id = reader.read_var_i32()?;
-        let legacy_transaction_len = if legacy_request_id == 0 {
-            0
-        } else {
-            reader.read_var_u32()? 
-        };
 
+        let legacy_transaction_len = if legacy_request_id == 0 { 0 } else { reader.read_var_u32()? };
         let mut legacy_transactions = Vec::with_capacity(legacy_transaction_len as usize);
         for _ in 0..legacy_transaction_len {
             legacy_transactions.push(LegacyTransactionEntry::deserialize_from(reader)?);
         }
 
         let transaction_type = reader.read_var_u32()?;
+        
         let actions_len = reader.read_var_u32()?;
-
         let mut actions = Vec::with_capacity(actions_len as usize);
         for _ in 0..actions_len {
             actions.push(TransactionAction::deserialize_from(reader)?);
         }
-
+        
         let transaction_type = TransactionType::deserialize_from(transaction_type, reader)?;
 
         Ok(InventoryTransaction {

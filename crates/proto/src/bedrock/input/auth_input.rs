@@ -154,7 +154,7 @@ impl TryFrom<u32> for InventoryActionSource {
 }
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
-#[repr(i8)]
+#[repr(i32)]
 pub enum WindowId {
     DropContents = -100,
     Beacon = -24,
@@ -182,13 +182,14 @@ pub enum WindowId {
     Creative = 121,
     Hotbar = 122,
     FixedInventory = 123,
-    Ui = 124
+    Ui = 124,
+    Custom(i32)
 }
 
-impl TryFrom<i8> for WindowId {
+impl TryFrom<i32> for WindowId {
     type Error = anyhow::Error;
 
-    fn try_from(v: i8) -> anyhow::Result<Self> {
+    fn try_from(v: i32) -> anyhow::Result<Self> {
         Ok(match v {
             -100 => Self::DropContents,
             -24 => Self::Beacon,
@@ -217,7 +218,7 @@ impl TryFrom<i8> for WindowId {
             122 => Self::Hotbar,
             123 => Self::FixedInventory,
             124 => Self::Ui,
-            _ => anyhow::bail!("Invalid window ID: {v}")
+            _ => Self::Custom(v)
         })
     }
 }
@@ -239,7 +240,7 @@ impl<'a> Deserialize<'a> for InventoryAction {
         let mut _source_flags = 0;
 
         if source_type == InventoryActionSource::Container || source_type == InventoryActionSource::Todo {
-            _window = Some(WindowId::try_from(reader.read_i8()?)?);
+            _window = Some(WindowId::try_from(reader.read_i8()? as i32)?);
         } else if source_type == InventoryActionSource::World {
             _source_flags = reader.read_var_u32()?;
         }

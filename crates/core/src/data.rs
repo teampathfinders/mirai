@@ -154,11 +154,11 @@
 //     }
 // }
 
-use std::collections::HashMap;
+use std::{collections::HashMap, sync::atomic::Ordering};
 
 use level::PaletteEntry;
 use nohash_hasher::{BuildNoHashHasher, IntMap};
-use proto::bedrock::{ItemStack, ItemType};
+use proto::bedrock::{ItemStack, ItemType, SHIELD_ID};
 use util::{BinaryRead, RString};
 
 const CREATIVE_ITEMS_RAW: &[u8] = include_bytes!("../include/creative_items.nbt");
@@ -193,7 +193,7 @@ impl CreativeItems {
             nbt_data: HashMap::new(),
         });
 
-        for item in nbt.into_iter().take(20) {
+        for item in nbt.into_iter().take(300) {
             if item.block_properties.is_empty() {
                 let Some(runtime_id) = item_ids.get_id(&item.name) else { continue };
 
@@ -261,6 +261,7 @@ impl ItemNetworkIds {
         for (name, id) in &nbt {
             if name == "minecraft:shield" {
                 shield_id = *id;
+                SHIELD_ID.store(*id, Ordering::Relaxed);
             }
 
             name_to_id.insert(name.clone(), *id);
