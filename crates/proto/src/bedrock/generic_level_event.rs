@@ -21,7 +21,7 @@ impl ConnectedPacket for GenericLevelEvent {
 impl<'a> Deserialize<'a> for GenericLevelEvent {
     fn deserialize_from<R: BinaryRead<'a>>(reader: &mut R) -> anyhow::Result<Self> {
         let event_id = reader.read_var_i32()?;
-        let (data, _) = nbt::from_le_bytes(reader.as_ref())?;
+        let (data, _) = nbt::from_le_bytes(reader)?;
 
         Ok(Self {
             event_id,

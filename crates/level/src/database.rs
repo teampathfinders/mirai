@@ -10,7 +10,7 @@ use std::{
 };
 
 use crate::ffi::LoadStatus;
-use crate::{ffi, DataKey};
+use crate::{ffi, DataKey, WriteBatch};
 
 /// Wraps a LevelDB buffer, ensuring the buffer is deallocated after use.
 #[derive(Debug)]
@@ -55,7 +55,7 @@ impl<'a> Drop for Guard<'a> {
         // SAFETY: The slice in self should have been allocated by the database.
         // It is safe to delete because the pointer is unique and guaranteed to exist.
         unsafe {
-            ffi::level_deallocate_array(self.0.as_mut_ptr() as *mut i8);
+            ffi::buffer_destroy(self.0.as_mut_ptr() as *mut i8);
         }
     }
 }
@@ -75,7 +75,7 @@ impl<'a> KvRef<'a> {
         // This invariant is upheld by the lifetime 'a.
         unsafe {
             // `level_iter_key` does not fail.
-            let result = ffi::level_iter_key(self.iter.as_ptr());
+            let result = ffi::iter_key(self.iter.as_ptr());
             assert!(!result.data.is_null(), "Iterator key pointer was null"); // Something is very wrong if this null...
 
             let slice = std::slice::from_raw_parts_mut(result.data as *mut u8, result.size as usize);
@@ -90,7 +90,7 @@ impl<'a> KvRef<'a> {
         // This invariant is upheld by the lifetime 'a.
         unsafe {
             // `level_iter_value` does not fail.
-            let result = ffi::level_iter_value(self.iter.as_ptr());
+            let result = ffi::iter_value(self.iter.as_ptr());
             assert!(!result.data.is_null(), "Iterator value pointer was null"); // Something is very wrong if this null...
 
             let slice = std::slice::from_raw_parts_mut(result.data as *mut u8, result.size as usize);
@@ -115,7 +115,7 @@ impl<'a> Keys<'a> {
     pub fn new(db: &'a Database) -> Keys<'a> {
         // SAFETY: level_iter is guaranteed to not return an error.
         // The iterator position has also been initialized by FFI and is not in an invalid state.
-        let result = unsafe { ffi::level_iter(db.ptr.as_ptr()) };
+        let result = unsafe { ffi::iter_new(db.ptr.as_ptr()) };
         assert!(!result.data.is_null(), "Iterator pointer was null"); // Something is very wrong if this null...
 
         Keys {
@@ -135,7 +135,7 @@ impl<'a> Iterator for Keys<'a> {
             // SAFETY: `level_iter_next` is safe to call, as long as the iterator has not been destroyed.
             // * The only way to delete the iterator is using the `Drop` implementation of `Self`,
             // it is therefore safe to call this function.
-            unsafe { ffi::level_iter_next(self.iter.as_ptr()) };
+            unsafe { ffi::iter_next(self.iter.as_ptr()) };
         }
         self.index += 1;
 
@@ -144,7 +144,7 @@ impl<'a> Iterator for Keys<'a> {
         // therefore safe to call this function.
         // Furthermore, the above check ensures the iterator is valid and supports the key and value methods
         // provided by `Ref`.
-        let valid = unsafe { ffi::level_iter_valid(self.iter.as_ptr()) };
+        let valid = unsafe { ffi::iter_valid(self.iter.as_ptr()) };
         valid.then_some(KvRef { iter: self.iter, _marker: PhantomData })
     }
 }
@@ -155,7 +155,7 @@ impl<'a> Drop for Keys<'a> {
         // SAFETY: `self` is the only object that is able to modify the iterator.
         // Therefore it is safe to delete because it hasn't been modified externally.
         unsafe {
-            ffi::level_destroy_iter(self.iter.as_ptr());
+            ffi::iter_destroy(self.iter.as_ptr());
         }
     }
 }
@@ -182,7 +182,7 @@ impl Database {
         // SAFETY: This function is guaranteed to not return exceptions.
         // It also does not modify the argument and returns a valid struct.
         unsafe {
-            let result = ffi::level_open(ffi_path.as_ptr());
+            let result = ffi::db_open(ffi_path.as_ptr());
             if result.status == LoadStatus::Success {
                 if result.data.is_null() {
                     tracing::error!("Received database was a null pointer despite the result being marked successful");
@@ -213,7 +213,7 @@ impl Database {
         //
         // A LevelDB database is thread-safe, this function can be used by multiple threads.
         unsafe {
-            let result = ffi::level_get(self.ptr.as_ptr(), raw_key.as_ptr() as *const c_char, raw_key.len() as c_int);
+            let result = ffi::db_get(self.ptr.as_ptr(), raw_key.as_ptr() as *const c_char, raw_key.len() as c_int);
             if result.status == LoadStatus::Success {
                 if result.data.is_null() {
                     tracing::error!("Received world data is a null pointer despite being marked as a successful result");
@@ -241,7 +241,7 @@ impl Database {
     /// # Arguments
     /// * `key` - Key to store the value at.
     /// * `value` - Value to store at the specified key.
-    pub fn insert<V>(&self, key: DataKey, value: V) -> anyhow::Result<()>
+    pub fn put<V>(&self, key: DataKey, value: V) -> anyhow::Result<()>
     where
         V: AsRef<[u8]>,
     {
@@ -253,7 +253,7 @@ impl Database {
         // SAFETY: This is safe because the data and lengths come from properly allocated vecs.
         // Additionally, the insert method does not keep references to the data after the function has been called.
         unsafe {
-            let result = ffi::level_insert(
+            let result = ffi::db_put(
                 self.ptr.as_ptr(),
                 raw_key.as_ptr() as *const c_char,
                 raw_key.len() as c_int,
@@ -270,16 +270,29 @@ impl Database {
     }
 
     /// Removes the given key from the database.
-    pub fn remove(&self, key: DataKey) -> anyhow::Result<()> {
+    pub fn delete(&self, key: DataKey) -> anyhow::Result<()> {
         let mut raw_key = RVec::alloc_with_capacity(key.serialized_size());
         key.serialize(&mut raw_key)?;
 
         // SAFETY: This is safe because the data and lengths come from properly allocated vecs.
         // Additionally, the remove method does not keep references to the data after the function has been called.
         unsafe {
-            let result = ffi::level_remove(self.ptr.as_ptr(), raw_key.as_mut_ptr() as *mut c_char, raw_key.len() as c_int);
+            let result = ffi::db_delete(self.ptr.as_ptr(), raw_key.as_mut_ptr() as *mut c_char, raw_key.len() as c_int);
 
             if result.status == LoadStatus::Success || result.status == LoadStatus::NotFound {
+                Ok(())
+            } else {
+                Err(translate_ffi_error(result))
+            }
+        }
+    }
+
+    /// Executes a batch.
+    pub fn execute(&self, batch: &WriteBatch) -> anyhow::Result<()> {
+        unsafe {
+            let result = ffi::batch_execute(self.ptr.as_ptr(), batch.ptr.as_ptr());
+
+            if result.status == LoadStatus::Success {
                 Ok(())
             } else {
                 Err(translate_ffi_error(result))
@@ -294,7 +307,7 @@ impl Drop for Database {
         // SAFETY: Make sure to clean up the LevelDB resources when the database is dropped.
         // This can only be done by C++.
         unsafe {
-            ffi::level_close(self.ptr.as_ptr());
+            ffi::db_close(self.ptr.as_ptr());
         }
     }
 }
@@ -314,14 +327,14 @@ unsafe fn translate_ffi_error(result: ffi::LevelResult) -> anyhow::Error {
     let ffi_err = CStr::from_ptr(result.data as *const c_char);
     let str = match ffi_err.to_str().context("Error returned LevelDB contains invalid UTF-8") {
         Ok(str) => str,
-        Err(err) => return err
+        Err(err) => return err,
     };
     let owned = str.to_owned();
 
     // Deallocate original string, now that it is converted into an owned Rust string.
     // SAFETY: The data has not been modified and has been allocated by C++.
     // It is therefore safe to deallocate.
-    ffi::level_deallocate_array(result.data as *mut c_char);
+    ffi::buffer_destroy(result.data as *mut c_char);
 
     anyhow!(owned)
 }

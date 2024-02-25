@@ -35,24 +35,24 @@ macro_rules! forward_unsupported {
 
 /// NBT deserialiser.
 #[derive(Debug)]
-pub struct Deserializer<'de, F, R>
+pub struct Deserializer<'re, 'de, F, R>
 where
-    R: BinaryRead<'de> + 'de,
+    R: BinaryRead<'de>,
     F: VariantImpl + 'de,
 {
-    input: R,
+    input: &'re mut R,
     next_ty: FieldType,
     is_key: bool,
     _marker: PhantomData<&'de F>,
 }
 
-impl<'de, F, R> Deserializer<'de, F, R>
+impl<'re, 'de, F, R> Deserializer<'re, 'de, F, R>
 where
     R: BinaryRead<'de>,
     F: VariantImpl + 'de,
 {
-    /// Creates a new deserialiser.
-    pub fn new(mut input: R) -> anyhow::Result<Self> {
+    /// Creates a new deserialiser, consuming the reader.
+    pub fn new(input: &'re mut R) -> anyhow::Result<Self> {
         let next_ty = FieldType::try_from(input.read_u8()?)?;
         if next_ty != FieldType::Compound && next_ty != FieldType::List {
             bail!(Malformed, "Expected compound or list tag as root");
@@ -91,14 +91,14 @@ where
 ///
 /// On success, the deserialised object and amount of bytes read from the buffer are returned.
 #[inline]
-fn from_bytes<'a, F, R, T>(mut reader: R) -> anyhow::Result<(T, usize)>
+fn from_bytes<'de, 're, F, R, T>(reader: &'re mut R) -> anyhow::Result<(T, usize)>
 where
-    R: BinaryRead<'a> + 'a,
-    T: Deserialize<'a>,
-    F: VariantImpl + 'a,
+    R: BinaryRead<'de>,
+    T: Deserialize<'de>,
+    F: VariantImpl + 'de,
 {
     let start = reader.remaining();
-    let mut deserializer = Deserializer::<F, _>::new(reader)?;
+    let mut deserializer = Deserializer::<F, R>::new(reader)?;
     let output = T::deserialize(&mut deserializer)?;
     let end = deserializer.input.remaining();
 
@@ -126,19 +126,19 @@ where
 /// #   value: String::from("Hello, World!")
 /// # };
 /// # let obuffer = nbt::to_le_bytes(&data).unwrap();
-/// # let buffer: &[u8] = obuffer.as_ref();
+/// # let mut buffer: &[u8] = obuffer.as_ref();
 ///
-///  let result = nbt::from_le_bytes(buffer).unwrap();
+///  let result = nbt::from_le_bytes(&mut buffer).unwrap();
 ///  let data: Data = result.0;
 ///
 ///  println!("Got {data:?}!");
 /// # }
 /// ```
 #[inline]
-pub fn from_le_bytes<'a, T, R>(reader: R) -> anyhow::Result<(T, usize)>
+pub fn from_le_bytes<'de, T, R>(reader: &mut R) -> anyhow::Result<(T, usize)>
 where
-    R: BinaryRead<'a> + 'a,
-    T: Deserialize<'a>,
+    R: BinaryRead<'de>,
+    T: Deserialize<'de>,
 {
     from_bytes::<LittleEndian, _, _>(reader)
 }
@@ -164,19 +164,19 @@ where
 /// #   value: String::from("Hello, World!")
 /// # };
 /// # let owned_buffer = nbt::to_be_bytes(&data).unwrap();
-/// # let buffer = owned_buffer.as_slice();
+/// # let mut buffer = owned_buffer.as_slice();
 ///
-///  let result = nbt::from_be_bytes(buffer).unwrap();
+///  let result = nbt::from_be_bytes(&mut buffer).unwrap();
 ///  let data: Data = result.0;
 ///
 ///  println!("Got {data:?}!");
 /// # }
 /// ```
 #[inline]
-pub fn from_be_bytes<'a, T, R>(reader: R) -> anyhow::Result<(T, usize)>
+pub fn from_be_bytes<'de, T, R>(reader: &mut R) -> anyhow::Result<(T, usize)>
 where
-    R: BinaryRead<'a> + 'a,
-    T: Deserialize<'a>,
+    R: BinaryRead<'de>,
+    T: Deserialize<'de>,
 {
     from_bytes::<BigEndian, _, _>(reader)
 }
@@ -202,24 +202,24 @@ where
 /// #   value: String::from("Hello, World!")
 /// # };
 /// # let owned_buffer = nbt::to_var_bytes(&data).unwrap();
-/// # let buffer = owned_buffer.as_slice();
+/// # let mut buffer = owned_buffer.as_slice();
 ///
-///  let result = nbt::from_var_bytes(buffer).unwrap();
+///  let result = nbt::from_var_bytes(&mut buffer).unwrap();
 ///  let data: Data = result.0;
 ///
 ///  println!("Got {data:?}!");
 /// # }
 /// ```
 #[inline]
-pub fn from_var_bytes<'a, T, R>(reader: R) -> anyhow::Result<(T, usize)>
+pub fn from_var_bytes<'data, T, R>(reader: &mut R) -> anyhow::Result<(T, usize)>
 where
-    R: BinaryRead<'a> + 'a,
-    T: Deserialize<'a>,
+    R: BinaryRead<'data>,
+    T: Deserialize<'data>,
 {
     from_bytes::<Variable, _, _>(reader)
 }
 
-impl<'de, 'a, F, R> de::Deserializer<'de> for &'a mut Deserializer<'de, F, R>
+impl<'de, 're, 'a, F, R> de::Deserializer<'de> for &'a mut Deserializer<'re, 'de, F, R>
 where
     R: BinaryRead<'de>,
     F: VariantImpl + 'a,
@@ -543,23 +543,23 @@ where
 /// Sequences are in this case: [`ByteArray`](FieldType::ByteArray), [`IntArray`](FieldType::IntArray)
 /// [`LongArray`](FieldType::LongArray) and [`List`](FieldType::List).
 #[derive(Debug)]
-struct SeqDeserializer<'a, 'de: 'a, F, R>
+struct SeqDeserializer<'a, 're, 'de: 'a, F, R>
 where
     R: BinaryRead<'de>,
     F: VariantImpl,
 {
-    de: &'a mut Deserializer<'de, F, R>,
+    de: &'a mut Deserializer<'re, 'de, F, R>,
     ty: FieldType,
     remaining: u32,
 }
 
-impl<'de, 'a, F, R> SeqDeserializer<'a, 'de, F, R>
+impl<'de, 're, 'a, F, R> SeqDeserializer<'a, 're, 'de, F, R>
 where
     R: BinaryRead<'de>,
     F: VariantImpl,
 {
     #[inline]
-    pub fn new(de: &'a mut Deserializer<'de, F, R>, ty: FieldType, expected_len: u32) -> anyhow::Result<Self> {
+    pub fn new(de: &'a mut Deserializer<'re, 'de, F, R>, ty: FieldType, expected_len: u32) -> anyhow::Result<Self> {
         debug_assert_ne!(ty, FieldType::End, "Cannot serialize sequence of end tags");
 
         // ty is not read in here because the x_array types don't have a type prefix.
@@ -579,7 +579,7 @@ where
     }
 }
 
-impl<'de, 'a, F, R> SeqAccess<'de> for SeqDeserializer<'a, 'de, F, R>
+impl<'de, 're, 'a, F, R> SeqAccess<'de> for SeqDeserializer<'a, 're, 'de, F, R>
 where
     R: BinaryRead<'de>,
     F: VariantImpl,
@@ -605,26 +605,26 @@ where
 
 /// Deserialises NBT compounds.
 #[derive(Debug)]
-struct MapDeserializer<'a, 'de: 'a, F, R>
+struct MapDeserializer<'a, 're, 'de: 'a, F, R>
 where
     R: BinaryRead<'de>,
     F: VariantImpl,
 {
-    de: &'a mut Deserializer<'de, F, R>,
+    de: &'a mut Deserializer<'re, 'de, F, R>,
 }
 
-impl<'de, 'a, F, R> From<&'a mut Deserializer<'de, F, R>> for MapDeserializer<'a, 'de, F, R>
+impl<'de, 're, 'a, F, R> From<&'a mut Deserializer<'re, 'de, F, R>> for MapDeserializer<'a, 're, 'de, F, R>
 where
     R: BinaryRead<'de>,
     F: VariantImpl,
 {
     #[inline]
-    fn from(v: &'a mut Deserializer<'de, F, R>) -> Self {
+    fn from(v: &'a mut Deserializer<'re, 'de, F, R>) -> Self {
         Self { de: v }
     }
 }
 
-impl<'de, 'a, F, R> MapAccess<'de> for MapDeserializer<'a, 'de, F, R>
+impl<'de, 're, 'a, F, R> MapAccess<'de> for MapDeserializer<'a, 're, 'de, F, R>
 where
     R: BinaryRead<'de>,
     F: VariantImpl,

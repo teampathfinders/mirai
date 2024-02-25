@@ -24,9 +24,9 @@ fn read_write_option() {
     };
 
     let some_ser = to_be_bytes(&some).unwrap();
-    dbg!(&some_ser);
+    let mut some_ser_slice = some_ser.as_slice();
 
-    let some_de: Value = from_be_bytes(some_ser.as_ref()).unwrap().0;
+    let some_de: Value = from_be_bytes(&mut some_ser_slice).unwrap().0;
     dbg!(some_de);
 
     let _none = Optional {
@@ -60,12 +60,15 @@ fn read_write_all() {
     ]));
 
     let ser = to_var_bytes(&value).unwrap();
+    let mut ser_slice = ser.as_slice();
     let ser_le = to_le_bytes(&value).unwrap();
+    let mut ser_le_slice = ser_le.as_slice();
     let ser_be = to_be_bytes(&value).unwrap();
+    let mut ser_be_slice = ser_be.as_slice();
 
-    from_var_bytes::<Value, _>(ser.as_ref()).unwrap();
-    from_le_bytes::<Value, _>(ser_le.as_ref()).unwrap();
-    from_be_bytes::<Value, _>(ser_be.as_ref()).unwrap();
+    from_var_bytes::<Value, _>(&mut ser_slice).unwrap();
+    from_le_bytes::<Value, _>(&mut ser_le_slice).unwrap();
+    from_be_bytes::<Value, _>(&mut ser_be_slice).unwrap();
 }
 
 #[test]
@@ -115,14 +118,14 @@ fn read_write_bigtest() {
         short_test: i16,
     }
 
-    let decoded: AllTypes = from_be_bytes(BIG_TEST_NBT).unwrap().0;
+    let decoded: AllTypes = from_be_bytes(&mut BIG_TEST_NBT).unwrap().0;
 
     let encoded = to_be_bytes(&decoded).unwrap();
-    let _decoded2: AllTypes = from_be_bytes(encoded.as_slice()).unwrap().0;
+    let _decoded2: AllTypes = from_be_bytes(&mut encoded.as_slice()).unwrap().0;
 
-    let value: Value = from_be_bytes(BIG_TEST_NBT).unwrap().0;
+    let value: Value = from_be_bytes(&mut BIG_TEST_NBT).unwrap().0;
     let value_encoded = to_be_bytes(&value).unwrap();
-    let value_decoded: Value = from_be_bytes(value_encoded.as_ref()).unwrap().0;
+    let value_decoded: Value = from_be_bytes(&mut value_encoded.as_slice()).unwrap().0;
     assert_eq!(value, value_decoded);
 }
 
@@ -134,13 +137,13 @@ fn read_write_hello_world() {
         name: Value,
     }
 
-    let decoded: HelloWorld = from_be_bytes(HELLO_WORLD_NBT).unwrap().0;
+    let decoded: HelloWorld = from_be_bytes(&mut HELLO_WORLD_NBT).unwrap().0;
     let encoded = to_be_bytes(&decoded).unwrap();
     assert_eq!(encoded.as_slice(), HELLO_WORLD_NBT);
 
-    let value: Value = from_be_bytes(HELLO_WORLD_NBT).unwrap().0;
+    let value: Value = from_be_bytes(&mut HELLO_WORLD_NBT).unwrap().0;
     let value_encoded = to_be_bytes(&value).unwrap();
-    let value_decoded: Value = from_be_bytes(value_encoded.as_ref()).unwrap().0;
+    let value_decoded: Value = from_be_bytes(&mut value_encoded.as_ref()).unwrap().0;
     assert_eq!(value, value_decoded);
 }
 
@@ -163,11 +166,11 @@ fn read_write_player() {
         rotation: [f32; 2],
     }
 
-    let decoded: Player = from_be_bytes(PLAYER_NAN_VALUE_NBT).unwrap().0;
+    let decoded: Player = from_be_bytes(&mut PLAYER_NAN_VALUE_NBT).unwrap().0;
     let encoded = to_be_bytes(&decoded).unwrap();
-    let decoded2: Player = from_be_bytes(encoded.as_ref()).unwrap().0;
+    let decoded2: Player = from_be_bytes(&mut encoded.as_ref()).unwrap().0;
 
-    let _value: Value = from_be_bytes(PLAYER_NAN_VALUE_NBT).unwrap().0;
+    let _value: Value = from_be_bytes(&mut PLAYER_NAN_VALUE_NBT).unwrap().0;
     let value_encoded = to_be_bytes(&decoded2).unwrap();
-    let _value_decoded: Value = from_be_bytes(value_encoded.as_ref()).unwrap().0;
+    let _value_decoded: Value = from_be_bytes(&mut value_encoded.as_ref()).unwrap().0;
 }

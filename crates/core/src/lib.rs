@@ -4,7 +4,6 @@
 
 #![doc(html_favicon_url = "https://github.com/teampathfinders/mirai/blob/master/resources/logo.png?raw=true")]
 #![doc(html_logo_url = "https://github.com/teampathfinders/mirai/blob/master/resources/logo.png?raw=true")]
-
 #![warn(
     missing_docs,
     clippy::expect_used,

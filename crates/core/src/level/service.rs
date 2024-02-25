@@ -49,7 +49,7 @@ impl Service {
         }?);
 
         let service = Arc::new(Service {
-            collector: Collector::new(options.instance_token.clone(), 100),
+            collector: Collector::new(Arc::clone(&provider), options.instance_token.clone(), 100),
             instance_token: options.instance_token,
             shutdown_token: CancellationToken::new(),
             instance: OnceLock::new(),
@@ -149,7 +149,7 @@ impl Service {
     /// the sequential and parallel iterator perform the exact same operations.
     #[inline]
     fn for_each_subchunk(item: Vector<i32, 3>, dimension: Dimension, provider: &Provider) -> IndexedSubChunk {
-        let subchunk = provider.get_subchunk(
+        let subchunk = provider.subchunk(
             Vector::from([item.x, item.z]), item.y as i8, dimension
         );
 

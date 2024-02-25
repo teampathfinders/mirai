@@ -163,6 +163,7 @@ where
 #[cfg(test)]
 mod test;
 
+mod batch;
 mod biome;
 mod ffi;
 mod key;
@@ -174,6 +175,7 @@ pub mod database;
 /// Implements serialization and deserialization for important types.
 pub mod provider;
 
+pub use batch::*;
 pub use biome::*;
 pub use key::*;
 pub use subchunk::*;

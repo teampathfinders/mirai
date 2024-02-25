@@ -62,14 +62,14 @@ pub trait BinaryRead<'a>: AsRef<[u8]> {
     fn take_const<const N: usize>(&mut self) -> anyhow::Result<[u8; N]>;
 
     /// Takes `n` bytes out of the reader without advancing the cursor.
-    fn peek(&self, n: usize) -> anyhow::Result<&[u8]>;
+    fn peek_n(&self, n: usize) -> anyhow::Result<&'a [u8]>;
 
     /// Takes `N` bytes out of the reader without advancing the cursor.
     /// /// This can be used to get sized arrays if the size is known at compile time.
     fn peek_const<const N: usize>(&self) -> anyhow::Result<[u8; N]>;
 
-    /// Reads a varuint32-prefixed slice of type `T`.
-    fn read_slice<T: Deserialize<'a>>(&mut self) -> anyhow::Result<Vec<T>>;
+    // /// Reads a varuint32-prefixed slice of type `T`.
+    // fn read_slice<T: Deserialize<'a>>(&mut self) -> anyhow::Result<Vec<T>>;
 
     /// Reads a [`bool`] from the reader.
     #[inline]
@@ -336,7 +336,7 @@ impl<'a> BinaryRead<'a> for &'a [u8] {
     /// # Errors
     /// Returns [`UnexpectedEof`](crate::ErrorKind::UnexpectedEof) if the read exceeds the buffer length.
     #[inline]
-    fn peek(&self, n: usize) -> anyhow::Result<&[u8]> {
+    fn peek_n(&self, n: usize) -> anyhow::Result<&'a [u8]> {
         if self.len() < n {
             tracing::error!("Expected {n} remaining bytes, got {}", self.len());
             bail!(UnexpectedEof, "expected {n} remaining bytes, got {}", self.len())
@@ -351,7 +351,7 @@ impl<'a> BinaryRead<'a> for &'a [u8] {
     /// In case the amount is known at compile time, this function can be used to
     /// take a sized array from the buffer.
     ///
-    /// See [`peek`](BinaryRead::peek) for a runtime-sized alternative.
+    /// See [`peek_n`](BinaryRead::peek_n) for a runtime-sized alternative.
     ///
     /// # Errors
     /// Returns [`UnexpectedEof`](crate::ErrorKind::UnexpectedEof) if the read exceeds the buffer length.
@@ -368,14 +368,51 @@ impl<'a> BinaryRead<'a> for &'a [u8] {
         }
     }
 
-    fn read_slice<T: Deserialize<'a>>(&mut self) -> anyhow::Result<Vec<T>> {
-        let len = self.read_var_u32()?;
-        let mut vec = Vec::with_capacity(len as usize);
+    // fn read_slice<T: Deserialize<'a>>(&mut self) -> anyhow::Result<Vec<T>> {
+    //     let len = self.read_var_u32()?;
+    //     let mut vec = Vec::with_capacity(len as usize);
 
-        for _ in 0..len {
-            vec.push(T::deserialize_from(self)?);
-        }
+    //     for _ in 0..len {
+    //         vec.push(T::deserialize_from(self)?);
+    //     }
 
-        Ok(vec)
+    //     Ok(vec)
+    // }
+}
+
+impl<'a, R> BinaryRead<'a> for &mut R where R: BinaryRead<'a> {
+    #[inline]
+    fn advance(&mut self, n: usize) -> anyhow::Result<()> {
+        (**self).advance(n)
     }
+
+    #[inline]
+    fn remaining(&mut self) -> usize {
+        (**self).remaining()
+    }
+
+    #[inline]
+    fn take_n(&mut self, n: usize) -> anyhow::Result<&'a [u8]> {
+        (**self).take_n(n)
+    }
+
+    #[inline]
+    fn take_const<const N: usize>(&mut self) -> anyhow::Result<[u8; N]> {
+        (**self).take_const()
+    }
+
+    #[inline]
+    fn peek_n(&self, n: usize) -> anyhow::Result<&'a [u8]> {
+        (**self).peek_n(n)
+    }
+
+    #[inline]
+    fn peek_const<const N: usize>(&self) -> anyhow::Result<[u8; N]> {
+        (**self).peek_const()
+    }
+
+    // #[inline]
+    // fn read_slice<T: Deserialize<'a>>(&mut self) -> anyhow::Result<Vec<T>> {
+    //     (**self).read_slice()
+    // }
 }

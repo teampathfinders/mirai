@@ -156,10 +156,34 @@ impl TryFrom<u32> for InventoryActionSource {
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 #[repr(i32)]
 pub enum WindowId {
+    DropContents = -100,
+    Beacon = -24,
+    TradingOutput = -23,
+    TradingUseInputs = -22,
+    TradingInput2 = -21,
+    TradingInput1 = -20,
+    EnchantOutput = -17,
+    EnchantMaterial = -16,
+    EnchantInput = -15,
+    AnvilOutput = -13,
+    AnvilResult = -12,
+    AnvilMaterial = -11,
+    ContainerInput = -10,
+    CraftingUseIngredient = -5,
+    CraftingResult = -4,
+    CraftingRemoveIngredient = -3,
+    CraftingAddIngredient = -2,
+    None = -1,
     Inventory = 0,
+    First = 1,
+    Last = 100,
     OffHand = 119,
-    Armour = 120,
-    Ui = 124
+    Armor = 120,
+    Creative = 121,
+    Hotbar = 122,
+    FixedInventory = 123,
+    Ui = 124,
+    Custom(i32)
 }
 
 impl TryFrom<i32> for WindowId {
@@ -167,11 +191,34 @@ impl TryFrom<i32> for WindowId {
 
     fn try_from(v: i32) -> anyhow::Result<Self> {
         Ok(match v {
+            -100 => Self::DropContents,
+            -24 => Self::Beacon,
+            -23 => Self::TradingOutput,
+            -22 => Self::TradingUseInputs,
+            -21 => Self::TradingInput2,
+            -20 => Self::TradingInput1,
+            -17 => Self::EnchantOutput,
+            -16 => Self::EnchantMaterial,
+            -15 => Self::EnchantInput,
+            -13 => Self::AnvilOutput,
+            -12 => Self::AnvilResult,
+            -11 => Self::AnvilMaterial,
+            -10 => Self::ContainerInput,
+            -5 => Self::CraftingUseIngredient,
+            -4 => Self::CraftingResult,
+            -3 => Self::CraftingRemoveIngredient,
+            -2 => Self::CraftingAddIngredient,
+            -1 => Self::None,
             0 => Self::Inventory,
+            1 => Self::First,
+            100 => Self::Last,
             119 => Self::OffHand,
-            120 => Self::Armour,
+            120 => Self::Armor,
+            121 => Self::Creative,
+            122 => Self::Hotbar,
+            123 => Self::FixedInventory,
             124 => Self::Ui,
-            _ => anyhow::bail!("Invalid window ID")
+            _ => Self::Custom(v)
         })
     }
 }
@@ -193,7 +240,7 @@ impl<'a> Deserialize<'a> for InventoryAction {
         let mut _source_flags = 0;
 
         if source_type == InventoryActionSource::Container || source_type == InventoryActionSource::Todo {
-            _window = Some(WindowId::try_from(reader.read_i32_le()?)?);
+            _window = Some(WindowId::try_from(reader.read_i8()? as i32)?);
         } else if source_type == InventoryActionSource::World {
             _source_flags = reader.read_var_u32()?;
         }

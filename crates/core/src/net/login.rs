@@ -1,7 +1,7 @@
 
 
 use std::sync::atomic::Ordering;
-use proto::bedrock::{BiomeDefinitionList, BroadcastIntent, CacheStatus, ChatRestrictionLevel, ChunkRadiusReply, ChunkRadiusRequest, ClientToServerHandshake, ConnectedPacket, CreativeContent, Difficulty, DisconnectReason, GameMode, Login, NetworkSettings, PermissionLevel, PlayStatus, PlayerMovementSettings, PlayerMovementType, PropertyData, RequestNetworkSettings, ResourcePackClientResponse, ResourcePackStack, ResourcePacksInfo, ServerToClientHandshake, SetLocalPlayerAsInitialized, SpawnBiomeType, StartGame, Status, TextData, TextMessage, ViolationWarning, WorldGenerator, CLIENT_VERSION_STRING, PROTOCOL_VERSION};
+use proto::bedrock::{BiomeDefinitionList, BroadcastIntent, CacheStatus, ChatRestrictionLevel, ChunkRadiusReply, ChunkRadiusRequest, ClientToServerHandshake, ConnectedPacket, CreativeContent, Difficulty, DisconnectReason, GameMode, Login, NetworkSettings, PermissionLevel, PlayStatus, PlayerMovementSettings, PlayerMovementType, PropertyData, RequestNetworkSettings, ResourcePackClientResponse, ResourcePackStack, ResourcePacksInfo, ServerToClientHandshake, SetLocalPlayerAsInitialized, SpawnBiomeType, StartGame, Status, TextData, TextMessage, ViolationWarning, WorldGenerator, CLIENT_VERSION_STRING, PROTOCOL_VERSION, ExperimentData};
 use proto::crypto::Encryptor;
 use proto::types::Dimension;
 
@@ -161,7 +161,7 @@ impl BedrockClient {
             world_game_mode: GameMode::Survival,
             difficulty: Difficulty::Normal,
             world_spawn: BlockPosition::new(0, 60, 0),
-            achievements_disabled: false,
+            achievements_disabled: true,
             editor_world: false,
             day_cycle_lock_time: 0,
             education_features_enabled: true,
@@ -179,9 +179,9 @@ impl BedrockClient {
             experiments: &[],
             experiments_previously_enabled: false,
             bonus_chest_enabled: false,
-            starter_map_enabled: true,
+            starter_map_enabled: false,
             permission_level: PermissionLevel::Operator,
-            server_chunk_tick_range: 4,
+            server_chunk_tick_range: 12,
             has_locked_behavior_pack: false,
             has_locked_resource_pack: false,
             is_from_locked_world_template: false,
@@ -191,17 +191,17 @@ impl BedrockClient {
             only_spawn_v1_villagers: false,
             persona_disabled: false,
             custom_skins_disabled: false,
-            emote_chat_muted: true,
+            emote_chat_muted: false,
             limited_world_width: 0,
             limited_world_height: 0,
             force_experimental_gameplay: false,
             chat_restriction_level: ChatRestrictionLevel::None,
             disable_player_interactions: false,
             level_id: "",
-            level_name: "World name",
+            level_name: "Mirai Dedicated Server",
             template_content_identity: "",
             movement_settings: PlayerMovementSettings {
-                movement_type: PlayerMovementType::ClientAuthoritative,
+                movement_type: PlayerMovementType::ServerAuthoritative,
                 rewind_history_size: 0,
                 server_authoritative_breaking: true,
             },
@@ -214,7 +214,7 @@ impl BedrockClient {
             block_properties: &[],
             item_properties: &[],
             property_data: PropertyData {},
-            server_authoritative_inventory: true,
+            server_authoritative_inventory: false,
             game_version: "1.20.50",
             // property_data: nbt::Value::Compound(HashMap::new()),
             server_block_state_checksum: 0,
@@ -226,13 +226,11 @@ impl BedrockClient {
         self.send(start_game)?;
 
         let creative_content = CreativeContent {
-            // items: CREATIVE_ITEMS_DATA.items()
-            items: &[]
+            items: &self.instance().creative_items.stacks
         };
         self.send(creative_content)?;
 
-        let biome_definition_list = BiomeDefinitionList;
-        self.send(biome_definition_list)?;
+        self.send(BiomeDefinitionList)?;
 
         let available_commands = self.commands.available_commands();
         self.send(available_commands)?;

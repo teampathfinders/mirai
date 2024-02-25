@@ -1,6 +1,8 @@
 #![allow(dead_code)]
 
-use std::{net::SocketAddrV4, str::FromStr, sync::atomic::{AtomicU16, Ordering}};
+use std::net::SocketAddrV4;
+use std::str::FromStr;
+use std::sync::atomic::{AtomicU16, Ordering};
 
 use anyhow::Context;
 use tokio::runtime;
@@ -21,7 +23,7 @@ fn main() -> anyhow::Result<()> {
 
     init_logging().context("Unable to initialise logging")?;
 
-    let builder = Instance::builder().ipv4_address(SocketAddrV4::from_str("0.0.0.0:19133").unwrap());
+    let builder = Instance::builder().ipv4_address(SocketAddrV4::from_str("0.0.0.0:19132").unwrap());
 
     runtime.block_on(async move {
         let instance = builder.build().await?;

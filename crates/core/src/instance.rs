@@ -19,7 +19,7 @@ use util::{CowString, Deserialize, Joinable, RVec, ReserveTo, Serialize};
 
 use crate::command::{self, HandlerOutput, HandlerResult, ParsedCommand};
 use crate::config::Config;
-use crate::data::{BlockStates, CreativeItems};
+use crate::data::{BlockStates, CreativeItems, ItemNetworkIds};
 use crate::net::{Clients, ForwardablePacket};
 use proto::bedrock::{
     Command, CommandDataType, CommandEnum, CommandOverload, CommandParameter, CommandPermissionLevel, CreditsStatus, CreditsUpdate,
@@ -75,6 +75,10 @@ impl InstanceBuilder {
             Instance::GIT_REV
         );
 
+        let item_network_ids = ItemNetworkIds::new()?;
+        let block_states = BlockStates::new()?;
+        let creative_items = CreativeItems::new(&item_network_ids, &block_states)?;
+
         let ipv4_socket = UdpSocket::bind(self.0.ipv4_addr).await.context("Unable to create IPv4 UDP socket")?;
         let ipv6_socket = match self.0.ipv6_addr {
             Some(addr) => Some(UdpSocket::bind(addr).await.context("Unable to create IPv6 UDP socket")?),
@@ -93,6 +97,7 @@ impl InstanceBuilder {
         })?;
 
         let user_map = Arc::new(Clients::new(Arc::clone(&command_service), Arc::clone(&level_service)));
+        let user_map = Arc::new(Clients::new(Arc::clone(&command_service), Arc::clone(&level_service)));
         let instance = Instance {
             ipv4_socket,
             ipv6_socket,
@@ -106,6 +111,11 @@ impl InstanceBuilder {
             running_token,
             shutdown_token: CancellationToken::new(),
             startup_token: CancellationToken::new(),
+
+            // Data
+            creative_items,
+            block_states,
+            item_network_ids
         };
 
         let instance = Arc::new(instance);
@@ -150,6 +160,10 @@ pub struct Instance {
     raknet_guid: u64,
     /// The current message of the day. Update every [`METADATA_REFRESH_INTERVAL`] seconds.
     current_motd: RwLock<String>,
+
+    pub creative_items: CreativeItems,
+    pub block_states: BlockStates,
+    pub item_network_ids: ItemNetworkIds
 }
 
 impl Instance {
@@ -254,13 +268,6 @@ impl Instance {
 
     /// Starts the server and immediately returns when the server has successfully started
     pub fn start(self: &Arc<Instance>) -> anyhow::Result<()> {
-        // FIXME: The level module will get a refactor and this will be changed
-        // let level = Level::new(self.user_map.clone(), self.token.clone())?;
-        // self.user_map.set_level(level);
-
-        let block_states = BlockStates::new()?;
-        let creative_items = CreativeItems::new(&block_states)?;
-
         self.clients.set_instance(self)?;
         self.command_service.set_instance(self)?;
         self.level_service.set_instance(self)?;
