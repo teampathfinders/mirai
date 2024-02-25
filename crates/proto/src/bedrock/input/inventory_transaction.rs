@@ -1,4 +1,6 @@
-use util::{BinaryRead, BlockPosition, Deserialize, Vector};
+use std::collections::HashMap;
+
+use util::{BinaryRead, BlockPosition, Deserialize, RString, Vector};
 
 use crate::bedrock::ConnectedPacket;
 
@@ -66,20 +68,15 @@ impl<'a> Deserialize<'a> for TransactionSourceType {
     }
 }
 
-#[derive(Debug, Default, Clone, PartialEq)]
-pub struct Item {
-
-}
-
 #[derive(Debug, Clone)]
-pub struct TransactionAction {
+pub struct TransactionAction<'a> {
     pub source_type: TransactionSourceType,
     pub slot: u32,
-    pub old_item: Item,
-    pub new_item: Item
+    pub old_item: Item<'a>,
+    pub new_item: Item<'a>
 }
 
-impl<'a> Deserialize<'a> for TransactionAction {
+impl<'a> Deserialize<'a> for TransactionAction<'a> {
     fn deserialize_from<R: BinaryRead<'a>>(reader: &mut R) -> anyhow::Result<Self> {
         let source_type = TransactionSourceType::deserialize_from(reader)?;
         let slot = reader.read_var_u32()?;
@@ -87,8 +84,8 @@ impl<'a> Deserialize<'a> for TransactionAction {
         Ok(TransactionAction {
             source_type,
             slot,
-            old_item: Item {},
-            new_item: Item {}
+            old_item: Item::deserialize_from(reader)?,
+            new_item: Item::deserialize_from(reader)?
         })
     }
 }
@@ -153,7 +150,7 @@ impl TryFrom<u32> for ReleaseAction {
 }
 
 #[derive(Debug, Default, Clone, PartialEq)]
-pub enum TransactionType {
+pub enum TransactionType<'a> {
     #[default]
     Normal,
     Mismatch,
@@ -162,7 +159,7 @@ pub enum TransactionType {
         block_position: BlockPosition,
         face: i32,
         hotbar_slot: i32,
-        held_item: Item,
+        held_item: Item<'a>,
         player_position: Vector<f32, 3>,
         click_position: Vector<f32, 3>,
         block_runtime_id: u32
@@ -171,20 +168,20 @@ pub enum TransactionType {
         entity_runtime_id: u64,
         action_type: UseOnEntityAction,
         hotbar_slot: i32,
-        held_item: Item,
+        held_item: Item<'a>,
         player_position: Vector<f32, 3>,
         click_position: Vector<f32, 3>
     },
     Release {
         action_type: ReleaseAction,
         hotbar_slot: i32,
-        held_item: Item,
+        held_item: Item<'a>,
         head_position: Vector<f32, 3>
     }
 }
 
-impl TransactionType {
-    pub fn deserialize_from<'a, R: BinaryRead<'a>>(transaction_type: u32, reader: &mut R) -> anyhow::Result<TransactionType> {
+impl<'a> TransactionType<'a> {
+    pub fn deserialize_from<R: BinaryRead<'a>>(transaction_type: u32, reader: &'a mut R) -> anyhow::Result<TransactionType> {
         Ok(match transaction_type {
             0 => Self::Normal,
             1 => Self::Mismatch,
@@ -217,12 +214,89 @@ impl TransactionType {
     }
 }
 
+#[derive(Debug, Default, Clone, PartialEq)]
+pub struct Item<'a> {
+    pub network_id: i32,
+    pub count: u16,
+    pub metadata: u32,
+    pub stack_id: Option<i32>,
+    pub block_runtime_id: i32,
+    pub nbt: HashMap<String, nbt::Value>,
+    pub can_place_on: Vec<&'a str>,
+    pub can_destroy: Vec<&'a str>,
+    pub blocking_tick: i64
+}
+
+impl<'a> Deserialize<'a> for Item<'a> {
+    fn deserialize_from<R: BinaryRead<'a>>(reader: &mut R) -> anyhow::Result<Self> {
+        let network_id = reader.read_var_i32()?;
+        if network_id == 0 {
+            // Item is air
+            return Ok(Item {
+                network_id: 0,
+                ..Default::default()
+            })
+        }
+
+        let count = reader.read_u16_le()?;
+        let metadata = reader.read_var_u32()?;
+        let has_stack_id = reader.read_bool()?;
+        let stack_id = has_stack_id.then(|| reader.read_var_i32()).transpose()?;
+        let block_runtime_id = reader.read_var_i32()?;
+        
+        let has_nbt = reader.read_i16_le()? == -1;
+        let nbt = if has_nbt {
+            let (nbt, n) = nbt::from_var_bytes(reader)?;
+            reader.advance(n)?;
+            nbt
+        } else {
+            HashMap::new()
+        };
+
+        let can_place_on_len = reader.read_u32_le()?;
+        let mut can_place_on = Vec::with_capacity(can_place_on_len as usize);
+        for _ in 0..can_place_on_len {
+            let str_len = reader.read_u16_le()?;
+            let name = std::str::from_utf8(reader.take_n(str_len as usize)?)?;
+
+            can_place_on.push(name);
+        }
+
+        let can_destroy_len = reader.read_u32_le()?;
+        let mut can_destroy = Vec::with_capacity(can_destroy_len as usize);
+        for _ in 0..can_destroy_len {
+            let str_len = reader.read_u16_le()?;
+            let name = std::str::from_utf8(reader.take_n(str_len as usize)?)?;
+
+            can_destroy.push(name);
+        }
+
+        let blocking_tick = if reader.eof() {
+            0
+        } else {
+            reader.read_i64_le()?
+        };
+
+        Ok(Item {
+            network_id,
+            count,
+            metadata,
+            stack_id,
+            block_runtime_id,
+            nbt,
+            can_place_on,
+            can_destroy,
+            blocking_tick
+        })
+    }
+}
+
 #[derive(Debug, Clone)]
 pub struct InventoryTransaction<'a> {
     pub legacy_request_id: i32,
     pub legacy_transactions: Vec<LegacyTransactionEntry<'a>>,
-    pub transaction_type: TransactionType,
-    pub actions: Vec<TransactionAction>
+    pub transaction_type: TransactionType<'a>,
+    pub actions: Vec<TransactionAction<'a>>
 }
 
 impl<'a> ConnectedPacket for InventoryTransaction<'a> {

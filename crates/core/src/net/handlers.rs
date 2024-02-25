@@ -1,12 +1,19 @@
 use std::sync::Arc;
 
-use proto::bedrock::{Animate, CommandOutput, CommandOutputMessage, CommandOutputType, CommandRequest, DisconnectReason, FormResponseData, HudElement, HudVisibility, PlayerAuthInput, RequestAbility, SetHud, SettingsCommand, TextData, TextMessage, TickSync, UpdateSkin};
+use proto::bedrock::{Animate, CommandOutput, CommandOutputMessage, CommandOutputType, CommandRequest, DisconnectReason, FormResponseData, HudElement, HudVisibility, InventoryTransaction, PlayerAuthInput, RequestAbility, SetHud, SettingsCommand, TextData, TextMessage, TickSync, UpdateSkin};
 
 use util::{RVec, Deserialize, CowSlice};
 
 use super::BedrockClient;
 
 impl BedrockClient {
+    pub fn handle_inventory_transaction(&self, packet: RVec) -> anyhow::Result<()> {
+        let transaction = InventoryTransaction::deserialize(packet.as_ref())?;
+        dbg!(transaction);
+
+        Ok(())
+    }
+
     /// Handles a [`SettingsCommand`] packet used to adjust a world setting.
     pub fn handle_settings_command(&self, packet: RVec) -> anyhow::Result<()> {
         let request = SettingsCommand::deserialize(packet.as_ref())?;
