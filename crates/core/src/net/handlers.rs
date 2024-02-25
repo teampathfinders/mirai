@@ -52,17 +52,6 @@ impl BedrockClient {
         )
     )]
     pub fn handle_text_message(self: &Arc<Self>, packet: RVec) -> anyhow::Result<()> {
-        // let this = Arc::clone(self);
-        // tokio::spawn(async move {
-        //     let region = RadialRegion::from_center(
-        //         [0, 0], 5, 0..5, Dimension::Overworld
-        //     );
-            
-        //     let mut sink = this.level.region_sink();
-
-        //     let mut stream = this.level.region(region);
-        // });
-
         let request = TextMessage::deserialize(packet.as_ref())?;
         if let TextData::Chat {
             source, message
@@ -115,11 +104,6 @@ impl BedrockClient {
     /// Handles an [`Animation`] packet.
     pub fn handle_animation(&self, packet: RVec) -> anyhow::Result<()> {
         let request = Animate::deserialize(packet.as_ref())?;
-
-        self.send(SetHud {
-            elements: &[HudElement::Hotbar],
-            visibibility: HudVisibility::Hide
-        })?;
 
         tracing::debug!("{request:?}");
         
