@@ -181,7 +181,7 @@ impl CreativeItems {
     pub fn new(item_ids: &ItemNetworkIds, block_states: &BlockStates) -> anyhow::Result<Self> {
         tracing::debug!("Loading creative items");
 
-        let nbt: Vec<RawCreativeItem> = nbt::from_var_bytes(CREATIVE_ITEMS_RAW)?.0;
+        let nbt: Vec<RawCreativeItem> = nbt::from_var_bytes(&mut CREATIVE_ITEMS_RAW)?.0;
         let mut stacks = Vec::with_capacity(nbt.len());
 
         stacks.push(ItemStack {
@@ -254,7 +254,7 @@ impl ItemNetworkIds {
     pub fn new() -> anyhow::Result<Self> {
         tracing::debug!("Loading item identifiers");
 
-        let nbt: HashMap<String, i32> = nbt::from_var_bytes(ITEM_IDS_RAW)?.0;
+        let nbt: HashMap<String, i32> = nbt::from_var_bytes(&mut ITEM_IDS_RAW)?.0;
         let mut shield_id = i32::MAX;
 
         let mut name_to_id = HashMap::with_capacity(nbt.len());
@@ -319,10 +319,8 @@ impl BlockStates {
         };
 
         while reader.remaining() > 0 {
-            let (item, n) = nbt::from_var_bytes(reader)?;
+            let (item, _) = nbt::from_var_bytes(&mut reader)?;
             states.register(item)?;
-
-            (_, reader) = reader.split_at(n);
         }
 
         Ok(states)

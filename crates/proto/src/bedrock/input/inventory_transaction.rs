@@ -49,7 +49,7 @@ impl<'a> Deserialize<'a> for TransactionSourceType {
         let source_type = reader.read_var_u32()?;
         Ok(match source_type {
             0 => Self::Container {
-                inventory_id: WindowId::try_from(reader.read_var_i32()?)?
+                inventory_id: WindowId::try_from(reader.read_i8()?)?
             },
             1 => Self::Global,
             2 => Self::WorldInteraction {
@@ -60,7 +60,7 @@ impl<'a> Deserialize<'a> for TransactionSourceType {
                 action: reader.read_var_u32()?
             },
             99_999 => Self::Craft {
-                inventory_id: WindowId::try_from(reader.read_var_i32()?)?,
+                inventory_id: WindowId::try_from(reader.read_i8()?)?,
                 action: reader.read_var_u32()?
             },
             _ => anyhow::bail!("Invalid transaction source type")
@@ -181,7 +181,7 @@ pub enum TransactionType<'a> {
 }
 
 impl<'a> TransactionType<'a> {
-    pub fn deserialize_from<R: BinaryRead<'a>>(transaction_type: u32, reader: &'a mut R) -> anyhow::Result<TransactionType> {
+    pub fn deserialize_from<R: BinaryRead<'a>>(transaction_type: u32, reader: &mut R) -> anyhow::Result<TransactionType<'a>> {
         Ok(match transaction_type {
             0 => Self::Normal,
             1 => Self::Mismatch,

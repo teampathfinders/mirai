@@ -26,15 +26,15 @@ pub trait Serialize {
 
 /// Trait that describes an object that can be deserialised from raw bytes.
 pub trait Deserialize<'a>: Sized {
-    // /// Deserializes the given buffer, returning the object.
-    // fn deserialize<'b, R: BinaryRead<'a> + 'b>(mut reader: R) -> anyhow::Result<Self> {
-    //     Self::deserialize_from(&mut reader)
-    // }
+    /// Deserializes the given buffer, returning the object.
+    fn deserialize<'b, R: BinaryRead<'a> + 'b>(mut reader: R) -> anyhow::Result<Self> {
+        Self::deserialize_from(&mut reader)
+    }
 
     /// Deserializes the given buffer, returning the object.
     /// While [`deserialize`](Self::deserialize) consumes the buffer, this function
     /// modifies the original buffer allowing you to continue where this function left off.
-    fn deserialize_from<'b, R: BinaryRead<'a>>(reader: &'b mut R) -> anyhow::Result<Self> where 'b: 'a;
+    fn deserialize_from<R: BinaryRead<'a>>(reader: &mut R) -> anyhow::Result<Self>;
 }
 
 /// Adds the [`try_expect`](TryExpect::try_expect) function to an object.

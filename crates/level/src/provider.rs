@@ -54,7 +54,7 @@ impl Provider {
             anyhow::bail!("Invalid `level.dat` file: header specified length of {file_size} bytes, but found {remaining}");
         }
 
-        let (settings, _) = nbt::from_le_bytes(reader)?;
+        let (settings, _) = nbt::from_le_bytes(&mut reader)?;
         Ok(settings)
     }
 

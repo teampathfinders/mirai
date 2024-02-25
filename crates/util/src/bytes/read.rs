@@ -62,7 +62,7 @@ pub trait BinaryRead<'a>: AsRef<[u8]> {
     fn take_const<const N: usize>(&mut self) -> anyhow::Result<[u8; N]>;
 
     /// Takes `n` bytes out of the reader without advancing the cursor.
-    fn peek_n(&self, n: usize) -> anyhow::Result<&[u8]>;
+    fn peek_n(&self, n: usize) -> anyhow::Result<&'a [u8]>;
 
     /// Takes `N` bytes out of the reader without advancing the cursor.
     /// /// This can be used to get sized arrays if the size is known at compile time.
@@ -336,7 +336,7 @@ impl<'a> BinaryRead<'a> for &'a [u8] {
     /// # Errors
     /// Returns [`UnexpectedEof`](crate::ErrorKind::UnexpectedEof) if the read exceeds the buffer length.
     #[inline]
-    fn peek_n(&self, n: usize) -> anyhow::Result<&[u8]> {
+    fn peek_n(&self, n: usize) -> anyhow::Result<&'a [u8]> {
         if self.len() < n {
             tracing::error!("Expected {n} remaining bytes, got {}", self.len());
             bail!(UnexpectedEof, "expected {n} remaining bytes, got {}", self.len())
@@ -402,7 +402,7 @@ impl<'a, R> BinaryRead<'a> for &mut R where R: BinaryRead<'a> {
     }
 
     #[inline]
-    fn peek_n(&self, n: usize) -> anyhow::Result<&[u8]> {
+    fn peek_n(&self, n: usize) -> anyhow::Result<&'a [u8]> {
         (**self).peek_n(n)
     }
 
