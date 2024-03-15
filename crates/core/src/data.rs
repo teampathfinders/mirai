@@ -193,7 +193,11 @@ impl CreativeItems {
             nbt_data: HashMap::new(),
         });
 
-        for item in nbt.into_iter().take(300) {
+        for item in nbt
+            .into_iter()
+            .filter(|item| !item.name.contains("element"))
+            .take(707)
+        {
             if item.block_properties.is_empty() {
                 let Some(runtime_id) = item_ids.get_id(&item.name) else { continue };
 
@@ -288,7 +292,12 @@ impl ItemNetworkIds {
     /// Convert an item network ID to a name.
     #[inline]
     pub fn get_name(&self, id: i32) -> Option<&str> {
-        self.id_to_name.get(&id).map(|x| x.as_str())
+        let name = self.id_to_name.get(&id).map(|x| x.as_str());
+        if let Some(name) = name {
+            println!("{name}: {id}");
+        }
+
+        name
     }
 }
 

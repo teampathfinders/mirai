@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use proto::bedrock::{Animate, CommandOutput, CommandOutputMessage, CommandOutputType, CommandRequest, DisconnectReason, FormResponseData, HudElement, HudVisibility, InventoryTransaction, PlayerAuthInput, RequestAbility, SetHud, SettingsCommand, TextData, TextMessage, TickSync, TransactionSourceType, UpdateSkin};
 
-use util::{RVec, Deserialize, CowSlice};
+use util::{BinaryRead, BinaryWrite, CowSlice, Deserialize, RVec};
 
 use super::BedrockClient;
 
@@ -14,9 +14,16 @@ impl BedrockClient {
             let instance = self.instance();
 
             let new = instance.item_network_ids.get_name(action.new_item.network_id);
-            let old = instance.item_network_ids.get_name(action.old_item.network_id);
+            // let old = instance.item_network_ids.get_name(action.old_item.network_id);
 
-            println!("Switch from {old:?} to {new:?}");
+            let mut buf = Vec::with_capacity(5);
+            buf.write_var_i32(action.new_item.network_id)?;
+
+            let mut var = buf.as_slice();
+            let var = var.read_var_u32()?;
+            println!("{var}")
+
+            // println!("Switch from {old:?} to {new:?}");
         }
 
         Ok(())

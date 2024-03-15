@@ -7,12 +7,14 @@ use crate::bedrock::ConnectedPacket;
 /// The Minecraft game modes.
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum GameMode {
-    Survival,
-    Creative,
-    Adventure,
-    Spectator,
+    Survival = 0,
+    Creative = 1,
+    Adventure = 2,
+    SurvivalSpectator = 3,
+    CreativeSpectator = 4,
     /// Sets the player's game mode to the world default.
     WorldDefault = 5,
+    Spectator = 6
 }
 
 impl TryFrom<i32> for GameMode {
@@ -23,8 +25,10 @@ impl TryFrom<i32> for GameMode {
             0 => Self::Survival,
             1 => Self::Creative,
             2 => Self::Adventure,
-            3 => Self::Spectator,
+            3 => Self::SurvivalSpectator,
+            4 => Self::CreativeSpectator,
             5 => Self::WorldDefault,
+            6 => Self::Spectator,
             _ => bail!(Malformed, "Invalid game mode"),
         })
     }

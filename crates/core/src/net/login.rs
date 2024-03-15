@@ -215,7 +215,7 @@ impl BedrockClient {
             item_properties: &[],
             property_data: PropertyData {},
             server_authoritative_inventory: false,
-            game_version: "1.20.50",
+            game_version: CLIENT_VERSION_STRING,
             // property_data: nbt::Value::Compound(HashMap::new()),
             server_block_state_checksum: 0,
             world_template_id: 0,
@@ -225,15 +225,15 @@ impl BedrockClient {
         };
         self.send(start_game)?;
 
-        let creative_content = CreativeContent {
-            items: &self.instance().creative_items.stacks
-        };
-        self.send(creative_content)?;
-
         self.send(BiomeDefinitionList)?;
 
         let available_commands = self.commands.available_commands();
         self.send(available_commands)?;
+
+        let creative_content = CreativeContent {
+            items: &self.instance().creative_items.stacks
+        };
+        self.send(creative_content)?;
 
         let play_status = PlayStatus { status: Status::PlayerSpawn };
         self.send(play_status)?;

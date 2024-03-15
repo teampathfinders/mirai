@@ -73,7 +73,7 @@ pub struct RakNetClient {
     /// This is increased for every reliable packet sent.
     pub acknowledge_index: AtomicU32,
     /// Current compound index. This index uniquely identifies a compound of fragments.
-    pub compound_index: AtomicU16,
+    pub compound_id: AtomicU16,
     /// Collection of incomplete compounds. These compounds will slowly be filled up and
     /// will be processed when all fragments have been received.
     pub compounds: Compounds,
@@ -131,7 +131,7 @@ impl RakNetClient {
             recovery: Recovery::new(),
             mtu: info.mtu,
             acknowledge_index: AtomicU32::new(0),
-            compound_index: AtomicU16::new(0),
+            compound_id: AtomicU16::new(0),
             compounds: Compounds::new(),
             sequence_index: AtomicU32::new(0),
             order: order_channels,

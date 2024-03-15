@@ -69,7 +69,7 @@ impl BedrockClient {
 
         // Only allow flying if the player is in the correct gamemode.
         let gamemode = player.gamemode();
-        if gamemode == GameMode::Creative || gamemode == GameMode::Spectator {
+        if gamemode == GameMode::Creative || gamemode == GameMode::SurvivalSpectator {
             self.send(UpdateAbilities(
                 AbilityData {
                     command_permission_level: player.command_permission_level(),
