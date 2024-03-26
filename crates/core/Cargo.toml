@@ -39,7 +39,7 @@ dashmap = "5.4.0"
 parking_lot = "0.12.1"
 flate2 = "1.0.26"
 serde = { version = "1.0.197", default-features = false }
-serde_json = { version = "1.0.114", features = ["preserve_order"] }
+serde_json = { version = "1.0.115", features = ["preserve_order"] }
 anyhow = { version = "1.0.81", features = ["backtrace"] }
 nohash-hasher = "0.2.0"
 paste = "1.0.14"
