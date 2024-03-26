@@ -43,5 +43,5 @@ serde_json = { version = "1.0.115", features = ["preserve_order"] }
 anyhow = { version = "1.0.81", features = ["backtrace"] }
 nohash-hasher = "0.2.0"
 paste = "1.0.14"
-rayon = "1.9.0"
+rayon = "1.10.0"
 futures = { version = "0.3.30", default-features = false }
