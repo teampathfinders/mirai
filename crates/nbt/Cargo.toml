@@ -12,4 +12,4 @@ util = { package = "mirai-util", path = "../util" }
 
 serde = { version = "1.0.197", features = ["derive"] }
 paste = "1.0.12"
-anyhow = "1.0.81"
+anyhow = "1.0.83"
