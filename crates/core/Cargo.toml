@@ -35,7 +35,7 @@ tracing-subscriber = { version = "0.3.17", features = ["ansi", "fmt", "json", "s
 tokio = { version = "1.37.0", features = ["net", "rt-multi-thread", "macros", "time", "tracing", "sync", "signal"] }
 tokio-util = "0.7.8"
 rand = "0.8.5"
-dashmap = "5.4.0"
+dashmap = "6.0.1"
 parking_lot = "0.12.1"
 flate2 = "1.0.26"
 serde = { version = "1.0.197", default-features = false }
