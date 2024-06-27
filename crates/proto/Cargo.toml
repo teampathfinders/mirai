@@ -12,7 +12,7 @@ anyhow = "1.0.86"
 bytemuck = "1.16.1"
 uuid = { version = "1.8.0", features = ["v4", "serde"], default-features = false }
 serde_repr = "0.1.19"
-serde_json = "1.0.115"
+serde_json = "1.0.118"
 jsonwebtoken = "9.3.0"
 aes = "0.8.4"
 ctr = "0.9.2"
