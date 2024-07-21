@@ -87,7 +87,7 @@ impl BedrockClient {
     pub fn handle_auth_input(&self, packet: RVec) -> anyhow::Result<()> {
         let input = PlayerAuthInput::deserialize(packet.as_ref())?;
         if input.input_data.0 != 0 {
-            tracing::debug!("{:?}", input.input_data);
+            // tracing::debug!("{:?}", input.input_data);
         }
 
         Ok(())

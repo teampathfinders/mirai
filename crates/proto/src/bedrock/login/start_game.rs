@@ -179,12 +179,12 @@ pub struct ItemEntry {
     pub component_based: bool,
 }
 
-impl ItemEntry {
-    pub fn serialized_size(&self) -> usize {
-        self.name.var_len() + 2 + 1
+impl Serialize for ItemEntry {
+    fn size_hint(&self) -> Option<usize> {
+        Some(self.name.var_len() + 2 + 1)
     }
 
-    pub fn serialize_into<W: BinaryWrite>(&self, writer: &mut W) -> anyhow::Result<()> {
+    fn serialize_into<W: BinaryWrite>(&self, writer: &mut W) -> anyhow::Result<()> {
         writer.write_str(&self.name)?;
         writer.write_u16_le(self.runtime_id)?;
         writer.write_bool(self.component_based)
@@ -211,9 +211,23 @@ pub enum BroadcastIntent {
     Public,
 }
 
-impl BroadcastIntent {
-    pub fn serialize_into<W: BinaryWrite>(&self, writer: &mut W) -> anyhow::Result<()> {
+impl Serialize for BroadcastIntent {
+    fn serialize_into<W: BinaryWrite>(&self, writer: &mut W) -> anyhow::Result<()> {
         writer.write_var_u32(*self as u32)
+    }
+}
+
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+#[repr(i32)]
+pub enum EditorWorldType {
+    NotEditor,
+    Project,
+    TestLevel
+}
+
+impl Serialize for EditorWorldType {
+    fn serialize_into<W: BinaryWrite>(&self, writer: &mut W) -> anyhow::Result<()> {
+        writer.write_var_i32(*self as i32)
     }
 }
 
@@ -243,6 +257,8 @@ pub struct StartGame<'a> {
     /// World game mode.
     /// The default game mode for new players.
     pub world_game_mode: GameMode,
+    /// Whether the game is in hardcore mode.
+    pub hardcore: bool,
     /// Difficulty of the game.
     pub difficulty: Difficulty,
     /// Default spawn position.
@@ -253,8 +269,12 @@ pub struct StartGame<'a> {
     /// According to wiki.vg, the client crashes if both achievements and commands are enabled.
     /// I couldn't reproduce this on Windows 10.
     pub achievements_disabled: bool,
-    /// Whether the world is in editor mode.
-    pub editor_world: bool,
+    /// The type of editor mode used for this world.
+    pub editor_world_type: EditorWorldType,
+    /// Whether this world was created as a project in editor mode.
+    pub created_in_editor: bool,
+    /// Whether this world was exported from editor mode.
+    pub exported_from_editor: bool,
     /// The time to which the daylight cycle is locked if the gamerule is set.
     pub day_cycle_lock_time: i32,
     /// Whether education edition features are enabled.
@@ -318,6 +338,9 @@ pub struct StartGame<'a> {
     pub force_experimental_gameplay: bool,
     pub chat_restriction_level: ChatRestrictionLevel,
     pub disable_player_interactions: bool,
+    // pub server_id: &'a str,
+    // pub world_id: &'a str,
+    // pub scenario_id: &'a str,
     pub level_id: &'a str,
     /// Name of the world.
     /// This is shown in the pause menu above the player list, and the settings menu.
@@ -359,6 +382,7 @@ impl ConnectedPacket for StartGame<'_> {
             (self.generator as i32).var_len() +
             (self.world_game_mode as i32).var_len() +
             (self.difficulty as i32).var_len() +
+            1 +
             self.world_spawn.serialized_size() +
             1 +
             1 +
@@ -411,9 +435,9 @@ impl ConnectedPacket for StartGame<'_> {
             8 +
             self.enchantment_seed.var_len() +
             (self.block_properties.len() as u32).var_len() +
-            self.block_properties.iter().fold(0, |acc, p| acc + p.serialized_size()) +
+            self.block_properties.iter().fold(0, |acc, p| acc + p.size_hint().unwrap()) +
             (self.item_properties.len() as u32).var_len() +
-            self.item_properties.iter().fold(0, |acc, p| acc + p.serialized_size()) +
+            self.item_properties.iter().fold(0, |acc, p| acc + p.size_hint().unwrap()) +
             MULTIPLAYER_CORRELATION_ID.var_len() +
             1 +
             CLIENT_VERSION_STRING.var_len() +
@@ -424,7 +448,7 @@ impl ConnectedPacket for StartGame<'_> {
             1 +
             1 +
             1 +
-            1
+            1 + 3 + 3
     }
 }
 
@@ -441,13 +465,14 @@ impl<'a> Serialize for StartGame<'a> {
         writer.write_var_u32(self.dimension as u32)?;
         writer.write_var_i32(self.generator as i32)?;
         writer.write_var_i32(self.world_game_mode as i32)?;
+        writer.write_bool(self.hardcore)?;
         writer.write_var_i32(self.difficulty as i32)?;
         writer.write_block_pos(&self.world_spawn)?;
 
         writer.write_bool(self.achievements_disabled)?;
-        writer.write_bool(self.editor_world)?;
-        writer.write_bool(false)?; // Not created in editor
-        writer.write_bool(false)?; // Not exported from editor
+        self.editor_world_type.serialize_into(writer)?;
+        writer.write_bool(self.created_in_editor)?;
+        writer.write_bool(self.exported_from_editor)?;
         writer.write_var_i32(self.day_cycle_lock_time)?;
         writer.write_var_i32(0)?; // Education offer.
         writer.write_bool(self.education_features_enabled)?;
@@ -496,6 +521,9 @@ impl<'a> Serialize for StartGame<'a> {
         writer.write_bool(self.force_experimental_gameplay)?;
         self.chat_restriction_level.serialize_into(writer)?;
         writer.write_bool(self.disable_player_interactions)?;
+        writer.write_str("")?; // Server ID
+        writer.write_str("")?; // World ID
+        writer.write_str("")?; // Scenario ID
         writer.write_str(self.level_id)?;
         writer.write_str(self.level_name)?;
         writer.write_str(self.template_content_identity)?;
