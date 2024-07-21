@@ -27,21 +27,21 @@ proto = { package = "mirai-proto", path = "../proto" }
 raknet = { package = "mirai-raknet", path = "../raknet" }
 macros = { package = "mirai-macros", path = "../macros" }
 
-console-subscriber = { version = "0.2.0", optional = true, features = ["parking_lot"] }
+console-subscriber = { version = "0.3.0", optional = true, features = ["parking_lot"] }
 
 tracing = { version = "0.1.38", features = ["attributes"] }
 tracing-subscriber = { version = "0.3.17", features = ["ansi", "fmt", "json", "smallvec", "parking_lot", "env-filter"], default-features = false }
 
-tokio = { version = "1.37.0", features = ["net", "rt-multi-thread", "macros", "time", "tracing", "sync", "signal"] }
+tokio = { version = "1.38.0", features = ["net", "rt-multi-thread", "macros", "time", "tracing", "sync", "signal"] }
 tokio-util = "0.7.8"
 rand = "0.8.5"
-dashmap = "5.4.0"
-parking_lot = "0.12.1"
-flate2 = "1.0.26"
-serde = { version = "1.0.197", default-features = false }
-serde_json = { version = "1.0.115", features = ["preserve_order"] }
+dashmap = "6.0.1"
+parking_lot = "0.12.3"
+flate2 = "1.0.30"
+serde = { version = "1.0.204", default-features = false }
+serde_json = { version = "1.0.120", features = ["preserve_order"] }
 anyhow = { version = "1.0.86", features = ["backtrace"] }
 nohash-hasher = "0.2.0"
-paste = "1.0.14"
+paste = "1.0.15"
 rayon = "1.10.0"
 futures = { version = "0.3.30", default-features = false }
