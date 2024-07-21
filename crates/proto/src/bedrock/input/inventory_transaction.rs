@@ -1,6 +1,6 @@
 use std::{collections::HashMap, sync::atomic::{AtomicI32, Ordering}};
 
-use util::{BinaryRead, BlockPosition, Deserialize, Vector};
+use util::{BinaryRead, BlockPosition, Deserialize, RVec, Vector};
 
 use crate::bedrock::ConnectedPacket;
 
@@ -82,13 +82,20 @@ pub struct TransactionAction<'a> {
 impl<'a> Deserialize<'a> for TransactionAction<'a> {
     fn deserialize_from<R: BinaryRead<'a>>(reader: &mut R) -> anyhow::Result<Self> {
         let source_type = TransactionSourceType::deserialize_from(reader)?;
+        tracing::debug!("Source type {source_type:?}");
         let slot = reader.read_var_u32()?;
+        tracing::debug!("Slot {slot}");
+
+        let old_item = Item::deserialize_from(reader)?;
+        tracing::debug!("Old item: {old_item:?}");
+        let new_item = Item::deserialize_from(reader)?;
+        tracing::debug!("New item: {new_item:?}");
 
         Ok(TransactionAction {
             source_type,
             slot,
-            old_item: Item::deserialize_from(reader)?,
-            new_item: Item::deserialize_from(reader)?
+            old_item,
+            new_item
         })
     }
 }
@@ -233,7 +240,10 @@ pub struct Item<'a> {
 impl<'a> Deserialize<'a> for Item<'a> {
     fn deserialize_from<R: BinaryRead<'a>>(reader: &mut R) -> anyhow::Result<Self> {
         let network_id = reader.read_var_i32()?;
+        tracing::debug!("Network ID: {network_id}");
         if network_id == 0 {
+            tracing::debug!("Item is air");
+
             // Item is air
             return Ok(Item {
                 network_id: 0,
@@ -242,21 +252,42 @@ impl<'a> Deserialize<'a> for Item<'a> {
         }
 
         let count = reader.read_u16_le()?;
+        tracing::debug!("Count: {count}");
+
         let metadata = reader.read_var_u32()?;
+        tracing::debug!("Metadata: {metadata}");
+
         let has_stack_id = reader.read_bool()?;
         let stack_id = has_stack_id.then(|| reader.read_var_i32()).transpose()?;
+        tracing::debug!("Stack ID: {stack_id:?}");
+
         let block_runtime_id = reader.read_var_i32()?;
-        
-        let has_nbt = reader.read_i16_le()? == -1;
-        let nbt = if has_nbt {
+        tracing::debug!("Block runtime ID: {block_runtime_id}");
+
+        let extra_data_len = reader.read_var_u32()?;
+        let remaining = reader.remaining();
+
+        let length = reader.read_i16_le()?;
+        let nbt = if length == -1 {
+            let version = reader.read_u8()?;
+            if version == 1 {
+                let (nbt, n) = nbt::from_var_bytes(reader)?;
+                reader.advance(n)?;
+                nbt
+            } else {
+                anyhow::bail!("Invalid item NBT version: {version}");
+            }
+        } else if length > 0 {
             let (nbt, n) = nbt::from_var_bytes(reader)?;
             reader.advance(n)?;
             nbt
         } else {
             HashMap::new()
         };
+        tracing::debug!("NBT: {nbt:?}");
 
         let can_place_on_len = reader.read_u32_le()?;
+        tracing::debug!("Can place entries: {can_place_on_len}");
         let mut can_place_on = Vec::with_capacity(can_place_on_len as usize);
         for _ in 0..can_place_on_len {
             let str_len = reader.read_u16_le()?;
@@ -266,6 +297,7 @@ impl<'a> Deserialize<'a> for Item<'a> {
         }
 
         let can_destroy_len = reader.read_u32_le()?;
+        tracing::debug!("Can break entries: {can_destroy_len}");
         let mut can_destroy = Vec::with_capacity(can_destroy_len as usize);
         for _ in 0..can_destroy_len {
             let str_len = reader.read_u16_le()?;
@@ -279,6 +311,9 @@ impl<'a> Deserialize<'a> for Item<'a> {
         } else {
             0
         };
+
+        let total_read = remaining - reader.remaining();
+        debug_assert_eq!(total_read, extra_data_len as usize, "Item extra data not read correctly");
 
         Ok(Item {
             network_id,
@@ -315,16 +350,21 @@ impl<'a> Deserialize<'a> for InventoryTransaction<'a> {
         for _ in 0..legacy_transaction_len {
             legacy_transactions.push(LegacyTransactionEntry::deserialize_from(reader)?);
         }
+        tracing::debug!("legacy {legacy_transactions:?}");
 
         let transaction_type = reader.read_var_u32()?;
+        tracing::debug!("transaction type {transaction_type}");
         
         let actions_len = reader.read_var_u32()?;
+        tracing::debug!("actions len {actions_len}");
         let mut actions = Vec::with_capacity(actions_len as usize);
         for _ in 0..actions_len {
             actions.push(TransactionAction::deserialize_from(reader)?);
         }
+        tracing::debug!("actions {actions:?}");
         
         let transaction_type = TransactionType::deserialize_from(transaction_type, reader)?;
+        tracing::debug!("transaction type2 {transaction_type:?}");
 
         Ok(InventoryTransaction {
             legacy_request_id,

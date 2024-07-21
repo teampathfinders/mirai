@@ -103,7 +103,7 @@ impl BedrockClient {
                         // Channel has been closed.
                         break
                     };
-
+                    
                     match cmd {
                         RakNetCommand::Received(packet) => {
                             if let Err(err) = self.handle_encrypted_frame(packet).await {
@@ -405,22 +405,22 @@ impl BedrockClient {
         let this = Arc::clone(self);
         let future = async move {
             match header.id {
-                InventoryTransaction::ID => this.handle_inventory_transaction(packet),
-                PlayerAuthInput::ID => this.handle_auth_input(packet),
+                InventoryTransaction::ID => this.handle_inventory_transaction(packet).context("while handling InventoryTransaction"),
+                PlayerAuthInput::ID => this.handle_auth_input(packet).context("while handling PlayerAuthInput"),
                 RequestNetworkSettings::ID => {
-                    this.handle_network_settings_request(packet)
+                    this.handle_network_settings_request(packet).context("while handling RequestNetworkSettings")
                 }
-                Login::ID => this.handle_login(packet).await,
+                Login::ID => this.handle_login(packet).await.context("while handling Login"),
                 ClientToServerHandshake::ID => {
-                    this.handle_client_to_server_handshake(packet)
+                    this.handle_client_to_server_handshake(packet).context("while handling ClientToServerHandshake")
                 }
-                CacheStatus::ID => this.handle_cache_status(packet),
+                CacheStatus::ID => this.handle_cache_status(packet).context("while handling CacheStatus"),
                 ResourcePackClientResponse::ID => {
-                    this.handle_resource_client_response(packet)
+                    this.handle_resource_client_response(packet).context("while handling ResourcePackClientResponse")
                 }
-                ViolationWarning::ID => this.handle_violation_warning(packet).await,
-                ChunkRadiusRequest::ID => this.handle_chunk_radius_request(packet),
-                Interact::ID => this.handle_interaction(packet),
+                ViolationWarning::ID => this.handle_violation_warning(packet).await.context("while handling ViolationWarning"),
+                ChunkRadiusRequest::ID => this.handle_chunk_radius_request(packet).context("while handling ChunkRadiusRequest"),
+                Interact::ID => this.handle_interaction(packet).context("while handling Interact"),
                 TextMessage::ID => this.handle_text_message(packet),
                 SetLocalPlayerAsInitialized::ID => {
                     this.handle_local_initialized(packet)

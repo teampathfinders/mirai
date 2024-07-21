@@ -15,10 +15,6 @@ pub struct ContainerClose {
 
 impl ConnectedPacket for ContainerClose {
     const ID: u32 = 0x2f;
-
-    fn serialized_size(&self) -> usize {
-        2
-    }
 }
 
 impl<'a> Deserialize<'a> for ContainerClose {
@@ -34,6 +30,10 @@ impl<'a> Deserialize<'a> for ContainerClose {
 }
 
 impl Serialize for ContainerClose {
+    fn size_hint(&self) -> Option<usize> {
+        Some(3)
+    }
+
     fn serialize_into<W: BinaryWrite>(&self, writer: &mut W) -> anyhow::Result<()> {
         writer.write_u8(self.window_id)?;
         writer.write_u8(self.container_type)?;

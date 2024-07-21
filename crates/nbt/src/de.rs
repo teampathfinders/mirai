@@ -560,7 +560,7 @@ where
 {
     #[inline]
     pub fn new(de: &'a mut Deserializer<'re, 'de, F, R>, ty: FieldType, expected_len: u32) -> anyhow::Result<Self> {
-        debug_assert_ne!(ty, FieldType::End, "Cannot serialize sequence of end tags");
+        // debug_assert_ne!(ty, FieldType::End, "Cannot serialize sequence of end tags");
 
         // ty is not read in here because the x_array types don't have a type prefix.
 

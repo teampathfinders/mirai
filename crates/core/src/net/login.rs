@@ -231,13 +231,15 @@ impl BedrockClient {
 
         self.send(BiomeDefinitionList)?;
 
-        // let available_commands = self.commands.available_commands();
-        // self.send(available_commands)?;
+        let available_commands = self.commands.available_commands();
+        self.send(available_commands)?;
 
-        // let creative_content = CreativeContent {
-        //     items: &self.instance().creative_items.stacks
-        // };
-        // self.send(creative_content)?;
+        tracing::debug!("{:?}", self.instance().creative_items.stacks);
+
+        let creative_content = CreativeContent {
+            items: &self.instance().creative_items.stacks
+        };
+        self.send(creative_content)?;
 
         let play_status = PlayStatus { status: Status::PlayerSpawn };
         self.send(play_status)?;

@@ -166,7 +166,7 @@ const CREATIVE_ITEMS_RAW: &[u8] = include_bytes!("../include/creative_items.nbt"
 #[derive(Debug, serde::Deserialize)]
 struct RawCreativeItem {
     pub name: String,
-    pub meta: i16,
+    pub meta: Option<i16>,
     #[serde(default)]
     pub nbt: HashMap<String, nbt::Value>,
     #[serde(default)]
@@ -196,7 +196,7 @@ impl CreativeItems {
         for item in nbt
             .into_iter()
             .filter(|item| !item.name.contains("element"))
-            .take(707)
+            .take(10)
         {
             if item.block_properties.is_empty() {
                 let Some(runtime_id) = item_ids.get_id(&item.name) else { continue };
@@ -204,7 +204,7 @@ impl CreativeItems {
                 let stack = ItemStack {
                     item_type: ItemType {
                         network_id: runtime_id,
-                        meta: item.meta as u32,
+                        meta: item.meta.unwrap_or(0) as u32,
                     },
                     block_runtime_id: 0,
                     count: 1,
@@ -222,7 +222,7 @@ impl CreativeItems {
                 let stack = ItemStack {
                     item_type: ItemType {
                         network_id: runtime_id as i32,
-                        meta: item.meta as u32,
+                        meta: item.meta.unwrap_or(0) as u32,
                     },
                     block_runtime_id: runtime_id as i32,
                     count: 1,
@@ -328,10 +328,13 @@ impl BlockStates {
             air_id: 0,
         };
 
-        while reader.remaining() > 0 {
+        // while reader.remaining() > 0 {
+        for _ in 0..10 {
             let (item, _) = nbt::from_var_bytes(&mut reader)?;
             states.register(item)?;
         }
+        
+        tracing::debug!("states: {states:?}");
 
         Ok(states)
     }
@@ -352,14 +355,12 @@ impl BlockStates {
     }
 
     pub fn register(&mut self, state: PaletteEntry) -> anyhow::Result<()> {
+        tracing::debug!("register {state:?}");
+
         let hash = state.hash();
         let new_id = self.runtime_hashes.len() + 1;
         if state.name == "minecraft:air" {
             self.air_id = new_id as u32;
-        }
-
-        if state.name.contains("grass") {
-            println!("register {state:?}")
         }
 
         self.runtime_hashes.insert(hash, new_id as u32);
