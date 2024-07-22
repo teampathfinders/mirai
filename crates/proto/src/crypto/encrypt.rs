@@ -181,7 +181,7 @@ impl Encryptor {
         compound_size: u64,
         writer: &mut W
     ) -> anyhow::Result<()> {
-        dbg!(compound_size);
+        // dbg!(compound_size);
 
         let counter = self.send_counter.expose().fetch_add(compound_size, Ordering::SeqCst);
         // Exclude 0xfe header from checksum calculations.

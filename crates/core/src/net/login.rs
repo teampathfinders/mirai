@@ -1,7 +1,8 @@
 
 
+use std::collections::HashMap;
 use std::sync::atomic::Ordering;
-use proto::bedrock::{BiomeDefinitionList, BroadcastIntent, CacheStatus, ChatRestrictionLevel, ChunkRadiusReply, ChunkRadiusRequest, ClientToServerHandshake, ConnectedPacket, CreativeContent, Difficulty, DisconnectReason, EditorWorldType, ExperimentData, GameMode, Login, NetworkSettings, PermissionLevel, PlayStatus, PlayerMovementSettings, PlayerMovementType, PropertyData, RequestNetworkSettings, ResourcePackClientResponse, ResourcePackStack, ResourcePacksInfo, ServerToClientHandshake, SetLocalPlayerAsInitialized, SpawnBiomeType, StartGame, Status, TextData, TextMessage, ViolationWarning, WorldGenerator, CLIENT_VERSION_STRING, PROTOCOL_VERSION};
+use proto::bedrock::{BiomeDefinitionList, BroadcastIntent, CacheStatus, ChatRestrictionLevel, ChunkRadiusReply, ChunkRadiusRequest, ClientToServerHandshake, ConnectedPacket, CreativeContent, Difficulty, DisconnectReason, EditorWorldType, ExperimentData, GameMode, InventoryTransaction, ItemInstance, Login, NetworkSettings, PermissionLevel, PlayStatus, PlayerMovementSettings, PlayerMovementType, PropertyData, RequestNetworkSettings, ResourcePackClientResponse, ResourcePackStack, ResourcePacksInfo, ServerToClientHandshake, SetLocalPlayerAsInitialized, SpawnBiomeType, StartGame, Status, TextData, TextMessage, TransactionAction, TransactionSourceType, TransactionType, ViolationWarning, WindowId, WorldGenerator, CLIENT_VERSION_STRING, PROTOCOL_VERSION};
 use proto::crypto::Encryptor;
 use proto::types::Dimension;
 
@@ -105,7 +106,10 @@ impl BedrockClient {
                 xuid: 0,
                 platform_chat_id: "",
             })?;
-        }
+            
+            let stack = &self.instance().creative_items.stacks[1];
+            tracing::debug!("stack: {stack:?}");
+        }   
 
         // ...then tell the client about all the other players.
         // TODO
