@@ -17,7 +17,7 @@ path = "src/lib.rs"
 tokio-console = ["console-subscriber"]
 
 [build-dependencies]
-vergen = { version = "8.3.1", features = ["git", "gitcl"] }
+vergen = { version = "8.3.2", features = ["git", "gitcl"] }
 
 [dependencies]
 nbt = { package = "mirai-nbt", path = "../nbt" }
