@@ -50,6 +50,7 @@ pub struct ResourcePackStack<'a> {
     pub game_version: &'a str,
     pub experiments: &'a [ExperimentData<'a>],
     pub experiments_previously_toggled: bool,
+    pub includes_editor_packs: bool
 }
 
 impl ConnectedPacket for ResourcePackStack<'_> {
@@ -90,6 +91,7 @@ impl Serialize for ResourcePackStack<'_> {
             experiment.serialize_into(writer)?;
         }
 
-        writer.write_bool(self.experiments_previously_toggled)
+        writer.write_bool(self.experiments_previously_toggled)?;
+        writer.write_bool(self.includes_editor_packs)
     }
 }

@@ -273,6 +273,8 @@ impl RakNetClient {
     }
 
     fn split_frame(&self, frame: &Frame) -> Vec<Frame> {
+        println!("{}", frame.body.len());
+
         let chunk_max_size = self.mtu as usize
             - std::mem::size_of::<Frame>()
             - std::mem::size_of::<FrameBatch>();
@@ -284,7 +286,7 @@ impl RakNetClient {
         debug_assert_eq!(chunks.len(), compound_size, "Chunk count does not match compound size");
 
         let compound_id =
-            self.compound_index.fetch_add(1, Ordering::SeqCst);
+            self.compound_id.fetch_add(1, Ordering::SeqCst);
 
         for (i, chunk) in chunks.enumerate() {
             let fragment = Frame {

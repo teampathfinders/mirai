@@ -177,8 +177,13 @@ impl Encryptor {
         skip_all,
         name = "Encryptor::encrypt"
     )]
-    pub fn encrypt<W: BinaryWrite>(&self, writer: &mut W) -> anyhow::Result<()> {
-        let counter = self.send_counter.expose().fetch_add(1, Ordering::SeqCst);
+    pub fn encrypt<W: BinaryWrite>(&self, 
+        compound_size: u64,
+        writer: &mut W
+    ) -> anyhow::Result<()> {
+        // dbg!(compound_size);
+
+        let counter = self.send_counter.expose().fetch_add(compound_size, Ordering::SeqCst);
         // Exclude 0xfe header from checksum calculations.
         let checksum = self.compute_checksum(&writer.as_ref()[1..], counter);
         writer.write_all(&checksum)?;

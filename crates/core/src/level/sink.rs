@@ -146,7 +146,7 @@ impl Collector {
         let shutdown_token = CancellationToken::new();
 
         tokio::spawn(Collector::collection(
-            instance_token, shutdown_token.clone(), consumer, state.clone(), collector_size
+            instance_token.clone(), shutdown_token.clone(), consumer, state.clone(), collector_size
         ));
 
         Self {
@@ -180,7 +180,10 @@ impl Collector {
 
                     Collector::flush(collected);
                 },
-                _ = instance_token.cancelled() => break
+                _ = instance_token.cancelled() => {
+                    shutdown_token.cancel();
+                    break
+                }
             }
         }   
 

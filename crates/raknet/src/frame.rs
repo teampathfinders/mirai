@@ -81,7 +81,7 @@ impl<'a> Deserialize<'a> for FrameBatch {
 /// Encapsulates game raknet.
 ///
 /// A frame provides extra metadata for the Raknet reliability layer.
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Frame {
     /// Reliability of this packet.
     pub reliability: Reliability,

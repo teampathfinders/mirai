@@ -10,9 +10,9 @@ use anyhow::Context;
 use flate2::Compression;
 use flate2::write::DeflateEncoder;
 use parking_lot::RwLock;
-use raknet::{BroadcastPacket, RakNetCommand, RakNetClient, SendConfig, DEFAULT_SEND_CONFIG};
+use raknet::{BroadcastPacket, Frame, FrameBatch, RakNetClient, RakNetCommand, SendConfig, DEFAULT_SEND_CONFIG};
 use tokio::sync::{broadcast, mpsc};
-use proto::bedrock::{Animate, CacheStatus, ChunkRadiusRequest, ClientToServerHandshake, CommandPermissionLevel, CommandRequest, CompressionAlgorithm, ConnectedPacket, ContainerClose, Disconnect, DisconnectReason, FormResponseData, GameMode, Header, Interact, InventoryTransaction, Login, MovePlayer, PermissionLevel, PlayerAction, PlayerAuthInput, RequestAbility, RequestNetworkSettings, ResourcePackClientResponse, SetLocalPlayerAsInitialized, SettingsCommand, Skin, TextMessage, TickSync, UpdateSkin, ViolationWarning, CONNECTED_PACKET_ID};
+use proto::bedrock::{Animate, CacheStatus, ChunkRadiusRequest, ClientToServerHandshake, CommandPermissionLevel, CommandRequest, CompressionAlgorithm, ConnectedPacket, ContainerClose, Disconnect, DisconnectReason, FormResponseData, GameMode, Header, Interact, InventoryTransaction, Login, MobEquipment, MovePlayer, PermissionLevel, PlayerAction, PlayerAuthInput, RequestAbility, RequestNetworkSettings, ResourcePackClientResponse, SetLocalPlayerAsInitialized, SettingsCommand, Skin, TextMessage, TickSync, UpdateSkin, ViolationWarning, CONNECTED_PACKET_ID};
 use proto::crypto::{Encryptor, BedrockIdentity, BedrockClientInfo};
 use proto::uuid::Uuid;
 
@@ -103,7 +103,7 @@ impl BedrockClient {
                         // Channel has been closed.
                         break
                     };
-
+                    
                     match cmd {
                         RakNetCommand::Received(packet) => {
                             if let Err(err) = self.handle_encrypted_frame(packet).await {
@@ -311,8 +311,14 @@ impl BedrockClient {
             out.write_all(packet.as_ref())?;
         };
 
+        let chunk_max_size = self.raknet.mtu as usize
+            - std::mem::size_of::<Frame>()
+            - std::mem::size_of::<FrameBatch>();
+
+        let compound_size = out.len().div_ceil(chunk_max_size) as u64;
+
         if let Some(encryptor) = self.encryptor.get() {
-            encryptor.encrypt(&mut out).context("Failed to encrypt packet")?;
+            encryptor.encrypt(compound_size, &mut out).context("Failed to encrypt packet")?;
         }
 
         self.raknet.send_raw_buffer_with_config(out, config);
@@ -399,22 +405,23 @@ impl BedrockClient {
         let this = Arc::clone(self);
         let future = async move {
             match header.id {
-                InventoryTransaction::ID => this.handle_inventory_transaction(packet),
-                PlayerAuthInput::ID => this.handle_auth_input(packet),
+                MobEquipment::ID => this.handle_mob_equipment(packet).context("while handling MobEquipment"),
+                InventoryTransaction::ID => this.handle_inventory_transaction(packet).context("while handling InventoryTransaction"),
+                PlayerAuthInput::ID => this.handle_auth_input(packet).context("while handling PlayerAuthInput"),
                 RequestNetworkSettings::ID => {
-                    this.handle_network_settings_request(packet)
+                    this.handle_network_settings_request(packet).context("while handling RequestNetworkSettings")
                 }
-                Login::ID => this.handle_login(packet).await,
+                Login::ID => this.handle_login(packet).await.context("while handling Login"),
                 ClientToServerHandshake::ID => {
-                    this.handle_client_to_server_handshake(packet)
+                    this.handle_client_to_server_handshake(packet).context("while handling ClientToServerHandshake")
                 }
-                CacheStatus::ID => this.handle_cache_status(packet),
+                CacheStatus::ID => this.handle_cache_status(packet).context("while handling CacheStatus"),
                 ResourcePackClientResponse::ID => {
-                    this.handle_resource_client_response(packet)
+                    this.handle_resource_client_response(packet).context("while handling ResourcePackClientResponse")
                 }
-                ViolationWarning::ID => this.handle_violation_warning(packet).await,
-                ChunkRadiusRequest::ID => this.handle_chunk_radius_request(packet),
-                Interact::ID => this.handle_interaction(packet),
+                ViolationWarning::ID => this.handle_violation_warning(packet).await.context("while handling ViolationWarning"),
+                ChunkRadiusRequest::ID => this.handle_chunk_radius_request(packet).context("while handling ChunkRadiusRequest"),
+                Interact::ID => this.handle_interaction(packet).context("while handling Interact"),
                 TextMessage::ID => this.handle_text_message(packet),
                 SetLocalPlayerAsInitialized::ID => {
                     this.handle_local_initialized(packet)
@@ -462,6 +469,12 @@ impl BedrockClient {
     #[inline]
     pub fn name(&self) -> anyhow::Result<&str> {
         self.identity().map(|id| id.name.as_str())
+    }
+
+    /// This function panics if the player data was not set.
+    #[inline]
+    pub fn runtime_id(&self) -> anyhow::Result<u64> {
+        Ok(self.player()?.runtime_id)
     }
 
     /// This function panics if the XUID was not set.

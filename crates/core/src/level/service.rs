@@ -214,6 +214,8 @@ impl Service {
 
 impl Joinable for Service {
     async fn join(&self) -> anyhow::Result<()> {
-        self.collector.join().await
+        self.collector.join().await?;
+
+        Ok(())
     }
 }

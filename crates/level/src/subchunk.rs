@@ -66,7 +66,7 @@ mod block_version {
 }
 
 /// Definition of block in the sub chunk block palette.
-#[derive(Debug, PartialEq, Eq, Deserialize, Serialize)]
+#[derive(Debug, PartialEq, Deserialize, Serialize)]
 #[serde(rename = "")]
 pub struct PaletteEntry {
     /// Name of the block.
@@ -107,7 +107,7 @@ impl PaletteEntry {
 /// This is prefixed with a 32-bit little endian integer specifying the size of the palette.
 /// The rest of the palette then consists of `n` concatenated NBT compounds.
 #[doc(alias = "storage record")]
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, PartialEq)]
 pub struct SubLayer {
     /// List of indices into the palette.
     ///
@@ -325,7 +325,7 @@ pub fn from_offset(offset: usize) -> Vector<u8, 3> {
 /// A Minecraft sub chunk.
 ///
 /// Every world contains
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, PartialEq)]
 pub struct SubChunk {
     /// Version of the sub chunk.
     ///

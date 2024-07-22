@@ -1,23 +1,72 @@
-use std::sync::Arc;
+use std::{collections::HashMap, sync::Arc};
 
-use proto::bedrock::{Animate, CommandOutput, CommandOutputMessage, CommandOutputType, CommandRequest, DisconnectReason, FormResponseData, HudElement, HudVisibility, InventoryTransaction, PlayerAuthInput, RequestAbility, SetHud, SettingsCommand, TextData, TextMessage, TickSync, TransactionSourceType, UpdateSkin};
+use proto::bedrock::{Animate, CommandOutput, CommandOutputMessage, CommandOutputType, CommandRequest, DisconnectReason, FormResponseData, HudElement, HudVisibility, InventoryTransaction, ItemInstance, MobEquipment, PlayerAuthInput, RequestAbility, SetHud, SettingsCommand, TextData, TextMessage, TickSync, TransactionAction, TransactionSourceType, TransactionType, UpdateSkin, WindowId};
 
-use util::{RVec, Deserialize, CowSlice};
+use util::{BinaryRead, BinaryWrite, CowSlice, Deserialize, RVec};
 
 use super::BedrockClient;
 
 impl BedrockClient {
+    /// Handles a mob equipment packet.
+    pub fn handle_mob_equipment(&self, packet: RVec) -> anyhow::Result<()> {
+        let equipment = MobEquipment::deserialize(packet.as_ref())?;
+        
+        // Verify that runtime ID matches player's runtime ID.
+        // Clients only send this packet to modify themselves.
+        if equipment.runtime_id != self.runtime_id()? {
+            // Illegal packet modifications
+            self.kick_with_reason("Illegal packets", DisconnectReason::BadPacket)?;
+        }
+
+        self.broadcast_others(equipment)
+    }
+    
     pub fn handle_inventory_transaction(&self, packet: RVec) -> anyhow::Result<()> {
         let transaction = InventoryTransaction::deserialize(packet.as_ref())?;
+        tracing::debug!("{transaction:?}");
+        // let action = &transaction.actions[0];
+        // let item = &action.new_item;
 
-        for action in transaction.actions {
-            let instance = self.instance();
+        // let transaction = InventoryTransaction {
+        //     legacy_request_id: 0,
+        //     legacy_transactions: vec![],
+        //     transaction_type: TransactionType::Normal,
+        //     actions: vec![
+        //         TransactionAction {
+        //             slot: 0,
+        //             source_type: TransactionSourceType::Container {
+        //                 inventory_id: WindowId::Ui
+        //             },
+        //             new_item: ItemInstance::air(),
+        //             old_item: item.clone()
+        //         },
+        //         TransactionAction {
+        //             slot: 2,
+        //             source_type: TransactionSourceType::Container {
+        //                 inventory_id: WindowId::Hotbar
+        //             },
+        //             old_item: ItemInstance::air(),
+        //             new_item: item.clone()
+        //         }
+        //     ]
+        // };
+        // self.send(transaction)?;
 
-            let new = instance.item_network_ids.get_name(action.new_item.network_id);
-            let old = instance.item_network_ids.get_name(action.old_item.network_id);
+        // for action in transaction.actions {
+        //     let instance = self.instance();
 
-            println!("Switch from {old:?} to {new:?}");
-        }
+        //     let new = instance.item_network_ids.get_name(action.new_item.network_id);
+        //     // let old = instance.item_network_ids.get_name(action.old_item.network_id);
+
+        //     let mut buf = Vec::with_capacity(5);
+        //     buf.write_var_i32(action.new_item.network_id)?;
+
+        //     let mut var = buf.as_slice();
+        //     let var = var.read_var_u32()?;
+        //     println!("{var}")
+
+        //     // println!("Switch from {old:?} to {new:?}");
+        // }
 
         Ok(())
     }
@@ -80,9 +129,9 @@ impl BedrockClient {
     pub fn handle_auth_input(&self, packet: RVec) -> anyhow::Result<()> {
         let input = PlayerAuthInput::deserialize(packet.as_ref())?;
         if input.input_data.0 != 0 {
-            tracing::debug!("{:?}", input.input_data);
+            // tracing::debug!("{:?}", input.input_data);
         }
-
+        
         Ok(())
     }
 
@@ -104,6 +153,96 @@ impl BedrockClient {
     /// Handles an [`Animation`] packet.
     pub fn handle_animation(&self, packet: RVec) -> anyhow::Result<()> {
         let request = Animate::deserialize(packet.as_ref())?;
+
+        let transaction = InventoryTransaction {
+            legacy_request_id: 0,
+            legacy_transactions: vec![],
+            transaction_type: TransactionType::Normal,
+            actions: vec![
+                TransactionAction {
+                    slot: 0,
+                    source_type: TransactionSourceType::Container {
+                        inventory_id: WindowId::Creative
+                    },
+                    new_item: ItemInstance::air(),
+                    old_item: ItemInstance {
+                        block_runtime_id: 13256,
+                        network_id: 5,
+                        blocking_tick: 0,
+                        can_destroy: vec![],
+                        can_place_on: vec![],
+                        count: 12,
+                        metadata: 0,
+                        nbt: HashMap::new(),
+                        stack_id: None
+                    }
+                },
+                TransactionAction {
+                    slot: 0,
+                    source_type: TransactionSourceType::Container {
+                        inventory_id: WindowId::Ui
+                    },
+                    old_item: ItemInstance::air(),
+                    new_item: ItemInstance {
+                        block_runtime_id: 13256,
+                        network_id: 5,
+                        blocking_tick: 0,
+                        can_destroy: vec![],
+                        can_place_on: vec![],
+                        count: 12,
+                        metadata: 0,
+                        nbt: HashMap::new(),
+                        stack_id: None
+                    }
+                }
+            ]
+        };
+        self.send(transaction)?;
+
+        let transaction = InventoryTransaction {
+            legacy_request_id: 0,
+            legacy_transactions: vec![],
+            transaction_type: TransactionType::Normal,
+            actions: vec![
+                TransactionAction {
+                    slot: 0,
+                    source_type: TransactionSourceType::Container {
+                        inventory_id: WindowId::Ui
+                    },
+                    new_item: ItemInstance::air(),
+                    old_item: ItemInstance {
+                        block_runtime_id: 13256,
+                        network_id: 5,
+                        blocking_tick: 0,
+                        can_destroy: vec![],
+                        can_place_on: vec![],
+                        count: 12,
+                        metadata: 0,
+                        nbt: HashMap::new(),
+                        stack_id: None
+                    }
+                },
+                TransactionAction {
+                    slot: 0,
+                    source_type: TransactionSourceType::Container {
+                        inventory_id: WindowId::Inventory
+                    },
+                    old_item: ItemInstance::air(),
+                    new_item: ItemInstance {
+                        block_runtime_id: 13256,
+                        network_id: 5,
+                        blocking_tick: 0,
+                        can_destroy: vec![],
+                        can_place_on: vec![],
+                        count: 12,
+                        metadata: 0,
+                        nbt: HashMap::new(),
+                        stack_id: None
+                    }
+                }
+            ]
+        };
+        self.send(transaction)?;
 
         tracing::debug!("{request:?}");
         

@@ -1,7 +1,8 @@
 
 
+use std::collections::HashMap;
 use std::sync::atomic::Ordering;
-use proto::bedrock::{BiomeDefinitionList, BroadcastIntent, CacheStatus, ChatRestrictionLevel, ChunkRadiusReply, ChunkRadiusRequest, ClientToServerHandshake, ConnectedPacket, CreativeContent, Difficulty, DisconnectReason, GameMode, Login, NetworkSettings, PermissionLevel, PlayStatus, PlayerMovementSettings, PlayerMovementType, PropertyData, RequestNetworkSettings, ResourcePackClientResponse, ResourcePackStack, ResourcePacksInfo, ServerToClientHandshake, SetLocalPlayerAsInitialized, SpawnBiomeType, StartGame, Status, TextData, TextMessage, ViolationWarning, WorldGenerator, CLIENT_VERSION_STRING, PROTOCOL_VERSION, ExperimentData};
+use proto::bedrock::{BiomeDefinitionList, BroadcastIntent, CacheStatus, ChatRestrictionLevel, ChunkRadiusReply, ChunkRadiusRequest, ClientToServerHandshake, ConnectedPacket, CreativeContent, Difficulty, DisconnectReason, EditorWorldType, ExperimentData, GameMode, InventoryTransaction, ItemInstance, Login, NetworkSettings, PermissionLevel, PlayStatus, PlayerMovementSettings, PlayerMovementType, PropertyData, RequestNetworkSettings, ResourcePackClientResponse, ResourcePackStack, ResourcePacksInfo, ServerToClientHandshake, SetLocalPlayerAsInitialized, SpawnBiomeType, StartGame, Status, TextData, TextMessage, TransactionAction, TransactionSourceType, TransactionType, ViolationWarning, WindowId, WorldGenerator, CLIENT_VERSION_STRING, PROTOCOL_VERSION};
 use proto::crypto::Encryptor;
 use proto::types::Dimension;
 
@@ -105,7 +106,10 @@ impl BedrockClient {
                 xuid: 0,
                 platform_chat_id: "",
             })?;
-        }
+            
+            let stack = &self.instance().creative_items.stacks[1];
+            tracing::debug!("stack: {stack:?}");
+        }   
 
         // ...then tell the client about all the other players.
         // TODO
@@ -144,6 +148,7 @@ impl BedrockClient {
         self.expected.store(u32::MAX, Ordering::SeqCst);
 
         let _request = ResourcePackClientResponse::deserialize(packet.as_ref())?;
+        tracing::debug!("Received resource pack client response");
 
         // TODO: Implement resource packs.
 
@@ -159,10 +164,13 @@ impl BedrockClient {
             dimension: Dimension::Overworld,
             generator: WorldGenerator::Infinite,
             world_game_mode: GameMode::Survival,
+            hardcore: false,
             difficulty: Difficulty::Normal,
             world_spawn: BlockPosition::new(0, 60, 0),
             achievements_disabled: true,
-            editor_world: false,
+            editor_world_type: EditorWorldType::NotEditor,
+            created_in_editor: false,
+            exported_from_editor: false,
             day_cycle_lock_time: 0,
             education_features_enabled: true,
             rain_level: 0.0,
@@ -215,7 +223,7 @@ impl BedrockClient {
             item_properties: &[],
             property_data: PropertyData {},
             server_authoritative_inventory: false,
-            game_version: "1.20.50",
+            game_version: CLIENT_VERSION_STRING,
             // property_data: nbt::Value::Compound(HashMap::new()),
             server_block_state_checksum: 0,
             world_template_id: 0,
@@ -225,15 +233,17 @@ impl BedrockClient {
         };
         self.send(start_game)?;
 
-        let creative_content = CreativeContent {
-            items: &self.instance().creative_items.stacks
-        };
-        self.send(creative_content)?;
-
         self.send(BiomeDefinitionList)?;
 
         let available_commands = self.commands.available_commands();
         self.send(available_commands)?;
+
+        tracing::debug!("{:?}", self.instance().creative_items.stacks);
+
+        let creative_content = CreativeContent {
+            items: &self.instance().creative_items.stacks
+        };
+        self.send(creative_content)?;
 
         let play_status = PlayStatus { status: Status::PlayerSpawn };
         self.send(play_status)?;
@@ -282,6 +292,7 @@ impl BedrockClient {
             required: false,
             scripting_enabled: false,
             forcing_server_packs: false,
+            has_addons: false,
             behavior_info: &[],
             resource_info: &[],
         };
@@ -294,6 +305,7 @@ impl BedrockClient {
             game_version: CLIENT_VERSION_STRING,
             experiments: &[],
             experiments_previously_toggled: false,
+            includes_editor_packs: false
         };
         self.send(pack_stack)?;
 

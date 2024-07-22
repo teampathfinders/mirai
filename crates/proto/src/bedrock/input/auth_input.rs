@@ -186,6 +186,41 @@ pub enum WindowId {
     Custom(i32)
 }
 
+impl Into<i32> for WindowId {
+    fn into(self) -> i32 {
+        match self {
+            Self::DropContents => -100,
+            Self::Beacon => -24,
+            Self::TradingOutput => -23,
+            Self::TradingUseInputs => -22,
+            Self::TradingInput2 => -21,
+            Self::TradingInput1 => -20,
+            Self::EnchantOutput => -17,
+            Self::EnchantMaterial => -16,
+            Self::EnchantInput => -15,
+            Self::AnvilOutput => -13,
+            Self::AnvilResult => -12,
+            Self::AnvilMaterial => -11,
+            Self::ContainerInput => -10,
+            Self::CraftingUseIngredient => -5,
+            Self::CraftingResult => -4,
+            Self::CraftingRemoveIngredient => -3,
+            Self::CraftingAddIngredient => -2,
+            Self::None => -1,
+            Self::Inventory => 0,
+            Self::First => 1,
+            Self::Last => 100,
+            Self::OffHand => 119,
+            Self::Armor => 120,
+            Self::Creative => 121,
+            Self::Hotbar => 122,
+            Self::FixedInventory => 123,
+            Self::Ui => 124,
+            Self::Custom(v) => v
+        }
+    }
+}
+
 impl TryFrom<i32> for WindowId {
     type Error = anyhow::Error;
 

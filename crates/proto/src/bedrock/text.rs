@@ -168,8 +168,7 @@ impl<'a> Serialize for TextMessage<'a> {
 
         writer.write_str(&self.xuid.to_string())?;
         writer.write_str(self.platform_chat_id)?;
-
-        Ok(())
+        writer.write_str("") // FilteredMessage is always empty
     }
 }
 

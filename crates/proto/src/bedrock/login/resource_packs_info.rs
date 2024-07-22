@@ -88,6 +88,8 @@ pub struct ResourcePacksInfo<'a> {
     pub scripting_enabled: bool,
     /// Unknown what this does.
     pub forcing_server_packs: bool,
+    /// Whether any of the packs contained have addons in them.
+    pub has_addons: bool,
     /// List of behavior packs
     pub behavior_info: &'a [BehaviorPack],
     /// List of resource packs.
@@ -111,6 +113,7 @@ impl<'a> ConnectedPacket for ResourcePacksInfo<'a> {
 impl<'a> Serialize for ResourcePacksInfo<'a> {
     fn serialize_into<W: BinaryWrite>(&self, writer: &mut W) -> anyhow::Result<()> {
         writer.write_bool(self.required)?;
+        writer.write_bool(self.has_addons)?;
         writer.write_bool(self.scripting_enabled)?;
         writer.write_bool(self.forcing_server_packs)?;
 
