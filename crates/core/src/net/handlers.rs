@@ -1,42 +1,56 @@
 use std::{collections::HashMap, sync::Arc};
 
-use proto::bedrock::{Animate, CommandOutput, CommandOutputMessage, CommandOutputType, CommandRequest, DisconnectReason, FormResponseData, HudElement, HudVisibility, InventoryTransaction, ItemInstance, PlayerAuthInput, RequestAbility, SetHud, SettingsCommand, TextData, TextMessage, TickSync, TransactionAction, TransactionSourceType, TransactionType, UpdateSkin, WindowId};
+use proto::bedrock::{Animate, CommandOutput, CommandOutputMessage, CommandOutputType, CommandRequest, DisconnectReason, FormResponseData, HudElement, HudVisibility, InventoryTransaction, ItemInstance, MobEquipment, PlayerAuthInput, RequestAbility, SetHud, SettingsCommand, TextData, TextMessage, TickSync, TransactionAction, TransactionSourceType, TransactionType, UpdateSkin, WindowId};
 
 use util::{BinaryRead, BinaryWrite, CowSlice, Deserialize, RVec};
 
 use super::BedrockClient;
 
 impl BedrockClient {
+    /// Handles a mob equipment packet.
+    pub fn handle_mob_equipment(&self, packet: RVec) -> anyhow::Result<()> {
+        let equipment = MobEquipment::deserialize(packet.as_ref())?;
+        
+        // Verify that runtime ID matches player's runtime ID.
+        // Clients only send this packet to modify themselves.
+        if equipment.runtime_id != self.runtime_id()? {
+            // Illegal packet modifications
+            self.kick_with_reason("Illegal packets", DisconnectReason::BadPacket)?;
+        }
+
+        self.broadcast_others(equipment)
+    }
+    
     pub fn handle_inventory_transaction(&self, packet: RVec) -> anyhow::Result<()> {
         let transaction = InventoryTransaction::deserialize(packet.as_ref())?;
         tracing::debug!("{transaction:?}");
-        let action = &transaction.actions[0];
-        let item = &action.new_item;
+        // let action = &transaction.actions[0];
+        // let item = &action.new_item;
 
-        let transaction = InventoryTransaction {
-            legacy_request_id: 0,
-            legacy_transactions: vec![],
-            transaction_type: TransactionType::Normal,
-            actions: vec![
-                TransactionAction {
-                    slot: 0,
-                    source_type: TransactionSourceType::Container {
-                        inventory_id: WindowId::Ui
-                    },
-                    new_item: ItemInstance::air(),
-                    old_item: item.clone()
-                },
-                TransactionAction {
-                    slot: 2,
-                    source_type: TransactionSourceType::Container {
-                        inventory_id: WindowId::Hotbar
-                    },
-                    old_item: ItemInstance::air(),
-                    new_item: item.clone()
-                }
-            ]
-        };
-        self.send(transaction)?;
+        // let transaction = InventoryTransaction {
+        //     legacy_request_id: 0,
+        //     legacy_transactions: vec![],
+        //     transaction_type: TransactionType::Normal,
+        //     actions: vec![
+        //         TransactionAction {
+        //             slot: 0,
+        //             source_type: TransactionSourceType::Container {
+        //                 inventory_id: WindowId::Ui
+        //             },
+        //             new_item: ItemInstance::air(),
+        //             old_item: item.clone()
+        //         },
+        //         TransactionAction {
+        //             slot: 2,
+        //             source_type: TransactionSourceType::Container {
+        //                 inventory_id: WindowId::Hotbar
+        //             },
+        //             old_item: ItemInstance::air(),
+        //             new_item: item.clone()
+        //         }
+        //     ]
+        // };
+        // self.send(transaction)?;
 
         // for action in transaction.actions {
         //     let instance = self.instance();
