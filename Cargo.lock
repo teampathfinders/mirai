@@ -943,6 +943,7 @@ dependencies = [
  "mirai-nbt",
  "mirai-proto",
  "mirai-util",
+ "nohash-hasher",
  "serde",
  "tracing",
 ]

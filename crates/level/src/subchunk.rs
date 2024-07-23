@@ -9,7 +9,7 @@ use serde::{Deserialize, Serialize};
 use util::{BinaryRead, BinaryWrite};
 use util::{RVec, Vector};
 
-use crate::PackedArrayReturn;
+use crate::{BlockStates, PackedArrayReturn};
 
 /// Version of the subchunk.
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
@@ -242,7 +242,7 @@ impl SubLayer {
         Ok(())
     }
 
-    fn serialize_network<W>(&self, mut writer: W) -> anyhow::Result<()>
+    fn serialize_network<W>(&self, states: &BlockStates, mut writer: W) -> anyhow::Result<()>
     where
         W: BinaryWrite,
     {
@@ -252,7 +252,10 @@ impl SubLayer {
             writer.write_var_i32(self.palette.len() as i32)?;
         }
 
-        for _entry in &self.palette {
+        for entry in &self.palette {
+            // Obtain block runtime ID of palette entry.
+            let runtime_id = states.get_state(entry);
+            tracing::debug!("{}: {runtime_id:?}", entry.name);
 
             // https://github.com/df-mc/dragonfly/blob/master/server/world/chunk/paletted_storage.go#L35
             // Requires new palette storage that only stores runtime IDs.
@@ -435,6 +438,32 @@ impl SubChunk {
 
         for layer in &self.layers {
             layer.serialize_disk(&mut writer)?;
+        }
+
+        Ok(())
+    }
+
+    /// Serialises the sub chunk into a new buffer and returns it in network format.
+    pub fn serialize_network(&self, states: &BlockStates) -> anyhow::Result<RVec> {
+        let mut buffer = RVec::alloc();
+        self.serialize_network_in(states, &mut buffer)?;
+        Ok(buffer)
+    }
+
+    /// Serialises the sub chunk into the given writer in network format.
+    pub fn serialize_network_in<W>(&self, states: &BlockStates, mut writer: W) -> anyhow::Result<()>
+    where
+        W: BinaryWrite,
+    {
+        writer.write_u8(self.version as u8)?;
+        writer.write_u8(self.layers.len() as u8)?;
+
+        if self.version == SubChunkVersion::Limitless {
+            writer.write_i8(self.index)?;
+        }
+
+        for layer in &self.layers {
+            layer.serialize_network(states, &mut writer)?;
         }
 
         Ok(())

@@ -156,10 +156,11 @@
 
 use std::{collections::HashMap, sync::atomic::Ordering};
 
-use level::PaletteEntry;
 use nohash_hasher::{BuildNoHashHasher, IntMap};
 use proto::bedrock::{ItemStack, ItemType, SHIELD_ID};
 use util::{BinaryRead, RString};
+
+use crate::PaletteEntry;
 
 const CREATIVE_ITEMS_RAW: &[u8] = include_bytes!("../include/creative_items.nbt");
 
@@ -174,7 +175,7 @@ struct RawCreativeItem {
 }
 
 pub struct CreativeItems {
-    pub(crate) stacks: Vec<ItemStack>,
+    pub stacks: Vec<ItemStack>,
 }
 
 impl CreativeItems {
@@ -346,6 +347,15 @@ impl BlockStates {
             version: None,
         };
 
+        if state.name.contains("grass") {
+            println!("get {state:?}")
+        }
+
+        let hash = state.hash();
+        self.runtime_hashes.get(&hash).copied()
+    }
+
+    pub fn get_state(&self, state: &PaletteEntry) -> Option<u32> {
         if state.name.contains("grass") {
             println!("get {state:?}")
         }

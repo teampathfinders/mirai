@@ -7,7 +7,7 @@ use util::Vector;
 use super::{BoxRegion, PointRegion, Service};
 
 pub struct Viewer {
-    service: Arc<Service>,
+    pub service: Arc<Service>,
     radius: AtomicU16,
 
     // The current position of this viewer in chunk coordinates.
@@ -49,18 +49,22 @@ impl Viewer {
         let x = self.current_x.load(Ordering::Relaxed);
         let z = self.current_z.load(Ordering::Relaxed);
 
-        // Request the chunk the player is in
-        let stream = self.service.region(BoxRegion::from_bounds(
-            (x, -4, z), (x, 15, z), Dimension::Overworld
-        ));
+        // // Request the chunk the player is in
+        // let stream = self.service.region(BoxRegion::from_bounds(
+        //     (x, -4, z), (x, 15, z), Dimension::Overworld
+        // ));
 
-        tokio::spawn(async move {
-            let fut = stream.for_each(|res| {
-                tracing::debug!("{res:?}");
-                future::ready(())
-            });
+        // tokio::spawn(async move {
+        //     let fut = stream.take(1).for_each(|res| {
+        //         tracing::debug!("{res:?}");
 
-            fut.await;
-        });
+        //         let chunk = res.data;
+        //         chunk.serialize_network().unwrap();
+
+        //         future::ready(())
+        //     });
+
+        //     fut.await;
+        // });
     }
 }

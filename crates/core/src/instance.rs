@@ -19,7 +19,7 @@ use util::{CowString, Deserialize, Joinable, RVec, ReserveTo, Serialize};
 
 use crate::command::{self, HandlerOutput, HandlerResult, ParsedCommand};
 use crate::config::Config;
-use crate::data::{BlockStates, CreativeItems, ItemNetworkIds};
+use level::{BlockStates, CreativeItems, ItemNetworkIds};
 use crate::net::{Clients, ForwardablePacket};
 use proto::bedrock::{
     Command, CommandDataType, CommandEnum, CommandOverload, CommandParameter, CommandPermissionLevel, CreditsStatus, CreditsUpdate,

@@ -1,8 +1,11 @@
 use std::{collections::HashMap, sync::Arc};
 
-use proto::bedrock::{Animate, CommandOutput, CommandOutputMessage, CommandOutputType, CommandRequest, DisconnectReason, FormResponseData, HudElement, HudVisibility, InventoryTransaction, ItemInstance, MobEquipment, PlayerAuthInput, RequestAbility, SetHud, SettingsCommand, TextData, TextMessage, TickSync, TransactionAction, TransactionSourceType, TransactionType, UpdateSkin, WindowId};
+use futures::{future, StreamExt};
+use proto::{bedrock::{Animate, CommandOutput, CommandOutputMessage, CommandOutputType, CommandRequest, DisconnectReason, FormResponseData, HudElement, HudVisibility, InventoryTransaction, ItemInstance, MobEquipment, PlayerAuthInput, RequestAbility, SetHud, SettingsCommand, TextData, TextMessage, TickSync, TransactionAction, TransactionSourceType, TransactionType, UpdateSkin, WindowId}, types::Dimension};
 
 use util::{BinaryRead, BinaryWrite, CowSlice, Deserialize, RVec};
+
+use crate::level::{BoxRegion, IndexedSubChunk};
 
 use super::BedrockClient;
 
@@ -274,6 +277,39 @@ impl BedrockClient {
         )
     )]
     pub fn handle_command_request(self: Arc<Self>, packet: RVec) {
+        // let this = self.clone();
+        // tokio::spawn(async move {
+        //     let stream = this.viewer.service.region(BoxRegion::from_bounds(
+        //         [0, -4, 0], [0, 15, 0], Dimension::Overworld
+        //     ));
+
+        //     stream.take(1).for_each(|sub| {
+        //         dbg!(sub);
+        //         future::ready(())
+        //     });
+        // });
+
+        // Request the chunk the player is in
+        let stream = self.viewer.service.region(BoxRegion::from_bounds(
+            (0, -4, 0), (0, 15, 0), Dimension::Overworld
+        ));
+
+        let this = self.clone();
+        tokio::spawn(async move {
+            let fut = stream.take(1).for_each(|res| {
+                tracing::debug!("{res:?}");
+
+                let chunk = res.data;
+                chunk.serialize_network(&this.instance().block_states).unwrap();
+
+                future::ready(())
+            });
+
+            fut.await;
+        });
+
+        self.viewer.update_radius(12);
+
         // Command execution could take several ticks, await the result in a separate task
         // to avoid blocking the request handler.
         tokio::spawn(async move {

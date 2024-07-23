@@ -421,7 +421,7 @@ impl BedrockClient {
                 ResourcePackClientResponse::ID => {
                     this.handle_resource_client_response(packet).context("while handling ResourcePackClientResponse")
                 }
-                ViolationWarning::ID => this.handle_violation_warning(packet).await.context("while handling ViolationWarning"),
+                ViolationWarning::ID => this.handle_violation_warning(packet).context("while handling ViolationWarning"),
                 ChunkRadiusRequest::ID => this.handle_chunk_radius_request(packet).context("while handling ChunkRadiusRequest"),
                 Interact::ID => this.handle_interaction(packet).context("while handling Interact"),
                 TextMessage::ID => this.handle_text_message(packet),
