@@ -44,9 +44,7 @@ impl Service {
     pub(crate) fn new(
         options: ServiceOptions
     ) -> anyhow::Result<Arc<Service>> {
-        let provider = Arc::new(unsafe {
-            level::provider::Provider::open(&options.level_path)
-        }?);
+        let provider = Arc::new(level::provider::Provider::open(&options.level_path)?);
 
         let service = Arc::new(Service {
             collector: Collector::new(Arc::clone(&provider), options.instance_token.clone(), 100),
@@ -83,7 +81,7 @@ impl Service {
         self.collector.create_sink()
     }
 
-    /// Loads a region using a parallel region.
+    /// Loads a region using a sequential iterator.
     /// 
     /// This function is used for smaller regions that do not benefit from
     /// parallel processing.

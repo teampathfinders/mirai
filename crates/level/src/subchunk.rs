@@ -208,10 +208,8 @@ impl SubLayer {
         let mut palette = Vec::with_capacity(len);
 
         for _ in 0..len {
-            let (entry, n) = nbt::from_le_bytes(&mut reader)?;
-
+            let (entry, _) = nbt::from_le_bytes(&mut reader)?;
             palette.push(entry);
-            reader.advance(n)?;
         }
 
         Ok(Self { indices, palette })

@@ -1,8 +1,10 @@
 use std::sync::{atomic::{AtomicI32, AtomicU16, Ordering}, Arc};
 
+use futures::{future, StreamExt};
+use proto::types::Dimension;
 use util::Vector;
 
-use super::Service;
+use super::{BoxRegion, PointRegion, Service};
 
 pub struct Viewer {
     service: Arc<Service>,
@@ -14,6 +16,15 @@ pub struct Viewer {
 }
 
 impl Viewer {
+    pub const fn new(service: Arc<Service>) -> Viewer {
+        Viewer {
+            service,
+            radius: AtomicU16::new(0),
+            current_x: AtomicI32::new(0),
+            current_z: AtomicI32::new(0)
+        }
+    }
+
     /// Updates the position of this viewer.
     pub fn update_position(&self, position: Vector<f32, 2>) {
         // Transform player coordinates to chunk coordinates.
@@ -35,7 +46,21 @@ impl Viewer {
     }
     
     fn on_view_update(&self) {
-        // Request the chunk the player is in
+        let x = self.current_x.load(Ordering::Relaxed);
+        let z = self.current_z.load(Ordering::Relaxed);
 
+        // Request the chunk the player is in
+        let stream = self.service.region(BoxRegion::from_bounds(
+            (x, -4, z), (x, 15, z), Dimension::Overworld
+        ));
+
+        tokio::spawn(async move {
+            let fut = stream.for_each(|res| {
+                tracing::debug!("{res:?}");
+                future::ready(())
+            });
+
+            fut.await;
+        });
     }
 }

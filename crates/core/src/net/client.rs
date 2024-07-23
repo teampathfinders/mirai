@@ -21,6 +21,7 @@ use util::{AtomicFlag, BinaryRead, BinaryWrite, Deserialize, Joinable, RVec, poo
 
 use crate::forms;
 use crate::instance::Instance;
+use crate::level::Viewer;
 
 const REQUEST_TIMEOUT: Duration = Duration::from_millis(50);
 
@@ -29,6 +30,7 @@ pub struct BedrockClient {
     pub(super) encryptor: OnceLock<Encryptor>,
     pub(super) identity: OnceLock<BedrockIdentity>,
     pub(super) client_info: OnceLock<BedrockClientInfo>,
+    pub(super) viewer: Viewer,
 
     /// Next packet that the server is expecting to receive.
     pub(crate) expected: AtomicU32,
@@ -41,7 +43,7 @@ pub struct BedrockClient {
 
     pub(crate) forms: forms::Subscriber,
     pub(crate) commands: Arc<crate::command::Service>,
-    pub(crate) level: Arc<crate::level::Service>,
+    // pub(crate) level: Arc<crate::level::Service>,
 
     pub(crate) broadcast: broadcast::Sender<BroadcastPacket>,
 
@@ -70,10 +72,10 @@ impl BedrockClient {
             player: OnceLock::new(),
             forms: forms::Subscriber::new(),
             commands,
-            level,
             broadcast,
             instance,
-            shutdown_token: CancellationToken::new()
+            shutdown_token: CancellationToken::new(),
+            viewer: Viewer::new(level)
         });
 
         let this = Arc::clone(&client);

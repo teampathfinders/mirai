@@ -2,7 +2,7 @@
 
 use std::collections::HashMap;
 use std::sync::atomic::Ordering;
-use proto::bedrock::{BiomeDefinitionList, BroadcastIntent, CacheStatus, ChatRestrictionLevel, ChunkRadiusReply, ChunkRadiusRequest, ClientToServerHandshake, ConnectedPacket, CreativeContent, Difficulty, DisconnectReason, EditorWorldType, ExperimentData, GameMode, InventoryTransaction, ItemInstance, Login, NetworkSettings, PermissionLevel, PlayStatus, PlayerMovementSettings, PlayerMovementType, PropertyData, RequestNetworkSettings, ResourcePackClientResponse, ResourcePackStack, ResourcePacksInfo, ServerToClientHandshake, SetLocalPlayerAsInitialized, SpawnBiomeType, StartGame, Status, TextData, TextMessage, TransactionAction, TransactionSourceType, TransactionType, ViolationWarning, WindowId, WorldGenerator, CLIENT_VERSION_STRING, PROTOCOL_VERSION};
+use proto::bedrock::{BiomeDefinitionList, BroadcastIntent, CacheStatus, ChatRestrictionLevel, ChunkRadiusReply, ChunkRadiusRequest, ClientToServerHandshake, ConnectedPacket, CreativeContent, Difficulty, DisconnectReason, EditorWorldType, ExperimentData, GameMode, InventoryTransaction, ItemInstance, Login, NetworkChunkPublisherUpdate, NetworkSettings, PermissionLevel, PlayStatus, PlayerMovementSettings, PlayerMovementType, PropertyData, RequestNetworkSettings, ResourcePackClientResponse, ResourcePackStack, ResourcePacksInfo, ServerToClientHandshake, SetLocalPlayerAsInitialized, SpawnBiomeType, StartGame, Status, TextData, TextMessage, TransactionAction, TransactionSourceType, TransactionType, ViolationWarning, WindowId, WorldGenerator, CLIENT_VERSION_STRING, PROTOCOL_VERSION};
 use proto::crypto::Encryptor;
 use proto::types::Dimension;
 
@@ -138,6 +138,8 @@ impl BedrockClient {
             allowed_radius,
         })?;
 
+        self.viewer.update_radius(allowed_radius as u16);
+
         // self.player().viewer.set_radius(allowed_radius);
 
         Ok(())
@@ -247,22 +249,6 @@ impl BedrockClient {
 
         let play_status = PlayStatus { status: Status::PlayerSpawn };
         self.send(play_status)?;
-
-        // self.send(NetworkChunkPublisherUpdate {
-        //     position: Vector::from([0, 0, 0]),
-        //     radius: self.player().viewer.get_radius() as u32
-        // })?;
-
-        // let subchunks = self.player().viewer.recenter(
-        //     Vector::from([0, 0]), &(0..5).map(|y| Vector::from([0, y, 0])).collect::<Vec<_>>()
-        // )?;
-        // let response = SubChunkResponse {
-        //     entries: subchunks,
-        //     position: Vector::from([0, 0, 0]),
-        //     dimension: Dimension::Overworld,
-        //     cache_enabled: false
-        // };
-        // self.send(response)?;
 
         Ok(())
     }

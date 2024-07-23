@@ -274,7 +274,7 @@ impl Instance {
 
         self.command_service.register(
             Command {
-                aliases: vec!["shutdown".to_owned(), "banjo".to_owned()],
+                aliases: vec!["shutdown".to_owned()],
                 description: "Shuts down the server".to_owned(),
                 name: "shutdown".to_owned(),
                 overloads: vec![CommandOverload { parameters: Vec::new() }],

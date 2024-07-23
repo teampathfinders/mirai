@@ -1,6 +1,9 @@
 use std::sync::Mutex;
 
-use crate::provider::Provider;
+use proto::types::Dimension;
+use util::Vector;
+
+use crate::{database::Database, provider::Provider, SubChunk};
 
 // digp [x] [z] [?dimension]
 // contains two int32
@@ -19,26 +22,26 @@ fn level_settings() {
     let _settings = provider.settings().unwrap();
 }
 //
-// #[test]
-// fn chunk_version() {
-//     let _lock = LOCK.lock().unwrap();
-//     let provider = unsafe {
-//         Provider::open("test").unwrap()
-//     };
-//     let version = provider.get_version(Vector::from([0, 0]), Dimension::Overworld).unwrap();
-//     assert_eq!(version, Some(40));
-// }
-//
+#[test]
+fn chunk_version() {
+    let _lock = LOCK.lock().unwrap();
+    let provider = Provider::open("test").unwrap();
+
+    let version = provider.chunk_version(Vector::from([0, 0]), Dimension::Overworld).unwrap();
+    assert_eq!(version, Some(40));
+
+    dbg!(version);
+}
+
 // #[test]
 // fn key_not_found() {
 //     let _lock = LOCK.lock().unwrap();
-//     let provider = unsafe {
-//         Provider::open("test").unwrap()
-//     };
-//     let biome = provider.get_biomes(Vector::from([1290712972, 29372937]), Dimension::Overworld).unwrap();
+//     let provider = Provider::open("test").unwrap();
+
+//     let biome = provider.biomes(Vector::from([1290712972, 29372937]), Dimension::Overworld).unwrap();
 //     assert_eq!(biome, None);
 // }
-//
+
 // #[test]
 // fn biomes() {
 //     let _lock = LOCK.lock().unwrap();
@@ -46,41 +49,46 @@ fn level_settings() {
 //         Database::open("test/db").unwrap()
 //     };
 //     let iter = database.iter();
-//
+
 //     for kv in iter {
 //         let key = kv.key();
 //         if *key.last().unwrap() == KeyType::Biome3d.discriminant() {
 //             let biome = Biomes::deserialize(&*kv.value()).unwrap();
-//
+
 //             let mut ser = Vec::new();
 //             biome.serialize(&mut ser).unwrap();
-//
+
 //             let biome2 = Biomes::deserialize(ser.as_ref().as_ref()).unwrap();
-//
+
 //             assert_eq!(biome, biome2);
 //         }
 //     }
 // }
-//
-// #[test]
-// fn subchunks() {
-//     let _lock = LOCK.lock().unwrap();
-//     let database = unsafe {
-//         Database::open("test/db").unwrap()
-//     };
-//     let iter = database.iter();
-//     for kv in iter {
-//         let key = kv.key();
-//         if key[key.len() - 2] == 0x2f {
-//             let subchunk = SubChunk::deserialize(&*kv.value()).unwrap();
-//
-//             let serialized = subchunk.serialize().unwrap();
-//             let deserialized = SubChunk::deserialize(serialized.as_slice()).unwrap();
-//
-//             assert_eq!(subchunk, deserialized);
-//         }
-//     }
-// }
+
+#[test]
+fn subchunks() {
+    let _lock = LOCK.lock().unwrap();
+    let provider = Provider::open("test").unwrap();
+
+    let subchunk = provider.subchunk((0, 0), 0, Dimension::Overworld).unwrap();
+    dbg!(subchunk);
+
+    // let database = unsafe {
+    //     Database::open("test/db").unwrap()
+    // };
+    // let iter = database.iter();
+    // for kv in iter {
+    //     let key = kv.key();
+    //     if key[key.len() - 2] == 0x2f {
+    //         let subchunk = SubChunk::deserialize(&*kv.value()).unwrap();
+
+    //         let serialized = subchunk.serialize().unwrap();
+    //         let deserialized = SubChunk::deserialize(serialized.as_slice()).unwrap();
+
+    //         assert_eq!(subchunk, deserialized);
+    //     }
+    // }
+}
 //
 // #[ignore]
 // #[test]
