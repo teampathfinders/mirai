@@ -1,7 +1,8 @@
 use std::{collections::HashMap, sync::Arc};
 
 use futures::{future, StreamExt};
-use proto::{bedrock::{Animate, CommandOutput, CommandOutputMessage, CommandOutputType, CommandRequest, DisconnectReason, FormResponseData, HudElement, HudVisibility, InventoryTransaction, ItemInstance, MobEquipment, PlayerAuthInput, RequestAbility, SetHud, SettingsCommand, TextData, TextMessage, TickSync, TransactionAction, TransactionSourceType, TransactionType, UpdateSkin, WindowId}, types::Dimension};
+use level::SubChunk;
+use proto::{bedrock::{Animate, CommandOutput, CommandOutputMessage, CommandOutputType, CommandRequest, DisconnectReason, FormResponseData, HeightmapType, HudElement, HudVisibility, InventoryTransaction, ItemInstance, MobEquipment, NetworkChunkPublisherUpdate, PlayerAuthInput, RequestAbility, SetHud, SetInventoryOptions, SettingsCommand, SubChunkEntry, SubChunkResponse, SubChunkResult, TextData, TextMessage, TickSync, TransactionAction, TransactionSourceType, TransactionType, UpdateSkin, WindowId}, types::Dimension};
 
 use util::{BinaryRead, BinaryWrite, CowSlice, Deserialize, RVec};
 
@@ -22,6 +23,13 @@ impl BedrockClient {
         }
 
         self.broadcast_others(equipment)
+    }
+
+    pub fn handle_inventory_options(&self, packet: RVec) -> anyhow::Result<()> {
+        let options = SetInventoryOptions::deserialize(packet.as_ref())?;
+        tracing::debug!("{options:?}");
+
+        Ok(())
     }
     
     pub fn handle_inventory_transaction(&self, packet: RVec) -> anyhow::Result<()> {
@@ -289,10 +297,17 @@ impl BedrockClient {
         //     });
         // });
 
+
+
         // Request the chunk the player is in
         let stream = self.viewer.service.region(BoxRegion::from_bounds(
             (0, -4, 0), (0, 15, 0), Dimension::Overworld
         ));
+
+        self.send(NetworkChunkPublisherUpdate {
+            position: (0, 0, 0).into(),
+            radius: 12
+        }).unwrap();
 
         let this = self.clone();
         tokio::spawn(async move {
@@ -300,7 +315,21 @@ impl BedrockClient {
                 tracing::debug!("{res:?}");
 
                 let chunk = res.data;
-                chunk.serialize_network(&this.instance().block_states).unwrap();
+                let ser = chunk.serialize_network(&this.instance().block_states).unwrap();
+
+                this.send(SubChunkResponse {
+                    cache_enabled: false,
+                    dimension: Dimension::Overworld,
+                    entries: vec![SubChunkEntry {
+                        blob_hash: 0,
+                        payload: ser,
+                        offset: (0, 0, 0).into(),
+                        result: SubChunkResult::Success,
+                        heightmap: Box::new([[0; 16]; 16]),
+                        heightmap_type: HeightmapType::None
+                    }],
+                    position: (0, 0, 0).into()
+                }).unwrap();
 
                 future::ready(())
             });
@@ -308,7 +337,7 @@ impl BedrockClient {
             fut.await;
         });
 
-        self.viewer.update_radius(12);
+        // self.viewer.update_radius(12);
 
         // Command execution could take several ticks, await the result in a separate task
         // to avoid blocking the request handler.

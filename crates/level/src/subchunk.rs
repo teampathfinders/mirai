@@ -254,14 +254,16 @@ impl SubLayer {
 
         for entry in &self.palette {
             // Obtain block runtime ID of palette entry.
-            let runtime_id = states.get_state(entry);
-            tracing::debug!("{}: {runtime_id:?}", entry.name);
+            let runtime_id = states.state(entry).unwrap_or(states.air());
+            tracing::debug!("{}: {runtime_id}", entry.name);
+
+            writer.write_var_i32(runtime_id as i32)?;
 
             // https://github.com/df-mc/dragonfly/blob/master/server/world/chunk/paletted_storage.go#L35
             // Requires new palette storage that only stores runtime IDs.
         }
 
-        todo!()
+        Ok(())
     }
 }
 

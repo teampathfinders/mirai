@@ -31,6 +31,7 @@ glob_export!(form_response);
 glob_export!(generic_level_event);
 glob_export!(header);
 glob_export!(interact);
+glob_export!(inventory_options);
 glob_export!(level_event);
 glob_export!(mob_effect);
 glob_export!(network_chunk_publisher_update);

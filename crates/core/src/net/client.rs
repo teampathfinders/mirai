@@ -12,7 +12,7 @@ use flate2::write::DeflateEncoder;
 use parking_lot::RwLock;
 use raknet::{BroadcastPacket, Frame, FrameBatch, RakNetClient, RakNetCommand, SendConfig, DEFAULT_SEND_CONFIG};
 use tokio::sync::{broadcast, mpsc};
-use proto::bedrock::{Animate, CacheStatus, ChunkRadiusRequest, ClientToServerHandshake, CommandPermissionLevel, CommandRequest, CompressionAlgorithm, ConnectedPacket, ContainerClose, Disconnect, DisconnectReason, FormResponseData, GameMode, Header, Interact, InventoryTransaction, Login, MobEquipment, MovePlayer, PermissionLevel, PlayerAction, PlayerAuthInput, RequestAbility, RequestNetworkSettings, ResourcePackClientResponse, SetLocalPlayerAsInitialized, SettingsCommand, Skin, TextMessage, TickSync, UpdateSkin, ViolationWarning, CONNECTED_PACKET_ID};
+use proto::bedrock::{Animate, CacheStatus, ChunkRadiusRequest, ClientToServerHandshake, CommandPermissionLevel, CommandRequest, CompressionAlgorithm, ConnectedPacket, ContainerClose, Disconnect, DisconnectReason, FormResponseData, GameMode, Header, Interact, InventoryTransaction, Login, MobEquipment, MovePlayer, PermissionLevel, PlayerAction, PlayerAuthInput, RequestAbility, RequestNetworkSettings, ResourcePackClientResponse, SetInventoryOptions, SetLocalPlayerAsInitialized, SettingsCommand, Skin, TextMessage, TickSync, UpdateSkin, ViolationWarning, CONNECTED_PACKET_ID};
 use proto::crypto::{Encryptor, BedrockIdentity, BedrockClientInfo};
 use proto::uuid::Uuid;
 
@@ -392,7 +392,7 @@ impl BedrockClient {
 
         let remaining = reader.remaining();
         packet.drain(0..(start_len - remaining));
-
+        
         let expected = self.expected();
         if expected != u32::MAX && header.id != expected {
             // Server received an unexpected packet.
@@ -407,6 +407,7 @@ impl BedrockClient {
         let this = Arc::clone(self);
         let future = async move {
             match header.id {
+                SetInventoryOptions::ID => this.handle_inventory_options(packet).context("while handling SetInventoryOptions"),
                 MobEquipment::ID => this.handle_mob_equipment(packet).context("while handling MobEquipment"),
                 InventoryTransaction::ID => this.handle_inventory_transaction(packet).context("while handling InventoryTransaction"),
                 PlayerAuthInput::ID => this.handle_auth_input(packet).context("while handling PlayerAuthInput"),
