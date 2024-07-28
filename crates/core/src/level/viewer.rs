@@ -108,7 +108,7 @@ impl Viewer {
         for col in col_map.values() {
             for (offset, opt) in &col.subchunks {
                 if let Some(sub) = opt {
-                    let subchunk_idx = base.y + offset.y as i32 - col.range.start;
+                    let subchunk_idx = base.y + offset.y as i32 - col.range.start as i32;
                     dbg!(subchunk_idx);
                     let heightmap = Heightmap::new(subchunk_idx as u16, col);
                     dbg!(&heightmap);

@@ -194,11 +194,7 @@ impl CreativeItems {
             nbt_data: HashMap::new(),
         });
 
-        for item in nbt
-            .into_iter()
-            .filter(|item| !item.name.contains("element"))
-            .take(10)
-        {
+        for item in nbt.into_iter().filter(|item| !item.name.contains("element")).take(10) {
             if item.block_properties.is_empty() {
                 let Some(runtime_id) = item_ids.get_id(&item.name) else { continue };
 
@@ -330,11 +326,11 @@ impl BlockStates {
         };
 
         while reader.remaining() > 0 {
-        // for _ in 0..10 {
+            // for _ in 0..10 {
             let (item, _) = nbt::from_var_bytes(&mut reader)?;
             states.register(item)?;
         }
-        
+
         // tracing::debug!("states: {states:?}");
 
         Ok(states)
@@ -363,7 +359,7 @@ impl BlockStates {
     pub fn register(&mut self, state: PaletteEntry) -> anyhow::Result<()> {
         // tracing::debug!("register {state:?}");
 
-        tracing::debug!("{}", state.name);
+        // tracing::debug!("{}", state.name);
 
         let hash = state.hash();
         let new_id = self.runtime_hashes.len() + 1;

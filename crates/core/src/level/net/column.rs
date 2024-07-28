@@ -7,7 +7,7 @@ use crate::level::viewer::ChunkOffset;
 
 pub struct ChunkColumn {
     pub subchunks: Vec<(ChunkOffset, Option<SubChunk>)>,
-    pub range: Range<i32>,
+    pub range: Range<i16>,
     heightmap: Box<[[i16; 16]; 16]>,
 }
 
@@ -42,15 +42,16 @@ impl ChunkColumn {
             }
         }
 
-        todo!()
+        // todo!()
     }
 
+    /// Converts a vertical coordinate to a subchunk index in this column.
     pub fn y_to_index(&self, y: i16) -> u16 {
-        todo!()
+        ((y - self.range.start) / 16) as u16
     }
 
     pub fn index_to_y(&self, index: u16) -> i16 {
-        todo!()
+        (index * 16) as i16 + self.range.start
     }
 
     fn serialize_network_in<W>(&self, states: &BlockStates, mut writer: W) -> anyhow::Result<()>
