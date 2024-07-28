@@ -1,14 +1,13 @@
-use core::range::RangeInclusive;
+use std::ops::Range;
 
-use level::{Biomes, BlockStates};
-use proto::bedrock::{SubChunkEntry, SubChunkResult};
+use level::{BlockStates, SubChunk};
 use util::BinaryWrite;
 
-use crate::level::ChunkOffset;
+use crate::level::viewer::ChunkOffset;
 
 pub struct ChunkColumn {
     pub subchunks: Vec<(ChunkOffset, Option<SubChunk>)>,
-    pub range: RangeInclusive<i32>,
+    pub range: Range<i32>,
     heightmap: Box<[[i16; 16]; 16]>,
 }
 
@@ -21,10 +20,25 @@ impl ChunkColumn {
         }
     }
 
+    pub fn heightmap(&self) -> &Box<[[i16; 16]; 16]> {
+        &self.heightmap
+    }
+
     pub fn generate_heightmap(&mut self) {
         for x in 0..16 {
             for z in 0..16 {
-                todo!()
+                let mut top_found = false;
+
+                for sub in self.subchunks.iter().rev().filter_map(|(_, sub)| sub.as_ref()) {
+                    if top_found {
+                        break;
+                    }
+
+                    for y in 16..0 {
+                        let block = sub.layer(0).unwrap().get((x, y, z));
+                        dbg!(block);
+                    }
+                }
             }
         }
 

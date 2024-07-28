@@ -91,7 +91,7 @@ impl InstanceBuilder {
         let running_token = CancellationToken::new();
 
         let command_service = crate::command::Service::new(running_token.clone());
-        let level_service = crate::level::Service::new(crate::level::ServiceOptions {
+        let level_service = crate::level::service::Service::new(crate::level::service::ServiceOptions {
             instance_token: running_token.clone(),
             level_path: self.0.level.path.clone(),
         })?;
@@ -147,7 +147,7 @@ pub struct Instance {
     /// Keeps track of all available commands.
     command_service: Arc<crate::command::Service>,
     /// Keeps track of the level state.
-    level_service: Arc<crate::level::Service>,
+    level_service: Arc<crate::level::service::Service>,
     /// Keeps track of the current configuration of the server.
     config: Config,
     /// Cancelled when the server has started up successfully.

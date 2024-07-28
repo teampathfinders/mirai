@@ -1,5 +1,5 @@
-use level::{BlockStates, SubChunk, SubStorage};
-use util::BinaryWrite;
+use level::{BlockStates, SubChunk, SubChunkVersion, SubStorage};
+use util::{BinaryWrite, RVec};
 
 pub trait NetworkChunkExt {
     /// Serialises the sub chunk into a new buffer and returns it in network format.
@@ -9,7 +9,7 @@ pub trait NetworkChunkExt {
         Ok(buffer)
     }
 
-    fn serialize_network_in<W>(&self, states: &BlockStates, mut writer: W) -> anyhow::Result<()>
+    fn serialize_network_in<W>(&self, states: &BlockStates, writer: W) -> anyhow::Result<()>
     where
         W: BinaryWrite;
 }
@@ -19,7 +19,7 @@ impl NetworkChunkExt for SubStorage {
     where
         W: BinaryWrite,
     {
-        crate::serialize_packed_array(&mut writer, &self.indices, self.palette.len(), true)?;
+        level::serialize_packed_array(&mut writer, &self.indices, self.palette.len(), true)?;
 
         if !self.palette.is_empty() {
             writer.write_var_i32(self.palette.len() as i32)?;

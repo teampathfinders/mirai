@@ -1,14 +1,17 @@
-use std::{future::Future, pin::Pin, sync::Arc, task::{ready, Context, Poll, Waker}};
+use std::{
+    pin::Pin,
+    sync::Arc,
+    task::{ready, Context, Poll},
+};
 
 use futures::{Sink, Stream};
 use level::SubChunk;
-use parking_lot::Mutex;
 use tokio::sync::{mpsc, watch, Notify};
 use util::Vector;
 
 /// A unique identifier for a specific subchunk.
-/// 
-/// First 6 bits are the vertical index, 
+///
+/// First 6 bits are the vertical index,
 /// then 29 bits for the x-coordinate
 /// and 29 bits for the z-coordinate.
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
@@ -49,7 +52,7 @@ pub struct IndexedSubChunk {
     /// The region index.
     pub index: RegionIndex,
     /// The subchunk data.
-    pub data: SubChunk
+    pub data: SubChunk,
 }
 
 /// Streams subchunk data as it is produced by an iterator.
@@ -57,7 +60,7 @@ pub struct RegionStream {
     /// Chunk receiver
     pub(super) inner: mpsc::Receiver<IndexedSubChunk>,
     /// Remaining items in the receiver.
-    pub(super) len: usize
+    pub(super) len: usize,
 }
 
 impl RegionStream {
@@ -70,10 +73,7 @@ impl RegionStream {
 impl Stream for RegionStream {
     type Item = IndexedSubChunk;
 
-    fn poll_next(
-        mut self: Pin<&mut Self>,
-        cx: &mut Context
-    ) -> Poll<Option<Self::Item>> {
+    fn poll_next(mut self: Pin<&mut Self>, cx: &mut Context) -> Poll<Option<Self::Item>> {
         let poll = self.inner.poll_recv(cx);
         let ready = ready!(poll);
 
@@ -106,7 +106,7 @@ impl Collector {
             let mut spare = Vec::new();
             let Some(chunk) = self.consumer.recv().await else {
                 // This collector is no longer referenced, shut it down.
-                break
+                break;
             };
 
             self.collection.push(chunk);
@@ -127,7 +127,7 @@ impl Collector {
 /// when the sink is filled up.
 pub struct RegionSink {
     producer: mpsc::Sender<IndexedSubChunk>,
-    flush: Arc<Notify>
+    flush: Arc<Notify>,
 }
 
 impl Sink<IndexedSubChunk> for RegionSink {
@@ -140,7 +140,6 @@ impl Sink<IndexedSubChunk> for RegionSink {
             self.flush.notify_one();
             return Poll::Pending;
         } else {
-
         }
 
         todo!()

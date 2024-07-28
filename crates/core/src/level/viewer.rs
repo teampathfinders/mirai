@@ -15,7 +15,11 @@ use proto::{
 };
 use util::Vector;
 
-use super::{BoxRegion, ChunkColumn, Heightmap, PointRegion, Service};
+use super::io::point::PointRegion;
+use super::io::r#box::BoxRegion;
+use super::net::column::ChunkColumn;
+use super::net::heightmap::Heightmap;
+use super::Service;
 
 pub type ChunkOffset = Vector<i8, 3>;
 
@@ -60,9 +64,9 @@ impl Viewer {
 
     fn create_entry(&self, base: Vector<i32, 3>, offset: ChunkOffset, full_chunk: &ChunkColumn) -> anyhow::Result<SubChunkEntry> {
         let absolute_y = base.y + offset.y as i32;
-        let subchunk_index = full_chunk.y_to_index(absolute_y);
+        let subchunk_index = full_chunk.y_to_index(absolute_y as i16);
 
-        let heightmap = Heightmap::new(subchunk_idx, full_chunk);
+        let heightmap = Heightmap::new(subchunk_index, full_chunk);
         let entry = SubChunkEntry {
             result: SubChunkResult::Success,
             offset,
@@ -78,20 +82,20 @@ impl Viewer {
     pub fn load_offsets(&self, base: Vector<i32, 3>, offsets: &[ChunkOffset], dimension: Dimension) -> anyhow::Result<SubChunkResponse> {
         // Group all subchunks into chunk columns,
         // with the map indices being two concatenated 32-bit integers representing X and Z coords.
-        let mut col_map: HashMap<i64, ChunkColumn, BuildNoHashHasher<i64>> = HashMap::new();
+        let mut col_map: HashMap<i64, ChunkColumn, BuildNoHashHasher<i64>> = HashMap::with_hasher(std::hash::BuildHasherDefault::default());
         for offset in offsets {
             let abs_coord: Vector<i32, 3> = (base.x + offset.x as i32, base.y + offset.y as i32, base.z + offset.z as i32).into();
 
             let xz = (abs_coord.x as i64) | (abs_coord.z as i64) >> 32;
             let col = col_map.entry(xz).or_insert_with(ChunkColumn::empty);
 
-            match self.load(abs_coord, dimension) {
+            match self.load(abs_coord.clone(), dimension) {
                 Ok(opt) => {
-                    col.push((offset, opt));
+                    col.subchunks.push((offset.clone(), opt));
                 }
                 Err(e) => {
-                    tracing::error!("Failed to load subchunk at {abs_coord}: {e}");
-                    col.push(None);
+                    tracing::error!("Failed to load subchunk at {abs_coord:?}: {e}");
+                    col.subchunks.push((offset.clone(), None));
                 }
             }
         }
@@ -106,12 +110,12 @@ impl Viewer {
                 if let Some(sub) = opt {
                     let subchunk_idx = base.y + offset.y as i32 - col.range.start;
                     dbg!(subchunk_idx);
-                    let heightmap = Heightmap::new(subchunk_idx as i16, col);
+                    let heightmap = Heightmap::new(subchunk_idx as u16, col);
                     dbg!(&heightmap);
 
                     let payload = todo!();
                     entries.push(SubChunkEntry {
-                        offset: *offset,
+                        offset: offset.clone(),
                         result: SubChunkResult::Success,
                         heightmap_type: heightmap.map_type,
                         heightmap: heightmap.data,
@@ -121,12 +125,14 @@ impl Viewer {
                 } else {
                     entries.push(SubChunkEntry {
                         result: SubChunkResult::AllAir,
-                        offset: *offset,
+                        offset: offset.clone(),
                         ..Default::default()
                     });
                 }
             }
         }
+
+        todo!()
     }
 
     #[inline]

@@ -1,3 +1,5 @@
+use super::io::sink::RegionSink;
+use super::io::stream::{IndexedSubChunk, RegionIndex};
 use std::{
     any::TypeId,
     sync::{Arc, OnceLock, Weak},
@@ -13,7 +15,10 @@ use util::{Joinable, Vector};
 
 use crate::instance::Instance;
 
-use super::{Collector, IndexedSubChunk, Region, RegionIndex, RegionSink, RegionStream, Rule, RuleValue};
+use super::{
+    io::{region::Region, sink::Collector, stream::RegionStream},
+    rule::{Rule, RuleValue},
+};
 
 pub struct ServiceOptions {
     pub instance_token: CancellationToken,
@@ -105,7 +110,7 @@ impl Service {
             });
         });
 
-        RegionStream { inner: receiver, len }
+        RegionStream::from_receiver(receiver, len)
     }
 
     /// Loads a region using a parallel iterator.
@@ -133,14 +138,14 @@ impl Service {
             });
         });
 
-        RegionStream { inner: receiver, len }
+        RegionStream::from_receiver(receiver, len)
     }
 
     /// Operation performed on each subchunk. This is put into a separate function because both
     /// the sequential and parallel iterator perform the exact same operations.
     #[inline]
     fn for_each_subchunk(item: Vector<i32, 3>, dimension: Dimension, provider: &Provider) -> IndexedSubChunk {
-        let subchunk = provider.subchunk(Vector::from([item.x, item.z]), item.y as i8, dimension);
+        let subchunk = provider.subchunk([item.x, item.y, item.z], dimension);
 
         let subchunk = match subchunk {
             Ok(Some(chunk)) => chunk,

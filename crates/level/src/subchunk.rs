@@ -127,7 +127,12 @@ impl SubStorage {
     }
 
     /// Gets a reference to a block inside the subchunk.
-    pub fn get(&self, pos: Vector<u8, 3>) -> Option<&PaletteEntry> {
+    pub fn get<V>(&self, pos: V) -> Option<&PaletteEntry>
+    where
+        V: Into<Vector<u8, 3>>,
+    {
+        let pos = pos.into();
+
         if pos.x > 16 || pos.y > 16 || pos.z > 16 {
             return None;
         }

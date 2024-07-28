@@ -1,13 +1,19 @@
-
-
-use std::collections::HashMap;
-use std::sync::atomic::Ordering;
 use level::PaletteEntry;
-use proto::bedrock::{BiomeDefinitionList, BroadcastIntent, CacheStatus, ChatRestrictionLevel, ChunkRadiusReply, ChunkRadiusRequest, ClientToServerHandshake, ConnectedPacket, CreativeContent, Difficulty, DisconnectReason, EditorWorldType, ExperimentData, GameMode, GameRule, HeightmapType, InventoryTransaction, ItemInstance, LevelChunk, Login, NetworkChunkPublisherUpdate, NetworkSettings, PermissionLevel, PlayStatus, PlayerMovementSettings, PlayerMovementType, PropertyData, RequestNetworkSettings, ResourcePackClientResponse, ResourcePackStack, ResourcePacksInfo, ServerToClientHandshake, SetLocalPlayerAsInitialized, SpawnBiomeType, StartGame, Status, SubChunkEntry, SubChunkRequestMode, SubChunkResponse, SubChunkResult, TextData, TextMessage, TransactionAction, TransactionSourceType, TransactionType, UpdateBlock, UpdateBlockFlags, ViolationWarning, WindowId, WorldGenerator, CLIENT_VERSION_STRING, PROTOCOL_VERSION};
+use proto::bedrock::{
+    BiomeDefinitionList, BroadcastIntent, CacheStatus, ChatRestrictionLevel, ChunkRadiusReply, ChunkRadiusRequest, ClientToServerHandshake,
+    ConnectedPacket, CreativeContent, Difficulty, DisconnectReason, EditorWorldType, ExperimentData, GameMode, GameRule, HeightmapType,
+    InventoryTransaction, ItemInstance, LevelChunk, Login, NetworkChunkPublisherUpdate, NetworkSettings, PermissionLevel, PlayStatus,
+    PlayerMovementSettings, PlayerMovementType, PropertyData, RequestNetworkSettings, ResourcePackClientResponse, ResourcePackStack,
+    ResourcePacksInfo, ServerToClientHandshake, SetLocalPlayerAsInitialized, SpawnBiomeType, StartGame, Status, SubChunkEntry, SubChunkRequestMode,
+    SubChunkResponse, SubChunkResult, TextData, TextMessage, TransactionAction, TransactionSourceType, TransactionType, UpdateBlock,
+    UpdateBlockFlags, ViolationWarning, WindowId, WorldGenerator, CLIENT_VERSION_STRING, PROTOCOL_VERSION,
+};
 use proto::crypto::Encryptor;
 use proto::types::Dimension;
+use std::collections::HashMap;
+use std::sync::atomic::Ordering;
 
-use util::{RVec, BlockPosition, Deserialize, Vector};
+use util::{BlockPosition, Deserialize, RVec, Vector};
 
 use crate::net::PlayerData;
 
@@ -28,7 +34,7 @@ impl BedrockClient {
 
         let request = CacheStatus::deserialize(packet.as_ref())?;
         self.supports_cache.store(request.supports_cache, Ordering::Relaxed);
-        
+
         tracing::debug!("Client cache status is: {}", request.supports_cache);
 
         Ok(())
@@ -67,27 +73,27 @@ impl BedrockClient {
 
         tracing::debug!("Player fully initialised");
 
-        self.send(NetworkChunkPublisherUpdate {
-            position: (0, 0, 0).into(),
-            radius: 12
-        })?;
+        self.send(NetworkChunkPublisherUpdate { position: (0, 0, 0).into(), radius: 12 })?;
 
-        self.send(LevelChunk {
-            blob_hashes: None,
-            coordinates: (0, 0).into(),
-            dimension: Dimension::Overworld,
-            sub_chunk_count: 1,
-            highest_sub_chunk: 4,
-            raw_payload: RVec::alloc(),
-            request_mode: SubChunkRequestMode::Limitless
-        })?;
+        let res = self.viewer.load_offsets((0, 0, 0).into(), &[(0, 0, 0).into()], Dimension::Overworld)?;
+        tracing::debug!("res {res:?}");
 
-        self.send(UpdateBlock {
-            flags: UpdateBlockFlags::UpdateNetwork as u32,
-            position: BlockPosition::new(0, 6, 0),
-            layer: 0,
-            block_runtime_id: 13256
-        })?;
+        // self.send(LevelChunk {
+        //     blob_hashes: None,
+        //     coordinates: (0, 0).into(),
+        //     dimension: Dimension::Overworld,
+        //     sub_chunk_count: 1,
+        //     highest_sub_chunk: 4,
+        //     raw_payload: RVec::alloc(),
+        //     request_mode: SubChunkRequestMode::Limitless
+        // })?;
+
+        // self.send(UpdateBlock {
+        //     flags: UpdateBlockFlags::UpdateNetwork as u32,
+        //     position: BlockPosition::new(0, 6, 0),
+        //     layer: 0,
+        //     block_runtime_id: 13256
+        // })?;
 
         // Add player to other's player lists
 
@@ -122,14 +128,13 @@ impl BedrockClient {
             self.broadcast(TextMessage {
                 data: TextData::Translation {
                     parameters: vec![&format!("§e{}", self.name()?)],
-                    message: "multiplayer.player.joined"
-                    // message: &format!("§e{} has joined the server.", identity_data.display_name),
+                    message: "multiplayer.player.joined", // message: &format!("§e{} has joined the server.", identity_data.display_name),
                 },
                 needs_translation: true,
                 xuid: 0,
                 platform_chat_id: "",
             })?;
-        }   
+        }
 
         // ...then tell the client about all the other players.
         // TODO
@@ -149,14 +154,10 @@ impl BedrockClient {
         let request = ChunkRadiusRequest::deserialize(packet.as_ref())?;
 
         // FIXME: Use render distance configured with builder instead of SERVER_CONFIG global.
-        let allowed_radius = std::cmp::min(
-            self.instance().config().max_render_distance() as i32, request.radius
-        );
+        let allowed_radius = std::cmp::min(self.instance().config().max_render_distance() as i32, request.radius);
         tracing::debug!("Chunk radius set to {allowed_radius} ({} was requested)", request.radius);
 
-        self.send(ChunkRadiusReply {
-            allowed_radius,
-        })?;
+        self.send(ChunkRadiusReply { allowed_radius })?;
 
         self.viewer.update_radius(allowed_radius as u16);
 
@@ -205,9 +206,7 @@ impl BedrockClient {
             texture_packs_required: true,
             // FIXME: Reimplement with new level interface.
             // game_rules: &self.level.get_game_rules(),
-            game_rules: &[
-                GameRule::ShowCoordinates(true)
-            ],
+            game_rules: &[GameRule::ShowCoordinates(true)],
             experiments: &[],
             experiments_previously_enabled: false,
             bonus_chest_enabled: false,
@@ -253,7 +252,7 @@ impl BedrockClient {
             world_template_id: 0,
             client_side_generation: false,
             hashed_block_ids: false,
-            server_authoritative_sounds: true
+            server_authoritative_sounds: true,
         };
         self.send(start_game)?;
 
@@ -265,7 +264,7 @@ impl BedrockClient {
         tracing::debug!("{:?}", self.instance().creative_items.stacks);
 
         let creative_content = CreativeContent {
-            items: &self.instance().creative_items.stacks
+            items: &self.instance().creative_items.stacks,
         };
         self.send(creative_content)?;
 
@@ -313,7 +312,7 @@ impl BedrockClient {
             game_version: CLIENT_VERSION_STRING,
             experiments: &[],
             experiments_previously_toggled: false,
-            includes_editor_packs: false
+            includes_editor_packs: false,
         };
         self.send(pack_stack)?;
 
@@ -345,15 +344,15 @@ impl BedrockClient {
             self.kick_with_reason("Encryption failed", DisconnectReason::BadPacket)?;
             anyhow::bail!("Failed to enable encryption");
         };
-        
+
         if self.identity.set(request.identity).is_err() {
             tracing::warn!("Identity data was already set");
-            return self.kick_with_reason("Unexpected login", DisconnectReason::UnexpectedPacket)
+            return self.kick_with_reason("Unexpected login", DisconnectReason::UnexpectedPacket);
         }
 
         if self.client_info.set(request.client_info).is_err() {
             tracing::error!("Client info was already set");
-            return self.kick_with_reason("Unexpected login", DisconnectReason::UnexpectedPacket)
+            return self.kick_with_reason("Unexpected login", DisconnectReason::UnexpectedPacket);
         }
 
         // Flush unencrypted packets in queue before enabling encryption
@@ -364,7 +363,7 @@ impl BedrockClient {
             // Client sent a second login packet?
             // Something is wrong, disconnect the client.
             tracing::warn!("Client unexpectedly sent a second login packet");
-            return self.kick_with_reason("Unexpected login", DisconnectReason::UnexpectedPacket)
+            return self.kick_with_reason("Unexpected login", DisconnectReason::UnexpectedPacket);
         }
 
         if self.player.set(PlayerData::new(request.skin)).is_err() {
@@ -391,17 +390,19 @@ impl BedrockClient {
                 let response = PlayStatus { status: Status::FailedServer };
                 self.send(response)?;
 
-                tracing::warn!("Server is outdated. Client using protocol {}, server using {PROTOCOL_VERSION}", request.protocol_version);
-                anyhow::bail!(
-                    "Client is using a newer protocol ({} vs. {})",
-                    request.protocol_version,
-                    PROTOCOL_VERSION
+                tracing::warn!(
+                    "Server is outdated. Client using protocol {}, server using {PROTOCOL_VERSION}",
+                    request.protocol_version
                 );
+                anyhow::bail!("Client is using a newer protocol ({} vs. {})", request.protocol_version, PROTOCOL_VERSION);
             } else {
                 let response = PlayStatus { status: Status::FailedClient };
                 self.send(response)?;
 
-                tracing::warn!("Client is outdated. Client using protocol {}, server using {PROTOCOL_VERSION}", request.protocol_version);
+                tracing::warn!(
+                    "Client is outdated. Client using protocol {}, server using {PROTOCOL_VERSION}",
+                    request.protocol_version
+                );
                 anyhow::bail!(
                     "Client is using an older protocol ({} vs. {})",
                     request.protocol_version,
@@ -421,7 +422,11 @@ impl BedrockClient {
                 client_throttle: config.throttling,
             };
 
-            tracing::debug!("Using {:?} compression with {} byte threshold", compression.algorithm, compression.threshold);
+            tracing::debug!(
+                "Using {:?} compression with {} byte threshold",
+                compression.algorithm,
+                compression.threshold
+            );
             settings
         };
 

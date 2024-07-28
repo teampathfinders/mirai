@@ -70,7 +70,7 @@ fn subchunks() {
     let _lock = LOCK.lock().unwrap();
     let provider = Provider::open("test").unwrap();
 
-    let subchunk = provider.subchunk((0, 0), 0, Dimension::Overworld).unwrap();
+    let subchunk = provider.subchunk([0; 3], Dimension::Overworld).unwrap();
     dbg!(subchunk);
 
     // let database = unsafe {

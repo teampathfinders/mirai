@@ -31,8 +31,21 @@ pub struct SubChunkEntry {
     pub result: SubChunkResult,
     pub payload: RVec,
     pub heightmap_type: HeightmapType,
-    pub heightmap: Option<Box<[[i8; 16]; 16]>>,
+    pub heightmap: Option<Box<[i8; 256]>>,
     pub blob_hash: u64,
+}
+
+impl Default for SubChunkEntry {
+    fn default() -> SubChunkEntry {
+        SubChunkEntry {
+            offset: [0; 3].into(),
+            result: SubChunkResult::NotFound,
+            payload: RVec::alloc(),
+            heightmap_type: HeightmapType::None,
+            heightmap: None,
+            blob_hash: 0,
+        }
+    }
 }
 
 impl SubChunkEntry {
@@ -49,7 +62,7 @@ impl SubChunkEntry {
         writer.write_all(&self.payload)?;
         writer.write_u8(self.heightmap_type as u8)?;
         if self.heightmap_type == HeightmapType::WithData {
-            let slice: &[[i8; 16]; 16] = self.heightmap.as_ref().unwrap();
+            let slice: &[i8; 256] = self.heightmap.as_ref().unwrap();
             writer.write_all(bytemuck::cast_slice(slice))?;
         }
         Ok(())
