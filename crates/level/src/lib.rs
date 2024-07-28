@@ -170,6 +170,7 @@ mod key;
 mod settings;
 mod subchunk;
 mod states;
+mod full_chunk;
 
 /// Direct access to the LevelDB database.
 pub mod database;
@@ -181,3 +182,4 @@ pub use biome::*;
 pub use key::*;
 pub use subchunk::*;
 pub use states::*;
+pub use full_chunk::*;

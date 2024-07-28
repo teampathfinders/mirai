@@ -2,7 +2,8 @@
 
 use std::collections::HashMap;
 use std::sync::atomic::Ordering;
-use proto::bedrock::{BiomeDefinitionList, BroadcastIntent, CacheStatus, ChatRestrictionLevel, ChunkRadiusReply, ChunkRadiusRequest, ClientToServerHandshake, ConnectedPacket, CreativeContent, Difficulty, DisconnectReason, EditorWorldType, ExperimentData, GameMode, HeightmapType, InventoryTransaction, ItemInstance, Login, NetworkChunkPublisherUpdate, NetworkSettings, PermissionLevel, PlayStatus, PlayerMovementSettings, PlayerMovementType, PropertyData, RequestNetworkSettings, ResourcePackClientResponse, ResourcePackStack, ResourcePacksInfo, ServerToClientHandshake, SetLocalPlayerAsInitialized, SpawnBiomeType, StartGame, Status, SubChunkEntry, SubChunkResponse, SubChunkResult, TextData, TextMessage, TransactionAction, TransactionSourceType, TransactionType, ViolationWarning, WindowId, WorldGenerator, CLIENT_VERSION_STRING, PROTOCOL_VERSION};
+use level::PaletteEntry;
+use proto::bedrock::{BiomeDefinitionList, BroadcastIntent, CacheStatus, ChatRestrictionLevel, ChunkRadiusReply, ChunkRadiusRequest, ClientToServerHandshake, ConnectedPacket, CreativeContent, Difficulty, DisconnectReason, EditorWorldType, ExperimentData, GameMode, GameRule, HeightmapType, InventoryTransaction, ItemInstance, LevelChunk, Login, NetworkChunkPublisherUpdate, NetworkSettings, PermissionLevel, PlayStatus, PlayerMovementSettings, PlayerMovementType, PropertyData, RequestNetworkSettings, ResourcePackClientResponse, ResourcePackStack, ResourcePacksInfo, ServerToClientHandshake, SetLocalPlayerAsInitialized, SpawnBiomeType, StartGame, Status, SubChunkEntry, SubChunkRequestMode, SubChunkResponse, SubChunkResult, TextData, TextMessage, TransactionAction, TransactionSourceType, TransactionType, UpdateBlock, UpdateBlockFlags, ViolationWarning, WindowId, WorldGenerator, CLIENT_VERSION_STRING, PROTOCOL_VERSION};
 use proto::crypto::Encryptor;
 use proto::types::Dimension;
 
@@ -65,6 +66,28 @@ impl BedrockClient {
         self.expected.store(u32::MAX, Ordering::SeqCst);
 
         tracing::debug!("Player fully initialised");
+
+        self.send(NetworkChunkPublisherUpdate {
+            position: (0, 0, 0).into(),
+            radius: 12
+        })?;
+
+        self.send(LevelChunk {
+            blob_hashes: None,
+            coordinates: (0, 0).into(),
+            dimension: Dimension::Overworld,
+            sub_chunk_count: 1,
+            highest_sub_chunk: 4,
+            raw_payload: RVec::alloc(),
+            request_mode: SubChunkRequestMode::Limitless
+        })?;
+
+        self.send(UpdateBlock {
+            flags: UpdateBlockFlags::UpdateNetwork as u32,
+            position: BlockPosition::new(0, 6, 0),
+            layer: 0,
+            block_runtime_id: 13256
+        })?;
 
         // Add player to other's player lists
 
@@ -155,7 +178,7 @@ impl BedrockClient {
             entity_id: 1,
             runtime_id: 1,
             game_mode: self.player()?.gamemode(),
-            position: Vector::from([0.0, 60.0, 0.0]),
+            position: Vector::from([0.0, 6.0, 0.0]),
             rotation: Vector::from([0.0, 0.0]),
             world_seed: 0,
             spawn_biome_type: SpawnBiomeType::Default,
@@ -182,7 +205,9 @@ impl BedrockClient {
             texture_packs_required: true,
             // FIXME: Reimplement with new level interface.
             // game_rules: &self.level.get_game_rules(),
-            game_rules: &[],
+            game_rules: &[
+                GameRule::ShowCoordinates(true)
+            ],
             experiments: &[],
             experiments_previously_enabled: false,
             bonus_chest_enabled: false,

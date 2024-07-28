@@ -108,16 +108,16 @@ impl PaletteEntry {
 /// The rest of the palette then consists of `n` concatenated NBT compounds.
 #[doc(alias = "storage record")]
 #[derive(Debug, PartialEq)]
-pub struct SubLayer {
+pub struct SubStorage {
     /// List of indices into the palette.
     ///
     /// Coordinates can be converted to an offset into the array using [`to_offset`].
-    pub(crate) indices: Box<[u16; 4096]>,
+    pub indices: Box<[u16; 4096]>,
     /// List of all different block types in this sub chunk layer.
-    pub(crate) palette: Vec<PaletteEntry>,
+    pub palette: Vec<PaletteEntry>,
 }
 
-impl SubLayer {
+impl SubStorage {
     /// Creates an iterator over the blocks in this layer.
     ///
     /// This iterates over every indices
@@ -179,7 +179,7 @@ impl SubLayer {
     }
 }
 
-impl SubLayer {
+impl SubStorage {
     /// Creates an empty subchunk layer.
     pub fn empty() -> Self {
         Self {
@@ -215,18 +215,18 @@ impl SubLayer {
         Ok(Self { indices, palette })
     }
 
-    fn deserialize_network<'a, R>(mut reader: R) -> anyhow::Result<Self>
-    where
-        R: BinaryRead<'a> + Copy + 'a,
-    {
-        let _indices = match crate::deserialize_packed_array(&mut reader)? {
-            PackedArrayReturn::Data(data) => data,
-            PackedArrayReturn::Empty => anyhow::bail!("Sub layer packed array index size cannot be 0"),
-            PackedArrayReturn::Inherit => anyhow::bail!("Sub layer packed array does not support biome referral"),
-        };
+    // fn deserialize_network<'a, R>(mut reader: R) -> anyhow::Result<Self>
+    // where
+    //     R: BinaryRead<'a> + Copy + 'a,
+    // {
+    //     let _indices = match crate::deserialize_packed_array(&mut reader)? {
+    //         PackedArrayReturn::Data(data) => data,
+    //         PackedArrayReturn::Empty => anyhow::bail!("Sub layer packed array index size cannot be 0"),
+    //         PackedArrayReturn::Inherit => anyhow::bail!("Sub layer packed array does not support biome referral"),
+    //     };
 
-        todo!();
-    }
+    //     todo!();
+    // }
 
     fn serialize_disk<W>(&self, mut writer: W) -> anyhow::Result<()>
     where
@@ -241,33 +241,9 @@ impl SubLayer {
 
         Ok(())
     }
-
-    fn serialize_network<W>(&self, states: &BlockStates, mut writer: W) -> anyhow::Result<()>
-    where
-        W: BinaryWrite,
-    {
-        crate::serialize_packed_array(&mut writer, &self.indices, self.palette.len(), true)?;
-
-        if !self.palette.is_empty() {
-            writer.write_var_i32(self.palette.len() as i32)?;
-        }
-
-        for entry in &self.palette {
-            // Obtain block runtime ID of palette entry.
-            let runtime_id = states.state(entry).unwrap_or(states.air());
-            tracing::debug!("{}: {runtime_id}", entry.name);
-
-            writer.write_var_i32(runtime_id as i32)?;
-
-            // https://github.com/df-mc/dragonfly/blob/master/server/world/chunk/paletted_storage.go#L35
-            // Requires new palette storage that only stores runtime IDs.
-        }
-
-        Ok(())
-    }
 }
 
-impl<I> Index<I> for SubLayer
+impl<I> Index<I> for SubStorage
 where
     I: Into<Vector<u8, 3>>,
 {
@@ -286,7 +262,7 @@ where
     }
 }
 
-impl<I> IndexMut<I> for SubLayer
+impl<I> IndexMut<I> for SubStorage
 where
     I: Into<Vector<u8, 3>>,
 {
@@ -303,7 +279,7 @@ where
     }
 }
 
-impl Default for SubLayer {
+impl Default for SubStorage {
     fn default() -> Self {
         Self::empty()
     }
@@ -333,17 +309,17 @@ pub struct SubChunk {
     /// Version of the sub chunk.
     ///
     /// See [`SubChunkVersion`] for more info.
-    pub(crate) version: SubChunkVersion,
+    pub version: SubChunkVersion,
     /// Index of the sub chunk.
     ///
     /// This specifies the vertical position of the sub chunk.
     /// It is only used if `version` is set to [`Limitless`](SubChunkVersion::Limitless)
     /// and set to 0 otherwise.
-    pub(crate) index: i8,
+    pub index: i8,
     /// Layers the sub chunk consists of.
     ///
     /// See [`SubLayer`] for more info.
-    pub(crate) layers: Vec<SubLayer>,
+    pub layers: Vec<SubStorage>,
 }
 
 impl SubChunk {
@@ -351,7 +327,7 @@ impl SubChunk {
     pub fn empty(index: i8) -> Self {
         Self {
             index,
-            layers: vec![SubLayer::empty()],
+            layers: vec![SubStorage::empty()],
             version: SubChunkVersion::Limitless,
         }
     }
@@ -373,23 +349,23 @@ impl SubChunk {
     }
 
     /// The layers (storage records) contained in this subchunk.
-    pub fn layers(&self) -> &[SubLayer] {
+    pub fn layers(&self) -> &[SubStorage] {
         &self.layers
     }
 
     /// Get an immutable reference to the layer at the specified index.
-    pub fn layer(&self, index: usize) -> Option<&SubLayer> {
+    pub fn layer(&self, index: usize) -> Option<&SubStorage> {
         self.layers.get(index)
     }
 
     /// Get a mutable reference to the layer at the specified index.
-    pub fn layer_mut(&mut self, index: usize) -> Option<&mut SubLayer> {
+    pub fn layer_mut(&mut self, index: usize) -> Option<&mut SubStorage> {
         self.layers.get_mut(index)
     }
 
     /// Takes ownership of the subchunk and returns an owned list of its layers.
     #[inline]
-    pub fn take_layers(self) -> Vec<SubLayer> {
+    pub fn take_layers(self) -> Vec<SubStorage> {
         self.layers
     }
 
@@ -413,7 +389,7 @@ impl SubChunk {
         // let mut layers = SmallVec::with_capacity(layer_count as usize);
         let mut layers = Vec::with_capacity(layer_count as usize);
         for _ in 0..layer_count {
-            layers.push(SubLayer::deserialize_disk(reader)?);
+            layers.push(SubStorage::deserialize_disk(reader)?);
         }
 
         Ok(Self { version, index, layers })
@@ -444,36 +420,10 @@ impl SubChunk {
 
         Ok(())
     }
-
-    /// Serialises the sub chunk into a new buffer and returns it in network format.
-    pub fn serialize_network(&self, states: &BlockStates) -> anyhow::Result<RVec> {
-        let mut buffer = RVec::alloc();
-        self.serialize_network_in(states, &mut buffer)?;
-        Ok(buffer)
-    }
-
-    /// Serialises the sub chunk into the given writer in network format.
-    pub fn serialize_network_in<W>(&self, states: &BlockStates, mut writer: W) -> anyhow::Result<()>
-    where
-        W: BinaryWrite,
-    {
-        writer.write_u8(self.version as u8)?;
-        writer.write_u8(self.layers.len() as u8)?;
-
-        if self.version == SubChunkVersion::Limitless {
-            writer.write_i8(self.index)?;
-        }
-
-        for layer in &self.layers {
-            layer.serialize_network(states, &mut writer)?;
-        }
-
-        Ok(())
-    }
 }
 
 impl Index<usize> for SubChunk {
-    type Output = SubLayer;
+    type Output = SubStorage;
 
     #[inline]
     fn index(&self, index: usize) -> &Self::Output {
@@ -497,9 +447,9 @@ pub struct LayerIter<'a> {
     palette: &'a [PaletteEntry],
 }
 
-impl<'a> From<&'a SubLayer> for LayerIter<'a> {
+impl<'a> From<&'a SubStorage> for LayerIter<'a> {
     #[inline]
-    fn from(value: &'a SubLayer) -> Self {
+    fn from(value: &'a SubStorage) -> Self {
         Self {
             indices: value.indices.as_ref(),
             palette: value.palette.as_ref(),

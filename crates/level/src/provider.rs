@@ -71,7 +71,7 @@ impl Provider {
     ///
     /// This method returns `None` if the requested chunk was not found
     /// and an error if the data could not be loaded.
-    pub fn chunk_version<I>(&self, coordinates: I, dimension: Dimension) -> anyhow::Result<Option<u8>>
+    pub fn version<I>(&self, coordinates: I, dimension: Dimension) -> anyhow::Result<Option<u8>>
     where
         I: Into<Vector<i32, 2>>,
     {
@@ -129,14 +129,15 @@ impl Provider {
     ///
     /// This method returns `None` if the sub chunk was not found
     /// and an error if the data could not be loaded.
-    pub fn subchunk<I>(&self, coordinates: I, index: i8, dimension: Dimension) -> anyhow::Result<Option<SubChunk>>
+    pub fn subchunk<I>(&self, coordinates: I, dimension: Dimension) -> anyhow::Result<Option<SubChunk>>
     where
-        I: Into<Vector<i32, 2>>,
+        I: Into<Vector<i32, 3>>,
     {
+        let coordinates = coordinates.into();
         let key = DataKey {
-            coordinates: coordinates.into(),
+            coordinates: (coordinates.x, coordinates.z).into(),
             dimension,
-            data: KeyType::SubChunk { index },
+            data: KeyType::SubChunk { index: coordinates.y as i8 },
         };
 
         if let Some(data) = self.database.get(key)? {

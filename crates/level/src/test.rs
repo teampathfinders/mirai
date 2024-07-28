@@ -27,7 +27,7 @@ fn chunk_version() {
     let _lock = LOCK.lock().unwrap();
     let provider = Provider::open("test").unwrap();
 
-    let version = provider.chunk_version(Vector::from([0, 0]), Dimension::Overworld).unwrap();
+    let version = provider.version(Vector::from([0, 0]), Dimension::Overworld).unwrap();
     assert_eq!(version, Some(40));
 
     dbg!(version);

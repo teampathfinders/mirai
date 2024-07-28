@@ -1,8 +1,8 @@
 use std::{collections::HashMap, sync::Arc};
 
 use futures::{future, StreamExt};
-use level::SubChunk;
-use proto::{bedrock::{Animate, CommandOutput, CommandOutputMessage, CommandOutputType, CommandRequest, DisconnectReason, FormResponseData, HeightmapType, HudElement, HudVisibility, InventoryTransaction, ItemInstance, MobEquipment, NetworkChunkPublisherUpdate, PlayerAuthInput, RequestAbility, SetHud, SetInventoryOptions, SettingsCommand, SubChunkEntry, SubChunkResponse, SubChunkResult, TextData, TextMessage, TickSync, TransactionAction, TransactionSourceType, TransactionType, UpdateSkin, WindowId}, types::Dimension};
+use level::{BiomeEncoding, BiomeStorage, Biomes, SubChunk, SubStorage};
+use proto::{bedrock::{Animate, CommandOutput, CommandOutputMessage, CommandOutputType, CommandRequest, DisconnectReason, FormResponseData, HeightmapType, HudElement, HudVisibility, InventoryTransaction, ItemInstance, LevelChunk, MobEquipment, NetworkChunkPublisherUpdate, PlayerAuthInput, RequestAbility, SetHud, SetInventoryOptions, SettingsCommand, SubChunkEntry, SubChunkRequestMode, SubChunkResponse, SubChunkResult, TextData, TextMessage, TickSync, TransactionAction, TransactionSourceType, TransactionType, UpdateSkin, WindowId}, types::Dimension};
 
 use util::{BinaryRead, BinaryWrite, CowSlice, Deserialize, RVec};
 
@@ -294,10 +294,8 @@ impl BedrockClient {
         //     stream.take(1).for_each(|sub| {
         //         dbg!(sub);
         //         future::ready(())
-        //     });
+        //     }).await;
         // });
-
-
 
         // Request the chunk the player is in
         let stream = self.viewer.service.region(BoxRegion::from_bounds(
@@ -315,21 +313,51 @@ impl BedrockClient {
                 tracing::debug!("{res:?}");
 
                 let chunk = res.data;
-                let ser = chunk.serialize_network(&this.instance().block_states).unwrap();
 
-                this.send(SubChunkResponse {
-                    cache_enabled: false,
+                let mut ser = chunk.serialize_network(&this.instance().block_states).unwrap();
+
+                // No biomes 
+                let indices = Box::new([0u16; 4096]);
+                let storage = BiomeStorage {
+                    indices, palette: vec![0]
+                };
+
+                let biome = Biomes {
+                    fragments: vec![BiomeEncoding::Paletted(storage)],
+                    heightmap: Box::new([[0; 16]; 16])
+                };
+
+                biome.serialize(&mut ser).unwrap();
+
+                // Border block count
+                ser.write_u8(0).unwrap();
+
+                // let de = SubChunk::deserialize_network(ser).unwrap();
+                // tracing::debug!("{de:?}");
+
+                this.send(LevelChunk {
+                    request_mode: SubChunkRequestMode::Limitless,
+                    coordinates: (0, 0).into(),
                     dimension: Dimension::Overworld,
-                    entries: vec![SubChunkEntry {
-                        blob_hash: 0,
-                        payload: ser,
-                        offset: (0, 0, 0).into(),
-                        result: SubChunkResult::Success,
-                        heightmap: Box::new([[0; 16]; 16]),
-                        heightmap_type: HeightmapType::None
-                    }],
-                    position: (0, 0, 0).into()
+                    sub_chunk_count: 24,
+                    highest_sub_chunk: 16,
+                    blob_hashes: None,
+                    raw_payload: ser
                 }).unwrap();
+
+                // this.send(SubChunkResponse {
+                //     cache_enabled: false,
+                //     dimension: Dimension::Overworld,
+                //     entries: vec![SubChunkEntry {
+                //         blob_hash: 0,
+                //         payload: ser,
+                //         offset: (0, 0, 0).into(),
+                //         result: SubChunkResult::Success,
+                //         heightmap: Box::new([[0; 16]; 16]),
+                //         heightmap_type: HeightmapType::None
+                //     }],
+                //     position: (0, 0, 0).into()
+                // }).unwrap();
 
                 future::ready(())
             });

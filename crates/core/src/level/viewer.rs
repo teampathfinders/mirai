@@ -1,10 +1,17 @@
-use std::sync::{atomic::{AtomicI32, AtomicU16, Ordering}, Arc};
+use std::sync::{
+    atomic::{AtomicI32, AtomicU16, Ordering},
+    Arc,
+};
 
 use futures::{future, StreamExt};
-use proto::types::Dimension;
+use level::SubChunk;
+use proto::{
+    bedrock::{HeightmapType, SubChunkEntry, SubChunkResponse, SubChunkResult},
+    types::Dimension,
+};
 use util::Vector;
 
-use super::{BoxRegion, PointRegion, Service};
+use super::{BoxRegion, FullChunk, Heightmap, PointRegion, Service};
 
 pub struct Viewer {
     pub service: Arc<Service>,
@@ -12,7 +19,7 @@ pub struct Viewer {
 
     // The current position of this viewer in chunk coordinates.
     current_x: AtomicI32,
-    current_z: AtomicI32
+    current_z: AtomicI32,
 }
 
 impl Viewer {
@@ -21,7 +28,7 @@ impl Viewer {
             service,
             radius: AtomicU16::new(0),
             current_x: AtomicI32::new(0),
-            current_z: AtomicI32::new(0)
+            current_z: AtomicI32::new(0),
         }
     }
 
@@ -44,7 +51,70 @@ impl Viewer {
         self.radius.store(radius, Ordering::Relaxed);
         self.on_view_update();
     }
-    
+
+    fn create_entry(&self, base: Vector<i32, 3>, offset: Vector<i8, 3>, full_chunk: &FullChunk) -> anyhow::Result<SubChunkEntry> {
+        let absolute_y = base.y + offset.y as i32;
+        let subchunk_index = full_chunk.y_to_index(absolute_y);
+
+        let heightmap = Heightmap::new(subchunk_idx, full_chunk);
+        let entry = SubChunkEntry {
+            result: SubChunkResult::Success,
+            offset,
+            heightmap_type: HeightmapType::WithDat,
+            heightmap,
+            blob_hash: todo!(),
+            payload: todo!(),
+        };
+
+        Ok(entry)
+    }
+
+    pub fn load_offsets(&self, base: Vector<i32, 3>, offsets: &[Vector<i8, 3>], dimension: Dimension) -> anyhow::Result<SubChunkResponse> {
+        let mut resp = SubChunkResponse {
+            dimension,
+            entries: Vec::with_capacity(offsets.len()),
+            position: base,
+            cache_enabled: false,
+        };
+
+        for offset in offsets {
+            let abs_coord: Vector<i32, 3> = (base.x + offset.x as i32, base.y + offset.y as i32, base.z + offset.z as i32).into();
+
+            match self.load(abs_coord, dimension) {
+                Ok(Some(subchunk)) => {
+                    if let Ok(entry) = self.create_entry(offset) {
+                        resp.entries.push(entry);
+                        continue;
+                    }
+                }
+                Ok(None) => {
+                    resp.entries.push(SubChunkEntry {
+                        result: SubChunkResult::AllAir,
+                        ..Default::default()
+                    });
+
+                    continue;
+                }
+                Err(e) => {
+                    tracing::error!("Failed to load subchunk at {abs_coord}: {e}");
+                }
+                _ => {}
+            }
+
+            resp.entries.push(SubChunkEntry {
+                result: SubChunkResult::NotFound,
+                ..Default::default()
+            });
+        }
+
+        Ok(resp)
+    }
+
+    #[inline]
+    pub fn load(&self, pos: Vector<i32, 3>, dimension: Dimension) -> anyhow::Result<Option<SubChunk>> {
+        self.service.provider.subchunk(pos, dimension)
+    }
+
     fn on_view_update(&self) {
         let x = self.current_x.load(Ordering::Relaxed);
         let z = self.current_z.load(Ordering::Relaxed);
