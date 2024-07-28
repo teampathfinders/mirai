@@ -1,16 +1,36 @@
 use core::range::RangeInclusive;
 
-use level::BlockStates;
+use level::{Biomes, BlockStates};
 use proto::bedrock::{SubChunkEntry, SubChunkResult};
 use util::BinaryWrite;
 
-pub struct FullChunk {
-    subchunks: Vec<Option<SubChunk>>,
-    biomes: Biomes,
-    range: RangeInclusive<i32>,
+use crate::level::ChunkOffset;
+
+pub struct ChunkColumn {
+    pub subchunks: Vec<(ChunkOffset, Option<SubChunk>)>,
+    pub range: RangeInclusive<i32>,
+    heightmap: Box<[[i16; 16]; 16]>,
 }
 
-impl FullChunk {
+impl ChunkColumn {
+    pub fn empty() -> ChunkColumn {
+        ChunkColumn {
+            subchunks: Vec::new(),
+            range: 0..0,
+            heightmap: Box::new([[0; 16]; 16]),
+        }
+    }
+
+    pub fn generate_heightmap(&mut self) {
+        for x in 0..16 {
+            for z in 0..16 {
+                todo!()
+            }
+        }
+
+        todo!()
+    }
+
     pub fn y_to_index(&self, y: i16) -> u16 {
         todo!()
     }

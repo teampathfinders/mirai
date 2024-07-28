@@ -1,5 +1,6 @@
 use proto::bedrock::HeightmapType;
 
+#[derive(Debug, Clone)]
 pub struct Heightmap {
     pub data: Option<Box<[[i8; 16]; 16]>>,
     pub map_type: HeightmapType,
@@ -20,9 +21,9 @@ impl Heightmap {
                 // Index of coordinate in current subchunk.
                 let block_idx = (z as u16) << 4 | (x as u16);
                 // Y-coordinate of highest block in column.
-                let full_y = full_chunk.heightmap().at(x, z);
+                let y = full_chunk.heightmap().at(x, z);
                 // Index of subchunk that the highest block is located in.
-                let other_idx = full_chunk.y_to_index(full_y);
+                let other_idx = full_chunk.y_to_index(y);
 
                 if subchunk_idx > other_idx {
                     // Topmost block is located below current subchunk.
@@ -34,7 +35,7 @@ impl Heightmap {
                     below_top = true;
                 } else {
                     // Topmost block is located in current subchunk.
-                    heightmap[block_idx] = full_y - full_chunk.index_to_y(other_idx);
+                    heightmap[block_idx] = y - full_chunk.index_to_y(other_idx);
                     above_top = true;
                     below_top = true;
                 }

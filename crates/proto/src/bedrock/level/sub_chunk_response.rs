@@ -1,4 +1,4 @@
-use util::{RVec, BinaryWrite, Serialize, Vector};
+use util::{BinaryWrite, RVec, Serialize, Vector};
 
 use crate::bedrock::ConnectedPacket;
 use crate::types::Dimension;
@@ -12,7 +12,7 @@ pub enum SubChunkResult {
     InvalidDimension = 3,
     PlayerNotFound = 4,
     OutOfBounds = 5,
-    AllAir = 6
+    AllAir = 6,
 }
 
 #[derive(Debug, Default, Copy, Clone, PartialEq, Eq)]
@@ -22,7 +22,7 @@ pub enum HeightmapType {
     None,
     WithData,
     TooHigh,
-    TooLow
+    TooLow,
 }
 
 #[derive(Debug)]
@@ -31,8 +31,8 @@ pub struct SubChunkEntry {
     pub result: SubChunkResult,
     pub payload: RVec,
     pub heightmap_type: HeightmapType,
-    pub heightmap: Box<[[u16; 16]; 16]>,
-    pub blob_hash: u64
+    pub heightmap: Option<Box<[[i8; 16]; 16]>>,
+    pub blob_hash: u64,
 }
 
 impl SubChunkEntry {
@@ -40,7 +40,7 @@ impl SubChunkEntry {
     fn serialize_cached<W: BinaryWrite>(&self, _writer: &mut W) -> anyhow::Result<()> {
         todo!();
     }
-    
+
     #[inline]
     fn serialize_into<W: BinaryWrite>(&self, writer: &mut W) -> anyhow::Result<()> {
         writer.write_vecb(&self.offset)?;
@@ -49,7 +49,8 @@ impl SubChunkEntry {
         writer.write_all(&self.payload)?;
         writer.write_u8(self.heightmap_type as u8)?;
         if self.heightmap_type == HeightmapType::WithData {
-            writer.write_all(bytemuck::cast_slice(&*self.heightmap))?;
+            let slice: &[[i8; 16]; 16] = self.heightmap.as_ref().unwrap();
+            writer.write_all(bytemuck::cast_slice(slice))?;
         }
         Ok(())
     }
@@ -60,7 +61,7 @@ pub struct SubChunkResponse {
     pub cache_enabled: bool,
     pub dimension: Dimension,
     pub position: Vector<i32, 3>,
-    pub entries: Vec<SubChunkEntry>
+    pub entries: Vec<SubChunkEntry>,
 }
 
 impl ConnectedPacket for SubChunkResponse {
@@ -77,14 +78,13 @@ impl Serialize for SubChunkResponse {
         if self.cache_enabled {
             for entry in &self.entries {
                 entry.serialize_cached(writer)?;
-            }   
+            }
         } else {
             for entry in &self.entries {
                 entry.serialize_into(writer)?;
             }
         }
-        
+
         Ok(())
     }
 }
-

@@ -1,17 +1,23 @@
-use std::sync::{
-    atomic::{AtomicI32, AtomicU16, Ordering},
-    Arc,
+use std::{
+    collections::HashMap,
+    sync::{
+        atomic::{AtomicI32, AtomicU16, Ordering},
+        Arc,
+    },
 };
 
 use futures::{future, StreamExt};
 use level::SubChunk;
+use nohash_hasher::BuildNoHashHasher;
 use proto::{
     bedrock::{HeightmapType, SubChunkEntry, SubChunkResponse, SubChunkResult},
     types::Dimension,
 };
 use util::Vector;
 
-use super::{BoxRegion, FullChunk, Heightmap, PointRegion, Service};
+use super::{BoxRegion, ChunkColumn, Heightmap, PointRegion, Service};
+
+pub type ChunkOffset = Vector<i8, 3>;
 
 pub struct Viewer {
     pub service: Arc<Service>,
@@ -52,7 +58,7 @@ impl Viewer {
         self.on_view_update();
     }
 
-    fn create_entry(&self, base: Vector<i32, 3>, offset: Vector<i8, 3>, full_chunk: &FullChunk) -> anyhow::Result<SubChunkEntry> {
+    fn create_entry(&self, base: Vector<i32, 3>, offset: ChunkOffset, full_chunk: &ChunkColumn) -> anyhow::Result<SubChunkEntry> {
         let absolute_y = base.y + offset.y as i32;
         let subchunk_index = full_chunk.y_to_index(absolute_y);
 
@@ -60,8 +66,8 @@ impl Viewer {
         let entry = SubChunkEntry {
             result: SubChunkResult::Success,
             offset,
-            heightmap_type: HeightmapType::WithDat,
-            heightmap,
+            heightmap_type: heightmap.map_type,
+            heightmap: heightmap.data,
             blob_hash: todo!(),
             payload: todo!(),
         };
@@ -69,45 +75,58 @@ impl Viewer {
         Ok(entry)
     }
 
-    pub fn load_offsets(&self, base: Vector<i32, 3>, offsets: &[Vector<i8, 3>], dimension: Dimension) -> anyhow::Result<SubChunkResponse> {
-        let mut resp = SubChunkResponse {
-            dimension,
-            entries: Vec::with_capacity(offsets.len()),
-            position: base,
-            cache_enabled: false,
-        };
-
+    pub fn load_offsets(&self, base: Vector<i32, 3>, offsets: &[ChunkOffset], dimension: Dimension) -> anyhow::Result<SubChunkResponse> {
+        // Group all subchunks into chunk columns,
+        // with the map indices being two concatenated 32-bit integers representing X and Z coords.
+        let mut col_map: HashMap<i64, ChunkColumn, BuildNoHashHasher<i64>> = HashMap::new();
         for offset in offsets {
             let abs_coord: Vector<i32, 3> = (base.x + offset.x as i32, base.y + offset.y as i32, base.z + offset.z as i32).into();
 
-            match self.load(abs_coord, dimension) {
-                Ok(Some(subchunk)) => {
-                    if let Ok(entry) = self.create_entry(offset) {
-                        resp.entries.push(entry);
-                        continue;
-                    }
-                }
-                Ok(None) => {
-                    resp.entries.push(SubChunkEntry {
-                        result: SubChunkResult::AllAir,
-                        ..Default::default()
-                    });
+            let xz = (abs_coord.x as i64) | (abs_coord.z as i64) >> 32;
+            let col = col_map.entry(xz).or_insert_with(ChunkColumn::empty);
 
-                    continue;
+            match self.load(abs_coord, dimension) {
+                Ok(opt) => {
+                    col.push((offset, opt));
                 }
                 Err(e) => {
                     tracing::error!("Failed to load subchunk at {abs_coord}: {e}");
+                    col.push(None);
                 }
-                _ => {}
             }
-
-            resp.entries.push(SubChunkEntry {
-                result: SubChunkResult::NotFound,
-                ..Default::default()
-            });
         }
 
-        Ok(resp)
+        // Generate all heightmaps now that the columns are finalised.
+        // TODO: Could maybe benefit from parallelisation depending on the offset count?
+        col_map.values_mut().for_each(ChunkColumn::generate_heightmap);
+
+        let mut entries = Vec::with_capacity(offsets.len());
+        for col in col_map.values() {
+            for (offset, opt) in &col.subchunks {
+                if let Some(sub) = opt {
+                    let subchunk_idx = base.y + offset.y as i32 - col.range.start;
+                    dbg!(subchunk_idx);
+                    let heightmap = Heightmap::new(subchunk_idx as i16, col);
+                    dbg!(&heightmap);
+
+                    let payload = todo!();
+                    entries.push(SubChunkEntry {
+                        offset: *offset,
+                        result: SubChunkResult::Success,
+                        heightmap_type: heightmap.map_type,
+                        heightmap: heightmap.data,
+                        blob_hash: 0,
+                        payload,
+                    });
+                } else {
+                    entries.push(SubChunkEntry {
+                        result: SubChunkResult::AllAir,
+                        offset: *offset,
+                        ..Default::default()
+                    });
+                }
+            }
+        }
     }
 
     #[inline]
