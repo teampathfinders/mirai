@@ -74,6 +74,14 @@ pub enum PersonaPieceType {
     /// The dress piece.
     #[serde(rename = "persona_dress")]
     Dress,
+    #[serde(rename = "persona_high_pants")]
+    HighPants,
+    #[serde(rename = "persona_outerwear")]
+    Outerwear,
+    #[serde(rename = "persona_hand")]
+    Hand,
+    #[serde(rename = "persona_face_accessory")]
+    FaceAccessory
 }
 
 impl PersonaPieceType {
@@ -93,6 +101,10 @@ impl PersonaPieceType {
             Self::Eyes => "persona_eyes",
             Self::FacialHair => "persona_facial_hair",
             Self::Dress => "persona_dress",
+            Self::HighPants => "persona_high_pants",
+            Self::Outerwear => "persona_outerwear",
+            Self::Hand => "persona_hand",
+            Self::FaceAccessory => "persona_face_accessory"
         }
     }
 }
@@ -113,6 +125,10 @@ impl TryFrom<&str> for PersonaPieceType {
             "persona_eyes" => Self::Eyes,
             "persona_facial_hair" => Self::FacialHair,
             "persona_dress" => Self::Dress,
+            "persona_high_pants" => Self::HighPants,
+            "persona_outerwear" => Self::Outerwear,
+            "persona_hand" => Self::Hand,
+            "persona_face_accessory" => Self::FaceAccessory,
             _ => bail!(Malformed, "Invalid persona piece type '{value}'")
         })
     }
