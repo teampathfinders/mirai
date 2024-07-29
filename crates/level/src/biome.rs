@@ -10,14 +10,14 @@ const HEIGHTMAP_SIZE: usize = 512;
 /// This biome format is just like the sub chunk format.
 /// Every block is an index into the palette, which is a list of biome IDs.
 #[derive(Debug, PartialEq, Eq)]
-pub struct PalettedBiome {
+pub struct BiomeStorage {
     /// Indices into the biome palette.
-    pub(crate) indices: Box<[u16; 4096]>,
+    pub indices: Box<[u16; 4096]>,
     /// Contains all biome IDs located in this chunk.
-    pub(crate) palette: Vec<u32>,
+    pub palette: Vec<u32>,
 }
 
-impl PalettedBiome {
+impl BiomeStorage {
     /// A list of indices in this palette.
     #[inline]
     pub const fn indices(&self) -> &[u16; 4096] {
@@ -39,7 +39,7 @@ pub enum BiomeEncoding {
     /// The entire sub chunk consists of a single biome.
     Single(u32),
     /// See [`PalettedBiome`].
-    Paletted(PalettedBiome),
+    Paletted(BiomeStorage),
 }
 
 /// Describes the biomes contained in a single full size chunk.
@@ -48,9 +48,9 @@ pub enum BiomeEncoding {
 #[derive(Debug, PartialEq, Eq)]
 pub struct Biomes {
     /// Highest blocks in the chunk.
-    pub(crate) heightmap: Box<[[u16; 16]; 16]>,
+    pub heightmap: Box<[[u16; 16]; 16]>,
     /// The biomes in each sub chunk.
-    pub(crate) fragments: Vec<BiomeEncoding>,
+    pub fragments: Vec<BiomeEncoding>,
 }
 
 impl Biomes {
@@ -84,7 +84,7 @@ impl Biomes {
                     palette.push(reader.read_u32_le()?);
                 }
 
-                fragments.push(BiomeEncoding::Paletted(PalettedBiome { indices, palette }));
+                fragments.push(BiomeEncoding::Paletted(BiomeStorage { indices, palette }));
             } else if PackedArrayReturn::Empty == packed_array {
                 let single = reader.read_u32_le()?;
                 fragments.push(BiomeEncoding::Single(single));
@@ -97,7 +97,7 @@ impl Biomes {
     }
 
     /// Serializes the current chunk biome.
-    pub(crate) fn serialize<W>(&self, mut writer: W) -> anyhow::Result<()>
+    pub fn serialize<W>(&self, mut writer: W) -> anyhow::Result<()>
     where
         W: BinaryWrite,
     {

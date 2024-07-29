@@ -156,10 +156,11 @@
 
 use std::{collections::HashMap, sync::atomic::Ordering};
 
-use level::PaletteEntry;
 use nohash_hasher::{BuildNoHashHasher, IntMap};
 use proto::bedrock::{ItemStack, ItemType, SHIELD_ID};
 use util::{BinaryRead, RString};
+
+use crate::PaletteEntry;
 
 const CREATIVE_ITEMS_RAW: &[u8] = include_bytes!("../include/creative_items.nbt");
 
@@ -174,7 +175,7 @@ struct RawCreativeItem {
 }
 
 pub struct CreativeItems {
-    pub(crate) stacks: Vec<ItemStack>,
+    pub stacks: Vec<ItemStack>,
 }
 
 impl CreativeItems {
@@ -193,11 +194,7 @@ impl CreativeItems {
             nbt_data: HashMap::new(),
         });
 
-        for item in nbt
-            .into_iter()
-            .filter(|item| !item.name.contains("element"))
-            .take(10)
-        {
+        for item in nbt.into_iter().filter(|item| !item.name.contains("element")).take(10) {
             if item.block_properties.is_empty() {
                 let Some(runtime_id) = item_ids.get_id(&item.name) else { continue };
 
@@ -328,13 +325,13 @@ impl BlockStates {
             air_id: 0,
         };
 
-        // while reader.remaining() > 0 {
-        for _ in 0..10 {
+        while reader.remaining() > 0 {
+            // for _ in 0..10 {
             let (item, _) = nbt::from_var_bytes(&mut reader)?;
             states.register(item)?;
         }
-        
-        tracing::debug!("states: {states:?}");
+
+        // tracing::debug!("states: {states:?}");
 
         Ok(states)
     }
@@ -346,16 +343,23 @@ impl BlockStates {
             version: None,
         };
 
-        if state.name.contains("grass") {
-            println!("get {state:?}")
-        }
-
         let hash = state.hash();
         self.runtime_hashes.get(&hash).copied()
     }
 
+    pub fn state(&self, state: &PaletteEntry) -> Option<u32> {
+        let hash = state.hash();
+        self.runtime_hashes.get(&hash).copied()
+    }
+
+    pub const fn air(&self) -> u32 {
+        self.air_id
+    }
+
     pub fn register(&mut self, state: PaletteEntry) -> anyhow::Result<()> {
-        tracing::debug!("register {state:?}");
+        // tracing::debug!("register {state:?}");
+
+        // tracing::debug!("{}", state.name);
 
         let hash = state.hash();
         let new_id = self.runtime_hashes.len() + 1;

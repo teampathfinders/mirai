@@ -48,7 +48,6 @@
 
 pub mod command;
 pub mod config;
-pub mod data;
 pub mod forms;
 pub mod instance;
 pub mod item;

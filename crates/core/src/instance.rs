@@ -19,11 +19,11 @@ use util::{CowString, Deserialize, Joinable, RVec, ReserveTo, Serialize};
 
 use crate::command::{self, HandlerOutput, HandlerResult, ParsedCommand};
 use crate::config::Config;
-use crate::data::{BlockStates, CreativeItems, ItemNetworkIds};
 use crate::net::{Clients, ForwardablePacket};
+use level::{BlockStates, CreativeItems, ItemNetworkIds};
 use proto::bedrock::{
-    Command, CommandDataType, CommandEnum, CommandOverload, CommandParameter, CommandPermissionLevel, CreditsStatus, CreditsUpdate,
-    CLIENT_VERSION_STRING, PROTOCOL_VERSION,
+    Command, CommandDataType, CommandEnum, CommandOverload, CommandParameter, CommandPermissionLevel, CreditsStatus, CreditsUpdate, MovePlayer,
+    MovementMode, TeleportCause, CLIENT_VERSION_STRING, PROTOCOL_VERSION,
 };
 use proto::raknet::{
     IncompatibleProtocol, OpenConnectionReply1, OpenConnectionReply2, OpenConnectionRequest1, OpenConnectionRequest2, UnconnectedPing,
@@ -56,7 +56,7 @@ impl InstanceBuilder {
     }
 
     /// Sets the IPv4 address of the instance.
-    pub fn ipv4_address<A: Into<SocketAddrV4>>(mut self, addr: A) -> InstanceBuilder {
+    pub fn ipv4_addr<A: Into<SocketAddrV4>>(mut self, addr: A) -> InstanceBuilder {
         self.0.ipv4_addr = addr.into();
         self
     }
@@ -91,7 +91,7 @@ impl InstanceBuilder {
         let running_token = CancellationToken::new();
 
         let command_service = crate::command::Service::new(running_token.clone());
-        let level_service = crate::level::Service::new(crate::level::ServiceOptions {
+        let level_service = crate::level::service::Service::new(crate::level::service::ServiceOptions {
             instance_token: running_token.clone(),
             level_path: self.0.level.path.clone(),
         })?;
@@ -115,7 +115,7 @@ impl InstanceBuilder {
             // Data
             creative_items,
             block_states,
-            item_network_ids
+            item_network_ids,
         };
 
         let instance = Arc::new(instance);
@@ -147,7 +147,7 @@ pub struct Instance {
     /// Keeps track of all available commands.
     command_service: Arc<crate::command::Service>,
     /// Keeps track of the level state.
-    level_service: Arc<crate::level::Service>,
+    level_service: Arc<crate::level::service::Service>,
     /// Keeps track of the current configuration of the server.
     config: Config,
     /// Cancelled when the server has started up successfully.
@@ -163,7 +163,7 @@ pub struct Instance {
 
     pub creative_items: CreativeItems,
     pub block_states: BlockStates,
-    pub item_network_ids: ItemNetworkIds
+    pub item_network_ids: ItemNetworkIds,
 }
 
 impl Instance {
@@ -272,9 +272,38 @@ impl Instance {
         self.command_service.set_instance(self)?;
         self.level_service.set_instance(self)?;
 
+        // self.command_service.register(
+        //     Command {
+        //         aliases: vec!["teleport".to_owned(), "tp".to_owned()],
+        //         description: "Teleports a player".to_owned(),
+        //         name: "tp".to_owned(),
+        //         overloads: vec![CommandOverload { parameters: Vec::new() }],
+        //         permission_level: CommandPermissionLevel::Normal
+        //     }, |_input, ctx| {
+        //         ctx.caller.send(MovePlayer {
+        //             runtime_id: 1,
+        //             head_yaw: 0.0,
+        //             mode: MovementMode::Teleport,
+        //             on_ground: false,
+        //             pitch: 0.0,
+        //             ridden_runtime_id: 0,
+        //             teleport_cause: TeleportCause::Command,
+        //             teleport_source_type: 0,
+        //             tick: 0,
+        //             translation: (20.0, 30.0, 0.0).into(),
+        //             yaw: 0.0
+        //         }).unwrap();
+
+        //         Ok(command::HandlerOutput {
+        //             message: CowString::new("Teleported"),
+        //             parameters: vec![]
+        //         })
+        //     }
+        // )?;
+
         self.command_service.register(
             Command {
-                aliases: vec!["shutdown".to_owned(), "banjo".to_owned()],
+                aliases: vec!["shutdown".to_owned()],
                 description: "Shuts down the server".to_owned(),
                 name: "shutdown".to_owned(),
                 overloads: vec![CommandOverload { parameters: Vec::new() }],

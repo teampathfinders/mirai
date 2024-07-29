@@ -1,6 +1,6 @@
 use util::{RVec, BinaryWrite, Serialize, Vector};
 
-use crate::bedrock::ConnectedPacket;
+use crate::{bedrock::ConnectedPacket, types::Dimension};
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum SubChunkRequestMode {
@@ -16,6 +16,8 @@ pub enum SubChunkRequestMode {
 pub struct LevelChunk {
     /// Position of the chunk.
     pub coordinates: Vector<i32, 2>,
+    /// Dimension of the chunk.
+    pub dimension: Dimension,
     /// How these chunks should be handled by the client.
     pub request_mode: SubChunkRequestMode,
     /// Top sub chunk in the packet.
@@ -37,6 +39,7 @@ impl ConnectedPacket for LevelChunk {
 impl Serialize for LevelChunk {
     fn serialize_into<W: BinaryWrite>(&self, writer: &mut W) -> anyhow::Result<()> {
         writer.write_veci(&self.coordinates)?;
+        writer.write_var_i32(self.dimension as i32)?;
         match self.request_mode {
             SubChunkRequestMode::Legacy => {
                 writer.write_var_u32(self.sub_chunk_count)?;
@@ -58,6 +61,7 @@ impl Serialize for LevelChunk {
             }
         }
 
+        writer.write_var_u32(self.raw_payload.len() as u32)?;
         writer.write_all(self.raw_payload.as_ref())?;
         Ok(())
     }

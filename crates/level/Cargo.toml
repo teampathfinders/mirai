@@ -18,6 +18,7 @@ serde = { version = "1.0.204", features = ["derive"] }
 anyhow = { version = "1.0.86", features = ["backtrace"] }
 bytemuck = "1.16.1"
 tracing = "0.1.40"
+nohash-hasher = "0.2.0"
 
 [build-dependencies]
 cmake = "0.1.50"
