@@ -5,7 +5,7 @@ use proto::raknet::{Ack, AckEntry};
 
 use util::{RVec, Serialize};
 
-use crate::{SendPriority, RakNetClient, Reliability, Frame, FrameBatch};
+use crate::{Frame, FrameBatch, RakNetClient, Reliability, SendPriority};
 
 /// Specifies the reliability and priority of a packet.
 pub struct SendConfig {
@@ -25,23 +25,19 @@ impl RakNetClient {
     /// Sends a raw buffer with default settings
     /// (reliable ordered and medium priority).
     pub fn send_raw_buffer<B>(&self, buffer: B)
-        where
-            B: Into<RVec>
+    where
+        B: Into<RVec>,
     {
         self.send_raw_buffer_with_config(buffer, DEFAULT_SEND_CONFIG);
     }
 
     /// Sends a raw buffer with custom reliability and priority.
-    pub fn send_raw_buffer_with_config<B>(
-        &self,
-        buffer: B,
-        config: SendConfig,
-    ) where B: Into<RVec> {
+    pub fn send_raw_buffer_with_config<B>(&self, buffer: B, config: SendConfig)
+    where
+        B: Into<RVec>,
+    {
         let buffer = buffer.into();
-        self.send.insert_raw(
-            config.priority,
-            Frame::new(config.reliability, buffer),
-        );
+        self.send.insert_raw(config.priority, Frame::new(config.reliability, buffer));
     }
 
     /// Flushes the send queue.
@@ -54,17 +50,13 @@ impl RakNetClient {
 
         if tick % 2 == 0 {
             // Also flush broadcast raknet.
-            if let Some(frames) =
-                self.send.flush(SendPriority::Medium)
-            {
+            if let Some(frames) = self.send.flush(SendPriority::Medium) {
                 self.send_raw_frames(frames).await?;
             }
         }
 
         if tick % 4 == 0 {
-            if let Some(frames) =
-                self.send.flush(SendPriority::Low)
-            {
+            if let Some(frames) = self.send.flush(SendPriority::Low) {
                 self.send_raw_frames(frames).await?;
             }
         }
@@ -83,8 +75,7 @@ impl RakNetClient {
             self.send_raw_frames(frames).await?;
         }
 
-        if let Some(frames) = self.send.flush(SendPriority::Medium)
-        {
+        if let Some(frames) = self.send.flush(SendPriority::Medium) {
             self.send_raw_frames(frames).await?;
         }
 
@@ -133,21 +124,18 @@ impl RakNetClient {
         let mut serialized = RVec::alloc_with_capacity(ack.serialized_size());
         ack.serialize_into(&mut serialized)?;
 
-        self
-            .socket
-            .send_to(serialized.as_ref(), self.address)
-            .await?;
+        self.socket.send_to(serialized.as_ref(), self.address).await?;
 
         Ok(())
     }
 
-    /// Send a list of frames. 
+    /// Send a list of frames.
     ///
     /// These frames are not guaranteed to be sent in the same frame batch.
     /// If the batch would be bigger than the MTU, the list will be split into multiple batches.
     /// Similarly if a frame is larger than the MTU, it will be split and sent in multiple packets.
     ///
-    /// ## Warning 
+    /// ## Warning
     ///
     /// In case the passed frames are already fragmented, there should at maximum one compound
     /// in the entire list.
@@ -170,20 +158,15 @@ impl RakNetClient {
                 index += 1;
             }
         }
-        
+
         debug_assert!(
-            !frames
-                .iter()
-                .any(|f| f.body.len() > self.mtu as usize - std::mem::size_of::<Frame>()),
+            !frames.iter().any(|f| f.body.len() > self.mtu as usize - std::mem::size_of::<Frame>()),
             "Frames were not split properly"
         );
 
-        let mut batch = FrameBatch {
-            sequence_number: 0,
-            frames: vec![],
-        };
+        let mut batch = FrameBatch { sequence_number: 0, frames: vec![] };
 
-        let mut has_reliable_packet = false;    
+        let mut has_reliable_packet = false;
 
         // Set to u32::MAX when unset, otherwise set to the compound's order index
         let mut compound_order_index = u32::MAX;
@@ -192,8 +175,7 @@ impl RakNetClient {
             let frame_size = frame.body.len() + std::mem::size_of::<Frame>();
 
             if frame.reliability.is_ordered() && !frame.is_compound {
-                let order_index = self.order[frame.order_channel as usize]
-                    .alloc_index();
+                let order_index = self.order[frame.order_channel as usize].alloc_index();
 
                 frame.order_index = order_index;
             } else if frame.reliability.is_ordered() {
@@ -207,15 +189,13 @@ impl RakNetClient {
             }
 
             if frame.reliability.is_sequenced() {
-                let sequence_index =
-                    self.sequence_index.fetch_add(1, Ordering::SeqCst);
+                let sequence_index = self.sequence_index.fetch_add(1, Ordering::SeqCst);
 
                 frame.sequence_index = sequence_index;
             }
 
             if frame.reliability.is_reliable() {
-                frame.reliable_index =
-                    self.acknowledge_index.fetch_add(1, Ordering::SeqCst);
+                frame.reliable_index = self.acknowledge_index.fetch_add(1, Ordering::SeqCst);
 
                 has_reliable_packet = true;
             }
@@ -230,9 +210,7 @@ impl RakNetClient {
                 batch.serialize_into(&mut serialized)?;
 
                 // TODO: Add IPv6 support
-                self.socket
-                    .send_to(serialized.as_ref(), self.address)
-                    .await?;
+                self.socket.send_to(serialized.as_ref(), self.address).await?;
 
                 if has_reliable_packet {
                     self.recovery.insert(batch);
@@ -240,9 +218,7 @@ impl RakNetClient {
 
                 has_reliable_packet = false;
                 batch = FrameBatch {
-                    sequence_number: self
-                        .batch_number
-                        .fetch_add(0, Ordering::SeqCst),
+                    sequence_number: self.batch_number.fetch_add(0, Ordering::SeqCst),
 
                     frames: vec![frame],
                 };
@@ -261,9 +237,7 @@ impl RakNetClient {
             }
 
             // TODO: Add IPv6 support
-            self.socket
-                .send_to(serialized.as_ref(), self.address)
-                .await?;
+            self.socket.send_to(serialized.as_ref(), self.address).await?;
         }
         // } else {
         //     self.batch_number.fetch_sub(1, Ordering::SeqCst);
@@ -273,11 +247,9 @@ impl RakNetClient {
     }
 
     fn split_frame(&self, frame: &Frame) -> Vec<Frame> {
-        println!("{}", frame.body.len());
+        tracing::debug!("split frame size: {}", frame.body.len());
 
-        let chunk_max_size = self.mtu as usize
-            - std::mem::size_of::<Frame>()
-            - std::mem::size_of::<FrameBatch>();
+        let chunk_max_size = self.mtu as usize - std::mem::size_of::<Frame>() - std::mem::size_of::<FrameBatch>();
 
         let compound_size = frame.body.len().div_ceil(chunk_max_size);
         let mut compound = Vec::with_capacity(compound_size);
@@ -285,8 +257,7 @@ impl RakNetClient {
 
         debug_assert_eq!(chunks.len(), compound_size, "Chunk count does not match compound size");
 
-        let compound_id =
-            self.compound_id.fetch_add(1, Ordering::SeqCst);
+        let compound_id = self.compound_id.fetch_add(1, Ordering::SeqCst);
 
         for (i, chunk) in chunks.enumerate() {
             let fragment = Frame {
@@ -295,7 +266,7 @@ impl RakNetClient {
                 compound_index: i as u32,
                 compound_size: compound_size as u32,
                 compound_id,
-                body: RVec::alloc_from_slice(chunk),                
+                body: RVec::alloc_from_slice(chunk),
                 ..Default::default()
             };
 

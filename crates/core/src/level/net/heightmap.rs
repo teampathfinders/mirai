@@ -10,7 +10,7 @@ pub struct Heightmap {
 
 impl Heightmap {
     /// Creates a new heightmap for the given subchunk.
-    pub fn new(subchunk_idx: u16, chunk_column: &ChunkColumn) -> Heightmap {
+    pub fn new(subchunk_idx: i8, chunk_column: &ChunkColumn) -> Heightmap {
         let mut heightmap = Box::new([0; 256]);
 
         // Whether at least one of the columns has a topmost block that lies below this subchunk.

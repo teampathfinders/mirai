@@ -1,23 +1,28 @@
 use std::io::{Read, Write};
 
+use std::sync::atomic::{AtomicBool, AtomicI64, AtomicU32, Ordering};
 use std::sync::{Arc, OnceLock, Weak};
-use std::sync::atomic::{
-    AtomicBool, AtomicI64, AtomicU32, Ordering
-};
-use std::time::{Instant, Duration};
+use std::time::{Duration, Instant};
 
 use anyhow::Context;
-use flate2::Compression;
 use flate2::write::DeflateEncoder;
+use flate2::Compression;
+use level::provider::Provider;
 use parking_lot::RwLock;
+use proto::bedrock::{
+    Animate, CacheStatus, ChunkRadiusRequest, ClientToServerHandshake, CommandPermissionLevel, CommandRequest, CompressionAlgorithm, ConnectedPacket,
+    ContainerClose, Disconnect, DisconnectReason, FormResponseData, GameMode, Header, Interact, InventoryTransaction, Login, MobEquipment,
+    MovePlayer, PermissionLevel, PlayerAction, PlayerAuthInput, RequestAbility, RequestNetworkSettings, ResourcePackClientResponse,
+    SetInventoryOptions, SetLocalPlayerAsInitialized, SettingsCommand, Skin, TextMessage, TickSync, UpdateSkin, ViolationWarning,
+    CONNECTED_PACKET_ID,
+};
+use proto::crypto::{BedrockClientInfo, BedrockIdentity, Encryptor};
+use proto::uuid::Uuid;
 use raknet::{BroadcastPacket, Frame, FrameBatch, RakNetClient, RakNetCommand, SendConfig, DEFAULT_SEND_CONFIG};
 use tokio::sync::{broadcast, mpsc};
-use proto::bedrock::{Animate, CacheStatus, ChunkRadiusRequest, ClientToServerHandshake, CommandPermissionLevel, CommandRequest, CompressionAlgorithm, ConnectedPacket, ContainerClose, Disconnect, DisconnectReason, FormResponseData, GameMode, Header, Interact, InventoryTransaction, Login, MobEquipment, MovePlayer, PermissionLevel, PlayerAction, PlayerAuthInput, RequestAbility, RequestNetworkSettings, ResourcePackClientResponse, SetInventoryOptions, SetLocalPlayerAsInitialized, SettingsCommand, Skin, TextMessage, TickSync, UpdateSkin, ViolationWarning, CONNECTED_PACKET_ID};
-use proto::crypto::{Encryptor, BedrockIdentity, BedrockClientInfo};
-use proto::uuid::Uuid;
 
 use tokio_util::sync::CancellationToken;
-use util::{AtomicFlag, BinaryRead, BinaryWrite, Deserialize, Joinable, RVec, pool, Serialize, Vector};
+use util::{pool, AtomicFlag, BinaryRead, BinaryWrite, Deserialize, Joinable, RVec, Serialize, Vector};
 
 use crate::forms;
 use crate::instance::Instance;
@@ -30,7 +35,8 @@ pub struct BedrockClient {
     pub(super) encryptor: OnceLock<Encryptor>,
     pub(super) identity: OnceLock<BedrockIdentity>,
     pub(super) client_info: OnceLock<BedrockClientInfo>,
-    pub(super) viewer: Viewer,
+
+    pub(crate) level: Arc<crate::level::Service>,
 
     /// Next packet that the server is expecting to receive.
     pub(crate) expected: AtomicU32,
@@ -44,11 +50,10 @@ pub struct BedrockClient {
     pub(crate) forms: forms::Subscriber,
     pub(crate) commands: Arc<crate::command::Service>,
     // pub(crate) level: Arc<crate::level::Service>,
-
     pub(crate) broadcast: broadcast::Sender<BroadcastPacket>,
 
     instance: Weak<Instance>,
-    shutdown_token: CancellationToken
+    shutdown_token: CancellationToken,
 }
 
 impl BedrockClient {
@@ -59,7 +64,7 @@ impl BedrockClient {
         commands: Arc<crate::command::Service>,
         level: Arc<crate::level::Service>,
         broadcast: broadcast::Sender<BroadcastPacket>,
-        instance: Weak<Instance>
+        instance: Weak<Instance>,
     ) -> Arc<Self> {
         let client = Arc::new(Self {
             encryptor: OnceLock::new(),
@@ -75,7 +80,7 @@ impl BedrockClient {
             broadcast,
             instance,
             shutdown_token: CancellationToken::new(),
-            viewer: Viewer::new(level)
+            level,
         });
 
         let this = Arc::clone(&client);
@@ -96,16 +101,16 @@ impl BedrockClient {
     )]
     async fn receiver(self: &Arc<Self>, mut receiver: mpsc::Receiver<RakNetCommand>) {
         let mut broadcast = self.broadcast.subscribe();
-        
+
         let mut should_run = true;
         while should_run {
             tokio::select! {
-                cmd = receiver.recv() => {  
+                cmd = receiver.recv() => {
                     let Some(cmd) = cmd else {
                         // Channel has been closed.
                         break
                     };
-                    
+
                     match cmd {
                         RakNetCommand::Received(packet) => {
                             if let Err(err) = self.handle_encrypted_frame(packet).await {
@@ -141,7 +146,9 @@ impl BedrockClient {
 
         tracing::info!(
             "Requests: {} | Returns: {} | Allocations: {}",
-            pool::total_requests(), pool::total_recycles(), pool::total_allocations()
+            pool::total_requests(),
+            pool::total_recycles(),
+            pool::total_allocations()
         );
 
         self.shutdown_token.cancel();
@@ -154,23 +161,30 @@ impl BedrockClient {
         self.instance.upgrade().unwrap()
     }
 
+    /// Whether the client supports the blob cache.
+    pub fn supports_cache(&self) -> bool {
+        self.supports_cache.load(Ordering::Relaxed)
+    }
+
     /// Handles a packet broadcasted by another user.
     #[allow(clippy::unwrap_in_result)]
     fn handle_broadcast(&self, packet: BroadcastPacket) -> anyhow::Result<()> {
         let should_send = packet.sender.map(|sender| sender != self.raknet.address).unwrap_or(true);
         if should_send {
             let header = Header {
-                id: packet.id, sender_subclient: 0, target_subclient: 0
+                id: packet.id,
+                sender_subclient: 0,
+                target_subclient: 0,
             };
 
             // Header::size_hint always returns `Some`.
             #[allow(clippy::unwrap_used)]
             let size_hint = header.size_hint().unwrap() + packet.content.len();
-    
+
             let mut body = RVec::alloc_with_capacity(size_hint);
             header.serialize_into(&mut body)?;
             body.write_all(&packet.content)?;
-    
+
             let mut full = RVec::alloc_with_capacity(body.len() + 5);
             full.write_var_u32(body.len() as u32)?;
             full.write_all(&body)?;
@@ -182,7 +196,7 @@ impl BedrockClient {
     }
 
     /// Sends a form to the client and asynchronously waits for a response.
-    /// 
+    ///
     /// In case it is more convenient to use a channel receiver instead, use the [`subscribe`](Subscriber::subscribe)
     /// method on the `forms` field of the user.
     #[allow(clippy::future_not_send)]
@@ -211,9 +225,7 @@ impl BedrockClient {
         )
     )]
     pub fn kick_with_reason(&self, message: &str, reason: DisconnectReason) -> anyhow::Result<()> {
-        let disconnect_packet = Disconnect {
-            reason, message, hide_message: false
-        };
+        let disconnect_packet = Disconnect { reason, message, hide_message: false };
         self.send(disconnect_packet)?;
 
         tracing::info!("User has been kicked");
@@ -224,19 +236,13 @@ impl BedrockClient {
     }
 
     /// Sends a packet to all initialised sessions including self.
-    pub fn broadcast<P: ConnectedPacket + Serialize + Clone>(
-        &self,
-        packet: P,
-    ) -> anyhow::Result<()> {
+    pub fn broadcast<P: ConnectedPacket + Serialize + Clone>(&self, packet: P) -> anyhow::Result<()> {
         self.broadcast.send(BroadcastPacket::new(packet, None)?)?;
         Ok(())
     }
 
     /// Sends a packet to all initialised sessions other than self.
-    pub fn broadcast_others<P: ConnectedPacket + Serialize + Clone>(
-        &self,
-        packet: P,
-    ) -> anyhow::Result<()> {
+    pub fn broadcast_others<P: ConnectedPacket + Serialize + Clone>(&self, packet: P) -> anyhow::Result<()> {
         self.broadcast.send(BroadcastPacket::new(packet, Some(self.raknet.address))?)?;
         Ok(())
     }
@@ -246,14 +252,14 @@ impl BedrockClient {
     #[allow(clippy::unwrap_in_result, clippy::missing_panics_doc)]
     pub fn send<T: ConnectedPacket + Serialize>(&self, packet: T) -> anyhow::Result<()> {
         let header = Header {
-            id: T::ID, sender_subclient: 0, target_subclient: 0
+            id: T::ID,
+            sender_subclient: 0,
+            target_subclient: 0,
         };
 
         // Header::size_hint always returns a value.
         #[allow(clippy::unwrap_used)]
-        let size_hint = 
-            header.size_hint().unwrap() + 
-            packet.size_hint().unwrap_or(0);
+        let size_hint = header.size_hint().unwrap() + packet.size_hint().unwrap_or(0);
 
         let mut body = RVec::alloc_with_capacity(size_hint);
         header.serialize_into(&mut body)?;
@@ -268,8 +274,8 @@ impl BedrockClient {
 
     /// Sends a game packet with custom reliability and priority
     pub fn send_serialized<B>(&self, packet: B, config: SendConfig) -> anyhow::Result<()>
-        where
-            B: AsRef<[u8]>
+    where
+        B: AsRef<[u8]>,
     {
         let mut out;
         if self.should_decompress.get() {
@@ -313,9 +319,7 @@ impl BedrockClient {
             out.write_all(packet.as_ref())?;
         };
 
-        let chunk_max_size = self.raknet.mtu as usize
-            - std::mem::size_of::<Frame>()
-            - std::mem::size_of::<FrameBatch>();
+        let chunk_max_size = self.raknet.mtu as usize - std::mem::size_of::<Frame>() - std::mem::size_of::<FrameBatch>();
 
         let compound_size = out.len().div_ceil(chunk_max_size) as u64;
 
@@ -328,10 +332,10 @@ impl BedrockClient {
     }
 
     /// Handles a received encrypted frame.
-    /// 
+    ///
     /// This is the first function that is called when a packet is received from the RakNet processing layer.
     /// It first decrypts the packet if encryption has been enabled and then optionally decompresses it.
-    /// 
+    ///
     /// After processing, this function sends the processed packet to [`handle_frame_body`](Self::handle_frame_body)
     /// function,
     async fn handle_encrypted_frame(self: &Arc<Self>, mut packet: RVec) -> anyhow::Result<()> {
@@ -358,10 +362,10 @@ impl BedrockClient {
                     CompressionAlgorithm::Flate => {
                         let mut reader = flate2::read::DeflateDecoder::new(packet.as_slice());
                         let mut decompressed = RVec::alloc_with_capacity(packet.len() * 2);
-                        
+
                         reader.read_to_end(&mut decompressed)?;
                         self.handle_frame_body(decompressed).await
-                    },
+                    }
                     CompressionAlgorithm::Snappy => {
                         anyhow::bail!("Snappy compression is not implemented");
                     }
@@ -375,7 +379,7 @@ impl BedrockClient {
     }
 
     /// Handles the body of a frame.
-    /// 
+    ///
     /// This function does the actual processing of the content of the frame and responds to it.
     #[tracing::instrument(
         skip_all,
@@ -392,15 +396,16 @@ impl BedrockClient {
 
         let remaining = reader.remaining();
         packet.drain(0..(start_len - remaining));
-        
+
         let expected = self.expected();
         if expected != u32::MAX && header.id != expected {
             // Server received an unexpected packet.
             tracing::warn!(
                 "Client sent unexpected packet while logging in (expected {:#04x}, got {:#04x})",
-                expected, header.id
+                expected,
+                header.id
             );
-            
+
             self.kick_with_reason("Unexpected packet", DisconnectReason::UnexpectedPacket)?;
         }
 
@@ -411,33 +416,31 @@ impl BedrockClient {
                 MobEquipment::ID => this.handle_mob_equipment(packet).context("while handling MobEquipment"),
                 InventoryTransaction::ID => this.handle_inventory_transaction(packet).context("while handling InventoryTransaction"),
                 PlayerAuthInput::ID => this.handle_auth_input(packet).context("while handling PlayerAuthInput"),
-                RequestNetworkSettings::ID => {
-                    this.handle_network_settings_request(packet).context("while handling RequestNetworkSettings")
-                }
+                RequestNetworkSettings::ID => this
+                    .handle_network_settings_request(packet)
+                    .context("while handling RequestNetworkSettings"),
                 Login::ID => this.handle_login(packet).await.context("while handling Login"),
-                ClientToServerHandshake::ID => {
-                    this.handle_client_to_server_handshake(packet).context("while handling ClientToServerHandshake")
-                }
+                ClientToServerHandshake::ID => this
+                    .handle_client_to_server_handshake(packet)
+                    .context("while handling ClientToServerHandshake"),
                 CacheStatus::ID => this.handle_cache_status(packet).context("while handling CacheStatus"),
-                ResourcePackClientResponse::ID => {
-                    this.handle_resource_client_response(packet).context("while handling ResourcePackClientResponse")
-                }
+                ResourcePackClientResponse::ID => this
+                    .handle_resource_client_response(packet)
+                    .context("while handling ResourcePackClientResponse"),
                 ViolationWarning::ID => this.handle_violation_warning(packet).context("while handling ViolationWarning"),
                 ChunkRadiusRequest::ID => this.handle_chunk_radius_request(packet).context("while handling ChunkRadiusRequest"),
                 Interact::ID => this.handle_interaction(packet).context("while handling Interact"),
                 TextMessage::ID => this.handle_text_message(packet),
-                SetLocalPlayerAsInitialized::ID => {
-                    this.handle_local_initialized(packet)
-                }
+                SetLocalPlayerAsInitialized::ID => this.handle_local_initialized(packet),
                 MovePlayer::ID => this.handle_move_player(packet),
                 PlayerAction::ID => this.handle_player_action(packet),
                 RequestAbility::ID => this.handle_ability_request(packet),
                 Animate::ID => this.handle_animation(packet),
                 // Command request does not return a result because it does not fail.
                 CommandRequest::ID => {
-                    this.handle_command_request(packet); 
+                    this.handle_command_request(packet);
                     Ok(())
-                },
+                }
                 UpdateSkin::ID => this.handle_skin_update(packet),
                 SettingsCommand::ID => this.handle_settings_command(packet),
                 ContainerClose::ID => this.handle_container_close(packet),
@@ -446,7 +449,7 @@ impl BedrockClient {
                 id => anyhow::bail!("Invalid game packet: {id:#04x}"),
             }
         };
-        
+
         let timeout = tokio::time::timeout(REQUEST_TIMEOUT, future);
         let Ok(result) = timeout.await else {
             tracing::error!("Request timed out");
@@ -465,7 +468,9 @@ impl BedrockClient {
     /// This function panics if the identity was not set.
     #[inline]
     pub fn identity(&self) -> anyhow::Result<&BedrockIdentity> {
-        self.identity.get().ok_or_else(|| anyhow::anyhow!("Identity unknown: user has not logged in yet"))
+        self.identity
+            .get()
+            .ok_or_else(|| anyhow::anyhow!("Identity unknown: user has not logged in yet"))
     }
 
     /// This function panics if the name was not set.
@@ -495,7 +500,9 @@ impl BedrockClient {
     /// This function panics if the encryptor was not set.
     #[inline]
     pub fn encryptor(&self) -> anyhow::Result<&Encryptor> {
-        self.encryptor.get().ok_or_else(|| anyhow::anyhow!("Encryption handshake has not been performed yet"))
+        self.encryptor
+            .get()
+            .ok_or_else(|| anyhow::anyhow!("Encryption handshake has not been performed yet"))
     }
 
     /// Returns the next expected packet for this session.
@@ -519,10 +526,7 @@ impl BedrockClient {
 }
 
 impl Joinable for BedrockClient {
-    #[tracing::instrument(
-        skip(self),
-        name = "BedrockUser::join"
-    )]
+    #[tracing::instrument(skip(self), name = "BedrockUser::join")]
     async fn join(&self) -> anyhow::Result<()> {
         self.shutdown_token.cancelled().await;
         self.raknet.join().await
@@ -530,7 +534,7 @@ impl Joinable for BedrockClient {
 }
 
 /// Contains data that is mostly related to the player in the vanilla game.
-/// 
+///
 /// Unlike [`BedrockUser`], most of this data is not related to the Bedrock protocol itself.
 pub struct PlayerData {
     /// Whether the player's inventory is currently open.
@@ -564,7 +568,7 @@ impl PlayerData {
             permission_level: PermissionLevel::Member,
             command_permission_level: CommandPermissionLevel::Owner,
             skin: RwLock::new(skin),
-            runtime_id: 1
+            runtime_id: 1,
         }
     }
 

@@ -75,8 +75,10 @@ impl BedrockClient {
 
         self.send(NetworkChunkPublisherUpdate { position: (0, 0, 0).into(), radius: 12 })?;
 
-        let res = self.viewer.load_offsets((0, 0, 0).into(), &[(0, 0, 0).into()], Dimension::Overworld)?;
+        let res = self.viewer.load_column((0, 0).into(), Dimension::Overworld)?;
         tracing::debug!("res {res:?}");
+
+        self.send(res)?;
 
         // self.send(LevelChunk {
         //     blob_hashes: None,

@@ -70,6 +70,13 @@ impl Service {
             .map_err(|_| anyhow::anyhow!("Level service instance was already set"))
     }
 
+    /// Returns the instance that owns this service.
+    pub fn instance(&self) -> Arc<Instance> {
+        // This will not panic because the instance field is initialised before the first command can be executed.
+        #[allow(clippy::unwrap_used)]
+        self.instance.get().unwrap().upgrade().unwrap()
+    }
+
     /// Requests chunks using the specified region iterator.
     pub fn region<R: Region>(self: &Arc<Service>, region: R) -> RegionStream
     where

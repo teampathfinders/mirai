@@ -45,3 +45,4 @@ nohash-hasher = "0.2.0"
 paste = "1.0.15"
 rayon = "1.10.0"
 futures = { version = "0.3.30", default-features = false }
+xxhash-rust = { version = "0.8.12", features = ["xxh64"] }
