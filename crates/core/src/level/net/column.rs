@@ -34,7 +34,7 @@ impl ChunkColumn {
                         break;
                     }
 
-                    for y in 16..0 {
+                    for y in (0..16).rev() {
                         let block = sub.layer(0).unwrap().get((x, y, z));
                         dbg!(block);
                     }
