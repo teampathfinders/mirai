@@ -1,8 +1,21 @@
 use std::{collections::HashMap, sync::Arc};
 
-use proto::bedrock::{Animate, CommandOutput, CommandOutputMessage, CommandOutputType, CommandRequest, DisconnectReason, FormResponseData, HudElement, HudVisibility, InventoryTransaction, ItemInstance, MobEquipment, PlayerAuthInput, RequestAbility, SetHud, SettingsCommand, TextData, TextMessage, TickSync, TransactionAction, TransactionSourceType, TransactionType, UpdateSkin, WindowId};
+use futures::{future, StreamExt};
+use level::{BiomeEncoding, BiomeStorage, Biomes, SubChunk, SubStorage};
+use proto::{
+    bedrock::{
+        Animate, CommandOutput, CommandOutputMessage, CommandOutputType, CommandRequest, DisconnectReason, FormResponseData, HeightmapType,
+        HudElement, HudVisibility, InventoryTransaction, ItemInstance, LevelChunk, MobEquipment, NetworkChunkPublisherUpdate, PlayerAuthInput,
+        RequestAbility, SetHud, SetInventoryOptions, SettingsCommand, SubChunkEntry, SubChunkRequestMode, SubChunkResponse, SubChunkResult, TextData,
+        TextMessage, TickSync, TransactionAction, TransactionSourceType, TransactionType, UpdateSkin, WindowId,
+    },
+    types::Dimension,
+};
 
 use util::{BinaryRead, BinaryWrite, CowSlice, Deserialize, RVec};
+
+use crate::level::io::r#box::BoxRegion;
+use crate::level::io::stream::IndexedSubChunk;
 
 use super::BedrockClient;
 
@@ -10,7 +23,7 @@ impl BedrockClient {
     /// Handles a mob equipment packet.
     pub fn handle_mob_equipment(&self, packet: RVec) -> anyhow::Result<()> {
         let equipment = MobEquipment::deserialize(packet.as_ref())?;
-        
+
         // Verify that runtime ID matches player's runtime ID.
         // Clients only send this packet to modify themselves.
         if equipment.runtime_id != self.runtime_id()? {
@@ -20,7 +33,14 @@ impl BedrockClient {
 
         self.broadcast_others(equipment)
     }
-    
+
+    pub fn handle_inventory_options(&self, packet: RVec) -> anyhow::Result<()> {
+        let options = SetInventoryOptions::deserialize(packet.as_ref())?;
+        tracing::debug!("{options:?}");
+
+        Ok(())
+    }
+
     pub fn handle_inventory_transaction(&self, packet: RVec) -> anyhow::Result<()> {
         let transaction = InventoryTransaction::deserialize(packet.as_ref())?;
         tracing::debug!("{transaction:?}");
@@ -102,16 +122,14 @@ impl BedrockClient {
     )]
     pub fn handle_text_message(self: &Arc<Self>, packet: RVec) -> anyhow::Result<()> {
         let request = TextMessage::deserialize(packet.as_ref())?;
-        if let TextData::Chat {
-            source, message
-        } = request.data {
+        if let TextData::Chat { source, message } = request.data {
             tracing::Span::current().record("msg", message);
 
             let name = self.name()?;
             // Check that the source is equal to the player name to prevent spoofing.
             if name != source {
                 tracing::warn!("Client and text message name do not match. Kicking them for forbidden modifications");
-                return self.kick_with_reason("Illegal packet modifications detected", DisconnectReason::BadPacket)
+                return self.kick_with_reason("Illegal packet modifications detected", DisconnectReason::BadPacket);
             }
 
             // We must also return the packet to the client that sent it.
@@ -146,7 +164,7 @@ impl BedrockClient {
     pub fn handle_ability_request(&self, packet: RVec) -> anyhow::Result<()> {
         let request = RequestAbility::deserialize(packet.as_ref())?;
         tracing::debug!("{request:?}");
-        
+
         Ok(())
     }
 
@@ -161,9 +179,7 @@ impl BedrockClient {
             actions: vec![
                 TransactionAction {
                     slot: 0,
-                    source_type: TransactionSourceType::Container {
-                        inventory_id: WindowId::Creative
-                    },
+                    source_type: TransactionSourceType::Container { inventory_id: WindowId::Creative },
                     new_item: ItemInstance::air(),
                     old_item: ItemInstance {
                         block_runtime_id: 13256,
@@ -174,14 +190,12 @@ impl BedrockClient {
                         count: 12,
                         metadata: 0,
                         nbt: HashMap::new(),
-                        stack_id: None
-                    }
+                        stack_id: None,
+                    },
                 },
                 TransactionAction {
                     slot: 0,
-                    source_type: TransactionSourceType::Container {
-                        inventory_id: WindowId::Ui
-                    },
+                    source_type: TransactionSourceType::Container { inventory_id: WindowId::Ui },
                     old_item: ItemInstance::air(),
                     new_item: ItemInstance {
                         block_runtime_id: 13256,
@@ -192,10 +206,10 @@ impl BedrockClient {
                         count: 12,
                         metadata: 0,
                         nbt: HashMap::new(),
-                        stack_id: None
-                    }
-                }
-            ]
+                        stack_id: None,
+                    },
+                },
+            ],
         };
         self.send(transaction)?;
 
@@ -206,9 +220,7 @@ impl BedrockClient {
             actions: vec![
                 TransactionAction {
                     slot: 0,
-                    source_type: TransactionSourceType::Container {
-                        inventory_id: WindowId::Ui
-                    },
+                    source_type: TransactionSourceType::Container { inventory_id: WindowId::Ui },
                     new_item: ItemInstance::air(),
                     old_item: ItemInstance {
                         block_runtime_id: 13256,
@@ -219,14 +231,12 @@ impl BedrockClient {
                         count: 12,
                         metadata: 0,
                         nbt: HashMap::new(),
-                        stack_id: None
-                    }
+                        stack_id: None,
+                    },
                 },
                 TransactionAction {
                     slot: 0,
-                    source_type: TransactionSourceType::Container {
-                        inventory_id: WindowId::Inventory
-                    },
+                    source_type: TransactionSourceType::Container { inventory_id: WindowId::Inventory },
                     old_item: ItemInstance::air(),
                     new_item: ItemInstance {
                         block_runtime_id: 13256,
@@ -237,23 +247,23 @@ impl BedrockClient {
                         count: 12,
                         metadata: 0,
                         nbt: HashMap::new(),
-                        stack_id: None
-                    }
-                }
-            ]
+                        stack_id: None,
+                    },
+                },
+            ],
         };
         self.send(transaction)?;
 
         tracing::debug!("{request:?}");
-        
+
         Ok(())
     }
 
     /// Handles a [`FormResponseData`] packet. This packet is forwarded to the forms [`Subscriber`](crate::forms::response::Subscriber)
     /// which will properly handle the response.
-    /// 
+    ///
     /// # Errors
-    /// 
+    ///
     /// May return an error if the packet fails to deserialize or handling a form response fails.
     pub fn handle_form_response(&self, packet: RVec) -> anyhow::Result<()> {
         let response = FormResponseData::deserialize(packet.as_ref())?;
@@ -261,9 +271,9 @@ impl BedrockClient {
     }
 
     /// Handles a [`CommandRequest`] packet.
-    /// 
+    ///
     /// # Errors
-    /// 
+    ///
     /// May return an error if the packet fails to deserialize or executing the command fails.
     #[tracing::instrument(
         skip_all,
@@ -274,6 +284,86 @@ impl BedrockClient {
         )
     )]
     pub fn handle_command_request(self: Arc<Self>, packet: RVec) {
+        // let this = self.clone();
+        // tokio::spawn(async move {
+        //     let stream = this.viewer.service.region(BoxRegion::from_bounds(
+        //         [0, -4, 0], [0, 15, 0], Dimension::Overworld
+        //     ));
+
+        //     stream.take(1).for_each(|sub| {
+        //         dbg!(sub);
+        //         future::ready(())
+        //     }).await;
+        // });
+
+        // Request the chunk the player is in
+        let stream = self
+            .viewer
+            .service
+            .region(BoxRegion::from_bounds((0, -4, 0), (0, 15, 0), Dimension::Overworld));
+
+        self.send(NetworkChunkPublisherUpdate { position: (0, 0, 0).into(), radius: 12 }).unwrap();
+
+        // let this = self.clone();
+        // tokio::spawn(async move {
+        //     let fut = stream.take(1).for_each(|res| {
+        //         tracing::debug!("{res:?}");
+
+        //         let chunk = res.data;
+
+        //         let mut ser = chunk.serialize_network(&this.instance().block_states).unwrap();
+
+        //         // No biomes
+        //         let indices = Box::new([0u16; 4096]);
+        //         let storage = BiomeStorage {
+        //             indices, palette: vec![0]
+        //         };
+
+        //         let biome = Biomes {
+        //             fragments: vec![BiomeEncoding::Paletted(storage)],
+        //             heightmap: Box::new([[0; 16]; 16])
+        //         };
+
+        //         biome.serialize(&mut ser).unwrap();
+
+        //         // Border block count
+        //         ser.write_u8(0).unwrap();
+
+        //         // let de = SubChunk::deserialize_network(ser).unwrap();
+        //         // tracing::debug!("{de:?}");
+
+        //         this.send(LevelChunk {
+        //             request_mode: SubChunkRequestMode::Limitless,
+        //             coordinates: (0, 0).into(),
+        //             dimension: Dimension::Overworld,
+        //             sub_chunk_count: 24,
+        //             highest_sub_chunk: 16,
+        //             blob_hashes: None,
+        //             raw_payload: ser
+        //         }).unwrap();
+
+        //         // this.send(SubChunkResponse {
+        //         //     cache_enabled: false,
+        //         //     dimension: Dimension::Overworld,
+        //         //     entries: vec![SubChunkEntry {
+        //         //         blob_hash: 0,
+        //         //         payload: ser,
+        //         //         offset: (0, 0, 0).into(),
+        //         //         result: SubChunkResult::Success,
+        //         //         heightmap: Box::new([[0; 16]; 16]),
+        //         //         heightmap_type: HeightmapType::None
+        //         //     }],
+        //         //     position: (0, 0, 0).into()
+        //         // }).unwrap();
+
+        //         future::ready(())
+        //     });
+
+        //     fut.await;
+        // });
+
+        // self.viewer.update_radius(12);
+
         // Command execution could take several ticks, await the result in a separate task
         // to avoid blocking the request handler.
         tokio::spawn(async move {
@@ -286,42 +376,42 @@ impl BedrockClient {
             };
             tracing::Span::current().record("command", request.command);
 
-            let receiver = match self.commands.execute(
-                Arc::clone(&self),
-                request.command.to_owned()
-            ).await {
+            let receiver = match self.commands.execute(Arc::clone(&self), request.command.to_owned()).await {
                 Ok(r) => r,
                 Err(e) => {
-                    tracing::error!("{e:#}"); 
-                    return
+                    tracing::error!("{e:#}");
+                    return;
                 }
             };
 
-            receiver.await.map_or_else(|_| tracing::error!("Command service shut down while awaiting execution"), |result| {
-                let is_success = result.is_ok();
-                let data = match result {
-                    Ok(r) => r,
-                    Err(r) => r
-                };
+            receiver.await.map_or_else(
+                |_| tracing::error!("Command service shut down while awaiting execution"),
+                |result| {
+                    let is_success = result.is_ok();
+                    let data = match result {
+                        Ok(r) => r,
+                        Err(r) => r,
+                    };
 
-                let messages = vec![CommandOutputMessage {
-                    is_success,
-                    message: data.message,
-                    parameters: CowSlice::Owned(data.parameters)
-                }];
+                    let messages = vec![CommandOutputMessage {
+                        is_success,
+                        message: data.message,
+                        parameters: CowSlice::Owned(data.parameters),
+                    }];
 
-                let output = CommandOutput {
-                    success_count: if is_success { 1 } else { 0 },
-                    request_id: request.request_id,
-                    origin: request.origin,
-                    output_type: CommandOutputType::AllOutput,
-                    output: CowSlice::Owned(messages)
-                }; 
+                    let output = CommandOutput {
+                        success_count: if is_success { 1 } else { 0 },
+                        request_id: request.request_id,
+                        origin: request.origin,
+                        output_type: CommandOutputType::AllOutput,
+                        output: CowSlice::Owned(messages),
+                    };
 
-                if let Err(err) = self.send(output) {
-                    tracing::error!("Failed to send command output to client: {err:#}");
-                }
-            });
+                    if let Err(err) = self.send(output) {
+                        tracing::error!("Failed to send command output to client: {err:#}");
+                    }
+                },
+            );
         });
     }
 }

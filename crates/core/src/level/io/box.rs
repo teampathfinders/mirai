@@ -4,7 +4,7 @@ use proto::types::Dimension;
 use rayon::iter::IntoParallelIterator;
 use util::Vector;
 
-use super::{Region, RegionIter};
+use super::region::{Region, RegionIter};
 
 /// A region representing the box between two coordinates.
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -12,18 +12,18 @@ pub struct BoxRegion {
     xrange: Range<i32>,
     yrange: Range<i32>,
     zrange: Range<i32>,
-    dimension: Dimension
+    dimension: Dimension,
 }
 
 impl BoxRegion {
     /// Creates a region query using two corner coordinates.
-    /// 
+    ///
     /// The region will represent the box between these two corners.
     /// The given bounds should be in subchunk coordinates.
-    pub fn from_bounds<B1, B2>(bound1: B1, bound2: B2, dimension: Dimension) -> Self 
+    pub fn from_bounds<B1, B2>(bound1: B1, bound2: B2, dimension: Dimension) -> Self
     where
         B1: Into<Vector<i32, 3>>,
-        B2: Into<Vector<i32, 3>>
+        B2: Into<Vector<i32, 3>>,
     {
         let bound1 = bound1.into();
         let bound2 = bound2.into();
@@ -33,7 +33,7 @@ impl BoxRegion {
 
     /// Converts an index to a coordinate within this region, without checking
     /// for bounds.
-    /// 
+    ///
     /// This function is not marked as unsafe because incorrect input does not cause memory unsafety.
     /// Using an index out of bounds will simply return a coordinate outside of the region.
     /// However, the coordinate will likely be incorrect because different regions use incompatible indices.
@@ -49,9 +49,9 @@ impl BoxRegion {
         Vector::from([x, y, z])
     }
 
-    /// Converts a coordinate to an index within this region, without checking 
+    /// Converts a coordinate to an index within this region, without checking
     /// for bounds.
-    /// 
+    ///
     /// This function is not marked as unsafe because incorrect input does not cause memory unsafety.
     /// Using a coordinate out of bounds will simply return a index outside of the region.
     /// However, the index will likely be incorrect because different regions use incompatible indices.
@@ -72,9 +72,7 @@ impl BoxRegion {
         let zmax = std::cmp::max(bound1.z, bound2.z);
         let zrange = zmin..zmax + 1;
 
-        Self {
-            xrange, yrange, zrange, dimension
-        }
+        Self { xrange, yrange, zrange, dimension }
     }
 }
 
@@ -83,7 +81,11 @@ impl IntoIterator for BoxRegion {
     type Item = Vector<i32, 3>;
 
     fn into_iter(self) -> Self::IntoIter {
-        RegionIter { front_index: 0, back_index: self.len(), region: self }
+        RegionIter {
+            front_index: 0,
+            back_index: self.len(),
+            region: self,
+        }
     }
 }
 
@@ -92,16 +94,18 @@ impl IntoParallelIterator for BoxRegion {
     type Item = Vector<i32, 3>;
 
     fn into_par_iter(self) -> Self::Iter {
-        RegionIter { front_index: 0, back_index: self.len(), region: self }
+        RegionIter {
+            front_index: 0,
+            back_index: self.len(),
+            region: self,
+        }
     }
 }
 
 impl Region for BoxRegion {
     fn as_index(&self, coord: &Vector<i32, 3>) -> Option<usize> {
-        if !self.xrange.contains(&coord.x) || 
-            !self.yrange.contains(&coord.y) || 
-            !self.zrange.contains(&coord.z) {
-            return None
+        if !self.xrange.contains(&coord.x) || !self.yrange.contains(&coord.y) || !self.zrange.contains(&coord.z) {
+            return None;
         }
 
         Some(self.as_index_unchecked(coord))

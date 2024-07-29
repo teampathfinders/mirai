@@ -2,15 +2,15 @@ use proto::types::Dimension;
 use rayon::iter::IntoParallelIterator;
 use util::Vector;
 
-use super::{Region, RegionIter};
+use super::region::{Region, RegionIter};
 
-/// A region consisting of a set of points. 
-/// 
+/// A region consisting of a set of points.
+///
 /// This region can be used to request only single chunks from specific coordinates.
 #[derive(Clone)]
 pub struct PointRegion {
     points: Vec<Vector<i32, 3>>,
-    dimension: Dimension
+    dimension: Dimension,
 }
 
 impl PointRegion {
@@ -25,7 +25,11 @@ impl IntoIterator for PointRegion {
     type Item = Vector<i32, 3>;
 
     fn into_iter(self) -> Self::IntoIter {
-        RegionIter { front_index: 0, back_index: self.len(), region: self }
+        RegionIter {
+            front_index: 0,
+            back_index: self.len(),
+            region: self,
+        }
     }
 }
 
@@ -34,7 +38,11 @@ impl IntoParallelIterator for PointRegion {
     type Item = Vector<i32, 3>;
 
     fn into_par_iter(self) -> Self::Iter {
-        RegionIter { front_index: 0, back_index: self.len(), region: self }
+        RegionIter {
+            front_index: 0,
+            back_index: self.len(),
+            region: self,
+        }
     }
 }
 
@@ -44,10 +52,7 @@ impl Region for PointRegion {
     }
 
     fn as_index(&self, coord: &Vector<i32, 3>) -> Option<usize> {
-        self.points
-            .iter()
-            .enumerate()
-            .find_map(|(i, item)| (item == coord).then_some(i))
+        self.points.iter().enumerate().find_map(|(i, item)| (item == coord).then_some(i))
     }
 
     fn dimension(&self) -> Dimension {

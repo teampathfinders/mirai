@@ -12,7 +12,7 @@ use flate2::write::DeflateEncoder;
 use parking_lot::RwLock;
 use raknet::{BroadcastPacket, Frame, FrameBatch, RakNetClient, RakNetCommand, SendConfig, DEFAULT_SEND_CONFIG};
 use tokio::sync::{broadcast, mpsc};
-use proto::bedrock::{Animate, CacheStatus, ChunkRadiusRequest, ClientToServerHandshake, CommandPermissionLevel, CommandRequest, CompressionAlgorithm, ConnectedPacket, ContainerClose, Disconnect, DisconnectReason, FormResponseData, GameMode, Header, Interact, InventoryTransaction, Login, MobEquipment, MovePlayer, PermissionLevel, PlayerAction, PlayerAuthInput, RequestAbility, RequestNetworkSettings, ResourcePackClientResponse, SetLocalPlayerAsInitialized, SettingsCommand, Skin, TextMessage, TickSync, UpdateSkin, ViolationWarning, CONNECTED_PACKET_ID};
+use proto::bedrock::{Animate, CacheStatus, ChunkRadiusRequest, ClientToServerHandshake, CommandPermissionLevel, CommandRequest, CompressionAlgorithm, ConnectedPacket, ContainerClose, Disconnect, DisconnectReason, FormResponseData, GameMode, Header, Interact, InventoryTransaction, Login, MobEquipment, MovePlayer, PermissionLevel, PlayerAction, PlayerAuthInput, RequestAbility, RequestNetworkSettings, ResourcePackClientResponse, SetInventoryOptions, SetLocalPlayerAsInitialized, SettingsCommand, Skin, TextMessage, TickSync, UpdateSkin, ViolationWarning, CONNECTED_PACKET_ID};
 use proto::crypto::{Encryptor, BedrockIdentity, BedrockClientInfo};
 use proto::uuid::Uuid;
 
@@ -21,6 +21,7 @@ use util::{AtomicFlag, BinaryRead, BinaryWrite, Deserialize, Joinable, RVec, poo
 
 use crate::forms;
 use crate::instance::Instance;
+use crate::level::Viewer;
 
 const REQUEST_TIMEOUT: Duration = Duration::from_millis(50);
 
@@ -29,6 +30,7 @@ pub struct BedrockClient {
     pub(super) encryptor: OnceLock<Encryptor>,
     pub(super) identity: OnceLock<BedrockIdentity>,
     pub(super) client_info: OnceLock<BedrockClientInfo>,
+    pub(super) viewer: Viewer,
 
     /// Next packet that the server is expecting to receive.
     pub(crate) expected: AtomicU32,
@@ -41,7 +43,7 @@ pub struct BedrockClient {
 
     pub(crate) forms: forms::Subscriber,
     pub(crate) commands: Arc<crate::command::Service>,
-    pub(crate) level: Arc<crate::level::Service>,
+    // pub(crate) level: Arc<crate::level::Service>,
 
     pub(crate) broadcast: broadcast::Sender<BroadcastPacket>,
 
@@ -70,10 +72,10 @@ impl BedrockClient {
             player: OnceLock::new(),
             forms: forms::Subscriber::new(),
             commands,
-            level,
             broadcast,
             instance,
-            shutdown_token: CancellationToken::new()
+            shutdown_token: CancellationToken::new(),
+            viewer: Viewer::new(level)
         });
 
         let this = Arc::clone(&client);
@@ -390,7 +392,7 @@ impl BedrockClient {
 
         let remaining = reader.remaining();
         packet.drain(0..(start_len - remaining));
-
+        
         let expected = self.expected();
         if expected != u32::MAX && header.id != expected {
             // Server received an unexpected packet.
@@ -405,6 +407,7 @@ impl BedrockClient {
         let this = Arc::clone(self);
         let future = async move {
             match header.id {
+                SetInventoryOptions::ID => this.handle_inventory_options(packet).context("while handling SetInventoryOptions"),
                 MobEquipment::ID => this.handle_mob_equipment(packet).context("while handling MobEquipment"),
                 InventoryTransaction::ID => this.handle_inventory_transaction(packet).context("while handling InventoryTransaction"),
                 PlayerAuthInput::ID => this.handle_auth_input(packet).context("while handling PlayerAuthInput"),
@@ -419,7 +422,7 @@ impl BedrockClient {
                 ResourcePackClientResponse::ID => {
                     this.handle_resource_client_response(packet).context("while handling ResourcePackClientResponse")
                 }
-                ViolationWarning::ID => this.handle_violation_warning(packet).await.context("while handling ViolationWarning"),
+                ViolationWarning::ID => this.handle_violation_warning(packet).context("while handling ViolationWarning"),
                 ChunkRadiusRequest::ID => this.handle_chunk_radius_request(packet).context("while handling ChunkRadiusRequest"),
                 Interact::ID => this.handle_interaction(packet).context("while handling Interact"),
                 TextMessage::ID => this.handle_text_message(packet),

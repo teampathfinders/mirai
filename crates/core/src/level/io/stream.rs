@@ -1,4 +1,7 @@
-use std::{pin::Pin, task::{ready, Context, Poll}};
+use std::{
+    pin::Pin,
+    task::{ready, Context, Poll},
+};
 
 use futures::Stream;
 use level::SubChunk;
@@ -6,8 +9,8 @@ use tokio::sync::mpsc;
 use util::Vector;
 
 /// A unique identifier for a specific subchunk.
-/// 
-/// First 6 bits are the vertical index, 
+///
+/// First 6 bits are the vertical index,
 /// then 29 bits for the x-coordinate
 /// and 29 bits for the z-coordinate.
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
@@ -48,7 +51,7 @@ pub struct IndexedSubChunk {
     /// The region index.
     pub index: RegionIndex,
     /// The subchunk data.
-    pub data: SubChunk
+    pub data: SubChunk,
 }
 
 /// Streams subchunk data as it is produced by an iterator.
@@ -56,10 +59,15 @@ pub struct RegionStream {
     /// Chunk receiver
     pub(super) inner: mpsc::Receiver<IndexedSubChunk>,
     /// Remaining items in the receiver.
-    pub(super) len: usize
+    pub(super) len: usize,
 }
 
 impl RegionStream {
+    #[inline]
+    pub const fn from_receiver(inner: mpsc::Receiver<IndexedSubChunk>, len: usize) -> RegionStream {
+        RegionStream { inner, len }
+    }
+
     /// Remaining length of this stream.
     pub const fn len(&self) -> usize {
         self.len
@@ -74,10 +82,7 @@ impl RegionStream {
 impl Stream for RegionStream {
     type Item = IndexedSubChunk;
 
-    fn poll_next(
-        mut self: Pin<&mut Self>,
-        cx: &mut Context
-    ) -> Poll<Option<Self::Item>> {
+    fn poll_next(mut self: Pin<&mut Self>, cx: &mut Context) -> Poll<Option<Self::Item>> {
         let poll = self.inner.poll_recv(cx);
         let ready = ready!(poll);
 
