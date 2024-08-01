@@ -86,7 +86,25 @@ impl BedrockClient {
         let request = SubChunkRequest::deserialize(packet.as_ref())?;
         tracing::debug!("request: {request:?}");
 
-        Ok(())
+        let mut entries = Vec::with_capacity(request.offsets.len());
+        for offset in request.offsets {
+            let entry = SubChunkEntry {
+                result: SubChunkResult::Success,
+                offset,
+                // Get subchunk data
+            };
+
+            entries.push(entry);
+        }
+
+        let response = SubChunkResponse {
+            cache_enabled: self.supports_cache(),
+            dimension: request.dimension,
+            position: request.position,
+            entries,
+        };
+
+        self.send(response)
     }
 }
 
