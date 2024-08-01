@@ -1,3 +1,87 @@
+use std::ops::Range;
+use std::{
+    collections::HashMap,
+    sync::{
+        atomic::{AtomicI32, AtomicU16, Ordering},
+        Arc,
+    },
+};
+
+use futures::{future, StreamExt};
+use level::SubChunk;
+use nohash_hasher::BuildNoHashHasher;
+use proto::bedrock::{CacheBlobStatus, NetworkChunkPublisherUpdate};
+use proto::{
+    bedrock::{HeightmapType, LevelChunk, SubChunkEntry, SubChunkRequestMode, SubChunkResponse, SubChunkResult},
+    types::Dimension,
+};
+use util::{Deserialize, RVec, Vector};
+
+use crate::level::net::column::ChunkColumn;
+use crate::net::BedrockClient;
+
+pub type ChunkOffset = Vector<i8, 3>;
+
+const USE_SUBCHUNK_REQUESTS: bool = true;
+
+impl BedrockClient {
+    /// Loads chunks around a center point.
+    pub fn load_chunks(&self, center: Vector<i32, 2>, dimension: Dimension) -> anyhow::Result<()> {
+        const VERTICAL_RANGE: Range<i16> = -4..20;
+
+        let mut column = ChunkColumn::empty(center.clone());
+        for y in VERTICAL_RANGE {
+            let opt = self.level.subchunk((center.x, y as i32, center.y), dimension)?;
+            let adj_y = (y - VERTICAL_RANGE.start) as u16;
+            column.subchunks.push((adj_y, opt));
+        }
+
+        column.generate_heightmap();
+
+        if self.supports_cache() {
+            self.send_blob_hashes(center, &column, dimension)?;
+        } else {
+        }
+
+        Ok(())
+    }
+
+    /// Sends blob hashes of the chunks that the client requested.
+    fn send_blob_hashes(&self, coordinates: Vector<i32, 2>, column: &ChunkColumn, dimension: Dimension) -> anyhow::Result<()> {
+        use xxhash_rust::xxh64::xxh64;
+
+        if USE_SUBCHUNK_REQUESTS {
+            let biomes = column.serialize_biomes()?;
+            // Blob cache uses 64-bit xxHash with seed 0.
+            let hash = xxh64(&biomes, 0);
+
+            let pk = LevelChunk {
+                dimension,
+                coordinates,
+                // request_mode: SubChunkRequestMode::KnownAir { highest_nonair: column.highest_nonair() },
+                request_mode: SubChunkRequestMode::Request,
+                blob_hashes: Some(vec![hash]),
+                raw_payload: RVec::alloc_from_slice(&[0]),
+            };
+            tracing::debug!("{pk:?}");
+            self.send(pk)?;
+            tracing::debug!("Sent LevelChunk");
+
+            self.send(NetworkChunkPublisherUpdate { position: (0, 0, 0).into(), radius: 12 })?;
+        } else {
+            todo!()
+        }
+
+        Ok(())
+    }
+
+    pub fn handle_cache_blob_status(&self, packet: RVec) -> anyhow::Result<()> {
+        let status = CacheBlobStatus::deserialize(packet.as_ref())?;
+        dbg!(status);
+
+        Ok(())
+    }
+}
 
 // use proto::bedrock::{GameRule, ParsedCommand};
 // use util::TryExpect;

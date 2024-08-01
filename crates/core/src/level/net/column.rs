@@ -3,8 +3,6 @@ use std::ops::Range;
 use level::{BiomeEncoding, BiomeStorage, Biomes, BlockStates, SubChunk};
 use util::{BinaryWrite, RVec, Vector};
 
-use crate::level::viewer::ChunkOffset;
-
 pub struct ChunkColumn {
     /// Pair of absolute subchunk indices and (optional) subchunk data.
     /// If there is no data, then the subchunk is full air.

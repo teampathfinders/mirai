@@ -10,9 +10,9 @@ use flate2::Compression;
 use level::provider::Provider;
 use parking_lot::RwLock;
 use proto::bedrock::{
-    Animate, CacheStatus, ChunkRadiusRequest, ClientToServerHandshake, CommandPermissionLevel, CommandRequest, CompressionAlgorithm, ConnectedPacket,
-    ContainerClose, Disconnect, DisconnectReason, FormResponseData, GameMode, Header, Interact, InventoryTransaction, Login, MobEquipment,
-    MovePlayer, PermissionLevel, PlayerAction, PlayerAuthInput, RequestAbility, RequestNetworkSettings, ResourcePackClientResponse,
+    Animate, CacheBlobStatus, CacheStatus, ChunkRadiusRequest, ClientToServerHandshake, CommandPermissionLevel, CommandRequest, CompressionAlgorithm,
+    ConnectedPacket, ContainerClose, Disconnect, DisconnectReason, FormResponseData, GameMode, Header, Interact, InventoryTransaction, Login,
+    MobEquipment, MovePlayer, PermissionLevel, PlayerAction, PlayerAuthInput, RequestAbility, RequestNetworkSettings, ResourcePackClientResponse,
     SetInventoryOptions, SetLocalPlayerAsInitialized, SettingsCommand, Skin, TextMessage, TickSync, UpdateSkin, ViolationWarning,
     CONNECTED_PACKET_ID,
 };
@@ -26,7 +26,6 @@ use util::{pool, AtomicFlag, BinaryRead, BinaryWrite, Deserialize, Joinable, RVe
 
 use crate::forms;
 use crate::instance::Instance;
-use crate::level::Viewer;
 
 const REQUEST_TIMEOUT: Duration = Duration::from_millis(50);
 
@@ -410,9 +409,10 @@ impl BedrockClient {
         }
 
         let this = Arc::clone(self);
-        dbg!(header.id);
+        // dbg!(header.id);
         let future = async move {
             match header.id {
+                CacheBlobStatus::ID => this.handle_cache_blob_status(packet).context("while handing CacheBlobStatus"),
                 SetInventoryOptions::ID => this.handle_inventory_options(packet).context("while handling SetInventoryOptions"),
                 MobEquipment::ID => this.handle_mob_equipment(packet).context("while handling MobEquipment"),
                 InventoryTransaction::ID => this.handle_inventory_transaction(packet).context("while handling InventoryTransaction"),

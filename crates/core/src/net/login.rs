@@ -2,10 +2,10 @@ use level::PaletteEntry;
 use proto::bedrock::{
     BiomeDefinitionList, BroadcastIntent, CacheStatus, ChatRestrictionLevel, ChunkRadiusReply, ChunkRadiusRequest, ClientToServerHandshake,
     ConnectedPacket, CreativeContent, Difficulty, DisconnectReason, EditorWorldType, ExperimentData, GameMode, GameRule, HeightmapType,
-    InventoryTransaction, ItemInstance, LevelChunk, Login, NetworkChunkPublisherUpdate, NetworkSettings, PermissionLevel, PlayStatus,
-    PlayerMovementSettings, PlayerMovementType, PropertyData, RequestNetworkSettings, ResourcePackClientResponse, ResourcePackStack,
+    InventoryTransaction, ItemInstance, LevelChunk, Login, MovePlayer, MovementMode, NetworkChunkPublisherUpdate, NetworkSettings, PermissionLevel,
+    PlayStatus, PlayerMovementSettings, PlayerMovementType, PropertyData, RequestNetworkSettings, ResourcePackClientResponse, ResourcePackStack,
     ResourcePacksInfo, ServerToClientHandshake, SetLocalPlayerAsInitialized, SpawnBiomeType, StartGame, Status, SubChunkEntry, SubChunkRequestMode,
-    SubChunkResponse, SubChunkResult, TextData, TextMessage, TransactionAction, TransactionSourceType, TransactionType, UpdateBlock,
+    SubChunkResponse, SubChunkResult, TeleportCause, TextData, TextMessage, TransactionAction, TransactionSourceType, TransactionType, UpdateBlock,
     UpdateBlockFlags, ViolationWarning, WindowId, WorldGenerator, CLIENT_VERSION_STRING, PROTOCOL_VERSION,
 };
 use proto::crypto::Encryptor;
@@ -68,10 +68,24 @@ impl BedrockClient {
         )
     )]
     pub fn handle_local_initialized(&self, packet: RVec) -> anyhow::Result<()> {
-        let _request = SetLocalPlayerAsInitialized::deserialize(packet.as_ref())?;
+        let request = SetLocalPlayerAsInitialized::deserialize(packet.as_ref())?;
         self.expected.store(u32::MAX, Ordering::SeqCst);
 
         tracing::debug!("Player fully initialised");
+
+        // self.send(MovePlayer {
+        //     head_yaw: 0.0,
+        //     pitch: 0.0,
+        //     yaw: 0.0,
+        //     mode: MovementMode::Reset,
+        //     on_ground: false,
+        //     ridden_runtime_id: 0,
+        //     runtime_id: request.runtime_id,
+        //     tick: 0,
+        //     teleport_cause: TeleportCause::Unknown,
+        //     teleport_source_type: 0,
+        //     translation: (0.0, 69.0, 0.0).into(),
+        // })?;
 
         self.send(NetworkChunkPublisherUpdate { position: (0, 0, 0).into(), radius: 12 })?;
         self.load_chunks((0, 0).into(), Dimension::Overworld)?;
@@ -238,8 +252,8 @@ impl BedrockClient {
             level_name: "Mirai Dedicated Server",
             template_content_identity: "",
             movement_settings: PlayerMovementSettings {
-                // movement_type: PlayerMovementType::ServerAuthoritative,
                 movement_type: PlayerMovementType::ClientAuthoritative,
+                // movement_type: PlayerMovementType::ServerAuthoritative,
                 rewind_history_size: 0,
                 server_authoritative_breaking: true,
             },

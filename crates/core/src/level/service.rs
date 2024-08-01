@@ -70,6 +70,14 @@ impl Service {
             .map_err(|_| anyhow::anyhow!("Level service instance was already set"))
     }
 
+    #[inline]
+    pub fn subchunk<I>(&self, coordinates: I, dimension: Dimension) -> anyhow::Result<Option<SubChunk>>
+    where
+        I: Into<Vector<i32, 3>>,
+    {
+        self.provider.subchunk(coordinates.into(), dimension)
+    }
+
     /// Returns the instance that owns this service.
     pub fn instance(&self) -> Arc<Instance> {
         // This will not panic because the instance field is initialised before the first command can be executed.
