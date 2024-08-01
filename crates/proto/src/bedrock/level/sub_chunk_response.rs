@@ -6,6 +6,7 @@ use crate::types::Dimension;
 #[derive(Debug, Default, Copy, Clone, PartialEq, Eq)]
 #[repr(u8)]
 pub enum SubChunkResult {
+    Undefined = 0,
     #[default]
     Success = 1,
     NotFound = 2,

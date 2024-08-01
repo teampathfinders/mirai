@@ -74,11 +74,12 @@ impl BedrockClient {
         tracing::debug!("Player fully initialised");
 
         self.send(NetworkChunkPublisherUpdate { position: (0, 0, 0).into(), radius: 12 })?;
+        self.load_chunks((0, 0).into(), Dimension::Overworld)?;
 
-        let res = self.viewer.load_column((0, 0).into(), Dimension::Overworld)?;
-        tracing::debug!("res {res:?}");
+        // let res = self.viewer.load_column((0, 0).into(), Dimension::Overworld)?;
+        // tracing::debug!("res {res:?}");
 
-        self.send(res)?;
+        // self.send(res)?;
 
         // self.send(LevelChunk {
         //     blob_hashes: None,
@@ -136,10 +137,10 @@ impl BedrockClient {
                 xuid: 0,
                 platform_chat_id: "",
             })?;
-            
+
             let stack = &self.instance().creative_items.stacks[1];
             tracing::debug!("stack: {stack:?}");
-        }   
+        }
 
         // ...then tell the client about all the other players.
         // TODO
@@ -164,7 +165,7 @@ impl BedrockClient {
 
         self.send(ChunkRadiusReply { allowed_radius })?;
 
-        self.viewer.update_radius(allowed_radius as u16);
+        // self.viewer.update_radius(allowed_radius as u16);
 
         // self.player().viewer.set_radius(allowed_radius);
 
@@ -237,7 +238,8 @@ impl BedrockClient {
             level_name: "Mirai Dedicated Server",
             template_content_identity: "",
             movement_settings: PlayerMovementSettings {
-                movement_type: PlayerMovementType::ServerAuthoritative,
+                // movement_type: PlayerMovementType::ServerAuthoritative,
+                movement_type: PlayerMovementType::ClientAuthoritative,
                 rewind_history_size: 0,
                 server_authoritative_breaking: true,
             },
@@ -266,12 +268,12 @@ impl BedrockClient {
         let available_commands = self.commands.available_commands();
         self.send(available_commands)?;
 
-        tracing::debug!("{:?}", self.instance().creative_items.stacks);
+        // tracing::debug!("{:?}", self.instance().creative_items.stacks);
 
-        let creative_content = CreativeContent {
-            items: &self.instance().creative_items.stacks,
-        };
-        self.send(creative_content)?;
+        // let creative_content = CreativeContent {
+        //     items: &self.instance().creative_items.stacks,
+        // };
+        // self.send(creative_content)?;
 
         let play_status = PlayStatus { status: Status::PlayerSpawn };
         self.send(play_status)?;

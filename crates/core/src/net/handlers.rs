@@ -149,7 +149,7 @@ impl BedrockClient {
         if input.input_data.0 != 0 {
             // tracing::debug!("{:?}", input.input_data);
         }
-        
+
         Ok(())
     }
 
@@ -284,86 +284,6 @@ impl BedrockClient {
         )
     )]
     pub fn handle_command_request(self: Arc<Self>, packet: RVec) {
-        // let this = self.clone();
-        // tokio::spawn(async move {
-        //     let stream = this.viewer.service.region(BoxRegion::from_bounds(
-        //         [0, -4, 0], [0, 15, 0], Dimension::Overworld
-        //     ));
-
-        //     stream.take(1).for_each(|sub| {
-        //         dbg!(sub);
-        //         future::ready(())
-        //     }).await;
-        // });
-
-        // Request the chunk the player is in
-        let stream = self
-            .viewer
-            .service
-            .region(BoxRegion::from_bounds((0, -4, 0), (0, 15, 0), Dimension::Overworld));
-
-        self.send(NetworkChunkPublisherUpdate { position: (0, 0, 0).into(), radius: 12 }).unwrap();
-
-        // let this = self.clone();
-        // tokio::spawn(async move {
-        //     let fut = stream.take(1).for_each(|res| {
-        //         tracing::debug!("{res:?}");
-
-        //         let chunk = res.data;
-
-        //         let mut ser = chunk.serialize_network(&this.instance().block_states).unwrap();
-
-        //         // No biomes
-        //         let indices = Box::new([0u16; 4096]);
-        //         let storage = BiomeStorage {
-        //             indices, palette: vec![0]
-        //         };
-
-        //         let biome = Biomes {
-        //             fragments: vec![BiomeEncoding::Paletted(storage)],
-        //             heightmap: Box::new([[0; 16]; 16])
-        //         };
-
-        //         biome.serialize(&mut ser).unwrap();
-
-        //         // Border block count
-        //         ser.write_u8(0).unwrap();
-
-        //         // let de = SubChunk::deserialize_network(ser).unwrap();
-        //         // tracing::debug!("{de:?}");
-
-        //         this.send(LevelChunk {
-        //             request_mode: SubChunkRequestMode::Limitless,
-        //             coordinates: (0, 0).into(),
-        //             dimension: Dimension::Overworld,
-        //             sub_chunk_count: 24,
-        //             highest_sub_chunk: 16,
-        //             blob_hashes: None,
-        //             raw_payload: ser
-        //         }).unwrap();
-
-        //         // this.send(SubChunkResponse {
-        //         //     cache_enabled: false,
-        //         //     dimension: Dimension::Overworld,
-        //         //     entries: vec![SubChunkEntry {
-        //         //         blob_hash: 0,
-        //         //         payload: ser,
-        //         //         offset: (0, 0, 0).into(),
-        //         //         result: SubChunkResult::Success,
-        //         //         heightmap: Box::new([[0; 16]; 16]),
-        //         //         heightmap_type: HeightmapType::None
-        //         //     }],
-        //         //     position: (0, 0, 0).into()
-        //         // }).unwrap();
-
-        //         future::ready(())
-        //     });
-
-        //     fut.await;
-        // });
-
-        // self.viewer.update_radius(12);
-
         // Command execution could take several ticks, await the result in a separate task
         // to avoid blocking the request handler.
         tokio::spawn(async move {

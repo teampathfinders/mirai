@@ -10,6 +10,7 @@ use std::{
 use futures::{future, StreamExt};
 use level::SubChunk;
 use nohash_hasher::BuildNoHashHasher;
+use proto::bedrock::NetworkChunkPublisherUpdate;
 use proto::{
     bedrock::{HeightmapType, LevelChunk, SubChunkEntry, SubChunkRequestMode, SubChunkResponse, SubChunkResult},
     types::Dimension,
@@ -55,16 +56,19 @@ impl BedrockClient {
         // // TODO: Could maybe benefit from parallelisation depending on the offset count?
         // col_map.values_mut().for_each(ChunkColumn::generate_heightmap);
         //
-        const VERTICAL_RANGE: Range<u16> = 0..16;
+        const VERTICAL_RANGE: Range<i16> = -4..20;
 
-        let mut column = ChunkColumn::empty(center);
+        let mut column = ChunkColumn::empty(center.clone());
         for y in VERTICAL_RANGE {
             let opt = self.level.provider.subchunk((center.x, y as i32, center.y), dimension)?;
-            column.subchunks.push((y, opt));
+            let adj_y = (y - VERTICAL_RANGE.start) as u16;
+            column.subchunks.push((adj_y, opt));
         }
 
+        column.generate_heightmap();
+
         if self.supports_cache() {
-            self.send_blob_hashes(center)?;
+            self.send_blob_hashes(center, &column, dimension)?;
         } else {
         }
 
@@ -77,20 +81,27 @@ impl BedrockClient {
 
         if USE_SUBCHUNK_REQUESTS {
             let biomes = column.serialize_biomes()?;
-            let hash = xxh64(biomes, 0);
+            // Blob cache uses 64-bit xxHash with seed 0.
+            let hash = xxh64(&biomes, 0);
 
-            self.send(LevelChunk {
+            let pk = LevelChunk {
                 dimension,
                 coordinates,
-                request_mode: SubChunkRequestMode::Limited {
-                    highest_subchunk: column.highest_nonempty(),
-                },
+                // request_mode: SubChunkRequestMode::KnownAir { highest_nonair: column.highest_nonair() },
+                request_mode: SubChunkRequestMode::Request,
                 blob_hashes: Some(vec![hash]),
                 raw_payload: RVec::alloc_from_slice(&[0]),
-            })?;
+            };
+            tracing::debug!("{pk:?}");
+            self.send(pk)?;
+            tracing::debug!("Sent LevelChunk");
+
+            self.send(NetworkChunkPublisherUpdate { position: (0, 0, 0).into(), radius: 12 })?;
         } else {
             todo!()
         }
+
+        Ok(())
     }
 
     // pub fn load_column(&self, base: Vector<i32, 2>, dimension: Dimension) -> anyhow::Result<()> {

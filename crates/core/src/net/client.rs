@@ -410,6 +410,7 @@ impl BedrockClient {
         }
 
         let this = Arc::clone(self);
+        dbg!(header.id);
         let future = async move {
             match header.id {
                 SetInventoryOptions::ID => this.handle_inventory_options(packet).context("while handling SetInventoryOptions"),

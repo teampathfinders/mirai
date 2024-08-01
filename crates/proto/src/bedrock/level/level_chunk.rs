@@ -7,9 +7,9 @@ pub enum SubChunkRequestMode {
     /// The legacy mode that specifies the amount of sub chunks in the packet.
     Legacy { subchunk_count: u32 },
     /// Limitless mode that allows an unlimited world height.
-    Limitless,
-    /// Mode that only specifies the highest chunk.
-    Limited { highest_subchunk: u16 },
+    Request,
+    /// Mode that only specifies the highest non-air subchunk relative to the bottom of the level chunk.
+    KnownAir { highest_nonair: u16 },
 }
 
 #[derive(Debug)]
@@ -39,11 +39,11 @@ impl Serialize for LevelChunk {
             SubChunkRequestMode::Legacy { subchunk_count } => {
                 writer.write_var_u32(subchunk_count)?;
             }
-            SubChunkRequestMode::Limitless => {
-                writer.write_var_u32(u32::MAX - 1)?;
-            }
-            SubChunkRequestMode::Limited { highest_subchunk } => {
+            SubChunkRequestMode::Request => {
                 writer.write_var_u32(u32::MAX)?;
+            }
+            SubChunkRequestMode::KnownAir { highest_nonair: highest_subchunk } => {
+                writer.write_var_u32(u32::MAX - 1)?;
                 writer.write_u16_le(highest_subchunk)?;
             }
         }
