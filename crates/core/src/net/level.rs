@@ -10,7 +10,7 @@ use std::{
 use futures::{future, StreamExt};
 use level::SubChunk;
 use nohash_hasher::BuildNoHashHasher;
-use proto::bedrock::{CacheBlobStatus, NetworkChunkPublisherUpdate};
+use proto::bedrock::{CacheBlobStatus, NetworkChunkPublisherUpdate, SubChunkRequest};
 use proto::{
     bedrock::{HeightmapType, LevelChunk, SubChunkEntry, SubChunkRequestMode, SubChunkResponse, SubChunkResult},
     types::Dimension,
@@ -58,9 +58,9 @@ impl BedrockClient {
             let pk = LevelChunk {
                 dimension,
                 coordinates,
-                // request_mode: SubChunkRequestMode::KnownAir { highest_nonair: column.highest_nonair() },
-                request_mode: SubChunkRequestMode::Request,
-                blob_hashes: Some(vec![hash]),
+                request_mode: SubChunkRequestMode::KnownAir { highest_nonair: column.highest_nonair() },
+                // blob_hashes: Some(vec![hash]),
+                blob_hashes: None,
                 raw_payload: RVec::alloc_from_slice(&[0]),
             };
             tracing::debug!("{pk:?}");
@@ -78,6 +78,13 @@ impl BedrockClient {
     pub fn handle_cache_blob_status(&self, packet: RVec) -> anyhow::Result<()> {
         let status = CacheBlobStatus::deserialize(packet.as_ref())?;
         dbg!(status);
+
+        Ok(())
+    }
+
+    pub fn handle_subchunk_request(&self, packet: RVec) -> anyhow::Result<()> {
+        let request = SubChunkRequest::deserialize(packet.as_ref())?;
+        tracing::debug!("request: {request:?}");
 
         Ok(())
     }

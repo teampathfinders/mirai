@@ -13,7 +13,7 @@ use proto::bedrock::{
     Animate, CacheBlobStatus, CacheStatus, ChunkRadiusRequest, ClientToServerHandshake, CommandPermissionLevel, CommandRequest, CompressionAlgorithm,
     ConnectedPacket, ContainerClose, Disconnect, DisconnectReason, FormResponseData, GameMode, Header, Interact, InventoryTransaction, Login,
     MobEquipment, MovePlayer, PermissionLevel, PlayerAction, PlayerAuthInput, RequestAbility, RequestNetworkSettings, ResourcePackClientResponse,
-    SetInventoryOptions, SetLocalPlayerAsInitialized, SettingsCommand, Skin, TextMessage, TickSync, UpdateSkin, ViolationWarning,
+    SetInventoryOptions, SetLocalPlayerAsInitialized, SettingsCommand, Skin, SubChunkRequest, TextMessage, TickSync, UpdateSkin, ViolationWarning,
     CONNECTED_PACKET_ID,
 };
 use proto::crypto::{BedrockClientInfo, BedrockIdentity, Encryptor};
@@ -412,6 +412,7 @@ impl BedrockClient {
         // dbg!(header.id);
         let future = async move {
             match header.id {
+                SubChunkRequest::ID => this.handle_subchunk_request(packet).context("while handling SubchunkRequest"),
                 CacheBlobStatus::ID => this.handle_cache_blob_status(packet).context("while handing CacheBlobStatus"),
                 SetInventoryOptions::ID => this.handle_inventory_options(packet).context("while handling SetInventoryOptions"),
                 MobEquipment::ID => this.handle_mob_equipment(packet).context("while handling MobEquipment"),

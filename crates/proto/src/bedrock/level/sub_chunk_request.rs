@@ -1,12 +1,13 @@
+use crate::bedrock::ConnectedPacket;
 use crate::types::Dimension;
 use util::BinaryRead;
 use util::{Deserialize, Vector};
-use crate::bedrock::ConnectedPacket;
 
+#[derive(Debug, Clone)]
 pub struct SubChunkRequest {
     pub dimension: Dimension,
     pub position: Vector<i32, 3>,
-    pub offsets: Vec<Vector<i8, 3>>
+    pub offsets: Vec<Vector<i8, 3>>,
 }
 
 impl ConnectedPacket for SubChunkRequest {
@@ -24,8 +25,6 @@ impl<'a> Deserialize<'a> for SubChunkRequest {
             offsets.push(reader.read_vecb()?);
         }
 
-        Ok(Self {
-            dimension, position, offsets
-        })
+        Ok(Self { dimension, position, offsets })
     }
 }
