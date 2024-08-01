@@ -1,35 +1,26 @@
 use std::ops::Range;
-use std::{
-    collections::HashMap,
-    sync::{
-        atomic::{AtomicI32, AtomicU16, Ordering},
-        Arc,
-    },
-};
 
-use futures::{future, StreamExt};
-use level::SubChunk;
-use nohash_hasher::BuildNoHashHasher;
 use proto::bedrock::{CacheBlobStatus, NetworkChunkPublisherUpdate, SubChunkRequest};
 use proto::{
-    bedrock::{HeightmapType, LevelChunk, SubChunkEntry, SubChunkRequestMode, SubChunkResponse, SubChunkResult},
+    bedrock::{LevelChunk, SubChunkEntry, SubChunkRequestMode, SubChunkResponse, SubChunkResult},
     types::Dimension,
 };
 use util::{Deserialize, RVec, Vector};
+use xxhash_rust::xxh64::xxh64;
 
 use crate::level::net::column::ChunkColumn;
+use crate::level::net::heightmap::Heightmap;
+use crate::level::net::ser::NetworkChunkExt;
 use crate::net::BedrockClient;
 
 pub type ChunkOffset = Vector<i8, 3>;
 
 const USE_SUBCHUNK_REQUESTS: bool = true;
+const VERTICAL_RANGE: Range<i16> = -4..20;
 
 impl BedrockClient {
-    /// Loads chunks around a center point.
-    pub fn load_chunks(&self, center: Vector<i32, 2>, dimension: Dimension) -> anyhow::Result<()> {
-        const VERTICAL_RANGE: Range<i16> = -4..20;
-
-        let mut column = ChunkColumn::empty(center.clone());
+    fn load_column(&self, center: Vector<i32, 2>, dimension: Dimension) -> anyhow::Result<ChunkColumn> {
+        let mut column = ChunkColumn::empty(center.clone(), VERTICAL_RANGE);
         for y in VERTICAL_RANGE {
             let opt = self.level.subchunk((center.x, y as i32, center.y), dimension)?;
             let adj_y = (y - VERTICAL_RANGE.start) as u16;
@@ -37,6 +28,13 @@ impl BedrockClient {
         }
 
         column.generate_heightmap();
+
+        Ok(column)
+    }
+
+    /// Loads chunks around a center point.
+    pub fn load_chunks(&self, center: Vector<i32, 2>, dimension: Dimension) -> anyhow::Result<()> {
+        let column = self.load_column(center.clone(), dimension)?;
 
         if self.supports_cache() {
             self.send_blob_hashes(center, &column, dimension)?;
@@ -86,12 +84,29 @@ impl BedrockClient {
         let request = SubChunkRequest::deserialize(packet.as_ref())?;
         tracing::debug!("request: {request:?}");
 
+        let center = (request.position.x, request.position.z).into();
+        let column = self.load_column(center, request.dimension)?;
+
         let mut entries = Vec::with_capacity(request.offsets.len());
         for offset in request.offsets {
+            let index = (offset.y as i16 - column.range.start) as u16;
+            let (_, Some(subchunk)) = &column.subchunks[index as usize] else {
+                continue;
+            };
+
+            // Generate the heightmap for this subchunk.
+            let heightmap = Heightmap::new(offset.y, &column);
+            let mut writer = RVec::alloc();
+            subchunk.serialize_network_in(&self.instance().block_states, &mut writer)?;
+
+            let hash = xxh64(&writer, 0);
             let entry = SubChunkEntry {
                 result: SubChunkResult::Success,
                 offset,
-                // Get subchunk data
+                heightmap_type: heightmap.map_type,
+                heightmap: heightmap.data, // Get subchunk data
+                blob_hash: hash,
+                payload: RVec::alloc_from_slice(&[0]),
             };
 
             entries.push(entry);

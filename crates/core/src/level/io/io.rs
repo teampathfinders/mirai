@@ -17,19 +17,29 @@ use util::Vector;
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
 pub struct RegionIndex(u64);
 
-impl From<Vector<i32, 3>> for RegionIndex {
-    fn from(value: Vector<i32, 3>) -> Self {
+impl TryFrom<Vector<i32, 3>> for RegionIndex {
+    type Error = anyhow::Error;
+
+    fn try_from(value: Vector<i32, 3>) -> anyhow::Result<RegionIndex> {
         const XZ_MASK: u64 = 2u64.pow(29) - 1;
 
-        assert!((value.y as u64) < 63, "Region Y-coordinate too large");
-        assert!((value.x as u64) < XZ_MASK, "Region X-coordinate too large");
-        assert!((value.z as u64) < XZ_MASK, "Region Z-coordinate too large");
+        if (value.y as u64) > 63 {
+            anyhow::bail!("Region index Y-coordinate too large");
+        }
+
+        if (value.x as u64) > XZ_MASK {
+            anyhow::bail!("Region index X-coordinate too large");
+        }
+
+        if (value.z as u64) > XZ_MASK {
+            anyhow::bail!("Region index Z-coordinate too large");
+        }
 
         let mut index = (value.y as u64) << 58;
         index |= ((value.x as u64) & XZ_MASK) << 29;
         index |= (value.z as u64) & XZ_MASK;
 
-        RegionIndex(index)
+        Ok(RegionIndex(index))
     }
 }
 
@@ -43,6 +53,18 @@ impl From<RegionIndex> for Vector<i32, 3> {
         let z = (index & XZ_MASK) as i32;
 
         Vector::from([x, y, z])
+    }
+}
+
+impl From<u64> for RegionIndex {
+    fn from(value: u64) -> Self {
+        RegionIndex(value)
+    }
+}
+
+impl From<RegionIndex> for u64 {
+    fn from(value: RegionIndex) -> Self {
+        value.0
     }
 }
 

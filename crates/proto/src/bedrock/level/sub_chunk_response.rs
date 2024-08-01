@@ -22,8 +22,10 @@ pub enum HeightmapType {
     #[default]
     None,
     WithData,
-    TooHigh,
-    TooLow,
+    /// The entire heightmap is above this subchunk.
+    AllTooHigh,
+    /// The entire heightmap is below this subchunk.
+    AllTooLow,
 }
 
 #[derive(Debug)]
@@ -51,8 +53,26 @@ impl Default for SubChunkEntry {
 
 impl SubChunkEntry {
     #[inline]
-    fn serialize_cached<W: BinaryWrite>(&self, _writer: &mut W) -> anyhow::Result<()> {
-        todo!();
+    fn serialize_cached<W: BinaryWrite>(&self, writer: &mut W) -> anyhow::Result<()> {
+        writer.write_vecb(&self.offset)?;
+        writer.write_u8(self.result as u8)?;
+
+        if self.result != SubChunkResult::AllAir {
+            writer.write_var_u32(self.payload.len() as u32)?;
+            writer.write_all(&self.payload)?;
+        }
+
+        writer.write_u8(self.heightmap_type as u8)?;
+        if self.heightmap_type == HeightmapType::WithData {
+            let Some(heightmap) = &self.heightmap else {
+                anyhow::bail!("Heightmap did not have data despite being marked `WithData`");
+            };
+
+            let cast = bytemuck::cast_slice(heightmap.as_ref());
+            writer.write_all(cast)?;
+        }
+
+        writer.write_u64_le(self.blob_hash)
     }
 
     #[inline]

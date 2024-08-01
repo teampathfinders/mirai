@@ -20,11 +20,11 @@ pub struct ChunkColumn {
 }
 
 impl ChunkColumn {
-    pub fn empty(coordinates: Vector<i32, 2>) -> ChunkColumn {
+    pub fn empty(coordinates: Vector<i32, 2>, range: Range<i16>) -> ChunkColumn {
         ChunkColumn {
             coordinates,
             subchunks: Vec::new(),
-            range: 0..0,
+            range,
             heightmap: Box::new([[0; 16]; 16]),
             biomes: Vec::new(),
             highest_nonair: 0,

@@ -14,9 +14,9 @@ impl Heightmap {
         let mut heightmap = Box::new([0; 256]);
 
         // Whether at least one of the columns has a topmost block that lies below this subchunk.
-        let mut above_top = false;
+        let mut has_below = false;
         // Whether at least one of the columns has a topmost block that lies above this subchunk.
-        let mut below_top = false;
+        let mut has_above = false;
 
         for x in 0..16 {
             for z in 0..16 {
@@ -30,29 +30,29 @@ impl Heightmap {
                 if subchunk_idx > other_idx {
                     // Topmost block is located below current subchunk.
                     heightmap[block_idx] = -1;
-                    above_top = true;
+                    has_below = true;
                 } else if subchunk_idx < other_idx {
                     // Topmost block is located above current subchunk.
                     heightmap[block_idx] = 16;
-                    below_top = true;
+                    has_above = true;
                 } else {
                     // Topmost block is located in current subchunk.
                     heightmap[block_idx] = (y - chunk_column.index_to_y(other_idx)) as i8;
-                    above_top = true;
-                    below_top = true;
+                    has_below = true;
+                    has_above = true;
                 }
             }
         }
 
         let mut map_type = HeightmapType::WithData;
-        if !above_top {
+        if !has_below {
             // All topmost blocks in this chunk column are located above this subchunk,
             // there is no point in sending heightmap data.
-            map_type = HeightmapType::TooLow;
-        } else if !below_top {
+            map_type = HeightmapType::AllTooHigh;
+        } else if !has_above {
             // All topmost blocks in this chunk column are located below this subchunk,
             // there is no point in sending heightmap data.
-            map_type = HeightmapType::TooHigh;
+            map_type = HeightmapType::AllTooLow;
         }
 
         Heightmap {
