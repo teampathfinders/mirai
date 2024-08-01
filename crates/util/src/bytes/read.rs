@@ -210,12 +210,22 @@ pub trait BinaryRead<'a>: AsRef<[u8]> {
         Ok(BlockPosition::new(x, y, z))
     }
 
-    /// Reads a byte vector from the buffer.
+    /// Reads a signed byte vector from the buffer.
     #[inline]
-    fn read_vecb<const N: usize>(&mut self) -> anyhow::Result<Vector<i8, N>> {
+    fn read_vecsb<const N: usize>(&mut self) -> anyhow::Result<Vector<i8, N>> {
         let mut x = [0; N];
         for v in &mut x {
             *v = self.read_i8()?;
+        }
+        Ok(Vector::from(x))
+    }
+
+    /// Reads an unsigned byte vector from the buffer.
+    #[inline]
+    fn read_vecub<const N: usize>(&mut self) -> anyhow::Result<Vector<u8, N>> {
+        let mut x = [0; N];
+        for v in &mut x {
+            *v = self.read_u8()?;
         }
         Ok(Vector::from(x))
     }

@@ -8,6 +8,7 @@ glob_export!(command);
 glob_export!(input);
 glob_export!(level);
 glob_export!(settings);
+glob_export!(maps);
 
 glob_export!(action);
 glob_export!(add_player);

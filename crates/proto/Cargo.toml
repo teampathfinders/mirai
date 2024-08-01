@@ -25,6 +25,7 @@ p384 = "0.13.0"
 dashmap = "6.0.1"
 paste = "1.0.15"
 tracing = "0.1.40"
+bitflags = "2.6.0"
 
 # reqwest = { version = "0.11.24", default-features = false, features = ["default-tls", "json"] }
 # open = "5.0.1"

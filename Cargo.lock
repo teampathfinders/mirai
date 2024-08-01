@@ -1009,6 +1009,7 @@ dependencies = [
  "aes",
  "anyhow",
  "base64 0.22.1",
+ "bitflags",
  "bytemuck",
  "ctr",
  "dashmap",

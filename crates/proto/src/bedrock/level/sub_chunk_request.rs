@@ -22,7 +22,7 @@ impl<'a> Deserialize<'a> for SubChunkRequest {
         let count = reader.read_u32_le()?;
         let mut offsets = Vec::with_capacity(count as usize);
         for _ in 0..count {
-            offsets.push(reader.read_vecb()?);
+            offsets.push(reader.read_vecsb()?);
         }
 
         Ok(Self { dimension, position, offsets })
