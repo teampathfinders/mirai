@@ -1,15 +1,17 @@
-use util::{Serialize};
-use util::BinaryWrite;
+use std::sync::Arc;
 
-use crate::bedrock::ConnectedPacket;
+use util::BinaryWrite;
+use util::Serialize;
+
 use crate::bedrock::CacheBlob;
+use crate::bedrock::ConnectedPacket;
 
 #[derive(Debug, Clone)]
 pub struct CacheMissResponse<'a> {
-    pub blobs: &'a [CacheBlob<'a>],
+    pub blobs: &'a [CacheBlob],
 }
 
-impl ConnectedPacket for CacheMissResponse<'_> {
+impl<'a> ConnectedPacket for CacheMissResponse<'a> {
     const ID: u32 = 0x88;
 
     fn serialized_size(&self) -> usize {
@@ -17,7 +19,7 @@ impl ConnectedPacket for CacheMissResponse<'_> {
     }
 }
 
-impl Serialize for CacheMissResponse<'_> {
+impl<'a> Serialize for CacheMissResponse<'a> {
     fn serialize_into<W: BinaryWrite>(&self, writer: &mut W) -> anyhow::Result<()> {
         writer.write_var_u32(self.blobs.len() as u32)?;
         for blob in self.blobs {

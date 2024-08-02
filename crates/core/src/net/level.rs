@@ -1,7 +1,7 @@
 use std::ops::Range;
 use std::sync::Arc;
 
-use proto::bedrock::{CacheBlobStatus, NetworkChunkPublisherUpdate, SubChunkRequest};
+use proto::bedrock::{CacheBlob, CacheBlobStatus, CacheMissResponse, NetworkChunkPublisherUpdate, SubChunkRequest};
 use proto::{
     bedrock::{LevelChunk, SubChunkEntry, SubChunkRequestMode, SubChunkResponse, SubChunkResult},
     types::Dimension,
@@ -72,7 +72,6 @@ impl BedrockClient {
             let column = self.load_column((pos.x, pos.z).into(), dimension)?;
             for (i, entry) in column.subchunks.iter().filter_map(|(i, x)| x.as_ref().map(|y| (i, y))) {
                 let sub_pos = (pos.x, *i as i32, pos.z).into();
-                dbg!(&sub_pos);
                 let payload = entry.serialize_network(&self.instance().block_states)?;
                 let heightmap = Heightmap::new(*i as i8 + CHUNK_VERTICAL_RANGE.start, &column);
 
@@ -91,15 +90,39 @@ impl BedrockClient {
 
     pub fn handle_cache_blob_status(&self, packet: RVec) -> anyhow::Result<()> {
         let status = CacheBlobStatus::deserialize(packet.as_ref())?;
-        dbg!(status);
+
+        for hit in &status.hits {
+            // Unref these entries from the cache.
+            let count = self.level.blobs().unref_by_hash(*hit);
+            dbg!(&count);
+        }
+
+        let mut blobs = Vec::with_capacity(status.misses.len());
+        for miss in &status.misses {
+            let Some(subchunk) = self.level.blobs().get_by_hash(*miss, false)? else {
+                tracing::warn!("Did not find blob {miss}");
+                continue;
+            };
+
+            tracing::debug!("Obtained blob for {miss}");
+
+            blobs.push(CacheBlob {
+                hash: *miss,
+                payload: subchunk.payload.clone(),
+            });
+            self.level.blobs().unref_by_hash(*miss);
+        }
+
+        if !blobs.is_empty() {
+            tracing::debug!("Sending {} blobs", blobs.len());
+            self.send(CacheMissResponse { blobs: &blobs })?;
+        }
 
         Ok(())
     }
 
     pub fn handle_subchunk_request(&self, packet: RVec) -> anyhow::Result<()> {
         let request = SubChunkRequest::deserialize(packet.as_ref())?;
-        tracing::debug!("request: {request:?}");
-
         let mut entries = Vec::with_capacity(request.offsets.len());
         for offset in &request.offsets {
             let abs = (
@@ -108,7 +131,6 @@ impl BedrockClient {
                 request.position.z + offset.z as i32,
             )
                 .into();
-            dbg!(&abs);
 
             let subchunk = self.load_subchunk(abs, request.dimension)?;
             entries.push(SubChunkEntry {
@@ -129,43 +151,6 @@ impl BedrockClient {
         };
 
         self.send(response)
-
-        // let center = (request.position.x, request.position.z).into();
-        // let column = self.load_column(center, request.dimension)?;
-
-        // let mut entries = Vec::with_capacity(request.offsets.len());
-        // for offset in request.offsets {
-        //     let index = (offset.y as i16 - column.range.start) as u16;
-        //     let (_, Some(subchunk)) = &column.subchunks[index as usize] else {
-        //         continue;
-        //     };
-
-        //     // Generate the heightmap for this subchunk.
-        //     let heightmap = Heightmap::new(offset.y, &column);
-        //     let mut writer = RVec::alloc();
-        //     subchunk.serialize_network_in(&self.instance().block_states, &mut writer)?;
-
-        //     let hash = xxh64(&writer, 0);
-        //     let entry = SubChunkEntry {
-        //         result: SubChunkResult::Success,
-        //         offset,
-        //         heightmap_type: heightmap.map_type,
-        //         heightmap: heightmap.data, // Get subchunk data
-        //         blob_hash: hash,
-        //         payload: RVec::alloc_from_slice(&[0]),
-        //     };
-
-        //     entries.push(entry);
-        // }
-
-        // let response = SubChunkResponse {
-        //     cache_enabled: self.supports_cache(),
-        //     dimension: request.dimension,
-        //     position: request.position,
-        //     entries,
-        // };
-
-        // self.send(response)
     }
 }
 

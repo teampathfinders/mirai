@@ -1,4 +1,6 @@
-use level::{BlockStates, SubChunk, SubChunkVersion, SubStorage};
+use std::collections::HashMap;
+
+use level::{BlockStates, PaletteEntry, SubChunk, SubChunkVersion, SubStorage};
 use util::{BinaryWrite, RVec};
 
 pub trait NetworkChunkExt {
@@ -27,7 +29,18 @@ impl NetworkChunkExt for SubStorage {
 
         for entry in &self.palette {
             // Obtain block runtime ID of palette entry.
-            let runtime_id = states.state(entry).unwrap_or(states.air());
+            // let runtime_id = states.state(entry).unwrap_or(states.air());
+            // let runtime_id = states.air();
+            let runtime_id = states
+                .state(&PaletteEntry {
+                    name: "minecraft:oak_planks".to_string(),
+                    version: Some([1, 20, 60, 1]),
+                    states: HashMap::new(),
+                })
+                .unwrap();
+
+            tracing::debug!("runtime_id: {runtime_id}");
+
             writer.write_var_i32(runtime_id as i32)?;
 
             // https://github.com/df-mc/dragonfly/blob/master/server/world/chunk/paletted_storage.go#L35

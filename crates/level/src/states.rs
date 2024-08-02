@@ -367,7 +367,10 @@ impl BlockStates {
             self.air_id = new_id as u32;
         }
 
-        self.runtime_hashes.insert(hash, new_id as u32);
+        if state.name.contains("planks") {
+            tracing::debug!("{state:?}");
+            self.runtime_hashes.insert(hash, new_id as u32);
+        }
 
         Ok(())
     }

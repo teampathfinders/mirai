@@ -19,7 +19,7 @@ use super::net::heightmap::Heightmap;
 pub struct CacheableSubChunk {
     pub hash: u64,
     pub heightmap: Heightmap,
-    pub payload: RVec,
+    pub payload: Arc<RVec>,
 }
 
 #[derive(Debug)]
@@ -36,7 +36,6 @@ pub struct BlobCache {
     chunks: DashMap<u64, ChunkRef, BuildNoHashHasher<u64>>,
     /// Maps coordinates to blob hashes.
     pos_to_hash: DashMap<u64, u64, BuildNoHashHasher<u64>>,
-    hash_to_pos: DashMap<u64, u64, BuildNoHashHasher<u64>>,
 }
 
 impl BlobCache {
@@ -44,7 +43,6 @@ impl BlobCache {
         BlobCache {
             chunks: DashMap::with_hasher(BuildNoHashHasher::default()),
             pos_to_hash: DashMap::with_hasher(BuildNoHashHasher::default()),
-            hash_to_pos: DashMap::with_hasher(BuildNoHashHasher::default()),
         }
     }
 
@@ -54,7 +52,11 @@ impl BlobCache {
         let index = RegionIndex::try_from(position)?;
         let hash = xxh64(&payload, 0);
 
-        let chunk = CacheableSubChunk { hash, heightmap, payload };
+        let chunk = CacheableSubChunk {
+            hash,
+            heightmap,
+            payload: Arc::new(payload),
+        };
 
         self.chunks.insert(
             hash,
@@ -90,8 +92,12 @@ impl BlobCache {
             let _ = self.chunks.remove(&hash);
             tracing::debug!("Removed chunk {hash}");
 
-            let pos = self.hash_to_pos.remove(&hash).expect("Missing hash to position entry").1;
-            let _ = self.pos_to_hash.remove(&pos);
+            // There may be multiple chunks referring to the same hash.
+            // We therefore iterate over the entire map to remove all of them.
+            self.pos_to_hash.retain(|k, v| {
+                tracing::debug!("Removed reference {k:?} => {v}");
+                *v != hash
+            });
         }
 
         Some(count)
@@ -117,7 +123,7 @@ impl BlobCache {
     /// and calls [`get_by_hash`](Self::get_by_hash) to load the blob.
     pub fn get_by_pos(&self, pos: Vector<i32, 3>) -> anyhow::Result<Option<Arc<CacheableSubChunk>>> {
         let Some(hash) = self.get_hash(pos)? else { return Ok(None) };
-        self.get_by_hash(hash)
+        self.get_by_hash(hash, true)
     }
 
     /// Retrieves the hash of a chunk without returning the blob.
@@ -127,13 +133,17 @@ impl BlobCache {
         Ok(self.pos_to_hash.get(&index.into()).map(|kv| *kv.value()))
     }
 
-    /// Loads a blob using its hash, increasing its reference count by one.
-    pub fn get_by_hash(&self, hash: u64) -> anyhow::Result<Option<Arc<CacheableSubChunk>>> {
+    /// Loads a blob using its hash.
+    /// The reference counter of the chunk can optionally be incremented.
+    pub fn get_by_hash(&self, hash: u64, incr_ref: bool) -> anyhow::Result<Option<Arc<CacheableSubChunk>>> {
         let Some(chunk_ref) = self.chunks.get(&hash) else {
             anyhow::bail!("Missing chunk for hash in index map");
         };
 
-        chunk_ref.counter.fetch_add(1, Ordering::Relaxed);
+        if incr_ref {
+            chunk_ref.counter.fetch_add(1, Ordering::Relaxed);
+        }
+
         Ok(Some(chunk_ref.data.clone()))
     }
 }
