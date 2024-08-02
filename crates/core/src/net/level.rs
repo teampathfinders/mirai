@@ -6,7 +6,7 @@ use proto::{
     bedrock::{LevelChunk, SubChunkEntry, SubChunkRequestMode, SubChunkResponse, SubChunkResult},
     types::Dimension,
 };
-use util::{Deserialize, RVec, Vector};
+use util::{BinaryWrite, Deserialize, RVec, Vector};
 use xxhash_rust::xxh64::xxh64;
 
 use crate::level::blobs::CacheableSubChunk;

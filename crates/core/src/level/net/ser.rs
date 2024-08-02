@@ -27,19 +27,24 @@ impl NetworkChunkExt for SubStorage {
             writer.write_var_i32(self.palette.len() as i32)?;
         }
 
-        for entry in &self.palette {
-            // Obtain block runtime ID of palette entry.
-            // let runtime_id = states.state(entry).unwrap_or(states.air());
-            // let runtime_id = states.air();
-            let runtime_id = states
-                .state(&PaletteEntry {
-                    name: "minecraft:oak_planks".to_string(),
-                    version: Some([1, 20, 60, 1]),
-                    states: HashMap::new(),
-                })
-                .unwrap();
+        // writer.write_var_i32(13256)?;
+        // writer.write_var_i32(states.air() as i32)?;
 
-            tracing::debug!("runtime_id: {runtime_id}");
+        for entry in self.palette.iter()
+        /*.skip(2)*/
+        {
+            // Obtain block runtime ID of palette entry.
+            let runtime_id = states.state(entry).unwrap_or(states.air());
+            // let runtime_id = states.air();
+            // let runtime_id = states
+            //     .state(&PaletteEntry {
+            //         name: "minecraft:oak_planks".to_string(),
+            //         version: Some([1, 20, 60, 1]),
+            //         states: HashMap::new(),
+            //     })
+            //     .unwrap();
+
+            tracing::debug!("{entry:?} runtime_id: {runtime_id}");
 
             writer.write_var_i32(runtime_id as i32)?;
 

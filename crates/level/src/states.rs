@@ -194,7 +194,7 @@ impl CreativeItems {
             nbt_data: HashMap::new(),
         });
 
-        for item in nbt.into_iter().filter(|item| !item.name.contains("element")).take(10) {
+        for item in nbt.into_iter().filter(|item| !item.block_properties.is_empty()).skip(90).take(10) {
             if item.block_properties.is_empty() {
                 let Some(runtime_id) = item_ids.get_id(&item.name) else { continue };
 
@@ -212,9 +212,11 @@ impl CreativeItems {
 
                 stacks.push(stack);
             } else {
+                dbg!(&item);
+
                 let Some(runtime_id) = block_states.get(&item) else { continue };
 
-                println!("runtime_id: {runtime_id}");
+                println!("runtime_id (creative): {runtime_id}");
 
                 let stack = ItemStack {
                     item_type: ItemType {

@@ -1,12 +1,12 @@
 use level::PaletteEntry;
 use proto::bedrock::{
-    BiomeDefinitionList, BroadcastIntent, CacheStatus, ChatRestrictionLevel, ChunkRadiusReply, ChunkRadiusRequest, ClientToServerHandshake,
-    ConnectedPacket, CreativeContent, Difficulty, DisconnectReason, EditorWorldType, ExperimentData, GameMode, GameRule, HeightmapType,
-    InventoryTransaction, ItemInstance, LevelChunk, Login, MovePlayer, MovementMode, NetworkChunkPublisherUpdate, NetworkSettings, PermissionLevel,
-    PlayStatus, PlayerMovementSettings, PlayerMovementType, PropertyData, RequestNetworkSettings, ResourcePackClientResponse, ResourcePackStack,
-    ResourcePacksInfo, ServerToClientHandshake, SetLocalPlayerAsInitialized, SpawnBiomeType, StartGame, Status, SubChunkEntry, SubChunkRequestMode,
-    SubChunkResponse, SubChunkResult, TeleportCause, TextData, TextMessage, TransactionAction, TransactionSourceType, TransactionType, UpdateBlock,
-    UpdateBlockFlags, ViolationWarning, WindowId, WorldGenerator, CLIENT_VERSION_STRING, PROTOCOL_VERSION,
+    BiomeDefinitionList, BlockEntry, BroadcastIntent, CacheStatus, ChatRestrictionLevel, ChunkRadiusReply, ChunkRadiusRequest,
+    ClientToServerHandshake, ConnectedPacket, CreativeContent, Difficulty, DisconnectReason, EditorWorldType, ExperimentData, GameMode, GameRule,
+    HeightmapType, InventoryTransaction, ItemInstance, LevelChunk, Login, MovePlayer, MovementMode, NetworkChunkPublisherUpdate, NetworkSettings,
+    PermissionLevel, PlayStatus, PlayerMovementSettings, PlayerMovementType, PropertyData, RequestNetworkSettings, ResourcePackClientResponse,
+    ResourcePackStack, ResourcePacksInfo, ServerToClientHandshake, SetLocalPlayerAsInitialized, SpawnBiomeType, StartGame, Status, SubChunkEntry,
+    SubChunkRequestMode, SubChunkResponse, SubChunkResult, TeleportCause, TextData, TextMessage, TransactionAction, TransactionSourceType,
+    TransactionType, UpdateBlock, UpdateBlockFlags, ViolationWarning, WindowId, WorldGenerator, CLIENT_VERSION_STRING, PROTOCOL_VERSION,
 };
 use proto::crypto::Encryptor;
 use proto::types::Dimension;
@@ -73,44 +73,8 @@ impl BedrockClient {
 
         tracing::debug!("Player fully initialised");
 
-        // self.send(MovePlayer {
-        //     head_yaw: 0.0,
-        //     pitch: 0.0,
-        //     yaw: 0.0,
-        //     mode: MovementMode::Reset,
-        //     on_ground: false,
-        //     ridden_runtime_id: 0,
-        //     runtime_id: request.runtime_id,
-        //     tick: 0,
-        //     teleport_cause: TeleportCause::Unknown,
-        //     teleport_source_type: 0,
-        //     translation: (0.0, 69.0, 0.0).into(),
-        // })?;
-
         self.send(NetworkChunkPublisherUpdate { position: (0, 0, 0).into(), radius: 12 })?;
         self.initiate_chunk_load((0, 0).into(), Dimension::Overworld)?;
-
-        // let res = self.viewer.load_column((0, 0).into(), Dimension::Overworld)?;
-        // tracing::debug!("res {res:?}");
-
-        // self.send(res)?;
-
-        // self.send(LevelChunk {
-        //     blob_hashes: None,
-        //     coordinates: (0, 0).into(),
-        //     dimension: Dimension::Overworld,
-        //     sub_chunk_count: 1,
-        //     highest_sub_chunk: 4,
-        //     raw_payload: RVec::alloc(),
-        //     request_mode: SubChunkRequestMode::Limitless
-        // })?;
-
-        // self.send(UpdateBlock {
-        //     flags: UpdateBlockFlags::UpdateNetwork as u32,
-        //     position: BlockPosition::new(0, 6, 0),
-        //     layer: 0,
-        //     block_runtime_id: 13256
-        // })?;
 
         // Add player to other's player lists
 
@@ -151,9 +115,6 @@ impl BedrockClient {
                 xuid: 0,
                 platform_chat_id: "",
             })?;
-
-            let stack = &self.instance().creative_items.stacks[1];
-            tracing::debug!("stack: {stack:?}");
         }
 
         // ...then tell the client about all the other players.
@@ -282,12 +243,12 @@ impl BedrockClient {
         let available_commands = self.commands.available_commands();
         self.send(available_commands)?;
 
-        // tracing::debug!("{:?}", self.instance().creative_items.stacks);
+        tracing::debug!("{:?}", self.instance().creative_items.stacks);
 
-        // let creative_content = CreativeContent {
-        //     items: &self.instance().creative_items.stacks,
-        // };
-        // self.send(creative_content)?;
+        let creative_content = CreativeContent {
+            items: &self.instance().creative_items.stacks,
+        };
+        self.send(creative_content)?;
 
         let play_status = PlayStatus { status: Status::PlayerSpawn };
         self.send(play_status)?;
