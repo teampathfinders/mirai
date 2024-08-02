@@ -1,17 +1,19 @@
+use std::sync::Arc;
+
 use proto::bedrock::HeightmapType;
 
 use super::column::ChunkColumn;
 
 #[derive(Debug, Clone)]
 pub struct Heightmap {
-    pub data: Option<Box<[i8; 256]>>,
+    pub data: Option<Arc<[i8; 256]>>,
     pub map_type: HeightmapType,
 }
 
 impl Heightmap {
     /// Creates a new heightmap for the given subchunk.
     pub fn new(subchunk_idx: i8, chunk_column: &ChunkColumn) -> Heightmap {
-        let mut heightmap = Box::new([0; 256]);
+        let mut heightmap = [0; 256];
 
         // Whether at least one of the columns has a topmost block that lies below this subchunk.
         let mut has_below = false;
@@ -58,7 +60,7 @@ impl Heightmap {
         Heightmap {
             map_type,
             data: match map_type {
-                HeightmapType::WithData => Some(heightmap),
+                HeightmapType::WithData => Some(Arc::new(heightmap)),
                 _ => None,
             },
         }

@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use util::{BinaryWrite, RVec, Serialize, Vector};
 
 use crate::bedrock::ConnectedPacket;
@@ -34,7 +36,7 @@ pub struct SubChunkEntry {
     pub result: SubChunkResult,
     pub payload: RVec,
     pub heightmap_type: HeightmapType,
-    pub heightmap: Option<Box<[i8; 256]>>,
+    pub heightmap: Option<Arc<[i8; 256]>>,
     pub blob_hash: u64,
 }
 

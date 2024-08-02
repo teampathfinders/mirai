@@ -17,6 +17,7 @@ use super::net::heightmap::Heightmap;
 
 #[derive(Debug, Clone)]
 pub struct CacheableSubChunk {
+    pub hash: u64,
     pub heightmap: Heightmap,
     pub payload: RVec,
 }
@@ -49,9 +50,11 @@ impl BlobCache {
 
     /// Inserts a blob into the cache.
     /// If a blob already existed for this chunk, it will be removed and returned.
-    pub fn cache(&self, position: Vector<i32, 3>, chunk: CacheableSubChunk) -> anyhow::Result<Option<Arc<CacheableSubChunk>>> {
+    pub fn cache(&self, position: Vector<i32, 3>, heightmap: Heightmap, payload: RVec) -> anyhow::Result<Option<Arc<CacheableSubChunk>>> {
         let index = RegionIndex::try_from(position)?;
-        let hash = xxh64(&chunk.payload, 0);
+        let hash = xxh64(&payload, 0);
+
+        let chunk = CacheableSubChunk { hash, heightmap, payload };
 
         self.chunks.insert(
             hash,

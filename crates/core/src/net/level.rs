@@ -76,8 +76,7 @@ impl BedrockClient {
                 let payload = entry.serialize_network(&self.instance().block_states)?;
                 let heightmap = Heightmap::new(*i as i8 + CHUNK_VERTICAL_RANGE.start, &column);
 
-                let cacheable = CacheableSubChunk { heightmap, payload };
-                let _ = self.level.blobs().cache(sub_pos, cacheable);
+                let _ = self.level.blobs().cache(sub_pos, heightmap, payload);
             }
 
             // Request subchunk now that it has been properly cached.
@@ -101,6 +100,7 @@ impl BedrockClient {
         let request = SubChunkRequest::deserialize(packet.as_ref())?;
         tracing::debug!("request: {request:?}");
 
+        let mut entries = Vec::with_capacity(request.offsets.len());
         for offset in &request.offsets {
             let abs = (
                 request.position.x + offset.x as i32,
@@ -111,9 +111,24 @@ impl BedrockClient {
             dbg!(&abs);
 
             let subchunk = self.load_subchunk(abs, request.dimension)?;
+            entries.push(SubChunkEntry {
+                offset: offset.clone(),
+                result: SubChunkResult::Success,
+                heightmap_type: subchunk.heightmap.map_type,
+                heightmap: subchunk.heightmap.data.clone(),
+                blob_hash: subchunk.hash,
+                payload: RVec::alloc_from_slice(&[0]),
+            });
         }
 
-        todo!()
+        let response = SubChunkResponse {
+            cache_enabled: true,
+            dimension: request.dimension,
+            entries,
+            position: request.position,
+        };
+
+        self.send(response)
 
         // let center = (request.position.x, request.position.z).into();
         // let column = self.load_column(center, request.dimension)?;
