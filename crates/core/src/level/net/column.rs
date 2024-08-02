@@ -9,7 +9,7 @@ pub struct ChunkColumn {
     pub subchunks: Vec<(u16, Option<SubChunk>)>,
     pub biomes: Vec<BiomeEncoding>,
     /// Vertical range of this column in terms of absolute subchunk coordinates.
-    pub range: Range<i16>,
+    pub range: Range<i8>,
     coordinates: Vector<i32, 2>,
     /// Column chunk heightmap.
     /// This is pregenerated and used to compute subchunk heightmaps.
@@ -20,7 +20,7 @@ pub struct ChunkColumn {
 }
 
 impl ChunkColumn {
-    pub fn empty(coordinates: Vector<i32, 2>, range: Range<i16>) -> ChunkColumn {
+    pub fn empty(coordinates: Vector<i32, 2>, range: Range<i8>) -> ChunkColumn {
         ChunkColumn {
             coordinates,
             subchunks: Vec::new(),
@@ -95,10 +95,10 @@ impl ChunkColumn {
 
     /// Converts a vertical coordinate to a subchunk index in this column.
     pub fn y_to_index(&self, y: i16) -> i8 {
-        ((y - self.range.start) / 16) as i8
+        ((y - self.range.start as i16) / 16) as i8
     }
 
     pub fn index_to_y(&self, index: i8) -> i16 {
-        (index * 16) as i16 + self.range.start
+        (index * 16) as i16 + self.range.start as i16
     }
 }

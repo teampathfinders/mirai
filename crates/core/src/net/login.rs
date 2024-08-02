@@ -88,7 +88,7 @@ impl BedrockClient {
         // })?;
 
         self.send(NetworkChunkPublisherUpdate { position: (0, 0, 0).into(), radius: 12 })?;
-        self.load_chunks((0, 0).into(), Dimension::Overworld)?;
+        self.initiate_chunk_load((0, 0).into(), Dimension::Overworld)?;
 
         // let res = self.viewer.load_column((0, 0).into(), Dimension::Overworld)?;
         // tracing::debug!("res {res:?}");

@@ -5,7 +5,6 @@
 
 use ::util::glob_export;
 
-glob_export!(blobs);
 glob_export!(level);
 glob_export!(client);
 glob_export!(clients);

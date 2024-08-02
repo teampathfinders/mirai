@@ -1,3 +1,4 @@
+use super::blobs::BlobCache;
 use super::io::sink::RegionSink;
 use super::io::stream::{IndexedSubChunk, RegionIndex};
 use std::{
@@ -41,6 +42,8 @@ pub struct Service {
     instance: OnceLock<Weak<Instance>>,
     /// Provides level data from disk.
     pub(super) provider: Arc<level::provider::Provider>,
+    /// Stores cached blobs.
+    blob_cache: BlobCache,
     /// Collects subchunk changes using sinks and writes them to disk periodically.
     collector: Collector,
     /// Current gamerule values.
@@ -58,6 +61,7 @@ impl Service {
             shutdown_token: CancellationToken::new(),
             instance: OnceLock::new(),
             provider,
+            blob_cache: BlobCache::new(),
             gamerules: DashMap::new(),
         });
         Ok(service)
@@ -83,6 +87,11 @@ impl Service {
         // This will not panic because the instance field is initialised before the first command can be executed.
         #[allow(clippy::unwrap_used)]
         self.instance.get().unwrap().upgrade().unwrap()
+    }
+
+    #[inline]
+    pub fn blobs(&self) -> &BlobCache {
+        &self.blob_cache
     }
 
     /// Requests chunks using the specified region iterator.

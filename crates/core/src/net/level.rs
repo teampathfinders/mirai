@@ -8,6 +8,7 @@ use proto::{
 use util::{Deserialize, RVec, Vector};
 use xxhash_rust::xxh64::xxh64;
 
+use crate::level::blobs::CacheableSubChunk;
 use crate::level::net::column::ChunkColumn;
 use crate::level::net::heightmap::Heightmap;
 use crate::level::net::ser::NetworkChunkExt;
@@ -16,7 +17,7 @@ use crate::net::BedrockClient;
 pub type ChunkOffset = Vector<i8, 3>;
 
 const USE_SUBCHUNK_REQUESTS: bool = true;
-const VERTICAL_RANGE: Range<i16> = -4..20;
+const VERTICAL_RANGE: Range<i8> = -4..20;
 
 impl BedrockClient {
     fn load_column(&self, center: Vector<i32, 2>, dimension: Dimension) -> anyhow::Result<ChunkColumn> {
@@ -33,44 +34,63 @@ impl BedrockClient {
     }
 
     /// Loads chunks around a center point.
-    pub fn load_chunks(&self, center: Vector<i32, 2>, dimension: Dimension) -> anyhow::Result<()> {
+    pub fn initiate_chunk_load(&self, center: Vector<i32, 2>, dimension: Dimension) -> anyhow::Result<()> {
         let column = self.load_column(center.clone(), dimension)?;
 
         if self.supports_cache() {
-            self.send_blob_hashes(center, &column, dimension)?;
-        } else {
-        }
-
-        Ok(())
-    }
-
-    /// Sends blob hashes of the chunks that the client requested.
-    fn send_blob_hashes(&self, coordinates: Vector<i32, 2>, column: &ChunkColumn, dimension: Dimension) -> anyhow::Result<()> {
-        use xxhash_rust::xxh64::xxh64;
-
-        if USE_SUBCHUNK_REQUESTS {
-            let biomes = column.serialize_biomes()?;
-            // Blob cache uses 64-bit xxHash with seed 0.
-            let hash = xxh64(&biomes, 0);
-
-            let pk = LevelChunk {
-                dimension,
-                coordinates,
-                request_mode: SubChunkRequestMode::KnownAir { highest_nonair: column.highest_nonair() },
-                // blob_hashes: Some(vec![hash]),
-                blob_hashes: None,
-                raw_payload: RVec::alloc_from_slice(&[0]),
-            };
-            tracing::debug!("{pk:?}");
-            self.send(pk)?;
-            tracing::debug!("Sent LevelChunk");
-
-            self.send(NetworkChunkPublisherUpdate { position: (0, 0, 0).into(), radius: 12 })?;
+            self.send_chunk_skeleton(center, &column, dimension)?;
         } else {
             todo!()
         }
 
         Ok(())
+    }
+
+    /// Initiates the subchunk request process in a chunk column.
+    fn send_chunk_skeleton(&self, pos: Vector<i32, 2>, column: &ChunkColumn, dimension: Dimension) -> anyhow::Result<()> {
+        self.send(LevelChunk {
+            dimension,
+            coordinates: pos.clone(),
+            request_mode: SubChunkRequestMode::KnownAir { highest_nonair: column.highest_nonair() },
+            // blob_hashes: Some(vec![hash]),
+            blob_hashes: None,
+            raw_payload: RVec::alloc_from_slice(&[0]),
+        })?;
+        self.send(NetworkChunkPublisherUpdate {
+            position: (pos.x, 0, pos.y).into(),
+            radius: 12,
+        })
+        // TODO: Remember render distance.
+    }
+
+    fn load_subchunk(&self, pos: Vector<i32, 3>, dimension: Dimension) -> anyhow::Result<CacheableSubChunk> {
+        let subchunk;
+        if let Some(cached) = self.level.blobs().get_by_pos(pos.clone())? {
+            subchunk = cached;
+        } else {
+            // Subchunk is unknown, load and cache entire chunk column for heightmap generation.
+            let column = self.load_column((pos.x, pos.z).into(), dimension)?;
+            for (i, entry) in column.subchunks.iter().filter_map(|(i, x)| x.as_ref().map(|y| (i, y))) {
+                let sub_pos = (pos.x, *i as i32, pos.z).into();
+                let payload = entry.serialize_network(&self.instance().block_states)?;
+                let heightmap = Heightmap::new(*i as i8 + VERTICAL_RANGE.start, &column);
+
+                let cacheable = CacheableSubChunk { heightmap, payload };
+                let _ = self.level.blobs().cache(sub_pos, cacheable);
+            }
+
+            // Request subchunk now that it has been properly cached.
+            // It is loaded via the blob cache to make sure it is wrapped in an `Arc`.
+            subchunk = self
+                .level
+                .blobs()
+                .get_by_pos(pos)?
+                .ok_or_else(|| anyhow::anyhow!("Subchunk cached just now somehow unavailable"))?;
+        }
+
+        tracing::debug!("Cached subchunk: {subchunk:?}");
+
+        todo!()
     }
 
     pub fn handle_cache_blob_status(&self, packet: RVec) -> anyhow::Result<()> {
@@ -84,42 +104,56 @@ impl BedrockClient {
         let request = SubChunkRequest::deserialize(packet.as_ref())?;
         tracing::debug!("request: {request:?}");
 
-        let center = (request.position.x, request.position.z).into();
-        let column = self.load_column(center, request.dimension)?;
+        for offset in &request.offsets {
+            let abs = (
+                request.position.x + offset.x as i32,
+                0 + offset.y as i32,
+                request.position.z + offset.z as i32,
+            )
+                .into();
+            dbg!(&abs);
 
-        let mut entries = Vec::with_capacity(request.offsets.len());
-        for offset in request.offsets {
-            let index = (offset.y as i16 - column.range.start) as u16;
-            let (_, Some(subchunk)) = &column.subchunks[index as usize] else {
-                continue;
-            };
-
-            // Generate the heightmap for this subchunk.
-            let heightmap = Heightmap::new(offset.y, &column);
-            let mut writer = RVec::alloc();
-            subchunk.serialize_network_in(&self.instance().block_states, &mut writer)?;
-
-            let hash = xxh64(&writer, 0);
-            let entry = SubChunkEntry {
-                result: SubChunkResult::Success,
-                offset,
-                heightmap_type: heightmap.map_type,
-                heightmap: heightmap.data, // Get subchunk data
-                blob_hash: hash,
-                payload: RVec::alloc_from_slice(&[0]),
-            };
-
-            entries.push(entry);
+            let subchunk = self.load_subchunk(abs, request.dimension)?;
         }
 
-        let response = SubChunkResponse {
-            cache_enabled: self.supports_cache(),
-            dimension: request.dimension,
-            position: request.position,
-            entries,
-        };
+        todo!()
 
-        self.send(response)
+        // let center = (request.position.x, request.position.z).into();
+        // let column = self.load_column(center, request.dimension)?;
+
+        // let mut entries = Vec::with_capacity(request.offsets.len());
+        // for offset in request.offsets {
+        //     let index = (offset.y as i16 - column.range.start) as u16;
+        //     let (_, Some(subchunk)) = &column.subchunks[index as usize] else {
+        //         continue;
+        //     };
+
+        //     // Generate the heightmap for this subchunk.
+        //     let heightmap = Heightmap::new(offset.y, &column);
+        //     let mut writer = RVec::alloc();
+        //     subchunk.serialize_network_in(&self.instance().block_states, &mut writer)?;
+
+        //     let hash = xxh64(&writer, 0);
+        //     let entry = SubChunkEntry {
+        //         result: SubChunkResult::Success,
+        //         offset,
+        //         heightmap_type: heightmap.map_type,
+        //         heightmap: heightmap.data, // Get subchunk data
+        //         blob_hash: hash,
+        //         payload: RVec::alloc_from_slice(&[0]),
+        //     };
+
+        //     entries.push(entry);
+        // }
+
+        // let response = SubChunkResponse {
+        //     cache_enabled: self.supports_cache(),
+        //     dimension: request.dimension,
+        //     position: request.position,
+        //     entries,
+        // };
+
+        // self.send(response)
     }
 }
 
