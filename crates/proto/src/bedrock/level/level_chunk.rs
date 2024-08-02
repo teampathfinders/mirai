@@ -9,7 +9,7 @@ pub enum SubChunkRequestMode {
     /// Limitless mode that allows an unlimited world height.
     Request,
     /// Mode that only specifies the highest non-air subchunk relative to the bottom of the level chunk.
-    KnownAir { highest_nonair: u16 },
+    KnownAir { highest_nonair: i16 },
 }
 
 #[derive(Debug)]
@@ -42,9 +42,13 @@ impl Serialize for LevelChunk {
             SubChunkRequestMode::Request => {
                 writer.write_var_u32(u32::MAX)?;
             }
-            SubChunkRequestMode::KnownAir { highest_nonair: highest_subchunk } => {
+            SubChunkRequestMode::KnownAir { highest_nonair } => {
+                if highest_nonair <= 0 {
+                    anyhow::bail!("Highest nonair subchunk index must be >0");
+                }
+
                 writer.write_var_u32(u32::MAX - 1)?;
-                writer.write_u16_le(highest_subchunk)?;
+                writer.write_u16_le(highest_nonair as u16)?;
             }
         }
 

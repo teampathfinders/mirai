@@ -6,7 +6,7 @@ use util::{BinaryWrite, RVec, Vector};
 pub struct ChunkColumn {
     /// Pair of absolute subchunk indices and (optional) subchunk data.
     /// If there is no data, then the subchunk is full air.
-    pub subchunks: Vec<(u16, Option<SubChunk>)>,
+    pub subchunks: Vec<(i16, Option<SubChunk>)>,
     pub biomes: Vec<BiomeEncoding>,
     /// Vertical range of this column in terms of absolute subchunk coordinates.
     pub range: Range<i8>,
@@ -16,7 +16,7 @@ pub struct ChunkColumn {
     heightmap: Box<[[i16; 16]; 16]>,
     /// Highest chunk that is nonair relative to the bottom limit of this column.
     /// (that is why the index is always positive unlike absolute subchunk coordinates).
-    highest_nonair: u16,
+    highest_nonair: i16,
 }
 
 impl ChunkColumn {
@@ -61,7 +61,7 @@ impl ChunkColumn {
 
     /// Returns the index of the highest subchunk that is nonempty.
     #[inline]
-    pub const fn highest_nonair(&self) -> u16 {
+    pub const fn highest_nonair(&self) -> i16 {
         self.highest_nonair
     }
 

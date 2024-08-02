@@ -9,6 +9,8 @@ use level::SubChunk;
 use tokio::sync::{mpsc, watch, Notify};
 use util::Vector;
 
+use crate::net::CHUNK_VERTICAL_RANGE;
+
 /// A unique identifier for a specific subchunk.
 ///
 /// First 6 bits are the vertical index,
@@ -23,16 +25,16 @@ impl TryFrom<Vector<i32, 3>> for RegionIndex {
     fn try_from(value: Vector<i32, 3>) -> anyhow::Result<RegionIndex> {
         const XZ_MASK: u64 = 2u64.pow(29) - 1;
 
-        if (value.y as u64) > 63 {
-            anyhow::bail!("Region index Y-coordinate too large");
+        if ((value.y - CHUNK_VERTICAL_RANGE.start as i32) as u64) > 63 {
+            anyhow::bail!("Region index Y-coordinate too large: {}", value.y);
         }
 
         if (value.x as u64) > XZ_MASK {
-            anyhow::bail!("Region index X-coordinate too large");
+            anyhow::bail!("Region index X-coordinate too large: {}", value.x);
         }
 
         if (value.z as u64) > XZ_MASK {
-            anyhow::bail!("Region index Z-coordinate too large");
+            anyhow::bail!("Region index Z-coordinate too large: {}", value.z);
         }
 
         let mut index = (value.y as u64) << 58;
@@ -48,7 +50,7 @@ impl From<RegionIndex> for Vector<i32, 3> {
         const XZ_MASK: u64 = 2u64.pow(29) - 1;
 
         let index = value.0;
-        let y = (index >> 58) as i32;
+        let y = (index >> 58) as i32 - CHUNK_VERTICAL_RANGE.start as i32;
         let x = ((index >> 29) & XZ_MASK) as i32;
         let z = (index & XZ_MASK) as i32;
 

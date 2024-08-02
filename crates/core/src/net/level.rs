@@ -1,4 +1,5 @@
 use std::ops::Range;
+use std::sync::Arc;
 
 use proto::bedrock::{CacheBlobStatus, NetworkChunkPublisherUpdate, SubChunkRequest};
 use proto::{
@@ -17,15 +18,15 @@ use crate::net::BedrockClient;
 pub type ChunkOffset = Vector<i8, 3>;
 
 const USE_SUBCHUNK_REQUESTS: bool = true;
-const VERTICAL_RANGE: Range<i8> = -4..20;
+pub const CHUNK_VERTICAL_RANGE: Range<i8> = -4..20;
 
 impl BedrockClient {
     fn load_column(&self, center: Vector<i32, 2>, dimension: Dimension) -> anyhow::Result<ChunkColumn> {
-        let mut column = ChunkColumn::empty(center.clone(), VERTICAL_RANGE);
-        for y in VERTICAL_RANGE {
+        let mut column = ChunkColumn::empty(center.clone(), CHUNK_VERTICAL_RANGE);
+        for y in CHUNK_VERTICAL_RANGE {
             let opt = self.level.subchunk((center.x, y as i32, center.y), dimension)?;
-            let adj_y = (y - VERTICAL_RANGE.start) as u16;
-            column.subchunks.push((adj_y, opt));
+            // let adj_y = (y - CHUNK_VERTICAL_RANGE.start) as u16
+            column.subchunks.push((y as i16, opt));
         }
 
         column.generate_heightmap();
@@ -63,17 +64,17 @@ impl BedrockClient {
         // TODO: Remember render distance.
     }
 
-    fn load_subchunk(&self, pos: Vector<i32, 3>, dimension: Dimension) -> anyhow::Result<CacheableSubChunk> {
-        let subchunk;
+    fn load_subchunk(&self, pos: Vector<i32, 3>, dimension: Dimension) -> anyhow::Result<Arc<CacheableSubChunk>> {
         if let Some(cached) = self.level.blobs().get_by_pos(pos.clone())? {
-            subchunk = cached;
+            Ok(cached)
         } else {
             // Subchunk is unknown, load and cache entire chunk column for heightmap generation.
             let column = self.load_column((pos.x, pos.z).into(), dimension)?;
             for (i, entry) in column.subchunks.iter().filter_map(|(i, x)| x.as_ref().map(|y| (i, y))) {
                 let sub_pos = (pos.x, *i as i32, pos.z).into();
+                dbg!(&sub_pos);
                 let payload = entry.serialize_network(&self.instance().block_states)?;
-                let heightmap = Heightmap::new(*i as i8 + VERTICAL_RANGE.start, &column);
+                let heightmap = Heightmap::new(*i as i8 + CHUNK_VERTICAL_RANGE.start, &column);
 
                 let cacheable = CacheableSubChunk { heightmap, payload };
                 let _ = self.level.blobs().cache(sub_pos, cacheable);
@@ -81,16 +82,12 @@ impl BedrockClient {
 
             // Request subchunk now that it has been properly cached.
             // It is loaded via the blob cache to make sure it is wrapped in an `Arc`.
-            subchunk = self
+            Ok(self
                 .level
                 .blobs()
                 .get_by_pos(pos)?
-                .ok_or_else(|| anyhow::anyhow!("Subchunk cached just now somehow unavailable"))?;
+                .ok_or_else(|| anyhow::anyhow!("Subchunk cached just now somehow unavailable"))?)
         }
-
-        tracing::debug!("Cached subchunk: {subchunk:?}");
-
-        todo!()
     }
 
     pub fn handle_cache_blob_status(&self, packet: RVec) -> anyhow::Result<()> {
