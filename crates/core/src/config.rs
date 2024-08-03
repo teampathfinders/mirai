@@ -73,7 +73,7 @@ impl Config {
                 scalar: 0.0,
                 threshold: 0,
             },
-            level: LevelConfig { path: String::from("resources\\level") },
+            level: LevelConfig { path: String::from("./resources/level") },
             max_connections: AtomicUsize::new(10),
             max_render_distance: AtomicUsize::new(12),
             motd_callback: Box::new(|_| "Powered by Mirai".into()),

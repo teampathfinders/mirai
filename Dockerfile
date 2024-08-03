@@ -1,5 +1,5 @@
 # Build the project
-FROM rust:1.75 as build
+FROM rust:1.80 AS build
 
 WORKDIR /usr/src/mirai
 RUN mkdir -p /usr/src/mirai
@@ -10,11 +10,13 @@ COPY . .
 RUN cargo install --path ./crates/core
 
 # Execution does not require build tools
-FROM debian:bookworm-slim as exec
+FROM debian:bookworm-slim AS exec
 
 WORKDIR /var/lib/mirai
-COPY resources /var/lib/mirai/resources
+COPY resources resources
 COPY --from=build /usr/local/cargo/bin/mirai /usr/local/bin/mirai
 
-CMD mirai
+ENV LOG_LEVEL=DEBUG
+
+ENTRYPOINT ["mirai"]
 
