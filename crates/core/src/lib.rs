@@ -53,6 +53,7 @@ pub mod instance;
 pub mod item;
 pub mod level;
 pub mod net;
+pub mod inventory;
 
 #[cfg(test)]
 mod test;
