@@ -243,7 +243,7 @@ impl BedrockClient {
         let available_commands = self.commands.available_commands();
         self.send(available_commands)?;
 
-        tracing::debug!("{:?}", self.instance().creative_items.stacks);
+        // tracing::debug!("{:?}", self.instance().creative_items.stacks);
 
         let creative_content = CreativeContent {
             items: &self.instance().creative_items.stacks,

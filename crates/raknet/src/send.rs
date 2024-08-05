@@ -210,6 +210,7 @@ impl RakNetClient {
                 batch.serialize_into(&mut serialized)?;
 
                 // TODO: Add IPv6 support
+                println!("Sent");
                 self.socket.send_to(serialized.as_ref(), self.address).await?;
 
                 if has_reliable_packet {
@@ -238,6 +239,7 @@ impl RakNetClient {
 
             // TODO: Add IPv6 support
             self.socket.send_to(serialized.as_ref(), self.address).await?;
+            println!("Sent");
         }
         // } else {
         //     self.batch_number.fetch_sub(1, Ordering::SeqCst);
@@ -260,6 +262,7 @@ impl RakNetClient {
         let compound_id = self.compound_id.fetch_add(1, Ordering::SeqCst);
 
         for (i, chunk) in chunks.enumerate() {
+            tracing::debug!("Fragment of size {}", chunk.len());
             let fragment = Frame {
                 reliability: frame.reliability,
                 is_compound: true,

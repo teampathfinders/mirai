@@ -186,6 +186,7 @@ impl Encryptor {
         let counter = self.send_counter.expose().fetch_add(compound_size, Ordering::SeqCst);
         // Exclude 0xfe header from checksum calculations.
         let checksum = self.compute_checksum(&writer.as_ref()[1..], counter);
+        tracing::debug!("Checksum: {checksum:x?}");
         writer.write_all(&checksum)?;
 
         self.cipher_encrypt.lock().apply_keystream(&mut writer.as_mut()[1..]);
