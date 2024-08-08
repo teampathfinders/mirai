@@ -14,7 +14,7 @@ util = { package = "mirai-util", path = "../util" }
 nbt = { package = "mirai-nbt", path = "../nbt" }
 proto = { package = "mirai-proto", path = "../proto" }
 
-serde = { version = "1.0.204", features = ["derive"] }
+serde = { version = "1.0.205", features = ["derive"] }
 anyhow = { version = "1.0.86", features = ["backtrace"] }
 bytemuck = "1.16.3"
 tracing = "0.1.40"
