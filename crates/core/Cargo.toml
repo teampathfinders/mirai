@@ -38,7 +38,7 @@ rand = "0.8.5"
 dashmap = "6.0.1"
 parking_lot = "0.12.3"
 flate2 = "1.0.31"
-serde = { version = "1.0.206", default-features = false }
+serde = { version = "1.0.207", default-features = false }
 serde_json = { version = "1.0.124", features = ["preserve_order"] }
 anyhow = { version = "1.0.86", features = ["backtrace"] }
 nohash-hasher = "0.2.0"
