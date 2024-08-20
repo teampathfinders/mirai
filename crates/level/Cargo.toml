@@ -21,4 +21,4 @@ tracing = "0.1.40"
 nohash-hasher = "0.2.0"
 
 [build-dependencies]
-cmake = "0.1.50"
+cmake = "0.1.51"
