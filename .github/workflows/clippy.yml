@@ -21,10 +21,10 @@ jobs:
 #      - name: Install Clippy
 #        run: rustup toolchain install 1.90.0 --profile minimal -c clippy
 
-      - name: Dependency cache
-        uses: Swatinem/rust-cache@v2.2.1
-        with:
-          save-if: ${{ github.ref == 'refs/heads/master' }}
+#      - name: Dependency cache
+#        uses: Swatinem/rust-cache@v2.2.1
+#        with:
+#          save-if: ${{ github.ref == 'refs/heads/master' }}
 
       - name: Install required cargo
         run: cargo install clippy-sarif sarif-fmt
