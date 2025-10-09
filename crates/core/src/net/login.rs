@@ -261,15 +261,15 @@ impl BedrockClient {
 
         self.send(BiomeDefinitionList)?;
 
-        let available_commands = self.commands.available_commands();
-        self.send(available_commands)?;
+        // let available_commands = self.commands.available_commands();
+        // self.send(available_commands)?;
 
         tracing::debug!("{:?}", self.instance().creative_items.stacks);
 
-        let creative_content = CreativeContent {
-            items: &self.instance().creative_items.stacks,
-        };
-        self.send(creative_content)?;
+        // let creative_content = CreativeContent {
+        //     items: &self.instance().creative_items.stacks,
+        // };
+        // self.send(creative_content)?;
 
         let play_status = PlayStatus { status: Status::PlayerSpawn };
         self.send(play_status)?;
@@ -301,6 +301,7 @@ impl BedrockClient {
         let pack_info = ResourcePacksInfo {
             required: false,
             scripting_enabled: false,
+            disable_vibrant_visuals: false,
             forcing_server_packs: false,
             has_addons: false,
             behavior_info: &[],
@@ -333,13 +334,17 @@ impl BedrockClient {
     )]
     pub async fn handle_login(&self, packet: RVec) -> anyhow::Result<()> {
         self.expected.store(ClientToServerHandshake::ID, Ordering::SeqCst);
+        
+        // let Ok(request) = Login::deserialize(packet.as_ref()) else {
+        //     // Kick the player when login fails. This is for security reasons.
+        //     // An error during login could mean the user is trying to impersonate someone else.
+        //     self.kick_with_reason("Login failed", DisconnectReason::BadPacket)?;
+        //     anyhow::bail!("Client failed to login")
+        // };
+        let res = Login::deserialize(packet.as_ref());
+        dbg!(&res);
 
-        let Ok(request) = Login::deserialize(packet.as_ref()) else {
-            // Kick the player when login fails. This is for security reasons.
-            // An error during login could mean the user is trying to impersonate someone else.
-            self.kick_with_reason("Login failed", DisconnectReason::BadPacket)?;
-            anyhow::bail!("Client failed to login")
-        };
+        let Ok(request) = res else { unreachable!() };
 
         tracing::Span::current().record("username", &request.identity.name);
 

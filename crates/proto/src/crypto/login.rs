@@ -2,6 +2,7 @@
 use base64::Engine;
 use jsonwebtoken::{Algorithm, DecodingKey, Validation};
 use p384::pkcs8::spki;
+use serde::Deserialize;
 use uuid::Uuid;
 
 use util::{BinaryRead};
@@ -129,6 +130,8 @@ fn parse_initial_token(token: &str) -> anyhow::Result<String> {
         }
     };
 
+    dbg!(&header);
+
     let Some(base64_x5u) = header.x5u else {
         tracing::error!("Missing X.509 certificate in initial JWT");
         anyhow::bail!("Missing X.509 certificate in initial JWT");
@@ -156,6 +159,8 @@ fn parse_initial_token(token: &str) -> anyhow::Result<String> {
             anyhow::bail!("Unable to decode initial JWT | {err:#}");
         }
     };
+
+    dbg!(&payload);
 
     Ok(payload.claims.public_key)
 }
@@ -261,6 +266,16 @@ fn parse_user_data_token(token: &str, key: &str) -> anyhow::Result<UserDataToken
     Ok(payload.claims)
 }
 
+#[derive(Deserialize)]
+struct AuthData {
+    #[serde(rename = "AuthenticationType")]
+    pub auth_type: u8,
+    #[serde(rename = "Certificate")]
+    pub certificate: String,
+    #[serde(rename = "Token")]
+    pub token: String
+}
+
 /// Parses the identification data contained in the first token chain.
 ///
 /// This contains such as the XUID, display name and public key.
@@ -268,7 +283,12 @@ pub fn parse_identity_data<'a, R: BinaryRead<'a>>(reader: &mut R) -> anyhow::Res
     let token_length = reader.read_u32_le()?;
     let token_chain = reader.take_n(token_length as usize)?;
 
-    let tokens = serde_json::from_slice::<TokenChain>(token_chain)?;
+    let str = String::from_utf8_lossy(token_chain);
+    dbg!(str);
+
+    let cert = serde_json::from_slice::<AuthData>(token_chain)?.certificate;
+    let tokens: TokenChain = serde_json::from_str(&cert)?;
+
     let identity_data = match tokens.chain.len() {
         1 => {
             // Client is not signed into Xbox.

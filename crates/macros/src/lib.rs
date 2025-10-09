@@ -44,6 +44,7 @@
 use proc_macro::TokenStream;
 
 mod atomic_enum;
+mod codec;
 mod variant_count;
 
 /// Generates a new type prefixed with `Atomic` that is the same as the affected

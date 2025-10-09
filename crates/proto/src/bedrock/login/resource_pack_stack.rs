@@ -74,13 +74,13 @@ impl Serialize for ResourcePackStack<'_> {
     fn serialize_into<W: BinaryWrite>(&self, writer: &mut W) -> anyhow::Result<()> {
         writer.write_bool(self.forced_to_accept)?;
 
-        writer.write_var_u32(self.resource_packs.len() as u32)?;
-        for pack in self.resource_packs {
+        writer.write_var_u32(self.behavior_packs.len() as u32)?;
+        for pack in self.behavior_packs {
             pack.serialize_into(writer)?;
         }
 
-        writer.write_var_u32(self.behavior_packs.len() as u32)?;
-        for pack in self.behavior_packs {
+        writer.write_var_u32(self.resource_packs.len() as u32)?;
+        for pack in self.resource_packs {
             pack.serialize_into(writer)?;
         }
 

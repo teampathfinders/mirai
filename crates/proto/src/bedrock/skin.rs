@@ -347,7 +347,7 @@ pub struct Skin {
     pub skin_id: String,
     /// PlayFab ID created for the skin.
     /// PlayFab hosts the marketplace.
-    #[serde(rename = "PlayFabId")]
+    #[serde(rename = "PlayFabId", default = "String::new")]
     pub playfab_id: String,
     /// Unknown what this does.
     #[serde(rename = "SkinResourcePatch", with = "base64_string")]

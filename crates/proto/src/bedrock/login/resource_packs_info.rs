@@ -1,3 +1,4 @@
+use uuid::Uuid;
 use util::{BinaryWrite, VarString};
 
 use util::Serialize;
@@ -84,12 +85,14 @@ impl ResourcePack {
 pub struct ResourcePacksInfo<'a> {
     /// Forces the client to accept the packs to be able to join the server.
     pub required: bool,
-    /// Indicates whether there are packs that make use of scripting.
-    pub scripting_enabled: bool,
-    /// Unknown what this does.
-    pub forcing_server_packs: bool,
     /// Whether any of the packs contained have addons in them.
     pub has_addons: bool,
+    /// Indicates whether there are packs that make use of scripting.
+    pub scripting_enabled: bool,
+    /// Forces the client to disable vibrant visuals when connecting to the server.
+    pub disable_vibrant_visuals: bool,
+    /// Unknown what this does.
+    pub forcing_server_packs: bool,
     /// List of behavior packs
     pub behavior_info: &'a [BehaviorPack],
     /// List of resource packs.
@@ -115,7 +118,10 @@ impl<'a> Serialize for ResourcePacksInfo<'a> {
         writer.write_bool(self.required)?;
         writer.write_bool(self.has_addons)?;
         writer.write_bool(self.scripting_enabled)?;
-        writer.write_bool(self.forcing_server_packs)?;
+        writer.write_bool(self.disable_vibrant_visuals)?;
+        // writer.write_bool(self.forcing_server_packs)?;
+        writer.write_uuid_le(&Uuid::new_v4())?; // World template UUID
+        writer.write_str("")?; // World template version
 
         writer.write_u16_be(self.behavior_info.len() as u16)?;
         for pack in self.behavior_info {
@@ -128,20 +134,20 @@ impl<'a> Serialize for ResourcePacksInfo<'a> {
             writer.write_bool(pack.has_scripts)?;
         }
 
-        writer.write_u16_be(self.resource_info.len() as u16)?;
-        for pack in self.resource_info {
-            writer.write_str(&pack.uuid)?;
-            writer.write_str(&pack.version)?;
-            writer.write_u64_be(pack.size)?;
-            writer.write_str(&pack.content_key)?;
-            writer.write_str(&pack.subpack_name)?;
-            writer.write_str(&pack.content_identity)?;
-            writer.write_bool(pack.has_scripts)?;
-            writer.write_bool(pack.rtx_enabled)?;
-        }
-
-        // No CDN entries
-        writer.write_var_u32(0)?;
+        // writer.write_u16_be(self.resource_info.len() as u16)?;
+        // for pack in self.resource_info {
+        //     writer.write_str(&pack.uuid)?;
+        //     writer.write_str(&pack.version)?;
+        //     writer.write_u64_be(pack.size)?;
+        //     writer.write_str(&pack.content_key)?;
+        //     writer.write_str(&pack.subpack_name)?;
+        //     writer.write_str(&pack.content_identity)?;
+        //     writer.write_bool(pack.has_scripts)?;
+        //     writer.write_bool(pack.rtx_enabled)?;
+        // }
+        //
+        // // No CDN entries
+        // writer.write_var_u32(0)?;
 
         Ok(())
     }
