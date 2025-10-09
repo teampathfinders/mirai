@@ -18,8 +18,8 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v5
 
-      - name: Install Clippy
-        run: rustup toolchain install 1.90.0 --profile minimal -c clippy
+#      - name: Install Clippy
+#        run: rustup toolchain install 1.90.0 --profile minimal -c clippy
 
       - name: Dependency cache
         uses: Swatinem/rust-cache@v2.2.1
