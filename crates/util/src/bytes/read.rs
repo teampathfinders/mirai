@@ -93,10 +93,7 @@ pub trait BinaryRead<'a>: AsRef<[u8]> {
     #[inline]
     fn read_u24_le(&mut self) -> anyhow::Result<u32> {
         let bytes = self.take_const::<3>()?;
-        // let copy = bytes;
-
-        let val = u32::from_le_bytes([bytes[0], bytes[1], bytes[2], 0]);
-        // tracing::info!("{copy:?} {val}");
+        let val = u32::from_be_bytes([bytes[0], bytes[1], bytes[2], 0]);
         
         Ok(val)
     }
@@ -114,7 +111,7 @@ pub trait BinaryRead<'a>: AsRef<[u8]> {
     #[inline]
     fn peek_u24_le(&self) -> anyhow::Result<u32> {
         let bytes = self.peek_const::<3>()?;
-        let val = u32::from_le_bytes([bytes[0], bytes[1], bytes[2], 0]);
+        let val = u32::from_be_bytes([bytes[0], bytes[1], bytes[2], 0]);
 
         Ok(val)
     }

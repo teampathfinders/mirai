@@ -132,11 +132,11 @@ impl BedrockClient {
                 return self.kick_with_reason("Illegal packet modifications detected", DisconnectReason::BadPacket);
             }
 
-            // We must also return the packet to the client that sent it.
-            // Otherwise their message won't be displayed in their own chat.
+            // We must also return the packet to the client that sent it
+            // otherwise their message won't be displayed in their own chat.
             self.broadcast(request)
         } else {
-            // Only the server is allowed to create text raknet that are not of the chat type.
+            // Only the server is allowed to create text packets that are not of the chat type.
             tracing::warn!("Client sent an illegal message type. Kicking them for forbidden modifications");
             self.kick_with_reason("Illegal packet received", DisconnectReason::BadPacket)
         }
