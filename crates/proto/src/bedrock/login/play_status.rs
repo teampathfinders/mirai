@@ -20,12 +20,12 @@ pub enum Status {
     FailedInvalidTenant,
     /// Displays "The server is not running Minecraft: Education Edition. Failed to connect."
     FailedVanillaEdu,
-    /// Displays "The server is running an incompatible edition of Minecraft. Failed to connect."
-    FailedIncompatible,
+    FailedEduVanilla,
     /// Displays "Wow this server is popular! Check back later to see if space opens up. Server Full."
     FailedServerFull,
     /// Displays "The server is not in Editor Mode. Failed to connect."
     FailedEditorToVanillaMismatch,
+    FailedVanillaToEditorMismatch
 }
 
 /// Sends a status update to the client.

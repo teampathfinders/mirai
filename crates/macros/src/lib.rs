@@ -42,6 +42,7 @@
 #![allow(clippy::use_self)]
 
 use proc_macro::TokenStream;
+use quote::quote;
 
 mod atomic_enum;
 mod codec;
@@ -58,4 +59,9 @@ pub fn atomic_enum(_attrs: TokenStream, item: TokenStream) -> TokenStream {
 #[proc_macro_attribute]
 pub fn variant_count(_attrs: TokenStream, item: TokenStream) -> TokenStream {
     variant_count::inner(item)
+}
+
+#[proc_macro_derive(BedrockCodec)]
+pub fn codec_serialize_derive(input: TokenStream) -> TokenStream {
+    codec::inner(input)
 }

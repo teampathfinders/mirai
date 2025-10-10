@@ -262,6 +262,8 @@ impl BedrockClient {
         let mut full = RVec::alloc_with_capacity(body.len() + 5);
         full.write_var_u32(body.len() as u32)?;
         full.write_all(&body)?;
+        
+        tracing::trace!("Sending packet {} of size {}b", T::ID, full.len());
 
         self.send_serialized(full, DEFAULT_SEND_CONFIG)
     }

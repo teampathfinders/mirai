@@ -1,5 +1,5 @@
 use std::collections::HashMap;
-
+use uuid::Uuid;
 use crate::types::Dimension;
 use macros::variant_count;
 use util::{Serialize, Vector};
@@ -7,8 +7,8 @@ use util::{Serialize, Vector};
 use util::BlockPosition;
 use util::{BinaryWrite, VarInt, VarString};
 
-use crate::bedrock::{CLIENT_VERSION_STRING, ConnectedPacket, Difficulty, GameMode, GameRule};
-use crate::bedrock::ExperimentData;
+use crate::bedrock::{CLIENT_VERSION_STRING, ConnectedPacket, Difficulty, GameMode, GameRule, GameRulesChanged, ExperimentList};
+use crate::bedrock::Experiment;
 
 const MULTIPLAYER_CORRELATION_ID: &str = "5b39a9d6-f1a1-411a-b749-b30742f81771";
 
@@ -110,8 +110,8 @@ pub enum PlayerMovementType {
 /// Sets the player movement settings.
 #[derive(Debug, Copy, Clone)]
 pub struct PlayerMovementSettings {
-    /// See [`PlayerMovementType`].
-    pub movement_type: PlayerMovementType,
+    // /// See [`PlayerMovementType`].
+    // pub movement_type: PlayerMovementType,
     /// Determines how far back a rewind can go.
     pub rewind_history_size: i32,
     /// Whether the server authorises block breaking.
@@ -121,14 +121,14 @@ pub struct PlayerMovementSettings {
 impl PlayerMovementSettings {
     /// Returns the serialized size of the struct.
     pub fn serialized_size(&self) -> usize {
-        (self.movement_type as i32).var_len() +
+        // (self.movement_type as i32).var_len() +
             self.rewind_history_size.var_len() +
             1
     }
 
     /// Serializes the struct.
     pub fn serialize_into<W: BinaryWrite>(&self, writer: &mut W) -> anyhow::Result<()> {
-        writer.write_var_i32(self.movement_type as i32)?;
+        // writer.write_var_i32(self.movement_type as i32)?;
         writer.write_var_i32(self.rewind_history_size)?;
         writer.write_bool(self.server_authoritative_breaking)
     }
@@ -231,6 +231,149 @@ impl Serialize for EditorWorldType {
     }
 }
 
+#[derive(Debug)]
+pub struct SpawnSettings<'a> {
+    pub ty: u16,
+    pub biome_name: &'a str,
+    pub dimension: Dimension
+}
+
+impl<'a> Serialize for SpawnSettings<'a> {
+    fn serialize_into<W: BinaryWrite>(&self, mut writer: &mut W) -> anyhow::Result<()> {
+        writer.write_u16_le(self.ty)?;
+        writer.write_str(self.biome_name)?;
+        writer.write_var_i32(self.dimension as i32)?;
+
+        Ok(())
+    }
+}
+
+#[derive(Debug)]
+pub struct LevelSettings<'a> {
+    pub seed: u64,
+    pub spawn_settings: SpawnSettings<'a>,
+    pub generator_type: u32,
+    pub game_type: GameMode,
+    pub hardcore: bool,
+    pub difficulty: Difficulty,
+    pub default_spawn: BlockPosition,
+    pub achievements_disabled: bool,
+    pub editor_world_type: EditorWorldType,
+    pub created_in_editor: bool,
+    pub exported_from_editor: bool,
+    pub day_cycle_stop_time: u32,
+    pub edu_offer: u32,
+    pub edu_enabled: bool,
+    pub edu_product_id: &'a str,
+    pub rain_level: f32,
+    pub lightning_level: f32,
+    pub platform_locked_content: bool,
+    pub multiplayed_enabled: bool,
+    pub lan_broadcasting: bool,
+    pub xbox_live_broadcast: BroadcastIntent,
+    pub platform_broadcast: BroadcastIntent,
+    pub commands_enabled: bool,
+    pub texture_packs_required: bool,
+    pub rule_data: GameRulesChanged<'a>,
+    pub experiments: ExperimentList<'a>,
+    pub bonus_chest: bool,
+    pub starter_map: bool,
+    pub permission_level: PermissionLevel,
+    pub server_tick_range: i32,
+    pub behavior_pack_locked: bool,
+    pub resource_pack_locked: bool,
+    pub from_locked_template: bool,
+    pub msa_gamertags_only: bool,
+    pub from_template: bool,
+    pub template_locked_settings: bool,
+    pub only_v1_villagers: bool,
+    pub persona_disabled: bool,
+    pub custom_skins_disabled: bool,
+    pub emote_chat_muted: bool,
+    pub base_game_version: &'a str,
+    pub world_width: i32,
+    pub world_depth: i32,
+    pub nether_type: bool,
+    pub edu_resource_uri: EducationResourceURI,
+    pub force_experimental_gameplay: bool,
+    pub chat_restriction_level: ChatRestrictionLevel,
+    pub disable_player_interactions: bool,
+    pub server_identifier: &'a str,
+    pub world_identifier: &'a str,
+    pub scenario_identifier: &'a str,
+    pub owner_identifier: &'a str
+}
+
+impl<'a> Serialize for LevelSettings<'a> {
+    fn serialize_into<W: BinaryWrite>(&self, writer: &mut W) -> anyhow::Result<()> {
+        writer.write_u64_le(self.seed)?;
+        self.spawn_settings.serialize_into(writer)?;
+        writer.write_var_i32(self.generator_type as i32)?;
+        writer.write_var_i32(self.game_type as i32)?;
+        writer.write_bool(self.hardcore)?;
+        writer.write_var_i32(self.difficulty as i32)?;
+        writer.write_block_pos(&self.default_spawn)?;
+        writer.write_bool(self.achievements_disabled)?;
+        writer.write_var_i32(self.editor_world_type as i32)?;
+        writer.write_bool(self.created_in_editor)?;
+        writer.write_bool(self.exported_from_editor)?;
+        writer.write_var_i32(self.day_cycle_stop_time as i32)?;
+        writer.write_var_i32(self.edu_offer as i32)?;
+        writer.write_bool(self.edu_enabled)?;
+        writer.write_str(&self.edu_product_id)?;
+        writer.write_f32_le(self.rain_level)?;
+        writer.write_f32_le(self.lightning_level)?;
+        writer.write_bool(self.platform_locked_content)?;
+        writer.write_bool(self.multiplayed_enabled)?;
+        writer.write_bool(self.lan_broadcasting)?;
+        writer.write_var_i32(self.xbox_live_broadcast as i32)?;
+        writer.write_var_i32(self.platform_broadcast as i32)?;
+        writer.write_bool(self.commands_enabled)?;
+        writer.write_bool(self.texture_packs_required)?;
+        self.rule_data.serialize_into(writer)?;
+        self.experiments.serialize_into(writer)?;
+        writer.write_bool(self.bonus_chest)?;
+        writer.write_bool(self.starter_map)?;
+        writer.write_var_i32(self.permission_level as i32)?;
+        writer.write_i32_le(self.server_tick_range)?;
+        writer.write_bool(self.behavior_pack_locked)?;
+        writer.write_bool(self.resource_pack_locked)?;
+        writer.write_bool(self.from_locked_template)?;
+        writer.write_bool(self.msa_gamertags_only)?;
+        writer.write_bool(self.from_template)?;
+        writer.write_bool(self.template_locked_settings)?;
+        writer.write_bool(self.only_v1_villagers)?;
+        writer.write_bool(self.persona_disabled)?;
+        writer.write_bool(self.custom_skins_disabled)?;
+        writer.write_bool(self.emote_chat_muted)?;
+        writer.write_str(&self.base_game_version)?;
+        writer.write_i32_le(self.world_width)?;
+        writer.write_i32_le(self.world_depth)?;
+        writer.write_bool(self.nether_type)?;
+        self.edu_resource_uri.serialize_into(writer)?;
+        writer.write_bool(self.force_experimental_gameplay)?; // TODO
+        writer.write_u8(self.chat_restriction_level as u8)?;
+        writer.write_bool(self.disable_player_interactions)?;
+        writer.write_str(&self.server_identifier)?;
+        writer.write_str(&self.world_identifier)?;
+        writer.write_str(&self.scenario_identifier)?;
+        writer.write_str(&self.owner_identifier)?;
+
+        Ok(())
+    }
+}
+
+#[derive(Debug)]
+pub struct NetworkPermissions {
+    pub server_authoritative_sound: bool
+}
+
+impl Serialize for NetworkPermissions {
+    fn serialize_into<W: BinaryWrite>(&self, mut writer: &mut W) -> anyhow::Result<()> {
+        writer.write_bool(self.server_authoritative_sound)
+    }
+}
+
 /// The start game packet contains most of the world settings displayed in the settings menu.
 #[derive(Debug)]
 pub struct StartGame<'a> {
@@ -244,103 +387,8 @@ pub struct StartGame<'a> {
     pub position: Vector<f32, 3>,
     /// Spawn rotation.
     pub rotation: Vector<f32, 2>,
-    /// World seed.
-    /// This is displayed in the settings menu.
-    pub world_seed: u64,
-    pub spawn_biome_type: SpawnBiomeType,
-    pub custom_biome_name: &'a str,
-    /// Dimension the client spawns in.
-    pub dimension: Dimension,
-    /// Generator used to create the world.
-    /// This is also displayed in the settings menu.
-    pub generator: WorldGenerator,
-    /// World game mode.
-    /// The default game mode for new players.
-    pub world_game_mode: GameMode,
-    /// Whether the game is in hardcore mode.
-    pub hardcore: bool,
-    /// Difficulty of the game.
-    pub difficulty: Difficulty,
-    /// Default spawn position.
-    pub world_spawn: BlockPosition,
-    /// Whether achievements are disabled.
-    /// This should generally be set to true for servers.
-    ///
-    /// According to wiki.vg, the client crashes if both achievements and commands are enabled.
-    /// I couldn't reproduce this on Windows 10.
-    pub achievements_disabled: bool,
-    /// The type of editor mode used for this world.
-    pub editor_world_type: EditorWorldType,
-    /// Whether this world was created as a project in editor mode.
-    pub created_in_editor: bool,
-    /// Whether this world was exported from editor mode.
-    pub exported_from_editor: bool,
-    /// The time to which the daylight cycle is locked if the gamerule is set.
-    pub day_cycle_lock_time: i32,
-    /// Whether education edition features are enabled.
-    pub education_features_enabled: bool,
-    /// The intensity of the current rain.
-    /// Set to 0 for no rain.
-    pub rain_level: f32,
-    /// The intensity of the current thunderstorm.
-    /// Set to 0 to for no thunderstorm.
-    pub lightning_level: f32,
-    pub confirmed_platform_locked_content: bool,
-    /// Whether to broadcast to LAN.
-    pub broadcast_to_lan: bool,
-    pub xbox_broadcast_intent: BroadcastIntent,
-    pub platform_broadcast_intent: BroadcastIntent,
-    /// Whether to enable commands.
-    /// If this is disabled, the client will not allow the player to send commands under any
-    /// circumstance.
-    pub enable_commands: bool,
-    /// Whether texture packs are required.
-    /// This doesn't really seem to have a function other than displaying the force pack setting in the settings menu.
-    ///
-    /// Whether packs are actually required has already been specified in the resource pack raknet.
-    pub texture_packs_required: bool,
-    /// List of game rules.
-    /// Only modified game rules have to be sent.
-    /// Game rules that are not sent in the start game packet, will be set to their default values.
-    pub game_rules: &'a [GameRule],
-    /// Experiments used by the server.
-    /// This is a visual option, since the experiments have already been specified in a resource pack packet.
-    pub experiments: &'a [ExperimentData<'a>],
-    /// Whether experiments have previously been enabled.
-    pub experiments_previously_enabled: bool,
-    /// Whether the bonus chest is enabled.
-    /// This is only a visual thing shown in the settings menu.
-    pub bonus_chest_enabled: bool,
-    /// Whether the starter map is enabled.
-    /// This generally should be left disabled as the client will otherwise force itself to have a map in its inventory.
-    pub starter_map_enabled: bool,
-    /// Permission level of the client: visitor, member, operator or custom.
-    pub permission_level: PermissionLevel,
-    /// Simulation distance of the server.
-    /// This is only a visual thing shown in the settings menu.
-    pub server_chunk_tick_range: i32,
+    pub level_settings: LevelSettings<'a>,
 
-    pub has_locked_behavior_pack: bool,
-    pub has_locked_resource_pack: bool,
-    pub is_from_locked_world_template: bool,
-    pub use_msa_gamertags_only: bool,
-    pub is_from_world_template: bool,
-    pub is_world_template_option_locked: bool,
-    pub only_spawn_v1_villagers: bool,
-    pub persona_disabled: bool,
-    pub custom_skins_disabled: bool,
-    pub emote_chat_muted: bool,
-    /// Version of the game from which vanilla features will be used.
-    // pub base_game_version: String,
-    pub limited_world_width: i32,
-    pub limited_world_height: i32,
-    // pub has_new_nether: bool,
-    pub force_experimental_gameplay: bool,
-    pub chat_restriction_level: ChatRestrictionLevel,
-    pub disable_player_interactions: bool,
-    // pub server_id: &'a str,
-    // pub world_id: &'a str,
-    // pub scenario_id: &'a str,
     pub level_id: &'a str,
     /// Name of the world.
     /// This is shown in the pause menu above the player list, and the settings menu.
@@ -348,7 +396,7 @@ pub struct StartGame<'a> {
     pub template_content_identity: &'a str,
     pub movement_settings: PlayerMovementSettings,
     /// Current time.
-    pub time: i64,
+    pub time: u64,
     pub enchantment_seed: i32,
     pub block_properties: &'a [BlockEntry],
     pub item_properties: &'a [ItemEntry],
@@ -363,13 +411,16 @@ pub struct StartGame<'a> {
     /// Client side generation allows the client to generate its own chunks without the server having to send them over.
     pub client_side_generation: bool,
     pub hashed_block_ids: bool,
-    pub server_authoritative_sounds: bool
+    pub server_version: &'a str,
+    pub network_permissions: NetworkPermissions,
+    pub tick_death_systems_enabled: bool
 }
 
 impl ConnectedPacket for StartGame<'_> {
     const ID: u32 = 0x0b;
 
     fn serialized_size(&self) -> usize {
+        // TODO: Update to new version
         self.entity_id.var_len() +
             self.runtime_id.var_len() +
             (self.game_mode as i32).var_len() +
@@ -377,16 +428,16 @@ impl ConnectedPacket for StartGame<'_> {
             3 * 4 +
             8 +
             2 +
-            self.custom_biome_name.var_len() +
-            (self.dimension as u32).var_len() +
-            (self.generator as i32).var_len() +
-            (self.world_game_mode as i32).var_len() +
-            (self.difficulty as i32).var_len() +
+            // self.custom_biome_name.var_len() +
+            // (self.dimension as u32).var_len() +
+            // (self.generator as i32).var_len() +
+            // (self.world_game_mode as i32).var_len() +
+            // (self.difficulty as i32).var_len() +
             1 +
-            self.world_spawn.serialized_size() +
+            // self.world_spawn.serialized_size() +
             1 +
             1 +
-            self.day_cycle_lock_time.var_len() +
+            // self.day_cycle_lock_time.var_len() +
             0.var_len() +
             1 +
             "".var_len() +
@@ -395,18 +446,18 @@ impl ConnectedPacket for StartGame<'_> {
             1 +
             1 +
             1 +
-            (self.xbox_broadcast_intent as u32).var_len() +
-            (self.platform_broadcast_intent as u32).var_len() +
+            // (self.xbox_broadcast_intent as u32).var_len() +
+            // (self.platform_broadcast_intent as u32).var_len() +
             1 +
             1 +
-            (self.game_rules.len() as u32).var_len() +
-            self.game_rules.iter().fold(0, |acc, r| acc + r.serialized_size()) +
+            // (self.game_rules.len() as u32).var_len() +
+            // self.game_rules.iter().fold(0, |acc, r| acc + r.serialized_size()) +
             4 +
-            self.experiments.iter().fold(0, |acc, e| acc + e.serialized_size()) +
+            // self.experiments.iter().fold(0, |acc, e| acc + e.serialized_size()) +
             1 +
             1 +
             1 +
-            (self.permission_level as i32).var_len() +
+            // (self.permission_level as i32).var_len() +
             4 +
             1 +
             1 +
@@ -456,104 +507,36 @@ impl<'a> Serialize for StartGame<'a> {
     fn serialize_into<W: BinaryWrite>(&self, mut writer: &mut W) -> anyhow::Result<()> {
         writer.write_var_i64(self.entity_id)?;
         writer.write_var_u64(self.runtime_id)?;
+
         writer.write_var_i32(self.game_mode as i32)?;
         writer.write_vecf(&self.position)?;
         writer.write_vecf(&self.rotation)?;
-        writer.write_u64_le(self.world_seed)?;
-        writer.write_i16_le(self.spawn_biome_type as i16)?;
-        writer.write_str(self.custom_biome_name)?;
-        writer.write_var_u32(self.dimension as u32)?;
-        writer.write_var_i32(self.generator as i32)?;
-        writer.write_var_i32(self.world_game_mode as i32)?;
-        writer.write_bool(self.hardcore)?;
-        writer.write_var_i32(self.difficulty as i32)?;
-        writer.write_block_pos(&self.world_spawn)?;
 
-        writer.write_bool(self.achievements_disabled)?;
-        self.editor_world_type.serialize_into(writer)?;
-        writer.write_bool(self.created_in_editor)?;
-        writer.write_bool(self.exported_from_editor)?;
-        writer.write_var_i32(self.day_cycle_lock_time)?;
-        writer.write_var_i32(0)?; // Education offer.
-        writer.write_bool(self.education_features_enabled)?;
-        writer.write_str("")?; // Education product ID.
-        writer.write_f32_le(self.rain_level)?;
-        writer.write_f32_le(self.lightning_level)?;
-        writer.write_bool(self.confirmed_platform_locked_content)?;
-        writer.write_bool(true)?; // Whether the game is multiplayer, must always be true for servers.
-        writer.write_bool(self.broadcast_to_lan)?;
-        self.xbox_broadcast_intent.serialize_into(writer)?;
-        self.platform_broadcast_intent.serialize_into(writer)?;
-        writer.write_bool(self.enable_commands)?;
-        writer.write_bool(self.texture_packs_required)?;
+        self.level_settings.serialize_into(writer)?;
 
-        writer.write_var_u32(self.game_rules.len() as u32)?;
-        for rule in self.game_rules {
-            rule.serialize_into(writer)?;
-        }
-
-        writer.write_u32_le(self.experiments.len() as u32)?;
-        for experiment in self.experiments {
-            experiment.serialize_into(writer)?;
-        }
-
-        writer.write_bool(self.experiments_previously_enabled)?;
-        writer.write_bool(self.bonus_chest_enabled)?;
-        writer.write_bool(self.starter_map_enabled)?;
-        writer.write_var_i32(self.permission_level as i32)?;
-        writer.write_i32_le(self.server_chunk_tick_range)?;
-        writer.write_bool(self.has_locked_behavior_pack)?;
-        writer.write_bool(self.has_locked_resource_pack)?;
-        writer.write_bool(self.is_from_locked_world_template)?;
-        writer.write_bool(self.use_msa_gamertags_only)?;
-        writer.write_bool(self.is_from_world_template)?;
-        writer.write_bool(self.is_world_template_option_locked)?;
-        writer.write_bool(self.only_spawn_v1_villagers)?;
-        writer.write_bool(self.persona_disabled)?;
-        writer.write_bool(self.custom_skins_disabled)?;
-        writer.write_bool(self.emote_chat_muted)?;
-        writer.write_str(CLIENT_VERSION_STRING)?; // Base game version
-        writer.write_i32_le(self.limited_world_width)?;
-        writer.write_i32_le(self.limited_world_height)?;
-        writer.write_bool(true)?; // Use new nether
-        writer.write_str("")?;
-        writer.write_str("")?;
-        writer.write_bool(self.force_experimental_gameplay)?;
-        self.chat_restriction_level.serialize_into(writer)?;
-        writer.write_bool(self.disable_player_interactions)?;
-        writer.write_str("")?; // Server ID
-        writer.write_str("")?; // World ID
-        writer.write_str("")?; // Scenario ID
         writer.write_str(self.level_id)?;
         writer.write_str(self.level_name)?;
         writer.write_str(self.template_content_identity)?;
-        writer.write_bool(false)?; // Game is not a trial.
+        writer.write_bool(false)?; // Is trial
         self.movement_settings.serialize_into(writer)?;
-        writer.write_i64_le(self.time)?;
+
+        writer.write_u64_le(self.time)?;
         writer.write_var_i32(self.enchantment_seed)?;
 
+        // Block properties
         writer.write_var_u32(self.block_properties.len() as u32)?;
-        for block in self.block_properties {
-            block.serialize_into(writer)?;
-        }
 
-        writer.write_var_u32(self.item_properties.len() as u32)?;
-        for item in self.item_properties {
-            item.serialize_into(writer)?;
-        }
-
-        // Random multiplayer correlation UUID.
-        writer.write_str(MULTIPLAYER_CORRELATION_ID)?;
-
-        writer.write_bool(self.server_authoritative_inventory)?;
-        writer.write_str(CLIENT_VERSION_STRING)?; // Game version
-
+        writer.write_str("")?; // Multiplayer correlation ID
+        writer.write_bool(true)?; // Enable item stack net manager (server authoritative inventory)
+        writer.write_str(self.server_version)?;
         nbt::to_var_bytes_in(&mut writer, &self.property_data)?;
-
         writer.write_u64_le(self.server_block_state_checksum)?;
-        writer.write_u128_le(self.world_template_id)?;
+        writer.write_uuid_le(&Uuid::new_v4())?; // World template ID
         writer.write_bool(self.client_side_generation)?;
         writer.write_bool(self.hashed_block_ids)?;
-        writer.write_bool(self.server_authoritative_sounds)
+        writer.write_bool(self.tick_death_systems_enabled)?;
+        self.network_permissions.serialize_into(writer)?;
+
+        Ok(())
     }
 }

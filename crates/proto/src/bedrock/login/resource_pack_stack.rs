@@ -5,12 +5,34 @@ use util::Serialize;
 use crate::bedrock::ConnectedPacket;
 
 #[derive(Debug, Clone)]
-pub struct ExperimentData<'a> {
+pub struct ExperimentList<'a> {
+    pub active_toggles: &'a [Experiment<'a>],
+    pub always_on_toggles: &'a [Experiment<'a>],
+    pub ever_toggled: bool
+}
+
+impl<'a> Serialize for ExperimentList<'a> {
+    fn serialize_into<W: BinaryWrite>(&self, writer: &mut W) -> anyhow::Result<()> {
+        writer.write_u32_le((self.active_toggles.len() + self.always_on_toggles.len()) as u32)?;
+        for active in self.active_toggles {
+            writer.write_str(active.name)?;
+            writer.write_bool(active.enabled)?;
+        }
+        for always in self.always_on_toggles {
+            writer.write_str(always.name)?;
+            writer.write_bool(always.enabled)?;
+        }
+        writer.write_bool(self.ever_toggled)
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct Experiment<'a> {
     pub name: &'a str,
     pub enabled: bool,
 }
 
-impl ExperimentData<'_> {
+impl Experiment<'_> {
     pub fn serialized_size(&self) -> usize {
         self.name.var_len() + 1
     }
@@ -48,7 +70,7 @@ pub struct ResourcePackStack<'a> {
     pub resource_packs: &'a [ResourcePackStackEntry<'a>],
     pub behavior_packs: &'a [ResourcePackStackEntry<'a>],
     pub game_version: &'a str,
-    pub experiments: &'a [ExperimentData<'a>],
+    pub experiments: &'a [Experiment<'a>],
     pub experiments_previously_toggled: bool,
     pub includes_editor_packs: bool
 }

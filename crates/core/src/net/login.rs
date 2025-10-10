@@ -1,13 +1,5 @@
 use level::PaletteEntry;
-use proto::bedrock::{
-    BiomeDefinitionList, BroadcastIntent, CacheStatus, ChatRestrictionLevel, ChunkRadiusReply, ChunkRadiusRequest, ClientToServerHandshake,
-    ConnectedPacket, CreativeContent, Difficulty, DisconnectReason, EditorWorldType, ExperimentData, GameMode, GameRule, HeightmapType,
-    InventoryTransaction, ItemInstance, LevelChunk, Login, NetworkChunkPublisherUpdate, NetworkSettings, PermissionLevel, PlayStatus,
-    PlayerMovementSettings, PlayerMovementType, PropertyData, RequestNetworkSettings, ResourcePackClientResponse, ResourcePackStack,
-    ResourcePacksInfo, ServerToClientHandshake, SetLocalPlayerAsInitialized, SpawnBiomeType, StartGame, Status, SubChunkEntry, SubChunkRequestMode,
-    SubChunkResponse, SubChunkResult, TextData, TextMessage, TransactionAction, TransactionSourceType, TransactionType, UpdateBlock,
-    UpdateBlockFlags, ViolationWarning, WindowId, WorldGenerator, CLIENT_VERSION_STRING, PROTOCOL_VERSION,
-};
+use proto::bedrock::{BiomeDefinitionList, BroadcastIntent, CacheStatus, ChatRestrictionLevel, ChunkRadiusReply, ChunkRadiusRequest, ClientToServerHandshake, ConnectedPacket, CreativeContent, Difficulty, DisconnectReason, EditorWorldType, EducationResourceURI, Experiment, ExperimentList, GameMode, GameRule, GameRulesChanged, HeightmapType, InventoryTransaction, ItemInstance, LevelChunk, LevelSettings, Login, NetworkChunkPublisherUpdate, NetworkPermissions, NetworkSettings, PermissionLevel, PlayStatus, PlayerMovementSettings, PlayerMovementType, PropertyData, RequestNetworkSettings, ResourcePackClientResponse, ResourcePackStack, ResourcePacksInfo, ServerToClientHandshake, SetLocalPlayerAsInitialized, SpawnBiomeType, SpawnSettings, StartGame, Status, SubChunkEntry, SubChunkRequestMode, SubChunkResponse, SubChunkResult, TextData, TextMessage, TransactionAction, TransactionSourceType, TransactionType, UpdateBlock, UpdateBlockFlags, ViolationWarning, WindowId, WorldGenerator, CLIENT_VERSION_STRING, PROTOCOL_VERSION};
 use proto::crypto::Encryptor;
 use proto::types::Dimension;
 use std::collections::HashMap;
@@ -182,60 +174,76 @@ impl BedrockClient {
             entity_id: 1,
             runtime_id: 1,
             game_mode: self.player()?.gamemode(),
-            position: Vector::from([0.0, 6.0, 0.0]),
+            position: Vector::from([0.0, 64.0, 0.0]),
             rotation: Vector::from([0.0, 0.0]),
-            world_seed: 0,
-            spawn_biome_type: SpawnBiomeType::Default,
-            custom_biome_name: "plains",
-            dimension: Dimension::Overworld,
-            generator: WorldGenerator::Infinite,
-            world_game_mode: GameMode::Survival,
-            hardcore: false,
-            difficulty: Difficulty::Normal,
-            world_spawn: BlockPosition::new(0, 60, 0),
-            achievements_disabled: true,
-            editor_world_type: EditorWorldType::NotEditor,
-            created_in_editor: false,
-            exported_from_editor: false,
-            day_cycle_lock_time: 0,
-            education_features_enabled: true,
-            rain_level: 0.0,
-            lightning_level: 0.0,
-            confirmed_platform_locked_content: false,
-            broadcast_to_lan: true,
-            xbox_broadcast_intent: BroadcastIntent::Public,
-            platform_broadcast_intent: BroadcastIntent::Public,
-            enable_commands: true,
-            texture_packs_required: true,
-            // FIXME: Reimplement with new level interface.
-            // game_rules: &self.level.get_game_rules(),
-            game_rules: &[GameRule::ShowCoordinates(true)],
-            experiments: &[],
-            experiments_previously_enabled: false,
-            bonus_chest_enabled: false,
-            starter_map_enabled: false,
-            permission_level: PermissionLevel::Operator,
-            server_chunk_tick_range: 12,
-            has_locked_behavior_pack: false,
-            has_locked_resource_pack: false,
-            is_from_locked_world_template: false,
-            use_msa_gamertags_only: false,
-            is_from_world_template: false,
-            is_world_template_option_locked: false,
-            only_spawn_v1_villagers: false,
-            persona_disabled: false,
-            custom_skins_disabled: false,
-            emote_chat_muted: false,
-            limited_world_width: 0,
-            limited_world_height: 0,
-            force_experimental_gameplay: false,
-            chat_restriction_level: ChatRestrictionLevel::None,
-            disable_player_interactions: false,
+            level_settings: LevelSettings {
+                seed: 0,
+                spawn_settings: SpawnSettings {
+                    ty: 0,
+                    biome_name: "minecraft:plains",
+                    dimension: Dimension::Overworld,
+                },
+                generator_type: 0,
+                game_type: GameMode::Creative,
+                hardcore: false,
+                difficulty: Difficulty::Normal,
+                default_spawn: BlockPosition::new(0, 64, 0),
+                achievements_disabled: true,
+                editor_world_type: EditorWorldType::NotEditor,
+                created_in_editor: false,
+                exported_from_editor: false,
+                day_cycle_stop_time: 0,
+                edu_offer: 0,
+                edu_enabled: false,
+                edu_product_id: "",
+                rain_level: 0.0,
+                lightning_level: 0.69,
+                platform_locked_content: false,
+                multiplayed_enabled: true,
+                lan_broadcasting: true,
+                xbox_live_broadcast: BroadcastIntent::Public,
+                platform_broadcast: BroadcastIntent::Public,
+                commands_enabled: true,
+                texture_packs_required: false,
+                rule_data: GameRulesChanged { game_rules: &[
+                    GameRule::ShowCoordinates(true)
+                ] },
+                experiments: ExperimentList {
+                    active_toggles: &[],
+                    always_on_toggles: &[],
+                    ever_toggled: false,
+                },
+                bonus_chest: false,
+                starter_map: false,
+                permission_level: PermissionLevel::Operator,
+                server_tick_range: 4,
+                behavior_pack_locked: false,
+                resource_pack_locked: false,
+                from_locked_template: false,
+                msa_gamertags_only: false,
+                from_template: false,
+                template_locked_settings: false,
+                only_v1_villagers: false,
+                persona_disabled: false,
+                custom_skins_disabled: false,
+                emote_chat_muted: false,
+                base_game_version: "1.21.111",
+                world_width: 0,
+                world_depth: 0,
+                nether_type: false,
+                edu_resource_uri: EducationResourceURI { button_name: "".to_string(), link_uri: "".to_string() },
+                force_experimental_gameplay: false,
+                chat_restriction_level: ChatRestrictionLevel::None,
+                disable_player_interactions: false,
+                server_identifier: "",
+                world_identifier: "",
+                scenario_identifier: "",
+                owner_identifier: "",
+            },
             level_id: "",
             level_name: "Mirai Dedicated Server",
             template_content_identity: "",
             movement_settings: PlayerMovementSettings {
-                movement_type: PlayerMovementType::ServerAuthoritative,
                 rewind_history_size: 0,
                 server_authoritative_breaking: true,
             },
@@ -250,29 +258,30 @@ impl BedrockClient {
             property_data: PropertyData {},
             server_authoritative_inventory: false,
             game_version: CLIENT_VERSION_STRING,
-            // property_data: nbt::Value::Compound(HashMap::new()),
             server_block_state_checksum: 0,
             world_template_id: 0,
             client_side_generation: false,
             hashed_block_ids: false,
-            server_authoritative_sounds: true,
+            server_version: "Mirai Development Server (v0.1.0)",
+            network_permissions: NetworkPermissions { server_authoritative_sound: false },
+            tick_death_systems_enabled: true,
         };
         self.send(start_game)?;
 
-        self.send(BiomeDefinitionList)?;
+        // self.send(BiomeDefinitionList)?;
 
         // let available_commands = self.commands.available_commands();
         // self.send(available_commands)?;
 
-        tracing::debug!("{:?}", self.instance().creative_items.stacks);
+        // tracing::debug!("{:?}", self.instance().creative_items.stacks);
 
         // let creative_content = CreativeContent {
         //     items: &self.instance().creative_items.stacks,
         // };
         // self.send(creative_content)?;
 
-        let play_status = PlayStatus { status: Status::PlayerSpawn };
-        self.send(play_status)?;
+        // let play_status = PlayStatus { status: Status::PlayerSpawn };
+        // self.send(play_status)?;
 
         Ok(())
     }
