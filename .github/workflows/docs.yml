@@ -40,6 +40,10 @@ jobs:
 #    - name: Run sccache-cache
 #      uses: mozilla-actions/sccache-action@v0.0.3
     
+    - name: Configure Pages
+      id: pages
+      uses: actions/configure-pages@v5
+
     - name: Generate documentation
       run: cargo +1.90.0 doc --no-deps
       
@@ -48,15 +52,21 @@ jobs:
         cd target/doc
         touch index.html
         echo "<meta http-equiv=\"refresh\" content=\"0; url=https://teampathfinders.github.io/mirai/mirai/index.html\">" > index.html
-      
-    - name: Upload build artifact
-      uses: actions/upload-pages-artifact@v1
+
+    - name: Upload docs artifact
+      uses: actions/upload-pages-artifact@v4
       with:
         path: target/doc
     
   deploy:
     name: Deploy docs
     needs: build
+
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
@@ -65,4 +75,4 @@ jobs:
     steps:
       - name: Deploy to Github Pages
         id: deployment
-        uses: actions/deploy-pages@v1
+        uses: actions/deploy-pages@v4
