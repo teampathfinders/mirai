@@ -8,7 +8,7 @@ util = { package = "mirai-util", path = "../util" }
 proto = { package = "mirai-proto", path = "../proto" }
 
 tracing = "0.1.40"
-tokio = { version = "1.40.0", features = ["sync"] }
+tokio = { version = "1.48.0", features = ["sync"] }
 tokio-util = "0.7.12"
 async-recursion = "1.1.1"
 anyhow = "1.0.95"
