@@ -30,7 +30,7 @@ macros = { package = "mirai-macros", path = "../macros" }
 console-subscriber = { version = "0.4.0", optional = true, features = ["parking_lot"] }
 
 tracing = { version = "0.1.38", features = ["attributes"] }
-tracing-subscriber = { version = "0.3.17", features = ["ansi", "fmt", "json", "smallvec", "parking_lot", "env-filter"], default-features = false }
+tracing-subscriber = { version = "0.3.22", features = ["ansi", "fmt", "json", "smallvec", "parking_lot", "env-filter"], default-features = false }
 
 tokio = { version = "1.48.0", features = ["net", "rt-multi-thread", "macros", "time", "tracing", "sync", "signal"] }
 tokio-util = "0.7.16"
